@@ -1,28 +1,43 @@
 {
   "compilerOptions": {
-    "target": "ES6",                    // JavaScript version output
-    "module": "CommonJS",               // Module system for Node.js
-    "lib": ["esnext"],                  // Include modern JS features
-    "esModuleInterop": true,            // Allow default imports
-    "skipLibCheck": true,               // Skip type checking of declaration files
-    "strict": true,                     // Enable all strict type-checking options
+    "target": "ES6", // JavaScript version output
+    "module": "CommonJS", // Module system for Node.js
+    "lib": [
+      "esnext"
+    ], // Include modern JS features
+    "esModuleInterop": true, // Allow default imports
+    "skipLibCheck": true, // Skip type checking of declaration files
+    "strict": true, // Enable all strict type-checking options
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,          // Allows importing JSON files
-    "outDir": "./dist",                 // Output directory for compiled JS files
-    "rootDir": "./src",                 // Root directory of your TypeScript files
-    "moduleResolution": "node",         // Use Node's module resolution
-    "baseUrl": ".",                     // Base directory for resolving non-relative paths
+    "resolveJsonModule": true, // Allows importing JSON files
+    "outDir": "./dist", // Output directory for compiled JS files
+    "rootDir": "./src", // Root directory of your TypeScript files
+    "moduleResolution": "node", // Use Node's module resolution
+    "baseUrl": ".", // Base directory for resolving non-relative paths
     "paths": {
-      "@prisma/client": ["./node_modules/@prisma/client"]  // Handle prisma client path if needed
-    }
+      "@prisma/client": [
+        "./node_modules/@prisma/client"
+      ] // Handle prisma client path if needed
+    },
+    "allowJs": true,
+    "noEmit": true,
+    "incremental": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
   "include": [
-    "src/**/*",                         // Include all files in src/
-    "prisma/seed.ts"                    // Include the seed file if it’s outside src
+    "prisma/seed.ts", // Include all files in src/
+    "src/**/*" // Include the seed file if it’s outside src
+    ,
+    ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules",                     // Exclude node_modules from compilation
-    "dist"                              // Exclude dist folder
+    "node_modules", // Exclude node_modules from compilation
+    "dist" // Exclude dist folder
   ]
 }
-
