@@ -1,0 +1,55 @@
+
+
+model User {
+  id     Int    @id @default(autoincrement())
+  email  String @unique
+  name   String
+  weeks  Week[]
+}
+
+model Week {
+  id        Int     @id @default(autoincrement())
+  user      User    @relation(fields: [userId], references: [id])
+  userId    Int
+  startDate DateTime
+  endDate   DateTime?
+  workouts  Workout[]
+}
+
+model Workout {
+  id        Int     @id @default(autoincrement())
+  week      Week    @relation(fields: [weekId], references: [id])
+  weekId    Int
+  date      DateTime
+  name      String
+  notes     String?
+  exercises WorkoutExercise[]
+}
+
+model Exercise {
+  id          Int     @id @default(autoincrement())
+  name        String
+  category    String?
+  description String?
+  workoutLinks WorkoutExercise[]
+}
+
+model WorkoutExercise {
+  id         Int     @id @default(autoincrement())
+  workout    Workout @relation(fields: [workoutId], references: [id])
+  workoutId  Int
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+  exerciseId Int
+  order      Int
+  sets       Set[]
+}
+
+model Set {
+  id                 Int     @id @default(autoincrement())
+  workoutExercise    WorkoutExercise @relation(fields: [workoutExerciseId], references: [id])
+  workoutExerciseId  Int
+  reps               Int
+  weight             Float?
+  duration           Int?
+  restTime           Int?
+}

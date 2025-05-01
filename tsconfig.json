@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES6",                    // JavaScript version output
+    "module": "CommonJS",               // Module system for Node.js
+    "lib": ["esnext"],                  // Include modern JS features
+    "esModuleInterop": true,            // Allow default imports
+    "skipLibCheck": true,               // Skip type checking of declaration files
+    "strict": true,                     // Enable all strict type-checking options
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,          // Allows importing JSON files
+    "outDir": "./dist",                 // Output directory for compiled JS files
+    "rootDir": "./src",                 // Root directory of your TypeScript files
+    "moduleResolution": "node",         // Use Node's module resolution
+    "baseUrl": ".",                     // Base directory for resolving non-relative paths
+    "paths": {
+      "@prisma/client": ["./node_modules/@prisma/client"]  // Handle prisma client path if needed
+    }
+  },
+  "include": [
+    "src/**/*",                         // Include all files in src/
+    "prisma/seed.ts"                    // Include the seed file if it’s outside src
+  ],
+  "exclude": [
+    "node_modules",                     // Exclude node_modules from compilation
+    "dist"                              // Exclude dist folder
+  ]
+}
+
