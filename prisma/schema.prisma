@@ -1,4 +1,13 @@
+// schema.prisma
 
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
 model User {
   id     Int    @id @default(autoincrement())
@@ -41,15 +50,14 @@ model WorkoutExercise {
   exercise   Exercise @relation(fields: [exerciseId], references: [id])
   exerciseId Int
   order      Int
-  sets       Set[]
+  sets       ExerciseSet[]
 }
 
-model Set {
+model ExerciseSet {
   id                 Int     @id @default(autoincrement())
   workoutExercise    WorkoutExercise @relation(fields: [workoutExerciseId], references: [id])
   workoutExerciseId  Int
   reps               Int
   weight             Float?
-  duration           Int?
   restTime           Int?
 }

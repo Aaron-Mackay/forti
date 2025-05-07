@@ -17,7 +17,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ setId: 
 
   try {
     const updated = await prisma.exerciseSet.update({
-      where: { id: params.setId },
+      where: { id: Number(params.setId) },
       data,
     });
 
