@@ -30,15 +30,3 @@ export async function getWorkoutExercise(exerciseId: string) {
   return res.json();
 }
 
-export async function updateSet(setId: number, data: Partial<{ reps: number; weight: number }>) {
-  const res = await fetch(`/api/sets/${setId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-
-  if (!res.ok) {
-    const error = await res.json();
-    console.error('Failed to update set:', error);
-  }
-}

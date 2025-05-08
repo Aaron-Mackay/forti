@@ -4,6 +4,7 @@
     "types": ["node"],
     "module": "CommonJS", // Module system for Node.js
     "lib": [
+      "DOM",
       "esnext"
     ], // Include modern JS features
     "esModuleInterop": true, // Allow default imports
