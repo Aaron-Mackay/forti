@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { getWorkoutsForWeek } from '@lib/api';
+import BackButton from "@/components/BackButton";
 
 export default function WeekWorkoutsPage() {
   const { userId, weekId } = useParams();
@@ -18,6 +19,7 @@ export default function WeekWorkoutsPage() {
 
   return (
     <main className="p-6">
+      <BackButton higherLevel={"Weeks"}/>
       <h1 className="text-xl font-semibold mb-2">Workouts</h1>
       {loading ? (
         <p>Loading workouts...</p>

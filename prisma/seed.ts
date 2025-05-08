@@ -13,14 +13,15 @@ async function main() {
   await prisma.user.deleteMany();
 
   // Seed some exercises
-  const exercises = await prisma.exercise.createMany({
+  const descLoremIpsum = "DESC - Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+  await prisma.exercise.createMany({
     data: [
-      { name: 'Bench Press', category: 'Chest' },
-      { name: 'Squat', category: 'Legs' },
-      { name: 'Deadlift', category: 'Back' },
-      { name: 'Overhead Press', category: 'Shoulders' },
-      { name: 'Barbell Row', category: 'Back' },
-      { name: 'Pull Ups', category: 'Back' },
+      { name: 'Bench Press', category: 'Chest', description: descLoremIpsum },
+      { name: 'Squat', category: 'Legs', description: descLoremIpsum },
+      { name: 'Deadlift', category: 'Back', description: descLoremIpsum },
+      { name: 'Overhead Press', category: 'Shoulders', description: descLoremIpsum },
+      { name: 'Barbell Row', category: 'Back', description: descLoremIpsum },
+      { name: 'Pull Ups', category: 'Back', description: descLoremIpsum },
     ],
   });
 
@@ -70,6 +71,8 @@ async function main() {
               workoutId: workout.id,
               exerciseId: exercise.id,
               order: i + 1,
+              restTime: "90",
+              repRange: "8-12"
             },
           });
 
@@ -79,7 +82,6 @@ async function main() {
                 workoutExerciseId: workoutExercise.id,
                 reps: 8 + Math.floor(Math.random() * 5),
                 weight: Math.round(Math.random() * 50 + 30),
-                restTime: 60,
               },
             });
           }

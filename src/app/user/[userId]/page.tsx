@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { getUserWeeks } from '@lib/api';
+import BackButton from "@/components/BackButton";
 
 export default function UserWeeksPage() {
   const { userId } = useParams();
