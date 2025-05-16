@@ -4,9 +4,8 @@ import {useEffect, useState} from 'react';
 import {useParams} from 'next/navigation';
 import {getWorkoutExercise} from '@lib/api';
 import BackButton from "@/components/BackButton";
-import {loadBootstrap, queueOrSendRequest, syncQueuedRequests} from "@/utils/offlineSync";
+import {queueOrSendRequest, syncQueuedRequests} from "@/utils/offlineSync";
 import NetworkStatusBanner from "@/components/NetworkStatusBanner";
-
 
 
 export default function WorkoutExercisePage() {

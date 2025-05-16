@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import {useEffect, useState} from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { getUserWeeks } from '@lib/api';
-import BackButton from "@/components/BackButton";
+import {useParams} from 'next/navigation';
+import {getUserWeeks} from '@lib/api';
 
 export default function UserWeeksPage() {
-  const { userId } = useParams();
+  const {userId} = useParams();
   const [weeks, setWeeks] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -19,7 +18,6 @@ export default function UserWeeksPage() {
 
   return (
     <main className="p-6">
-      <h1 className="text-xl font-semibold mb-2">Weeks</h1>
       {loading ? (
         <p>Loading weeks...</p>
       ) : (
@@ -30,7 +28,7 @@ export default function UserWeeksPage() {
                 href={`/user/${userId}/week/${week.id}`}
                 className="text-blue-600 underline"
               >
-                Week starting {new Date(week.startDate).toLocaleDateString()}
+                Week {week.id}
               </Link>
             </li>
           ))}

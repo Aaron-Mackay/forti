@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const users = await prisma.user.findMany({
       include: {
-        weeks: true,  // Optionally include related weeks data, based on your schema
+        weeks: true,
       },
     });
     return NextResponse.json(users);

@@ -1,8 +1,21 @@
-// lib/api.ts
+import {SerialisedFullUser} from "@/types/fullUser";
+import {EditableUser} from "@/types/editableData";
 
 export async function getUsers() {
   const res = await fetch('/api/users');
   if (!res.ok) throw new Error('Failed to fetch users');
+  return res.json();
+}
+
+export async function getExercises() {
+  const res = await fetch('/api/exercises');
+  if (!res.ok) throw new Error('Failed to fetch exercises');
+  return res.json();
+}
+
+export async function getExercisesAndCategories() {
+  const res = await fetch('/api/exercises/all');
+  if (!res.ok) throw new Error('Failed to fetch exercises and categories');
   return res.json();
 }
 
@@ -25,8 +38,29 @@ export async function getWorkout(workoutId: string) {
 }
 
 export async function getWorkoutExercise(exerciseId: string) {
-  const res = await fetch(`/api/exercises/${exerciseId}`);
+  const res = await fetch(`/api/workoutExercises/${exerciseId}`);
   if (!res.ok) throw new Error('Failed to fetch workout exercise');
   return res.json();
 }
 
+export async function getUserData(userId: string): Promise<SerialisedFullUser> {
+  const res = await fetch(`/api/user/${userId}/plan`);
+  if (!res.ok) throw new Error('Failed to fetch user stateData');
+  return res.json();
+}
+
+export async function saveUserWorkoutData(userData: EditableUser) {
+  const res = await fetch(`/api/saveUserWorkoutData`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(userData),
+  });
+
+  const json = await res.json();
+  if (!res.ok) {
+    alert("Save failed: " + json.error);
+    return;
+  }
+
+  alert("Saved successfully");
+}

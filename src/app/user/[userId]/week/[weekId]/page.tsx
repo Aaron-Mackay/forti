@@ -31,7 +31,7 @@ export default function WeekWorkoutsPage() {
                 href={`/user/${userId}/week/${weekId}/workout/${workout.id}`}
                 className="text-blue-600 underline"
               >
-                {workout.name} ({new Date(workout.date).toLocaleDateString()})
+                {workout.name}
               </Link>
             </li>
           ))}

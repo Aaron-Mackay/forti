@@ -18,9 +18,6 @@ export async function GET(
       where: {
         userId,
       },
-      orderBy: {
-        startDate: 'asc',
-      },
     } satisfies Prisma.WeekFindManyArgs);
 
     return NextResponse.json(weeks);

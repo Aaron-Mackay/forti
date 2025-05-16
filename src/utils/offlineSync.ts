@@ -62,10 +62,10 @@ export async function queueOrSendRequest(url: string, method: string, body: any)
       }
     }
 
-    showBootstrapToast(`Request queued while offline`);
+    await showBootstrapToast(`Request queued while offline`);
   } else {
     await retryFetch(req);
-    showBootstrapToast(`Request sent`);
+    await showBootstrapToast(`Request sent`);
   }
 }
 

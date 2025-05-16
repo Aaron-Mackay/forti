@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
     "target": "ES6", // JavaScript version output
-    "types": ["node"],
+    "types": [
+      "node",
+      "vitest/globals"
+    ],
     "module": "CommonJS", // Module system for Node.js
     "lib": [
       "DOM",
@@ -42,6 +45,7 @@
     "src/**/*",
     // Include the seed file if it’s outside src,
     ".next/types/**/*.ts",
+    "node_modules/vitest/globals.d.ts"
   ],
   "exclude": [
     "node_modules", // Exclude node_modules from compilation
