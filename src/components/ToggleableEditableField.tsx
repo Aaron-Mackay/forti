@@ -18,7 +18,7 @@ export const ToggleableEditableField: React.FC<ToggleableEditableFieldProps> = (
   return isInEditMode ? (
     <input
       type={type}
-      value={value}
+      value={value.toString()}
       onChange={(e) => onChange(e.target.value)}
       {...inputProps}
     />

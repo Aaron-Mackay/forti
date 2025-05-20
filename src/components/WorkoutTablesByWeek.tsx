@@ -1,5 +1,4 @@
 import React, {useEffect, useState} from 'react';
-import {SerialisedFullUser} from "@/types/fullUser";
 import {useWorkoutEditor} from '@/lib/useWorkoutEditor';
 import {EditableUser} from '@/types/editableData';
 import {getExercisesAndCategories, saveUserWorkoutData} from "@lib/api";
@@ -7,12 +6,13 @@ import {ToggleableEditableField} from "@/components/ToggleableEditableField";
 import {Exercise} from "@prisma/client";
 
 interface Props {
-  data: SerialisedFullUser;
+  data: EditableUser,
+  lockedInEditMode: boolean
 }
 
-const WorkoutTablesByWeek: React.FC<Props> = ({data}) => {
+const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
   const {state, dispatch} = useWorkoutEditor(data as EditableUser);
-  const [isInEditMode, setIsInEditMode] = useState(false);
+  const [isInEditMode, setIsInEditMode] = useState(lockedInEditMode);
 
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -31,10 +31,10 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data}) => {
 
   return (
     <div className="container mt-4 mb-4">
-      <button onClick={() => setIsInEditMode(!isInEditMode)}>
-        Edit mode {isInEditMode ? 'ON' : 'OFF'}
-      </button>
-      <i className="bi bi-copy"></i>
+      {!lockedInEditMode &&
+        <button onClick={() => setIsInEditMode(!isInEditMode)}>
+          Edit mode {isInEditMode ? 'ON' : 'OFF'}
+        </button>}
 
       {isInEditMode && (
         <button onClick={handleSave}>

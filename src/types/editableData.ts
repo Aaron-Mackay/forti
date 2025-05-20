@@ -1,7 +1,7 @@
 export type EditableSet = {
   id: string; // UUID for unsaved
   reps: number | null;
-  weight: number | null;
+  weight: string | number | null;
   order: number;
 };
 
