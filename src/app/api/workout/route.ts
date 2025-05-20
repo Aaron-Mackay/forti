@@ -5,7 +5,7 @@ import {PrismaClient} from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function GET(request: Request, { params }: { params: { userId: string, weekId: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ userId: string, weekId: string }> }) {
   const { userId, weekId } = params;
 
   try {
