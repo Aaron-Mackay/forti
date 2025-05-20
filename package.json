@@ -9,7 +9,8 @@
     "lint": "next lint",
     "seed": "ts-node prisma/seed.ts",
     "local-db": "psql -h localhost -U postgres -d postgres",
-    "test": "vitest"
+    "test": "vitest",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.7.0",
