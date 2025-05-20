@@ -6,8 +6,8 @@ const prisma = new PrismaClient();
 type ExerciseData = {
   id: number,
   name: string,
-  category: string,
-  description: string
+  category: string | null,
+  description: string | null
 }
 
 export async function GET(req: Request) {
