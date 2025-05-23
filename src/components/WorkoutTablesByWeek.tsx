@@ -1,9 +1,28 @@
+'use client'
+
 import React, {useEffect, useState} from 'react';
 import {useWorkoutEditor} from '@/lib/useWorkoutEditor';
 import {EditableUser} from '@/types/editableData';
 import {getExercisesAndCategories, saveUserWorkoutData} from "@lib/api";
 import {ToggleableEditableField} from "@/components/ToggleableEditableField";
 import {Exercise} from "@prisma/client";
+import Autocomplete, {createFilterOptions} from "@mui/material/Autocomplete";
+import TextField from "@mui/material/TextField";
+import {Button} from "@mui/material";
+
+const filter = createFilterOptions<string>();
+const filterOptions = (options: string[], params) => {
+  const filtered = filter(options, params);
+  const {inputValue} = params;
+
+  // Suggest the creation of a new value
+  const isExisting = options.some((option) => inputValue === option);
+  if (inputValue.length > 2 && !isExisting) {
+    filtered.push(inputValue);
+  }
+
+  return filtered
+}
 
 interface Props {
   data: EditableUser,
@@ -30,16 +49,16 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
   }, []);
 
   return (
-    <div className="container mt-4 mb-4">
+    <>
       {!lockedInEditMode &&
-        <button onClick={() => setIsInEditMode(!isInEditMode)}>
+        <Button onClick={() => setIsInEditMode(!isInEditMode)}>
           Edit mode {isInEditMode ? 'ON' : 'OFF'}
-        </button>}
+        </Button>}
 
       {isInEditMode && (
-        <button onClick={handleSave}>
+        <Button onClick={handleSave}>
           Save
-        </button>
+        </Button>
       )}
 
       <h1>User: {state.name}</h1>
@@ -48,7 +67,7 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
         <div key={week.id} className="mb-2 border p-3">
           <h2>Week {week.order}</h2>
           {isInEditMode && (
-            <button
+            <Button
               onClick={() =>
                 dispatch({
                   type: 'REMOVE_WEEK',
@@ -57,7 +76,7 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
               }
             >
               Remove Week
-            </button>
+            </Button>
           )}
 
           {week.workouts.map((workout, woi) => (
@@ -65,6 +84,7 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
               <h4 className="mt-3">
                 Workout {workout.order} -&nbsp;
                 {<ToggleableEditableField
+                  label={"Workout"}
                   inputProps={{style: {textAlign: "center"}}}
                   isInEditMode={isInEditMode}
                   value={workout.name ?? ''}
@@ -80,7 +100,7 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
               </h4>
               {isInEditMode && (
                 <>
-                  <button
+                  <Button
                     onClick={() =>
                       dispatch({
                         type: 'REMOVE_WORKOUT',
@@ -90,8 +110,8 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
                     }
                   >
                     Remove Workout
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     disabled={workout.order === Math.min(...week.workouts.map(wo => wo.order))}
                     onClick={() => {
                       dispatch({
@@ -104,8 +124,8 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
                     }
                   >
                     &uarr;
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     disabled={workout.order === Math.max(...week.workouts.map(wo => wo.order))}
                     onClick={() =>
                       dispatch({
@@ -117,7 +137,7 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
                     }
                   >
                     &darr;
-                  </button>
+                  </Button>
                 </>
 
               )}
@@ -137,80 +157,62 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
                     )
                   )}
                 </tr>
-                <tr>
-                  <th>Muscle</th>
-                  <th>Exercise</th>
-                  <th>Rep Range</th>
-                  <th>Rest</th>
-                  {Array.from({length: Math.max(...workout.exercises.map((e) => e.sets.length))}).map(
-                    (_, idx) => (
-                      <React.Fragment key={idx}>
-                        <th>Weight</th>
-                        <th>Reps</th>
-                      </React.Fragment>
-                    )
-                  )}
-                </tr>
                 </thead>
 
                 <tbody>
                 {workout.exercises.map((exerciseLink, i) => (
                   <tr key={exerciseLink.id}>
                     <td>
-                      {isInEditMode ? (
-                        <select
-                          value={exerciseLink.exercise.category || ""}
-                          onChange={(e) =>
+                      {isInEditMode ?
+                        <Autocomplete
+                          freeSolo
+                          options={categories}
+                          value={exerciseLink.exercise?.category || ""}
+                          onInputChange={(event, newInputValue) => {
                             dispatch({
                               type: "UPDATE_CATEGORY",
                               weekId: week.id,
                               workoutId: workout.id,
                               workoutExerciseId: exerciseLink.id,
-                              category: e.target.value,
+                              category: newInputValue,
                             })
-                          }
-                        >
-                          <option value="">--Select Muscle--</option>
-                          {categories.map((cat) => (
-                            <option key={cat} value={cat}>
-                              {cat}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        exerciseLink.exercise.category || "-"
-                      )}
+                          }}
+                          renderInput={(params) => <TextField {...params} label="Category"/>}
+                          filterOptions={filterOptions}
+                        />
+                        : exerciseLink.exercise.category}
                     </td>
                     <td>
                       {isInEditMode ?
                         (exerciseLink.exercise.category && (
-                            <select
-                              value={exerciseLink.exercise.id || ""}
-                              onChange={(e) =>
+                            <Autocomplete
+                              freeSolo
+                              options={allExercises
+                                .filter((ex) => ex.category === exerciseLink.exercise.category)
+                                .map((ex) => (ex.name))}
+                              value={exerciseLink.exercise.name || ""}
+                              onInputChange={(event, newInputValue) => {
                                 dispatch({
                                   type: "UPDATE_EXERCISE",
                                   weekId: week.id,
                                   workoutId: workout.id,
                                   workoutExerciseId: exerciseLink.id,
-                                  exerciseId: e.target.value,
-                                  exercises: allExercises
+                                  exerciseId: newInputValue,
+                                  exercises: allExercises,
+                                  category: exerciseLink.exercise.category
                                 })
-                              }
-                            >
-                              <option value="">--Select Exercise--</option>
-                              {allExercises
-                                .filter((ex) => ex.category === exerciseLink.exercise.category)
-                                .map((ex) => (
-                                  <option key={ex.id} value={ex.id}>
-                                    {ex.name}
-                                  </option>
-                                ))}
-                            </select>)
+                              }}
+                              renderInput={(params) => <TextField {...params} label="Exercise"/>}
+                              filterOptions={filterOptions}
+                              sx={{ width: "25rem" }}
+                            />
+                          )
                         )
                         : exerciseLink.exercise.name}
                     </td>
                     <td>
                       <ToggleableEditableField
+                        label={"Rep Range"}
                         inputProps={{style: {width: "10ch", textAlign: "center"}}}
                         isInEditMode={isInEditMode}
                         value={exerciseLink.repRange ?? ''}
@@ -225,6 +227,7 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
                     </td>
                     <td>
                       <ToggleableEditableField
+                        label={"Rest"}
                         inputProps={{style: {width: "10ch", textAlign: "center"}}}
                         isInEditMode={isInEditMode}
                         value={exerciseLink.restTime ?? ''}
@@ -242,6 +245,7 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
                       <React.Fragment key={set.id}>
                         <td>
                           <ToggleableEditableField
+                            label={"Sets"}
                             inputProps={{style: {width: "5ch", textAlign: "center"}, inputMode: "numeric"}}
                             isInEditMode={isInEditMode}
                             value={set.weight ?? ''}
@@ -257,6 +261,7 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
                         </td>
                         <td>
                           <ToggleableEditableField
+                            label={"Reps"}
                             inputProps={{style: {width: "4ch", textAlign: "center"}, inputMode: "numeric"}}
                             isInEditMode={isInEditMode}
                             value={set.reps ?? ''}
@@ -283,7 +288,7 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
 
                     {isInEditMode && (
                       <td>
-                        <button
+                        <Button
                           onClick={() =>
                             dispatch({
                               type: 'ADD_SET',
@@ -294,8 +299,8 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
                           }
                         >
                           +
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() =>
                             dispatch({
                               type: 'REMOVE_SET',
@@ -306,9 +311,9 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
                           }
                         >
                           -
-                        </button>
+                        </Button>
                         &nbsp;Set&nbsp;&nbsp;
-                        <button
+                        <Button
                           onClick={() =>
                             dispatch({
                               type: 'REMOVE_EXERCISE',
@@ -319,8 +324,8 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
                           }
                         >
                           x
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           disabled={exerciseLink.order === Math.min(...workout.exercises.map(ex => ex.order))}
                           onClick={() => {
                             dispatch({
@@ -334,8 +339,8 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
                           }
                         >
                           &uarr;
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           disabled={exerciseLink.order === Math.max(...workout.exercises.map(ex => ex.order))}
                           onClick={() =>
                             dispatch({
@@ -348,7 +353,7 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
                           }
                         >
                           &darr;
-                        </button>
+                        </Button>
                       </td>
                     )}
                   </tr>
@@ -357,7 +362,7 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
                 {isInEditMode && (
                   <tr>
                     <td colSpan={100}>
-                      <button
+                      <Button
                         onClick={() =>
                           dispatch({
                             type: 'ADD_EXERCISE',
@@ -367,7 +372,7 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
                         }
                       >
                         Add Exercise
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 )}
@@ -377,7 +382,7 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
           ))}
 
           {isInEditMode && (
-            <button
+            <Button
               onClick={() =>
                 dispatch({
                   type: 'ADD_WORKOUT',
@@ -386,13 +391,13 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
               }
             >
               Add Workout
-            </button>
+            </Button>
           )}
         </div>
       ))}
 
       {isInEditMode && (
-        <button
+        <Button
           onClick={() =>
             dispatch({
               type: 'ADD_WEEK',
@@ -400,9 +405,9 @@ const WorkoutTablesByWeek: React.FC<Props> = ({data, lockedInEditMode}) => {
           }
         >
           Add Week
-        </button>
+        </Button>
       )}
-    </div>
+    </>
   );
 };
 

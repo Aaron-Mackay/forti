@@ -1,16 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { Roboto } from "next/font/google";
+import "bootstrap/dist/css/bootstrap.min.css";
 import "./globals.css";
+import { ThemeProvider, GlobalStyles } from "@mui/material";
+import theme from "@/lib/theme"; // ✅ central theme import
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const roboto = Roboto({
+  weight: ["300", "400", "500", "700"],
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -19,17 +17,23 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-  children,
-}: Readonly<{
+                                     children,
+                                   }: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
+    <html lang="en" className={roboto.className}>
+    <body>
+    <ThemeProvider theme={theme}>
+      <GlobalStyles
+        styles={{
+          "@keyframes mui-auto-fill": { from: { display: "block" } },
+          "@keyframes mui-auto-fill-cancel": { from: { display: "block" } },
+        }}
+      />
+      {children}
+    </ThemeProvider>
+    </body>
     </html>
   );
 }

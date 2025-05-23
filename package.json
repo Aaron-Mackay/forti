@@ -10,9 +10,13 @@
     "seed": "ts-node prisma/seed.ts",
     "local-db": "psql -h localhost -U postgres -d postgres",
     "test": "vitest",
+    "rebuild-prisma": "prisma generate && prisma db push",
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/material": "^7.1.0",
     "@prisma/client": "^6.8.2",
     "axios": "^1.9.0",
     "bootstrap": "^5.3.6",

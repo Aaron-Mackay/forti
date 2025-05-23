@@ -40,6 +40,8 @@ model Exercise {
   category     String?
   description  String?
   workoutLinks WorkoutExercise[]
+
+  @@unique([name, category], name: "name_category")
 }
 
 model WorkoutExercise {
@@ -60,5 +62,5 @@ model ExerciseSet {
   workoutExercise   WorkoutExercise @relation(fields: [workoutExerciseId], references: [id])
   workoutExerciseId Int
   reps              Int?
-  weight            Float?
+  weight            String?
 }

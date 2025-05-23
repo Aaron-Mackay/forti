@@ -1,6 +1,8 @@
 import {EditableExercise, EditableSet, EditableUser, EditableWorkout} from "@/types/editableData";
 import * as Assert from "assert";
 
+
+
 export const parsePlan = (data: string): EditableUser => {
   const arr2d = data.trim().split("\n").map(row => row.split("\t"));
 
@@ -63,14 +65,14 @@ const parseExercises = (exerciseTable: string[][]): EditableExercise[] => {
     const exerciseRow = trimmedBlock[i]
     const exercise: EditableExercise = {
       id: i.toString(),
-      exerciseId: "1", // todo exercise lookup, if no match, throw
+      // exerciseId: "1", // todo exercise lookup, if no match, throw
       order: i,
       repRange: exerciseRow[4],
       restTime: exerciseRow[5],
       exercise: {
-        id: i.toString(),
+        // id: i.toString(),
         name: exerciseRow[0],
-        category: "test" // todo fix this
+        category: "N/A" // todo fix this
       },
       sets: parseSets(exerciseRow)
     }

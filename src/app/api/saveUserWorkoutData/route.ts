@@ -59,11 +59,23 @@ export async function POST(req: Request) {
                 order: workout.order,
                 exercises: {
                   create: workout.exercises
-                    .filter(x => x.exercise.id) // ignore new exercises that aren't filled
                     .map(exercise => ({
-                      exercise: {
-                        connect: {id: exercise.exercise.id}
-                      },
+                      exercise: exercise.exercise.id
+                        ? { connect: { id: exercise.exercise.id } }
+                        : {
+                          connectOrCreate: {
+                            where: {
+                              name_category: {
+                                name: exercise.exercise.name,
+                                category: exercise.exercise.category,
+                              },
+                            },
+                            create: {
+                              name: exercise.exercise.name,
+                              category: exercise.exercise.category,
+                            },
+                          },
+                        },
                       order: exercise.order,
                       repRange: exercise.repRange,
                       restTime: exercise.restTime,

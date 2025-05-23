@@ -79,7 +79,7 @@ async function main() {
                 workoutExerciseId: workoutExercise.id,
                 order: s + 1,
                 reps: 8 + Math.floor(Math.random() * 5),
-                weight: Math.round(Math.random() * 50 + 30),
+                weight: (Math.round(Math.random() * 50 + 30)).toString(),
               },
             });
           }

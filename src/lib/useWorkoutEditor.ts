@@ -26,7 +26,8 @@ type Action =
   workoutId: string;
   workoutExerciseId: string;
   exerciseId: string;
-  exercises: Exercise[]
+  exercises: Exercise[];
+  category: string
 }
 
 function uuid() {
@@ -109,7 +110,7 @@ function reducer(state: EditableUser, action: Action): EditableUser {
                         restTime: '',
                         order: workout.exercises.length + 1,
                         exercise: {
-                          name: "test"
+                          name: "N/A"
                         },
                         sets: [],
                       },
@@ -150,7 +151,6 @@ function reducer(state: EditableUser, action: Action): EditableUser {
 
     case 'MOVE_EXERCISE': {
       const {weekId, workoutId, index, dir} = action;
-      console.trace("reducer")
       return {
         ...state,
         weeks: state.weeks.map(week => {
@@ -355,11 +355,11 @@ function reducer(state: EditableUser, action: Action): EditableUser {
                   ex.id !== workoutExerciseId ? ex : {
                     ...ex,
                     exercise: {
-                      ...ex.exercise,
+                      // ...ex.exercise,
                       category,
                       // optionally reset name or id if changing category
                       name: "",
-                      id: 0,
+                      // id: 0,
                     },
                   }
                 ),
@@ -371,10 +371,13 @@ function reducer(state: EditableUser, action: Action): EditableUser {
     }
 
     case "UPDATE_EXERCISE": {
-      const {weekId, workoutId, workoutExerciseId, exerciseId, exercises} = action;
+      const {weekId, workoutId, workoutExerciseId, exerciseId, exercises, category} = action;
 
-      const newExercise =
+      const newExercise: Exercise =
         exercises.find((exercise) => exercise.id == exerciseId)
+        || ({
+          category
+        } as Exercise)
 
       return <EditableUser>{
         ...state,
@@ -404,7 +407,7 @@ function reducer(state: EditableUser, action: Action): EditableUser {
 
 export function useWorkoutEditor(initialState: EditableUser) {
   const [state, dispatch] = useReducer(reducer, initialState);
-
+  console.log(state)
   return {
     state,
     dispatch,
