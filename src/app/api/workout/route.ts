@@ -6,7 +6,7 @@ import {PrismaClient} from "@prisma/client";
 const prisma = new PrismaClient();
 
 export async function GET(request: Request, { params }: { params: Promise<{ userId: string, weekId: string }> }) {
-  const { userId, weekId } = params;
+  const { userId, weekId } = await params;
 
   try {
     const workouts = await prisma.workout.findMany({

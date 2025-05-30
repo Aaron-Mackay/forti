@@ -4,11 +4,11 @@ import WorkoutTablesByWeek from "@/components/WorkoutTablesByWeek";
 import {getUserData} from "@lib/api";
 import {useParams} from "next/navigation";
 import {useEffect, useState} from "react";
-import {SerialisedFullUser} from "@/types/fullUser";
+import {EditableUser} from "@/types/editableData";
 
 const Plan = () => {
   const {userId} = useParams();
-  const [data, setData] = useState<SerialisedFullUser | null>(null);
+  const [data, setData] = useState<EditableUser | null>(null);
   const [loading, setLoading] = useState(true);
 
 
@@ -20,10 +20,10 @@ const Plan = () => {
 
   return (
     <main className="p-6">
-      {loading ? (
+      {loading || data == null ? (
         <p>Loading data...</p>
       ) : (
-          <WorkoutTablesByWeek data={data}/>
+        <WorkoutTablesByWeek data={data}/>
       )}
     </main>
   )

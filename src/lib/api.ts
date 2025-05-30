@@ -1,4 +1,3 @@
-import {SerialisedFullUser} from "@/types/fullUser";
 import {EditableUser} from "@/types/editableData";
 
 export async function getUsers() {
@@ -43,24 +42,22 @@ export async function getWorkoutExercise(exerciseId: string) {
   return res.json();
 }
 
-export async function getUserData(userId: string): Promise<SerialisedFullUser> {
+export async function getUserData(userId: string): Promise<EditableUser> {
   const res = await fetch(`/api/user/${userId}/plan`);
   if (!res.ok) throw new Error('Failed to fetch user stateData');
   return res.json();
 }
 
 export async function saveUserWorkoutData(userData: EditableUser) {
-  const res = await fetch(`/api/saveUserWorkoutData`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const response = await fetch('/api/saveUserWorkoutData', {
+    method: 'POST',
     body: JSON.stringify(userData),
+    headers: {'Content-Type': 'application/json',},
   });
 
-  const json = await res.json();
-  if (!res.ok) {
-    alert("Save failed: " + json.error);
-    return;
+  if (!response.ok) {
+    throw new Error('Failed to save workout data');
   }
 
-  alert("Saved successfully");
+  return await response.json(); // or just return response if you want
 }

@@ -2,7 +2,7 @@ import {useReducer} from 'react';
 import {EditableUser,} from '@/types/editableData';
 import {Exercise} from "@prisma/client";
 
-type Action =
+export type WorkoutEditorAction =
   | { type: 'ADD_WEEK' }
   | { type: 'REMOVE_WEEK'; weekId: string }
   | { type: 'DUPLICATE_WEEK'; weekId: string }
@@ -20,21 +20,13 @@ type Action =
   | { type: 'UPDATE_REP_RANGE'; workoutExerciseId: string; repRange: string; }
   | { type: 'UPDATE_REST_TIME'; workoutExerciseId: string; restTime: string; }
   | { type: "UPDATE_CATEGORY"; weekId: string; workoutId: string; workoutExerciseId: string; category: string; }
-  | {
-  type: "UPDATE_EXERCISE";
-  weekId: string;
-  workoutId: string;
-  workoutExerciseId: string;
-  exerciseId: string;
-  exercises: Exercise[];
-  category: string
-}
+  | { type: "UPDATE_EXERCISE"; weekId: string; workoutId: string; workoutExerciseId: string; exerciseId: string; exercises: Exercise[]; category: string }
 
 function uuid() {
   return `tmp-${crypto.randomUUID()}`;
 }
 
-function reducer(state: EditableUser, action: Action): EditableUser {
+function reducer(state: EditableUser, action: WorkoutEditorAction): EditableUser {
   switch (action.type) {
     case 'ADD_WEEK':
       return <EditableUser>{
@@ -374,9 +366,10 @@ function reducer(state: EditableUser, action: Action): EditableUser {
       const {weekId, workoutId, workoutExerciseId, exerciseId, exercises, category} = action;
 
       const newExercise: Exercise =
-        exercises.find((exercise) => exercise.id == exerciseId)
+        exercises.find((exercise) => exercise.id.toString() === exerciseId)
         || ({
-          category
+          category,
+          name: exerciseId
         } as Exercise)
 
       return <EditableUser>{
@@ -407,7 +400,6 @@ function reducer(state: EditableUser, action: Action): EditableUser {
 
 export function useWorkoutEditor(initialState: EditableUser) {
   const [state, dispatch] = useReducer(reducer, initialState);
-  console.log(state)
   return {
     state,
     dispatch,

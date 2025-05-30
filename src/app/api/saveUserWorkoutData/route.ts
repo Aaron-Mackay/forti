@@ -1,4 +1,5 @@
 import {PrismaClient} from "@prisma/client";
+import {EditableWorkout} from "@/types/editableData";
 
 const prisma = new PrismaClient();
 
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
             userId,
             order: week.order,
             workouts: {
-              create: week.workouts.map(workout => ({
+              create: week.workouts.map((workout: EditableWorkout) => ({
                 name: workout.name,
                 notes: workout.notes,
                 order: workout.order,
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
                   create: workout.exercises
                     .map(exercise => ({
                       exercise: exercise.exercise.id
-                        ? { connect: { id: exercise.exercise.id } }
+                        ? {connect: {id: exercise.exercise.id}}
                         : {
                           connectOrCreate: {
                             where: {

@@ -9,7 +9,7 @@ import {Button, Typography} from "@mui/material";
 
 export default function TSVParserPage() {
   const [text, setText] = useState("");
-  const [tableData, setTableData] = useState<EditableUser>(null);
+  const [tableData, setTableData] = useState<EditableUser | null>(null);
   // todo add input for dropdown with users
 
   const handleSubmit = () => {
