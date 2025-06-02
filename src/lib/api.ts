@@ -1,9 +1,14 @@
 import {EditableUser} from "@/types/editableData";
+import {PrismaClient} from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 export async function getUsers() {
-  const res = await fetch('/api/users');
-  if (!res.ok) throw new Error('Failed to fetch users');
-  return res.json();
+  return prisma.user.findMany({
+    include: {
+      weeks: true,
+    },
+  });
 }
 
 export async function getExercises() {
