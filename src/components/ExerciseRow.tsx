@@ -2,6 +2,7 @@
 
 import React from 'react';
 import {Button, TableCell, TableRow, TextField} from '@mui/material';
+import ClearIcon from '@mui/icons-material/Clear';
 import Autocomplete, {createFilterOptions} from '@mui/material/Autocomplete';
 import {ToggleableEditableField} from '@/components/ToggleableEditableField';
 import {useWorkoutEditorContext} from '@/context/WorkoutEditorContext';
@@ -93,7 +94,6 @@ const ExerciseRow = ({
             }}
             renderInput={(params) => <TextField variant="standard" {...params} label="Exercise"/>}
             filterOptions={filterOptions}
-            sx={{width: '25rem'}}
           />
         ) : (
           exerciseName
@@ -194,7 +194,6 @@ const ExerciseRow = ({
           >
             -
           </Button>
-          &nbsp;Set&nbsp;&nbsp;
           <Button
             onClick={() =>
               dispatch({
@@ -205,7 +204,7 @@ const ExerciseRow = ({
               })
             }
           >
-            x
+            <ClearIcon/>
           </Button>
           <Button
             disabled={exerciseLink.order === 1}

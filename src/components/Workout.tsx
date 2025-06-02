@@ -1,15 +1,15 @@
 'use client';
 
 import React from 'react';
-import { Button, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import {Button, Table, TableBody, TableCell, TableHead, TableRow} from '@mui/material';
 import ExerciseRow from './ExerciseRow';
-import { ToggleableEditableField } from '@/components/ToggleableEditableField';
-import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
+import {ToggleableEditableField} from '@/components/ToggleableEditableField';
+import {useWorkoutEditorContext} from '@/context/WorkoutEditorContext';
 import {EditableWorkout} from "@/types/editableData";
 import {Exercise} from "@prisma/client";
 
 
-interface WorkoutProps  {
+interface WorkoutProps {
   weekId: string
   index: number
   workout: EditableWorkout
@@ -18,6 +18,7 @@ interface WorkoutProps  {
   allExercises: Exercise[]
   weekWorkoutCount: number
 }
+
 const Workout = ({
                    weekId,
                    workout,
@@ -26,15 +27,15 @@ const Workout = ({
                    categories,
                    allExercises,
                    weekWorkoutCount
-}: WorkoutProps) => {
-  const { dispatch } = useWorkoutEditorContext();
+                 }: WorkoutProps) => {
+  const {dispatch} = useWorkoutEditorContext();
 
   return (
     <>
       <h4 className="mt-3">
         Workout {workout.order} -{' '}
         <ToggleableEditableField
-          inputProps={{ style: { textAlign: 'center' } }}
+          inputProps={{style: {textAlign: 'center'}}}
           isInEditMode={isInEditMode}
           value={workout.name ?? ''}
           onChange={(val) =>
@@ -50,25 +51,41 @@ const Workout = ({
 
       {isInEditMode && (
         <>
-          <Button onClick={() => dispatch({ type: 'REMOVE_WORKOUT', weekId, workoutId: workout.id })}>
+          <Button onClick={() => dispatch({type: 'REMOVE_WORKOUT', weekId, workoutId: workout.id})}>
             Remove Workout
           </Button>
           <Button
             disabled={workout.order === 1}
-            onClick={() => dispatch({ type: 'MOVE_WORKOUT', dir: 'up', index, weekId })}
+            onClick={() => dispatch({type: 'MOVE_WORKOUT', dir: 'up', index, weekId})}
           >
             &uarr;
           </Button>
           <Button
             disabled={workout.order === weekWorkoutCount}
-            onClick={() => dispatch({ type: 'MOVE_WORKOUT', dir: 'down', index, weekId })}
+            onClick={() => dispatch({type: 'MOVE_WORKOUT', dir: 'down', index, weekId})}
           >
             &darr;
           </Button>
         </>
       )}
 
-      <Table className="table table-striped text-center">
+      <Table className="table table-striped text-center" sx={{ tableLayout: 'fixed' }}>
+        <colgroup>
+          <col style={{width: '3em'}}/>
+          <col style={{width: '8em'}}/>
+          <col style={{width: '20em'}}/>
+          <col style={{width: '6em'}}/>
+          <col style={{width: '6em'}}/>
+          {Array.from({length: Math.max(...workout.exercises.map((e) => e.sets.length))}).map((_, idx) => (
+            <React.Fragment key={idx}>
+              <col style={{width: '4em'}}/>
+              <col style={{width: '4em'}}/>
+            </React.Fragment>
+          ))}
+          {isInEditMode &&
+            <col style={{width: '30em'}}/>
+          }
+        </colgroup>
         <TableHead>
           <TableRow>
             <TableCell></TableCell>
@@ -76,7 +93,7 @@ const Workout = ({
             <TableCell></TableCell>
             <TableCell></TableCell>
             <TableCell></TableCell>
-            {Array.from({ length: Math.max(...workout.exercises.map((e) => e.sets.length)) }).map((_, idx) => (
+            {Array.from({length: Math.max(...workout.exercises.map((e) => e.sets.length))}).map((_, idx) => (
               <React.Fragment key={idx}>
                 <TableCell colSpan={2} align={"center"}>Set {idx + 1}</TableCell>
               </React.Fragment>
@@ -88,7 +105,7 @@ const Workout = ({
             <TableCell align={"center"}>Exercise</TableCell>
             <TableCell align={"center"}>Rep Range</TableCell>
             <TableCell align={"center"}>Rest</TableCell>
-            {Array.from({ length: Math.max(...workout.exercises.map((e) => e.sets.length)) }).map((_, idx) => (
+            {Array.from({length: Math.max(...workout.exercises.map((e) => e.sets.length))}).map((_, idx) => (
               <React.Fragment key={idx}>
                 <TableCell align={"center"}>Reps</TableCell>
                 <TableCell align={"center"}>Weight</TableCell>
@@ -116,7 +133,7 @@ const Workout = ({
           {isInEditMode && (
             <TableRow>
               <TableCell colSpan={100}>
-                <Button onClick={() => dispatch({ type: 'ADD_EXERCISE', weekId, workoutId: workout.id })}>
+                <Button onClick={() => dispatch({type: 'ADD_EXERCISE', weekId, workoutId: workout.id})}>
                   Add Exercise
                 </Button>
               </TableCell>
