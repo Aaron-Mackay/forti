@@ -26,7 +26,7 @@ function uuid() {
   return `tmp-${crypto.randomUUID()}`;
 }
 
-function reducer(state: EditableUser, action: WorkoutEditorAction): EditableUser {
+export function reducer(state: EditableUser, action: WorkoutEditorAction): EditableUser {
   switch (action.type) {
     case 'ADD_WEEK':
       return <EditableUser>{
@@ -46,6 +46,37 @@ function reducer(state: EditableUser, action: WorkoutEditorAction): EditableUser
         ...state,
         weeks: state.weeks.filter(week => week.id != action.weekId),
       };
+
+
+    case 'DUPLICATE_WEEK': {
+      const weekToDuplicate = state.weeks.find(w => w.id === action.weekId);
+      if (!weekToDuplicate) return state;
+
+      const duplicatedWeek = {
+        ...weekToDuplicate,
+        order: state.weeks.length + 1,
+        id: uuid(),
+        workouts: weekToDuplicate.workouts.map(workout => ({
+          ...workout,
+          id: uuid(),
+          exercises: workout.exercises.map(exercise => ({
+            ...exercise,
+            id: uuid(),
+            sets: exercise.sets.map(set => ({
+              ...set,
+              id: uuid(),
+              weight: 0,
+              reps: 0,
+            }))
+          }))
+        }))
+      };
+
+      return {
+        ...state,
+        weeks: [...state.weeks, duplicatedWeek]
+      };
+    }
 
     case 'ADD_WORKOUT':
       return <EditableUser>{
@@ -292,6 +323,28 @@ function reducer(state: EditableUser, action: WorkoutEditorAction): EditableUser
           })),
         })),
       }
+    }
+
+    case 'UPDATE_SET_REPS': {
+      const { setId, reps } = action;
+
+      return {
+        ...state,
+        weeks: state.weeks.map(week => ({
+          ...week,
+          workouts: week.workouts.map(workout => ({
+            ...workout,
+            exercises: workout.exercises.map(exercise => ({
+              ...exercise,
+              sets: exercise.sets.map(set =>
+                set.id === setId
+                  ? { ...set, reps }
+                  : set
+              ),
+            })),
+          })),
+        })),
+      };
     }
 
     case 'UPDATE_REP_RANGE': {

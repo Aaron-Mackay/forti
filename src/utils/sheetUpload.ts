@@ -1,8 +1,6 @@
 import {EditableExercise, EditableSet, EditableUser, EditableWorkout} from "@/types/editableData";
 import * as Assert from "assert";
 
-
-
 export const parsePlan = (data: string): EditableUser => {
   const arr2d = data.trim().split("\n").map(row => row.split("\t"));
 
@@ -17,7 +15,7 @@ export const parsePlan = (data: string): EditableUser => {
     const end = headerRowIndexes[i + 1]
     const weekUntrimmed = arr2d.slice(start, end);
     const workoutEndRowIndex = weekUntrimmed.findIndex((row) => row.some(cell => cell === "TRAINING NOTES"))
-    return weekUntrimmed.slice(0, workoutEndRowIndex - 1)
+    return weekUntrimmed.slice(0, workoutEndRowIndex)
   });
 
   const parsedWeeks = weeks.map((week, i) => {
@@ -48,7 +46,7 @@ const parseWeekWorkouts = (week: string[][]): EditableWorkout[] => {
       id: counter.toString(),
       name: `Workout #${counter}`,
       order: counter++,
-      exercises: parseExercises(remainingData.map(row => row.slice(startColIdx, endColIdx)))
+      exercises: parseExercises(remainingData.map(row => row.slice(startColIdx, endColIdx + 1)))
     }
     workouts.push(parsedWorkout)
     remainingData = remainingData.map(row => row.slice(endColIdx + 1))
@@ -83,7 +81,7 @@ const parseExercises = (exerciseTable: string[][]): EditableExercise[] => {
 }
 
 const validateExerciseBlock = (topRow: string[]) => {
-  const correctHeaderOrder = ["EXERCISE", "", "", "SETS/REPS", "", "REST", "", "Set 1 Weight", "Set 2 Weight", "Set 3 Weight", "Set 1 Reps", "Set 2 Reps", "Set 3 Reps"]
+  const correctHeaderOrder = ["EXERCISE", "", "", "SETS/REPS", "", "REST", "", "Set 1 Weight", "Set 2 Weight", "Set 3 Weight", "Set 1 Reps", "Set 2 Reps", "Set 3 Reps", "Volume"]
   Assert.equal(JSON.stringify(topRow), JSON.stringify(correctHeaderOrder), "Exercise block headers mismatch: " + topRow.toString())
 }
 
