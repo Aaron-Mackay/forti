@@ -9,6 +9,7 @@ import {useWorkoutEditorContext} from '@/context/WorkoutEditorContext';
 import {Exercise} from "@prisma/client";
 import {EditableExercise} from "@/types/editableData";
 import {FilterOptionsState} from "@mui/material/useAutocomplete/useAutocomplete";
+import {CompactAutocomplete} from "@/components/CompactUI";
 
 const filter = createFilterOptions<string>();
 const filterOptions = (options: string[], params: FilterOptionsState<string>) => {
@@ -54,7 +55,7 @@ const ExerciseRow = ({
 
       <TableCell align={"center"}>
         {isInEditMode ? (
-          <Autocomplete
+          <CompactAutocomplete
             freeSolo
             options={categories}
             value={category}
@@ -67,7 +68,7 @@ const ExerciseRow = ({
                 category: newInputValue,
               });
             }}
-            renderInput={(params) => <TextField variant="standard" {...params} label="Category"/>}
+            renderInput={(params) => <TextField variant="standard" {...params}/>}
             filterOptions={filterOptions}
           />
         ) : (
@@ -77,7 +78,7 @@ const ExerciseRow = ({
 
       <TableCell align={"center"}>
         {isInEditMode && category ? (
-          <Autocomplete
+          <CompactAutocomplete
             freeSolo
             options={allExercises.filter((ex) => ex.category === category).map((ex) => ex.name)}
             value={exerciseName}
@@ -92,7 +93,7 @@ const ExerciseRow = ({
                 category,
               });
             }}
-            renderInput={(params) => <TextField variant="standard" {...params} label="Exercise"/>}
+            renderInput={(params) => <TextField variant="standard" {...params}/>}
             filterOptions={filterOptions}
           />
         ) : (
@@ -102,7 +103,7 @@ const ExerciseRow = ({
 
       <TableCell align={"center"}>
         <ToggleableEditableField
-          inputProps={{style: {width: '10ch', textAlign: 'center'}}}
+          inputProps={{style: {textAlign: 'center'}}}
           isInEditMode={isInEditMode}
           value={exerciseLink.repRange ?? ''}
           onChange={(val) =>
@@ -117,7 +118,7 @@ const ExerciseRow = ({
 
       <TableCell align={"center"}>
         <ToggleableEditableField
-          inputProps={{style: {width: '10ch', textAlign: 'center'}}}
+          inputProps={{style: {textAlign: 'center'}}}
           isInEditMode={isInEditMode}
           value={exerciseLink.restTime ?? ''}
           onChange={(val) =>
@@ -136,7 +137,7 @@ const ExerciseRow = ({
           <React.Fragment key={i}>
             <TableCell align={"center"}>
               <ToggleableEditableField
-                inputProps={{style: {width: '5ch', textAlign: 'center'}, inputMode: 'numeric'}}
+                inputProps={{style: { textAlign: 'center'}, inputMode: 'numeric'}}
                 isInEditMode={isInEditMode}
                 value={set?.weight ?? ''}
                 onChange={(val) =>
@@ -151,7 +152,7 @@ const ExerciseRow = ({
             </TableCell>
             <TableCell align={"center"}>
               <ToggleableEditableField
-                inputProps={{style: {width: '4ch', textAlign: 'center'}, inputMode: 'numeric'}}
+                inputProps={{style: {textAlign: 'center'}, inputMode: 'numeric'}}
                 isInEditMode={isInEditMode}
                 value={set?.reps ?? ''}
                 onChange={(val) =>

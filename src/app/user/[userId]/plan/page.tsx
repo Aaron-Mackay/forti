@@ -1,31 +1,21 @@
-'use client'
+import PlanTable from "@/components/PlanTable";
+import {getExercisesAndCategories, getUserData} from "@lib/api";
+import {WorkoutContent} from "@/components/WorkoutContent";
+import {WorkoutEditorProvider} from "@/context/WorkoutEditorContext";
+import React from "react";
 
-import WorkoutTablesByWeek from "@/components/WorkoutTablesByWeek";
-import {getUserData} from "@lib/api";
-import {useParams} from "next/navigation";
-import {useEffect, useState} from "react";
-import {EditableUser} from "@/types/editableData";
-
-const Plan = () => {
-  const {userId} = useParams();
-  const [data, setData] = useState<EditableUser | null>(null);
-  const [loading, setLoading] = useState(true);
-
-
-  useEffect(() => {
-    getUserData(userId as string)
-      .then(setData)
-      .finally(() => setLoading(false));
-  }, [userId]);
+const Plan = async ({params}: { params: { userId: string } }) => {
+  const data = await getUserData((await params).userId)
+  const {allExercises, categories} = await getExercisesAndCategories()
 
   return (
-    <main className="p-6">
-      {loading || data == null ? (
-        <p>Loading data...</p>
-      ) : (
-        <WorkoutTablesByWeek data={data}/>
-      )}
-    </main>
+    <WorkoutEditorProvider userData={data}>
+      <WorkoutContent
+        lockedInEditMode={false}
+        categories={categories}
+        allExercises={allExercises}
+      />
+    </WorkoutEditorProvider>
   )
 };
 

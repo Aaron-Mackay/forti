@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {getExercises} from "@lib/api";
 
 interface Exercise {
@@ -10,23 +10,14 @@ interface Exercise {
   description: string | null;
 }
 
-const ExercisesPage: React.FC = () => {
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    getExercises()
-      .then(setExercises)
-      .finally(() => setIsLoading(false))
-  }, []);
+export default async function ExercisesPage ()  {
+  const exercises = await getExercises()
 
   return (
     <div className="container mt-4">
       <h1>All Exercises</h1>
 
-      {isLoading && <p>Loading...</p>}
-
-      {!isLoading && (
+      {(
         <table className="table table-striped mt-3">
           <thead>
           <tr>
@@ -49,5 +40,3 @@ const ExercisesPage: React.FC = () => {
     </div>
   );
 };
-
-export default ExercisesPage;

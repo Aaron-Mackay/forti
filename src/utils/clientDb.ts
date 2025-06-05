@@ -54,7 +54,6 @@ export async function clearRequests(): Promise<void> {
   const store = tx.objectStore('requests');
   const clearReq = store.clear();
   clearReq.onsuccess = () => {
-    console.trace("clear")
     window.dispatchEvent(new CustomEvent('queue-updated')); // ✅ dispatch on sync
   };
 }

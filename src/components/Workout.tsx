@@ -7,6 +7,7 @@ import {ToggleableEditableField} from '@/components/ToggleableEditableField';
 import {useWorkoutEditorContext} from '@/context/WorkoutEditorContext';
 import {EditableWorkout} from "@/types/editableData";
 import {Exercise} from "@prisma/client";
+import { CompactTable } from './CompactUI';
 
 
 interface WorkoutProps {
@@ -29,6 +30,11 @@ const Workout = ({
                    weekWorkoutCount
                  }: WorkoutProps) => {
   const {dispatch} = useWorkoutEditorContext();
+
+  const baseColumns = 5; // first 5 fixed cols
+  const setColumns = Math.max(...workout.exercises.map(e => e.sets.length)) * 2; // each set has 2 cols
+  const editModeExtraColumn = isInEditMode ? 1 : 0;
+  const totalColumns = baseColumns + setColumns + editModeExtraColumn;
 
   return (
     <>
@@ -69,18 +75,15 @@ const Workout = ({
         </>
       )}
 
-      <Table className="table table-striped text-center" sx={{ tableLayout: 'fixed' }}>
+      <CompactTable className="table table-striped text-center table-compact">
         <colgroup>
           <col style={{width: '3em'}}/>
           <col style={{width: '8em'}}/>
           <col style={{width: '20em'}}/>
           <col style={{width: '6em'}}/>
           <col style={{width: '6em'}}/>
-          {Array.from({length: Math.max(...workout.exercises.map((e) => e.sets.length))}).map((_, idx) => (
-            <React.Fragment key={idx}>
-              <col style={{width: '4em'}}/>
-              <col style={{width: '4em'}}/>
-            </React.Fragment>
+          {Array.from({ length: setColumns }).map((_, i) => (
+            <col key={i}style={{width: '4em'}}/>
           ))}
           {isInEditMode &&
             <col style={{width: '30em'}}/>
@@ -114,7 +117,7 @@ const Workout = ({
           </TableRow>
         </TableHead>
 
-        <TableBody>
+        <TableBody sx={{ fontSize: '0.8rem' }}>
           {workout.exercises.map((exerciseLink, i) => (
             <ExerciseRow
               key={exerciseLink.id}
@@ -132,7 +135,7 @@ const Workout = ({
 
           {isInEditMode && (
             <TableRow>
-              <TableCell colSpan={100}>
+              <TableCell colSpan={totalColumns} align={"center"}>
                 <Button onClick={() => dispatch({type: 'ADD_EXERCISE', weekId, workoutId: workout.id})}>
                   Add Exercise
                 </Button>
@@ -140,7 +143,7 @@ const Workout = ({
             </TableRow>
           )}
         </TableBody>
-      </Table>
+      </CompactTable>
     </>
   );
 };

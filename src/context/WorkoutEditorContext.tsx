@@ -1,8 +1,9 @@
+'use client'
+
 import React, {createContext, ReactNode, useContext} from 'react';
 import {useWorkoutEditor, WorkoutEditorAction} from '@/lib/useWorkoutEditor';
 import useDebouncedDispatch from "@/utils/useDebouncedDispatch";
 import {EditableUser} from "@/types/editableData";
-
 
 export interface WorkoutEditorContextType {
   state: EditableUser;

@@ -1,5 +1,5 @@
 import {EditableUser} from "@/types/editableData";
-import {PrismaClient} from "@prisma/client";
+import {Exercise, PrismaClient} from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -12,15 +12,24 @@ export async function getUsers() {
 }
 
 export async function getExercises() {
-  const res = await fetch('/api/exercises');
-  if (!res.ok) throw new Error('Failed to fetch exercises');
-  return res.json();
+  return prisma.exercise.findMany();
 }
 
 export async function getExercisesAndCategories() {
-  const res = await fetch('/api/exercises/all');
-  if (!res.ok) throw new Error('Failed to fetch exercises and categories');
-  return res.json();
+  const allExercises = await prisma.exercise.findMany({
+    select: {
+      id: true,
+      name: true,
+      category: true,
+    },
+  }) as Exercise[];
+
+  const categories = [...new Set(allExercises
+    .map(e => e.category as string)
+    .filter(Boolean))
+  ];
+
+  return {allExercises, categories};
 }
 
 export async function getUserWeeks(userId: string) {
@@ -42,15 +51,41 @@ export async function getWorkout(workoutId: string) {
 }
 
 export async function getWorkoutExercise(exerciseId: string) {
-  const res = await fetch(`/api/workoutExercises/${exerciseId}`);
-  if (!res.ok) throw new Error('Failed to fetch workout exercise');
-  return res.json();
+    return prisma.workoutExercise.findUnique({
+      where: {
+        id: Number(exerciseId),
+      },
+      include: {
+        exercise: true,
+        sets: {orderBy: {order: 'asc'},}
+      },
+    });
 }
 
 export async function getUserData(userId: string): Promise<EditableUser> {
-  const res = await fetch(`/api/user/${userId}/plan`);
-  if (!res.ok) throw new Error('Failed to fetch user stateData');
-  return res.json();
+  return (await prisma.user.findUnique({
+    where: {id: Number(userId)},
+    include: {
+      weeks: {
+        include: {
+          workouts: {
+            orderBy: {order: 'asc'},
+            include: {
+              exercises: {
+                orderBy: {order: 'asc'},
+                include: {
+                  exercise: true,
+                  sets: {
+                    orderBy: {order: 'asc'}
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  }));
 }
 
 export async function saveUserWorkoutData(userData: EditableUser) {
