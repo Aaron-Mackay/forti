@@ -1,9 +1,6 @@
-// app/api/users/route.ts
-
-import {PrismaClient} from "@prisma/client";
+import prisma from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
-const prisma = new PrismaClient();
 
 // GET request to fetch users from the database
 export async function GET() {

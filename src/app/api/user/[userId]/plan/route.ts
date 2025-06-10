@@ -1,8 +1,7 @@
-import {Prisma, PrismaClient} from "@prisma/client";
+import {Prisma} from "@prisma/client";
 import {NextRequest, NextResponse} from "next/server";
 import {SerialisedFullUser} from "@/types/fullUser";
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 type FullUserData = Prisma.UserGetPayload<{
   include: {
@@ -58,7 +57,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ userId: s
                   include: {
                     exercise: true,
                     sets: {
-                      orderBy: { order: 'asc'}
+                      orderBy: {order: 'asc'}
                     },
                   },
                 },

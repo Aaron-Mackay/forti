@@ -1,6 +1,4 @@
-import {PrismaClient} from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 function getRandomBetween(min: number, max: number): number {
   return Math.random() * (max - min) + min;

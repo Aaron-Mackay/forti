@@ -1,7 +1,6 @@
-import {PrismaClient} from "@prisma/client";
 import {EditableWorkout} from "@/types/editableData";
 
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 export async function POST(req: Request) {
   const userData = await req.json();

@@ -1,7 +1,6 @@
 import {NextResponse} from 'next/server';
-import {PrismaClient} from "@prisma/client";
 
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 // GET request to fetch workouts for a specific user and week
 export async function GET(req: Request, {params}: { params: Promise<{ workoutId: string }> }) {
