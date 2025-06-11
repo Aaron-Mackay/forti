@@ -3,6 +3,8 @@ import {Exercise, Prisma} from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { fetchJson } from './fetchWrapper';
 
+type
+
 export async function getUsers() {
   return prisma.user.findMany({
     include: { weeks: true },
@@ -21,44 +23,6 @@ export async function getExercisesAndCategories() {
   const categories = [...new Set(allExercises.map(e => e.category as string).filter(Boolean))];
 
   return { allExercises, categories };
-}
-
-export async function getUserWeeks(userId: string) {
-  return prisma.week.findMany({
-    where: {
-      userId: parseInt(userId),
-    },
-  });
-}
-
-export async function getWorkoutsForWeek(userId: string, weekId: string) {
-  return prisma.workout.findMany({
-    where: {
-      week: {
-        userId: Number(userId),
-        id: Number(weekId),
-      },
-    },
-    include: {
-      exercises: {
-        include: {
-          exercise: true,
-          sets: true,
-        },
-      },
-    },
-  })
-}
-
-export async function getWorkout(workoutId: string) {
-  return fetchJson(`/api/workout/${workoutId}`);
-}
-
-export async function getWorkoutExercise(exerciseId: string) {
-  return prisma.workoutExercise.findUnique({
-    where: { id: Number(exerciseId) },
-    include: { exercise: true, sets: { orderBy: { order: 'asc' } } },
-  });
 }
 
 export async function getUserData(userId: string): Promise<EditableUser> {
