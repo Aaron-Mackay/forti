@@ -3,8 +3,6 @@ import {Exercise, Prisma} from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { fetchJson } from './fetchWrapper';
 
-type
-
 export async function getUsers() {
   return prisma.user.findMany({
     include: { weeks: true },
