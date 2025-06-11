@@ -1,5 +1,5 @@
 import { EditableUser } from '@/types/editableData';
-import { Exercise } from '@prisma/client';
+import {Exercise, Prisma} from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { fetchJson } from './fetchWrapper';
 
@@ -24,11 +24,30 @@ export async function getExercisesAndCategories() {
 }
 
 export async function getUserWeeks(userId: string) {
-  return fetchJson(`/api/weeks/${userId}`);
+  return prisma.week.findMany({
+    where: {
+      userId: parseInt(userId),
+    },
+  });
 }
 
 export async function getWorkoutsForWeek(userId: string, weekId: string) {
-  return fetchJson(`/api/workouts/${userId}/${weekId}`);
+  return prisma.workout.findMany({
+    where: {
+      week: {
+        userId: Number(userId),
+        id: Number(weekId),
+      },
+    },
+    include: {
+      exercises: {
+        include: {
+          exercise: true,
+          sets: true,
+        },
+      },
+    },
+  })
 }
 
 export async function getWorkout(workoutId: string) {

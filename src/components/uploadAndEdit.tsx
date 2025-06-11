@@ -3,7 +3,8 @@
 import React, {useState} from "react";
 import {EditableUser} from "@/types/editableData";
 import {parsePlan} from "@/utils/sheetUpload";
-import {Button, Typography} from "@mui/material";
+import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 import {WorkoutEditorProvider} from "@/context/WorkoutEditorContext";
 import {WorkoutContent} from "@/components/WorkoutContent";

@@ -9,16 +9,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true
   },
-  webpack(config, { isServer }) {
-    if (!isServer) {
-      config.ignoreWarnings = [
-        (warning) =>
-          typeof warning.message === "string" &&
-          warning.message.includes("bootstrap.min.css.map"),
-      ];
-    }
-    return config;
-  }
 };
 
 export default nextConfig;

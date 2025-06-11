@@ -8,7 +8,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ setId: 
   const data: any = {};
 
   if (typeof reps === 'number') data.reps = reps;
-  if (typeof weight === 'number') data.weight = weight;
+  if (typeof weight === 'string') data.weight = weight;
 
   if (!Object.keys(data).length) {
     return NextResponse.json({ error: 'No valid fields provided' }, { status: 400 });
@@ -22,6 +22,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ setId: 
 
     return NextResponse.json(updated);
   } catch (err: any) {
+    console.error(err)
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
