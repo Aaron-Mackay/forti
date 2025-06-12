@@ -12,7 +12,6 @@ import {CompactAutocomplete} from "@/components/CompactUI";
 
 import {WorkoutExercisePrisma} from "@/types/dataTypes";
 import {Dir} from "@lib/useWorkoutEditor";
-import {blue} from "@mui/material/colors";
 
 const filter = createFilterOptions<string>();
 const filterOptions = (options: string[], params: FilterOptionsState<string>) => {
