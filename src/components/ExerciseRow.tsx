@@ -3,13 +3,16 @@
 import React from 'react';
 import {Button, TableCell, TableRow, TextField} from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
-import Autocomplete, {createFilterOptions} from '@mui/material/Autocomplete';
+import {createFilterOptions} from '@mui/material/Autocomplete';
 import {ToggleableEditableField} from '@/components/ToggleableEditableField';
 import {useWorkoutEditorContext} from '@/context/WorkoutEditorContext';
 import {Exercise} from "@prisma/client";
-import {EditableExercise} from "@/types/editableData";
 import {FilterOptionsState} from "@mui/material/useAutocomplete/useAutocomplete";
 import {CompactAutocomplete} from "@/components/CompactUI";
+
+import {WorkoutExercisePrisma} from "@/types/dataTypes";
+import {Dir} from "@lib/useWorkoutEditor";
+import {blue} from "@mui/material/colors";
 
 const filter = createFilterOptions<string>();
 const filterOptions = (options: string[], params: FilterOptionsState<string>) => {
@@ -23,10 +26,10 @@ const filterOptions = (options: string[], params: FilterOptionsState<string>) =>
 };
 
 interface ExerciseRowProps {
-  exerciseLink: EditableExercise
+  exerciseLink: WorkoutExercisePrisma
   index: number
-  workoutId: string
-  weekId: string
+  workoutId: number
+  weekId: number
   isInEditMode: boolean
   allExercises: Exercise[]
   categories: string[]
@@ -48,6 +51,7 @@ const ExerciseRow = ({
   const {dispatch, debouncedDispatch} = useWorkoutEditorContext();
   const category = exerciseLink.exercise?.category || "";
   const exerciseName = exerciseLink.exercise?.name || "";
+  const setCount = exerciseLink.sets.length;
 
   return (
     <TableRow>
@@ -88,7 +92,7 @@ const ExerciseRow = ({
                 weekId,
                 workoutId,
                 workoutExerciseId: exerciseLink.id,
-                exerciseId: newInputValue,
+                exerciseName: newInputValue,
                 exercises: allExercises,
                 category,
               });
@@ -130,8 +134,7 @@ const ExerciseRow = ({
           }
         />
       </TableCell>
-
-      {Array.from({length: maxSetCount}).map((_, i) => {
+      {Array.from({length: setCount}).map((_, i) => {
         const set = exerciseLink.sets[i];
         return (
           <React.Fragment key={i}>
@@ -145,7 +148,7 @@ const ExerciseRow = ({
                     type: 'UPDATE_SET_WEIGHT',
                     workoutExerciseId: exerciseLink.id,
                     setId: set.id,
-                    weight: parseFloat(val),
+                    weight: val,
                   })
                 }
               />
@@ -166,6 +169,11 @@ const ExerciseRow = ({
               />
             </TableCell>
           </React.Fragment>
+        );
+      })}
+      {Array.from({length: (maxSetCount - setCount)*2}).map((_, i) => {
+        return (
+          <TableCell key={i}/>
         );
       })}
 
@@ -212,7 +220,7 @@ const ExerciseRow = ({
             onClick={() =>
               dispatch({
                 type: 'MOVE_EXERCISE',
-                dir: 'up',
+                dir: Dir.UP,
                 index,
                 weekId,
                 workoutId,
@@ -226,7 +234,7 @@ const ExerciseRow = ({
             onClick={() =>
               dispatch({
                 type: 'MOVE_EXERCISE',
-                dir: 'down',
+                dir: Dir.DOWN,
                 index,
                 weekId,
                 workoutId,

@@ -27,7 +27,7 @@ export default function NetworkStatusBanner() {
       window.removeEventListener('online', updateStatus);
       window.removeEventListener('offline', updateStatus);
     };
-  }, []);
+  }, [queuedRequestsCount]);
 
   useEffect(() => {
     const updateCount = async () => {

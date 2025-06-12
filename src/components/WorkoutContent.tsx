@@ -6,11 +6,12 @@ import { saveUserWorkoutData } from "@lib/api";
 import Button from "@mui/material/Button";
 import Week from "@/components/Week";
 import EditModeToggle from "@/components/EditModeToggle";
+import {Exercise} from "@prisma/client";
 
 export const WorkoutContent: React.FC<{
   lockedInEditMode: boolean;
   categories: string[];
-  allExercises: any[];
+  allExercises: Exercise[];
 }> = ({ lockedInEditMode = false, categories, allExercises }) => {
   const [isInEditMode, setIsInEditMode] = useState(lockedInEditMode);
   const { state, dispatch } = useWorkoutEditorContext();

@@ -1,7 +1,6 @@
 'use client'
 
 import React, {useState} from "react";
-import {EditableUser} from "@/types/editableData";
 import {parsePlan} from "@/utils/sheetUpload";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
@@ -10,13 +9,15 @@ import {WorkoutEditorProvider} from "@/context/WorkoutEditorContext";
 import {WorkoutContent} from "@/components/WorkoutContent";
 import {Exercise} from "@prisma/client";
 
+import {UserPrisma} from "@/types/dataTypes";
+
 type Props = {
   categories: string[]
   allExercises: Exercise[]
 }
 export const UploadAndEdit = ({categories, allExercises}: Props) => {
   const [text, setText] = useState("");
-  const [tableData, setTableData] = useState<EditableUser | null>(null);
+  const [tableData, setTableData] = useState<UserPrisma | null>(null);
   // todo add input for dropdown with users
 
   const handleSubmit = () => {

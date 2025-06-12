@@ -4,11 +4,12 @@ import React from 'react';
 import { Button, TableContainer } from '@mui/material';
 import Workout from './Workout';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
-import {EditableWeek} from "@/types/editableData";
 import {Exercise} from "@prisma/client";
 
+import {WeekPrisma} from "@/types/dataTypes";
+
 interface WeekProps {
-  week: EditableWeek
+  week: WeekPrisma
   isInEditMode: boolean
   categories: string[]
   allExercises: Exercise[]

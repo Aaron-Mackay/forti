@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as api from './api';
 import prisma from '@/lib/prisma';
 import * as fetchWrapper from './fetchWrapper';
+import {UserPrisma} from "@/types/dataTypes";
 
 vi.mock('@/lib/prisma', () => ({
   default: {
@@ -80,8 +81,8 @@ describe('API functions', () => {
       const mockResponse = { success: true };
       (fetchWrapper.fetchJson as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
-      const userData = { id: 1, name: 'Test User' };
-      const result = await api.saveUserWorkoutData(userData as any);
+      const userData = { id: 1, name: 'Test User' } as UserPrisma;
+      const result = await api.saveUserWorkoutData(userData);
       expect(fetchWrapper.fetchJson).toHaveBeenCalledWith('/api/saveUserWorkoutData', {
         method: 'POST',
         body: JSON.stringify(userData),
@@ -93,7 +94,7 @@ describe('API functions', () => {
     it('throws error if save fails', async () => {
       (fetchWrapper.fetchJson as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Failed to fetch /api/saveUserWorkoutData'));
 
-      await expect(api.saveUserWorkoutData({} as any)).rejects.toThrow('Failed to fetch /api/saveUserWorkoutData');
+      await expect(api.saveUserWorkoutData({} as UserPrisma)).rejects.toThrow('Failed to fetch /api/saveUserWorkoutData');
     });
   });
 });

@@ -1,14 +1,14 @@
 import * as React from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import { styled } from "@mui/material/styles";
+import {styled} from "@mui/material/styles";
 
 interface EditModeToggleProps {
   isInEditMode: boolean;
   setIsInEditMode: (edit: boolean) => void;
 }
 
-const MaskBox = styled(Box)(({ theme }) => ({
+const MaskBox = styled(Box)(() => ({
   borderRadius: 20,
   position: "relative",
   background: "#e5cfff",
@@ -20,7 +20,7 @@ const MaskBox = styled(Box)(({ theme }) => ({
 
 const Mask = styled(Box, {
   shouldForwardProp: (prop) => prop !== "isInEditMode",
-})<{ isInEditMode: boolean }>(({ isInEditMode }) => ({
+})<{ isInEditMode: boolean }>(({isInEditMode}) => ({
   width: 100,
   height: 40,
   borderRadius: 20,
@@ -46,15 +46,15 @@ const StyledButton = styled(Button)({
   },
 });
 
-export default function EditModeToggle({ isInEditMode, setIsInEditMode }: EditModeToggleProps) {
+export default function EditModeToggle({isInEditMode, setIsInEditMode}: EditModeToggleProps) {
   return (
-    <Box sx={{ display: "flex" }}>
+    <Box sx={{display: "flex"}}>
       <MaskBox>
-        <Mask isInEditMode={isInEditMode} />
+        <Mask isInEditMode={isInEditMode}/>
         <StyledButton
           disableRipple
           variant="text"
-          sx={{ color: !isInEditMode ? "#ffffff" : "#5316AE" }}
+          sx={{color: !isInEditMode ? "#ffffff" : "#5316AE"}}
           onClick={() => setIsInEditMode(false)}
         >
           View
@@ -62,7 +62,7 @@ export default function EditModeToggle({ isInEditMode, setIsInEditMode }: EditMo
         <StyledButton
           disableRipple
           variant="text"
-          sx={{ color: isInEditMode ? "#ffffff" : "#5316AE" }}
+          sx={{color: isInEditMode ? "#ffffff" : "#5316AE"}}
           onClick={() => setIsInEditMode(true)}
         >
           Edit

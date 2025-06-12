@@ -1,4 +1,4 @@
-import {Autocomplete, AutocompleteProps, PaperProps, Table, TableProps} from '@mui/material';
+import {Autocomplete, AutocompleteProps, Table, TableProps} from '@mui/material';
 import React from 'react';
 
 const COMPACT_FONT_SIZE = '0.9rem';
@@ -32,7 +32,7 @@ export const CompactAutocomplete = <T, Multiple extends boolean | undefined = fa
           ...(props.slotProps?.paper),
           sx: {
             fontSize: COMPACT_FONT_SIZE,
-            // @ts-ignore
+            // @ts-expect-error - sx is not typed correctly in MUI
             ...(props.slotProps?.paper?.sx as object),
           },
         },

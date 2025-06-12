@@ -1,11 +1,11 @@
 import React from 'react';
-import {EditableUser} from '@/types/editableData';
 import {getExercisesAndCategories} from '@lib/api';
 import {WorkoutEditorProvider} from '@/context/WorkoutEditorContext';
 import {WorkoutContent} from "@/components/WorkoutContent";
+import {UserPrisma} from "@/types/dataTypes";
 
 interface Props {
-  data: EditableUser;
+  data: UserPrisma;
   lockedInEditMode?: boolean;
 }
 

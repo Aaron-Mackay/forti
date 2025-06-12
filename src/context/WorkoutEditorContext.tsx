@@ -3,17 +3,18 @@
 import React, {createContext, ReactNode, useContext} from 'react';
 import {useWorkoutEditor, WorkoutEditorAction} from '@/lib/useWorkoutEditor';
 import useDebouncedDispatch from "@/utils/useDebouncedDispatch";
-import {EditableUser} from "@/types/editableData";
+
+import {UserPrisma} from "@/types/dataTypes";
 
 export interface WorkoutEditorContextType {
-  state: EditableUser;
+  state: UserPrisma;
   dispatch: React.Dispatch<WorkoutEditorAction>;
   debouncedDispatch: (action: WorkoutEditorAction) => void;
 }
 const WorkoutEditorContext = createContext<WorkoutEditorContextType | null>(null);
 
 interface WorkoutEditorProviderProps {
-  userData: EditableUser;
+  userData: UserPrisma;
   children: ReactNode;
 }
 export const WorkoutEditorProvider = ({ children, userData }: WorkoutEditorProviderProps) => {

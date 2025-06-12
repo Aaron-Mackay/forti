@@ -28,6 +28,7 @@ export async function GET(req: Request, {params}: { params: Promise<{ workoutId:
 
     return NextResponse.json(workout);
   } catch (error) {
+    console.error(error)
     return NextResponse.json({error: 'Failed to fetch workout'}, {status: 500});
   }
 }

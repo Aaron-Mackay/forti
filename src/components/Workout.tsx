@@ -1,19 +1,21 @@
 'use client';
 
 import React from 'react';
-import {Button, Table, TableBody, TableCell, TableHead, TableRow} from '@mui/material';
+import {Button, TableBody, TableCell, TableHead, TableRow} from '@mui/material';
 import ExerciseRow from './ExerciseRow';
 import {ToggleableEditableField} from '@/components/ToggleableEditableField';
 import {useWorkoutEditorContext} from '@/context/WorkoutEditorContext';
-import {EditableWorkout} from "@/types/editableData";
 import {Exercise} from "@prisma/client";
-import { CompactTable } from './CompactUI';
+import {CompactTable} from './CompactUI';
+
+import {WorkoutPrisma} from "@/types/dataTypes";
+import {Dir} from "@lib/useWorkoutEditor";
 
 
 interface WorkoutProps {
-  weekId: string
+  weekId: number
   index: number
-  workout: EditableWorkout
+  workout: WorkoutPrisma
   isInEditMode: boolean
   categories: string[]
   allExercises: Exercise[]
@@ -62,13 +64,13 @@ const Workout = ({
           </Button>
           <Button
             disabled={workout.order === 1}
-            onClick={() => dispatch({type: 'MOVE_WORKOUT', dir: 'up', index, weekId})}
+            onClick={() => dispatch({type: 'MOVE_WORKOUT', dir: Dir.UP, index, weekId})}
           >
             &uarr;
           </Button>
           <Button
             disabled={workout.order === weekWorkoutCount}
-            onClick={() => dispatch({type: 'MOVE_WORKOUT', dir: 'down', index, weekId})}
+            onClick={() => dispatch({type: 'MOVE_WORKOUT', dir: Dir.DOWN, index, weekId})}
           >
             &darr;
           </Button>
@@ -82,8 +84,8 @@ const Workout = ({
           <col style={{width: '20em'}}/>
           <col style={{width: '6em'}}/>
           <col style={{width: '6em'}}/>
-          {Array.from({ length: setColumns }).map((_, i) => (
-            <col key={i}style={{width: '4em'}}/>
+          {Array.from({length: setColumns}).map((_, i) => (
+            <col key={i} style={{width: '4em'}}/>
           ))}
           {isInEditMode &&
             <col style={{width: '30em'}}/>
@@ -117,7 +119,7 @@ const Workout = ({
           </TableRow>
         </TableHead>
 
-        <TableBody sx={{ fontSize: '0.8rem' }}>
+        <TableBody sx={{fontSize: '0.8rem'}}>
           {workout.exercises.map((exerciseLink, i) => (
             <ExerciseRow
               key={exerciseLink.id}

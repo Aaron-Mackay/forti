@@ -1,14 +1,5 @@
-"use client";
-
 import React from "react";
 import {getExercises} from "@lib/api";
-
-interface Exercise {
-  id: string;
-  name: string;
-  category: string | null;
-  description: string | null;
-}
 
 export default async function ExercisesPage ()  {
   const exercises = await getExercises()
@@ -39,4 +30,4 @@ export default async function ExercisesPage ()  {
       )}
     </div>
   );
-};
+}

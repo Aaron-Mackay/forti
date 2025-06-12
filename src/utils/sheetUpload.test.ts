@@ -1,5 +1,10 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
+// todo validation of data, where is userId?
+
 import {parsePlan} from './sheetUpload';
-import {EditableUser} from '@/types/editableData'; // Assuming these types are defined
+
+import {UserPrisma} from "@/types/dataTypes";
 
 describe('parsePlan', () => {
   test('Full data upload', () => {
@@ -8,21 +13,21 @@ describe('parsePlan', () => {
       .toEqual(partiallyFilledParsedData.weeks[0].workouts[0].exercises[0])
   })
 
-  const partiallyFilledParsedData: EditableUser = {
+  const partiallyFilledParsedData: UserPrisma = {
     id: 5,
     name: "TestName",
     weeks: [
       {
-        id: "1",
+        id: 1,
         order: 1,
         workouts: [
           {
-            id: "1",
+            id: 1,
             name: "Day 1: Chest, Delts & Triceps",
             order: 1,
             exercises: [
               {
-                id: "1",
+                id: 1,
                 order: 1,
                 repRange: "10-15",
                 restTime: "90",
@@ -32,19 +37,19 @@ describe('parsePlan', () => {
                 },
                 sets: [
                   {
-                    id: "1",
+                    id: 1,
                     reps: 12,
                     weight: "5",
                     order: 1
                   },
                   {
-                    "id": "2",
+                    "id": 2,
                     "order": 2,
                     "reps": 15,
                     "weight": "3",
                   },
                   {
-                    "id": "3",
+                    "id": 3,
                     "order": 3,
                     "reps": null,
                     "weight": "3",

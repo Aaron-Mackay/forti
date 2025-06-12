@@ -16,6 +16,7 @@ export async function GET(request: Request, {params}: { params: Promise<{ userId
 
     return NextResponse.json(workouts);
   } catch (error) {
+    console.error(error)
     return NextResponse.json({error: 'Failed to fetch workouts'}, {status: 500});
   }
 }

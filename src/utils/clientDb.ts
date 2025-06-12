@@ -1,8 +1,10 @@
+import {SetUpdatePayload} from "@/types/dataTypes";
+
 interface OfflineRequest {
   id?: number;
   url: string;
   method: string;
-  body: any;
+  body: SetUpdatePayload;
 }
 
 export function openDatabase(): Promise<IDBDatabase> {
@@ -29,7 +31,6 @@ export async function addRequest(data: Omit<OfflineRequest, 'id'>): Promise<void
     const request = store.add(data);
     request.onsuccess = () => {
       resolve();
-      console.log("add")
       window.dispatchEvent(new CustomEvent('queue-updated')); // ✅ dispatch event on add
     };
     request.onerror = () => reject(request.error);

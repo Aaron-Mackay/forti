@@ -8,7 +8,7 @@ export default async function HomePage() {
     <main className="p-6">
       <h1 className="text-2xl font-bold mb-4">Users</h1>
       <ul className="space-y-2">
-        {users.map((user: any) => (
+        {users.map((user) => (
           <li key={user.id}>
             <Link href={`/user/${user.id}`} className="text-blue-600 underline">
               {user.name}

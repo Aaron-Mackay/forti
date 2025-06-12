@@ -1,12 +1,12 @@
-import { EditableUser, EditableSet } from '@/types/editableData';
+import {SetPrisma, UserPrisma} from "@/types/dataTypes";
 
 export function updateUserSets(
-  user: EditableUser,
-  weekId: string,
-  workoutId: string,
-  exerciseId: string,
-  newSets: EditableSet[]
-): EditableUser {
+  user: UserPrisma,
+  weekId: number,
+  workoutId: number,
+  exerciseId: number,
+  newSets: SetPrisma[]
+): UserPrisma {
   return {
     ...user,
     weeks: user.weeks.map(week =>

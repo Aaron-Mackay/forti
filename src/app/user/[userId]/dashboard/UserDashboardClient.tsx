@@ -19,8 +19,9 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {queueOrSendRequest, syncQueuedRequests} from '@/utils/offlineSync';
-import {EditableExercise, EditableSet, EditableUser, EditableWeek, EditableWorkout,} from '@/types/editableData';
 import {updateUserSets} from '@/utils/updateUserSets';
+
+import {SetPrisma, SetUpdatePayload, UserPrisma} from "@/types/dataTypes";
 
 type SnackbarState = {
   open: boolean;
@@ -28,18 +29,28 @@ type SnackbarState = {
   severity: 'success' | 'info';
 };
 
-export default function UserDashboardPage({userData}: { userData: EditableUser }) {
-  const [selectedWeekId, setSelectedWeekId] = useState<string | null>(null);
-  const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(null);
-  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
+type Field = 'weight' | 'reps';
 
-  const [editingSets, setEditingSets] = useState<EditableSet[]>([]);
+export default function UserDashboardPage({userData}: { userData: UserPrisma }) {
+  const [selectedWeekId, setSelectedWeekId] = useState<number | null>(null);
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState<number | null>(null);
+  const [selectedExerciseId, setSelectedExerciseId] = useState<number | null>(null);
+
+  const [editingSets, setEditingSets] = useState<SetPrisma[]>([]);
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
     message: '',
     severity: 'success',
   });
-  const [userDataState, setUserData] = useState<EditableUser>(userData);
+  const [userDataState, setUserData] = useState(userData);
+
+  // remove body margin
+  useEffect(() => {
+    document.body.classList.add("no-body-margin");
+    return () => {
+      document.body.classList.remove("no-body-margin");
+    };
+  }, []);
 
   // Sync queued requests when coming online
   useEffect(() => {
@@ -60,9 +71,9 @@ export default function UserDashboardPage({userData}: { userData: EditableUser }
   }, [selectedExerciseId, userDataState]);
 
   // Selectors
-  const selectedWeek: EditableWeek | undefined = userDataState.weeks.find((w) => w.id === selectedWeekId);
-  const selectedWorkout: EditableWorkout | undefined = selectedWeek?.workouts.find((w) => w.id === selectedWorkoutId);
-  const selectedExercise: EditableExercise | undefined = selectedWorkout?.exercises.find((e) => e.id === selectedExerciseId);
+  const selectedWeek = userDataState.weeks.find((w) => w.id === selectedWeekId);
+  const selectedWorkout = selectedWeek?.workouts.find((w) => w.id === selectedWorkoutId);
+  const selectedExercise = selectedWorkout?.exercises.find((e) => e.id === selectedExerciseId);
 
   // Navigation handlers
   const goBack = () => {
@@ -72,14 +83,14 @@ export default function UserDashboardPage({userData}: { userData: EditableUser }
   };
 
   // Handle set update (auto-save on change)
-  const handleSetUpdate = async (setIdx: number, field: 'weight' | 'reps', value: string) => {
+  const handleSetUpdate = async (setIdx: number, field: Field, value: string) => {
     const updatedSets = editingSets.map((set, idx) =>
-      idx === setIdx ? { ...set, [field]: field === 'weight' ? value : Number(value) } : set
+      idx === setIdx ? {...set, [field]: field === 'weight' ? value : Number(value)} : set
     );
     setEditingSets(updatedSets);
 
     const setId = updatedSets[setIdx].id;
-    const payload = { [field]: field === 'reps' ? Number(value) : value };
+    const payload = {[field]: field === 'reps' ? Number(value) : value} as SetUpdatePayload;
 
     try {
       await queueOrSendRequest(`/api/sets/${setId}`, 'PATCH', payload);
@@ -255,7 +266,7 @@ export default function UserDashboardPage({userData}: { userData: EditableUser }
       <AppBar position="sticky" color="primary" enableColorOnDark>
         <Toolbar>
           <Typography variant="h6" noWrap component="div" sx={{flexGrow: 1}}>
-            {userDataState.name}'s Dashboard
+            {userDataState.name}&apos;s Dashboard
           </Typography>
         </Toolbar>
       </AppBar>

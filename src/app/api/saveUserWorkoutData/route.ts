@@ -1,15 +1,15 @@
-import {EditableWorkout} from "@/types/editableData";
 
 import prisma from '@/lib/prisma';
+import {WorkoutPrisma} from "@/types/dataTypes";
 
 export async function POST(req: Request) {
   const userData = await req.json();
 
-  if (!userData?.id) {
+  const userId = userData.id;
+  if (!userId) {
     return new Response("Missing userId", {status: 400});
   }
 
-  const userId = userData.id;
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -47,13 +47,12 @@ export async function POST(req: Request) {
 
       // 2. Recreate all weeks, workouts, etc.
       for (const week of userData.weeks) {
-
-        const createdWeek = await tx.week.create({
+        await tx.week.create({
           data: {
             userId,
             order: week.order,
             workouts: {
-              create: week.workouts.map((workout: EditableWorkout) => ({
+              create: week.workouts.map((workout: WorkoutPrisma) => ({
                 name: workout.name,
                 notes: workout.notes,
                 order: workout.order,
@@ -96,8 +95,14 @@ export async function POST(req: Request) {
     });
 
     return new Response(JSON.stringify({success: true}), {status: 200});
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Save error:", err);
-    return new Response(JSON.stringify({error: err.message}), {status: 500});
+
+    let message = "Unknown error";
+    if (err && typeof err === "object" && "message" in err) {
+      message = String((err as { message: unknown }).message);
+    }
+
+    return new Response(JSON.stringify({ error: message }), { status: 500 });
   }
 }

@@ -16,7 +16,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true, // Allows importing JSON files
     "outDir": "./dist", // Output directory for compiled JS files
-    "rootDir": "./src", // Root directory of your TypeScript files
+    "rootDir": ".", // Root directory of your TypeScript files
     "moduleResolution": "node", // Use Node's module resolution
     "baseUrl": ".", // Base directory for resolving non-relative paths
     "paths": {

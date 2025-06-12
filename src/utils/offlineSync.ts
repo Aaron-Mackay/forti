@@ -1,9 +1,11 @@
 import {addRequest, clearRequests, getAllRequests, openDatabase} from './clientDb';
 
+import {SetUpdatePayload} from "@/types/dataTypes";
+
 interface OfflineRequest {
   url: string;
   method: string;
-  body: any;
+  body: SetUpdatePayload;
 }
 
 const MAX_RETRIES = 3;
@@ -43,7 +45,7 @@ export async function getQueuedRequests(): Promise<number> {
 }
 
 
-export async function queueOrSendRequest(url: string, method: string, body: any): Promise<void> {
+export async function queueOrSendRequest(url: string, method: string, body: SetUpdatePayload): Promise<void> {
   const req: OfflineRequest = {url, method, body};
 
 
@@ -54,8 +56,10 @@ export async function queueOrSendRequest(url: string, method: string, body: any)
     if ('serviceWorker' in navigator && 'SyncManager' in window) {
       const reg = await navigator.serviceWorker.ready;
       try {
-        await (reg as any).sync.register('sync-queued-requests');
+        // @ts-expect-error sync is not yet in the serviceworker definition
+        await (reg).sync.register('sync-queued-requests');
       } catch (err) {
+        console.error(err)
         console.warn('Background sync registration failed:', err);
       }
     }
@@ -73,6 +77,7 @@ export async function syncQueuedRequests(): Promise<void> {
     try {
       await retryFetch(req);
     } catch (err) {
+      console.error(err)
       console.error('Failed to send queued request:', req, err);
     }
   }
