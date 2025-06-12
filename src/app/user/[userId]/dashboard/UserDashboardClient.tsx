@@ -22,6 +22,7 @@ import {queueOrSendRequest, syncQueuedRequests} from '@/utils/offlineSync';
 import {updateUserSets} from '@/utils/updateUserSets';
 
 import {SetPrisma, SetUpdatePayload, UserPrisma} from "@/types/dataTypes";
+import Stopwatch from "@/components/Stopwatch";
 
 type SnackbarState = {
   open: boolean;
@@ -173,6 +174,7 @@ export default function UserDashboardPage({userData}: { userData: UserPrisma }) 
                 </ListItem>
               ))}
             </List>
+            <Stopwatch />
           </Paper>
         </Container>
         <Snackbar

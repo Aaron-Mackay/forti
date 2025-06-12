@@ -1,0 +1,77 @@
+body {
+    background-color: #000;
+}
+
+.stopwatch-outer-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.stopwatch-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: #fff;
+    border: none;
+    color: #1976d2;
+    font-size: 40px;
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.12), 0 1.5px 4px rgba(0,0,0,0.08);
+    cursor: pointer;
+    outline: none;
+    transition: box-shadow 0.2s, background 0.2s;
+    user-select: none;
+    position: relative;
+    padding: 0;
+}
+
+.stopwatch-circle.running {
+    background: #e3f2fd;
+    box-shadow: 0 4px 16px rgba(25, 118, 210, 0.18), 0 2px 8px rgba(0,0,0,0.10);
+}
+
+.stopwatch-circle:active {
+    background: #bbdefb;
+}
+
+.stopwatch-time {
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    color: #1976d2;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+.stopwatch-reset-circle {
+    margin-left: 16px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #fff;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 1.5px 4px rgba(25, 118, 210, 0.10), 0 1px 2px rgba(0,0,0,0.08);
+    transition: background 0.2s, box-shadow 0.2s;
+    outline: none;
+    padding: 0;
+}
+
+.stopwatch-reset-circle:hover {
+    background: #e3f2fd;
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.18), 0 2px 8px rgba(0,0,0,0.10);
+}
+
+.stopwatch-reset-circle svg {
+    display: block;
+    width: 24px;
+    height: 24px;
+}
