@@ -26,7 +26,6 @@
     "node-html-parser": "^7.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-mobile-picker": "^1.1.2",
     "typescript-eslint": "^8.34.0"
   },
   "devDependencies": {
