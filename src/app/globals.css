@@ -19,3 +19,9 @@ body {
 body.no-body-margin {
     margin: 0 !important;
 }
+
+.swiper-wrapper {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+}

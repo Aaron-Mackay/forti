@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Alert,
   AppBar,
@@ -18,6 +18,11 @@ import {
   Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import {Swiper, SwiperSlide} from 'swiper/react';
+import {Swiper as SwiperType} from 'swiper/types';
+import {Pagination} from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
 import {queueOrSendRequest, syncQueuedRequests} from '@/utils/offlineSync';
 import {updateUserSets} from '@/utils/updateUserSets';
 
@@ -37,7 +42,6 @@ export default function UserDashboardPage({userData}: { userData: UserPrisma }) 
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<number | null>(null);
   const [selectedExerciseId, setSelectedExerciseId] = useState<number | null>(null);
 
-  const [editingSets, setEditingSets] = useState<SetPrisma[]>([]);
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
     message: '',
@@ -60,17 +64,6 @@ export default function UserDashboardPage({userData}: { userData: UserPrisma }) 
     return () => window.removeEventListener('online', sync);
   }, []);
 
-  // When navigating to an exercise, initialize editingSets
-  useEffect(() => {
-    if (selectedExerciseId) {
-      const exercise = userDataState.weeks
-        .flatMap((w) => w.workouts)
-        .flatMap((w) => w.exercises)
-        .find((e) => e.id === selectedExerciseId);
-      setEditingSets(exercise ? exercise.sets.map((set) => ({...set})) : []);
-    }
-  }, [selectedExerciseId, userDataState]);
-
   // Selectors
   const selectedWeek = userDataState.weeks.find((w) => w.id === selectedWeekId);
   const selectedWorkout = selectedWeek?.workouts.find((w) => w.id === selectedWorkoutId);
@@ -84,98 +77,175 @@ export default function UserDashboardPage({userData}: { userData: UserPrisma }) 
   };
 
   // Handle set update (auto-save on change)
-  const handleSetUpdate = async (setIdx: number, field: Field, value: string) => {
-    const updatedSets = editingSets.map((set, idx) =>
+  const handleSetUpdate = (setIdx: number, field: Field, value: string) => {
+    if (!(selectedWeekId && selectedWorkoutId && selectedExerciseId)) return;
+
+    // Save previous state for possible revert
+    const prevUserData = userDataState;
+
+    // Find the current sets for the selected exercise
+    const selectedWeek = userDataState.weeks.find((w) => w.id === selectedWeekId);
+    const selectedWorkout = selectedWeek?.workouts.find((w) => w.id === selectedWorkoutId);
+    const selectedExercise = selectedWorkout?.exercises.find((e) => e.id === selectedExerciseId);
+    if (!selectedExercise) return;
+
+    const updatedSets = selectedExercise.sets.map((set, idx) =>
       idx === setIdx ? {...set, [field]: field === 'weight' ? value : Number(value)} : set
     );
-    setEditingSets(updatedSets);
 
-    const setId = updatedSets[setIdx].id;
-    const payload = {[field]: field === 'reps' ? Number(value) : value} as SetUpdatePayload;
+    // Optimistically update userDataState
+    setUserData(prev =>
+      updateUserSets(prev, selectedWeekId, selectedWorkoutId, selectedExerciseId, updatedSets)
+    );
 
-    try {
-      await queueOrSendRequest(`/api/sets/${setId}`, 'PATCH', payload);
-      setSnackbar({
-        open: true,
-        message: navigator.onLine ? 'Set updated' : 'Offline: update queued',
-        severity: navigator.onLine ? 'success' : 'info',
+    // Fire PATCH request in background
+    queueOrSendRequest(`/api/sets/${updatedSets[setIdx].id}`, 'PATCH', {
+      [field]: field === 'reps' ? Number(value) : value
+    } as SetUpdatePayload)
+      .then(() => {
+        setSnackbar({
+          open: true,
+          message: navigator.onLine ? 'Set updated' : 'Offline: update queued',
+          severity: navigator.onLine ? 'success' : 'info',
+        });
+      })
+      .catch(() => {
+        setUserData(prevUserData);
+        setSnackbar({
+          open: true,
+          message: 'Failed to update set',
+          severity: 'info',
+        });
       });
-
-      if (selectedWeekId && selectedWorkoutId && selectedExerciseId) {
-        setUserData(prev =>
-          updateUserSets(prev, selectedWeekId, selectedWorkoutId, selectedExerciseId, updatedSets)
-        );
-      }
-    } catch {
-      setSnackbar({
-        open: true,
-        message: 'Failed to update set',
-        severity: 'info',
-      });
-      // Optionally: revert optimistic update here if needed
-    }
   };
 
   const handleSnackbarClose = () => {
     setSnackbar((s) => ({...s, open: false}));
   };
 
-  // --- RENDERING ---
+  const paginationRef = useRef<HTMLDivElement | null>(null);
+  // Exercise Detail View (Swipeable)
+  if (selectedExercise && selectedWorkout) {
 
-  // Exercise Detail View
-  if (selectedExercise) {
+    const handleSlideChange = (swiper: SwiperType) => {
+      const newExercise = selectedWorkout.exercises[swiper.activeIndex];
+      if (newExercise && newExercise.id !== selectedExerciseId) {
+        setSelectedExerciseId(newExercise.id);
+      }
+    };
+
     return (
-      <Box sx={{minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary'}}>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          bgcolor: 'background.default',
+          color: 'text.primary',
+        }}
+      >
         <AppBar position="sticky" color="primary" enableColorOnDark>
           <Toolbar>
             <IconButton edge="start" color="inherit" aria-label="back" onClick={goBack} sx={{mr: 2}}>
               <ArrowBackIcon/>
             </IconButton>
             <Typography variant="h6" noWrap component="div" sx={{flexGrow: 1}}>
-              {selectedExercise.exercise.name}
+              {selectedExercise?.exercise.name}
             </Typography>
           </Toolbar>
         </AppBar>
-        <Container maxWidth="sm" sx={{py: 2}}>
-          <Paper sx={{p: 2}}>
-            <Typography variant="subtitle1" gutterBottom>
-              Sets
-            </Typography>
-            <List>
-              {editingSets.length === 0 && (
-                <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
-                  No sets recorded.
-                </Typography>
-              )}
-              {editingSets.map((set, idx) => (
-                <ListItem key={set.id} disablePadding sx={{alignItems: 'flex-end', mb: 1}}>
-                  <ListItemText
-                    primary={`Set ${idx + 1}`}
-                    sx={{minWidth: 60, flex: 'none', mr: 2}}
-                  />
-                  <TextField
-                    label="Weight"
-                    size="small"
-                    value={set.weight ?? ''}
-                    onChange={e => handleSetUpdate(idx, 'weight', e.target.value)}
-                    sx={{mr: 1, width: 100}}
-                  />
-                  <TextField
-                    label="Reps"
-                    type="number"
-                    size="small"
-                    value={set.reps ?? ''}
-                    onChange={e => handleSetUpdate(idx, 'reps', e.target.value)}
-                    sx={{width: 80}}
-                    slotProps={{
-                      htmlInput: {inputMode: 'numeric', pattern: '[0-9.]*'}
-                    }}
-                  />
-                </ListItem>
-              ))}
-            </List>
-            <Stopwatch />
-          </Paper>
+        <Container maxWidth="sm" sx={{
+          py: 2, flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          <Swiper
+            initialSlide={selectedWorkout.exercises.findIndex((e) => e.id === selectedExerciseId)}
+            onSlideChange={handleSlideChange}
+            modules={[Pagination]}
+            pagination={{
+              el: paginationRef.current,
+              clickable: true,
+            }}
+            style={{
+              flex: 1, display: 'flex',
+              flexDirection: 'column', width: '100%'
+            }}
+          >
+            {selectedWorkout.exercises.map((ex) => (
+              <SwiperSlide key={ex.id}
+                           style={{backgroundColor: "green", display: 'flex', flexDirection: 'column', height: '100%'}}>
+                <Paper
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    flex: 1,
+                    maxWidth: '100%',
+                    boxSizing: 'border-box',
+                    p: 2,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Typography variant="h4">{ex.exercise.name}</Typography>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Sets
+                  </Typography>
+                  <List>
+                    {ex.sets.length === 0 && (
+                      <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
+                        No sets recorded.
+                      </Typography>
+                    )}
+                    {(ex.sets).map((set: SetPrisma, setIdx) => (
+                      <ListItem key={set.id} disablePadding sx={{alignItems: 'flex-end', mb: 1}}>
+                        <ListItemText
+                          primary={`Set ${setIdx + 1}`}
+                          sx={{minWidth: 60, flex: 'none', mr: 2}}
+                        />
+                        <TextField
+                          label="Weight"
+                          size="small"
+                          value={set.weight ?? ''}
+                          onChange={e =>
+                            selectedExerciseId === ex.id &&
+                            handleSetUpdate(setIdx, 'weight', e.target.value)
+                          }
+                          sx={{mr: 1, width: 100}}
+                          disabled={selectedExerciseId !== ex.id}
+                        />
+                        <TextField
+                          label="Reps"
+                          type="text"
+                          size="small"
+                          value={set.reps ?? ''}
+                          onChange={e =>
+                            selectedExerciseId === ex.id &&
+                            handleSetUpdate(setIdx, 'reps', e.target.value)
+                          }
+                          sx={{width: 80}}
+                          slotProps={{
+                            htmlInput: {inputMode: 'numeric',}
+                          }}
+                          disabled={selectedExerciseId !== ex.id}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                  {<Stopwatch/>}
+                </Paper>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+          <Box
+            ref={paginationRef}
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: 48,
+              mt: 1,
+            }}
+          />
         </Container>
         <Snackbar
           open={snackbar.open}
