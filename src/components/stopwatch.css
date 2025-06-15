@@ -28,6 +28,7 @@ body {
     user-select: none;
     position: relative;
     padding: 0;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .stopwatch-circle.running {
@@ -64,6 +65,7 @@ body {
     transition: background 0.2s, box-shadow 0.2s;
     outline: none;
     padding: 0;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .stopwatch-reset-circle:hover {
