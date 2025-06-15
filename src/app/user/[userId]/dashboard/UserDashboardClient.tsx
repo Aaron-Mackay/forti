@@ -150,7 +150,7 @@ export default function UserDashboardPage({userData}: { userData: UserPrisma }) 
               <ArrowBackIcon/>
             </IconButton>
             <Typography variant="h6" noWrap component="div" sx={{flexGrow: 1}}>
-              {selectedExercise?.exercise.name}
+              Exercises
             </Typography>
           </Toolbar>
         </AppBar>
@@ -164,7 +164,7 @@ export default function UserDashboardPage({userData}: { userData: UserPrisma }) 
             onSlideChange={handleSlideChange}
             modules={[Pagination]}
             pagination={{
-              el: paginationRef.current,
+              el: '.custom-swiper-pagination',
               clickable: true,
             }}
             style={{
@@ -186,7 +186,7 @@ export default function UserDashboardPage({userData}: { userData: UserPrisma }) 
                     alignItems: 'center',
                   }}
                 >
-                  <Typography variant="h4">{ex.exercise.name}</Typography>
+                  <Typography variant="h6" align={"center"}>{ex.exercise.name}</Typography>
                   <Typography variant="subtitle1" gutterBottom>
                     Sets
                   </Typography>
@@ -233,12 +233,13 @@ export default function UserDashboardPage({userData}: { userData: UserPrisma }) 
                       </ListItem>
                     ))}
                   </List>
-                  {<Stopwatch/>}
                 </Paper>
               </SwiperSlide>
             ))}
           </Swiper>
+          <Stopwatch/>
           <Box
+            className={"custom-swiper-pagination"}
             ref={paginationRef}
             sx={{
               display: 'flex',

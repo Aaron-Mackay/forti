@@ -14,10 +14,7 @@ const Stopwatch = () => {
     return () => clearInterval(intervalId);
   }, [isRunning]);
 
-  // Minutes calculation
   const minutes = Math.floor((time % 360000) / 6000);
-
-  // Seconds calculation
   const seconds = Math.floor((time % 6000) / 100);
 
   const startAndStop = () => {
