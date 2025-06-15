@@ -205,6 +205,7 @@ export default function UserDashboardPage({userData}: { userData: UserPrisma }) 
                         <TextField
                           label="Weight"
                           size="small"
+                          autoComplete="off"
                           value={set.weight ?? ''}
                           onChange={e =>
                             selectedExerciseId === ex.id &&
@@ -217,6 +218,7 @@ export default function UserDashboardPage({userData}: { userData: UserPrisma }) 
                           label="Reps"
                           type="text"
                           size="small"
+                          autoComplete="off"
                           value={set.reps ?? ''}
                           onChange={e =>
                             selectedExerciseId === ex.id &&
