@@ -9,7 +9,7 @@
     "lint": "next lint",
     "seed": "ts-node prisma/seed.ts",
     "local-db": "psql -h localhost -U postgres -d postgres",
-    "test": "vitest",
+    "test": "vitest run",
     "rebuild-prisma": "prisma generate && prisma db push",
     "postinstall": "prisma generate"
   },

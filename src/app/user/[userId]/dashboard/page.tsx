@@ -1,5 +1,5 @@
 import { getUserData } from '@lib/api'; // Server-side data fetching
-import UserDashboardPage from './UserDashboardClient';
+import DashboardClient from './DashboardClient';
 import {notFound} from "next/navigation"; // Client component
 
 export default async function DashboardPage({ params }: { params: Promise<{ userId: string }> }) {
@@ -8,5 +8,5 @@ export default async function DashboardPage({ params }: { params: Promise<{ user
     return notFound()
   }
 
-  return <UserDashboardPage userData={userData} />;
+  return <DashboardClient userData={userData} />;
 }
