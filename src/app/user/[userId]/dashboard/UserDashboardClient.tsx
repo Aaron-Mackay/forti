@@ -23,6 +23,7 @@ import {Swiper as SwiperType} from 'swiper/types';
 import {Pagination} from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
+import './styles.css';
 import {queueOrSendRequest, syncQueuedRequests} from '@/utils/offlineSync';
 import {updateUserSets} from '@/utils/updateUserSets';
 
@@ -137,7 +138,7 @@ export default function UserDashboardPage({userData}: { userData: UserPrisma }) 
     return (
       <Box
         sx={{
-          minHeight: '100vh',
+          minHeight: '100dvh',
           display: 'flex',
           flexDirection: 'column',
           bgcolor: 'background.default',
@@ -166,6 +167,10 @@ export default function UserDashboardPage({userData}: { userData: UserPrisma }) 
             pagination={{
               el: '.custom-swiper-pagination',
               clickable: true,
+              type: 'bullets',
+              renderBullet: function (index, className) {
+                return '<span class="' + className + '">' + (index + 1) + '</span>';
+              },
             }}
             style={{
               flex: 1, display: 'flex',
