@@ -27,13 +27,36 @@ export default function ExercisesListView({
   onStopwatchReset: () => void;
 }) {
   return (
-    <Box sx={{minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary'}}>
+    <Box sx={{
+      minHeight: '100vh',
+      bgcolor: 'background.default',
+      color: 'text.primary',
+      display: 'flex',
+      flexDirection: 'column',
+      height: "100vh"
+    }}>
       <DashboardAppBar title={workout.name} onBack={onBack} showBack/>
-      <Container maxWidth="sm" sx={{py: 2}}>
+      <Container
+        maxWidth="sm"
+        sx={{
+          py: 2,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1
+        }}
+      >
         <Typography variant="subtitle1" gutterBottom>
           Exercises
         </Typography>
-        <List>
+        <List
+          sx={{
+            flex: 1,
+            overflowY: 'auto',
+            mb: 2,
+            minHeight: 0
+          }}
+        >
           {workout.exercises.map((ex) => (
             <ListItem key={ex.id} disablePadding>
               <ListItemButton onClick={() => onSelectExercise(ex.id)} sx={{display: 'flex', alignItems: 'center'}}>
