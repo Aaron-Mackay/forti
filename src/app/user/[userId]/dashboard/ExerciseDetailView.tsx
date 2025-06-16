@@ -107,9 +107,14 @@ export default function ExerciseDetailView({
                 <Typography variant="h6" align="center">
                   {ex.exercise.name}
                 </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', m: 1, width: '100%' }}>
                 <Typography variant="subtitle1" gutterBottom>
-                  Sets
+                  Rest: {ex.restTime}
                 </Typography>
+                <Typography variant="subtitle1" gutterBottom>
+                  Reps: {ex.repRange}
+                </Typography>
+                </Box>
                 <List>
                   {ex.sets.length === 0 && (
                     <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
