@@ -6,6 +6,7 @@ import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
 import DashboardAppBar from './DashboardAppBar';
 import {WorkoutPrisma} from '@/types/dataTypes';
 import Stopwatch from "./Stopwatch";
+import './exercisesListView.css'
 
 export default function ExercisesListView({
                                             workout,
@@ -50,6 +51,7 @@ export default function ExercisesListView({
           Exercises
         </Typography>
         <List
+          className={"maskedOverflow"}
           sx={{
             flex: 1,
             overflowY: 'auto',
