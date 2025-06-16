@@ -30,6 +30,28 @@ export default function DashboardClient({userData}: { userData: UserPrisma }) {
   });
   const [userDataState, setUserData] = useState(userData);
 
+  // shared stopwatch state so it can be running in multiple views
+  const [stopwatch, setStopwatch] = useState({time: 0, isRunning: false, startTimestamp: null as null | number, pausedTime: 0});
+  const handleStartStop = () => {
+    if (stopwatch.isRunning) {
+      setStopwatch(sw => ({
+        ...sw,
+        isRunning: false,
+        pausedTime: sw.startTimestamp !== null ? sw.pausedTime + Math.floor((Date.now() - (sw.startTimestamp ?? 0)) / 100) : sw.pausedTime,
+        startTimestamp: null
+      }));
+    } else {
+      setStopwatch(sw => ({
+        ...sw,
+        isRunning: true,
+        startTimestamp: Date.now()
+      }));
+    }
+  };
+  const handleReset = () => {
+    setStopwatch({time: 0, isRunning: false, startTimestamp: null, pausedTime: 0});
+  };
+
   // Remove body margin
   useEffect(() => {
     document.body.classList.add('no-body-margin');
@@ -119,6 +141,11 @@ export default function DashboardClient({userData}: { userData: UserPrisma }) {
         handleSetUpdate={handleSetUpdate}
         snackbar={snackbar}
         handleSnackbarClose={handleSnackbarClose}
+        stopwatchIsRunning={stopwatch.isRunning}
+        stopwatchStartTimestamp={stopwatch.startTimestamp}
+        stopwatchPausedTime={stopwatch.pausedTime}
+        onStopwatchStartStop={handleStartStop}
+        onStopwatchReset={handleReset}
       />
     );
   }
@@ -129,6 +156,11 @@ export default function DashboardClient({userData}: { userData: UserPrisma }) {
         workout={selectedWorkout}
         onBack={goBack}
         onSelectExercise={setSelectedExerciseId}
+        stopwatchIsRunning={stopwatch.isRunning}
+        stopwatchStartTimestamp={stopwatch.startTimestamp}
+        stopwatchPausedTime={stopwatch.pausedTime}
+        onStopwatchStartStop={handleStartStop}
+        onStopwatchReset={handleReset}
       />
     );
   }
