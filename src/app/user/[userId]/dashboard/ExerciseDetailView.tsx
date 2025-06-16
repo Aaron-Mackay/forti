@@ -53,23 +53,23 @@ export default function ExerciseDetailView({
   const paginationRef = useRef<HTMLDivElement | null>(null);
 
   return (
-    <Box
-      sx={{
-        minHeight: '100dvh',
-        display: 'flex',
-        flexDirection: 'column',
-        bgcolor: 'background.default',
-        color: 'text.primary',
-      }}
-    >
+    <Box sx={{
+      minHeight: '100vh',
+      bgcolor: 'background.default',
+      color: 'text.primary',
+      display: 'flex',
+      flexDirection: 'column',
+      height: "100vh"
+    }}>
       <DashboardAppBar title="Exercises" onBack={onBack} showBack/>
       <Container
         maxWidth="sm"
         sx={{
           py: 2,
-          flex: 1,
+          minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
+          flex: 1
         }}
       >
         <Swiper
