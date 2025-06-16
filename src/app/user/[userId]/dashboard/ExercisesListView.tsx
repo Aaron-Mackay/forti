@@ -5,15 +5,26 @@ import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
 import DashboardAppBar from './DashboardAppBar';
 import {WorkoutPrisma} from '@/types/dataTypes';
+import Stopwatch from "./Stopwatch";
 
 export default function ExercisesListView({
                                             workout,
                                             onBack,
                                             onSelectExercise,
+                                            stopwatchIsRunning,
+                                            stopwatchStartTimestamp,
+                                            stopwatchPausedTime,
+                                            onStopwatchStartStop,
+                                            onStopwatchReset,
                                           }: {
   workout: WorkoutPrisma;
   onBack: () => void;
   onSelectExercise: (exerciseId: number) => void;
+  stopwatchIsRunning: boolean;
+  stopwatchStartTimestamp: number | null;
+  stopwatchPausedTime: number;
+  onStopwatchStartStop: () => void;
+  onStopwatchReset: () => void;
 }) {
   return (
     <Box sx={{minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary'}}>
@@ -39,6 +50,13 @@ export default function ExercisesListView({
             </ListItem>
           ))}
         </List>
+        <Stopwatch
+          isRunning={stopwatchIsRunning}
+          startTimestamp={stopwatchStartTimestamp}
+          pausedTime={stopwatchPausedTime}
+          onStartStop={onStopwatchStartStop}
+          onReset={onStopwatchReset}
+        />
       </Container>
     </Box>
   );

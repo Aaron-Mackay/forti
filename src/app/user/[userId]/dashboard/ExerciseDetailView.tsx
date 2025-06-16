@@ -1,37 +1,42 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, {useRef} from 'react';
 import {
+  Alert,
   Box,
   Container,
-  Paper,
-  Typography,
   List,
   ListItem,
   ListItemText,
-  TextField,
+  Paper,
   Snackbar,
-  Alert,
+  TextField,
+  Typography,
 } from '@mui/material';
 import DashboardAppBar from './DashboardAppBar';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Pagination } from 'swiper/modules';
-import { Swiper as SwiperType } from 'swiper/types';
+import {Swiper, SwiperSlide} from 'swiper/react';
+import {Pagination} from 'swiper/modules';
+import {Swiper as SwiperType} from 'swiper/types';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import './styles.css';
-import { SetPrisma, WorkoutPrisma } from '@/types/dataTypes';
-import Stopwatch from '@/components/Stopwatch';
+import {SetPrisma, WorkoutPrisma} from '@/types/dataTypes';
+import Stopwatch from "./Stopwatch";
 
 export default function ExerciseDetailView({
-  workout,
-  activeExerciseId,
-  onBack,
-  onSlideChange,
-  handleSetUpdate,
-  snackbar,
-  handleSnackbarClose,
-}: {
+                                             workout,
+                                             activeExerciseId,
+                                             onBack,
+                                             onSlideChange,
+                                             handleSetUpdate,
+                                             snackbar,
+                                             handleSnackbarClose,
+                                             stopwatchIsRunning,
+                                             stopwatchStartTimestamp,
+                                             stopwatchPausedTime,
+                                             onStopwatchStartStop,
+                                             onStopwatchReset,
+                                           }: {
   workout: WorkoutPrisma;
   activeExerciseId: number;
   onBack: () => void;
@@ -39,6 +44,11 @@ export default function ExerciseDetailView({
   handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
   snackbar: { open: boolean; message: string; severity: 'success' | 'info' };
   handleSnackbarClose: () => void;
+  stopwatchIsRunning: boolean;
+  stopwatchStartTimestamp: number | null;
+  stopwatchPausedTime: number;
+  onStopwatchStartStop: () => void;
+  onStopwatchReset: () => void;
 }) {
   const paginationRef = useRef<HTMLDivElement | null>(null);
 
@@ -52,7 +62,7 @@ export default function ExerciseDetailView({
         color: 'text.primary',
       }}
     >
-      <DashboardAppBar title="Exercises" onBack={onBack} showBack />
+      <DashboardAppBar title="Exercises" onBack={onBack} showBack/>
       <Container
         maxWidth="sm"
         sx={{
@@ -102,20 +112,20 @@ export default function ExerciseDetailView({
                 </Typography>
                 <List>
                   {ex.sets.length === 0 && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
                       No sets recorded.
                     </Typography>
                   )}
                   {ex.sets.map((set: SetPrisma, setIdx) => (
-                    <ListItem key={set.id} disablePadding sx={{ alignItems: 'flex-end', mb: 1 }}>
-                      <ListItemText primary={`Set ${setIdx + 1}`} sx={{ minWidth: 60, flex: 'none', mr: 2 }} />
+                    <ListItem key={set.id} disablePadding sx={{alignItems: 'flex-end', mb: 1}}>
+                      <ListItemText primary={`Set ${setIdx + 1}`} sx={{minWidth: 60, flex: 'none', mr: 2}}/>
                       <TextField
                         label="Weight"
                         size="small"
                         autoComplete="off"
                         value={set.weight ?? ''}
                         onChange={(e) => handleSetUpdate(setIdx, 'weight', e.target.value)}
-                        sx={{ mr: 1, width: 100 }}
+                        sx={{mr: 1, width: 100}}
                       />
                       <TextField
                         label="Reps"
@@ -126,8 +136,8 @@ export default function ExerciseDetailView({
                         onChange={(e) => {
                           handleSetUpdate(setIdx, 'reps', e.target.value);
                         }}
-                        sx={{ width: 80 }}
-                        inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
+                        sx={{width: 80}}
+                        inputProps={{inputMode: 'numeric', pattern: '[0-9]*'}}
                       />
                     </ListItem>
                   ))}
@@ -136,7 +146,6 @@ export default function ExerciseDetailView({
             </SwiperSlide>
           ))}
         </Swiper>
-        <Stopwatch />
         <Box
           className="custom-swiper-pagination"
           ref={paginationRef}
@@ -148,14 +157,21 @@ export default function ExerciseDetailView({
             mt: 1,
           }}
         />
+        <Stopwatch
+          isRunning={stopwatchIsRunning}
+          startTimestamp={stopwatchStartTimestamp}
+          pausedTime={stopwatchPausedTime}
+          onStartStop={onStopwatchStartStop}
+          onReset={onStopwatchReset}
+        />
       </Container>
       <Snackbar
         open={snackbar.open}
         autoHideDuration={2500}
         onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}
       >
-        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{width: '100%'}}>
           {snackbar.message}
         </Alert>
       </Snackbar>
