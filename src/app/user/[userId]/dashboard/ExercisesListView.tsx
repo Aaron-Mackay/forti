@@ -29,12 +29,12 @@ export default function ExercisesListView({
 }) {
   return (
     <Box sx={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       bgcolor: 'background.default',
       color: 'text.primary',
       display: 'flex',
       flexDirection: 'column',
-      height: "100vh"
+      height: "100dvh"
     }}>
       <DashboardAppBar title={workout.name} onBack={onBack} showBack/>
       <Container

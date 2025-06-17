@@ -54,12 +54,12 @@ export default function ExerciseDetailView({
 
   return (
     <Box sx={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       bgcolor: 'background.default',
       color: 'text.primary',
       display: 'flex',
       flexDirection: 'column',
-      height: "100vh"
+      height: "100dvh"
     }}>
       <DashboardAppBar title="Exercises" onBack={onBack} showBack/>
       <Container
