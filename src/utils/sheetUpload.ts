@@ -33,7 +33,7 @@ export const parsePlan = (data: string): UserPrisma => {
 
   return {
     weeks: parsedWeeks,
-    id: 1,
+    id: 1, // todo update this to be userId
     name: "testName"
   }
 }
