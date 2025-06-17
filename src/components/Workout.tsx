@@ -112,8 +112,8 @@ const Workout = ({
             <TableCell align={"center"}>Rest</TableCell>
             {Array.from({length: Math.max(...workout.exercises.map((e) => e.sets.length))}).map((_, idx) => (
               <React.Fragment key={idx}>
-                <TableCell align={"center"}>Reps</TableCell>
                 <TableCell align={"center"}>Weight</TableCell>
+                <TableCell align={"center"}>Reps</TableCell>
               </React.Fragment>
             ))}
           </TableRow>
