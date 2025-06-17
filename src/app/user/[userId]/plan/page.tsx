@@ -1,10 +1,10 @@
 import {getExercisesAndCategories, getUserData} from "@lib/api";
-import {WorkoutContent} from "@/components/WorkoutContent";
+import {PlanTable} from "@/components/PlanTable";
 import {WorkoutEditorProvider} from "@/context/WorkoutEditorContext";
 import React from "react";
 import {notFound} from "next/navigation";
 
-const Plan = async ({params}: { params: Promise<{ userId: string }> }) => {
+const PlanPage = async ({params}: { params: Promise<{ userId: string }> }) => {
   const userData = await getUserData((await params).userId)
   if (!userData) {
     return notFound()
@@ -13,7 +13,7 @@ const Plan = async ({params}: { params: Promise<{ userId: string }> }) => {
 
   return (
     <WorkoutEditorProvider userData={userData}>
-      <WorkoutContent
+      <PlanTable
         lockedInEditMode={false}
         categories={categories}
         allExercises={allExercises}
@@ -22,4 +22,4 @@ const Plan = async ({params}: { params: Promise<{ userId: string }> }) => {
   )
 };
 
-export default Plan;
+export default PlanPage;

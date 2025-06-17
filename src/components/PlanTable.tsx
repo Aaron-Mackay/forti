@@ -1,25 +1,61 @@
-import React from 'react';
-import {getExercisesAndCategories} from '@lib/api';
-import {WorkoutEditorProvider} from '@/context/WorkoutEditorContext';
-import {WorkoutContent} from "@/components/WorkoutContent";
-import {UserPrisma} from "@/types/dataTypes";
+'use client'
 
-interface Props {
-  data: UserPrisma;
-  lockedInEditMode?: boolean;
-}
+import React, { useState } from "react";
+import { useWorkoutEditorContext } from "@/context/WorkoutEditorContext";
+import { saveUserWorkoutData } from "@lib/api";
+import Button from "@mui/material/Button";
+import Week from "@/components/Week";
+import EditModeToggle from "@/components/EditModeToggle";
+import {Exercise} from "@prisma/client";
 
-const PlanTable = async ({ data, lockedInEditMode = false }: Props) => {
-  const {allExercises, categories} = await getExercisesAndCategories()
+export const PlanTable: React.FC<{
+  lockedInEditMode: boolean;
+  categories: string[];
+  allExercises: Exercise[];
+}> = ({ lockedInEditMode = false, categories, allExercises }) => {
+  const [isInEditMode, setIsInEditMode] = useState(lockedInEditMode);
+  const { state, dispatch } = useWorkoutEditorContext();
+
+  const handleSave = () => {
+    saveUserWorkoutData(state)
+      .then(() => {
+        setIsInEditMode(false)
+        alert('Saved successfully')
+      })
+      .catch(() => alert('Failed to save'));
+  };
+
   return (
-    <WorkoutEditorProvider userData={data}>
-        <WorkoutContent
-          lockedInEditMode={lockedInEditMode}
+    <>
+      {!lockedInEditMode && (
+        <EditModeToggle
+          isInEditMode={isInEditMode}
+          setIsInEditMode={setIsInEditMode}
+        />
+      )}
+      {isInEditMode && (
+        <Button onClick={handleSave}>
+          Save
+        </Button>
+      )}
+
+      <h1>User: {state.name}</h1>
+
+      {state.weeks.map((week) => (
+        <Week
+          key={week.id}
+          week={week}
+          isInEditMode={isInEditMode}
           categories={categories}
           allExercises={allExercises}
         />
-    </WorkoutEditorProvider>
+      ))}
+
+      {isInEditMode && (
+        <Button onClick={() => dispatch({ type: 'ADD_WEEK' })}>
+          Add Week
+        </Button>
+      )}
+    </>
   );
 };
-
-export default PlanTable;

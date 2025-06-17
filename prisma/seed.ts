@@ -28,7 +28,7 @@ async function main() {
   const allExercises = await prisma.exercise.findMany();
 
   // Seed users and stateData
-  for (const [index, name] of ['Alice', 'Bob'].entries()) {
+  for (const [_index, name] of ['Aaron', 'Bob'].entries()) {
     const user = await prisma.user.create({
       data: {
         name,

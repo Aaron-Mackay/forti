@@ -6,7 +6,7 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 import {WorkoutEditorProvider} from "@/context/WorkoutEditorContext";
-import {WorkoutContent} from "@/components/WorkoutContent";
+import {PlanTable} from "@/components/PlanTable";
 import {Exercise} from "@prisma/client";
 
 import {UserPrisma} from "@/types/dataTypes";
@@ -48,7 +48,7 @@ export const UploadAndEdit = ({categories, allExercises}: Props) => {
 
       {tableData
         ? <WorkoutEditorProvider userData={tableData}>
-          <WorkoutContent
+          <PlanTable
             lockedInEditMode={true}
             categories={categories}
             allExercises={allExercises}
