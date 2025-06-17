@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider, GlobalStyles } from "@mui/material";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v14-appRouter";
 import theme from "@/lib/theme";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const roboto = Roboto({
   weight: ["300", "400", "500", "700"],
@@ -32,6 +33,7 @@ export default function RootLayout({
               }}
             />
             {children}
+            <SpeedInsights />
           </ThemeProvider>
         </AppRouterCacheProvider>
       </body>
