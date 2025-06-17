@@ -1,6 +1,11 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import 'fake-indexeddb/auto';
 import {addRequest, clearRequests, getAllRequests, openDatabase,} from './clientDb';
+import {SetUpdatePayload} from "@/types/dataTypes";
+
+const mockPayload: SetUpdatePayload = {
+  weight: "100"
+}
 
 describe('clientDb (Vitest)', () => {
   beforeEach(async () => {
@@ -18,7 +23,7 @@ describe('clientDb (Vitest)', () => {
     const handler = vi.fn();
     window.addEventListener('queue-updated', handler);
 
-    await addRequest({url: '/some', method: 'POST', body: {foo: 'bar'}});
+    await addRequest({url: '/some', method: 'POST', body: mockPayload});
     const all = await getAllRequests();
 
     expect(all.length).toBe(1);
@@ -27,8 +32,8 @@ describe('clientDb (Vitest)', () => {
   });
 
   it('retrieves all requests', async () => {
-    await addRequest({url: '/a', method: 'POST', body: {}});
-    await addRequest({url: '/b', method: 'POST', body: {}});
+    await addRequest({url: '/a', method: 'POST', body: mockPayload});
+    await addRequest({url: '/b', method: 'POST', body: mockPayload});
 
     const all = await getAllRequests();
     expect(all.length).toBe(2);
@@ -36,7 +41,7 @@ describe('clientDb (Vitest)', () => {
   });
 
   it('clears all requests and dispatches event', async () => {
-    await addRequest({url: '/to-clear', method: 'POST', body: {}});
+    await addRequest({url: '/to-clear', method: 'POST', body: mockPayload});
 
     const handler = vi.fn();
     window.addEventListener('queue-updated', handler);
