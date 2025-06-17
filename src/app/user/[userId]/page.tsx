@@ -4,11 +4,11 @@ import Button from "@mui/material/Button";
 import Link from "next/link";
 
 interface UserPageProps {
-  params: { userId: string };
+  params: Promise<{ userId: string }>
 }
 
-export default function UserPage({ params }: UserPageProps) {
-  const userId = params.userId;
+export default async function UserPage({ params }: UserPageProps) {
+  const userId = (await params).userId;
 
   // Define the gap in px for precise calculation
   const GAP = 16;
