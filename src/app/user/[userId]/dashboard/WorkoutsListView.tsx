@@ -14,7 +14,7 @@ export default function WorkoutsListView({
   onSelectWorkout: (workoutId: number) => void;
 }) {
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}>
+    <Box sx={{ minHeight: '100dvh', bgcolor: 'background.default', color: 'text.primary' }}>
       <DashboardAppBar title={`Week ${week.order}`} onBack={onBack} showBack />
       <Container maxWidth="sm" sx={{ py: 2 }}>
         <Typography variant="subtitle1" gutterBottom>
