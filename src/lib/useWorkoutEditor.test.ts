@@ -1,6 +1,5 @@
 import {Dir, reducer, WorkoutEditorAction} from './useWorkoutEditor';
-import {UserPrisma} from '@/types/dataTypes';
-import {ExerciseBuilder, SetBuilder, WeekBuilder, WorkoutBuilder} from '@/testUtils/builders';
+import {ExerciseBuilder, SetBuilder, UserBuilder, WeekBuilder, WorkoutBuilder} from '@/testUtils/builders';
 
 // Deterministic UUID generator for testing
 let nextId = 1;
@@ -10,24 +9,15 @@ beforeEach(() => {
   nextId = 1;
 });
 
-function getInitialState(): UserPrisma {
-  return {
-    email: "testEmail",
-    id: 1,
-    name: 'Test User',
-    weeks: []
-  };
-}
-
 describe('reducer', () => {
   it('throws for unknown action', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     // @ts-expect-error - Testing invalid action
     expect(() => reducer(state, {type: 'UNKNOWN'}, mockUuid)).toThrow('Unexpected action');
   });
 
   it('ADD_WEEK adds a new week', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     const action: WorkoutEditorAction = {type: 'ADD_WEEK'};
     const newState = reducer(state, action, mockUuid);
     expect(newState.weeks.length).toBe(1);
@@ -36,7 +26,7 @@ describe('reducer', () => {
   });
 
   it('REMOVE_WEEK removes the specified week', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(42, 1).build()
     );
@@ -46,7 +36,7 @@ describe('reducer', () => {
   });
 
   it('DUPLICATE_WEEK duplicates a week with new IDs', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     // Use builders for mock data
     const week = new WeekBuilder(1001,)
       .addWorkout(
@@ -83,7 +73,7 @@ describe('reducer', () => {
   });
 
   it('ADD_WORKOUT adds a workout to the specified week', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,).build()
     );
@@ -94,7 +84,7 @@ describe('reducer', () => {
   });
 
   it('REMOVE_WORKOUT removes the specified workout', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -109,7 +99,7 @@ describe('reducer', () => {
   });
 
   it('MOVE_WORKOUT swaps workouts up and down', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -129,7 +119,7 @@ describe('reducer', () => {
   });
 
   it('ADD_EXERCISE adds an exercise to a workout', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -144,7 +134,7 @@ describe('reducer', () => {
   });
 
   it('REMOVE_EXERCISE removes the specified exercise', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -163,7 +153,7 @@ describe('reducer', () => {
   });
 
   it('MOVE_EXERCISE swaps exercises up and down', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1, 1)
         .addWorkout(
@@ -188,7 +178,7 @@ describe('reducer', () => {
   });
 
   it('ADD_SET adds a set to an exercise', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -208,7 +198,7 @@ describe('reducer', () => {
   });
 
   it('REMOVE_SET removes the last set from an exercise', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -230,7 +220,7 @@ describe('reducer', () => {
   });
 
   it('UPDATE_WORKOUT_NAME updates the workout name', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -244,7 +234,7 @@ describe('reducer', () => {
   });
 
   it('UPDATE_SET_WEIGHT updates the set weight', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -264,7 +254,7 @@ describe('reducer', () => {
   });
 
   it('UPDATE_SET_REPS updates the set reps', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -284,7 +274,7 @@ describe('reducer', () => {
   });
 
   it('UPDATE_REP_RANGE updates the rep range', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -303,7 +293,7 @@ describe('reducer', () => {
   });
 
   it('UPDATE_REST_TIME updates the rest time', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -322,7 +312,7 @@ describe('reducer', () => {
   });
 
   it('UPDATE_CATEGORY updates the exercise category and resets name', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -348,7 +338,7 @@ describe('reducer', () => {
   });
 
   it('UPDATE_EXERCISE updates the exercise object', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -380,7 +370,7 @@ describe('reducer', () => {
   });
 
   it('MOVE_WORKOUT does not move workout out of bounds', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1, 1)
         .addWorkout(
@@ -393,7 +383,7 @@ describe('reducer', () => {
   });
 
   it('MOVE_EXERCISE does not move exercise out of bounds', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1, 1)
         .addWorkout(
@@ -411,7 +401,7 @@ describe('reducer', () => {
   });
 
   it('REMOVE_WEEK non-existent week is a no op', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     // No weeks added, so weekId: 999 does not exist
     const prevState = JSON.parse(JSON.stringify(state));
     const newState = reducer(state, {type: 'REMOVE_WEEK', weekId: 999}, mockUuid);
@@ -419,7 +409,7 @@ describe('reducer', () => {
   });
 
   it('REMOVE_WORKOUT non-existent workout is a no op', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,).build()
     );
@@ -429,7 +419,7 @@ describe('reducer', () => {
   });
 
   it('REMOVE_EXERCISE non-existent exercise is a no op', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -443,7 +433,7 @@ describe('reducer', () => {
   });
 
   it('UPDATE_SET_WEIGHT on non-existent set is a no-op', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -464,7 +454,7 @@ describe('reducer', () => {
   });
 
   it('UPDATE_SET_REPS on non-existent set is a no-op', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -485,7 +475,7 @@ describe('reducer', () => {
   });
 
   it('UPDATE_REP_RANGE on non-existent exercise is a no-op', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
@@ -505,7 +495,7 @@ describe('reducer', () => {
   });
 
   it('UPDATE_REST_TIME on non-existent exercise is a no-op', () => {
-    const state = getInitialState();
+    const state = new UserBuilder(1).build();
     state.weeks.push(
       new WeekBuilder(1,)
         .addWorkout(
