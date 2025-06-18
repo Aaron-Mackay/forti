@@ -29,6 +29,6 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ setId: 
       message = String((err as { message: unknown }).message);
     }
 
-    return new Response(JSON.stringify({ error: message }), { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
