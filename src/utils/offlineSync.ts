@@ -10,7 +10,7 @@ interface OfflineRequest {
 
 const MAX_RETRIES = 3;
 
-async function retryFetch(req: OfflineRequest, retries = MAX_RETRIES): Promise<void> {
+export async function retryFetch(req: OfflineRequest, retries = MAX_RETRIES): Promise<void> {
   for (let i = 0; i < retries; i++) {
     try {
       await fetch(req.url, {
