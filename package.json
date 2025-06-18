@@ -48,7 +48,7 @@
     "eslint-config-next": "^15.3.3",
     "fake-indexeddb": "^6.0.1",
     "jsdom": "^26.1.0",
-    "prisma": "^6.8.2",
+    "prisma": "^6.10.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "vite-tsconfig-paths": "^5.1.4",
