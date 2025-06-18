@@ -26,6 +26,7 @@ export class ExerciseBuilder {
       repRange: '',
       restTime: '',
       order,
+      notes: null,
       exercise: {
         id: -1,
         name: 'Bench Press',
