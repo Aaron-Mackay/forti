@@ -10,57 +10,96 @@ datasource db {
 }
 
 model User {
-  id    Int    @id @default(autoincrement())
-  email String @unique
-  name  String
-  weeks Week[]
+  id               Int                @id @default(autoincrement())
+  email            String             @unique
+  name             String
+  weeks            Week[]
+  events           Event[]
+  UserExerciseNote UserExerciseNote[]
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      Int
+  name        String
+  description String?
+  startDate   DateTime @db.Date // only the date part matters
+  endDate     DateTime @db.Date // inclusive
+  color       String?
+
+  @@index([userId])
+  @@index([startDate, endDate])
 }
 
 model Week {
   id       Int       @id @default(autoincrement())
   order    Int
-  user     User      @relation(fields: [userId], references: [id])
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId   Int
   workouts Workout[]
+
+  @@unique([userId, order])
 }
 
 model Workout {
   id        Int               @id @default(autoincrement())
   order     Int
-  week      Week              @relation(fields: [weekId], references: [id])
+  week      Week              @relation(fields: [weekId], references: [id], onDelete: Cascade)
   weekId    Int
   name      String
   notes     String?
   exercises WorkoutExercise[]
+
+  @@unique([weekId, order])
 }
 
 model Exercise {
-  id           Int               @id @default(autoincrement())
-  name         String
-  category     String?
-  description  String?
-  workoutLinks WorkoutExercise[]
+  id               Int                @id @default(autoincrement())
+  name             String
+  category         String?
+  description      String?
+  workoutLinks     WorkoutExercise[]
+  UserExerciseNote UserExerciseNote[]
 
   @@unique([name, category], name: "name_category")
 }
 
 model WorkoutExercise {
   id         Int           @id @default(autoincrement())
-  workout    Workout       @relation(fields: [workoutId], references: [id])
+  workout    Workout       @relation(fields: [workoutId], references: [id], onDelete: Cascade)
   workoutId  Int
   exercise   Exercise      @relation(fields: [exerciseId], references: [id])
   exerciseId Int
   order      Int
   restTime   String?
   repRange   String?
+  notes      String?
   sets       ExerciseSet[]
+
+  @@unique([workoutId, order])
 }
 
 model ExerciseSet {
   id                Int             @id @default(autoincrement())
   order             Int
-  workoutExercise   WorkoutExercise @relation(fields: [workoutExerciseId], references: [id])
+  workoutExercise   WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
   workoutExerciseId Int
   reps              Int?
   weight            String?
+
+  @@unique([workoutExerciseId, order])
+}
+
+model UserExerciseNote {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     Int
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  exerciseId Int
+  note       String
+
+  @@unique([userId, exerciseId])
+  @@index([userId])
+  @@index([exerciseId])
 }

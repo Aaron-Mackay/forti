@@ -1,36 +1,53 @@
-# 🏋️ Workout Backend
+# Forti - WorkoutApp
 
-A scalable backend for a fitness tracking app where users manage weekly workouts, exercises, and sets. Built with **Prisma** and **PostgreSQL**, designed for future flexibility (e.g., exercise switching, progress tracking, analytics).
-
----
-
-## 🚀 Features
-
-- Relational schema:
-    - Users ➝ Weeks ➝ Workouts ➝ Exercises ➝ Sets
-- Support for reordering exercises and sets
-- Built with [Prisma ORM](https://www.prisma.io/)
-- Local PostgreSQL development support (via Docker or native)
-- Easily extendable to REST, GraphQL, or serverless APIs
+A fitness tracking app where users manage weekly workouts, exercises, and sets.
 
 ---
 
-## 🛠 Tech Stack
+## Features
+
+- TODO
+
+---
+
+## Tech Stack
 
 - **Node.js**
 - **Prisma**
 - **PostgreSQL**
-- **TypeScript** (if applicable)
-- **Docker** (optional for local Postgres)
+- **Neon**
+- **TypeScript**
 
 ---
 
-## 🧱 Database Schema
+## 🛠 Dev Notes
+
+To reset the database (full data loss):
+
+```bash
+npx prisma db push --force-reset
+prisma generate
+```
+
+---
+
+## Database Schema - Mermaid ER Diagram (requires plugin)
 
 ```mermaid
 erDiagram
-  User ||--o{ Week : has
-  Week ||--o{ Workout : has
-  Workout ||--o{ WorkoutExercise : has
-  WorkoutExercise }o--|| Exercise : targets
-  WorkoutExercise ||--o{ ExerciseSet : contains
+    USER ||--o{ WEEK : has
+    USER ||--o{ EVENT : has
+    USER ||--o{ USEREXERCISENOTE : has
+
+    WEEK ||--o{ WORKOUT : has
+
+    WORKOUT ||--o{ WORKOUTEXERCISE : has
+
+    WORKOUTEXERCISE ||--o{ EXERCISESET : has
+    WORKOUTEXERCISE }o--|| EXERCISE : uses
+
+    EXERCISE ||--o{ USEREXERCISENOTE : has
+
+    EVENT }o--|| USER : belongs_to
+
+    USEREXERCISENOTE }o--|| EXERCISE : about

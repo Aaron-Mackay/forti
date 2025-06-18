@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma';
+import prisma from '../src/lib/prisma';
 
 function getRandomBetween(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -7,7 +7,7 @@ function getRandomBetween(min: number, max: number): number {
 async function main() {
   // Clear existing stateData
   await prisma.$executeRawUnsafe(`
-  TRUNCATE "ExerciseSet", "WorkoutExercise", "Exercise", "Workout", "Week", "User"
+  TRUNCATE "ExerciseSet", "WorkoutExercise", "Exercise", "Workout", "Week", "User", "Event", "UserExerciseNote"
   RESTART IDENTITY CASCADE
 `);
 
@@ -36,21 +36,53 @@ async function main() {
       },
     });
 
-    for (let w = 0; w < 2; w++) {
+    await prisma.userExerciseNote.createMany({
+      data: [
+        {userId: user.id, exerciseId: allExercises[0].id, note: 'Warm up properly to protect elbow'},
+        {userId: user.id, exerciseId: allExercises[1].id, note: 'Squat properly'},
+        {userId: user.id, exerciseId: allExercises[3].id, note: 'Wrench and twist'},
+        {userId: user.id, exerciseId: allExercises[4].id, note: 'Dont fall over'},
+      ],
+    });
+
+    await prisma.event.createMany({
+      data: [
+        {
+          userId: user.id,
+          name: 'Training Week 1',
+          description: 'Start of the program',
+          startDate: new Date('2025-01-01'),
+          endDate: new Date('2025-01-07'),
+          color: 'green',
+        },
+        {
+          userId: user.id,
+          name: 'Holiday',
+          description: 'Recovery week',
+          startDate: new Date('2025-01-15'),
+          endDate: new Date('2025-01-20'),
+          color: 'yellow',
+        },
+      ],
+    })
+
+    for (let weekIdx = 0; weekIdx < 2; weekIdx++) {
+
+
       const week = await prisma.week.create({
         data: {
           userId: user.id,
-          order: w + 1
+          order: weekIdx + 1
         },
       });
 
-      for (let j = 0; j < 2; j++) {
+      for (let woIdx = 0; woIdx < 2; woIdx++) {
         const workout = await prisma.workout.create({
           data: {
             weekId: week.id,
-            name: `Workout name ${j + 1}`,
-            notes: j % 2 === 0 ? 'Felt strong today 💪' : null,
-            order: j + 1
+            name: `Workout name ${woIdx + 1}`,
+            notes: woIdx % 2 === 0 ? 'Felt strong today 💪' : null,
+            order: woIdx + 1
           },
         });
 
@@ -86,7 +118,7 @@ async function main() {
     }
   }
 
-  console.log('✅ Seeded database with users, weeks, workouts, and sets');
+  console.log('✅ Seeded database with exercises, users, events, notes, weeks, workouts, sets');
 }
 
 main()
