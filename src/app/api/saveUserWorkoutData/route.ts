@@ -1,13 +1,14 @@
 
 import prisma from '@/lib/prisma';
 import {WorkoutPrisma} from "@/types/dataTypes";
+import {NextResponse} from "next/server";
 
 export async function POST(req: Request) {
   const userData = await req.json();
 
   const userId = userData.id;
   if (!userId) {
-    return new Response("Missing userId", {status: 400});
+    return NextResponse.json({ error: "Missing userId" }, { status: 400 });
   }
 
 
@@ -94,7 +95,7 @@ export async function POST(req: Request) {
       }
     });
 
-    return new Response(JSON.stringify({success: true}), {status: 200});
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (err: unknown) {
     console.error("Save error:", err);
 
@@ -103,6 +104,6 @@ export async function POST(req: Request) {
       message = String((err as { message: unknown }).message);
     }
 
-    return new Response(JSON.stringify({ error: message }), { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
