@@ -2,6 +2,7 @@
 
 import {useEffect, useState} from 'react';
 import {getQueuedRequests} from "@/utils/offlineSync";
+import {Box, Typography} from "@mui/material";
 
 export default function NetworkStatusBanner() {
   const [isOnline, setIsOnline] = useState(true);
@@ -44,12 +45,18 @@ export default function NetworkStatusBanner() {
   }, []);
 
   return (
-    <div className={`text-center py-1 text-white text-sm ${isOnline ? 'bg-success-subtle' : 'bg-danger-subtle'}`}>
-      {isOnline
-        ? 'You are online'
-        : queuedRequestsCount > 0
+    !isOnline &&
+    <Box style={{
+      backgroundColor: 'indianred',
+      color: 'white',
+      textAlign: 'center',
+    }}>
+      <Typography variant={"caption"}>
+        {(queuedRequestsCount > 0
           ? `You are offline — ${queuedRequestsCount} request(s) queued for sync.`
-          : 'You are offline – requests will be queued'}
-    </div>
+          : 'You are offline – requests will be queued')
+        }
+      </Typography>
+    </Box>
   );
 }
