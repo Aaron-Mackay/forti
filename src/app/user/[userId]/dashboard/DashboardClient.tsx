@@ -2,13 +2,13 @@
 
 import React, {useEffect, useState} from 'react';
 import {queueOrSendRequest, syncQueuedRequests} from '@/utils/offlineSync';
-import {updateUserSets} from '@/utils/updateUserSets';
 import {SetUpdatePayload, UserPrisma} from '@/types/dataTypes';
 
 import WeeksListView from './WeeksListView';
 import WorkoutsListView from './WorkoutsListView';
 import ExercisesListView from './ExercisesListView';
 import ExerciseDetailView from './ExerciseDetailView';
+import {updateUserSets} from "@/utils/userPlanMutators";
 
 type SnackbarState = {
   open: boolean;

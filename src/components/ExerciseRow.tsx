@@ -112,6 +112,8 @@ const ExerciseRow = ({
           onChange={(val) =>
             dispatch({
               type: 'UPDATE_REP_RANGE',
+              weekId,
+              workoutId,
               workoutExerciseId: exerciseLink.id,
               repRange: val,
             })
@@ -127,6 +129,8 @@ const ExerciseRow = ({
           onChange={(val) =>
             dispatch({
               type: 'UPDATE_REST_TIME',
+              weekId,
+              workoutId,
               workoutExerciseId: exerciseLink.id,
               restTime: val,
             })
@@ -145,7 +149,9 @@ const ExerciseRow = ({
                 onChange={(val) =>
                   dispatch({
                     type: 'UPDATE_SET_WEIGHT',
-                    workoutExerciseId: exerciseLink.id,
+                    exerciseId: exerciseLink.id,
+                    workoutId,
+                    weekId,
                     setId: set.id,
                     weight: val,
                   })
@@ -160,7 +166,9 @@ const ExerciseRow = ({
                 onChange={(val) =>
                   dispatch({
                     type: 'UPDATE_SET_REPS',
-                    workoutExerciseId: exerciseLink.id,
+                    exerciseId: exerciseLink.id,
+                    workoutId,
+                    weekId,
                     setId: set.id,
                     reps: parseInt(val, 10),
                   })
