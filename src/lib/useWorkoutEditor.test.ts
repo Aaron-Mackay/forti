@@ -1,5 +1,8 @@
 import {Dir, reducer, WorkoutEditorAction} from './useWorkoutEditor';
 import {ExerciseBuilder, SetBuilder, UserBuilder, WeekBuilder, WorkoutBuilder} from '@/testUtils/builders';
+import {describe, expect, it} from "vitest";
+import {SetPrisma, UserPrisma} from "@/types/dataTypes";
+import {updateUserSets} from "@/utils/userPlanMutators";
 
 // Deterministic UUID generator for testing
 let nextId = 1;
@@ -248,7 +251,14 @@ describe('reducer', () => {
         )
         .build()
     );
-    const action: WorkoutEditorAction = {type: 'UPDATE_SET_WEIGHT', workoutExerciseId: 3, setId: 10, weight: '200'};
+    const action: WorkoutEditorAction = {
+      type: 'UPDATE_SET_WEIGHT',
+      exerciseId: 3,
+      weekId: 1,
+      workoutId: 2,
+      setId: 10,
+      weight: '200'
+    };
     const newState = reducer(state, action, mockUuid);
     expect(newState.weeks[0].workouts[0].exercises[0].sets[0].weight).toBe('200');
   });
@@ -268,7 +278,14 @@ describe('reducer', () => {
         )
         .build()
     );
-    const action: WorkoutEditorAction = {type: 'UPDATE_SET_REPS', workoutExerciseId: 3, setId: 10, reps: 12};
+    const action: WorkoutEditorAction = {
+      type: 'UPDATE_SET_REPS',
+      exerciseId: 3,
+      setId: 10,
+      weekId: 1,
+      workoutId: 2,
+      reps: 12
+    };
     const newState = reducer(state, action, mockUuid);
     expect(newState.weeks[0].workouts[0].exercises[0].sets[0].reps).toBe(12);
   });
@@ -287,7 +304,7 @@ describe('reducer', () => {
         )
         .build()
     );
-    const action: WorkoutEditorAction = {type: 'UPDATE_REP_RANGE', workoutExerciseId: 3, repRange: '10-12'};
+    const action: WorkoutEditorAction = {type: 'UPDATE_REP_RANGE', weekId: 1, workoutId: 2,workoutExerciseId: 3, repRange: '10-12'};
     const newState = reducer(state, action, mockUuid);
     expect(newState.weeks[0].workouts[0].exercises[0].repRange).toBe('10-12');
   });
@@ -306,7 +323,7 @@ describe('reducer', () => {
         )
         .build()
     );
-    const action: WorkoutEditorAction = {type: 'UPDATE_REST_TIME', workoutExerciseId: 3, restTime: '90'};
+    const action: WorkoutEditorAction = {type: 'UPDATE_REST_TIME', weekId: 1, workoutId: 2,workoutExerciseId: 3, restTime: '90'};
     const newState = reducer(state, action, mockUuid);
     expect(newState.weeks[0].workouts[0].exercises[0].restTime).toBe('90');
   });
@@ -448,7 +465,13 @@ describe('reducer', () => {
         .build()
     );
     const prevState = JSON.parse(JSON.stringify(state));
-    const action: WorkoutEditorAction = {type: 'UPDATE_SET_WEIGHT', workoutExerciseId: 3, setId: 999, weight: '200'};
+    const action: WorkoutEditorAction = {
+      type: 'UPDATE_SET_WEIGHT',
+      exerciseId: 3,
+      weekId: 1,
+      workoutId: 2,
+      setId: 999,
+      weight: '200'};
     const newState = reducer(state, action, mockUuid);
     expect(newState).toEqual(prevState);
   });
@@ -469,7 +492,13 @@ describe('reducer', () => {
         .build()
     );
     const prevState = JSON.parse(JSON.stringify(state));
-    const action: WorkoutEditorAction = {type: 'UPDATE_SET_REPS', workoutExerciseId: 3, setId: 999, reps: 12};
+    const action: WorkoutEditorAction = {
+      type: 'UPDATE_SET_REPS',
+      exerciseId: 3,
+      weekId: 1,
+      workoutId: 2,
+      setId: 999,
+      reps: 12};
     const newState = reducer(state, action, mockUuid);
     expect(newState).toEqual(prevState);
   });
@@ -489,7 +518,7 @@ describe('reducer', () => {
         .build()
     );
     const prevState = JSON.parse(JSON.stringify(state));
-    const action: WorkoutEditorAction = {type: 'UPDATE_REP_RANGE', workoutExerciseId: 999, repRange: '10-12'};
+    const action: WorkoutEditorAction = {type: 'UPDATE_REP_RANGE', weekId: 1, workoutId: 2,workoutExerciseId: 999, repRange: '10-12'};
     const newState = reducer(state, action, mockUuid);
     expect(newState).toEqual(prevState);
   });
@@ -509,8 +538,173 @@ describe('reducer', () => {
         .build()
     );
     const prevState = JSON.parse(JSON.stringify(state));
-    const action: WorkoutEditorAction = {type: 'UPDATE_REST_TIME', workoutExerciseId: 999, restTime: '90'};
+    const action: WorkoutEditorAction = {type: 'UPDATE_REST_TIME', weekId: 1, workoutId: 2,workoutExerciseId: 999, restTime: '90'};
     const newState = reducer(state, action, mockUuid);
     expect(newState).toEqual(prevState);
+  });
+
+  it('REMOVES_WORKOUT, on item in the middle, and updates order properties', () => {
+    const state = new UserBuilder(1)
+      .addWeek(
+        new WeekBuilder(10, 1)
+          .addWorkout(new WorkoutBuilder(100, 1).build())
+          .addWorkout(new WorkoutBuilder(101, 2).build())
+          .addWorkout(new WorkoutBuilder(102, 3).build())
+          .build()
+      )
+      .build();
+
+    const action: WorkoutEditorAction = {type: 'REMOVE_WORKOUT', weekId: 10, workoutId: 101};
+    const newState = reducer(state, action, mockUuid);
+
+    expect(newState.weeks[0].workouts).toHaveLength(2);
+    expect(newState.weeks[0].workouts[0].order).toBe(1);
+    expect(newState.weeks[0].workouts[1].order).toBe(2);
+    expect(newState.weeks[0].workouts[0].id).toBe(100);
+    expect(newState.weeks[0].workouts[1].id).toBe(102);
+  });
+
+  it('REMOVES_WEEK, on item in the middle, updates order properties', () => {
+    const state = new UserBuilder(1)
+      .addWeek(new WeekBuilder(10, 1).build())
+      .addWeek(new WeekBuilder(11, 2).build())
+      .addWeek(new WeekBuilder(12, 3).build())
+      .build();
+
+    const action: WorkoutEditorAction = {type: 'REMOVE_WEEK', weekId: 11};
+    const newState = reducer(state, action, mockUuid);
+
+    expect(newState.weeks).toHaveLength(2);
+    expect(newState.weeks[0].order).toBe(1);
+    expect(newState.weeks[1].order).toBe(2);
+    expect(newState.weeks[0].id).toBe(10);
+    expect(newState.weeks[1].id).toBe(12);
+  });
+
+  it('REMOVE_EXERCISE, on item in the middle, updates order properties', () => {
+    const state = new UserBuilder(1)
+      .addWeek(
+        new WeekBuilder(10, 1)
+          .addWorkout(
+            new WorkoutBuilder(100, 1)
+              .addExercise(new ExerciseBuilder(200, 1).build())
+              .addExercise(new ExerciseBuilder(201, 2).build())
+              .addExercise(new ExerciseBuilder(202, 3).build())
+              .build()
+          )
+          .build()
+      )
+      .build();
+
+    const action: WorkoutEditorAction = {type: 'REMOVE_EXERCISE', weekId: 10, workoutId: 100, exerciseId: 201};
+    const newState = reducer(state, action, mockUuid);
+
+    const exercises = newState.weeks[0].workouts[0].exercises;
+    expect(exercises).toHaveLength(2);
+    expect(exercises[0].order).toBe(1);
+    expect(exercises[1].order).toBe(2);
+    expect(exercises[0].id).toBe(200);
+    expect(exercises[1].id).toBe(202);
+  });
+});
+
+function buildUser(): UserPrisma {
+  const week1 = new WeekBuilder(101, 1)
+    .addWorkout(new WorkoutBuilder(201, 1)
+      .addExercise(new ExerciseBuilder(301, 1)
+        .addSet(new SetBuilder(401, 1).build())
+        .addSet(new SetBuilder(402, 2).build())
+        .build())
+      .addExercise(new ExerciseBuilder(302, 2)
+        .addSet(new SetBuilder(403, 1).build())
+        .build())
+      .build())
+    .build();
+
+
+  const week2 = new WeekBuilder(102, 2)
+    .addWorkout(new WorkoutBuilder(202, 1)
+      .addExercise(new ExerciseBuilder(303, 1)
+        .addSet(new SetBuilder(404, 1)
+          .build()).build()).build()).build();
+
+
+  return new UserBuilder(1).addWeek(week1).addWeek(week2).build()
+}
+
+describe("updateUserSets", () => {
+  it("updates the sets for the correct exercise", () => {
+    const user = buildUser();
+
+    const newSets: SetPrisma[] = [
+      new SetBuilder(405, 1).build(),
+      new SetBuilder(406, 2).build(),
+    ];
+
+    const updatedUser = updateUserSets(
+      user,
+      101, // weekId
+      201, // workoutId
+      301, // exerciseId
+      newSets
+    );
+
+    // Check that the sets for exercise 301 are updated
+    const updatedSets =
+      updatedUser.weeks[0].workouts[0].exercises[0].sets;
+    expect(updatedSets).toEqual(newSets);
+
+    // Other exercises remain unchanged
+    expect(
+      updatedUser.weeks[0].workouts[0].exercises[1].sets
+    ).toEqual(user.weeks[0].workouts[0].exercises[1].sets);
+
+    // Other weeks remain unchanged
+    expect(updatedUser.weeks[1]).toEqual(user.weeks[1]);
+  });
+
+  it("does not modify user if weekId does not match", () => {
+    const user = buildUser();
+    const newSets: SetPrisma[] = [new SetBuilder(407, 1).build()];
+
+    const updatedUser = updateUserSets(
+      user,
+      999, // non-existent weekId
+      201,
+      301,
+      newSets
+    );
+
+    expect(updatedUser).toEqual(user);
+  });
+
+  it("does not modify user if workoutId does not match", () => {
+    const user = buildUser();
+    const newSets: SetPrisma[] = [new SetBuilder(408, 1).build()];
+
+    const updatedUser = updateUserSets(
+      user,
+      101,
+      999, // non-existent workoutId
+      301,
+      newSets
+    );
+
+    expect(updatedUser).toEqual(user);
+  });
+
+  it("does not modify user if exerciseId does not match", () => {
+    const user = buildUser();
+    const newSets: SetPrisma[] = [new SetBuilder(409, 1).build()];
+
+    const updatedUser = updateUserSets(
+      user,
+      101,
+      201,
+      999, // non-existent exerciseId
+      newSets
+    );
+
+    expect(updatedUser).toEqual(user);
   });
 });
