@@ -47,6 +47,12 @@ export async function getUserData(userId: string): Promise<UserPrisma | null> {
   });
 }
 
+export async function getUserEvents(userId: string) {
+  return prisma.event.findMany({
+    where: {userId: Number(userId)},
+  })
+}
+
 export async function saveUserWorkoutData(userData: UserPrisma) {
   // todo validation (zod?)
   return fetchJson('/api/saveUserWorkoutData', {

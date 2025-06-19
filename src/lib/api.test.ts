@@ -2,13 +2,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as api from './api';
 import prisma from '@/lib/prisma';
 import * as fetchWrapper from './fetchWrapper';
-import {UserPrisma} from "@/types/dataTypes";
+import {EventPrisma, UserPrisma} from "@/types/dataTypes";
 
 vi.mock('@/lib/prisma', () => ({
   default: {
     user: { findMany: vi.fn(), findUnique: vi.fn() },
     exercise: { findMany: vi.fn() },
     workoutExercise: { findUnique: vi.fn() },
+    event: { findMany: vi.fn() }
   },
 }));
 
@@ -56,6 +57,16 @@ describe('API functions', () => {
 
       expect(allExercises).toEqual(mockExercises);
       expect(categories).toEqual(['Legs', 'Chest', 'Back']);
+    });
+  });
+
+  describe('getUserEvents', () => {
+    it('returns all events a user has', async () => {
+      const mockEvents: Partial<EventPrisma>[] = [{ id: 1, }, { id: 2, }];
+      (prisma.event.findMany as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockEvents);
+
+      const result = await api.getUserEvents('1');
+      expect(result).toEqual(mockEvents);
     });
   });
 
