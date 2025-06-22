@@ -1,0 +1,27 @@
+.fc-event {
+    min-height: 12px;
+    font-size: 10px;
+}
+
+.fc .fc-daygrid-day-number {
+    font-size: 0.8rem;
+    padding: 4px 1px 2px 1px
+}
+
+.fc-multimonth-daygrid-table tr {
+    height: 70px !important;
+}
+
+.fc {
+    padding: 10px;
+}
+
+.fc .fc-button-primary {
+    background-color: #1976d2;
+    border: 0
+}
+
+.fc .fc-toolbar.fc-header-toolbar {
+    margin-bottom: 10px
+}
+

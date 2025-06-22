@@ -13,7 +13,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import DashboardAppBar from './DashboardAppBar';
+import CustomAppBar from './CustomAppBar';
 import {Swiper, SwiperSlide} from 'swiper/react';
 import {Pagination} from 'swiper/modules';
 import {Swiper as SwiperType} from 'swiper/types';
@@ -61,7 +61,7 @@ export default function ExerciseDetailView({
       flexDirection: 'column',
       height: "100dvh"
     }}>
-      <DashboardAppBar title="Exercises" onBack={onBack} showBack/>
+      <CustomAppBar title="Exercises" onBack={onBack} showBack/>
       <Container
         maxWidth="sm"
         sx={{

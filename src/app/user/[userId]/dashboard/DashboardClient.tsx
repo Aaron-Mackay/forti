@@ -52,14 +52,6 @@ export default function DashboardClient({userData}: { userData: UserPrisma }) {
     setStopwatch({time: 0, isRunning: false, startTimestamp: null, pausedTime: 0});
   };
 
-  // Remove body margin
-  useEffect(() => {
-    document.body.classList.add('no-body-margin');
-    return () => {
-      document.body.classList.remove('no-body-margin');
-    };
-  }, []);
-
   // Sync queued requests when coming online
   useEffect(() => {
     const sync = () => syncQueuedRequests();
