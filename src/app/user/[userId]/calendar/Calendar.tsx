@@ -1,115 +1,207 @@
 'use client'
 
-import React, {useEffect, useRef, useState} from 'react';
-import {Box} from '@mui/material';
-import {format, getWeek, getYear, startOfWeek} from 'date-fns';
 import {EventPrisma} from "@/types/dataTypes";
-import {generateWeeks, getMonthLabels} from './calendarUtils';
-import MonthHeader from './MonthHeader';
-import WeekRow from './WeekRow';
-import {Loading} from "@/app/user/[userId]/calendar/Loading";
+import FullCalendar from "@fullcalendar/react";
+import multiMonthPlugin from "@fullcalendar/multimonth";
+import interactionPlugin, {DateClickArg} from "@fullcalendar/interaction";
+import React, {RefObject, useMemo, useRef, useState} from "react";
+import './calendar.css'
+import {EventApi, EventClickArg} from "@fullcalendar/core";
+import {Box, Button, Fab, List, ListItemButton, SwipeableDrawer, TextField, Typography} from "@mui/material";
+import AddIcon from '@mui/icons-material/Add';
+import CustomAppBar from "@/app/user/[userId]/dashboard/CustomAppBar";
+import {sub} from "date-fns";
 
 type Props = {
   events: EventPrisma[];
 };
 
-const rowHeight = 60;
-const monthHeaderHeight = 32;
-
 export default function Calendar({events}: Props) {
-  console.log(events)
-  const [isScrolledToCurrentWeek, setIsScrolledToCurrentWeek] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null);
-  const today = new Date();
-  const currentWeek = getWeek(today, {weekStartsOn: 1}); // ISO week number
-  const startDate = startOfWeek(new Date(getYear(today), 0, 4), {weekStartsOn: 1}); // Start of ISO week 1
+  const calendarRef = useRef<FullCalendar | null>(null);
 
-  const weeks = generateWeeks(startDate, 52);
-  const monthLabels = getMonthLabels(weeks);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [drawerView, setDrawerView] = useState<'list' | 'details' | 'form'>('list');
+  const [selectedEvent, setSelectedEvent] = useState<EventApi | null>(null);
 
-  // State to track the current month label
-  const [currentMonth, setCurrentMonth] = useState(format(weeks[currentWeek - 1][0], 'MMMM yyyy'));
-
-  // scrolls to current week
-  useEffect(() => {
-    const container = containerRef.current;
-    if (container) {
-      const totalHeight = weeks.length * rowHeight + monthHeaderHeight * Object.keys(monthLabels).length;
-      const heightFromPastMonthHeaders = Object.values(monthLabels).filter(idx => idx < currentWeek).length * monthHeaderHeight;
-      const desiredScrollTop = (currentWeek) * (rowHeight) + heightFromPastMonthHeaders - container.clientHeight / 2 + rowHeight / 2;
-      const maxScrollTop = Math.max(0, totalHeight - container.clientHeight);
-      container.scrollTop = Math.max(0, Math.min(desiredScrollTop, maxScrollTop));
-      setIsScrolledToCurrentWeek(true)
-    }
-  }, []);
-
-  // Update currentMonth as user scrolls
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    // Precompute offsets for each week
-    const weekOffsets = weeks.map((_, i) => {
-      // Count how many month headers appear before this week
-      const monthHeadersBefore = Object.values(monthLabels).filter(idx => idx < i).length;
-      return i * rowHeight + monthHeadersBefore * monthHeaderHeight;
+  const eventsOnSelectedDate = useMemo(() => {
+    if (!selectedDate || !calendarRef.current) return [];
+    return calendarRef.current.getApi().getEvents().filter(event => {
+      const start = event.start;
+      const end = event.end ?? start;
+      return start && end && start <= selectedDate && selectedDate < end;
     });
+  }, [selectedDate]);
 
-    const handleScroll = () => {
-      const scrollTop = container.scrollTop;
-      // Find the last week whose offset is <= scrollTop
-      let weekIndex = 0;
-      for (let i = 0; i < weekOffsets.length; i++) {
-        if (weekOffsets[i] <= scrollTop) {
-          weekIndex = i;
-        } else {
-          break;
-        }
+  const handleDateClick = (dateInfo: DateClickArg, calendarRef: RefObject<FullCalendar | null>) => {
+    const events = getEventsOnDate(dateInfo, calendarRef);
+
+    setSelectedDate(dateInfo.date);
+    setSelectedEvent(events.length === 1 ? events[0] : null);
+    setDrawerView('list');
+    setDrawerOpen(true);
+  }
+
+  const handleEventClick = (eventInfo: EventClickArg) => {
+    setSelectedEvent(eventInfo.event);
+    setDrawerView('details');
+    setDrawerOpen(true);
+  }
+
+  const handleFabCreateClick = () => {
+    setDrawerView('form');
+    setDrawerOpen(true);
+  }
+
+  const handleTodayButtonClick = () => {
+    if (!calendarRef.current) return
+    calendarRef.current.getApi().gotoDate(new Date());
+    setTimeout(() => {
+      const todayCell = document.querySelector('.fc-day-today');
+      if (todayCell) {
+        todayCell.scrollIntoView({behavior: 'smooth', block: 'center'});
       }
-      const week = weeks[weekIndex] || weeks[0];
-      setCurrentMonth(format(week[0], 'MMMM yyyy'));
-    };
-
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [weeks, monthLabels]);
+    }, 0);
+  };
 
   return (
-    <Box
-      sx={{
-        height: '98dvh',
-        width: '98dvw',
-        overflowY: 'auto',
-        backgroundColor: '#f4f4f4',
-        position: 'fixed',
-        top: "1dvh",
-        left: "1dvw",
-        zIndex: 1,
-      }}
-      ref={containerRef}
-      data-testid="calendar-container"
-    >
-      {!isScrolledToCurrentWeek && (
-        <Loading/>
-      )}
-      <Box visibility={!isScrolledToCurrentWeek ? 'hidden' : 'visible'}>
-        {/* Single sticky header for the current month */}
-        <MonthHeader month={currentMonth} height={monthHeaderHeight} sticky showDaysOfWeek/>
+    <>
+      <CustomAppBar title={"Calendar"} showBack/>
+      <FullCalendar
+        ref={calendarRef}
+        plugins={[multiMonthPlugin, interactionPlugin]}
+        initialView="multiMonthYear"
+        multiMonthMaxColumns={1}
+        height={"calc(100vh - 56px)"}
+        editable={true}
+        selectable={true}
+        selectLongPressDelay={400}
+        dateClick={(dateInfo) => handleDateClick(dateInfo, calendarRef)}
+        select={({start, end}) => createEvent(start, end)}
+        eventClick={handleEventClick}
+        events={parsedEvents([...events, ...events, ...events])}
+        headerToolbar={{
+          left: 'title',
+          center: '',
+          right: 'myTodayButton prev,next'
+        }}
+        customButtons={{
+          myTodayButton: {
+            text: 'Today',
+            click: handleTodayButtonClick
+          }
+        }}
+      />
+      <Fab color="primary" aria-label="add" onClick={handleFabCreateClick}
+           sx={{position: "absolute", bottom: 25, right: 25}}>
+        <AddIcon/>
+      </Fab>
 
-        {weeks.map((week, i) => {
-          // Determine if this week is the first week of a new month
-          const month = format(week[0], 'MMMM yyyy');
-          const isFirstOfMonth = monthLabels[month] === i;
+      <SwipeableDrawer
+        anchor="bottom"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        onOpen={() => {
+        }}
+        PaperProps={{
+          sx: {
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+            maxHeight: '75vh'
+          }
+        }}
+      >
+        <Box p={2}>
+          <Box sx={{width: 40, height: 4, bgcolor: 'grey.400', borderRadius: 2, mx: 'auto', my: 1}}/>
+          <Typography variant="h6" gutterBottom>
+            {selectedDate?.toDateString()}
+          </Typography>
 
-          return (
-            <React.Fragment key={i}>
-              {isFirstOfMonth && <MonthHeader height={monthHeaderHeight} month={month}/>}
-              <WeekRow week={week} isCurrentWeek={i + 1 === currentWeek} rowHeight={rowHeight}/>
-            </React.Fragment>
-          );
-        })
-        }
-      </Box>
-    </Box>
+          {drawerView === 'list' && (
+            <>
+              <List>
+                {eventsOnSelectedDate.map((event) => (
+                  <ListItemButton
+                    key={event.id}
+                    onClick={() => {
+                      setSelectedEvent(event);
+                      setDrawerView('details');
+                    }}
+                  >
+                    {event.title}
+                  </ListItemButton>
+                ))}
+              </List>
+              <Button fullWidth variant="contained" onClick={() => setDrawerView('form')}>
+                + Add Event
+              </Button>
+            </>
+          )}
+
+          {drawerView === 'details' && selectedEvent && (
+            <Box>
+              <Typography variant="subtitle1">{selectedEvent.title}</Typography>
+              <Typography variant="body2">
+                {selectedEvent.start?.toDateString()}
+                {selectedEvent.end && ` — ${sub(selectedEvent.end, {days: 1}).toDateString()}`}
+              </Typography>
+            </Box>
+          )}
+
+          {drawerView === 'form' && (
+            <Box
+              component="form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                // Handle form submit
+                setDrawerOpen(false);
+              }}
+            >
+              <TextField label="Title" fullWidth sx={{my: 1}}/>
+              {/* Add other fields here */}
+              <Button type="submit" fullWidth variant="contained">
+                Save
+              </Button>
+              <Button fullWidth variant="text" onClick={() => setDrawerView('list')} sx={{mt: 1}}>
+                Cancel
+              </Button>
+            </Box>
+          )}
+        </Box>
+      </SwipeableDrawer>
+    </>
   )
 }
+
+const parsedEvents = (events: EventPrisma[]) => {
+  return events.map(event => {
+    return {
+      allDay: true,
+      title: event.name,
+      start: event.startDate,
+      end: event.endDate,
+      id: event.id.toString(),
+      color: event.color || undefined,
+    }
+  })
+}
+
+const createEvent = (start: Date, end?: Date) => {
+  if (typeof end === "undefined") {
+    end = start
+  }
+
+}
+
+const getEventsOnDate = (dateInfo: DateClickArg, calendarRef: RefObject<FullCalendar | null>): EventApi[] => {
+  const clickedDate = dateInfo.date;
+  const calendarApi = calendarRef.current?.getApi();
+  if (!calendarApi) return [];
+  return calendarApi.getEvents().filter(event => {
+    const start = event.start;
+    const end = event.end ?? start;
+    return start && end && start <= clickedDate && clickedDate < end;
+  });
+}
+
+// TODO set up create form, extract drawer out

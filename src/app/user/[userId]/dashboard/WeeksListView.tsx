@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Container, List, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
-import DashboardAppBar from './DashboardAppBar';
+import CustomAppBar from './CustomAppBar';
 import { UserPrisma } from '@/types/dataTypes';
 
 export default function WeeksListView({
@@ -13,7 +13,7 @@ export default function WeeksListView({
 }) {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}>
-      <DashboardAppBar title={`${userData.name}'s Dashboard`} />
+      <CustomAppBar title={`${userData.name}'s Dashboard`} />
       <Container maxWidth="sm" sx={{ py: 2 }}>
         <Typography variant="subtitle1" gutterBottom>
           Weeks

@@ -51,3 +51,6 @@ erDiagram
     EVENT }o--|| USER : belongs_to
 
     USEREXERCISENOTE }o--|| EXERCISE : about
+```
+
+Calendar powered by FullCalendar (https://fullcalendar.io)

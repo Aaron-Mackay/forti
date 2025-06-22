@@ -3,7 +3,7 @@
 import {Box, Container, List, ListItem, ListItemButton, ListItemText, Typography} from '@mui/material';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
-import DashboardAppBar from './DashboardAppBar';
+import CustomAppBar from './CustomAppBar';
 import {WorkoutPrisma} from '@/types/dataTypes';
 import Stopwatch from "./Stopwatch";
 import './exercisesListView.css'
@@ -36,7 +36,7 @@ export default function ExercisesListView({
       flexDirection: 'column',
       height: "100dvh"
     }}>
-      <DashboardAppBar title={workout.name} onBack={onBack} showBack/>
+      <CustomAppBar title={workout.name} onBack={onBack} showBack/>
       <Container
         maxWidth="sm"
         sx={{
