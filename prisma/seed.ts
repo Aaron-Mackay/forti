@@ -1,4 +1,5 @@
 import prisma from '../src/lib/prisma';
+import {EventType} from "@prisma/client";
 
 function getRandomBetween(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -54,6 +55,7 @@ async function main() {
           startDate: new Date('2025-06-01'),
           endDate: new Date('2025-06-07'),
           color: 'green',
+          eventType: EventType.CustomEvent
         },
         {
           userId: user.id,
@@ -62,6 +64,23 @@ async function main() {
           startDate: new Date('2025-08-15'),
           endDate: new Date('2025-08-20'),
           color: 'yellow',
+          eventType: EventType.CustomEvent
+        },
+        {
+          userId: user.id,
+          name: 'Bulk',
+          startDate: new Date('2025-08-01'),
+          endDate: new Date('2025-08-31'),
+          color: 'darkgreen',
+          eventType: EventType.BlockEvent
+        },
+        {
+          userId: user.id,
+          name: 'Cut',
+          startDate: new Date('2025-09-01'),
+          endDate: new Date('2025-09-21'),
+          color: 'lightblue',
+          eventType: EventType.BlockEvent
         },
       ],
     })

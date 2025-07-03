@@ -18,6 +18,10 @@ model User {
   UserExerciseNote UserExerciseNote[]
 }
 
+enum EventType {
+  BlockEvent
+  CustomEvent
+}
 model Event {
   id          Int       @id @default(autoincrement())
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -27,6 +31,7 @@ model Event {
   startDate   DateTime @db.Date // only the date part matters
   endDate     DateTime @db.Date // inclusive
   color       String?
+  eventType   EventType
 
   @@index([userId])
   @@index([startDate, endDate])
