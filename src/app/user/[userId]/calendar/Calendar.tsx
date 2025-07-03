@@ -7,14 +7,25 @@ import interactionPlugin, {DateClickArg} from "@fullcalendar/interaction";
 import React, {RefObject, useMemo, useRef, useState} from "react";
 import './calendar.css'
 import {EventApi, EventClickArg} from "@fullcalendar/core";
-import {Box, Button, Fab, List, ListItemButton, SwipeableDrawer, TextField, Typography} from "@mui/material";
+import {Box, Button, Drawer, Fab, List, ListItemButton, TextField, Typography} from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import CustomAppBar from "@/app/user/[userId]/dashboard/CustomAppBar";
 import {sub} from "date-fns";
+import {EventType} from "@prisma/client";
 
 type Props = {
   events: EventPrisma[];
 };
+
+type FullCalendarIngestableEvent = {
+  allDay: boolean,
+  title: string,
+  start: Date,
+  end: Date,
+  id: string,
+  color?: string,
+  display: string
+}
 
 export default function Calendar({events}: Props) {
   const calendarRef = useRef<FullCalendar | null>(null);
@@ -79,7 +90,7 @@ export default function Calendar({events}: Props) {
         dateClick={(dateInfo) => handleDateClick(dateInfo, calendarRef)}
         select={({start, end}) => createEvent(start, end)}
         eventClick={handleEventClick}
-        events={parsedEvents([...events, ...events, ...events])}
+        events={parsedEvents(events)}
         headerToolbar={{
           left: 'title',
           center: '',
@@ -97,12 +108,10 @@ export default function Calendar({events}: Props) {
         <AddIcon/>
       </Fab>
 
-      <SwipeableDrawer
+      <Drawer
         anchor="bottom"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        onOpen={() => {
-        }}
         PaperProps={{
           sx: {
             borderTopLeftRadius: 16,
@@ -168,12 +177,12 @@ export default function Calendar({events}: Props) {
             </Box>
           )}
         </Box>
-      </SwipeableDrawer>
+      </Drawer>
     </>
   )
 }
 
-const parsedEvents = (events: EventPrisma[]) => {
+const parsedEvents = (events: EventPrisma[]): FullCalendarIngestableEvent[] => {
   return events.map(event => {
     return {
       allDay: true,
@@ -182,6 +191,7 @@ const parsedEvents = (events: EventPrisma[]) => {
       end: event.endDate,
       id: event.id.toString(),
       color: event.color || undefined,
+      display: event.eventType === EventType.CustomEvent ? 'auto' : 'background'
     }
   })
 }

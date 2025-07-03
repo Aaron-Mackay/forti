@@ -27,6 +27,7 @@ To reset the database (full data loss):
 ```bash
 npx prisma db push --force-reset
 prisma generate
+npm run seed
 ```
 
 ---
