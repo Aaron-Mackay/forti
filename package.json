@@ -10,10 +10,11 @@
     "seed": "ts-node prisma/seed.ts",
     "local-db": "psql -h localhost -U postgres -d postgres",
     "test": "vitest run",
-    "rebuild-prisma": "prisma generate && prisma db push",
+    "rebuild-prisma": "prisma db push && prisma generate",
     "postinstall": "prisma generate",
     "check": "npm run test && npm run lint && npm run build",
-    "prepare": "husky"
+    "prepare": "husky",
+    "reset-db-schema": "prisma db push --force-reset && prisma generate && ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -55,7 +56,7 @@
     "fake-indexeddb": "^6.0.1",
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
-    "prisma": "^6.10.0",
+    "prisma": "^6.11.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "vite-tsconfig-paths": "^5.1.4",
