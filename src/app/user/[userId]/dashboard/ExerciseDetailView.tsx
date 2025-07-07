@@ -13,7 +13,6 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import CustomAppBar from './CustomAppBar';
 import {Swiper, SwiperSlide} from 'swiper/react';
 import {Pagination} from 'swiper/modules';
 import {Swiper as SwiperType} from 'swiper/types';
@@ -22,6 +21,7 @@ import 'swiper/css/pagination';
 import './styles.css';
 import {SetPrisma, WorkoutPrisma} from '@/types/dataTypes';
 import Stopwatch from "./Stopwatch";
+import CustomAppBar from "@/components/CustomAppBar";
 
 export default function ExerciseDetailView({
                                              workout,

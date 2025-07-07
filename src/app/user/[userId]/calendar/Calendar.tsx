@@ -7,11 +7,11 @@ import interactionPlugin, {DateClickArg} from "@fullcalendar/interaction";
 import React, {RefObject, useMemo, useRef, useState} from "react";
 import './calendar.css'
 import {EventApi, EventClickArg} from "@fullcalendar/core";
-import {Box, Button, Drawer, Fab, List, ListItemButton, TextField, Typography} from "@mui/material";
+import {Fab} from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
-import CustomAppBar from "@/app/user/[userId]/dashboard/CustomAppBar";
-import {sub} from "date-fns";
 import {EventType} from "@prisma/client";
+import CalendarDrawer from "./CalendarDrawer";
+import CustomAppBar from "@/components/CustomAppBar";
 
 type Props = {
   events: EventPrisma[];
@@ -108,76 +108,17 @@ export default function Calendar({events}: Props) {
         <AddIcon/>
       </Fab>
 
-      <Drawer
-        anchor="bottom"
+      <CalendarDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        PaperProps={{
-          sx: {
-            borderTopLeftRadius: 16,
-            borderTopRightRadius: 16,
-            maxHeight: '75vh'
-          }
-        }}
-      >
-        <Box p={2}>
-          <Box sx={{width: 40, height: 4, bgcolor: 'grey.400', borderRadius: 2, mx: 'auto', my: 1}}/>
-          <Typography variant="h6" gutterBottom>
-            {selectedDate?.toDateString()}
-          </Typography>
-
-          {drawerView === 'list' && (
-            <>
-              <List>
-                {eventsOnSelectedDate.map((event) => (
-                  <ListItemButton
-                    key={event.id}
-                    onClick={() => {
-                      setSelectedEvent(event);
-                      setDrawerView('details');
-                    }}
-                  >
-                    {event.title}
-                  </ListItemButton>
-                ))}
-              </List>
-              <Button fullWidth variant="contained" onClick={() => setDrawerView('form')}>
-                + Add Event
-              </Button>
-            </>
-          )}
-
-          {drawerView === 'details' && selectedEvent && (
-            <Box>
-              <Typography variant="subtitle1">{selectedEvent.title}</Typography>
-              <Typography variant="body2">
-                {selectedEvent.start?.toDateString()}
-                {selectedEvent.end && ` — ${sub(selectedEvent.end, {days: 1}).toDateString()}`}
-              </Typography>
-            </Box>
-          )}
-
-          {drawerView === 'form' && (
-            <Box
-              component="form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                // Handle form submit
-                setDrawerOpen(false);
-              }}
-            >
-              <TextField label="Title" fullWidth sx={{my: 1}}/>
-              {/* Add other fields here */}
-              <Button type="submit" fullWidth variant="contained">
-                Save
-              </Button>
-              <Button fullWidth variant="text" onClick={() => setDrawerView('list')} sx={{mt: 1}}>
-                Cancel
-              </Button>
-            </Box>
-          )}
-        </Box>
-      </Drawer>
+        drawerView={drawerView}
+        setDrawerView={setDrawerView}
+        selectedDate={selectedDate}
+        selectedEvent={selectedEvent}
+        setSelectedEvent={setSelectedEvent}
+        eventsOnSelectedDate={eventsOnSelectedDate}
+        setDrawerOpen={setDrawerOpen}
+      />
     </>
   )
 }
