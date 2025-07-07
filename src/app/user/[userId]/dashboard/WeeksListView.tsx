@@ -1,8 +1,8 @@
 'use client';
 
 import { Box, Container, List, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
-import CustomAppBar from './CustomAppBar';
 import { UserPrisma } from '@/types/dataTypes';
+import CustomAppBar from "@/components/CustomAppBar";
 
 export default function WeeksListView({
   userData,

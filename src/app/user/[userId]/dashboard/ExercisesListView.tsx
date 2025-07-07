@@ -3,10 +3,10 @@
 import {Box, Container, List, ListItem, ListItemButton, ListItemText, Typography} from '@mui/material';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
-import CustomAppBar from './CustomAppBar';
 import {WorkoutPrisma} from '@/types/dataTypes';
 import Stopwatch from "./Stopwatch";
 import './exercisesListView.css'
+import CustomAppBar from "@/components/CustomAppBar";
 
 export default function ExercisesListView({
                                             workout,
