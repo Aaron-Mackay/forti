@@ -135,9 +135,34 @@ async function main() {
         }
       }
     }
+
+    // Seed DayMetrics for the last 60 days
+    const today = new Date();
+    const dayMetricsData = [];
+    for (let i = 0; i < 60; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+
+      // Helper to randomly set null ~30% of the time
+      const maybeNull = (val: any) => Math.random() < 0.3 ? null : val;
+
+      dayMetricsData.push({
+        userId: user.id,
+        date,
+        weight: maybeNull(Number((Math.random() * 2 + 82).toFixed(1))),
+        steps: maybeNull(Math.floor(Math.random() * (10000 - 2000 + 1)) + 2000),
+        sleepMins: maybeNull(Math.floor(Math.random() * (540 - 360 + 1)) + 360),
+        calories: maybeNull(Math.floor(Math.random() * (2500 - 1500 + 1)) + 1500),
+        protein: maybeNull(Math.floor(Math.random() * 200)),
+        carbs: maybeNull(Math.floor(Math.random() * 400)),
+        fat: maybeNull(Math.floor(Math.random() * 100)),
+        workout: Math.random() < 0.5,
+      });
+    }
+    await prisma.dayMetric.createMany({ data: dayMetricsData });
   }
 
-  console.log('✅ Seeded database with exercises, users, events, notes, weeks, workouts, sets');
+  console.log('✅ Seeded database with exercises, users, events, notes, weeks, workouts, sets, daymetrics');
 }
 
 main()

@@ -12,7 +12,7 @@ export default function WeeksListView({
   onSelectWeek: (weekId: number) => void;
 }) {
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}>
+    <Box sx={{ minHeight: '100dvh', bgcolor: 'background.default', color: 'text.primary' }}>
       <CustomAppBar title={`${userData.name}'s Dashboard`} />
       <Container maxWidth="sm" sx={{ py: 2 }}>
         <Typography variant="subtitle1" gutterBottom>

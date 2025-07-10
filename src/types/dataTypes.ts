@@ -1,6 +1,7 @@
-import {Prisma, Event} from "@prisma/client";
+import {Prisma, Event, DayMetric} from "@prisma/client";
 
 export type EventPrisma = Event
+export type DayMetricPrisma = DayMetric
 
 export type UserPrisma = Prisma.UserGetPayload<{
   include: {
