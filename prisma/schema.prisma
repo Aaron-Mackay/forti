@@ -10,31 +10,50 @@ datasource db {
 }
 
 model User {
-  id               Int                @id @default(autoincrement())
-  email            String             @unique
-  name             String
-  weeks            Week[]
-  events           Event[]
-  UserExerciseNote UserExerciseNote[]
+  id                Int                @id @default(autoincrement())
+  email             String             @unique
+  name              String
+  weeks             Week[]
+  events            Event[]
+  userExerciseNotes UserExerciseNote[]
+  dayMetrics        DayMetric[]
 }
 
 enum EventType {
   BlockEvent
   CustomEvent
 }
+
 model Event {
   id          Int       @id @default(autoincrement())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      Int
   name        String
   description String?
-  startDate   DateTime @db.Date // only the date part matters
-  endDate     DateTime @db.Date // inclusive
+  startDate   DateTime  @db.Date // only the date part matters
+  endDate     DateTime  @db.Date // inclusive
   color       String?
   eventType   EventType
 
   @@index([userId])
   @@index([startDate, endDate])
+}
+
+model DayMetric {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  workout   Boolean  @default(false)
+  weight    Float?
+  steps     Int?
+  sleepMins Int?
+  calories  Int?
+  protein   Int?
+  carbs     Int?
+  fat       Int?
+  date      DateTime @db.Date
+
+  @@unique([userId, date])
 }
 
 model Week {

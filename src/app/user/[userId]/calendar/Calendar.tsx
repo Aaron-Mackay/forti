@@ -1,20 +1,24 @@
 'use client'
 
-import {EventPrisma} from "@/types/dataTypes";
+import {DayMetricPrisma, EventPrisma} from "@/types/dataTypes";
 import FullCalendar from "@fullcalendar/react";
 import multiMonthPlugin from "@fullcalendar/multimonth";
 import interactionPlugin, {DateClickArg} from "@fullcalendar/interaction";
 import React, {RefObject, useMemo, useRef, useState} from "react";
 import './calendar.css'
-import {EventApi, EventClickArg} from "@fullcalendar/core";
+import {EventApi} from "@fullcalendar/core";
 import {Fab} from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import {EventType} from "@prisma/client";
 import CalendarDrawer from "./CalendarDrawer";
 import CustomAppBar from "@/components/CustomAppBar";
+import {isSameDay} from 'date-fns';
+
+export type DrawerView = 'list' | 'details' | 'event-form' | 'daymetric-form';
 
 type Props = {
   events: EventPrisma[];
+  dayMetrics: DayMetricPrisma[];
 };
 
 type FullCalendarIngestableEvent = {
@@ -27,13 +31,14 @@ type FullCalendarIngestableEvent = {
   display: string
 }
 
-export default function Calendar({events}: Props) {
+export default function Calendar({events, dayMetrics}: Props) {
   const calendarRef = useRef<FullCalendar | null>(null);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [drawerView, setDrawerView] = useState<'list' | 'details' | 'form'>('list');
+  const [drawerView, setDrawerView] = useState<DrawerView>('list');
   const [selectedEvent, setSelectedEvent] = useState<EventApi | null>(null);
+  const [dayMetricsState, setDayMetricsState] = useState<DayMetricPrisma[]>(dayMetrics);
 
   const eventsOnSelectedDate = useMemo(() => {
     if (!selectedDate || !calendarRef.current) return [];
@@ -53,14 +58,8 @@ export default function Calendar({events}: Props) {
     setDrawerOpen(true);
   }
 
-  const handleEventClick = (eventInfo: EventClickArg) => {
-    setSelectedEvent(eventInfo.event);
-    setDrawerView('details');
-    setDrawerOpen(true);
-  }
-
   const handleFabCreateClick = () => {
-    setDrawerView('form');
+    setDrawerView('event-form');
     setDrawerOpen(true);
   }
 
@@ -83,13 +82,18 @@ export default function Calendar({events}: Props) {
         plugins={[multiMonthPlugin, interactionPlugin]}
         initialView="multiMonthYear"
         multiMonthMaxColumns={1}
-        height={"calc(100vh - 56px)"}
+        height={"calc(100dvh - 56px)"}
         editable={true}
         selectable={true}
         selectLongPressDelay={400}
         dateClick={(dateInfo) => handleDateClick(dateInfo, calendarRef)}
         select={({start, end}) => createEvent(start, end)}
-        eventClick={handleEventClick}
+        dayCellDidMount={(info) => {
+          const el = document.createElement("div");
+          el.className = "custom-dot";
+          el.innerText = "•";
+          info.el.querySelector('.fc-daygrid-day-top')?.appendChild(el);
+        }}
         events={parsedEvents(events)}
         headerToolbar={{
           left: 'title',
@@ -107,10 +111,8 @@ export default function Calendar({events}: Props) {
            sx={{position: "absolute", bottom: 25, right: 25}}>
         <AddIcon/>
       </Fab>
-
       <CalendarDrawer
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
         drawerView={drawerView}
         setDrawerView={setDrawerView}
         selectedDate={selectedDate}
@@ -118,6 +120,24 @@ export default function Calendar({events}: Props) {
         setSelectedEvent={setSelectedEvent}
         eventsOnSelectedDate={eventsOnSelectedDate}
         setDrawerOpen={setDrawerOpen}
+        dateDayMetrics={
+          selectedDate &&
+          dayMetricsState.find(dm => isSameDay(dm.date, selectedDate))
+        }
+        setDayMetricsStateCb={
+          (date, newMetrics: DayMetricPrisma | null) => {
+            setDayMetricsState((prev: DayMetricPrisma[]): DayMetricPrisma[] => {
+              if (!newMetrics) return prev;
+              const index = prev.findIndex(m => isSameDay(m.date, date));
+              if (index === -1) { // if no metrics for this date, add new metrics
+                return [...prev, {...newMetrics, date}];
+              }
+              return prev.map(metric =>
+                isSameDay(metric.date, date) ? {...metric, ...newMetrics} : metric
+              );
+            });
+          }
+        }
       />
     </>
   )

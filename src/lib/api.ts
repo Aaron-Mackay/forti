@@ -1,7 +1,7 @@
 import {Exercise} from '@prisma/client';
 import prisma from '@/lib/prisma';
 import {fetchJson} from './fetchWrapper';
-import {UserPrisma} from "@/types/dataTypes";
+import {DayMetricPrisma, UserPrisma} from "@/types/dataTypes";
 
 export async function getUsers() {
   return prisma.user.findMany({
@@ -51,6 +51,21 @@ export async function getUserEvents(userId: string) {
   return prisma.event.findMany({
     where: {userId: Number(userId)},
   })
+}
+
+export async function getUserDayMetrics(userId: string) {
+  return prisma.dayMetric.findMany({
+    where: {userId: Number(userId)},
+    orderBy: { date: 'asc' }
+  })
+}
+
+export async function updateUserDayMetric(dayMetric: DayMetricPrisma) {
+  return await prisma.dayMetric.upsert({
+    where: { id: Number(dayMetric.id) },
+    update: dayMetric,
+    create: dayMetric
+  });
 }
 
 export async function saveUserWorkoutData(userData: UserPrisma) {
