@@ -7,7 +7,7 @@ import interactionPlugin, {DateClickArg} from "@fullcalendar/interaction";
 import React, {RefObject, useMemo, useRef, useState} from "react";
 import './calendar.css'
 import {EventApi} from "@fullcalendar/core";
-import {SpeedDial, SpeedDialAction, SpeedDialIcon} from "@mui/material";
+import {Fab} from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import {EventType} from "@prisma/client";
 import CalendarDrawer from "./CalendarDrawer";
@@ -19,6 +19,7 @@ export type DrawerView = 'list' | 'details' | 'event-form' | 'daymetric-form';
 type Props = {
   events: EventPrisma[];
   dayMetrics: DayMetricPrisma[];
+  userId: string
 };
 
 type FullCalendarIngestableEvent = {
@@ -31,7 +32,7 @@ type FullCalendarIngestableEvent = {
   display: string
 }
 
-export default function Calendar({events, dayMetrics}: Props) {
+export default function Calendar({events, dayMetrics, userId}: Props) {
   const calendarRef = useRef<FullCalendar | null>(null);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -58,10 +59,10 @@ export default function Calendar({events, dayMetrics}: Props) {
     setDrawerOpen(true);
   }
 
-  // const handleFabCreateClick = () => {
-  //   setDrawerView('event-form');
-  //   setDrawerOpen(true);
-  // }
+  const handleFabCreateClick = () => {
+    setDrawerView('event-form');
+    setDrawerOpen(true);
+  }
 
   const handleTodayButtonClick = () => {
     if (!calendarRef.current) return
@@ -73,13 +74,6 @@ export default function Calendar({events, dayMetrics}: Props) {
       }
     }, 0);
   };
-
-  const actions = [
-    {icon: <AddIcon/>, name: 'Copy'},
-    {icon: <AddIcon/>, name: 'Save'},
-    {icon: <AddIcon/>, name: 'Print'},
-    {icon: <AddIcon/>, name: 'Share'},
-  ];
 
   return (
     <>
@@ -114,28 +108,10 @@ export default function Calendar({events, dayMetrics}: Props) {
           }
         }}
       />
-      {/*<Fab color="primary" aria-label="add" onClick={handleFabCreateClick}*/}
-      {/*     sx={{position: "absolute", bottom: 25, right: 25}}>*/}
-      {/*  <AddIcon/>*/}
-      {/*</Fab>*/}
-      <SpeedDial
-        ariaLabel="SpeedDial basic example"
-        sx={{position: 'absolute', bottom: 16, right: 16}}
-        icon={<SpeedDialIcon/>}
-      >
-        <SpeedDialAction
-          key={actions[0].name}
-          icon={actions[0].icon}
-          slotProps={
-            {
-              tooltip: {
-                open: true,
-                title: actions[0].name
-              }
-            }
-          }
-        />
-      </SpeedDial>
+      <Fab color="primary" aria-label="add" onClick={handleFabCreateClick}
+           sx={{position: "absolute", bottom: 25, right: 25}}>
+        <AddIcon/>
+      </Fab>
       <CalendarDrawer
         open={drawerOpen}
         drawerView={drawerView}
@@ -163,6 +139,7 @@ export default function Calendar({events, dayMetrics}: Props) {
             });
           }
         }
+        userId={userId}
       />
     </>
   )

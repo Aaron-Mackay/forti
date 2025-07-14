@@ -60,9 +60,14 @@ export async function getUserDayMetrics(userId: string) {
   })
 }
 
-export async function updateUserDayMetric(dayMetric: DayMetricPrisma) {
+export async function updateUserDayMetric(dayMetric: Omit<DayMetricPrisma, 'id'>) {
   return await prisma.dayMetric.upsert({
-    where: { id: Number(dayMetric.id) },
+    where: {
+      userId_date: {
+        userId: Number(dayMetric.userId),
+        date: dayMetric.date,
+      }
+    },
     update: dayMetric,
     create: dayMetric
   });
