@@ -7,10 +7,12 @@ import FoodIcon from '@mui/icons-material/RestaurantRounded';
 import StepsIcon from '@mui/icons-material/DirectionsWalkRounded';
 import WorkoutIcon from '@mui/icons-material/FitnessCenterRounded';
 import SleepIcon from '@mui/icons-material/HotelRounded';
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import {DayMetricPrisma} from "@/types/dataTypes";
 import {DrawerView} from "@/app/user/[userId]/calendar/Calendar";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import {hhMmToMin, minToHhMm} from "@/app/user/[userId]/calendar/utils";
+import DayMetricButton from "@/app/user/[userId]/calendar/DayMetricButton";
+import {updateDayMetricClient} from "@lib/dayMetrics";
 
 type MetricKey = keyof DayMetricPrisma
 type CalendarDrawerProps = {
@@ -25,50 +27,6 @@ type CalendarDrawerProps = {
   dateDayMetrics: DayMetricPrisma | null | undefined;
   setDayMetricsStateCb: (date: Date, metrics: DayMetricPrisma | null) => void;
 };
-
-const DayMetric = ({
-                     icon,
-                     value,
-                     onClick,
-                   }: {
-  icon: React.ReactNode,
-  value: boolean | string | number | null | undefined,
-  onClick?: () => void
-}) => {
-  return (
-    <Button
-      onClick={onClick}
-      variant="outlined"
-      sx={{borderRadius: 999, minWidth: "4rem", px: 1, py: 0}}
-    >
-      {icon}
-      {value || <AddRoundedIcon/>}
-    </Button>
-  );
-};
-
-
-const minToHhMm = (timeInMinutes: number): string => {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const h = Math.floor(timeInMinutes / 60);
-  const m = timeInMinutes % 60;
-  return `${pad(h)}:${pad(m)}`;
-}
-
-const hhMmToMin = (time: string): number => {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
-}
-
-async function updateDayMetricClient(dayMetric: DayMetricPrisma) {
-  const res = await fetch('/api/dayMetric', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(dayMetric),
-  });
-  if (!res.ok) throw new Error('Failed to update day metric');
-  return await res.json();
-}
 
 const CalendarDrawer: React.FC<CalendarDrawerProps> = ({
                                                          open,
@@ -169,23 +127,23 @@ const CalendarDrawer: React.FC<CalendarDrawerProps> = ({
       <Box ref={mainPanelRef} sx={{width: '50%', p: 2}}>
         <Box mb={2}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-            <DayMetric value={weight} icon={<WeightIcon/>} onClick={() => {
+            <DayMetricButton value={weight} icon={<WeightIcon/>} onClick={() => {
               setSelectedMetric('weight')
               setInputValue(weight)
             }}/>
-            <DayMetric value={calories} icon={<FoodIcon/>} onClick={() => {
+            <DayMetricButton value={calories} icon={<FoodIcon/>} onClick={() => {
               setSelectedMetric('calories')
               setInputValue(calories)
             }}/>
-            <DayMetric value={steps} icon={<StepsIcon/>} onClick={() => {
+            <DayMetricButton value={steps} icon={<StepsIcon/>} onClick={() => {
               setSelectedMetric('steps')
               setInputValue(steps)
             }}/>
-            <DayMetric value={sleepMins && minToHhMm(sleepMins)} icon={<SleepIcon/>} onClick={() => {
+            <DayMetricButton value={sleepMins && minToHhMm(sleepMins)} icon={<SleepIcon/>} onClick={() => {
               setSelectedMetric('sleepMins')
               setInputValue(sleepMins)
             }}/>
-            <DayMetric value={workout} icon={<WorkoutIcon/>}/>
+            <DayMetricButton value={workout} icon={<WorkoutIcon/>}/>
             {/* todo: this should just show if a workout happened, and link to it */}
           </Box>
           <Typography variant="h6">{selectedDate?.toDateString()}</Typography>

@@ -9,6 +9,7 @@ module.exports = {
     'next/typescript',
   ],
   rules: {
+    "react/display-name": "off",
     '@typescript-eslint/no-unused-vars': [
       'error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_',}],
   },
