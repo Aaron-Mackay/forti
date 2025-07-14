@@ -43,7 +43,7 @@ model DayMetric {
   id        Int      @id @default(autoincrement())
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
-  workout   Boolean  @default(false)
+  workout   Boolean?  @default(false)
   weight    Float?
   steps     Int?
   sleepMins Int?
