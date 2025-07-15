@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect, useRef} from "react";
 import {MetricKey} from "@/app/user/[userId]/calendar/DayMetricBar";
 import {Box, IconButton, TextField, Typography} from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -26,6 +26,13 @@ export const DayMetricInput: React.FC<{
         userId,
         setDayMetricsStateCb
       }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (selectedMetric) {
+      setTimeout(() => inputRef.current?.focus(), 300)
+    }
+  }, [selectedMetric])
 
   const handleSubmit = () => {
     if (!selectedDate || !selectedMetric) {
@@ -68,6 +75,7 @@ export const DayMetricInput: React.FC<{
                      value={(inputValue && minToHhMm(Number(inputValue))) ?? ""}
                      onChange={(e) => setInputValue(hhMmToMin(e.target.value))}
                      sx={{mb: 2, width: '100%'}}
+                     inputRef={inputRef}
           />
           : <TextField
             type={'number'}
@@ -75,6 +83,7 @@ export const DayMetricInput: React.FC<{
             value={inputValue ?? ""}
             onChange={(e) => setInputValue(e.target.value)}
             sx={{mb: 2, width: '100%'}}
+            inputRef={inputRef}
           />}
 
         <Button
