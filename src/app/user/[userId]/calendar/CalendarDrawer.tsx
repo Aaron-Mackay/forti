@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useRef, useState} from "react";
 import {Box, Drawer, Typography} from "@mui/material";
 import {EventApi} from "@fullcalendar/core";
 import {sub} from "date-fns";
@@ -9,6 +9,7 @@ import {DayMetricsBar, MetricKey} from "@/app/user/[userId]/calendar/DayMetricBa
 import {EventCreationForm} from "@/app/user/[userId]/calendar/EventCreationForm";
 import {EventsList} from "@/app/user/[userId]/calendar/EventsList";
 import {DayMetricInput} from "@/app/user/[userId]/calendar/DayMetricInput";
+import {useAnimatedDrawerHeight, TRANSITION_MS} from "./useAnimatedDrawerHeight";
 
 type CalendarDrawerProps = {
   open: boolean;
@@ -42,30 +43,13 @@ const CalendarDrawer: React.FC<CalendarDrawerProps> = ({
   const mainPanelRef = useRef<HTMLDivElement>(null);
   const formPanelRef = useRef<HTMLDivElement>(null);
   const drawerPaperRef = useRef<HTMLDivElement>(null);
-  const [initialHeight, setInitialHeight] = useState<number | null>(null);
-
-// Before opening drawer, measure and store height
-  useEffect(() => {
-    if (open) {
-      const raf = requestAnimationFrame(() => {
-        const panel = selectedMetric ? formPanelRef.current : mainPanelRef.current;
-        if (panel) setInitialHeight(panel.offsetHeight);
-      })
-      return () => cancelAnimationFrame(raf)
-    }
-  }, [open, selectedMetric, initialHeight]);
-
-  useEffect(() => {
-    const panel = selectedMetric ? formPanelRef.current : mainPanelRef.current;
-    const drawer = drawerPaperRef.current;
-
-    if (!panel || !drawer) return;
-
-    const targetHeight = panel.offsetHeight;
-
-    drawer.style.transition = 'height 250ms ease-in-out';
-    drawer.style.height = `${targetHeight}px`;
-  }, [selectedMetric]);
+  const height = useAnimatedDrawerHeight({
+    open,
+    selectedMetric,
+    mainPanelRef,
+    formPanelRef,
+    drawerPaperRef
+  });
 
   return <Drawer
     anchor="bottom"
@@ -81,8 +65,8 @@ const CalendarDrawer: React.FC<CalendarDrawerProps> = ({
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
           overflow: 'hidden',
-          height: initialHeight ? `${initialHeight}px` : undefined,
-          transition: initialHeight ? 'height 500ms ease' : 'none',
+          height: height ? `${height}px` : undefined,
+          transition: height ? `height ${TRANSITION_MS}ms ease` : 'none',
         }
       }
     }}
@@ -94,7 +78,7 @@ const CalendarDrawer: React.FC<CalendarDrawerProps> = ({
         alignItems: 'flex-start',
         width: '200%',
         transform: `translateX(${selectedMetric ? '-50%' : '0%'})`,
-        transition: 'transform 300ms ease'
+        transition: `height ${TRANSITION_MS}ms ease`
       }}
     >
       {/* Main Panel */}

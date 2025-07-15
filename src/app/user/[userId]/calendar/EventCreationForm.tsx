@@ -14,6 +14,7 @@ export const EventCreationForm = (props: {
   }
 
   const handleSubmit = (e: FormEvent) => {
+    console.log(e)
     e.preventDefault();
     props.setDrawerOpen(false);
   }
