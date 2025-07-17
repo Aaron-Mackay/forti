@@ -64,7 +64,6 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
 
     setSelectedDate(dateInfo.date);
     setPrefilledDateRange({start: dateInfo.date, endExcl: null})
-    console.log(eventsOnDate)
     setSelectedEvent(eventsOnDate.length === 1 ? eventsOnDate[0] : null);
     setDrawerView('list');
     setDrawerOpen(true);
@@ -194,7 +193,8 @@ const parsedEvents = (events: EventPrisma[]): FullCalendarIngestableEvent[] => {
       end: addDays(event.endDate,1), // add day as end is natively exclusive
       id: event.id.toString(),
       color: getEventColor(event),
-      display: event.eventType === EventType.CustomEvent ? 'auto' : 'background'
+      display: event.eventType === EventType.CustomEvent ? 'auto' : 'background',
+      extendedProps: {eventType: event.eventType, blockSubtype: event.blockSubtype}
     }
   })
 }
