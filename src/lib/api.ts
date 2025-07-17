@@ -1,7 +1,7 @@
 import {Exercise} from '@prisma/client';
 import prisma from '@/lib/prisma';
 import {fetchJson} from './fetchWrapper';
-import {DayMetricPrisma, UserPrisma} from "@/types/dataTypes";
+import {DayMetricPrisma, EventPrisma, UserPrisma} from "@/types/dataTypes";
 
 export async function getUsers() {
   return prisma.user.findMany({
@@ -79,5 +79,11 @@ export async function saveUserWorkoutData(userData: UserPrisma) {
     method: 'POST',
     body: JSON.stringify(userData),
     headers: {'Content-Type': 'application/json'},
+  });
+}
+
+export async function saveUserEvent(eventData: Omit<EventPrisma, 'id'>) {
+  return await prisma.event.create({
+    data: eventData,
   });
 }

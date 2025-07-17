@@ -25,15 +25,22 @@
     margin-bottom: 10px
 }
 
-.fc-event-title {
+/* Title of custom events*/
+.fc-daygrid-block-event .fc-event-time, .fc-daygrid-block-event .fc-event-title {
+    font-size: 0.85em;
     color: lightgray;
 }
 
-.fc-daygrid-block-event .fc-event-time, .fc-daygrid-block-event .fc-event-title {
-    font-size: 0.85em;
+/* Title of block events */
+.fc .fc-bg-event .fc-event-title {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    color: lightgray;
+    font-size: clamp(0.6em, 2vw, 3em)
 }
 
-/* Allow clicks to pass through events, for consistency */
+/* Allow clicks to pass through events */
 .fc-daygrid-event-harness {
     pointer-events: none;
 }

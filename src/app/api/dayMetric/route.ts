@@ -2,7 +2,6 @@ import {NextRequest, NextResponse} from 'next/server';
 import {updateUserDayMetric} from '@/lib/api';
 import {z} from 'zod';
 
-// Define your validation schema
 const DayMetricSchema = z.object({
   userId: z.number().int().positive(),
   date: z.coerce.date(), // Accepts string or Date, coerces to Date

@@ -8,7 +8,7 @@ function getRandomBetween(min: number, max: number): number {
 async function main() {
   // Clear existing stateData
   await prisma.$executeRawUnsafe(`
-  TRUNCATE "ExerciseSet", "WorkoutExercise", "Exercise", "Workout", "Week", "User", "Event", "UserExerciseNote"
+  TRUNCATE "ExerciseSet", "WorkoutExercise", "Exercise", "Workout", "Week", "User", "Event", "UserExerciseNote", "DayMetric"
   RESTART IDENTITY CASCADE
 `);
 
@@ -54,7 +54,6 @@ async function main() {
           description: `Start of ${user.name}'s program'`,
           startDate: new Date('2025-06-01'),
           endDate: new Date('2025-06-07'),
-          color: 'green',
           eventType: EventType.CustomEvent
         },
         {
@@ -63,7 +62,6 @@ async function main() {
           description: 'Recovery week',
           startDate: new Date('2025-08-15'),
           endDate: new Date('2025-08-20'),
-          color: 'yellow',
           eventType: EventType.CustomEvent
         },
         {
@@ -71,7 +69,6 @@ async function main() {
           name: 'Bulk',
           startDate: new Date('2025-08-01'),
           endDate: new Date('2025-08-31'),
-          color: 'darkgreen',
           eventType: EventType.BlockEvent
         },
         {
@@ -79,8 +76,15 @@ async function main() {
           name: 'Cut',
           startDate: new Date('2025-09-01'),
           endDate: new Date('2025-09-21'),
-          color: 'lightblue',
           eventType: EventType.BlockEvent
+        },
+        {
+          userId: user.id,
+          name: 'Custom',
+          startDate: new Date('2025-07-01'),
+          endDate: new Date('2025-07-21'),
+          customColor: 'red',
+          eventType: EventType.CustomEvent
         },
       ],
     })

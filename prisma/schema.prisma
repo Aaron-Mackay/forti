@@ -24,16 +24,27 @@ enum EventType {
   CustomEvent
 }
 
+enum BlockSubtype {
+  Bulk
+  Cut
+  Maintenance
+  Deload
+  Prep
+  Refeed
+  Custom
+}
+
 model Event {
-  id          Int       @id @default(autoincrement())
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      Int
-  name        String
-  description String?
-  startDate   DateTime  @db.Date // only the date part matters
-  endDate     DateTime  @db.Date // inclusive
-  color       String?
-  eventType   EventType
+  id           Int           @id @default(autoincrement())
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       Int
+  name         String
+  description  String?
+  startDate    DateTime      @db.Date // only the date part matters
+  endDate      DateTime      @db.Date // inclusive
+  customColor  String?
+  eventType    EventType
+  blockSubtype BlockSubtype?
 
   @@index([userId])
   @@index([startDate, endDate])
@@ -43,7 +54,7 @@ model DayMetric {
   id        Int      @id @default(autoincrement())
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
-  workout   Boolean?  @default(false)
+  workout   Boolean? @default(false)
   weight    Float?
   steps     Int?
   sleepMins Int?

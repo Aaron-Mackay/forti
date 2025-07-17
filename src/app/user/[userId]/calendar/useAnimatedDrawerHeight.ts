@@ -1,7 +1,7 @@
 // hooks/useAnimatedDrawerHeight.ts
 import {useEffect, useState} from "react";
 
-export const TRANSITION_MS = 300;
+export const TRANSITION_MS = 0;
 
 export function useAnimatedDrawerHeight({
                                           open,
@@ -16,11 +16,14 @@ export function useAnimatedDrawerHeight({
   formPanelRef: React.RefObject<HTMLElement | null>;
   drawerPaperRef: React.RefObject<HTMLElement | null>;
 }) {
-  const [height, setHeight] = useState<number | null>(null);
+  // todo this whole thing needs refactoring, overcomplicated and unreliable
+  const [height, setHeight] = useState<number>(0);
 
   // Measure panel height when drawer opens
   useEffect(() => {
     if (open) {
+      setHeight(0)
+
       const raf = requestAnimationFrame(() => {
         const panel = selectedMetric ? formPanelRef.current : mainPanelRef.current;
         if (panel) {
@@ -30,6 +33,8 @@ export function useAnimatedDrawerHeight({
       return () => cancelAnimationFrame(raf);
     }
   }, [formPanelRef, mainPanelRef, open, selectedMetric]);
+
+
 
   // Animate height changes and observe panel resize
   useEffect(() => {
@@ -64,7 +69,7 @@ export function useAnimatedDrawerHeight({
 }
 
 const animationCb = (drawer: HTMLElement, panel: HTMLElement) => {
-  drawer.style.transition = `height ${TRANSITION_MS}ms ease-in-out`;
+  drawer.style.transition = `height ${TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`;
   drawer.style.height = `${panel.offsetHeight}px`;
 
   const resizeObserver = new ResizeObserver(() => {
