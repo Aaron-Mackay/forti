@@ -3,26 +3,29 @@ import {Box, Drawer, Typography} from "@mui/material";
 import {EventApi} from "@fullcalendar/core";
 import {sub} from "date-fns";
 
-import {DayMetricPrisma} from "@/types/dataTypes";
+import {DayMetricPrisma, EventPrisma} from "@/types/dataTypes";
 import {DrawerView} from "@/app/user/[userId]/calendar/Calendar";
 import {DayMetricsBar, MetricKey} from "@/app/user/[userId]/calendar/DayMetricBar";
 import {EventCreationForm} from "@/app/user/[userId]/calendar/EventCreationForm";
 import {EventsList} from "@/app/user/[userId]/calendar/EventsList";
 import {DayMetricInput} from "@/app/user/[userId]/calendar/DayMetricInput";
-import {useAnimatedDrawerHeight, TRANSITION_MS} from "./useAnimatedDrawerHeight";
+import {TRANSITION_MS, useAnimatedDrawerHeight} from "./useAnimatedDrawerHeight";
 
 type CalendarDrawerProps = {
-  open: boolean;
-  drawerView: DrawerView;
-  setDrawerView: (view: DrawerView) => void;
-  selectedDate: Date | null;
-  selectedEvent: EventApi | null;
-  setSelectedEvent: (event: EventApi | null) => void;
-  eventsOnSelectedDate: EventApi[];
-  setDrawerOpen: (open: boolean) => void;
-  dateDayMetrics: DayMetricPrisma | null | undefined;
-  setDayMetricsStateCb: (date: Date, metrics: DayMetricPrisma | null) => void;
-  userId: string
+  open: boolean,
+  drawerView: DrawerView,
+  setDrawerView: (view: DrawerView) => void,
+  selectedDate: Date | null,
+  selectedEvent: EventApi | null,
+  setSelectedEvent: (event: EventApi | null) => void,
+  eventsOnSelectedDate: EventApi[],
+  setDrawerOpen: (open: boolean) => void,
+  dateDayMetrics: DayMetricPrisma | null | undefined,
+  setDayMetricsStateCb: (date: Date, metrics: DayMetricPrisma | null) => void,
+  userId: string,
+  setEventsInState: (value: (prevEvents: EventPrisma[]) => EventPrisma[]) => void,
+  prefilledDateRange: { start: Date | null; endExcl: Date | null },
+  setPrefilledDateRange: (value: { start: Date | null; endExcl: Date | null }) => void
 };
 
 const CalendarDrawer: React.FC<CalendarDrawerProps> = ({
@@ -36,7 +39,10 @@ const CalendarDrawer: React.FC<CalendarDrawerProps> = ({
                                                          setDrawerOpen,
                                                          dateDayMetrics,
                                                          setDayMetricsStateCb,
-                                                         userId
+                                                         userId,
+                                                         setEventsInState,
+                                                         prefilledDateRange,
+                                                         setPrefilledDateRange
                                                        }) => {
   const [selectedMetric, setSelectedMetric] = useState<MetricKey | null>(null);
   const [inputValue, setInputValue] = useState<string | number | null>('');
@@ -57,6 +63,7 @@ const CalendarDrawer: React.FC<CalendarDrawerProps> = ({
     onClose={() => {
       setDrawerOpen(false)
       setSelectedMetric(null)
+      setPrefilledDateRange({start: null, endExcl: null})
     }}
     slotProps={{
       paper: {
@@ -78,7 +85,7 @@ const CalendarDrawer: React.FC<CalendarDrawerProps> = ({
         alignItems: 'flex-start',
         width: '200%',
         transform: `translateX(${selectedMetric ? '-50%' : '0%'})`,
-        transition: `height ${TRANSITION_MS}ms ease`
+        transition: `transform 300ms linear`
       }}
     >
       {/* Main Panel */}
@@ -112,7 +119,11 @@ const CalendarDrawer: React.FC<CalendarDrawerProps> = ({
 
         {drawerView === 'event-form' && (
           <EventCreationForm
-            setDrawerOpen={setDrawerOpen}/>
+            setDrawerOpen={setDrawerOpen}
+            userId={userId}
+            setEventsInState={setEventsInState}
+            prefilledDateRange={prefilledDateRange}
+          />
         )}
       </Box>
 
