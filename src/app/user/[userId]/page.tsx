@@ -30,7 +30,7 @@ export default async function UserPage({params}: UserPageProps) {
         <Button
           key={route}
           component={Link}
-          href={`/user/${userId}/${route === "dashboard" ? "dashboard" : route}`}
+          href={`/user/${userId}/${route}`}
           variant="contained"
           color={route === "plan" ? "primary" : "secondary"}
           sx={{

@@ -1,4 +1,4 @@
-import {saveUserEvent} from "@lib/api";
+import {findOverlappingBlockEvent, saveUserEvent} from "@lib/api";
 import {NextRequest, NextResponse} from "next/server";
 import {z} from "zod";
 import {BlockSubtype, EventType} from "@prisma/client";
@@ -32,6 +32,21 @@ export async function POST(req: NextRequest) {
       customColor: null,
       blockSubtype: null,
       ...parsed.data
+    };
+
+    // Only check for overlap if eventType is BlockEvent
+    if (completeEvent.eventType === "BlockEvent") {
+      const overlap = await findOverlappingBlockEvent(
+        completeEvent.userId,
+        completeEvent.startDate,
+        completeEvent.endDate
+      );
+      if (overlap) {
+        return NextResponse.json(
+          { error: "BlockEvent overlaps with an existing BlockEvent." },
+          { status: 400 }
+        );
+      }
     }
 
     const uploadedEvent = await saveUserEvent(completeEvent);

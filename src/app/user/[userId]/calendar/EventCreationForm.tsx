@@ -38,7 +38,6 @@ export const EventCreationForm = (props: {
       }
       return Boolean(startDate);
     }
-
     return false;
   };
 
@@ -81,9 +80,9 @@ export const EventCreationForm = (props: {
           return [...prevEvents, addedEvent]
         })
       })
-      // .then(() => setSelectedMetric(null)) // todo update the calendar state
-      .catch(() => {
-        alert("Failed to create event")
+      .catch((e) => {
+        console.log(e.message)
+        alert(JSON.parse(e.message).error)
       })
   }
 
@@ -176,6 +175,7 @@ export const EventCreationForm = (props: {
           <Divider sx={{my: 1}}/>
           <Typography variant={'subtitle2'} fontSize="0.75rem">Date Range</Typography>
           <Box display="flex" gap={2} alignItems="center" width="100%" mb={2} mt={1}>
+            {/* todo use memoized function to check if dates have blocks already?*/}
             <DatePicker
               label={"Start" + (startDate ? ` - Week ${getISOWeek(startDate)}` : "")}
               value={startDate}

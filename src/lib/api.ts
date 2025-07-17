@@ -87,3 +87,14 @@ export async function saveUserEvent(eventData: Omit<EventPrisma, 'id'>) {
     data: eventData,
   });
 }
+
+export async function findOverlappingBlockEvent(userId: number, startDate: Date, endDate: Date) {
+  return await prisma.event.findFirst({
+    where: {
+      userId: Number(userId),
+      eventType: 'BlockEvent',
+      startDate: { lte: endDate },
+      endDate: { gte: startDate },
+    },
+  });
+}

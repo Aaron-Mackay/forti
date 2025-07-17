@@ -108,6 +108,7 @@ const CalendarDrawer: React.FC<CalendarDrawerProps> = ({
         )}
 
         {drawerView === 'details' && selectedEvent && (
+          // todo next - edit, delete
           <Box>
             <Typography variant="subtitle1">{selectedEvent.title}</Typography>
             <Typography variant="body2">
