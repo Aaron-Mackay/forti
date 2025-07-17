@@ -7,11 +7,8 @@ interface UserPageProps {
   params: Promise<{ userId: string }>
 }
 
-export default async function UserPage({ params }: UserPageProps) {
+export default async function UserPage({params}: UserPageProps) {
   const userId = (await params).userId;
-
-  // Define the gap in px for precise calculation
-  const GAP = 16;
 
   return (
     <Box
@@ -19,59 +16,45 @@ export default async function UserPage({ params }: UserPageProps) {
         height: "calc(100dvh - 16px)",
         width: "100%",
         display: "flex",
-        flexDirection: { xs: "column", md: "row" },
+        flexDirection: {xs: "column", md: "row"},
         gap: 2,
-        p: 0,
+        p: 2,
         m: 0,
         overflow: "hidden",
-        alignItems: "stretch",
-        justifyContent: "stretch",
+        alignItems: "center",
+        justifyContent: "space-around",
         boxSizing: "border-box",
       }}
     >
-      <Button
-        component={Link}
-        href={`/user/${userId}/plan`}
-        variant="contained"
-        sx={{
-          flex: "1 1 0",
-          minWidth: 0,
-          minHeight: 0,
-          borderRadius: 2,
-          fontSize: "2rem",
-          border: "2px solid #333",
-          bgcolor: "#f0f0f0",
-          color: "#222",
-          boxShadow: "none",
-          boxSizing: "border-box",
-          height: { xs: `calc((100dvh - ${GAP}px) / 2)`, md: "100%" },
-          width: { xs: "100%", md: `calc((100dvw - ${GAP}px) / 2)` },
-        }}
-      >
-        Plan
-      </Button>
-      <Button
-        component={Link}
-        href={`/user/${userId}/dashboard`}
-        variant="contained"
-        color="secondary"
-        sx={{
-          flex: "1 1 0",
-          minWidth: 0,
-          minHeight: 0,
-          borderRadius: 2,
-          fontSize: "2rem",
-          border: "2px solid #333",
-          bgcolor: "#f0f0f0",
-          color: "#222",
-          boxShadow: "none",
-          boxSizing: "border-box",
-          height: { xs: `calc((100dvh - ${GAP}px) / 2)`, md: "100%" },
-          width: { xs: "100%", md: `calc((100dvw - ${GAP}px) / 2)` },
-        }}
-      >
-        Workout
-      </Button>
+      {["plan", "dashboard", "calendar"].map((route) => (
+        <Button
+          key={route}
+          component={Link}
+          href={`/user/${userId}/${route === "dashboard" ? "dashboard" : route}`}
+          variant="contained"
+          color={route === "plan" ? "primary" : "secondary"}
+          sx={{
+            flex: "0 0 auto",
+            aspectRatio: "1 / 1", // Ensures square shape
+            width: {xs: "30dvh", md: "30dvw"}, // Adjust as needed for your layout
+            maxWidth: 300, // Optional: limit max size
+            minWidth: 0,
+            minHeight: 0,
+            borderRadius: 2,
+            fontSize: "2rem",
+            border: "2px solid #333",
+            bgcolor: "#f0f0f0",
+            color: "#222",
+            boxShadow: "none",
+            boxSizing: "border-box",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {route.charAt(0).toUpperCase() + route.slice(1)}
+        </Button>
+      ))}
     </Box>
   );
 }
