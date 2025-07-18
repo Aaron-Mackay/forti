@@ -190,7 +190,7 @@ const parsedEvents = (events: EventPrisma[]): FullCalendarIngestableEvent[] => {
       allDay: true,
       title: event.name,
       start: event.startDate,
-      end: addDays(event.endDate,1), // add day as end is natively exclusive
+      end: addDays(event.endDate, 1), // add day as end is natively exclusive
       id: event.id.toString(),
       color: getEventColor(event),
       display: event.eventType === EventType.CustomEvent ? 'auto' : 'background',
