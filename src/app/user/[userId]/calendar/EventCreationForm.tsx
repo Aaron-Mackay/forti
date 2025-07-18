@@ -140,6 +140,7 @@ export const EventCreationForm = (props: {
                 eventType === EventType.BlockEvent &&
                 blockSubtype === BlockSubtype.Custom
               }
+              onExited={() => setCustomBlockName('')}
               timeout={TIMEOUT}
               unmountOnExit
               sx={{
@@ -170,7 +171,7 @@ export const EventCreationForm = (props: {
           </Box>
         </Collapse>
 
-        <Collapse in={!!props.prefilledDateRange.start || eventType === EventType.CustomEvent || blockSubtype !== null}
+        <Collapse in={(!!props.prefilledDateRange.start || eventType === EventType.CustomEvent || blockSubtype !== null) && !(blockSubtype === BlockSubtype.Custom && !customBlockName)}
                   timeout={TIMEOUT} unmountOnExit>
           <Divider sx={{my: 1}}/>
           <Typography variant={'subtitle2'} fontSize="0.75rem">Date Range</Typography>

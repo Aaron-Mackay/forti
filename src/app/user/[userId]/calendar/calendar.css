@@ -33,11 +33,22 @@
 
 /* Title of block events */
 .fc .fc-bg-event .fc-event-title {
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0.5em 1em 0.5em 0.5em;
+    border-top-right-radius: 1em;
+    border-bottom-right-radius: 1em;
     position: absolute;
     bottom: 0;
     left: 0;
-    color: lightgray;
-    font-size: clamp(0.6em, 2vw, 3em)
+    background-color: white;
+    color: black;
+    font-weight: bold;
+    font-size: clamp(0.6em, 2vw, 3em);
+}
+
+.fc .fc-bg-event {
+    --fc-bg-event-opacity: 0.5;
 }
 
 /* Allow clicks to pass through events */
