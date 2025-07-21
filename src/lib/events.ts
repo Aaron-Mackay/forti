@@ -23,3 +23,13 @@ export async function deleteEvent(eventId: number) {
   if (!res.ok) throw new Error(await res.text());
   return await res.json();
 }
+
+export async function updateEvent(eventId: number, data: Partial<EventPrisma>) {
+  const res = await fetch(`/api/event/${eventId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw await res.json();
+  return await res.json();
+}
