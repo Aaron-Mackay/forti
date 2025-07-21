@@ -11,7 +11,7 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import {sub} from "date-fns";
+import {addDays, sub, subDays} from "date-fns";
 import React, {useState} from "react";
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditCalendarIcon from '@mui/icons-material/EditCalendar';
@@ -20,7 +20,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import {dateAndWeek} from "@/app/user/[userId]/calendar/utils";
 import {DatePicker} from "@mui/x-date-pickers";
 import {EventPrisma} from "@/types/dataTypes";
-import {deleteEvent} from "@lib/events";
+import {deleteEvent, updateEvent} from "@lib/events";
 
 export const EventDetails = (
   {
@@ -39,7 +39,7 @@ export const EventDetails = (
 
   const [title, setTitle] = useState<string>(event.title ?? '')
   const [startDate, setStartDate] = useState<Date>(event.start!)
-  const [endDate, setEndDate] = useState<Date>(sub(event.end!, {days: 1}))
+  const [endDate, setEndDate] = useState<Date>(subDays(event.end!, 1))
 
   const handleDelete = async () => {
     setShowDeleteConfirm(false)
@@ -62,19 +62,32 @@ export const EventDetails = (
       })
   }
 
-  const handleSave = () => {
-    // todo implement save
-
-    setMode('view')
+  const handleSave = async () => {
+    updateEvent(Number(event.id), {
+      name: title,
+      startDate: addDays(startDate, 1),
+      endDate: addDays(endDate, 1),
+    })
+      .then((updated) => {
+        setEventsInState((prev) =>
+          prev.map((e) => (e.id === updated.id ? {...e, ...updated} : e))
+        );
+        setMode('view');
+        alert("Event updated");
+      })
+      .catch((err) => {
+        console.error(err)
+        alert("Failed to update event")
+      })
   }
 
   return (<>
     {mode === 'view' &&
       <Box>
-        <Typography variant="h5" gutterBottom sx={{paddingBottom: 1}}>{event.title}</Typography>
+        <Typography variant="h5" gutterBottom sx={{paddingBottom: 1}}>{title}</Typography>
         <Typography variant="subtitle2" sx={{textAlign: 'center', py: 1}}>
         <span style={{textAlign: 'center'}}>
-                  {event.start && dateAndWeek(event.start)} - {event.end && dateAndWeek(sub(event.end, {days: 1}))}
+                  {dateAndWeek(startDate)} - {dateAndWeek(sub(endDate, {days: 1}))}
                 </span>
         </Typography>
         <Divider sx={{my: 1}}/>
@@ -150,7 +163,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({date, onChange}) => 
   return (<DatePicker
     label="Select date"
     value={date}
-  // @ts-expect-error Latest MUI Date Picker wants some extra types that are not in the docs
+    // @ts-expect-error Latest MUI Date Picker wants some extra types that are not in the docs
     onChange={onChange}
     slotProps={{
       textField: {
