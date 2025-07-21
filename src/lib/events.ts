@@ -14,3 +14,12 @@ export async function createEvent(event: Omit<EventPrisma, 'id'>) {
   if (!res.ok) throw new Error(await res.text());
   return await res.json();
 }
+
+export async function deleteEvent(eventId: number) {
+  const res = await fetch(`/api/event/${eventId}`, {
+    method: "DELETE",
+    headers: {"Content-Type": "application/json"},
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return await res.json();
+}
