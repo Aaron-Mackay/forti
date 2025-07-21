@@ -1,3 +1,5 @@
+import {getISOWeek} from "date-fns";
+
 export const minToHhMm = (timeInMinutes: number): string => {
   const pad = (n: number) => String(n).padStart(2, '0');
   const h = Math.floor(timeInMinutes / 60);
@@ -7,4 +9,8 @@ export const minToHhMm = (timeInMinutes: number): string => {
 export const hhMmToMin = (time: string): number => {
   const [hours, minutes] = time.split(':').map(Number);
   return hours * 60 + minutes;
+}
+
+export const dateAndWeek = (date: Date) => {
+  return `${date.toDateString()} (Wk ${getISOWeek(date)})`
 }

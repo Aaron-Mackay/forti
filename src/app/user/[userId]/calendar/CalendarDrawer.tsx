@@ -1,7 +1,6 @@
 import React, {useRef, useState} from "react";
 import {Box, Drawer, Typography} from "@mui/material";
 import {EventApi} from "@fullcalendar/core";
-import {sub} from "date-fns";
 
 import {DayMetricPrisma, EventPrisma} from "@/types/dataTypes";
 import {DrawerView} from "@/app/user/[userId]/calendar/Calendar";
@@ -10,6 +9,7 @@ import {EventCreationForm} from "@/app/user/[userId]/calendar/EventCreationForm"
 import {EventsList} from "@/app/user/[userId]/calendar/EventsList";
 import {DayMetricInput} from "@/app/user/[userId]/calendar/DayMetricInput";
 import {TRANSITION_MS, useAnimatedDrawerHeight} from "./useAnimatedDrawerHeight";
+import {EventDetails} from "@/app/user/[userId]/calendar/EventDetails";
 
 type CalendarDrawerProps = {
   open: boolean,
@@ -108,14 +108,7 @@ const CalendarDrawer: React.FC<CalendarDrawerProps> = ({
         )}
 
         {drawerView === 'details' && selectedEvent && (
-          // todo next - edit, delete
-          <Box>
-            <Typography variant="subtitle1">{selectedEvent.title}</Typography>
-            <Typography variant="body2">
-              {selectedEvent.start?.toDateString()}
-              {selectedEvent.end && ` — ${sub(selectedEvent.end, {days: 1}).toDateString()}`}
-            </Typography>
-          </Box>
+          <EventDetails event={selectedEvent} setDrawerOpen={setDrawerOpen} setEventsInState={setEventsInState}/>
         )}
 
         {drawerView === 'event-form' && (
