@@ -40,6 +40,7 @@
     ]
   },
   "include": [
+    "svgr.d.ts",
     "prisma/seed.ts",
     // Include all files in src/
     "src/**/*",

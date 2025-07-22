@@ -7,7 +7,7 @@ import interactionPlugin, {DateClickArg} from "@fullcalendar/interaction";
 import React, {RefObject, useMemo, useRef, useState} from "react";
 import './calendar.css'
 import {EventApi} from "@fullcalendar/core";
-import {Fab} from "@mui/material";
+import {Box, Fab} from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import {BlockSubtype, EventType} from "@prisma/client";
 import CalendarDrawer from "./CalendarDrawer";
@@ -89,8 +89,8 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
   };
 
   return (
-    <>
-      <CustomAppBar title={"Calendar"} showBack/>
+    <Box sx={{ backgroundColor: 'background.default', minHeight: '100dvh' }}>
+      <CustomAppBar title={"Calendar"}/>
       <FullCalendar
         ref={calendarRef}
         plugins={[multiMonthPlugin, interactionPlugin]}
@@ -158,7 +158,7 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
         prefilledDateRange={prefilledDateRange}
         setPrefilledDateRange={setPrefilledDateRange}
       />
-    </>
+    </Box>
   )
 }
 
