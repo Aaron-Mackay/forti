@@ -14,22 +14,29 @@ export const EventCreationForm = (props: {
   setEventsInState: (value: (prevEvents: EventPrisma[]) => EventPrisma[]) => void,
   prefilledDateRange: { start: Date | null; endExcl: Date | null }
 }) => {
+  const [eventType, setEventType] = useState<EventType | null>(null)
+  const [blockSubtype, setBlockSubtype] = useState<BlockSubtype | null>(null)
+  const [customEventName, setCustomEventName] = useState<string>("")
+  const [customBlockName, setCustomBlockName] = useState<string>("")
+  const [startDate, setStartDate] = useState<Date | null>(props.prefilledDateRange.start)
+  const [endDate, setEndDate]
+    = useState<Date | null>(props.prefilledDateRange.endExcl && subDays(props.prefilledDateRange.endExcl, 1))
+
   const handleEventTypeChange = (
     _event: React.MouseEvent<HTMLElement>,
     selection: EventType | null) => {
-    setEventType(selection)
 
+    setEventType(selection)
     setCustomBlockName("")
     setCustomEventName("")
     setBlockSubtype(null)
+    // resetDates()
   }
-
   const isFormFilled = () => {
     // CustomEvent: requires a custom event name and a start date
     if (eventType === EventType.CustomEvent) {
       return Boolean(customEventName && startDate);
     }
-
     // BlockEvent: requires a block subtype and a start date
     if (eventType === EventType.BlockEvent && blockSubtype) {
       // Custom block subtype only: requires a custom block name and a start date
@@ -39,15 +46,8 @@ export const EventCreationForm = (props: {
       return Boolean(startDate);
     }
     return false;
-  };
 
-  const [eventType, setEventType] = useState<EventType | null>(null)
-  const [blockSubtype, setBlockSubtype] = useState<BlockSubtype | null>(null)
-  const [customEventName, setCustomEventName] = useState<string>("")
-  const [customBlockName, setCustomBlockName] = useState<string>("")
-  const [startDate, setStartDate] = useState<Date | null>(props.prefilledDateRange.start)
-  const [endDate, setEndDate]
-    = useState<Date | null>(props.prefilledDateRange.endExcl && subDays(props.prefilledDateRange.endExcl, 1))
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -109,6 +109,7 @@ export const EventCreationForm = (props: {
             fullWidth
             value={customEventName}
             onChange={(e) => setCustomEventName(e.target.value)}
+            autoComplete="off"
             sx={{my: 1}}
           />
         </Collapse>
@@ -156,6 +157,7 @@ export const EventCreationForm = (props: {
                 fullWidth
                 value={customBlockName}
                 onChange={(e) => setCustomBlockName(e.target.value)}
+                autoComplete="off"
                 sx={{
                   display: 'block',
                   height: '100%',
@@ -171,8 +173,9 @@ export const EventCreationForm = (props: {
           </Box>
         </Collapse>
 
-        <Collapse in={(!!props.prefilledDateRange.start || eventType === EventType.CustomEvent || blockSubtype !== null) && !(blockSubtype === BlockSubtype.Custom && !customBlockName)}
-                  timeout={TIMEOUT} unmountOnExit>
+        <Collapse
+          in={!!(startDate || endDate) || (eventType === EventType.CustomEvent || blockSubtype !== null) && !(blockSubtype === BlockSubtype.Custom && !customBlockName)}
+          timeout={TIMEOUT} unmountOnExit>
           <Divider sx={{my: 1}}/>
           <Typography variant={'subtitle2'} fontSize="0.75rem">Date Range</Typography>
           <Box display="flex" gap={2} alignItems="center" width="100%" mb={2} mt={1}>
