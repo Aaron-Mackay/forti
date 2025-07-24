@@ -1,6 +1,5 @@
 import React, {useRef, useState} from "react";
 import {Box, Drawer, Typography} from "@mui/material";
-import {EventApi} from "@fullcalendar/core";
 
 import {DayMetricPrisma, EventPrisma} from "@/types/dataTypes";
 import {BottomDrawerView} from "@/app/user/[userId]/calendar/Calendar";
@@ -16,9 +15,9 @@ type CalendarDrawerProps = {
   drawerView: BottomDrawerView,
   setDrawerView: (view: BottomDrawerView) => void,
   selectedDate: Date | null,
-  selectedEvent: EventApi | null,
-  setSelectedEvent: (event: EventApi | null) => void,
-  eventsOnSelectedDate: EventApi[],
+  selectedEvent: EventPrisma | null,
+  setSelectedEvent: (event: EventPrisma | null) => void,
+  eventsOnSelectedDate: EventPrisma[],
   setDrawerOpen: (open: boolean) => void,
   dateDayMetrics: DayMetricPrisma | null | undefined,
   setDayMetricsStateCb: (date: Date, metrics: DayMetricPrisma | null) => void,
@@ -29,21 +28,21 @@ type CalendarDrawerProps = {
 };
 
 const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
-                                                         open,
-                                                         drawerView,
-                                                         setDrawerView,
-                                                         selectedDate,
-                                                         selectedEvent,
-                                                         setSelectedEvent,
-                                                         eventsOnSelectedDate,
-                                                         setDrawerOpen,
-                                                         dateDayMetrics,
-                                                         setDayMetricsStateCb,
-                                                         userId,
-                                                         setEventsInState,
-                                                         prefilledDateRange,
-                                                         setPrefilledDateRange
-                                                       }) => {
+                                                               open,
+                                                               drawerView,
+                                                               setDrawerView,
+                                                               selectedDate,
+                                                               selectedEvent,
+                                                               setSelectedEvent,
+                                                               eventsOnSelectedDate,
+                                                               setDrawerOpen,
+                                                               dateDayMetrics,
+                                                               setDayMetricsStateCb,
+                                                               userId,
+                                                               setEventsInState,
+                                                               prefilledDateRange,
+                                                               setPrefilledDateRange
+                                                             }) => {
   const [selectedMetric, setSelectedMetric] = useState<MetricKey | null>(null);
   const [inputValue, setInputValue] = useState<string | number | null>('');
   const mainPanelRef = useRef<HTMLDivElement>(null);
