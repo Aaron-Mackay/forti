@@ -9,12 +9,14 @@ import './calendar.css'
 import {EventApi} from "@fullcalendar/core";
 import {Box, Fab} from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
-import {BlockSubtype, EventType} from "@prisma/client";
-import CalendarDrawer from "./CalendarDrawer";
+import CalendarBottomDrawer from "./CalendarBottomDrawer";
 import CustomAppBar from "@/components/CustomAppBar";
-import {addDays, isSameDay} from 'date-fns';
+import {isSameDay} from 'date-fns';
+import {getEventsOnDate, parsedEvents} from "@/app/user/[userId]/calendar/utils";
+import {EventType} from "@prisma/client";
+import {CalendarRightDrawer} from "@/app/user/[userId]/calendar/CalendarRightDrawer";
 
-export type DrawerView = 'list' | 'details' | 'event-form' | 'daymetric-form';
+export type BottomDrawerView = 'list' | 'details' | 'event-form' | 'daymetric-form';
 
 type Props = {
   events: EventPrisma[];
@@ -22,24 +24,19 @@ type Props = {
   userId: string
 };
 
-type FullCalendarIngestableEvent = {
-  allDay: boolean,
-  title: string,
-  start: Date,
-  end: Date,
-  id: string,
-  color?: string,
-  display: string
-}
 
 export default function Calendar({events, dayMetrics, userId}: Props) {
   const calendarRef = useRef<FullCalendar | null>(null);
 
   const [eventsInState, setEventsInState] = useState<EventPrisma[]>(events);
 
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [bottomDrawerOpen, setBottomDrawerOpen] = useState(false);
+  const [bottomDrawerView, setBottomDrawerView] = useState<BottomDrawerView>('list');
+
+  const [rightDrawerOpen, setRightDrawerOpen] = useState(false)
+  const [rightDrawerView, setRightDrawerView] = useState<EventType | null>(null)
+
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [drawerView, setDrawerView] = useState<DrawerView>('list');
   const [selectedEvent, setSelectedEvent] = useState<EventApi | null>(null);
   const [dayMetricsState, setDayMetricsState] = useState<DayMetricPrisma[]>(dayMetrics);
   const [prefilledDateRange, setPrefilledDateRange] =
@@ -55,8 +52,8 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
   }, [selectedDate]);
 
   const handleFabCreateClick = () => {
-    setDrawerView('event-form');
-    setDrawerOpen(true);
+    setBottomDrawerView('event-form');
+    setBottomDrawerOpen(true);
   }
 
   const handleDateSelect = (dateInfo: DateClickArg, calendarRef: RefObject<FullCalendar | null>) => {
@@ -65,16 +62,14 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
     setSelectedDate(dateInfo.date);
     setPrefilledDateRange({start: dateInfo.date, endExcl: null})
     setSelectedEvent(eventsOnDate.length === 1 ? eventsOnDate[0] : null);
-    setDrawerView('list');
-    setDrawerOpen(true);
+    setBottomDrawerView('list');
+    setBottomDrawerOpen(true);
   }
 
   const handleDateRangeSelect = (start: Date, endExcl: Date) => {
-    setDrawerOpen(true)
-    setDrawerView('event-form')
+    setBottomDrawerOpen(true)
+    setBottomDrawerView('event-form')
     setPrefilledDateRange({start, endExcl})
-
-    // todo open create event drawer, with start and end dates prefilled
   }
 
   const handleTodayButtonClick = () => {
@@ -89,7 +84,7 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
   };
 
   return (
-    <Box sx={{ backgroundColor: 'background.default', minHeight: '100dvh' }}>
+    <Box sx={{backgroundColor: 'background.default', minHeight: '100dvh'}}>
       <CustomAppBar title={"Calendar"}/>
       <FullCalendar
         ref={calendarRef}
@@ -122,20 +117,42 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
           }
         }}
       />
+      <Box sx={{
+        position: 'absolute',
+        bottom: 25,
+        left: 25,
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        gap: 1
+      }}>
+        <Fab variant="extended" size="medium" onClick={() => {
+          setRightDrawerView(EventType.CustomEvent);
+          setRightDrawerOpen(true);
+        }}>
+          Events
+        </Fab>
+        <Fab variant="extended" size="medium" onClick={() => {
+          setRightDrawerView(EventType.BlockEvent);
+          setRightDrawerOpen(true);
+        }}>
+          Blocks
+        </Fab>
+      </Box>
       <Fab color="primary" aria-label="add" onClick={handleFabCreateClick}
            sx={{position: "absolute", bottom: 25, right: 25}}>
         <AddIcon/>
       </Fab>
-      <CalendarDrawer
+      <CalendarBottomDrawer
         setEventsInState={setEventsInState}
-        open={drawerOpen}
-        drawerView={drawerView}
-        setDrawerView={setDrawerView}
+        open={bottomDrawerOpen}
+        drawerView={bottomDrawerView}
+        setDrawerView={setBottomDrawerView}
         selectedDate={selectedDate}
         selectedEvent={selectedEvent}
         setSelectedEvent={setSelectedEvent}
         eventsOnSelectedDate={eventsOnSelectedDate}
-        setDrawerOpen={setDrawerOpen}
+        setDrawerOpen={setBottomDrawerOpen}
         dateDayMetrics={
           selectedDate &&
           dayMetricsState.find(dm => isSameDay(dm.date, selectedDate))
@@ -158,54 +175,12 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
         prefilledDateRange={prefilledDateRange}
         setPrefilledDateRange={setPrefilledDateRange}
       />
+      <CalendarRightDrawer
+        rightDrawerOpen={rightDrawerOpen}
+        setRightDrawerOpen={setRightDrawerOpen}
+        rightDrawerView={rightDrawerView}
+        eventsInState={eventsInState}
+      />
     </Box>
   )
-}
-
-const getDefinedBlockColor = (blockSubtype: BlockSubtype): string => {
-  // todo pick readable colors
-  const BLOCK_COLORS: Record<BlockSubtype, string> = {
-    Bulk: 'green',
-    Cut: 'yellow',
-    Maintenance: 'darkgreen',
-    Deload: 'lightblue',
-    Prep: 'red',
-    Refeed: 'orange',
-    Custom: 'purple',
-  };
-
-  return BLOCK_COLORS[blockSubtype] || 'gray'
-}
-
-const getEventColor = (event: EventPrisma): string | undefined => {
-  if (event.eventType === EventType.CustomEvent) return undefined;
-  if (event.customColor) return event.customColor;
-  if (event.blockSubtype) return getDefinedBlockColor(event.blockSubtype);
-  return undefined;
-};
-
-const parsedEvents = (events: EventPrisma[]): FullCalendarIngestableEvent[] => {
-  return events.map(event => {
-    return {
-      allDay: true,
-      title: event.name,
-      start: event.startDate,
-      end: addDays(event.endDate, 1), // add day as end is natively exclusive
-      id: event.id.toString(),
-      color: getEventColor(event),
-      display: event.eventType === EventType.CustomEvent ? 'auto' : 'background',
-      extendedProps: {eventType: event.eventType, blockSubtype: event.blockSubtype}
-    }
-  })
-}
-
-const getEventsOnDate = (dateInfo: DateClickArg, calendarRef: RefObject<FullCalendar | null>): EventApi[] => {
-  const clickedDate = dateInfo.date;
-  const calendarApi = calendarRef.current?.getApi();
-  if (!calendarApi) return [];
-  return calendarApi.getEvents().filter(event => {
-    const start = event.start;
-    const end = event.end ?? start;
-    return start && end && start <= clickedDate && clickedDate < end;
-  });
 }

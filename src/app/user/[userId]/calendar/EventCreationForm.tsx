@@ -81,7 +81,7 @@ export const EventCreationForm = (props: {
         })
       })
       .catch((e) => {
-        console.log(e.message)
+        console.error(e.message)
         alert(JSON.parse(e.message).error)
       })
   }

@@ -1,11 +1,10 @@
 import React from "react";
 import {EventApi} from "@fullcalendar/core";
-import {DrawerView} from "@/app/user/[userId]/calendar/Calendar";
-import {Divider, Paper, Stack, styled, Typography} from "@mui/material";
+import {BottomDrawerView} from "@/app/user/[userId]/calendar/Calendar";
+import {Divider, Stack, Typography} from "@mui/material";
 import {EventType} from "@prisma/client";
 import Button from "@mui/material/Button";
-import {sub} from "date-fns";
-import {dateAndWeek} from "@/app/user/[userId]/calendar/utils";
+import {EventListItem} from "@/app/user/[userId]/calendar/EventListItem";
 
 const splitEventsByType = (events: EventApi[]) => {
   const blockEvents: EventApi[] = [];
@@ -25,7 +24,7 @@ const splitEventsByType = (events: EventApi[]) => {
 export const EventsList: React.FC<{
   eventsOnSelectedDate: EventApi[],
   setSelectedEvent: (event: EventApi) => void,
-  setDrawerView: (view: DrawerView) => void,
+  setDrawerView: (view: BottomDrawerView) => void,
 }> = ({
         eventsOnSelectedDate,
         setSelectedEvent,
@@ -34,39 +33,22 @@ export const EventsList: React.FC<{
 
   const [blockEvents, customEvents] = splitEventsByType(eventsOnSelectedDate)
 
-  const Item = styled(Paper)(({theme}) => ({
-    backgroundColor: '#fff',
-    ...theme.typography.body2,
-    padding: theme.spacing(1),
-    textAlign: 'center',
-    color: (theme.vars ?? theme).palette.text.secondary,
-    ...theme.applyStyles('dark', {
-      backgroundColor: '#1A2027',
-    }),
-  }));
 
   const EventButtonList = ({events, title}: { events: EventApi[], title: string }) => {
     return (<>
       <Typography variant="subtitle2" fontSize="0.75rem">{title}</Typography>
       <Stack spacing={1} sx={{marginBottom: 1}}>
         {events.map((event) => (
-          <Item
+          <EventListItem
             key={event.id}
             onClick={() => {
               setSelectedEvent(event);
               setDrawerView('details');
             }}
-            sx={{backgroundColor: 'rgba(200,238,255,0.1)', borderRadius: '1em'}}
-          >
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
-              <span>{event.title}</span>
-              <span style={{textAlign: 'center'}}>
-                  {event.start && dateAndWeek(event.start)}
-                <br/><Divider sx={{my: 1}}/>
-                {event.end && dateAndWeek(sub(event.end, {days: 1}))}
-                </span>
-            </div>
-          </Item>
+            title={event.title}
+            start={event.start!}
+            end={event.end!}
+          />
         ))}
       </Stack>
     </>)

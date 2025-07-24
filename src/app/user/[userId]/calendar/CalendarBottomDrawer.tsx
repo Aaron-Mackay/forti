@@ -3,7 +3,7 @@ import {Box, Drawer, Typography} from "@mui/material";
 import {EventApi} from "@fullcalendar/core";
 
 import {DayMetricPrisma, EventPrisma} from "@/types/dataTypes";
-import {DrawerView} from "@/app/user/[userId]/calendar/Calendar";
+import {BottomDrawerView} from "@/app/user/[userId]/calendar/Calendar";
 import {DayMetricsBar, MetricKey} from "@/app/user/[userId]/calendar/DayMetricBar";
 import {EventCreationForm} from "@/app/user/[userId]/calendar/EventCreationForm";
 import {EventsList} from "@/app/user/[userId]/calendar/EventsList";
@@ -13,8 +13,8 @@ import {EventDetails} from "@/app/user/[userId]/calendar/EventDetails";
 
 type CalendarDrawerProps = {
   open: boolean,
-  drawerView: DrawerView,
-  setDrawerView: (view: DrawerView) => void,
+  drawerView: BottomDrawerView,
+  setDrawerView: (view: BottomDrawerView) => void,
   selectedDate: Date | null,
   selectedEvent: EventApi | null,
   setSelectedEvent: (event: EventApi | null) => void,
@@ -28,7 +28,7 @@ type CalendarDrawerProps = {
   setPrefilledDateRange: (value: { start: Date | null; endExcl: Date | null }) => void
 };
 
-const CalendarDrawer: React.FC<CalendarDrawerProps> = ({
+const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
                                                          open,
                                                          drawerView,
                                                          setDrawerView,
@@ -139,4 +139,4 @@ const CalendarDrawer: React.FC<CalendarDrawerProps> = ({
 }
 
 
-export default CalendarDrawer;
+export default CalendarBottomDrawer;
