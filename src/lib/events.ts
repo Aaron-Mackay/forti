@@ -1,18 +1,23 @@
 import {EventPrisma} from "@/types/dataTypes";
-import convertDateToString from "@lib/convertDateToString";
+import {convertDateStringToDate, convertDateToDateString} from "@lib/dateUtils";
 
-export async function createEvent(event: Omit<EventPrisma, 'id'>) {
+export async function createEvent(event: Omit<EventPrisma, 'id'>): Promise<EventPrisma> {
   const res = await fetch("/api/event", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
       ...event,
-      startDate: convertDateToString(event.startDate),
-      endDate: convertDateToString(event.endDate),
+      startDate: convertDateToDateString(event.startDate),
+      endDate: convertDateToDateString(event.endDate),
     }),
   });
   if (!res.ok) throw new Error(await res.text());
-  return await res.json();
+  const createdEvent = await res.json()
+  return {
+    ...createdEvent,
+    startDate: convertDateStringToDate(createdEvent.startDate),
+    endDate: convertDateStringToDate(createdEvent.endDate),
+  };
 }
 
 export async function deleteEvent(eventId: number) {
