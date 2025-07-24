@@ -7,6 +7,7 @@ import Button from "@mui/material/Button";
 import Week from "@/components/Week";
 import EditModeToggle from "@/components/EditModeToggle";
 import {Exercise} from "@prisma/client";
+import ScreenSizeWarningBanner from "@/components/ScreenSizeWarningBanner";
 
 export const PlanTable: React.FC<{
   lockedInEditMode: boolean;
@@ -56,6 +57,7 @@ export const PlanTable: React.FC<{
           Add Week
         </Button>
       )}
+      <ScreenSizeWarningBanner />
     </>
   );
 };
