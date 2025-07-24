@@ -4,14 +4,13 @@ import {DayMetricPrisma, EventPrisma} from "@/types/dataTypes";
 import FullCalendar from "@fullcalendar/react";
 import multiMonthPlugin from "@fullcalendar/multimonth";
 import interactionPlugin, {DateClickArg} from "@fullcalendar/interaction";
-import React, {RefObject, useMemo, useRef, useState} from "react";
+import React, {useMemo, useRef, useState} from "react";
 import './calendar.css'
-import {EventApi} from "@fullcalendar/core";
 import {Box, Fab} from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import CalendarBottomDrawer from "./CalendarBottomDrawer";
 import CustomAppBar from "@/components/CustomAppBar";
-import {isSameDay} from 'date-fns';
+import {format, isAfter, isBefore, isSameDay} from 'date-fns';
 import {getEventsOnDate, parsedEvents} from "@/app/user/[userId]/calendar/utils";
 import {EventType} from "@prisma/client";
 import {CalendarRightDrawer} from "@/app/user/[userId]/calendar/CalendarRightDrawer";
@@ -37,27 +36,30 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
   const [rightDrawerView, setRightDrawerView] = useState<EventType | null>(null)
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<EventApi | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventPrisma | null>(null);
   const [dayMetricsState, setDayMetricsState] = useState<DayMetricPrisma[]>(dayMetrics);
   const [prefilledDateRange, setPrefilledDateRange] =
     useState<{ start: Date | null, endExcl: Date | null }>({start: null, endExcl: null})
 
-  const eventsOnSelectedDate = useMemo(() => {
-    if (!selectedDate || !calendarRef.current) return [];
-    return calendarRef.current.getApi().getEvents().filter(event => {
-      const start = event.start;
-      const end = event.end ?? start;
-      return start && end && start <= selectedDate && selectedDate < end;
+  const eventsOnSelectedDate: EventPrisma[] = useMemo(() => {
+    if (!selectedDate) return [];
+    return eventsInState.filter(event => {
+      const start = event.startDate;
+      const end = event.endDate ?? start;
+      return (
+        (isSameDay(selectedDate, start) || isAfter(selectedDate, start)) &&
+        isBefore(selectedDate, end)
+      );
     });
-  }, [selectedDate]);
+  }, [selectedDate, eventsInState]);
 
   const handleFabCreateClick = () => {
     setBottomDrawerView('event-form');
     setBottomDrawerOpen(true);
   }
 
-  const handleDateSelect = (dateInfo: DateClickArg, calendarRef: RefObject<FullCalendar | null>) => {
-    const eventsOnDate = getEventsOnDate(dateInfo, calendarRef);
+  const handleDateSelect = (dateInfo: DateClickArg) => {
+    const eventsOnDate = getEventsOnDate(dateInfo, eventsInState);
 
     setSelectedDate(dateInfo.date);
     setPrefilledDateRange({start: dateInfo.date, endExcl: null})
@@ -73,12 +75,19 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
   }
 
   const handleTodayButtonClick = () => {
+    scrollToDate(new Date())
+  };
+
+  const scrollToDate = (date: Date) => {
     if (!calendarRef.current) return
-    calendarRef.current.getApi().gotoDate(new Date());
+    calendarRef.current.getApi().gotoDate(date);
     setTimeout(() => {
-      const todayCell = document.querySelector('.fc-day-today');
-      if (todayCell) {
-        todayCell.scrollIntoView({behavior: 'smooth', block: 'center'});
+      // FullCalendar uses ISO date strings for day cell class names
+      const isoDate = format(date, "yyyy-MM-dd");
+      // Try to find the cell for the given date
+      const cell = document.querySelector(`.fc-day[data-date="${isoDate}"]`);
+      if (cell) {
+        cell.scrollIntoView({behavior: 'smooth', block: 'center'});
       }
     }, 0);
   };
@@ -93,10 +102,9 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
         firstDay={1}
         multiMonthMaxColumns={1}
         height={"calc(100dvh - 56px)"}
-        editable={true}
         selectable={true}
         selectLongPressDelay={400}
-        dateClick={(dateInfo) => handleDateSelect(dateInfo, calendarRef)}
+        dateClick={(dateInfo) => handleDateSelect(dateInfo)}
         select={({start, end}) => handleDateRangeSelect(start, end)}
         dayCellDidMount={(info) => {
           const el = document.createElement("div");
@@ -180,7 +188,11 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
         setRightDrawerOpen={setRightDrawerOpen}
         rightDrawerView={rightDrawerView}
         eventsInState={eventsInState}
+        setBottomDrawerOpen={setBottomDrawerOpen}
+        setBottomDrawerView={setBottomDrawerView}
+        setSelectedEvent={setSelectedEvent}
         year={calendarRef.current?.getApi().view.currentStart.getFullYear()}
+        scrollToDate={scrollToDate}
       />
     </Box>
   )

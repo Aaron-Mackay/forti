@@ -1,4 +1,3 @@
-import {EventApi} from "@fullcalendar/core";
 import {
   Box,
   Dialog,
@@ -28,7 +27,7 @@ export const EventDetails = (
     setDrawerOpen,
     setEventsInState
   }: {
-    event: EventApi,
+    event: EventPrisma,
     setDrawerOpen: (open: boolean) => void
     setEventsInState: (value: (prevEvents: EventPrisma[]) => EventPrisma[]) => void
   },
@@ -37,9 +36,9 @@ export const EventDetails = (
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const [title, setTitle] = useState<string>(event.title ?? '')
-  const [startDate, setStartDate] = useState<Date>(event.start!)
-  const [endDate, setEndDate] = useState<Date>(subDays(event.end!, 1))
+  const [title, setTitle] = useState<string>(event.name ?? '')
+  const [startDate, setStartDate] = useState<Date>(event.startDate!)
+  const [endDate, setEndDate] = useState<Date>(subDays(event.endDate!, 1))
 
   const handleDelete = async () => {
     setShowDeleteConfirm(false)

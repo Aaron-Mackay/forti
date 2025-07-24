@@ -2,9 +2,6 @@ import {addDays, getISOWeek} from "date-fns";
 import {BlockSubtype, EventType} from "@prisma/client";
 import {EventPrisma} from "@/types/dataTypes";
 import {DateClickArg} from "@fullcalendar/interaction";
-import {RefObject} from "react";
-import FullCalendar from "@fullcalendar/react";
-import {EventApi} from "@fullcalendar/core";
 
 export const minToHhMm = (timeInMinutes: number): string => {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -66,13 +63,11 @@ export const parsedEvents = (events: EventPrisma[]): FullCalendarIngestableEvent
   })
 }
 
-export const getEventsOnDate = (dateInfo: DateClickArg, calendarRef: RefObject<FullCalendar | null>): EventApi[] => {
+export const getEventsOnDate = (dateInfo: DateClickArg, eventsInState: EventPrisma[]): EventPrisma[] => {
   const clickedDate = dateInfo.date;
-  const calendarApi = calendarRef.current?.getApi();
-  if (!calendarApi) return [];
-  return calendarApi.getEvents().filter(event => {
-    const start = event.start;
-    const end = event.end ?? start;
+  return eventsInState.filter(event => {
+    const start = event.startDate;
+    const end = event.endDate ?? start;
     return start && end && start <= clickedDate && clickedDate < end;
   });
 }
