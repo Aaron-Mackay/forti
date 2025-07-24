@@ -180,6 +180,7 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
         setRightDrawerOpen={setRightDrawerOpen}
         rightDrawerView={rightDrawerView}
         eventsInState={eventsInState}
+        year={calendarRef.current?.getApi().view.currentStart.getFullYear()}
       />
     </Box>
   )

@@ -16,12 +16,14 @@ type CalendarRightDrawerProps = {
   setRightDrawerOpen: (open: boolean) => void;
   rightDrawerView: EventType | null;
   eventsInState: EventPrisma[];
+  year?: number;
 };
 export const CalendarRightDrawer = ({
                                       rightDrawerOpen,
                                       setRightDrawerOpen,
                                       rightDrawerView,
-                                      eventsInState
+                                      eventsInState,
+                                      year
                                     }: CalendarRightDrawerProps) => {
   return (<Drawer
     anchor={'right'}
@@ -33,7 +35,10 @@ export const CalendarRightDrawer = ({
       <Divider sx={{my: 1}}/>
       <Stack spacing={1}>
         {eventsInState
-          .filter(event => event.eventType === rightDrawerView)
+          .filter(event => {
+            return (event.eventType === rightDrawerView)
+              && (event.startDate.getFullYear() === year || event.endDate.getFullYear() === year)
+          })
           .sort(sortByStartDateAsc)
           .map(event => {
             return (
