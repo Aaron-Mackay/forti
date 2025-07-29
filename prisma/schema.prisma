@@ -78,13 +78,14 @@ model Week {
 }
 
 model Workout {
-  id        Int               @id @default(autoincrement())
-  order     Int
-  week      Week              @relation(fields: [weekId], references: [id], onDelete: Cascade)
-  weekId    Int
-  name      String
-  notes     String?
-  exercises WorkoutExercise[]
+  id            Int               @id @default(autoincrement())
+  order         Int
+  week          Week              @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  weekId        Int
+  name          String
+  notes         String?
+  exercises     WorkoutExercise[]
+  dateCompleted DateTime?
 
   @@unique([weekId, order])
 }
