@@ -1,31 +1,97 @@
-import {SetPrisma, UserPrisma, WeekPrisma, WorkoutExercisePrisma, WorkoutPrisma} from "@/types/dataTypes";
+import {
+  SetPrisma,
+  UserPrisma,
+  PlanPrisma,
+  WeekPrisma,
+  WorkoutPrisma,
+  WorkoutExercisePrisma,
+} from "@/types/dataTypes";
 
+/**
+ * Builder for UserPrisma, now with plans.
+ */
 export class UserBuilder {
-  private readonly user: UserPrisma
+  private readonly user: UserPrisma;
   constructor(id: number) {
     this.user = {
       id,
-      email: 'test@test.com',
-      name: 'Test User',
-      weeks: [],
-    }
+      email: "test@test.com",
+      name: "Test User",
+      plans: [],
+    };
   }
-  addWeek(week: WeekPrisma)  {
-    week.userId = this.user.id
-    this.user.weeks.push(week)
-    return this
+  addPlan(plan: PlanPrisma) {
+    plan.userId = this.user.id;
+    this.user.plans.push(plan);
+    return this;
   }
   build(): UserPrisma {
-    return {...this.user}
+    // Deep copy plans
+    return {
+      ...this.user,
+      plans: this.user.plans.map((plan) => ({
+        ...plan,
+        weeks: plan.weeks.map((week) => ({
+          ...week,
+          workouts: week.workouts.map((workout) => ({
+            ...workout,
+            exercises: workout.exercises.map((ex) => ({
+              ...ex,
+              sets: [...ex.sets],
+            })),
+          })),
+        })),
+      })),
+    };
   }
 }
 
+/**
+ * Builder for PlanPrisma.
+ */
+export class PlanBuilder {
+  private readonly plan: PlanPrisma;
+  constructor(id: number, order = 1) {
+    this.plan = {
+      id,
+      userId: -1,
+      order,
+      name: "Test Plan",
+      description: "",
+      weeks: [],
+    };
+  }
+  addWeek(week: WeekPrisma)  {
+    week.planId = this.plan.id;
+    this.plan.weeks.push(week);
+    return this;
+  }
+  build(): PlanPrisma {
+    return {
+      ...this.plan,
+      weeks: this.plan.weeks.map((week) => ({
+        ...week,
+        workouts: week.workouts.map((workout) => ({
+          ...workout,
+          exercises: workout.exercises.map((ex) => ({
+            ...ex,
+            sets: [...ex.sets],
+          })),
+        })),
+      })),
+    };
+  }
+}
+
+/**
+ * Builder for WeekPrisma.
+ */
 export class WeekBuilder {
   private readonly week: WeekPrisma;
   constructor(id: number, order = 1) {
     this.week = {
       id,
-      userId: -1,
+      planId: -1,
       order,
       workouts: [],
     };
@@ -36,20 +102,33 @@ export class WeekBuilder {
     return this;
   }
   build(): WeekPrisma {
-    return { ...this.week, workouts: [...this.week.workouts] };
+    return {
+      ...this.week,
+      workouts: this.week.workouts.map((workout) => ({
+        ...workout,
+        exercises: workout.exercises.map((ex) => ({
+          ...ex,
+          sets: [...ex.sets],
+        })),
+      })),
+    };
   }
 }
 
+/**
+ * Builder for WorkoutPrisma.
+ */
 export class WorkoutBuilder {
   private readonly workout: WorkoutPrisma;
   constructor(id: number,  order = 1) {
     this.workout = {
       id,
       weekId: -1,
-      name: 'Workout',
+      name: "Workout",
       order,
-      notes: '',
+      notes: "",
       exercises: [],
+      dateCompleted: null,
     };
   }
   addExercise(ex: WorkoutExercisePrisma) {
@@ -58,10 +137,19 @@ export class WorkoutBuilder {
     return this;
   }
   build(): WorkoutPrisma {
-    return { ...this.workout, exercises: [...this.workout.exercises] };
+    return {
+      ...this.workout,
+      exercises: this.workout.exercises.map((ex) => ({
+        ...ex,
+        sets: [...ex.sets],
+      })),
+    };
   }
 }
 
+/**
+ * Builder for WorkoutExercisePrisma.
+ */
 export class ExerciseBuilder {
   private readonly exercise: WorkoutExercisePrisma;
   constructor(id: number,  order = 1) {
@@ -69,14 +157,14 @@ export class ExerciseBuilder {
       id,
       workoutId: -1,
       exerciseId: -1,
-      repRange: '',
-      restTime: '',
+      repRange: "",
+      restTime: "",
       order,
-      notes: null,
+      notes: "",
       exercise: {
         id: -1,
-        name: 'Bench Press',
-        category: 'Chest',
+        name: "Bench Press",
+        category: "Chest",
         description: null,
       },
       sets: [],
@@ -88,10 +176,16 @@ export class ExerciseBuilder {
     return this;
   }
   build(): WorkoutExercisePrisma {
-    return { ...this.exercise, sets: [...this.exercise.sets] };
+    return {
+      ...this.exercise,
+      sets: [...this.exercise.sets],
+    };
   }
 }
 
+/**
+ * Builder for SetPrisma.
+ */
 export class SetBuilder {
   private readonly set: SetPrisma;
   constructor(id: number, order = 1) {
@@ -100,7 +194,7 @@ export class SetBuilder {
       workoutExerciseId: -1,
       order,
       reps: 8,
-      weight: '100',
+      weight: "100",
     };
   }
   build(): SetPrisma {

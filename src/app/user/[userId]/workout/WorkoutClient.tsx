@@ -9,6 +9,7 @@ import WorkoutsListView from './WorkoutsListView';
 import ExercisesListView from './ExercisesListView';
 import ExerciseDetailView from './ExerciseDetailView';
 import {updateUserSets} from "@/utils/userPlanMutators";
+import PlansListView from "@/app/user/[userId]/workout/PlansListView";
 
 type SnackbarState = {
   open: boolean;
@@ -18,7 +19,8 @@ type SnackbarState = {
 
 type Field = 'weight' | 'reps';
 
-export default function DashboardClient({userData}: { userData: UserPrisma }) {
+export default function WorkoutClient({userData}: { userData: UserPrisma }) {
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [selectedWeekId, setSelectedWeekId] = useState<number | null>(null);
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<number | null>(null);
   const [selectedExerciseId, setSelectedExerciseId] = useState<number | null>(null);
@@ -31,7 +33,12 @@ export default function DashboardClient({userData}: { userData: UserPrisma }) {
   const [userDataState, setUserData] = useState(userData);
 
   // shared stopwatch state so it can be running in multiple views
-  const [stopwatch, setStopwatch] = useState({time: 0, isRunning: false, startTimestamp: null as null | number, pausedTime: 0});
+  const [stopwatch, setStopwatch] = useState({
+    time: 0,
+    isRunning: false,
+    startTimestamp: null as null | number,
+    pausedTime: 0
+  });
   const handleStartStop = () => {
     if (stopwatch.isRunning) {
       setStopwatch(sw => ({
@@ -60,7 +67,8 @@ export default function DashboardClient({userData}: { userData: UserPrisma }) {
   }, []);
 
   // Selectors
-  const selectedWeek = userDataState.weeks.find((w) => w.id === selectedWeekId);
+  const selectedPlan = userDataState.plans.find((p) => p.id === selectedPlanId);
+  const selectedWeek = selectedPlan?.weeks.find((w) => w.id === selectedWeekId);
   const selectedWorkout = selectedWeek?.workouts.find((w) => w.id === selectedWorkoutId);
 
   // Navigation handlers
@@ -68,17 +76,19 @@ export default function DashboardClient({userData}: { userData: UserPrisma }) {
     if (selectedExerciseId) setSelectedExerciseId(null);
     else if (selectedWorkoutId) setSelectedWorkoutId(null);
     else if (selectedWeekId) setSelectedWeekId(null);
+    else if (selectedPlanId) setSelectedPlanId(null);
   };
 
   // Handle set update (auto-save on change)
   const handleSetUpdate = (setIdx: number, field: Field, value: string) => {
-    if (!(selectedWeekId && selectedWorkoutId && selectedExerciseId)) return;
+    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId && selectedExerciseId)) return;
 
     // Save previous state for possible revert
     const prevUserData = userDataState;
 
     // Find the current sets for the selected exercise
-    const selectedWeek = userDataState.weeks.find((w) => w.id === selectedWeekId);
+    const selectedPlan = userDataState.plans.find((p) => p.id === selectedPlanId);
+    const selectedWeek = selectedPlan?.weeks.find((w) => w.id === selectedWeekId);
     const selectedWorkout = selectedWeek?.workouts.find((w) => w.id === selectedWorkoutId);
     const selectedExercise = selectedWorkout?.exercises.find((e) => e.id === selectedExerciseId);
     if (!selectedExercise) return;
@@ -89,7 +99,7 @@ export default function DashboardClient({userData}: { userData: UserPrisma }) {
 
     // Optimistically update userDataState
     setUserData((prev) =>
-      updateUserSets(prev, selectedWeekId, selectedWorkoutId, selectedExerciseId, updatedSets)
+      updateUserSets(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, selectedExerciseId, updatedSets)
     );
 
     // Fire PATCH request in background
@@ -118,7 +128,7 @@ export default function DashboardClient({userData}: { userData: UserPrisma }) {
   };
 
   // View switching
-  if (selectedExerciseId && selectedWorkout) {
+  if (selectedPlan && selectedWeek && selectedWorkout && selectedExerciseId) {
     return (
       <ExerciseDetailView
         workout={selectedWorkout}
@@ -142,7 +152,7 @@ export default function DashboardClient({userData}: { userData: UserPrisma }) {
     );
   }
 
-  if (selectedWorkout) {
+  if (selectedPlan && selectedWeek && selectedWorkout) {
     return (
       <ExercisesListView
         workout={selectedWorkout}
@@ -157,7 +167,7 @@ export default function DashboardClient({userData}: { userData: UserPrisma }) {
     );
   }
 
-  if (selectedWeek) {
+  if (selectedPlan && selectedWeek) {
     return (
       <WorkoutsListView
         week={selectedWeek}
@@ -167,7 +177,18 @@ export default function DashboardClient({userData}: { userData: UserPrisma }) {
     );
   }
 
+  if (selectedPlan) {
+    return (
+      <WeeksListView
+        userData={userDataState}
+        plan={selectedPlan}
+        onBack={goBack}
+        onSelectWeek={setSelectedWeekId}
+      />
+    );
+  }
+
   return (
-    <WeeksListView userData={userDataState} onSelectWeek={setSelectedWeekId}/>
+    <PlansListView userData={userDataState} onSelectPlan={setSelectedPlanId}/>
   );
 }

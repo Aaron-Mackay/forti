@@ -1,144 +1,45 @@
-import {SetPrisma, UserPrisma, WeekPrisma, WorkoutExercisePrisma, WorkoutPrisma} from "@/types/dataTypes";
+import {PlanPrisma, SetPrisma, UserPrisma, WeekPrisma, WorkoutExercisePrisma, WorkoutPrisma} from "@/types/dataTypes";
 import {Exercise} from "@prisma/client";
 import {CreateUuid, Dir} from "@lib/useWorkoutEditor";
 
-export function addExercise(
-  user: UserPrisma,
-  weekId: number,
-  workoutId: number,
-  createUuid: CreateUuid
-): UserPrisma {
+function updatePlan(user: UserPrisma, planId: number, updateFn: (plan: PlanPrisma) => PlanPrisma): UserPrisma {
   return {
     ...user,
-    weeks: user.weeks.map(week =>
-      week.id === weekId
-        ? {
-          ...week,
-          workouts: week.workouts.map(workout =>
-            workout.id === workoutId
-              ? {
-                ...workout,
-                exercises: [
-                  ...workout.exercises,
-                  {
-                    id: createUuid(),
-                    exerciseId: null,
-                    repRange: "",
-                    restTime: "",
-                    order: workout.exercises.length + 1,
-                    exercise: {
-                      name: "N/A",
-                    },
-                    sets: [],
-                  },
-                ],
-              }
-              : workout
-          ),
-        }
-        : week
-    ),
-  } as UserPrisma;
-}
-
-export function updateUserSets(
-  user: UserPrisma,
-  weekId: number,
-  workoutId: number,
-  exerciseId: number,
-  newSets: SetPrisma[]
-): UserPrisma {
-  return {
-    ...user,
-    weeks: user.weeks.map(week =>
-      week.id !== weekId
-        ? week
-        : {
-          ...week,
-          workouts: week.workouts.map(workout =>
-            workout.id !== workoutId
-              ? workout
-              : {
-                ...workout,
-                exercises: workout.exercises.map(ex =>
-                  ex.id !== exerciseId
-                    ? ex
-                    : {...ex, sets: newSets}
-                ),
-              }
-          ),
-        }
-    ),
+    plans: user.plans.map(plan => (plan.id === planId ? updateFn(plan) : plan)),
   };
 }
 
-export function addWeek(user: UserPrisma, createUuid: CreateUuid): UserPrisma {
+function updateWeek(plan: PlanPrisma, weekId: number, updateFn: (week: WeekPrisma) => WeekPrisma): PlanPrisma {
   return {
-    ...user,
-    weeks: [
-      ...user.weeks,
-      {
-        id: createUuid(),
-        order: user.weeks.length + 1,
-        workouts: [],
-      },
-    ],
-  } as UserPrisma;
-}
-
-export function removeWeek(user: UserPrisma, weekId: number): UserPrisma {
-  return {
-    ...user,
-    weeks: user.weeks
-      .filter(w => w.id !== weekId)
-      .map((w, idx) => ({...w, order: idx + 1})),
+    ...plan,
+    weeks: plan.weeks.map(week => (week.id === weekId ? updateFn(week) : week)),
   };
 }
 
-export function addWorkout(user: UserPrisma, weekId: number, createUuid: CreateUuid): UserPrisma {
+function updateWorkout(week: WeekPrisma, workoutId: number, updateFn: (workout: WorkoutPrisma) => WorkoutPrisma): WeekPrisma {
   return {
-    ...user,
-    weeks: user.weeks.map(week =>
-      week.id === weekId
-        ? {
-          ...week,
-          workouts: [
-            ...week.workouts,
-            {
-              id: createUuid(),
-              name: "New Workout",
-              order: week.workouts.length + 1,
-              notes: "",
-              exercises: [],
-            },
-          ],
-        }
-        : week
-    ),
-  } as UserPrisma;
-}
-
-export function removeWorkout(user: UserPrisma, weekId: number, workoutId: number): UserPrisma {
-  return {
-    ...user,
-    weeks: user.weeks.map(week =>
-      week.id === weekId
-        ? {
-          ...week,
-          workouts: week.workouts
-            .filter(wo => wo.id !== workoutId)
-            .map((wo, idx) => ({...wo, order: idx + 1})),
-        }
-        : week
-    ),
+    ...week,
+    workouts: week.workouts.map(workout => (workout.id === workoutId ? updateFn(workout) : workout)),
   };
 }
 
-/**
- * Update the exercise for a specific workout exercise slot in a user plan.
- */
-export function updateExercise(
+function updateExercise(workout: WorkoutPrisma, exerciseId: number, updateFn: (exercise: WorkoutExercisePrisma) => WorkoutExercisePrisma): WorkoutPrisma {
+  return {
+    ...workout,
+    exercises: workout.exercises.map(exercise => (exercise.id === exerciseId ? updateFn(exercise) : exercise)),
+  };
+}
+
+function updateSet(exercise: WorkoutExercisePrisma, setId: number, updateFn: (set: SetPrisma) => SetPrisma): WorkoutExercisePrisma {
+  return {
+    ...exercise,
+    sets: exercise.sets.map(set => (set.id === setId ? updateFn(set) : set)),
+  };
+}
+
+export function updateExerciseInUser(
   user: UserPrisma,
+  planId: number,
   weekId: number,
   workoutId: number,
   workoutExerciseId: number,
@@ -147,530 +48,333 @@ export function updateExercise(
   category: string,
   createUuid: CreateUuid
 ): UserPrisma {
-  const newExercise: Exercise =
-    exercises.find(
-      exercise =>
-        exercise.category === category && exercise.name === exerciseName
-    ) || {
-      category,
-      name: exerciseName,
-      id: createUuid(),
-      description: null,
-    };
-
-  return {
-    ...user,
-    weeks: user.weeks.map(week =>
-      week.id !== weekId
-        ? week
-        : {
-          ...week,
-          workouts: week.workouts.map(workout =>
-            workout.id !== workoutId
-              ? workout
-              : {
-                ...workout,
-                exercises: workout.exercises.map(ex =>
-                  ex.id !== workoutExerciseId
-                    ? ex
-                    : {
-                      ...ex,
-                      exercise: newExercise,
-                    }
-                ),
-              }
-          ),
-        }
-    ),
+  const newExercise = exercises.find(e => e.category === category && e.name === exerciseName) || {
+    category,
+    name: exerciseName,
+    id: createUuid(),
+    description: null,
   };
+
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout =>
+        updateExercise(workout, workoutExerciseId, exercise => ({...exercise, exercise: newExercise}))
+      )
+    )
+  );
 }
 
-/**
- * Move a workout within the user for a particular week
- */
-export function moveWorkout(
-  user: UserPrisma,
-  weekId: number,
-  index: number,
-  dir: Dir
-): UserPrisma {
-  return {
-    ...user,
-    weeks: user.weeks.map(week =>
-      week.id === weekId ? moveWorkoutInWeek(week, index, dir) : week
-    ),
-  };
+export function moveWorkout(user: UserPrisma, planId: number, weekId: number, index: number, dir: Dir): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week => moveWorkoutInWeek(week, index, dir))
+  );
 }
 
-function moveWorkoutInWeek(
-  week: WeekPrisma,
-  index: number,
-  dir: Dir
-): WeekPrisma {
+function moveWorkoutInWeek(week: WeekPrisma, index: number, dir: Dir): WeekPrisma {
   const newWorkouts = [...week.workouts];
   const targetIndex = dir === Dir.UP ? index - 1 : index + 1;
-  if (
-    index < 0 ||
-    index >= newWorkouts.length ||
-    targetIndex < 0 ||
-    targetIndex >= newWorkouts.length
-  ) {
+  if (index < 0 || index >= newWorkouts.length || targetIndex < 0 || targetIndex >= newWorkouts.length) {
     return week;
   }
   const [removed] = newWorkouts.splice(index, 1);
   newWorkouts.splice(targetIndex, 0, removed);
-  // Update order property if needed
   return {
     ...week,
     workouts: newWorkouts.map((w, i) => ({...w, order: i + 1})),
   };
 }
 
-/**
- * Move an exercise within a workout by index and direction.
- */
-export function moveExerciseInWorkout(
-  workout: WorkoutPrisma,
-  index: number,
-  dir: number
-): WorkoutPrisma {
+function moveExerciseInWorkout(workout: WorkoutPrisma, index: number, dir: number): WorkoutPrisma {
   const newExercises = [...workout.exercises];
   const targetIndex = dir === Dir.UP ? index - 1 : index + 1;
-  if (
-    index < 0 ||
-    index >= newExercises.length ||
-    targetIndex < 0 ||
-    targetIndex >= newExercises.length
-  ) {
+  if (index < 0 || index >= newExercises.length || targetIndex < 0 || targetIndex >= newExercises.length) {
     return workout;
   }
   const [removed] = newExercises.splice(index, 1);
   newExercises.splice(targetIndex, 0, removed);
-  // Optionally update order property if needed
   return {
     ...workout,
     exercises: newExercises.map((ex, i) => ({...ex, order: i + 1})),
   };
 }
 
-/**
- * Move an exercise within a workout in a user's plan by index and direction.
- */
-export function moveExercise(
-  user: UserPrisma,
-  weekId: number,
-  workoutId: number,
-  index: number,
-  dir: number
-): UserPrisma {
-  return {
-    ...user,
-    weeks: user.weeks.map(week =>
-      week.id !== weekId
-        ? week
-        : {
-            ...week,
-            workouts: week.workouts.map(workout =>
-              workout.id !== workoutId
-                ? workout
-                : moveExerciseInWorkout(workout, index, dir)
-            ),
-          }
-    ),
-  };
+export function moveExercise(user: UserPrisma, planId: number, weekId: number, workoutId: number, index: number, dir: number): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout => moveExerciseInWorkout(workout, index, dir))
+    )
+  );
 }
 
-/**
- * Deeply duplicate a week, assigning new IDs and resetting set values.
- */
-export function duplicateWeekData(
-  week: WeekPrisma,
-  newOrder: number,
-  createUuid: CreateUuid
-): WeekPrisma {
+export function duplicateWeek(user: UserPrisma, planId: number, weekId: number, createUuid: CreateUuid): UserPrisma {
+  return updatePlan(user, planId, plan => ({
+    ...plan,
+    weeks: [
+      ...plan.weeks,
+      duplicateWeekData(plan.weeks.find(w => w.id === weekId)!, plan.weeks.length + 1, createUuid),
+    ],
+  }));
+}
+
+function duplicateWeekData(week: WeekPrisma, newOrder: number, createUuid: CreateUuid): WeekPrisma {
   return {
     ...week,
-    order: newOrder,
     id: createUuid(),
+    order: newOrder,
     workouts: week.workouts.map(workout => duplicateWorkoutData(workout, createUuid)),
   };
 }
 
-/**
- * Deeply duplicate a workout, assigning new IDs and resetting set values.
- */
-export function duplicateWorkoutData(
-  workout: WorkoutPrisma,
-  createUuid: CreateUuid
-): WorkoutPrisma {
+function duplicateWorkoutData(workout: WorkoutPrisma, createUuid: CreateUuid): WorkoutPrisma {
   return {
     ...workout,
     id: createUuid(),
-    exercises: workout.exercises.map(exercise => duplicateExerciseData(exercise, createUuid)),
+    exercises: workout.exercises.map(ex => duplicateExerciseData(ex, createUuid)),
   };
 }
 
-/**
- * Deeply duplicate an exercise, assigning new IDs and resetting set values.
- */
-export function duplicateExerciseData(
-  exercise: WorkoutExercisePrisma,
-  createUuid: CreateUuid
-) {
+function duplicateExerciseData(exercise: WorkoutExercisePrisma, createUuid: CreateUuid): WorkoutExercisePrisma {
   return {
     ...exercise,
     id: createUuid(),
-    sets: exercise.sets.map(set => ({
-      ...set,
-      id: createUuid(),
-      weight: null,
-      reps: null,
-    })),
+    sets: exercise.sets.map(set => ({...set, id: createUuid(), weight: null, reps: null})),
   };
 }
 
-/**
- * Duplicate a week in the user plan.
- */
-export function duplicateWeek(
+export function removeExercise(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout => ({
+        ...workout,
+        exercises: workout.exercises.filter(ex => ex.id !== exerciseId).map((ex, idx) => ({...ex, order: idx + 1})),
+      }))
+    )
+  );
+}
+
+export function addSet(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, createUuid: CreateUuid): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout =>
+        updateExercise(workout, exerciseId, exercise => ({
+          ...exercise,
+          sets: [
+            ...exercise.sets,
+            {
+              id: createUuid(),
+              workoutExerciseId: exerciseId,
+              order: exercise.sets.length + 1,
+              reps: null,
+              weight: null,
+            },
+          ],
+        }))
+      )
+    )
+  );
+}
+
+export function updateSetWeight(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, setId: number, weight: string): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout =>
+        updateExercise(workout, exerciseId, exercise =>
+          updateSet(exercise, setId, set => ({...set, weight}))
+        )
+      )
+    )
+  );
+}
+
+export function updateSetReps(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, setId: number, reps: number): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout =>
+        updateExercise(workout, exerciseId, exercise =>
+          updateSet(exercise, setId, set => ({...set, reps}))
+        )
+      )
+    )
+  );
+}
+
+export function updateRepRange(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, repRange: string): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout =>
+        updateExercise(workout, exerciseId, exercise => ({...exercise, repRange}))
+      )
+    )
+  );
+}
+
+export function updateRestTime(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, restTime: string): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout =>
+        updateExercise(workout, exerciseId, exercise => ({...exercise, restTime}))
+      )
+    )
+  );
+}
+
+export function updateCategory(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, category: string): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout =>
+        updateExercise(workout, exerciseId, exercise => ({
+          ...exercise,
+          exercise: {...exercise.exercise, category, name: ""},
+        }))
+      )
+    )
+  );
+}
+
+export function removeLastSet(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout =>
+        updateExercise(workout, exerciseId, exercise => ({
+          ...exercise,
+          sets: exercise.sets.slice(0, -1).map((set, idx) => ({...set, order: idx + 1})),
+        }))
+      )
+    )
+  );
+}
+
+export function updateWorkoutName(user: UserPrisma, planId: number, weekId: number, workoutId: number, name: string): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout => ({...workout, name}))
+    )
+  );
+}
+
+export function updateUserSets(
   user: UserPrisma,
+  planId: number,
+  weekId: number,
+  workoutId: number,
+  exerciseId: number,
+  newSets: SetPrisma[]
+): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout =>
+        updateExercise(workout, exerciseId, exercise => ({...exercise, sets: newSets}))
+      )
+    )
+  );
+}
+
+export function addExercise(
+  user: UserPrisma,
+  planId: number,
+  weekId: number,
+  workoutId: number,
+  createUuid: CreateUuid
+): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout => ({
+        ...workout,
+        exercises: [
+          ...workout.exercises,
+          {
+            id: createUuid(),
+            exerciseId: dummyExercise.id,
+            repRange: "",
+            restTime: "",
+            order: workout.exercises.length + 1,
+            exercise: dummyExercise,
+            sets: [],
+            workoutId: workout.id,
+            notes: "",
+          },
+        ],
+      }))
+    )
+  );
+}
+
+export function addWeek(
+  user: UserPrisma,
+  planId: number,
+  createUuid: CreateUuid
+): UserPrisma {
+  return updatePlan(user, planId, plan => ({
+    ...plan,
+    weeks: [
+      ...plan.weeks,
+      {
+        id: createUuid(),
+        order: plan.weeks.length + 1,
+        workouts: [],
+        planId,
+      },
+    ],
+  }));
+}
+
+export function removeWeek(
+  user: UserPrisma,
+  planId: number,
+  weekId: number
+): UserPrisma {
+  return updatePlan(user, planId, plan => ({
+    ...plan,
+    weeks: plan.weeks
+      .filter(week => week.id !== weekId)
+      .map((week, idx) => ({...week, order: idx + 1})),
+  }));
+}
+
+export function addWorkout(
+  user: UserPrisma,
+  planId: number,
   weekId: number,
   createUuid: CreateUuid
 ): UserPrisma {
-  const weekToDuplicate = user.weeks.find(w => w.id === weekId);
-  if (!weekToDuplicate) return user;
-  const duplicatedWeek = duplicateWeekData(weekToDuplicate, user.weeks.length + 1, createUuid);
-  return {
-    ...user,
-    weeks: [...user.weeks, duplicatedWeek],
-  };
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week => ({
+      ...week,
+      workouts: [
+        ...week.workouts,
+        {
+          id: createUuid(),
+          name: "New Workout",
+          order: week.workouts.length + 1,
+          notes: "",
+          exercises: [],
+          weekId,
+          dateCompleted: null,
+        },
+      ],
+    }))
+  );
 }
 
-/**
- * Remove an exercise from a workout in a given user's week by ID and reorders remaining.
- */
-export function removeExercise(user: UserPrisma, weekId: number, workoutId: number, exerciseId: number): UserPrisma {
-  return {
-    ...user,
-    weeks: user.weeks.map(week =>
-      week.id === weekId
-        ? {
-          ...week,
-          workouts: week.workouts.map(workout =>
-            workout.id === workoutId
-              ? {
-                ...workout,
-                exercises: workout.exercises
-                  .filter(ex => ex.id !== exerciseId)
-                  .map((ex, idx) => ({...ex, order: idx + 1})),
-              }
-              : workout
-          ),
-        }
-        : week
-    ),
-  };
-}
-
-/**
- * Add a set to a workout exercise, at the end of the sets
- */
-export function addSet(
+export function removeWorkout(
   user: UserPrisma,
+  planId: number,
   weekId: number,
-  workoutId: number,
-  exerciseId: number,
-  createUuid: CreateUuid
+  workoutId: number
 ): UserPrisma {
-  return {
-    ...user,
-    weeks: user.weeks.map(week =>
-      week.id === weekId
-        ? {
-          ...week,
-          workouts: week.workouts.map(workout =>
-            workout.id === workoutId
-              ? {
-                ...workout,
-                exercises: workout.exercises.map(exercise =>
-                  exercise.id === exerciseId
-                    ? {
-                      ...exercise,
-                      sets: [
-                        ...exercise.sets,
-                        {
-                          id: createUuid(),
-                          workoutExerciseId: exerciseId,
-                          order: exercise.sets.length + 1,
-                          reps: null,
-                          weight: null,
-                        },
-                      ],
-                    }
-                    : exercise
-                ),
-              }
-              : workout
-          ),
-        }
-        : week
-    ),
-  };
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week => ({
+      ...week,
+      workouts: week.workouts
+        .filter(workout => workout.id !== workoutId)
+        .map((workout, idx) => ({...workout, order: idx + 1})),
+    }))
+  );
 }
 
-/**
- * Update the weight of a set in a specific exercise.
- */
-export function updateSetWeight(
-  user: UserPrisma,
-  weekId: number,
-  workoutId: number,
-  exerciseId: number,
-  setId: number,
-  weight: string
-): UserPrisma {
-  return {
-    ...user,
-    weeks: user.weeks.map(week =>
-      week.id !== weekId
-        ? week
-        : {
-          ...week,
-          workouts: week.workouts.map(workout =>
-            workout.id !== workoutId
-              ? workout
-              : {
-                ...workout,
-                exercises: workout.exercises.map(ex =>
-                  ex.id !== exerciseId
-                    ? ex
-                    : {
-                      ...ex,
-                      sets: ex.sets.map(set =>
-                        set.id !== setId
-                          ? set
-                          : {...set, weight}
-                      ),
-                    }
-                ),
-              }
-          ),
-        }
-    ),
-  };
-}
-
-/**
- * Update the reps of a set in a specific exercise.
- */
-export function updateSetReps(
-  user: UserPrisma,
-  weekId: number,
-  workoutId: number,
-  exerciseId: number,
-  setId: number,
-  reps: number
-): UserPrisma {
-  return {
-    ...user,
-    weeks: user.weeks.map(week =>
-      week.id !== weekId
-        ? week
-        : {
-          ...week,
-          workouts: week.workouts.map(workout =>
-            workout.id !== workoutId
-              ? workout
-              : {
-                ...workout,
-                exercises: workout.exercises.map(ex =>
-                  ex.id !== exerciseId
-                    ? ex
-                    : {
-                      ...ex,
-                      sets: ex.sets.map(set =>
-                        set.id !== setId
-                          ? set
-                          : {...set, reps}
-                      ),
-                    }
-                ),
-              }
-          ),
-        }
-    ),
-  };
-}
-
-/**
- * Update the repRange of a specific exercise in a workout.
- */
-export function updateRepRange(
-  user: UserPrisma,
-  weekId: number,
-  workoutId: number,
-  exerciseId: number,
-  repRange: string
-): UserPrisma {
-  return {
-    ...user,
-    weeks: user.weeks.map(week =>
-      week.id !== weekId
-        ? week
-        : {
-          ...week,
-          workouts: week.workouts.map(workout =>
-            workout.id !== workoutId
-              ? workout
-              : {
-                ...workout,
-                exercises: workout.exercises.map(ex =>
-                  ex.id !== exerciseId
-                    ? ex
-                    : {...ex, repRange}
-                ),
-              }
-          ),
-        }
-    ),
-  };
-}
-
-/**
- * Update the restTime of a specific exercise in a workout.
- */
-export function updateRestTime(
-  user: UserPrisma,
-  weekId: number,
-  workoutId: number,
-  exerciseId: number,
-  restTime: string
-): UserPrisma {
-  return {
-    ...user,
-    weeks: user.weeks.map(week =>
-      week.id !== weekId
-        ? week
-        : {
-          ...week,
-          workouts: week.workouts.map(workout =>
-            workout.id !== workoutId
-              ? workout
-              : {
-                ...workout,
-                exercises: workout.exercises.map(ex =>
-                  ex.id !== exerciseId
-                    ? ex
-                    : {...ex, restTime}
-                ),
-              }
-          ),
-        }
-    ),
-  };
-}
-
-/**
- * Update the category of a specific exercise in a workout.
- */
-export function updateCategory(
-  user: UserPrisma,
-  weekId: number,
-  workoutId: number,
-  exerciseId: number,
-  category: string
-): UserPrisma {
-  return {
-    ...user,
-    weeks: user.weeks.map(week =>
-      week.id !== weekId
-        ? week
-        : {
-          ...week,
-          workouts: week.workouts.map(workout =>
-            workout.id !== workoutId
-              ? workout
-              : {
-                ...workout,
-                exercises: workout.exercises.map(ex =>
-                  ex.id !== exerciseId
-                    ? ex
-                    : {
-                      ...ex,
-                      exercise: {
-                        ...ex.exercise,
-                        category,
-                        name: "",
-                      },
-                    }
-                ),
-              }
-          ),
-        }
-    ),
-  };
-}
-
-/**
- * Remove the last set from a specific exercise and reorders remaining sets.
- */
-export function removeLastSet(
-  user: UserPrisma,
-  weekId: number,
-  workoutId: number,
-  exerciseId: number
-): UserPrisma {
-  return {
-    ...user,
-    weeks: user.weeks.map(week =>
-      week.id === weekId
-        ? {
-            ...week,
-            workouts: week.workouts.map(workout =>
-              workout.id === workoutId
-                ? {
-                    ...workout,
-                    exercises: workout.exercises.map(exercise =>
-                      exercise.id === exerciseId
-                        ? {
-                            ...exercise,
-                            sets: exercise.sets
-                              .slice(0, -1)
-                              .map((set, idx) => ({ ...set, order: idx + 1 })),
-                          }
-                        : exercise
-                    ),
-                  }
-                : workout
-            ),
-          }
-        : week
-    ),
-  };
-}
-
-/**
- * Update the name of a specific workout in a week.
- */
-export function updateWorkoutName(
-  user: UserPrisma,
-  weekId: number,
-  workoutId: number,
-  name: string
-): UserPrisma {
-  return {
-    ...user,
-    weeks: user.weeks.map(week =>
-      week.id !== weekId
-        ? week
-        : {
-          ...week,
-          workouts: week.workouts.map(workout =>
-            workout.id !== workoutId
-              ? workout
-              : { ...workout, name }
-          ),
-        }
-    ),
-  };
-}
+const dummyExercise: Exercise = {
+  id: -1,              // Or some sentinel value, or createUuid() if it fits
+  category: "none",
+  name: "N/A",
+  description: null,
+};

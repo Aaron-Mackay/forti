@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import { useWorkoutEditorContext } from "@/context/WorkoutEditorContext";
 import { saveUserWorkoutData } from "@lib/api";
 import Button from "@mui/material/Button";
-import Week from "@/components/Week";
-import EditModeToggle from "@/components/EditModeToggle";
+import Week from "./Week";
+import EditModeToggle from "./EditModeToggle";
 import {Exercise} from "@prisma/client";
 import ScreenSizeWarningBanner from "@/components/ScreenSizeWarningBanner";
 
@@ -15,10 +15,10 @@ export const PlanTable: React.FC<{
   allExercises: Exercise[];
 }> = ({ lockedInEditMode = false, categories, allExercises }) => {
   const [isInEditMode, setIsInEditMode] = useState(lockedInEditMode);
-  const { state, dispatch } = useWorkoutEditorContext();
+  const { state: userDataState, dispatch } = useWorkoutEditorContext();
 
   const handleSave = () => {
-    saveUserWorkoutData(state)
+    saveUserWorkoutData(userDataState)
       .then(() => {
         setIsInEditMode(false)
         alert('Saved successfully')
@@ -26,6 +26,8 @@ export const PlanTable: React.FC<{
       .catch(() => alert('Failed to save'));
   };
 
+  {/* todo update this with dropdown to select plan */}
+  const plan = userDataState.plans[0];
   return (
     <>
       {!lockedInEditMode && (
@@ -40,11 +42,13 @@ export const PlanTable: React.FC<{
         </Button>
       )}
 
-      <h1>User: {state.name}</h1>
+      <h1>User: {userDataState.name}</h1>
 
-      {state.weeks.map((week) => (
+
+      {plan.weeks.map((week) => (
         <Week
           key={week.id}
+          planId={plan.id}
           week={week}
           isInEditMode={isInEditMode}
           categories={categories}
@@ -53,7 +57,8 @@ export const PlanTable: React.FC<{
       ))}
 
       {isInEditMode && (
-        <Button onClick={() => dispatch({ type: 'ADD_WEEK' })}>
+        // todo fix this too
+        <Button onClick={() => dispatch({ type: 'ADD_WEEK', planId: 1 })}>
           Add Week
         </Button>
       )}

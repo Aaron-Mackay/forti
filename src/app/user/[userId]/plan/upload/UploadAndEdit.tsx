@@ -6,10 +6,11 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 import {WorkoutEditorProvider} from "@/context/WorkoutEditorContext";
-import {PlanTable} from "@/components/PlanTable";
+
 import {Exercise} from "@prisma/client";
 
 import {UserPrisma} from "@/types/dataTypes";
+import {PlanTable} from "../PlanTable";
 
 type Props = {
   categories: string[]

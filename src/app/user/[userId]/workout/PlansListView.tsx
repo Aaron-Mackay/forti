@@ -4,25 +4,25 @@ import { Box, Container, List, ListItem, ListItemButton, ListItemText, Typograph
 import { UserPrisma } from '@/types/dataTypes';
 import CustomAppBar from "@/components/CustomAppBar";
 
-export default function WeeksListView({
+export default function PlansListView({
   userData,
-  onSelectWeek,
+  onSelectPlan,
 }: {
   userData: UserPrisma;
-  onSelectWeek: (weekId: number) => void;
+  onSelectPlan: (planId: number) => void;
 }) {
   return (
     <Box sx={{ minHeight: '100dvh', bgcolor: 'background.default', color: 'text.primary' }}>
       <CustomAppBar title={`${userData.name}'s Dashboard`} />
       <Container maxWidth="sm" sx={{ py: 2 }}>
         <Typography variant="subtitle1" gutterBottom>
-          Weeks
+          Plans
         </Typography>
         <List>
-          {userData.weeks.map((week) => (
-            <ListItem key={week.id} disablePadding>
-              <ListItemButton onClick={() => onSelectWeek(week.id)}>
-                <ListItemText primary={`Week ${week.order}`} />
+          {userData.plans.map((plan) => (
+            <ListItem key={plan.id} disablePadding>
+              <ListItemButton onClick={() => onSelectPlan(plan.id)}>
+                <ListItemText primary={`Plan ${plan.order} - ${plan.name}`} />
               </ListItemButton>
             </ListItem>
           ))}

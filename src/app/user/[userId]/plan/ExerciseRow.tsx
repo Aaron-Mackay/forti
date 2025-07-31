@@ -4,11 +4,11 @@ import React from 'react';
 import {Button, TableCell, TableRow, TextField} from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
 import {createFilterOptions} from '@mui/material/Autocomplete';
-import {ToggleableEditableField} from '@/components/ToggleableEditableField';
+import {ToggleableEditableField} from './ToggleableEditableField';
 import {useWorkoutEditorContext} from '@/context/WorkoutEditorContext';
 import {Exercise} from "@prisma/client";
 import {FilterOptionsState} from "@mui/material/useAutocomplete/useAutocomplete";
-import {CompactAutocomplete} from "@/components/CompactUI";
+import {CompactAutocomplete} from "./CompactUI";
 
 import {WorkoutExercisePrisma} from "@/types/dataTypes";
 import {Dir} from "@lib/useWorkoutEditor";
@@ -27,6 +27,7 @@ const filterOptions = (options: string[], params: FilterOptionsState<string>) =>
 interface ExerciseRowProps {
   exerciseLink: WorkoutExercisePrisma
   index: number
+  planId: number
   workoutId: number
   weekId: number
   isInEditMode: boolean
@@ -39,6 +40,7 @@ interface ExerciseRowProps {
 const ExerciseRow = ({
                        exerciseLink,
                        index,
+                       planId,
                        workoutId,
                        weekId,
                        isInEditMode,
@@ -65,6 +67,7 @@ const ExerciseRow = ({
             onInputChange={(_event, newInputValue) => {
               debouncedDispatch({
                 type: 'UPDATE_CATEGORY',
+                planId,
                 weekId,
                 workoutId,
                 workoutExerciseId: exerciseLink.id,
@@ -88,6 +91,7 @@ const ExerciseRow = ({
             onInputChange={(_event, newInputValue) => {
               debouncedDispatch({
                 type: 'UPDATE_EXERCISE',
+                planId,
                 weekId,
                 workoutId,
                 workoutExerciseId: exerciseLink.id,
@@ -112,6 +116,7 @@ const ExerciseRow = ({
           onChange={(val) =>
             dispatch({
               type: 'UPDATE_REP_RANGE',
+              planId,
               weekId,
               workoutId,
               workoutExerciseId: exerciseLink.id,
@@ -129,6 +134,7 @@ const ExerciseRow = ({
           onChange={(val) =>
             dispatch({
               type: 'UPDATE_REST_TIME',
+              planId,
               weekId,
               workoutId,
               workoutExerciseId: exerciseLink.id,
@@ -149,6 +155,7 @@ const ExerciseRow = ({
                 onChange={(val) =>
                   dispatch({
                     type: 'UPDATE_SET_WEIGHT',
+                    planId,
                     exerciseId: exerciseLink.id,
                     workoutId,
                     weekId,
@@ -166,6 +173,7 @@ const ExerciseRow = ({
                 onChange={(val) =>
                   dispatch({
                     type: 'UPDATE_SET_REPS',
+                    planId,
                     exerciseId: exerciseLink.id,
                     workoutId,
                     weekId,
@@ -190,6 +198,7 @@ const ExerciseRow = ({
             onClick={() =>
               dispatch({
                 type: 'ADD_SET',
+                planId,
                 weekId,
                 workoutId,
                 exerciseId: exerciseLink.id,
@@ -202,6 +211,7 @@ const ExerciseRow = ({
             onClick={() =>
               dispatch({
                 type: 'REMOVE_SET',
+                planId,
                 weekId,
                 workoutId,
                 exerciseId: exerciseLink.id,
@@ -214,6 +224,7 @@ const ExerciseRow = ({
             onClick={() =>
               dispatch({
                 type: 'REMOVE_EXERCISE',
+                planId,
                 weekId,
                 workoutId,
                 exerciseId: exerciseLink.id,
@@ -227,6 +238,7 @@ const ExerciseRow = ({
             onClick={() =>
               dispatch({
                 type: 'MOVE_EXERCISE',
+                planId,
                 dir: Dir.UP,
                 index,
                 weekId,
@@ -241,6 +253,7 @@ const ExerciseRow = ({
             onClick={() =>
               dispatch({
                 type: 'MOVE_EXERCISE',
+                planId,
                 dir: Dir.DOWN,
                 index,
                 weekId,

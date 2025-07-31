@@ -1,6 +1,6 @@
 import React from "react";
 import {getExercisesAndCategories} from "@lib/api";
-import {UploadAndEdit} from "@/components/uploadAndEdit";
+import {UploadAndEdit} from "@/app/user/[userId]/plan/upload/UploadAndEdit";
 
 export default async function UploadAndEditPage() {
   const { categories, allExercises } = await getExercisesAndCategories()
