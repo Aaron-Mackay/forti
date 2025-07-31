@@ -26,7 +26,7 @@ export default async function UserPage({params}: UserPageProps) {
         boxSizing: "border-box",
       }}
     >
-      {["plan", "dashboard", "calendar"].map((route) => (
+      {["plan", "workout", "calendar"].map((route) => (
         <Button
           key={route}
           component={Link}

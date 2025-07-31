@@ -70,7 +70,7 @@ export default function CustomAppBar(
       <List>
         <ListLink icon={<HomeIcon/>} text={"Home"} href={userPath + "/"}/>
         <ListLink icon={<CalendarIcon/>} text={"Calendar"} href={userPath + "/calendar"}/>
-        <ListLink icon={<WorkoutIcon/>} text={"Training"} href={userPath + "/dashboard"}/>
+        <ListLink icon={<WorkoutIcon/>} text={"Training"} href={userPath + "/workout"}/>
         <ListLink icon={<ListAltIcon/>} text={"Training Plan"} href={userPath + "/plan"} disabled/>
         {/*// todo undisable once plan finished*/}
       </List>

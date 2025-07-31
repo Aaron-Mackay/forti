@@ -13,7 +13,7 @@ model User {
   id                Int                @id @default(autoincrement())
   email             String             @unique
   name              String
-  weeks             Week[]
+  plans             Plan[]
   events            Event[]
   userExerciseNotes UserExerciseNote[]
   dayMetrics        DayMetric[]
@@ -67,14 +67,26 @@ model DayMetric {
   @@unique([userId, date])
 }
 
-model Week {
-  id       Int       @id @default(autoincrement())
-  order    Int
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId   Int
-  workouts Workout[]
+model Plan {
+  id          Int     @id @default(autoincrement())
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      Int
+  order       Int
+  name        String
+  description String?
+  weeks       Week[]
 
   @@unique([userId, order])
+}
+
+model Week {
+  id      Int      @id @default(autoincrement())
+  order   Int
+  plan    Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  planId  Int
+  workouts Workout[]
+
+  @@unique([planId, order])
 }
 
 model Workout {

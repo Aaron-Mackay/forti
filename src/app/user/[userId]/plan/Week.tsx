@@ -14,13 +14,15 @@ interface WeekProps {
   isInEditMode: boolean
   categories: string[]
   allExercises: Exercise[]
+  planId: number
 }
 
 const Week = ({
                 week,
                 isInEditMode,
                 categories,
-                allExercises
+                allExercises,
+                planId
               }: WeekProps) => {
   const {dispatch} = useWorkoutEditorContext();
 
@@ -28,7 +30,7 @@ const Week = ({
     <div key={week.id} className="mb-2 border p-3">
       <h2>Week {week.order}</h2>
       {isInEditMode && (
-        <Button onClick={() => dispatch({type: 'REMOVE_WEEK', weekId: week.id})}>Remove Week</Button>
+        <Button onClick={() => dispatch({type: 'REMOVE_WEEK', planId, weekId: week.id})}>Remove Week</Button>
       )}
 
       <Box sx={{
@@ -41,6 +43,7 @@ const Week = ({
         {week.workouts.map((workout, woi) => (
           <TableContainer key={workout.id} className="mb-4">
             <Workout
+              planId={planId}
               weekId={week.id}
               workout={workout}
               index={woi}
@@ -54,7 +57,7 @@ const Week = ({
       </Box>
 
       {isInEditMode && (
-        <Button onClick={() => dispatch({type: 'ADD_WORKOUT', weekId: week.id})}>Add Workout</Button>
+        <Button onClick={() => dispatch({type: 'ADD_WORKOUT', planId, weekId: week.id})}>Add Workout</Button>
       )}
     </div>
   );

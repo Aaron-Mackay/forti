@@ -5,14 +5,18 @@ export type DayMetricPrisma = DayMetric
 
 export type UserPrisma = Prisma.UserGetPayload<{
   include: {
-    weeks: {
+    plans: {
       include: {
-        workouts: {
+        weeks: {
           include: {
-            exercises: {
+            workouts: {
               include: {
-                exercise: true,
-                sets: true,
+                exercises: {
+                  include: {
+                    exercise: true,
+                    sets: true,
+                  },
+                },
               },
             },
           },
@@ -22,7 +26,9 @@ export type UserPrisma = Prisma.UserGetPayload<{
   },
 }>;
 
-export type WeekPrisma = UserPrisma['weeks'][number];
+
+export type PlanPrisma = UserPrisma['plans'][number];
+export type WeekPrisma = PlanPrisma['weeks'][number];
 export type WorkoutPrisma = WeekPrisma['workouts'][number];
 export type WorkoutExercisePrisma = WorkoutPrisma['exercises'][number];
 export type SetPrisma = WorkoutExercisePrisma['sets'][number];

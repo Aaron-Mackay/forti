@@ -1,5 +1,5 @@
 import {getUserData} from '@lib/api'; // Server-side data fetching
-import DashboardClient from './DashboardClient';
+import WorkoutClient from './WorkoutClient';
 import {notFound} from "next/navigation";
 import NetworkStatusBanner from "@/components/NetworkStatusBanner"; // Client component
 
@@ -11,6 +11,6 @@ export default async function DashboardPage({params}: { params: Promise<{ userId
 
   return <>
     <NetworkStatusBanner/>
-    <DashboardClient userData={userData}/>
+    <WorkoutClient userData={userData}/>
   </>
 }

@@ -1,6 +1,5 @@
-
 import prisma from '@/lib/prisma';
-import {WorkoutPrisma} from "@/types/dataTypes";
+import {WeekPrisma, WorkoutPrisma} from "@/types/dataTypes";
 import {NextResponse} from "next/server";
 
 export async function POST(req: Request) {
@@ -8,15 +7,20 @@ export async function POST(req: Request) {
 
   const userId = userData.id;
   if (!userId) {
-    return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+    return NextResponse.json({error: "Missing userId"}, {status: 400});
   }
 
 
   try {
     await prisma.$transaction(async (tx) => {
       // 1. Delete all nested data
-      const weekIds = await tx.week.findMany({
+      const planIds = await tx.plan.findMany({
         where: {userId},
+        select: {id: true},
+      });
+
+      const weekIds = await tx.week.findMany({
+        where: {planId: {in: planIds.map(p => p.id)}},
         select: {id: true},
       });
 
@@ -43,59 +47,72 @@ export async function POST(req: Request) {
       });
 
       await tx.week.deleteMany({
+        where: {planId: {in: planIds.map(p => p.id)}},
+      });
+
+      await tx.plan.deleteMany({
         where: {userId}
       });
 
-      // 2. Recreate all weeks, workouts, etc.
-      for (const week of userData.weeks) {
-        await tx.week.create({
+      // 2. Recreate all plans, weeks, workouts, etc.
+      for (const plan of userData.plans) {
+        await tx.plan.create({
           data: {
             userId,
-            order: week.order,
-            workouts: {
-              create: week.workouts.map((workout: WorkoutPrisma) => ({
-                name: workout.name,
-                notes: workout.notes,
-                order: workout.order,
-                exercises: {
+            order: plan.order,
+            name: plan.name,
+            description: plan.description,
+            weeks: {
+              create: plan.weeks.map((week: WeekPrisma) => ({
+                order: week.order,
+                workouts: {
+                  create: week.workouts.map((workout: WorkoutPrisma) => ({
+                    name: workout.name,
+                    notes: workout.notes,
+                    order: workout.order,
+                    dateCompleted: workout.dateCompleted ? new Date(workout.dateCompleted) : null,
+                    exercises: {
                   create: workout.exercises
                     .map(exercise => ({
-                      exercise: exercise.exercise.id
-                        ? {connect: {id: exercise.exercise.id}}
-                        : {
-                          connectOrCreate: {
-                            where: {
-                              name_category: {
+                        exercise: exercise.exercise.id
+                          ? {connect: {id: exercise.exercise.id}}
+                          : {
+                            connectOrCreate: {
+                              where: {
+                                name_category: {
+                                  name: exercise.exercise.name,
+                                  category: exercise.exercise.category,
+                                },
+                              },
+                              create: {
                                 name: exercise.exercise.name,
                                 category: exercise.exercise.category,
                               },
                             },
-                            create: {
-                              name: exercise.exercise.name,
-                              category: exercise.exercise.category,
-                            },
                           },
-                        },
-                      order: exercise.order,
-                      repRange: exercise.repRange,
-                      restTime: exercise.restTime,
-                      sets: {
+                        order: exercise.order,
+                        repRange: exercise.repRange,
+                        restTime: exercise.restTime,
+                        notes: exercise.notes,
+                        sets: {
                         create: exercise.sets.map(set => ({
-                          weight: set.weight ?? null,
-                          reps: set.reps ?? null,
-                          order: set.order
-                        }))
-                      }
-                    }))
-                }
-              }))
-            }
-          }
+                            weight: set.weight ?? null,
+                            reps: set.reps ?? null,
+                            order: set.order,
+                          })),
+                        },
+                      })),
+                    },
+                  })),
+                },
+              })),
+            },
+          },
         });
       }
     });
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    return NextResponse.json({success: true}, {status: 200});
   } catch (err: unknown) {
     console.error("Save error:", err);
 
@@ -104,6 +121,6 @@ export async function POST(req: Request) {
       message = String((err as { message: unknown }).message);
     }
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({error: message}, {status: 500});
   }
 }

@@ -4,9 +4,7 @@ import {fetchJson} from './fetchWrapper';
 import {DayMetricPrisma, EventPrisma, UserPrisma} from "@/types/dataTypes";
 
 export async function getUsers() {
-  return prisma.user.findMany({
-    include: {weeks: true},
-  });
+  return prisma.user.findMany();
 }
 
 export async function getExercises() {
@@ -24,19 +22,25 @@ export async function getExercisesAndCategories() {
 }
 
 export async function getUserData(userId: string): Promise<UserPrisma | null> {
-  return prisma.user.findUnique({
-    where: {id: Number(userId)},
+  const user = await prisma.user.findUnique({
+    where: { id: Number(userId) },
     include: {
-      weeks: {
+      plans: {
+        orderBy: { order: 'asc' },
         include: {
-          workouts: {
-            orderBy: {order: 'asc'},
+          weeks: {
+            orderBy: { order: 'asc' },
             include: {
-              exercises: {
-                orderBy: {order: 'asc'},
+              workouts: {
+                orderBy: { order: 'asc' },
                 include: {
-                  exercise: true,
-                  sets: {orderBy: {order: 'asc'}},
+                  exercises: {
+                    orderBy: { order: 'asc' },
+                    include: {
+                      exercise: true,
+                      sets: { orderBy: { order: 'asc' } },
+                    },
+                  },
                 },
               },
             },
@@ -45,7 +49,12 @@ export async function getUserData(userId: string): Promise<UserPrisma | null> {
       },
     },
   });
+
+  if (!user) return null;
+
+  return user
 }
+
 
 export async function getUserEvents(userId: string) {
   return prisma.event.findMany({

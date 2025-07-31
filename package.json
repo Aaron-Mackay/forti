@@ -10,6 +10,7 @@
     "seed": "ts-node prisma/seed.ts",
     "local-db": "psql -h localhost -U postgres -d postgres",
     "test": "vitest run",
+    "test:e2e": "start-server-and-test dev http://localhost:3000 'playwright test'",
     "rebuild-prisma": "prisma db push && prisma generate",
     "postinstall": "prisma generate",
     "check": "npm run test && npm run lint && npm run build",
@@ -43,6 +44,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.54.1",
     "@svgr/webpack": "^8.1.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
@@ -61,6 +63,7 @@
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
     "prisma": "^6.11.1",
+    "start-server-and-test": "^2.0.12",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "vite-tsconfig-paths": "^5.1.4",

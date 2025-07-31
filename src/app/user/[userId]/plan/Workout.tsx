@@ -3,7 +3,7 @@
 import React from 'react';
 import {Button, TableBody, TableCell, TableHead, TableRow} from '@mui/material';
 import ExerciseRow from './ExerciseRow';
-import {ToggleableEditableField} from '@/components/ToggleableEditableField';
+import {ToggleableEditableField} from './ToggleableEditableField';
 import {useWorkoutEditorContext} from '@/context/WorkoutEditorContext';
 import {Exercise} from "@prisma/client";
 import {CompactTable} from './CompactUI';
@@ -13,6 +13,7 @@ import {Dir} from "@lib/useWorkoutEditor";
 
 
 interface WorkoutProps {
+  planId: number
   weekId: number
   index: number
   workout: WorkoutPrisma
@@ -23,6 +24,7 @@ interface WorkoutProps {
 }
 
 const Workout = ({
+                   planId,
                    weekId,
                    workout,
                    index,
@@ -49,6 +51,7 @@ const Workout = ({
           onChange={(val) =>
             dispatch({
               type: 'UPDATE_WORKOUT_NAME',
+              planId,
               weekId,
               workoutId: workout.id,
               name: val,
@@ -59,18 +62,18 @@ const Workout = ({
 
       {isInEditMode && (
         <>
-          <Button onClick={() => dispatch({type: 'REMOVE_WORKOUT', weekId, workoutId: workout.id})}>
+          <Button onClick={() => dispatch({type: 'REMOVE_WORKOUT', planId, weekId, workoutId: workout.id})}>
             Remove Workout
           </Button>
           <Button
             disabled={workout.order === 1}
-            onClick={() => dispatch({type: 'MOVE_WORKOUT', dir: Dir.UP, index, weekId})}
+            onClick={() => dispatch({type: 'MOVE_WORKOUT', planId, dir: Dir.UP, index, weekId})}
           >
             &uarr;
           </Button>
           <Button
             disabled={workout.order === weekWorkoutCount}
-            onClick={() => dispatch({type: 'MOVE_WORKOUT', dir: Dir.DOWN, index, weekId})}
+            onClick={() => dispatch({type: 'MOVE_WORKOUT', planId, dir: Dir.DOWN, index, weekId})}
           >
             &darr;
           </Button>
@@ -122,6 +125,7 @@ const Workout = ({
         <TableBody sx={{fontSize: '0.8rem'}}>
           {workout.exercises.map((exerciseLink, i) => (
             <ExerciseRow
+              planId={planId}
               key={exerciseLink.id}
               exerciseLink={exerciseLink}
               index={i}
@@ -138,7 +142,7 @@ const Workout = ({
           {isInEditMode && (
             <TableRow>
               <TableCell colSpan={totalColumns} align={"center"}>
-                <Button onClick={() => dispatch({type: 'ADD_EXERCISE', weekId, workoutId: workout.id})}>
+                <Button onClick={() => dispatch({type: 'ADD_EXERCISE', planId, weekId, workoutId: workout.id})}>
                   Add Exercise
                 </Button>
               </TableCell>

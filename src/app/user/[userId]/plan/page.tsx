@@ -1,5 +1,5 @@
 import {getExercisesAndCategories, getUserData} from "@lib/api";
-import {PlanTable} from "@/components/PlanTable";
+import {PlanTable} from "./PlanTable";
 import {WorkoutEditorProvider} from "@/context/WorkoutEditorContext";
 import React from "react";
 import {notFound} from "next/navigation";
