@@ -11,7 +11,7 @@ export default defineConfig({
     exclude: [
       'node_modules',
       'dist',
-      'tests/e2e/*.ts'
+      'tests/e2e/**'
     ],
     coverage: {
       reporter: ['text', 'html'],
