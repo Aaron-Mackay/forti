@@ -48,6 +48,7 @@ export function updateExerciseInUser(
   category: string,
   createUuid: CreateUuid
 ): UserPrisma {
+  //todo if exercise isn't in exercises, add it to db
   const newExercise = exercises.find(e => e.category === category && e.name === exerciseName) || {
     category,
     name: exerciseName,
@@ -62,6 +63,15 @@ export function updateExerciseInUser(
       )
     )
   );
+}
+
+export function updatePlanName(user: UserPrisma, planId: number, name: string): UserPrisma {
+  return {
+    ...user,
+    plans: user.plans.map(plan =>
+      plan.id === planId ? {...plan, name} : plan
+    ),
+  };
 }
 
 export function moveWorkout(user: UserPrisma, planId: number, weekId: number, index: number, dir: Dir): UserPrisma {
@@ -169,6 +179,40 @@ export function addSet(user: UserPrisma, planId: number, weekId: number, workout
             },
           ],
         }))
+      )
+    )
+  );
+}
+
+export function updateSetCount(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, setCount: number, createUuid: CreateUuid): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout =>
+        updateExercise(workout, exerciseId, exercise => {
+          if (setCount < exercise.sets.length) {
+            const sortedSets = [...exercise.sets].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+            return {
+              ...exercise,
+              sets: sortedSets.slice(0, setCount).map((set, idx) => ({ ...set, order: idx + 1 })),
+            };
+          }
+          if (setCount > exercise.sets.length) {
+            return {
+              ...exercise,
+              sets: [
+                ...exercise.sets,
+                ...Array.from({ length: setCount - exercise.sets.length }).map((_, idx) => ({
+                  id: createUuid(),
+                  workoutExerciseId: exerciseId,
+                  order: exercise.sets.length + idx + 1,
+                  reps: null,
+                  weight: null,
+                })),
+              ],
+            };
+          }
+          return exercise;
+        })
       )
     )
   );
@@ -344,7 +388,7 @@ export function addWorkout(
         ...week.workouts,
         {
           id: createUuid(),
-          name: "New Workout",
+          name: `Workout ${week.workouts.length + 1}`,
           order: week.workouts.length + 1,
           notes: "",
           exercises: [],
@@ -375,6 +419,6 @@ export function removeWorkout(
 const dummyExercise: Exercise = {
   id: -1,              // Or some sentinel value, or createUuid() if it fits
   category: "none",
-  name: "N/A",
+  name: "",
   description: null,
 };

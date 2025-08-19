@@ -1,7 +1,7 @@
 import type {Metadata} from "next";
 import {Roboto} from "next/font/google";
 import "./globals.css";
-import {GlobalStyles, ThemeProvider} from "@mui/material";
+import {Box, GlobalStyles, ThemeProvider} from "@mui/material";
 import {AppRouterCacheProvider} from "@mui/material-nextjs/v14-appRouter";
 import theme from "@/lib/theme";
 import {SpeedInsights} from "@vercel/speed-insights/next"
@@ -35,7 +35,9 @@ export default function RootLayout({
           }}
         />
         <DateLocalizationProvider>
-          {children}
+          <Box sx={{ backgroundColor: 'background.default', minHeight: '100dvh' }}>
+            {children}
+          </Box>
         </DateLocalizationProvider>
         <SpeedInsights/>
         <Analytics/>

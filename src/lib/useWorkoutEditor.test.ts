@@ -94,7 +94,7 @@ describe('reducer', () => {
     const action: WorkoutEditorAction = {type: 'ADD_WORKOUT', planId: 1, weekId: 1};
     const newState = reducer(state, action, mockUuid);
     expect(newState.plans[0].weeks[0].workouts.length).toBe(1);
-    expect(newState.plans[0].weeks[0].workouts[0].name).toBe('New Workout');
+    expect(newState.plans[0].weeks[0].workouts[0].name).toBe('Workout 1');
   });
 
   it('REMOVE_WORKOUT removes the specified workout', () => {
@@ -146,7 +146,7 @@ describe('reducer', () => {
     const action: WorkoutEditorAction = {type: 'ADD_EXERCISE', planId: 1, weekId: 1, workoutId: 2};
     const newState = reducer(state, action, mockUuid);
     expect(newState.plans[0].weeks[0].workouts[0].exercises.length).toBe(1);
-    expect(newState.plans[0].weeks[0].workouts[0].exercises[0].exercise.name).toBe('N/A');
+    expect(newState.plans[0].weeks[0].workouts[0].exercises[0].exercise.name).toBe('');
   });
 
   it('REMOVE_EXERCISE removes the specified exercise', () => {
