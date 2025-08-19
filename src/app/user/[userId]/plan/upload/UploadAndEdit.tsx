@@ -48,11 +48,10 @@ export const UploadAndEdit = ({categories, allExercises}: Props) => {
       </Button>
 
       {tableData
-        ? <WorkoutEditorProvider userData={tableData}>
+        ? <WorkoutEditorProvider userData={tableData} allExercises={allExercises}>
           <PlanTable
             lockedInEditMode={true}
             categories={categories}
-            allExercises={allExercises}
           />
         </WorkoutEditorProvider>
         : ""}

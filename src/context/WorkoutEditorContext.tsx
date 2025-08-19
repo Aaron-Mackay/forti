@@ -5,24 +5,27 @@ import {useWorkoutEditor, WorkoutEditorAction} from '@/lib/useWorkoutEditor';
 import useDebouncedDispatch from "@/utils/useDebouncedDispatch";
 
 import {UserPrisma} from "@/types/dataTypes";
+import {Exercise} from "@prisma/client";
 
 export interface WorkoutEditorContextType {
   state: UserPrisma;
   dispatch: React.Dispatch<WorkoutEditorAction>;
   debouncedDispatch: (action: WorkoutEditorAction) => void;
+  allExercises: Exercise[];
 }
 const WorkoutEditorContext = createContext<WorkoutEditorContextType | null>(null);
 
 interface WorkoutEditorProviderProps {
   userData: UserPrisma;
   children: ReactNode;
+  allExercises: Exercise[];
 }
-export const WorkoutEditorProvider = ({ children, userData }: WorkoutEditorProviderProps) => {
+export const WorkoutEditorProvider = ({ children, userData, allExercises }: WorkoutEditorProviderProps) => {
   const { state, dispatch } = useWorkoutEditor(userData);
   const debouncedDispatch = useDebouncedDispatch(dispatch, 250);
 
   return (
-    <WorkoutEditorContext.Provider value={{ state, dispatch, debouncedDispatch }}>
+    <WorkoutEditorContext.Provider value={{ state, dispatch, debouncedDispatch, allExercises }}>
       {children}
     </WorkoutEditorContext.Provider>
   );

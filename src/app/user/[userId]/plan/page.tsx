@@ -12,11 +12,10 @@ const PlanPage = async ({params}: { params: Promise<{ userId: string }> }) => {
   const {allExercises, categories} = await getExercisesAndCategories()
 
   return (
-    <WorkoutEditorProvider userData={userData}>
+    <WorkoutEditorProvider userData={userData} allExercises={allExercises}>
       <PlanTable
         lockedInEditMode={false}
         categories={categories}
-        allExercises={allExercises}
       />
     </WorkoutEditorProvider>
   )

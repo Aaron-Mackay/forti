@@ -9,7 +9,7 @@ import './calendar.css'
 import {Box, Fab} from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import CalendarBottomDrawer from "./CalendarBottomDrawer";
-import CustomAppBar from "@/components/CustomAppBar";
+import CustomAppBar, {HEIGHT_EXC_APPBAR} from "@/components/CustomAppBar";
 import {format, isAfter, isBefore, isSameDay} from 'date-fns';
 import {getEventsOnDate, parsedEvents} from "@/app/user/[userId]/calendar/utils";
 import {EventType} from "@prisma/client";
@@ -93,7 +93,7 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
   };
 
   return (
-    <Box sx={{backgroundColor: 'background.default', minHeight: '100dvh'}}>
+    <>
       <CustomAppBar title={"Calendar"}/>
       <FullCalendar
         ref={calendarRef}
@@ -101,7 +101,7 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
         initialView="multiMonthYear"
         firstDay={1}
         multiMonthMaxColumns={1}
-        height={"calc(100dvh - 56px)"}
+        height={HEIGHT_EXC_APPBAR}
         selectable={true}
         selectLongPressDelay={400}
         dateClick={(dateInfo) => handleDateSelect(dateInfo)}
@@ -194,6 +194,6 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
         year={calendarRef.current?.getApi().view.currentStart.getFullYear()}
         scrollToDate={scrollToDate}
       />
-    </Box>
+    </>
   )
 }

@@ -23,22 +23,22 @@ export async function getExercisesAndCategories() {
 
 export async function getUserData(userId: string): Promise<UserPrisma | null> {
   const user = await prisma.user.findUnique({
-    where: { id: Number(userId) },
+    where: {id: Number(userId)},
     include: {
       plans: {
-        orderBy: { order: 'asc' },
+        orderBy: {order: 'asc'},
         include: {
           weeks: {
-            orderBy: { order: 'asc' },
+            orderBy: {order: 'asc'},
             include: {
               workouts: {
-                orderBy: { order: 'asc' },
+                orderBy: {order: 'asc'},
                 include: {
                   exercises: {
-                    orderBy: { order: 'asc' },
+                    orderBy: {order: 'asc'},
                     include: {
                       exercise: true,
-                      sets: { orderBy: { order: 'asc' } },
+                      sets: {orderBy: {order: 'asc'}},
                     },
                   },
                 },
@@ -65,7 +65,7 @@ export async function getUserEvents(userId: string) {
 export async function getUserDayMetrics(userId: string) {
   return prisma.dayMetric.findMany({
     where: {userId: Number(userId)},
-    orderBy: { date: 'asc' }
+    orderBy: {date: 'asc'}
   })
 }
 
@@ -99,13 +99,13 @@ export async function saveUserEvent(eventData: Omit<EventPrisma, 'id'>) {
 
 export async function deleteUserEvent(eventId: number) {
   return await prisma.event.delete({
-    where: { id: eventId },
+    where: {id: eventId},
   });
 }
 
 export async function updateUserEvent(eventId: number, data: Partial<EventPrisma>) {
   return await prisma.event.update({
-    where: { id: eventId },
+    where: {id: eventId},
     data,
   });
 }
@@ -115,8 +115,8 @@ export async function findOverlappingBlockEvent(userId: number, startDate: Date,
     where: {
       userId: Number(userId),
       eventType: 'BlockEvent',
-      startDate: { lte: endDate },
-      endDate: { gte: startDate },
+      startDate: {lte: endDate},
+      endDate: {gte: startDate},
     },
   });
 }
