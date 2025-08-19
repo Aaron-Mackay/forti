@@ -90,7 +90,7 @@ export default function CustomAppBar(
           <ListItemIcon>
             <ListAltIcon/>
           </ListItemIcon>
-          <ListItemText primary="Inbox"/>
+          <ListItemText primary="Planning"/>
           {planNestedOpen ? <ExpandLess/> : <ExpandMore/>}
         </ListItemButton>
         <Collapse in={planNestedOpen} timeout="auto" unmountOnExit>
