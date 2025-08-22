@@ -1,6 +1,7 @@
 'use client'
 
 import React, {useState} from "react";
+import {notFound} from "next/navigation";
 import {useWorkoutEditorContext} from "@/context/WorkoutEditorContext";
 import {saveUserWorkoutData} from "@lib/api";
 import Button from "@mui/material/Button";
@@ -13,7 +14,8 @@ import {Box} from "@mui/material";
 export const PlanTable: React.FC<{
   lockedInEditMode: boolean;
   categories: string[];
-}> = ({lockedInEditMode = false, categories}) => {
+  planId?: string;
+}> = ({lockedInEditMode = false, categories, planId}) => {
   const [isInEditMode, setIsInEditMode] = useState(lockedInEditMode);
   const {state: userDataState, dispatch, allExercises} = useWorkoutEditorContext();
 
@@ -23,12 +25,15 @@ export const PlanTable: React.FC<{
         setIsInEditMode(false)
         alert('Saved successfully')
       })
-      .catch(() => alert('Failed to save'));
+      .catch(() => alert('Failed to save'))
   };
 
-  {/* todo update this with dropdown to select plan */
+  const plan = planId ?
+    userDataState.plans.find(p => p.id === parseInt(planId))
+    : userDataState.plans[0]
+  if (!plan) {
+    return notFound()
   }
-  const plan = userDataState.plans[0];
   return (
     <>
       <CustomAppBar title={"Plan"}/>
@@ -46,7 +51,6 @@ export const PlanTable: React.FC<{
         )}
 
         <h1>User: {userDataState.name}</h1>
-
 
         {plan.weeks.map((week) => (
           <Week
