@@ -24,7 +24,7 @@ export async function getExercisesAndCategories() {
 
 export async function getUserData(userId: string): Promise<UserPrisma | null> {
   const user = await prisma.user.findUnique({
-    where: {id: Number(userId)},
+    where: {id: userId},
     include: {
       plans: {
         orderBy: {order: 'asc'},
@@ -59,13 +59,13 @@ export async function getUserData(userId: string): Promise<UserPrisma | null> {
 
 export async function getUserEvents(userId: string) {
   return prisma.event.findMany({
-    where: {userId: Number(userId)},
+    where: {userId: userId},
   })
 }
 
 export async function getUserDayMetrics(userId: string) {
   return prisma.dayMetric.findMany({
-    where: {userId: Number(userId)},
+    where: {userId: userId},
     orderBy: {date: 'asc'}
   })
 }
@@ -74,7 +74,7 @@ export async function updateUserDayMetric(dayMetric: Omit<DayMetricPrisma, 'id'>
   return await prisma.dayMetric.upsert({
     where: {
       userId_date: {
-        userId: Number(dayMetric.userId),
+        userId: dayMetric.userId,
         date: dayMetric.date,
       }
     },
@@ -179,10 +179,10 @@ export async function updateUserEvent(eventId: number, data: Partial<EventPrisma
   });
 }
 
-export async function findOverlappingBlockEvent(userId: number, startDate: Date, endDate: Date) {
+export async function findOverlappingBlockEvent(userId: string, startDate: Date, endDate: Date) {
   return await prisma.event.findFirst({
     where: {
-      userId: Number(userId),
+      userId,
       eventType: 'BlockEvent',
       startDate: {lte: endDate},
       endDate: {gte: startDate},

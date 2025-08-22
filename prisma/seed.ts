@@ -8,8 +8,8 @@ function getRandomBetween(min: number, max: number): number {
 async function main() {
   // Clear existing data
   await prisma.$executeRawUnsafe(`
-    TRUNCATE "ExerciseSet", "WorkoutExercise", "Exercise", "Workout", "Week", "Plan", "User", "Event", "UserExerciseNote", "DayMetric"
-    RESTART IDENTITY CASCADE
+    TRUNCATE "ExerciseSet", "WorkoutExercise", "Exercise", "Workout", "Week", "Plan", "User", "Event", "UserExerciseNote", "DayMetric", "Account", "Session"
+    CASCADE
   `);
 
   // Seed Exercises

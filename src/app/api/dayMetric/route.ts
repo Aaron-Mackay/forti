@@ -3,7 +3,7 @@ import {updateUserDayMetric} from '@/lib/api';
 import {z} from 'zod';
 
 const DayMetricSchema = z.object({
-  userId: z.number().int().positive(),
+  userId: z.string(),
   date: z.coerce.date(), // Accepts string or Date, coerces to Date
   workout: z.boolean().optional(),
   weight: z.number().optional().nullable(),
