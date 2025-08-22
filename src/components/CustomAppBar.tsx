@@ -21,15 +21,17 @@ import FortiIcon from 'public/forti-icon.svg'
 import HomeIcon from '@mui/icons-material/Home';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import MenuIcon from "@mui/icons-material/Menu";
-import React, {ReactNode, useState} from 'react';
+import React, {ReactNode, useEffect, useState} from 'react';
 import {usePathname, useRouter} from 'next/navigation';
 import CalendarIcon from '@mui/icons-material/CalendarMonth';
 import WorkoutIcon from '@mui/icons-material/FitnessCenterRounded';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
+import LogoutIcon from '@mui/icons-material/Logout';
 import AddIcon from "@mui/icons-material/Add";
 import SpecificPlan from '@mui/icons-material/InsertInvitation';
+import {signOut} from "next-auth/react";
 
 const APPBAR_HEIGHT = 56;
 export const HEIGHT_EXC_APPBAR = `calc(100vh - ${APPBAR_HEIGHT}px)`
@@ -64,6 +66,17 @@ export default function CustomAppBar(
     }
   }
 
+  useEffect(() => {
+    if (drawerOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [drawerOpen]);
+
   const ListLink = ({icon, text, href, disabled, nested}
                     : { icon: ReactNode, text: string, href: string, disabled?: boolean, nested?: boolean }) => {
     return (
@@ -78,26 +91,6 @@ export default function CustomAppBar(
       </ListItem>
     )
   }
-
-  const DrawerList = (
-    <Box sx={{width: 250}} role="presentation" onClick={() => setDrawerOpen(false)}>
-      <List>
-        <ListLink icon={<HomeIcon/>} text={"Home"} href={"/user"}/>
-        <ListLink icon={<CalendarIcon/>} text={"Calendar"} href={"/user/calendar"}/>
-        <ListLink icon={<WorkoutIcon/>} text={"Training"} href={"/user/workout"}/>
-        <ListItemButton onClick={handleClick}>
-          <ListItemIcon>
-            <ListAltIcon/>
-          </ListItemIcon>
-          <ListItemText primary="Planning"/>
-          {planNestedOpen ? <ExpandLess/> : <ExpandMore/>}
-        </ListItemButton>
-        <Collapse in={planNestedOpen} timeout="auto" unmountOnExit>
-          <ListLink nested icon={<AddIcon/>} text={"Build Plan"} href={"/user/plan/create"}/>
-          <ListLink nested icon={<SpecificPlan/>} text={"User Plans"} href={"/user/plan"}/>
-        </Collapse>
-      </List>
-    </Box>)
 
   return (
     <>
@@ -119,14 +112,55 @@ export default function CustomAppBar(
       <Toolbar sx={{minHeight: APPBAR_HEIGHT}}/>
       <Drawer
         open={drawerOpen}
+        variant="temporary"
         onClose={() => setDrawerOpen(false)}
+        PaperProps={{
+          sx: {
+            height: '100vh',
+            width: 250,
+            display: 'flex',
+            flexDirection: 'column',
+          }
+        }}
       >
-        <Stack direction={"row"} alignItems={"center"} spacing={1} sx={{p: 1.5}}>
+        {/* Header / Logo */}
+        <Stack direction="row" alignItems="center" spacing={1} sx={{p: 1.5}}>
           <FortiIcon style={{width: 50, height: 50}}/>
-          <Typography variant={"h5"}>Forti</Typography>
+          <Typography variant="h5">Forti</Typography>
         </Stack>
         <Divider/>
-        {DrawerList}
+
+        {/* Scrollable content */}
+        <Box sx={{flexGrow: 1, overflowY: 'auto'}} onClick={() => setDrawerOpen(false)}>
+          <List>
+            <ListLink icon={<HomeIcon/>} text="Home" href="/user"/>
+            <ListLink icon={<CalendarIcon/>} text="Calendar" href="/user/calendar"/>
+            <ListLink icon={<WorkoutIcon/>} text="Training" href="/user/workout"/>
+            <ListItemButton onClick={handleClick}>
+              <ListItemIcon><ListAltIcon/></ListItemIcon>
+              <ListItemText primary="Planning"/>
+              {planNestedOpen ? <ExpandLess/> : <ExpandMore/>}
+            </ListItemButton>
+            <Collapse in={planNestedOpen} timeout="auto" unmountOnExit>
+              <ListLink nested icon={<AddIcon/>} text="Build Plan" href="/user/plan/create"/>
+              <ListLink nested icon={<SpecificPlan/>} text="User Plans" href="/user/plan"/>
+            </Collapse>
+          </List>
+        </Box>
+
+        <Divider/>
+
+        {/* Fixed bottom logout */}
+        <Box>
+          <List>
+            <ListItem disablePadding>
+              <ListItemButton onClick={() => signOut({callbackUrl: '/login'})}>
+                <ListItemIcon><LogoutIcon/></ListItemIcon>
+                <ListItemText primary="Log Out"/>
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </Box>
       </Drawer>
     </>
   );
