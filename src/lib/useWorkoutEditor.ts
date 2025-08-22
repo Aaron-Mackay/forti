@@ -1,7 +1,7 @@
 import {useReducer} from 'react';
 import {Exercise} from "@prisma/client";
 
-import {UserPrisma} from "@/types/dataTypes";
+import {PlanPrisma, SetPrisma, UserPrisma, WeekPrisma, WorkoutExercisePrisma, WorkoutPrisma} from "@/types/dataTypes";
 import * as userPlanMutators from "@/utils/userPlanMutators";
 
 export enum Dir {'UP', 'DOWN'}
@@ -83,251 +83,199 @@ export type WorkoutEditorAction =
 
 export type CreateUuid = () => number;
 
-// Helper to DRY up devWarning checks
-function getOrWarn<T>(value: T | undefined, message: string): T | undefined {
-  if (!value) {
-    devWarning(message);
-    return undefined;
-  }
-  return value;
-}
-
 export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, createUuid: CreateUuid): UserPrisma {
-  function getPlan(planId: number) {
+  function getPlan(planId: number): PlanPrisma | undefined {
     return userDataState.plans.find(p => p.id === planId);
+  }
+
+  // Helper to DRY up devWarning checks
+  function getOrWarn<T>(value: T | undefined, message: string): T | undefined {
+    if (!value) {
+      devWarning(message);
+      return undefined;
+    }
+    return value;
+  }
+
+  /**
+   * Retrieves a nested plan, week, workout, or exercise by IDs.
+   * Returns the deepest object specified, or null if not found.
+   */
+  function getNestedOrWarn({
+                             planId, weekId, workoutId, exerciseId, setId
+  }: {
+    planId: number; weekId?: number; workoutId?: number; exerciseId?: number, setId?: number
+  }): PlanPrisma | WeekPrisma | WorkoutPrisma | WorkoutExercisePrisma | SetPrisma | null {
+    const plan = getOrWarn(getPlan(planId),
+      `Plan ${planId} does not exist`);
+    if (!plan) return null;
+    if (!weekId) return plan;
+    const week = getOrWarn(plan.weeks.find(w => w.id === weekId),
+      `Week ${weekId} does not exist in plan ${planId}`);
+    if (!week) return null;
+    if (!workoutId) return week;
+    const workout = getOrWarn(week.workouts.find(wo => wo.id === workoutId),
+      `Workout ${workoutId} does not exist in week ${weekId} (plan ${planId})`);
+    if (!workout) return null;
+    if (!exerciseId) return workout;
+    const exercise = getOrWarn(workout.exercises.find(ex => ex.id === exerciseId),
+      `Exercise ${exerciseId} does not exist in workout ${workoutId} (week ${weekId}, plan ${planId})`);
+    if (!exercise) return null;
+    if (!setId) return exercise
+    const set = getOrWarn(exercise.sets.find(s => s.id === setId),
+      `Set ${setId} does not exist in exercise ${exerciseId} (workout ${workoutId}, week ${weekId}, plan ${planId})`);
+    if (!set) return null
+    return set;
   }
 
   switch (action.type) {
     case 'UPDATE_PLAN_NAME': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
+      const { planId, name } = action;
+      const plan = getNestedOrWarn({planId});
       if (!plan) return userDataState;
-      return userPlanMutators.updatePlanName(userDataState, action.planId, action.name);
+      return userPlanMutators.updatePlanName(userDataState, planId, name);
     }
 
     case 'DUPLICATE_WEEK': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const weekToDuplicate = getOrWarn(plan.weeks.find(w => w.id === action.weekId), `Week ${action.weekId} does not exist in plan ${action.planId}`);
+      const { planId, weekId } = action;
+      const weekToDuplicate = getNestedOrWarn({planId, weekId});
       if (!weekToDuplicate) return userDataState;
-      return userPlanMutators.duplicateWeek(userDataState, action.planId, action.weekId, createUuid)
+      return userPlanMutators.duplicateWeek(userDataState, planId, weekId, createUuid)
     }
 
-    case 'ADD_WEEK':
-      return userPlanMutators.addWeek(userDataState, action.planId, createUuid);
+    case 'ADD_WEEK': {
+      const { planId } = action;
+      return userPlanMutators.addWeek(userDataState, planId, createUuid);
+    }
 
     case 'REMOVE_WEEK': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const week = getOrWarn(plan.weeks.find(w => w.id === action.weekId), `Week ${action.weekId} does not exist in plan ${action.planId}`);
+      const { planId, weekId } = action;
+      const week = getNestedOrWarn({planId, weekId});
       if (!week) return userDataState;
-      return userPlanMutators.removeWeek(userDataState, action.planId, action.weekId)
+      return userPlanMutators.removeWeek(userDataState, planId, weekId)
     }
 
-
     case 'ADD_WORKOUT': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const week = getOrWarn(plan.weeks.find(w => w.id === action.weekId), `Week ${action.weekId} does not exist in plan ${action.planId}`);
+      const { planId, weekId } = action;
+      const week = getNestedOrWarn({planId, weekId});
       if (!week) return userDataState;
-      return userPlanMutators.addWorkout(userDataState, action.planId, action.weekId, createUuid)
+      return userPlanMutators.addWorkout(userDataState, planId, weekId, createUuid)
     }
 
     case 'REMOVE_WORKOUT': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const week = getOrWarn(plan.weeks.find(w => w.id === action.weekId), `Week ${action.weekId} does not exist in plan ${action.planId}`);
-      if (!week) return userDataState;
-      const workout = getOrWarn(week.workouts.find(wo => wo.id === action.workoutId), `Workout ${action.workoutId} does not exist in week ${action.weekId} (plan ${action.planId})`);
+      const { planId, weekId, workoutId } = action;
+      const workout = getNestedOrWarn({planId, weekId, workoutId});
       if (!workout) return userDataState;
-      return userPlanMutators.removeWorkout(userDataState, action.planId, action.weekId, action.workoutId)
+      return userPlanMutators.removeWorkout(userDataState, planId, weekId, workoutId)
     }
 
     case 'ADD_EXERCISE': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const week = getOrWarn(plan.weeks.find(w => w.id === action.weekId), `Week ${action.weekId} does not exist in plan ${action.planId}`);
-      if (!week) return userDataState;
-      const workout = getOrWarn(week.workouts.find(wo => wo.id === action.workoutId), `Workout ${action.workoutId} does not exist in week ${action.weekId} (plan ${action.planId})`);
+      const { planId, weekId, workoutId } = action;
+      const workout = getNestedOrWarn({planId, weekId, workoutId});
       if (!workout) return userDataState;
-      return userPlanMutators.addExercise(userDataState, action.planId, action.weekId, action.workoutId, createUuid)
+      return userPlanMutators.addExercise(userDataState, planId, weekId, workoutId, createUuid)
     }
 
     case 'ADD_EXERCISE_WITH_SET': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const week = getOrWarn(plan.weeks.find(w => w.id === action.weekId), `Week ${action.weekId} does not exist in plan ${action.planId}`);
-      if (!week) return userDataState;
-      const workout = getOrWarn(week.workouts.find(wo => wo.id === action.workoutId), `Workout ${action.workoutId} does not exist in week ${action.weekId} (plan ${action.planId})`);
+      const { planId, weekId, workoutId } = action;
+      const workout = getNestedOrWarn({planId, weekId, workoutId});
       if (!workout) return userDataState;
-      return userPlanMutators.addExerciseWithSet(userDataState, action.planId, action.weekId, action.workoutId, createUuid)
+      return userPlanMutators.addExerciseWithSet(userDataState, planId, weekId, workoutId, createUuid)
     }
 
     case 'MOVE_WORKOUT': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const {weekId, index, dir} = action;
-      const week = getOrWarn(plan.weeks.find(w => w.id === weekId), `Week ${weekId} does not exist in plan ${action.planId}`);
+      const { planId, weekId, dir, index } = action;
+      const week = getNestedOrWarn({planId, weekId});
       if (!week) return userDataState;
-      return userPlanMutators.moveWorkout(userDataState, action.planId, weekId, index, dir)
+      return userPlanMutators.moveWorkout(userDataState, planId, weekId, index, dir)
     }
 
     case 'MOVE_EXERCISE': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const {weekId, workoutId, index, dir} = action;
-      const week = getOrWarn(plan.weeks.find(w => w.id === weekId), `Week ${weekId} does not exist in plan ${action.planId}`);
-      if (!week) return userDataState;
-      const workout = getOrWarn(week.workouts.find(wo => wo.id === workoutId), `Workout ${workoutId} does not exist in week ${weekId} (plan ${action.planId})`);
+      const { planId, weekId, workoutId, dir, index } = action;
+      const workout = getNestedOrWarn({planId, weekId, workoutId});
       if (!workout) return userDataState;
-      return userPlanMutators.moveExercise(userDataState, action.planId, weekId, workoutId, index, dir)
+      return userPlanMutators.moveExercise(userDataState, planId, weekId, workoutId, index, dir)
     }
 
     case 'REMOVE_EXERCISE': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const week = getOrWarn(plan.weeks.find(w => w.id === action.weekId), `Week ${action.weekId} does not exist in plan ${action.planId}`);
-      if (!week) return userDataState;
-      const workout = getOrWarn(week.workouts.find(wo => wo.id === action.workoutId), `Workout ${action.workoutId} does not exist in week ${action.weekId} (plan ${action.planId})`);
-      if (!workout) return userDataState;
-      const exercise = getOrWarn(workout.exercises.find(ex => ex.id === action.exerciseId), `Exercise ${action.exerciseId} does not exist in workout ${action.workoutId} (week ${action.weekId}, plan ${action.planId})`);
+      const { planId, weekId, workoutId, exerciseId } = action;
+      const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId});
       if (!exercise) return userDataState;
-      return userPlanMutators.removeExercise(userDataState, action.planId, action.weekId, action.workoutId, action.exerciseId)
+      return userPlanMutators.removeExercise(userDataState, planId, weekId, workoutId, exerciseId)
     }
 
     case 'ADD_SET': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const {weekId, workoutId, exerciseId} = action;
-      const week = getOrWarn(plan.weeks.find(w => w.id === weekId), `Week ${weekId} does not exist in plan ${action.planId}`);
-      if (!week) return userDataState;
-      const workout = getOrWarn(week.workouts.find(wo => wo.id === workoutId), `Workout ${workoutId} does not exist in week ${weekId} (plan ${action.planId})`);
-      if (!workout) return userDataState;
-      const exercise = getOrWarn(workout.exercises.find(ex => ex.id === exerciseId), `Exercise ${exerciseId} does not exist in workout ${workoutId} (week ${weekId}, plan ${action.planId})`);
+      const { planId, weekId, workoutId, exerciseId } = action;
+      const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId});
       if (!exercise) return userDataState;
-      return userPlanMutators.addSet(userDataState, action.planId, weekId, workoutId, exerciseId, createUuid)
+      return userPlanMutators.addSet(userDataState, planId, weekId, workoutId, exerciseId, createUuid)
     }
 
     case 'REMOVE_SET': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const {weekId, workoutId, exerciseId} = action;
-      const week = getOrWarn(plan.weeks.find(w => w.id === weekId), `Week ${weekId} does not exist in plan ${action.planId}`);
-      if (!week) return userDataState;
-      const workout = getOrWarn(week.workouts.find(wo => wo.id === workoutId), `Workout ${workoutId} does not exist in week ${weekId} (plan ${action.planId})`);
-      if (!workout) return userDataState;
-      const exercise = getOrWarn(workout.exercises.find(ex => ex.id === exerciseId), `Exercise ${exerciseId} does not exist in workout ${workoutId} (week ${weekId}, plan ${action.planId})`);
+      const { planId, weekId, workoutId, exerciseId } = action;
+      const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId});
       if (!exercise) return userDataState;
-      if (!exercise.sets.length) {
-        devWarning(`No sets to remove in exercise ${exerciseId} (workout ${workoutId}, week ${weekId}, plan ${action.planId})`);
+      if (!('sets' in exercise) || !exercise.sets.length) {
+        devWarning(`No sets to remove in exercise ${exerciseId} (workout ${workoutId}, week ${weekId}, plan ${planId})`);
         return userDataState;
       }
-      return userPlanMutators.removeLastSet(userDataState, action.planId, weekId, workoutId, exerciseId)
+      return userPlanMutators.removeLastSet(userDataState, planId, weekId, workoutId, exerciseId)
     }
 
     case 'UPDATE_WORKOUT_NAME': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const {weekId, workoutId, name} = action;
-      const week = getOrWarn(plan.weeks.find(w => w.id === weekId), `Week ${weekId} does not exist in plan ${action.planId}`);
-      if (!week) return userDataState;
-      const workout = getOrWarn(week.workouts.find(wo => wo.id === workoutId), `Workout ${workoutId} does not exist in week ${weekId} (plan ${action.planId})`);
+      const { planId, weekId, workoutId, name } = action;
+      const workout = getNestedOrWarn({planId, weekId, workoutId});
       if (!workout) return userDataState;
-      return userPlanMutators.updateWorkoutName(userDataState, action.planId, weekId, workoutId, name)
+      return userPlanMutators.updateWorkoutName(userDataState, planId, weekId, workoutId, name)
     }
 
     case 'UPDATE_SET_WEIGHT': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const {weekId, workoutId, exerciseId, setId, weight} = action;
-      const week = getOrWarn(plan.weeks.find(w => w.id === weekId), `Week ${weekId} does not exist in plan ${action.planId}`);
-      if (!week) return userDataState;
-      const workout = getOrWarn(week.workouts.find(wo => wo.id === workoutId), `Workout ${workoutId} does not exist in week ${weekId} (plan ${action.planId})`);
-      if (!workout) return userDataState;
-      const exercise = getOrWarn(workout.exercises.find(ex => ex.id === exerciseId), `Exercise ${exerciseId} does not exist in workout ${workoutId} (week ${weekId}, plan ${action.planId})`);
-      if (!exercise) return userDataState;
-      const set = getOrWarn(exercise.sets.find(s => s.id === setId), `Set ${setId} does not exist in exercise ${exerciseId} (workout ${workoutId}, week ${weekId}, plan ${action.planId})`);
+      const { planId, weekId, workoutId, exerciseId, setId, weight } = action;
+      const set = getNestedOrWarn({planId, weekId, workoutId, exerciseId, setId});
       if (!set) return userDataState;
-      return userPlanMutators.updateSetWeight(userDataState, action.planId, weekId, workoutId, exerciseId, setId, weight);
+      return userPlanMutators.updateSetWeight(userDataState, planId, weekId, workoutId, exerciseId, setId, weight);
     }
 
     case 'UPDATE_SET_REPS': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const {weekId, workoutId, exerciseId, setId, reps} = action;
-      const week = getOrWarn(plan.weeks.find(w => w.id === weekId), `Week ${weekId} does not exist in plan ${action.planId}`);
-      if (!week) return userDataState;
-      const workout = getOrWarn(week.workouts.find(wo => wo.id === workoutId), `Workout ${workoutId} does not exist in week ${weekId} (plan ${action.planId})`);
-      if (!workout) return userDataState;
-      const exercise = getOrWarn(workout.exercises.find(ex => ex.id === exerciseId), `Exercise ${exerciseId} does not exist in workout ${workoutId} (week ${weekId}, plan ${action.planId})`);
-      if (!exercise) return userDataState;
-      const set = getOrWarn(exercise.sets.find(s => s.id === setId), `Set ${setId} does not exist in exercise ${exerciseId} (workout ${workoutId}, week ${weekId}, plan ${action.planId})`);
+      const { planId, weekId, workoutId, exerciseId, setId, reps } = action;
+      const set = getNestedOrWarn({planId, weekId, workoutId, exerciseId, setId});
       if (!set) return userDataState;
-      return userPlanMutators.updateSetReps(userDataState, action.planId, weekId, workoutId, exerciseId, setId, reps);
+      return userPlanMutators.updateSetReps(userDataState, planId, weekId, workoutId, exerciseId, setId, reps);
     }
 
     case 'UPDATE_REP_RANGE': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const {weekId, workoutId, workoutExerciseId: exerciseId, repRange} = action;
-      const week = getOrWarn(plan.weeks.find(w => w.id === weekId), `Week ${weekId} does not exist in plan ${action.planId}`);
-      if (!week) return userDataState;
-      const workout = getOrWarn(week.workouts.find(wo => wo.id === workoutId), `Workout ${workoutId} does not exist in week ${weekId} (plan ${action.planId})`);
-      if (!workout) return userDataState;
-      const exercise = getOrWarn(workout.exercises.find(ex => ex.id === exerciseId), `Exercise ${exerciseId} does not exist in workout ${workoutId} (week ${weekId}, plan ${action.planId})`);
+      const { planId, weekId, workoutId, workoutExerciseId, repRange } = action;
+      const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId: workoutExerciseId});
       if (!exercise) return userDataState;
-      return userPlanMutators.updateRepRange(userDataState, action.planId, weekId, workoutId, exerciseId, repRange);
+      return userPlanMutators.updateRepRange(userDataState, planId, weekId, workoutId, workoutExerciseId, repRange);
     }
 
     case 'UPDATE_REST_TIME': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const {weekId, workoutId, workoutExerciseId: exerciseId, restTime} = action;
-      const week = getOrWarn(plan.weeks.find(w => w.id === weekId), `Week ${weekId} does not exist in plan ${action.planId}`);
-      if (!week) return userDataState;
-      const workout = getOrWarn(week.workouts.find(wo => wo.id === workoutId), `Workout ${workoutId} does not exist in week ${weekId} (plan ${action.planId})`);
-      if (!workout) return userDataState;
-      const exercise = getOrWarn(workout.exercises.find(ex => ex.id === exerciseId), `Exercise ${exerciseId} does not exist in workout ${workoutId} (week ${weekId}, plan ${action.planId})`);
+      const { planId, weekId, workoutId, workoutExerciseId, restTime } = action;
+      const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId: workoutExerciseId});
       if (!exercise) return userDataState;
-      return userPlanMutators.updateRestTime(userDataState, action.planId, weekId, workoutId, exerciseId, restTime);
+      return userPlanMutators.updateRestTime(userDataState, planId, weekId, workoutId, workoutExerciseId, restTime);
     }
 
     case 'UPDATE_SET_COUNT': {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const {weekId, workoutId, workoutExerciseId: exerciseId, setCount} = action;
-      const week = getOrWarn(plan.weeks.find(w => w.id === weekId), `Week ${weekId} does not exist in plan ${action.planId}`);
-      if (!week) return userDataState;
-      const workout = getOrWarn(week.workouts.find(wo => wo.id === workoutId), `Workout ${workoutId} does not exist in week ${weekId} (plan ${action.planId})`);
-      if (!workout) return userDataState;
-      const exercise = getOrWarn(workout.exercises.find(ex => ex.id === exerciseId), `Exercise ${exerciseId} does not exist in workout ${workoutId} (week ${weekId}, plan ${action.planId})`);
+      const { planId, weekId, workoutId, workoutExerciseId, setCount } = action;
+      const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId: workoutExerciseId});
       if (!exercise) return userDataState;
-      return userPlanMutators.updateSetCount(userDataState, action.planId, weekId, workoutId, exerciseId, setCount, createUuid);
+      return userPlanMutators.updateSetCount(userDataState, planId, weekId, workoutId, workoutExerciseId, setCount, createUuid);
     }
 
     case "UPDATE_CATEGORY": {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const {weekId, workoutId, workoutExerciseId, category} = action;
-      const week = getOrWarn(plan.weeks.find(w => w.id === weekId), `Week ${weekId} does not exist in plan ${action.planId}`);
-      if (!week) return userDataState;
-      const workout = getOrWarn(week.workouts.find(wo => wo.id === workoutId), `Workout ${workoutId} does not exist in week ${weekId} (plan ${action.planId})`);
-      if (!workout) return userDataState;
-      const exercise = getOrWarn(workout.exercises.find(ex => ex.id === workoutExerciseId), `Exercise ${workoutExerciseId} does not exist in workout ${workoutId} (week ${weekId}, plan ${action.planId})`);
+      const { planId, weekId, workoutId, workoutExerciseId, category } = action;
+      const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId: workoutExerciseId});
       if (!exercise) return userDataState;
-      return userPlanMutators.updateCategory(userDataState, action.planId, weekId, workoutId, workoutExerciseId, category);
+      return userPlanMutators.updateCategory(userDataState, planId, weekId, workoutId, workoutExerciseId, category);
     }
 
     case "UPDATE_EXERCISE": {
-      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
-      if (!plan) return userDataState;
-      const {weekId, workoutId, workoutExerciseId, exerciseName, exercises, category} = action;
-      const week = getOrWarn(plan.weeks.find(w => w.id === weekId), `Week ${weekId} does not exist in plan ${action.planId}`);
-      if (!week) return userDataState;
-      const workout = getOrWarn(week.workouts.find(wo => wo.id === workoutId), `Workout ${workoutId} does not exist in week ${weekId} (plan ${action.planId})`);
-      if (!workout) return userDataState;
-      const exercise = getOrWarn(workout.exercises.find(ex => ex.id === workoutExerciseId), `Exercise ${workoutExerciseId} does not exist in workout ${workoutId} (week ${weekId}, plan ${action.planId})`);
+      const { planId, weekId, workoutId, workoutExerciseId, exerciseName, exercises, category } = action;
+      const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId: workoutExerciseId});
       if (!exercise) return userDataState;
-      return userPlanMutators.updateExerciseInUser(userDataState, action.planId, weekId, workoutId, workoutExerciseId, exerciseName, exercises, category, createUuid)
+      return userPlanMutators.updateExerciseInUser(userDataState, planId, weekId, workoutId, workoutExerciseId, exerciseName, exercises, category, createUuid)
     }
 
     default:
