@@ -31,7 +31,7 @@ const ExerciseBox = ({ex, idx, exerciseCount}: { ex: WorkoutExercisePrisma, idx:
             })
           }
         >
-          <KeyboardArrowUpIcon />
+          <KeyboardArrowUpIcon/>
         </IconButton>
         <div
           style={{
@@ -59,7 +59,7 @@ const ExerciseBox = ({ex, idx, exerciseCount}: { ex: WorkoutExercisePrisma, idx:
             })
           }
         >
-          <KeyboardArrowDownIcon />
+          <KeyboardArrowDownIcon/>
         </IconButton>
       </Box>
       <Box sx={{gap: 1, display: 'flex', flexDirection: 'column', flex: 1}}>
@@ -82,19 +82,21 @@ const ExerciseBox = ({ex, idx, exerciseCount}: { ex: WorkoutExercisePrisma, idx:
               })
             }
           />
-          <IconButton
-            onClick={() =>
-              dispatch({
-                type: 'REMOVE_EXERCISE',
-                planId: statePlan.id,
-                weekId: PLACEHOLDER_ID,
-                workoutId: ex.workoutId,
-                exerciseId: ex.id,
-              })
-            }
-          >
-            <DeleteIcon/>
-          </IconButton>
+          {exerciseCount > 1 &&
+            <IconButton
+              onClick={() =>
+                dispatch({
+                  type: 'REMOVE_EXERCISE',
+                  planId: statePlan.id,
+                  weekId: PLACEHOLDER_ID,
+                  workoutId: ex.workoutId,
+                  exerciseId: ex.id,
+                })
+              }
+            >
+              <DeleteIcon/>
+            </IconButton>
+          }
         </Box>
         <Box sx={{display: 'flex', flexDirection: 'row', gap: 1}}>
           <TextField
@@ -117,6 +119,7 @@ const ExerciseBox = ({ex, idx, exerciseCount}: { ex: WorkoutExercisePrisma, idx:
             sx={{flex: 1}}
             label={'Rest'}
             value={ex.restTime}
+            slotProps={{inputLabel: {shrink: true}}}
             autoComplete='off'
             onChange={e =>
               dispatch({
@@ -133,6 +136,7 @@ const ExerciseBox = ({ex, idx, exerciseCount}: { ex: WorkoutExercisePrisma, idx:
             sx={{flex: 1}}
             label={'Rep Range'}
             value={ex.repRange}
+            slotProps={{inputLabel: {shrink: true}}}
             autoComplete='off'
             onChange={e =>
               dispatch({
@@ -193,7 +197,7 @@ export const SpecificWorkoutSubstep = ({workout}: { workout: WorkoutPrisma }) =>
         <Button
           onClick={() =>
             dispatch({
-              type: 'ADD_EXERCISE',
+              type: 'ADD_EXERCISE_WITH_SET',
               planId: PLACEHOLDER_ID,
               weekId: PLACEHOLDER_ID,
               workoutId: workout.id

@@ -1,7 +1,8 @@
 import {Exercise} from '@prisma/client';
 import prisma from '@/lib/prisma';
 import {fetchJson} from './fetchWrapper';
-import {DayMetricPrisma, EventPrisma, UserPrisma} from "@/types/dataTypes";
+import {DayMetricPrisma, EventPrisma, PlanPrisma, UserPrisma} from "@/types/dataTypes";
+import {PlanUploadResponse} from "@/app/api/plan/route";
 
 export async function getUsers() {
   return prisma.user.findMany();
@@ -91,10 +92,78 @@ export async function saveUserWorkoutData(userData: UserPrisma) {
   });
 }
 
+export async function savePlan(plan: PlanPrisma): Promise<PlanUploadResponse> {
+  // todo validation (zod?)
+  return fetchJson('/api/plan', {
+    method: 'POST',
+    body: JSON.stringify(plan),
+    headers: {'Content-Type': 'application/json'},
+  });
+}
+
+
 export async function saveUserEvent(eventData: Omit<EventPrisma, 'id'>) {
   return await prisma.event.create({
     data: eventData,
   });
+}
+
+function omit<T extends object, K extends keyof T>(
+  obj: T,
+  keys: K[]
+): Omit<T, K> {
+  const result = {...obj};
+  for (const key of keys) {
+    delete result[key];
+  }
+  return result;
+}
+
+export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
+  const uploadedPlan = await prisma.plan.create({
+    data: omit(planData, ["weeks", "id"])
+  })
+  for (const week of planData.weeks) {
+    const uploadedWeek = await prisma.week.create({
+      data: {...omit(week, ["workouts", "id"]), planId: uploadedPlan.id}
+    })
+    for (const workout of week.workouts) {
+      const uploadedWorkout = await prisma.workout.create({
+        data: {...omit(workout, ["exercises", "id"]), weekId: uploadedWeek.id}
+      })
+      for (const exercise of workout.exercises) {
+        const exerciseRecord = await prisma.exercise.upsert({
+          where: {
+            name_category: {
+              name: exercise.exercise.name,
+              category: exercise.exercise.category!,
+            },
+          },
+          update: {},
+          create: {
+            name: exercise.exercise.name,
+            category: exercise.exercise.category!,
+          },
+        });
+
+        const uploadedWorkoutExercise = await prisma.workoutExercise.create({
+          data: {
+            workoutId: uploadedWorkout.id,
+            order: exercise.order,
+            restTime: exercise.restTime,
+            repRange: exercise.repRange,
+            exerciseId: exerciseRecord.id,
+          },
+        });
+        for (const set of exercise.sets) {
+          await prisma.exerciseSet.create({
+            data: {...omit(set, ["id"]), workoutExerciseId: uploadedWorkoutExercise.id}
+          })
+        }
+      }
+    }
+  }
+  return uploadedPlan.id
 }
 
 export async function deleteUserEvent(eventId: number) {

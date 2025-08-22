@@ -15,6 +15,7 @@ export type WorkoutEditorAction =
   | { type: 'REMOVE_WORKOUT'; planId: number, weekId: number; workoutId: number; }
   | { type: 'MOVE_WORKOUT'; planId: number, weekId: number; dir: Dir, index: number }
   | { type: 'ADD_EXERCISE'; planId: number, weekId: number; workoutId: number; }
+  | { type: 'ADD_EXERCISE_WITH_SET'; planId: number, weekId: number; workoutId: number; }
   | { type: 'REMOVE_EXERCISE'; planId: number, weekId: number; workoutId: number; exerciseId: number }
   | { type: 'MOVE_EXERCISE'; planId: number, weekId: number; workoutId: number; dir: Dir, index: number }
   | { type: 'ADD_SET'; planId: number, weekId: number; workoutId: number; exerciseId: number }
@@ -149,6 +150,16 @@ export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, 
       const workout = getOrWarn(week.workouts.find(wo => wo.id === action.workoutId), `Workout ${action.workoutId} does not exist in week ${action.weekId} (plan ${action.planId})`);
       if (!workout) return userDataState;
       return userPlanMutators.addExercise(userDataState, action.planId, action.weekId, action.workoutId, createUuid)
+    }
+
+    case 'ADD_EXERCISE_WITH_SET': {
+      const plan = getOrWarn(getPlan(action.planId), `Plan ${action.planId} does not exist`);
+      if (!plan) return userDataState;
+      const week = getOrWarn(plan.weeks.find(w => w.id === action.weekId), `Week ${action.weekId} does not exist in plan ${action.planId}`);
+      if (!week) return userDataState;
+      const workout = getOrWarn(week.workouts.find(wo => wo.id === action.workoutId), `Workout ${action.workoutId} does not exist in week ${action.weekId} (plan ${action.planId})`);
+      if (!workout) return userDataState;
+      return userPlanMutators.addExerciseWithSet(userDataState, action.planId, action.weekId, action.workoutId, createUuid)
     }
 
     case 'MOVE_WORKOUT': {

@@ -343,6 +343,47 @@ export function addExercise(
   );
 }
 
+export function addExerciseWithSet(
+  user: UserPrisma,
+  planId: number,
+  weekId: number,
+  workoutId: number,
+  createUuid: CreateUuid
+): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout => {
+        const newExerciseId = createUuid();
+        return {
+          ...workout,
+          exercises: [
+            ...workout.exercises,
+            {
+              id: newExerciseId,
+              exerciseId: dummyExercise.id,
+              repRange: "",
+              restTime: "",
+              order: workout.exercises.length + 1,
+              exercise: dummyExercise,
+              sets: [
+                {
+                  id: createUuid(),
+                  workoutExerciseId: newExerciseId,
+                  order: 1,
+                  reps: null,
+                  weight: null,
+                }
+              ],
+              workoutId: workout.id,
+              notes: "",
+            },
+          ],
+        };
+      })
+    )
+  );
+}
+
 export function addWeek(
   user: UserPrisma,
   planId: number,
@@ -417,7 +458,7 @@ export function removeWorkout(
 }
 
 const dummyExercise: Exercise = {
-  id: -1,              // Or some sentinel value, or createUuid() if it fits
+  id: -1,
   category: "none",
   name: "",
   description: null,

@@ -12,6 +12,7 @@ import WeekStep from "@/app/user/[userId]/plan/create/steps/WeekStep";
 import {useNewPlan} from "@/app/user/[userId]/plan/create/useNewPlan";
 import WorkoutsStep from "@/app/user/[userId]/plan/create/steps/WorkoutsStep";
 import {HEIGHT_EXC_APPBAR} from "@/components/CustomAppBar";
+import PlanSummary from "@/app/user/[userId]/plan/create/steps/PlanSummary";
 
 
 export const PlanBuilder = () => {
@@ -54,7 +55,7 @@ export const PlanBuilder = () => {
     },
     {
       title: 'Summary',
-      // component: <PlanSummary/>,
+      component: <PlanSummary weekCount={weekCount}/>,
     },
   ];
 
@@ -108,26 +109,23 @@ export const PlanBuilder = () => {
             <Button
               size="small"
               onClick={handleNext}
-              disabled={activeStep === steps.length - 1 || !isStepValid()}
+              disabled={!isStepValid()}
               sx={{
                 borderRadius: 1,
               }}
             >
-              Next
-              <KeyboardArrowRightIcon/>
+              {!(activeStep === steps.length - 1) && <>Next<KeyboardArrowRightIcon /></>}
             </Button>
           }
           backButton={
             <Button
               size="small"
               onClick={handleBack}
-              disabled={activeStep === 0}
               sx={{
                 borderRadius: 1,
               }}
             >
-              <KeyboardArrowLeftIcon/>
-              Back
+              {!(activeStep === 0) && <>Back<KeyboardArrowLeftIcon /></>}
             </Button>
           }
         />
@@ -141,12 +139,6 @@ export const PlanBuilder = () => {
       >
         {steps[activeStep]?.component}
       </Box>
-      <Button variant="contained" onClick={() => {
-        const win = window.open();
-        win!.document.write('<pre>' + weekCount + JSON.stringify(statePlan, null, 2) + '</pre>');
-      }} sx={{position: 'absolute', top: 60, left: 16, zIndex: 1}}>
-        State
-      </Button>
     </Paper>
   )
 }
