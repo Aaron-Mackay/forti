@@ -37,7 +37,7 @@ export const PlanTable: React.FC<{
   return (
     <>
       <CustomAppBar title={"Plan"}/>
-      <Box sx={{p: 1}}>
+      <Box sx={{p: 1, overflow: 'auto'}} >
         {!lockedInEditMode && (
           <EditModeToggle
             isInEditMode={isInEditMode}
