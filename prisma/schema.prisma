@@ -10,13 +10,47 @@ datasource db {
 }
 
 model User {
-  id                Int                @id @default(autoincrement())
+  id                String             @id @default(cuid())
   email             String             @unique
   name              String
+  image             String?
+  emailVerified     DateTime?
+
+  // NextAuth required
+  accounts          Account[]
+  sessions          Session[]
+
+
   plans             Plan[]
   events            Event[]
   userExerciseNotes UserExerciseNote[]
   dayMetrics        DayMetric[]
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum EventType {
@@ -37,7 +71,7 @@ enum BlockSubtype {
 model Event {
   id           Int           @id @default(autoincrement())
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId       Int
+  userId       String
   name         String
   description  String?
   startDate    DateTime      @db.Date // only the date part matters
@@ -52,7 +86,7 @@ model Event {
 
 model DayMetric {
   id        Int      @id @default(autoincrement())
-  userId    Int
+  userId    String
   user      User     @relation(fields: [userId], references: [id])
   workout   Boolean? @default(false)
   weight    Float?
@@ -70,7 +104,7 @@ model DayMetric {
 model Plan {
   id          Int     @id @default(autoincrement())
   user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      Int
+  userId      String
   order       Int
   name        String
   description String?
@@ -142,7 +176,7 @@ model ExerciseSet {
 model UserExerciseNote {
   id         Int      @id @default(autoincrement())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId     Int
+  userId     String
   exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
   exerciseId Int
   note       String

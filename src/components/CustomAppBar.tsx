@@ -17,7 +17,7 @@ import {
   Typography
 } from '@mui/material';
 import Link from 'next/link';
-import FortiIcon from 'src/app/forti-icon.svg'
+import FortiIcon from 'public/forti-icon.svg'
 import HomeIcon from '@mui/icons-material/Home';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import MenuIcon from "@mui/icons-material/Menu";
@@ -79,13 +79,12 @@ export default function CustomAppBar(
     )
   }
 
-  const userPath = pathname.split("/").slice(0, 3).join("/")
   const DrawerList = (
     <Box sx={{width: 250}} role="presentation" onClick={() => setDrawerOpen(false)}>
       <List>
-        <ListLink icon={<HomeIcon/>} text={"Home"} href={userPath + "/"}/>
-        <ListLink icon={<CalendarIcon/>} text={"Calendar"} href={userPath + "/calendar"}/>
-        <ListLink icon={<WorkoutIcon/>} text={"Training"} href={userPath + "/workout"}/>
+        <ListLink icon={<HomeIcon/>} text={"Home"} href={"/user"}/>
+        <ListLink icon={<CalendarIcon/>} text={"Calendar"} href={"/user/calendar"}/>
+        <ListLink icon={<WorkoutIcon/>} text={"Training"} href={"/user/workout"}/>
         <ListItemButton onClick={handleClick}>
           <ListItemIcon>
             <ListAltIcon/>
@@ -94,8 +93,8 @@ export default function CustomAppBar(
           {planNestedOpen ? <ExpandLess/> : <ExpandMore/>}
         </ListItemButton>
         <Collapse in={planNestedOpen} timeout="auto" unmountOnExit>
-          <ListLink nested icon={<AddIcon/>} text={"Build Plan"}  href={userPath + "/plan/create"}/>
-          <ListLink nested icon={<SpecificPlan/>} text={"User Plans"} href={userPath + "/plan"}/>
+          <ListLink nested icon={<AddIcon/>} text={"Build Plan"} href={"/user/plan/create"}/>
+          <ListLink nested icon={<SpecificPlan/>} text={"User Plans"} href={"/user/plan"}/>
         </Collapse>
       </List>
     </Box>)
@@ -117,7 +116,7 @@ export default function CustomAppBar(
           </Typography>
         </Toolbar>
       </AppBar>
-      <Toolbar sx={{ minHeight: APPBAR_HEIGHT }} />
+      <Toolbar sx={{minHeight: APPBAR_HEIGHT}}/>
       <Drawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

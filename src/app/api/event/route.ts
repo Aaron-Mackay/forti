@@ -4,7 +4,7 @@ import {z} from "zod";
 import {BlockSubtype, EventType} from "@prisma/client";
 
 const EventSchema = z.object({
-  userId: z.number().int().positive(),
+  userId: z.string(),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
   name: z.string(),

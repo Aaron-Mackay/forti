@@ -8,7 +8,6 @@ export default function ScreenSizeWarningBanner() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      console.log(window.innerWidth)
       const isSmallScreen = window.innerWidth < 1024
       setShowWarning(isSmallScreen)
     }

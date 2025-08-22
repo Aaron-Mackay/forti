@@ -14,10 +14,12 @@ export class UserBuilder {
   private readonly user: UserPrisma;
   constructor(id: number) {
     this.user = {
-      id,
+      id: id.toString(),
       email: "test@test.com",
       name: "Test User",
       plans: [],
+      image: null,
+      emailVerified: null
     };
   }
   addPlan(plan: PlanPrisma) {
@@ -54,7 +56,7 @@ export class PlanBuilder {
   constructor(id: number, order = 1) {
     this.plan = {
       id,
-      userId: -1,
+      userId: "-1",
       order,
       name: "Test Plan",
       description: "",

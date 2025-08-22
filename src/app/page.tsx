@@ -1,21 +1,22 @@
-import Link from 'next/link';
-import { getUsers } from '@/lib/api'
+import React from "react";
+import Link from "next/link";
+import Button from "@mui/material/Button";
+import {getServerSession} from "next-auth/next";
+import {redirect} from "next/navigation";
 
-export default async function HomePage() {
-  const users = await getUsers();
-
+export default async function PublicPage() {
+  const session = await getServerSession()
+  if (session) redirect("/user")
   return (
-    <main className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Users</h1>
-      <ul className="space-y-2">
-        {users.map((user) => (
-          <li key={user.id}>
-            <Link href={`/user/${user.id}`} className="text-blue-600 underline">
-              {user.name}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </main>
+    <>
+      <h1 className="text-2xl font-bold mb-4">{"Public Page for non-signed in users"}</h1>
+      <Button
+        component={Link}
+        href={'/login'}
+        variant="contained"
+      >
+        Go to Login
+      </Button>
+    </>
   );
 }
