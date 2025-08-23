@@ -31,7 +31,7 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AddIcon from "@mui/icons-material/Add";
 import SpecificPlan from '@mui/icons-material/InsertInvitation';
-import {signOut} from "next-auth/react";
+import {signOut, useSession} from "next-auth/react";
 
 const APPBAR_HEIGHT = 56;
 export const HEIGHT_EXC_APPBAR = `calc(100vh - ${APPBAR_HEIGHT}px)`
@@ -47,8 +47,10 @@ export default function CustomAppBar(
   }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  const { data: session } = useSession();
   const pathname = usePathname();
   const [planNestedOpen, setPlanNestedOpen] = useState(() => pathname.includes('/plan'))
+  const [planCount, setPlanCount] = useState<number | null>(null);
 
   const handleClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     event.stopPropagation()
@@ -76,6 +78,27 @@ export default function CustomAppBar(
       document.body.style.overflow = '';
     };
   }, [drawerOpen]);
+
+  // Step 2: Get session and user info
+
+
+  // Step 3: Fetch plan count when session is available
+  useEffect(() => {
+    async function fetchPlanCount() {
+      if (session?.user?.id) {
+        try {
+          const res = await fetch(`/api/plans/count`);
+          if (res.ok) {
+            const data = await res.json();
+            setPlanCount(data.count);
+          }
+        } catch (_e) {
+          setPlanCount(null);
+        }
+      }
+    }
+    fetchPlanCount();
+  }, [session?.user?.id]);
 
   const ListLink = ({icon, text, href, disabled, nested}
                     : { icon: ReactNode, text: string, href: string, disabled?: boolean, nested?: boolean }) => {
@@ -136,15 +159,20 @@ export default function CustomAppBar(
             <ListLink icon={<HomeIcon/>} text="Home" href="/user"/>
             <ListLink icon={<CalendarIcon/>} text="Calendar" href="/user/calendar"/>
             <ListLink icon={<WorkoutIcon/>} text="Training" href="/user/workout"/>
-            <ListItemButton onClick={handleClick}>
-              <ListItemIcon><ListAltIcon/></ListItemIcon>
-              <ListItemText primary="Planning"/>
-              {planNestedOpen ? <ExpandLess/> : <ExpandMore/>}
-            </ListItemButton>
-            <Collapse in={planNestedOpen} timeout="auto" unmountOnExit>
-              <ListLink nested icon={<AddIcon/>} text="Build Plan" href="/user/plan/create"/>
-              <ListLink nested icon={<SpecificPlan/>} text="User Plans" href="/user/plan"/>
-            </Collapse>
+            {planCount
+            ? <>
+                <ListItemButton onClick={handleClick}>
+                  <ListItemIcon><ListAltIcon/></ListItemIcon>
+                  <ListItemText primary="Planning"/>
+                  {planNestedOpen ? <ExpandLess/> : <ExpandMore/>}
+                </ListItemButton>
+                <Collapse in={planNestedOpen} timeout="auto" unmountOnExit>
+                  <ListLink nested icon={<AddIcon/>} text="Build Plan" href="/user/plan/create"/>
+                  <ListLink nested icon={<SpecificPlan/>} text="User Plans" href="/user/plan"/>
+                </Collapse>
+            </>
+            : <ListLink icon={<AddIcon/>} text="Build Plan" href="/user/plan/create"/>}
+
           </List>
         </Box>
 
