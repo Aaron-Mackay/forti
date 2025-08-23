@@ -134,18 +134,21 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
         alignItems: 'flex-end',
         gap: 1
       }}>
-        <Fab variant="extended" size="medium" onClick={() => {
-          setRightDrawerView(EventType.CustomEvent);
-          setRightDrawerOpen(true);
-        }}>
-          Events
-        </Fab>
-        <Fab variant="extended" size="medium" onClick={() => {
-          setRightDrawerView(EventType.BlockEvent);
-          setRightDrawerOpen(true);
-        }}>
-          Blocks
-        </Fab>
+        {eventsInState.filter(event => event.eventType === EventType.CustomEvent).length
+          && <Fab variant="extended" size="medium" onClick={() => {
+            setRightDrawerView(EventType.CustomEvent);
+            setRightDrawerOpen(true);
+          }}>
+            Events
+          </Fab>}
+        {eventsInState.filter(event => event.eventType === EventType.BlockEvent).length
+          && <Fab variant="extended" size="medium" onClick={() => {
+            setRightDrawerView(EventType.BlockEvent);
+            setRightDrawerOpen(true);
+          }}>
+            Blocks
+          </Fab>}
+
       </Box>
       <Fab color="primary" aria-label="add" onClick={handleFabCreateClick}
            sx={{position: "absolute", bottom: 25, right: 25}}>
