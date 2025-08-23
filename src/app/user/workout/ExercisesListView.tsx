@@ -17,6 +17,8 @@ export default function ExercisesListView({
                                             stopwatchPausedTime,
                                             onStopwatchStartStop,
                                             onStopwatchReset,
+                                            isStopwatchVisible,
+                                            setIsStopwatchVisible
                                           }: {
   workout: WorkoutPrisma;
   onBack: () => void;
@@ -26,6 +28,8 @@ export default function ExercisesListView({
   stopwatchPausedTime: number;
   onStopwatchStartStop: () => void;
   onStopwatchReset: () => void;
+  isStopwatchVisible: boolean;
+  setIsStopwatchVisible: (isVisible: boolean) => void;
 }) {
   return (
     <Box sx={{
@@ -81,6 +85,8 @@ export default function ExercisesListView({
           pausedTime={stopwatchPausedTime}
           onStartStop={onStopwatchStartStop}
           onReset={onStopwatchReset}
+          isStopwatchVisible={isStopwatchVisible}
+          setIsStopwatchVisible={setIsStopwatchVisible}
         />
       </Container>
     </Box>

@@ -1,8 +1,9 @@
 .stopwatch-outer-container {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-evenly;
     gap: 20px;
+    height: 96px;
 }
 
 .stopwatch-circle {
@@ -45,8 +46,8 @@
     padding: 0;
 }
 
-.stopwatch-reset-circle {
-    margin-left: 16px;
+.stopwatch-sidebutton-circle {
+    margin: 16px;
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -63,13 +64,18 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-.stopwatch-reset-circle:hover {
+.stopwatch-sidebutton-circle:hover {
     background: #e3f2fd;
     box-shadow: 0 4px 12px rgba(25, 118, 210, 0.18), 0 2px 8px rgba(0,0,0,0.10);
 }
 
-.stopwatch-reset-circle svg {
+.stopwatch-sidebutton-circle svg {
     display: block;
     width: 24px;
     height: 24px;
+}
+
+.stopwatch-sidebutton-circle.active-stopwatch {
+    background: #e3f2fd;
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.18), 0 2px 8px rgba(0, 0, 0, 0.10);
 }

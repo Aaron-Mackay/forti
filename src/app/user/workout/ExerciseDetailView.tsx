@@ -36,6 +36,8 @@ export default function ExerciseDetailView({
                                              stopwatchPausedTime,
                                              onStopwatchStartStop,
                                              onStopwatchReset,
+                                             isStopwatchVisible,
+                                             setIsStopwatchVisible
                                            }: {
   workout: WorkoutPrisma;
   activeExerciseId: number;
@@ -49,6 +51,8 @@ export default function ExerciseDetailView({
   stopwatchPausedTime: number;
   onStopwatchStartStop: () => void;
   onStopwatchReset: () => void;
+  isStopwatchVisible: boolean;
+  setIsStopwatchVisible: (isVisible: boolean) => void;
 }) {
   const paginationRef = useRef<HTMLDivElement | null>(null);
 
@@ -168,6 +172,8 @@ export default function ExerciseDetailView({
           pausedTime={stopwatchPausedTime}
           onStartStop={onStopwatchStartStop}
           onReset={onStopwatchReset}
+          isStopwatchVisible={isStopwatchVisible}
+          setIsStopwatchVisible={setIsStopwatchVisible}
         />
       </Container>
       <Snackbar

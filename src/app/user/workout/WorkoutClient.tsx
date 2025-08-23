@@ -33,6 +33,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
   const [userDataState, setUserData] = useState(userData);
 
   // shared stopwatch state so it can be running in multiple views
+  const [isStopwatchVisible, setIsStopwatchVisible] = useState(false);
   const [stopwatch, setStopwatch] = useState({
     time: 0,
     isRunning: false,
@@ -148,6 +149,8 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
         stopwatchPausedTime={stopwatch.pausedTime}
         onStopwatchStartStop={handleStartStop}
         onStopwatchReset={handleReset}
+        isStopwatchVisible={isStopwatchVisible}
+        setIsStopwatchVisible={setIsStopwatchVisible}
       />
     );
   }
@@ -163,6 +166,8 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
         stopwatchPausedTime={stopwatch.pausedTime}
         onStopwatchStartStop={handleStartStop}
         onStopwatchReset={handleReset}
+        isStopwatchVisible={isStopwatchVisible}
+        setIsStopwatchVisible={setIsStopwatchVisible}
       />
     );
   }

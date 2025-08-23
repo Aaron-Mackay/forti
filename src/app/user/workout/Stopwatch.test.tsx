@@ -44,6 +44,8 @@ describe("Stopwatch", () => {
         pausedTime={123}
         onStartStop={() => {}}
         onReset={() => {}}
+        isStopwatchVisible={true}
+        setIsStopwatchVisible={() => {}}
       />
     );
     expect(screen.getByText("0:12:3")).toBeInTheDocument();
@@ -58,6 +60,8 @@ describe("Stopwatch", () => {
         pausedTime={0}
         onStartStop={onStartStop}
         onReset={() => {}}
+        isStopwatchVisible={true}
+        setIsStopwatchVisible={() => {}}
       />
     );
     fireEvent.click(screen.getByRole("button", { name: /start stopwatch/i }));
@@ -73,6 +77,8 @@ describe("Stopwatch", () => {
         pausedTime={0}
         onStartStop={() => {}}
         onReset={onReset}
+        isStopwatchVisible={true}
+        setIsStopwatchVisible={() => {}}
       />
     );
     fireEvent.click(screen.getByRole("button", { name: /reset stopwatch/i }));
@@ -88,6 +94,8 @@ describe("Stopwatch", () => {
         pausedTime={0}
         onStartStop={() => {}}
         onReset={() => {}}
+        isStopwatchVisible={true}
+        setIsStopwatchVisible={() => {}}
       />
     );
     await act(async () => {
