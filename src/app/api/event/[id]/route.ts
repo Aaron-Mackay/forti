@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {deleteUserEvent, updateUserEvent} from "@/lib/api";
+import getLoggedInUser from "@lib/getLoggedInUser";
 
 export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const eventId = Number((await props.params).id);
@@ -9,7 +10,9 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: s
   }
 
   try {
-    const deletedEvent = await deleteUserEvent(eventId);
+    const user = await getLoggedInUser()
+
+    const deletedEvent = await deleteUserEvent(eventId, user.id);
     return NextResponse.json(deletedEvent);
   } catch (error) {
     // @ts-expect-error error typing

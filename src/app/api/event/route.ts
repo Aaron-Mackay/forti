@@ -2,6 +2,7 @@ import {findOverlappingBlockEvent, saveUserEvent} from "@lib/api";
 import {NextRequest, NextResponse} from "next/server";
 import {z} from "zod";
 import {BlockSubtype, EventType} from "@prisma/client";
+import confirmPermission from "@lib/confirmPermission";
 
 const EventSchema = z.object({
   userId: z.string(),
@@ -27,6 +28,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const permissionResult = await confirmPermission(parsed.data.userId);
+    if (permissionResult) return permissionResult;
+
     const completeEvent = {
       description: null,
       customColor: null,
@@ -43,8 +47,8 @@ export async function POST(req: NextRequest) {
       );
       if (overlap) {
         return NextResponse.json(
-          { error: "BlockEvent overlaps with an existing BlockEvent." },
-          { status: 400 }
+          {error: "BlockEvent overlaps with an existing BlockEvent."},
+          {status: 400}
         );
       }
     }

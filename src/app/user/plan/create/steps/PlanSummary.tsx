@@ -21,7 +21,7 @@ const WeekStep: React.FC<{ weekCount: string }> = ({weekCount}) => {
     try {
       const response = await savePlan(statePlan);
       if (response.success) {
-        router.push(`/user/${statePlan.userId}/plan/${response.planId}`);
+        router.push(`/user/plan/${response.planId}`);
       } else {
         setError(response.error || 'Failed to save plan. Please try again.');
       }

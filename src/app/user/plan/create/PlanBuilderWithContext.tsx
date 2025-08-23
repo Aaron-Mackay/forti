@@ -59,7 +59,7 @@ export default function PlanBuilderWithContext({userData, allExercises}: {
     name: "",
     id: PLACEHOLDER_ID,
     userId: userData.id,
-    order: maxOrder + 1,
+    order: Math.max(maxOrder + 1, 1),
     description: null
   }
 

@@ -1,6 +1,7 @@
 import {NextRequest, NextResponse} from "next/server";
 import {saveUserPlan} from "@lib/api";
 import {PlanPrisma} from "@/types/dataTypes";
+import confirmPermission from "@lib/confirmPermission";
 
 export type PlanUploadResponse = {
   success: boolean;
@@ -9,7 +10,11 @@ export type PlanUploadResponse = {
 }
 export async function POST(req: NextRequest) {
   try {
-    const uploadedPlanId = await saveUserPlan(await req.json() as PlanPrisma);
+    const receivedPlan = await req.json() as PlanPrisma;
+    const permissionResult = await confirmPermission(receivedPlan.userId);
+    if (permissionResult) return permissionResult;
+
+    const uploadedPlanId = await saveUserPlan(receivedPlan);
 
     return NextResponse.json({ success: true, planId: uploadedPlanId } as PlanUploadResponse, { status: 200 });
   } catch (error) {
