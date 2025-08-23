@@ -121,7 +121,10 @@ function omit<T extends object, K extends keyof T>(
 
 export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
   const uploadedPlan = await prisma.plan.create({
-    data: omit(planData, ["weeks", "id"])
+    data: {
+      ...omit(planData, ["weeks", "id", "userId"]),
+      user: {connect: {id: planData.userId}}
+    }
   })
   for (const week of planData.weeks) {
     const uploadedWeek = await prisma.week.create({
@@ -166,9 +169,9 @@ export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
   return uploadedPlan.id
 }
 
-export async function deleteUserEvent(eventId: number) {
+export async function deleteUserEvent(eventId: number, userId: string) {
   return await prisma.event.delete({
-    where: {id: eventId},
+    where: {id: eventId, userId},
   });
 }
 

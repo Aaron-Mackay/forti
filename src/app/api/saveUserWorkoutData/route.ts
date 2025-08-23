@@ -1,11 +1,15 @@
 import prisma from '@/lib/prisma';
 import {WeekPrisma, WorkoutPrisma} from "@/types/dataTypes";
 import {NextResponse} from "next/server";
+import confirmPermission from "@lib/confirmPermission";
 
 export async function POST(req: Request) {
   const userData = await req.json();
 
   const userId = userData.id;
+  const permissionResult = await confirmPermission(userId);
+  if (permissionResult) return permissionResult;
+
   if (!userId) {
     return NextResponse.json({error: "Missing userId"}, {status: 400});
   }

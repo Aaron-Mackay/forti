@@ -1,6 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {updateUserDayMetric} from '@/lib/api';
 import {z} from 'zod';
+import confirmPermission from "@lib/confirmPermission";
 
 const DayMetricSchema = z.object({
   userId: z.string(),
@@ -27,6 +28,9 @@ export async function POST(req: NextRequest) {
         {status: 400}
       );
     }
+
+    const permissionResult = await confirmPermission(parsed.data.userId);
+    if (permissionResult) return permissionResult;
 
     const completeDayMetric = {
       workout: false,
