@@ -201,7 +201,9 @@ async function main() {
     await prisma.dayMetric.createMany({ data: dayMetricsData });
   }
 
-  console.log('✅ Seeded database with Plans, Weeks, Workouts (partial & full), Sets (partial & full), Events, and DayMetrics');
+  const dbUrl = process.env.DATABASE_URL ?? "";
+  const dbLoc = dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1") ? 'local' : 'neon'
+  console.log(`✅ Seeded ${dbLoc} database with Plans, Weeks, Workouts (partial & full), Sets (partial & full), Events, and DayMetrics`);
 }
 
 main()

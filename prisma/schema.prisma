@@ -20,11 +20,15 @@ model User {
   accounts          Account[]
   sessions          Session[]
 
-
   plans             Plan[]
   events            Event[]
   userExerciseNotes UserExerciseNote[]
   dayMetrics        DayMetric[]
+
+  // self relation (coach <-> clients)
+  coachId           String?
+  coach             User?              @relation("CoachClients", fields: [coachId], references: [id])
+  clients          User[]             @relation("CoachClients")
 }
 
 model Account {
