@@ -19,7 +19,8 @@ export class UserBuilder {
       name: "Test User",
       plans: [],
       image: null,
-      emailVerified: null
+      emailVerified: null,
+      coachId: null
     };
   }
   addPlan(plan: PlanPrisma) {
