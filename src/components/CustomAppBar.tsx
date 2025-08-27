@@ -21,6 +21,7 @@ import FortiIcon from 'public/forti-icon.svg'
 import HomeIcon from '@mui/icons-material/Home';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import MenuIcon from "@mui/icons-material/Menu";
+import BugReportIcon from '@mui/icons-material/BugReport';
 import React, {ReactNode, useEffect, useState} from 'react';
 import {usePathname, useRouter} from 'next/navigation';
 import CalendarIcon from '@mui/icons-material/CalendarMonth';
@@ -181,6 +182,7 @@ export default function CustomAppBar(
         {/* Fixed bottom logout */}
         <Box>
           <List>
+            <ListLink icon={<BugReportIcon/>} text="Report Bug" href="/report-bug"/>
             <ListItem disablePadding>
               <ListItemButton onClick={() => signOut({callbackUrl: '/login'})}>
                 <ListItemIcon><LogoutIcon/></ListItemIcon>
