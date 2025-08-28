@@ -31,10 +31,15 @@ export const PlanBuilder = () => {
 
   const isStepValid = () => {
     switch (activeStep) {
-      case 0:
+      case 0: // PlanStep
         return !!statePlan?.name && (!!weekCount || weekCount === '0')
-      case 1:
-        return statePlan?.weeks[0].workouts.length > 0
+      case 1: // WeekStep
+        return statePlan?.weeks[0].workouts.length > 0 && statePlan?.weeks[0].workouts
+          .every(wo => wo.name)
+      case 2: // WorkoutsStep
+        return statePlan?.weeks[0].workouts
+          .every(wo => wo.exercises.length && wo.exercises
+            .every(ex => ex.restTime && ex.repRange && ex.exercise.name))
       default:
         return true
     }
@@ -114,7 +119,7 @@ export const PlanBuilder = () => {
                 borderRadius: 1,
               }}
             >
-              {!(activeStep === steps.length - 1) && <>Next<KeyboardArrowRightIcon /></>}
+              {!(activeStep === steps.length - 1) && <>Next<KeyboardArrowRightIcon/></>}
             </Button>
           }
           backButton={
@@ -125,7 +130,7 @@ export const PlanBuilder = () => {
                 borderRadius: 1,
               }}
             >
-              {!(activeStep === 0) && <>Back<KeyboardArrowLeftIcon /></>}
+              {!(activeStep === 0) && <>Back<KeyboardArrowLeftIcon/></>}
             </Button>
           }
         />
@@ -134,7 +139,7 @@ export const PlanBuilder = () => {
         sx={{
           minHeight: '300px',
           mb: 2,
-          flex:1
+          flex: 1
         }}
       >
         {steps[activeStep]?.component}

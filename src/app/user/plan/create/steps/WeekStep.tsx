@@ -126,7 +126,7 @@ const WeekStep: React.FC = () => {
         <Button
           onClick={() =>
             dispatch({
-              type: 'ADD_WORKOUT',
+              type: 'ADD_WORKOUT_WITH_EXERCISE_WITH_SET',
               planId: PLACEHOLDER_ID,
               weekId: PLACEHOLDER_ID,
             })

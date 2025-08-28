@@ -441,6 +441,54 @@ export function addWorkout(
   );
 }
 
+export function addWorkoutWithExerciseWithSet(
+  user: UserPrisma,
+  planId: number,
+  weekId: number,
+  createUuid: CreateUuid
+): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week => {
+      const newWorkoutId = createUuid()
+      const newExerciseId = createUuid()
+      return {
+      ...week,
+      workouts: [
+        ...week.workouts,
+        {
+          id: newWorkoutId,
+          name: `Workout ${week.workouts.length + 1}`,
+          order: week.workouts.length + 1,
+          notes: "",
+          exercises: [
+            {
+              id: newExerciseId,
+              exerciseId: dummyExercise.id,
+              repRange: "",
+              restTime: "",
+              order: 1,
+              exercise: dummyExercise,
+              sets: [
+                {
+                  id: createUuid(),
+                  workoutExerciseId: newExerciseId,
+                  order: 1,
+                  reps: null,
+                  weight: null,
+                }
+              ],
+              workoutId: newWorkoutId,
+              notes: "",
+            },
+          ],
+          weekId,
+          dateCompleted: null,
+        },
+      ],
+    }})
+  );
+}
+
 export function removeWorkout(
   user: UserPrisma,
   planId: number,
