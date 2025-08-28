@@ -119,7 +119,11 @@ export default function CustomAppBar(
   return (
     <>
       <AppBar position="fixed" color="primary" sx={{height: APPBAR_HEIGHT}} enableColorOnDark>
-        <Toolbar>
+        <Toolbar
+          sx={{
+            minHeight: '56px !important', // forces 56px at all widths
+          }}
+        >
           {showBack
             ? <IconButton edge="start" color="inherit" aria-label="back" onClick={onBack} sx={{mr: 2}}>
               <ArrowBackIcon/>
