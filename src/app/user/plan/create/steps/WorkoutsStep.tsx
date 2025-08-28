@@ -21,12 +21,9 @@ const WorkoutsStep: React.FC = () => {
     setActiveWorkout((prevActiveWorkout) => prevActiveWorkout - 1)
   }
 
-  const steps = useMemo(() => {
+  const workouts = useMemo(() => {
     const currentWeek = statePlan.weeks.find((week) => week.id === PLACEHOLDER_ID)!;
-    return currentWeek.workouts.map((workout) => ({
-      id: workout.id,
-      workout,
-    }));
+    return currentWeek.workouts
   }, [statePlan]);
 
 
@@ -45,16 +42,16 @@ const WorkoutsStep: React.FC = () => {
         initialSlide={activeWorkout}
         style={{height: '100%'}}
       >
-        {steps.map((step) => (
-          <SwiperSlide key={step.id}>
-            <SpecificWorkoutSubstep workout={step.workout}/>
+        {workouts.map((workout) => (
+          <SwiperSlide key={workout.id}>
+            <SpecificWorkoutSubstep workout={workout}/>
           </SwiperSlide>
         ))}
       </Swiper>
     </Box>
     <MobileStepper
       variant="dots"
-      steps={steps.length}
+      steps={workouts.length}
       activeStep={activeWorkout}
       sx={{
         bgcolor: 'transparent',
@@ -66,12 +63,12 @@ const WorkoutsStep: React.FC = () => {
         <Button
           size="small"
           onClick={handleNext}
-          disabled={activeWorkout === steps.length - 1}
+          disabled={activeWorkout === workouts.length - 1}
           sx={{
             borderRadius: 1,
           }}
         >
-          {!(activeWorkout === steps.length - 1) && <KeyboardArrowRight/>}
+          {!(activeWorkout === workouts.length - 1) && <KeyboardArrowRight/>}
         </Button>
       }
       backButton={
