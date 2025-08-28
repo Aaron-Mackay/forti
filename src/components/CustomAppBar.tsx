@@ -35,7 +35,7 @@ import SpecificPlan from '@mui/icons-material/InsertInvitation';
 import {signOut, useSession} from "next-auth/react";
 
 const APPBAR_HEIGHT = 56;
-export const HEIGHT_EXC_APPBAR = `calc(100vh - ${APPBAR_HEIGHT}px)`
+export const HEIGHT_EXC_APPBAR = `calc(100dvh - ${APPBAR_HEIGHT}px)`
 export default function CustomAppBar(
   {
     title,
@@ -144,7 +144,7 @@ export default function CustomAppBar(
         onClose={() => setDrawerOpen(false)}
         PaperProps={{
           sx: {
-            height: '100vh',
+            height: '100dvh',
             width: 250,
             display: 'flex',
             flexDirection: 'column',
