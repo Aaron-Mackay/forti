@@ -15,7 +15,7 @@
     border-radius: 50%;
     background: #fff;
     border: none;
-    color: #1976d2;
+    color: var(--primary-color);
     font-size: 40px;
     box-shadow: 0 2px 8px rgba(25, 118, 210, 0.12), 0 1.5px 4px rgba(0,0,0,0.08);
     cursor: pointer;
@@ -40,7 +40,7 @@
     font-size: 24px;
     font-weight: 500;
     letter-spacing: 1px;
-    color: #1976d2;
+    color: var(--primary-color);
     text-align: center;
     margin: 0;
     padding: 0;

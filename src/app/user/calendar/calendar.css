@@ -22,7 +22,7 @@
 }
 
 .fc .fc-button-primary {
-    background-color: #1976d2;
+    background-color: var(--primary-color);
     border: 0
 }
 
