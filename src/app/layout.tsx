@@ -1,9 +1,9 @@
-import type {Metadata} from "next";
+import type {Metadata, Viewport} from "next";
 import {Roboto} from "next/font/google";
 import "./globals.css";
 import {Box, GlobalStyles, ThemeProvider} from "@mui/material";
 import {AppRouterCacheProvider} from "@mui/material-nextjs/v14-appRouter";
-import theme from "@/lib/theme";
+import theme, {PRIMARY_COLOUR} from "@/lib/theme";
 import {SpeedInsights} from "@vercel/speed-insights/next"
 import {Analytics} from "@vercel/analytics/next"
 import {DateLocalizationProvider} from "@lib/providers/DateLocalizationProvider";
@@ -18,6 +18,10 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: "Forti",
 };
+
+export const viewport: Viewport = {
+  themeColor: PRIMARY_COLOUR,
+}
 
 export default function RootLayout({
                                      children,
