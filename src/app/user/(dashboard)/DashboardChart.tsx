@@ -2,13 +2,13 @@
 
 import dynamic from "next/dynamic";
 import React, {useRef, useState} from "react";
-import {Box, Button, ButtonGroup, Typography} from "@mui/material";
+import {Box, Button, ButtonGroup} from "@mui/material";
 import {subDays, subMonths} from "date-fns";
 import {DayMetricPrisma, EventPrisma} from "@/types/dataTypes";
 import {MetricKey} from "@/app/user/calendar/DayMetricBar";
 import {getDefinedBlockColor} from "@/app/user/calendar/utils";
 import {DataPoint, extractGapSeries} from "@/app/user/(dashboard)/utils";
-import {useDrag} from "@use-gesture/react";
+import {GestureHandlers, useGesture} from "@use-gesture/react";
 
 const Chart = dynamic(() => import("react-apexcharts"), {ssr: false});
 
@@ -91,42 +91,90 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
   };
 
   const chartRef = useRef<HTMLDivElement>(null);
-  const bind = useDrag(({delta: [mx, _my]}) => {
+  const pinchRef = useRef<{ startWidth?: number, centerMs?: number }>({});
+  const chartMetrics = () => {
+    if (!chartRef.current) return {chartWidthPx: 1, msPerPixel: 1, pxPerMs: 1, visibleMs: 1};
+    const chartWidthPx = chartRef.current.offsetWidth;
     const visibleMs = selection.xaxis.max - selection.xaxis.min;
-    const chartWidthPx = chartRef.current?.offsetWidth ?? 1;
-    const msPerPixel = visibleMs / chartWidthPx;
+    return {
+      chartWidthPx,
+      visibleMs,
+      msPerPixel: visibleMs / chartWidthPx,
+      pxPerMs: chartWidthPx / visibleMs
+    };
+  };
 
-    const deltaMs = -mx * msPerPixel;
+  const onDrag: GestureHandlers['onDrag'] = ({delta: [dx]}) => {
+    const {msPerPixel} = chartMetrics()
+
+    const deltaMs = -dx * msPerPixel;
     setSelection(prev => {
       const totalRange = today.getTime() - startDay.getTime();
       const width = prev.xaxis.max - prev.xaxis.min;
       if (width >= totalRange) return prev; // don’t allow drag
       const newMin = Math.max(startDay.getTime(), Math.min(prev.xaxis.min + deltaMs, today.getTime() - width));
       const newMax = newMin + width;
-      return { xaxis: { min: newMin, max: newMax } };
+      return {xaxis: {min: newMin, max: newMax}};
     });
-  }, {axis: 'x'})
+  }
+
+// --- Pinch handler ---
+  const onPinch: GestureHandlers['onPinch'] = ({first, origin: [ox], movement: [mscale]}) => {
+    const {chartWidthPx, visibleMs} = chartMetrics();
+
+    if (first) {
+      pinchRef.current.startWidth = visibleMs;
+      pinchRef.current.centerMs = selection.xaxis.min + (ox / chartWidthPx) * visibleMs;
+    }
+
+    const startWidth = pinchRef.current.startWidth!;
+    const centerMs = pinchRef.current.centerMs!;
+
+    let newWidth = startWidth / mscale;
+
+    // Clamp zoom
+    const minZoomMs = 1000 * 60 * 60 * 24 * 7;
+    const maxZoomMs = today.getTime() - startDay.getTime();
+    newWidth = Math.max(minZoomMs, Math.min(newWidth, maxZoomMs));
+
+    // Center around pinch point
+    let newMin = centerMs - (centerMs - selection.xaxis.min) / visibleMs * newWidth;
+    let newMax = newMin + newWidth;
+
+    // Clamp to total range
+    if (newMin < startDay.getTime()) {
+      newMin = startDay.getTime();
+      newMax = newMin + newWidth;
+    }
+    if (newMax > today.getTime()) {
+      newMax = today.getTime();
+      newMin = newMax - newWidth;
+    }
+
+    setSelection({xaxis: {min: newMin, max: newMax}});
+  };
+
+  const bindGestures = useGesture(
+    {onDrag, onPinch},
+    {drag: {axis: 'x'}, pinch: {scaleBounds: {min: 0.1, max: 10}}}
+  );
 
   return (
     <Box sx={{height: '100%'}}>
-      <Typography variant="h6" gutterBottom>
-        Zoomable Chart with Phases
-      </Typography>
-
       <Box ref={chartRef} sx={{position: 'relative', touchAction: 'none'}}>
         <Chart options={mainOptions} series={series} type="line" height={350}/>
-        {/* Transparent overlay to capture drags */}
+        {/* Transparent overlay to capture gestures */}
         <Box
-          {...bind()} // useDrag bound here
+          {...bindGestures()}
           sx={{
             position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            cursor: 'grab',      // optional visual cue
+            cursor: 'grab',
             zIndex: 10,
-            backgroundColor: 'transparent', // must be transparent
+            backgroundColor: 'transparent',
           }}
         />
       </Box>
