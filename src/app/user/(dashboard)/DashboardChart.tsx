@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from "next/dynamic";
-import React, {useRef, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {Box, Button, ButtonGroup} from "@mui/material";
 import {subDays, subMonths} from "date-fns";
 import {DayMetricPrisma, EventPrisma} from "@/types/dataTypes";
@@ -103,6 +103,46 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
       pxPerMs: chartWidthPx / visibleMs
     };
   };
+
+  const updateXaxis = (newMin: number, newMax: number) => {
+    const totalRange = today.getTime() - startDay.getTime();
+    let width = newMax - newMin;
+
+    const minZoomMs = 1000 * 60 * 60 * 24 * 7; // 1 week
+    width = Math.max(minZoomMs, Math.min(width, totalRange));
+
+    newMin = Math.max(startDay.getTime(), Math.min(newMin, today.getTime() - width));
+    newMax = newMin + width;
+
+    setSelection({xaxis: {min: newMin, max: newMax}});
+  };
+
+
+  // --- Wheel zoom (desktop) ---
+  useEffect(() => {
+    const el = chartRef.current;
+    if (!el) return;
+
+    const onWheelZoom = (e: WheelEvent) => {
+      e.preventDefault();
+      const {chartWidthPx, visibleMs} = chartMetrics();
+      const rect = el.getBoundingClientRect();
+      const ox = e.clientX - rect.left;
+
+      const zoomFactor = 1 - e.deltaY * 0.002;
+      if (zoomFactor <= 0) return;
+
+      const centerMs = selection.xaxis.min + (ox / chartWidthPx) * visibleMs;
+      const newWidth = visibleMs / zoomFactor;
+      const newMin = centerMs - (centerMs - selection.xaxis.min) / visibleMs * newWidth;
+      const newMax = newMin + newWidth;
+
+      updateXaxis(newMin, newMax);
+    };
+
+    el.addEventListener('wheel', onWheelZoom, {passive: false});
+    return () => el.removeEventListener('wheel', onWheelZoom);
+  }, [chartMetrics, selection]);
 
   const onDrag: GestureHandlers['onDrag'] = ({delta: [dx]}) => {
     const {msPerPixel} = chartMetrics()
