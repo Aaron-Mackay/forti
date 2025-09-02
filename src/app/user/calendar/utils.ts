@@ -18,7 +18,7 @@ export const dateAndWeek = (date: Date) => {
   const typedDate: Date = typeof date === "string" ? new Date(date) : date
   return `${typedDate.toDateString()} (Wk ${getISOWeek(typedDate)})`
 }
-const getDefinedBlockColor = (blockSubtype: BlockSubtype): string => {
+export const getDefinedBlockColor = (blockSubtype: BlockSubtype): string => {
   const BLOCK_COLORS: Record<BlockSubtype, string> = {
     Bulk: 'green',
     Cut: 'lightblue',

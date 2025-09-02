@@ -185,7 +185,6 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
   if (selectedPlan) {
     return (
       <WeeksListView
-        userData={userDataState}
         plan={selectedPlan}
         onBack={goBack}
         onSelectWeek={setSelectedWeekId}

@@ -13,7 +13,7 @@ export default function PlansListView({
 }) {
   return (
     <Box sx={{ minHeight: '100dvh', color: 'text.primary' }}>
-      <CustomAppBar title={`${userData.name}'s Dashboard`} />
+      <CustomAppBar title={'Training'} />
       <Container maxWidth="sm" sx={{ py: 2 }}>
         <Typography variant="subtitle1" gutterBottom>
           Plans
