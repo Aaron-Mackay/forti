@@ -1,4 +1,4 @@
-export function extractGapSeries(data: DataPoint[], metricLabel: string) {
+export function extractGapSeries(data: DataPoint[], metricLabel: string, yAxisIndex: YAxisIndex = 0) {
   const gapSeries: Series[] = [];
   let i = 0;
 
@@ -19,6 +19,7 @@ export function extractGapSeries(data: DataPoint[], metricLabel: string) {
             [data[prevIndex][0], data[prevIndex][1]],
             [data[nextIndex][0], data[nextIndex][1]],
           ],
+          yAxisIndex
         });
       }
 
@@ -32,4 +33,6 @@ export function extractGapSeries(data: DataPoint[], metricLabel: string) {
 }
 
 export type DataPoint = [number, number | string | boolean | Date | null];
-export type Series = { name: string; data: DataPoint[] };
+export type Series = { name: string; data: DataPoint[], yAxisIndex: YAxisIndex };
+
+export type YAxisIndex = 0 | 1

@@ -60,6 +60,7 @@ export async function getUserData(userId: string): Promise<UserPrisma | null> {
 export async function getUserEvents(userId: string) {
   return prisma.event.findMany({
     where: {userId: userId},
+    orderBy: {startDate: 'asc'}
   })
 }
 
