@@ -104,6 +104,7 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
       },
       {
         title: {text: metricLabel(selectedMetrics[1] ?? 'Metric')},
+        show: selectedMetrics.length > 1,
         opposite: true
       }
     ],
