@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import React, {useEffect, useRef, useState} from "react";
 import {Box, Button, ButtonGroup, Skeleton} from "@mui/material";
-import {subDays, subMonths} from "date-fns";
+import {addDays, subDays, subMonths} from "date-fns";
 import {DayMetricPrisma, EventPrisma} from "@/types/dataTypes";
 import {MetricKey} from "@/app/user/calendar/DayMetricBar";
 import {getDefinedBlockColor} from "@/app/user/calendar/utils";
@@ -63,7 +63,6 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
 
     series.push({name: metricLabel, data, yAxisIndex})
   }
-  console.log(series.filter(s => s.yAxisIndex === 0).map(s => [s.yAxisIndex, s.data]))
 
   const isActiveRange = (min: number, max: number) => {
     const tol = 1000 * 60 * 60 * 12;
@@ -73,7 +72,7 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
   const chartBlocks = blocks.map(block => ({
     name: block.name,
     start: block.startDate.getTime(),
-    end: block.endDate.getTime(),
+    end: addDays(block.endDate, 1).getTime(),
     color: block.customColor ?? (block.blockSubtype ? getDefinedBlockColor(block.blockSubtype) : "blue")
   }));
 
