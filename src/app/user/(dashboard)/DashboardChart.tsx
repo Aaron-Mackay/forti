@@ -76,6 +76,19 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
     color: block.customColor ?? (block.blockSubtype ? getDefinedBlockColor(block.blockSubtype) : "blue")
   }));
 
+  const formatLabel = (val: number , metricKey: MetricKey): string => {
+    switch (metricKey) {
+      case 'weight':
+        return val.toPrecision(3);  // 3 significant figures
+      case 'calories':
+      case 'steps':
+        return val.toFixed(0);
+      default:
+        return val.toString();
+    }
+  }
+
+
   const mainOptions: ApexCharts.ApexOptions = {
     chart: {
       id: "main-chart",
@@ -101,9 +114,11 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
     yaxis: [
       {
         title: {text: metricLabel(selectedMetrics[0] ?? 'Metric')},
+        labels: {formatter: val => formatLabel(val, selectedMetrics[0])},
       },
       {
         title: {text: metricLabel(selectedMetrics[1] ?? 'Metric')},
+        labels: {formatter: val => formatLabel(val, selectedMetrics[1])},
         show: selectedMetrics.length > 1,
         opposite: true
       }
