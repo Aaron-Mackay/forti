@@ -1,13 +1,13 @@
 'use client'
 
 import dynamic from "next/dynamic";
-import React, {useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {Box, Button, ButtonGroup, Skeleton} from "@mui/material";
 import {addDays, subDays, subMonths} from "date-fns";
 import {DayMetricPrisma, EventPrisma} from "@/types/dataTypes";
 import {MetricKey} from "@/app/user/calendar/DayMetricBar";
 import {getDefinedBlockColor} from "@/app/user/calendar/utils";
-import {DataPoint, Series, YAxisIndex} from "@/app/user/(dashboard)/utils";
+import {DataPoint, Series} from "@/app/user/(dashboard)/utils";
 import {GestureHandlers, useGesture} from "@use-gesture/react";
 
 import WeightIcon from '@mui/icons-material/Scale';
@@ -18,20 +18,27 @@ const CHART_HEIGHT = 350;
 
 const Chart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
-  loading: () => <Skeleton variant="rounded" height={CHART_HEIGHT-15} sx={{my: '15px'}}/>
+  loading: () => <Skeleton variant="rounded" height={CHART_HEIGHT - 15} sx={{my: '15px'}}/>
 });
 
+type Selection = {
+  xaxis: { min: number; max: number };
+}
+
 export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMetricPrisma[], blocks: EventPrisma[] }) {
-  const [selectedMetrics, setSelectedMetrics] = useState<MetricKey[]>(['weight'])
-  const metricLabel = (metricKey: MetricKey): string => metricKey[0].toUpperCase() + metricKey.slice(1);
+  const [selectedMetrics, setSelectedMetrics] = useState<MetricKey[]>(['weight']);
+  const metricLabelify = (metricKey: MetricKey): string => metricKey[0].toUpperCase() + metricKey.slice(1);
 
-  const getData = (metric: MetricKey): DataPoint[] =>
-    dayMetrics
-      .filter(dm => dm[metric] !== null)
-      .map(dm => [new Date(dm.date).getTime(), dm[metric]])
+  const getData = useCallback(
+    (metric: MetricKey): DataPoint[] =>
+      dayMetrics
+        .filter(dm => dm[metric] !== null)
+        .map(dm => [new Date(dm.date).getTime(), dm[metric]]),
+    [dayMetrics]
+  );
 
 
-  const today: Date = new Date();
+  const today: Date = useMemo(() => new Date(), [])
   const startDay =
     dayMetrics[0]?.date
     ?? blocks[0]?.startDate
@@ -44,39 +51,41 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
     {label: "All", min: startDay.getTime(), max: today.getTime()},
   ];
 
-  const [selection, setSelection] = useState({
+  const [selection, setSelection] = useState<Selection>({
     xaxis: {min: subMonths(today, 1).getTime(), max: today.getTime()}
   });
 
   // if user has no metrics recorded, add an invisible series or blocks don't show
-  const series: Series[] = dayMetrics.length > 0 ? [] : [{
-    name: "invisible",
-    data: [[startDay.getTime(), null], [today.getTime(), null]],
-    yAxisIndex: 0,
-  }];
-
-  for (let i: YAxisIndex = 0; i < selectedMetrics.length; i++) {
-    const yAxisIndex = i as 0 | 1;
-    const metricKey = selectedMetrics[i];
-    const metricLabel: string = metricKey[0].toUpperCase() + metricKey.slice(1);
-    const data = getData(metricKey);
-
-    series.push({name: metricLabel, data, yAxisIndex})
-  }
+  const series = useMemo<Series[]>(() => {
+    if (dayMetrics.length === 0 || selectedMetrics.length === 0) {
+      return [{
+        name: "invisible",
+        data: [[startDay.getTime(), null], [today.getTime(), null]],
+        yAxisIndex: 0,
+      }];
+    }
+    return selectedMetrics.map((metricKey, i) => ({
+      name: metricLabelify(metricKey),
+      data: getData(metricKey),
+      yAxisIndex: i as 0 | 1,
+    }));
+  }, [dayMetrics.length, getData, selectedMetrics, startDay, today]);
 
   const isActiveRange = (min: number, max: number) => {
     const tol = 1000 * 60 * 60 * 12;
     return Math.abs(selection.xaxis.min - min) < tol && Math.abs(selection.xaxis.max - max) < tol;
   };
 
-  const chartBlocks = blocks.map(block => ({
-    name: block.name,
-    start: block.startDate.getTime(),
-    end: addDays(block.endDate, 1).getTime(),
-    color: block.customColor ?? (block.blockSubtype ? getDefinedBlockColor(block.blockSubtype) : "blue")
-  }));
+  const chartBlocks = useMemo(() => (
+    blocks.map(block => ({
+      name: block.name,
+      start: block.startDate.getTime(),
+      end: addDays(block.endDate, 1).getTime(),
+      color: block.customColor ?? (block.blockSubtype ? getDefinedBlockColor(block.blockSubtype) : "blue")
+    }))
+  ), [blocks]);
 
-  const formatLabel = (val: number , metricKey: MetricKey): string => {
+  const formatLabel = (val: number, metricKey: MetricKey): string => {
     switch (metricKey) {
       case 'weight':
         return val.toPrecision(3);  // 3 significant figures
@@ -116,11 +125,11 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
     xaxis: {type: "datetime", min: selection.xaxis.min, max: selection.xaxis.max},
     yaxis: [
       {
-        title: {text: metricLabel(selectedMetrics[0] ?? 'Metric')},
+        title: {text: metricLabelify(selectedMetrics[0] ?? '')},
         labels: {formatter: val => formatLabel(val, selectedMetrics[0])},
       },
       {
-        title: {text: metricLabel(selectedMetrics[1] ?? 'Metric')},
+        title: {text: metricLabelify(selectedMetrics[1] ?? 'Metric')},
         labels: {formatter: val => formatLabel(val, selectedMetrics[1])},
         show: selectedMetrics.length > 1,
         opposite: true
@@ -146,7 +155,7 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
   const chartRef = useRef<HTMLDivElement>(null);
   const pinchRef = useRef<{ startWidth?: number, centerMs?: number }>({});
 
-  const chartMetrics = () => {
+  const chartMetrics = useCallback(() => {
     if (!chartRef.current) return {chartWidthPx: 1, msPerPixel: 1, pxPerMs: 1, visibleMs: 1};
     const chartWidthPx = chartRef.current.offsetWidth;
     const visibleMs = selection.xaxis.max - selection.xaxis.min;
@@ -156,9 +165,9 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
       msPerPixel: visibleMs / chartWidthPx,
       pxPerMs: chartWidthPx / visibleMs
     };
-  };
+  }, [selection]);
 
-  const updateXaxis = (newMin: number, newMax: number) => {
+  const updateXaxis = useCallback((newMin: number, newMax: number): void => {
     const totalRange = today.getTime() - startDay.getTime();
     let width = newMax - newMin;
 
@@ -169,7 +178,7 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
     newMax = newMin + width;
 
     setSelection({xaxis: {min: newMin, max: newMax}});
-  };
+  }, [today, startDay]);
 
 
   // --- Wheel zoom (desktop) ---
@@ -196,7 +205,7 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
 
     el.addEventListener('wheel', onWheelZoom, {passive: false});
     return () => el.removeEventListener('wheel', onWheelZoom);
-  }, [chartMetrics, selection]);
+  }, [chartMetrics, selection, updateXaxis]);
 
   const onDrag: GestureHandlers['onDrag'] = ({delta: [dx]}) => {
     const {msPerPixel} = chartMetrics()
