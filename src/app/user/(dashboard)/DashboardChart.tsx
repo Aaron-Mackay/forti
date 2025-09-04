@@ -18,7 +18,7 @@ const CHART_HEIGHT = 350;
 
 const Chart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
-  loading: () => <Skeleton variant="rounded" height={CHART_HEIGHT} sx={{mb: '15px'}}/>
+  loading: () => <Skeleton variant="rounded" height={CHART_HEIGHT-15} sx={{my: '15px'}}/>
 });
 
 export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMetricPrisma[], blocks: EventPrisma[] }) {
@@ -98,6 +98,9 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
       animations: {enabled: false},
       events: {
         zoomed: (_, {xaxis}) => setSelection({xaxis})
+      },
+      toolbar: {
+        show: false
       }
     },
     stroke: {
