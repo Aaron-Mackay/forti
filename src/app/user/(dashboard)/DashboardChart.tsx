@@ -2,34 +2,40 @@
 
 import dynamic from "next/dynamic";
 import React, {useEffect, useRef, useState} from "react";
-import {Box, Button, ButtonGroup} from "@mui/material";
+import {Box, Button, ButtonGroup, Skeleton} from "@mui/material";
 import {subDays, subMonths} from "date-fns";
 import {DayMetricPrisma, EventPrisma} from "@/types/dataTypes";
 import {MetricKey} from "@/app/user/calendar/DayMetricBar";
 import {getDefinedBlockColor} from "@/app/user/calendar/utils";
-import {DataPoint, extractGapSeries} from "@/app/user/(dashboard)/utils";
+import {DataPoint, Series, YAxisIndex} from "@/app/user/(dashboard)/utils";
 import {GestureHandlers, useGesture} from "@use-gesture/react";
 
-const Chart = dynamic(() => import("react-apexcharts"), {ssr: false});
+import WeightIcon from '@mui/icons-material/Scale';
+import FoodIcon from '@mui/icons-material/RestaurantRounded';
+import StepsIcon from '@mui/icons-material/DirectionsWalkRounded';
+
+const CHART_HEIGHT = 350;
+
+const Chart = dynamic(() => import("react-apexcharts"), {
+  ssr: false,
+  loading: () => <Skeleton variant="rounded" height={CHART_HEIGHT} sx={{mb: '15px'}}/>
+});
 
 export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMetricPrisma[], blocks: EventPrisma[] }) {
-
-  const metricKey: MetricKey = 'weight';
-  const metricLabel: string = metricKey[0].toUpperCase() + metricKey.slice(1);
+  const [selectedMetrics, setSelectedMetrics] = useState<MetricKey[]>(['weight'])
+  const metricLabel = (metricKey: MetricKey): string => metricKey[0].toUpperCase() + metricKey.slice(1);
 
   const getData = (metric: MetricKey): DataPoint[] =>
-    dayMetrics.map(dm => [new Date(dm.date).getTime(), dm[metric]]);
+    dayMetrics
+      .filter(dm => dm[metric] !== null)
+      .map(dm => [new Date(dm.date).getTime(), dm[metric]])
 
-  const data = getData(metricKey);
-  const gapSeries = extractGapSeries(data, metricLabel);
-
-  const series = [
-    ...gapSeries,
-    {name: metricLabel, data},
-  ];
 
   const today: Date = new Date();
-  const startDay: Date = dayMetrics[0].date
+  const startDay =
+    dayMetrics[0]?.date
+    ?? blocks[0]?.startDate
+    ?? subMonths(today, 7);
   const ranges = [
     {label: "1W", min: subDays(today, 7).getTime(), max: today.getTime()},
     {label: "1M", min: subMonths(today, 1).getTime(), max: today.getTime()},
@@ -41,6 +47,23 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
   const [selection, setSelection] = useState({
     xaxis: {min: subMonths(today, 1).getTime(), max: today.getTime()}
   });
+
+  // if user has no metrics recorded, add an invisible series or blocks don't show
+  const series: Series[] = dayMetrics.length > 0 ? [] : [{
+    name: "invisible",
+    data: [[startDay.getTime(), null], [today.getTime(), null]],
+    yAxisIndex: 0,
+  }];
+
+  for (let i: YAxisIndex = 0; i < selectedMetrics.length; i++) {
+    const yAxisIndex = i as 0 | 1;
+    const metricKey = selectedMetrics[i];
+    const metricLabel: string = metricKey[0].toUpperCase() + metricKey.slice(1);
+    const data = getData(metricKey);
+
+    series.push({name: metricLabel, data, yAxisIndex})
+  }
+  console.log(series.filter(s => s.yAxisIndex === 0).map(s => [s.yAxisIndex, s.data]))
 
   const isActiveRange = (min: number, max: number) => {
     const tol = 1000 * 60 * 60 * 12;
@@ -58,7 +81,7 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
     chart: {
       id: "main-chart",
       type: "line",
-      height: 350,
+      height: CHART_HEIGHT,
       zoom: {enabled: false},
       animations: {enabled: false},
       events: {
@@ -68,11 +91,23 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
     stroke: {
       curve: "smooth",
       width: 2,
-      dashArray: [...Array(gapSeries.length).fill(6), 0]
     },
-    colors: ['#00a2f1'],
+    markers: {
+      size: 3,
+      shape: "diamond",
+      colors: ['#000000'],
+    },
+    colors: ['#00a2f1', '#d30bff'],
     xaxis: {type: "datetime", min: selection.xaxis.min, max: selection.xaxis.max},
-    yaxis: {title: {text: metricLabel}},
+    yaxis: [
+      {
+        title: {text: metricLabel(selectedMetrics[0] ?? 'Metric')},
+      },
+      {
+        title: {text: metricLabel(selectedMetrics[1] ?? 'Metric')},
+        opposite: true
+      }
+    ],
     tooltip: {x: {format: "yyyy-MM-dd"}},
     legend: {show: false},
     annotations: {
@@ -92,6 +127,7 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
 
   const chartRef = useRef<HTMLDivElement>(null);
   const pinchRef = useRef<{ startWidth?: number, centerMs?: number }>({});
+
   const chartMetrics = () => {
     if (!chartRef.current) return {chartWidthPx: 1, msPerPixel: 1, pxPerMs: 1, visibleMs: 1};
     const chartWidthPx = chartRef.current.offsetWidth;
@@ -199,10 +235,23 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
     {drag: {axis: 'x'}, pinch: {scaleBounds: {min: 0.1, max: 10}}}
   );
 
+  const toggleSelectedMetric = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const clickedMetricKey = e.currentTarget.value as MetricKey
+    setSelectedMetrics(prevState => {
+      if (prevState.includes(clickedMetricKey)) {
+        return prevState.filter(mk => mk != clickedMetricKey)
+      }
+      if (prevState.length > 1 && !prevState.includes(clickedMetricKey)) {
+        return prevState
+      }
+      return [...prevState, clickedMetricKey]
+    })
+  }
+
   return (
     <Box sx={{height: '100%'}}>
       <Box ref={chartRef} sx={{position: 'relative', touchAction: 'none'}}>
-        <Chart options={mainOptions} series={series} type="line" height={350}/>
+        <Chart options={mainOptions} series={series} type="line" height={CHART_HEIGHT}/>
         {/* Transparent overlay to capture gestures */}
         <Box
           {...bindGestures()}
@@ -220,7 +269,33 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
       </Box>
 
 
-      <Box sx={{display: 'flex', alignItems: 'center', flexDirection: 'column', mt: 2}}>
+      <Box sx={{display: 'flex', alignItems: 'center', flexDirection: 'column', mt: -1}}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1} gap={1}>
+          <Button
+            value={'weight'}
+            onClick={toggleSelectedMetric}
+            variant={selectedMetrics.includes('weight') ? "contained" : "outlined"}
+            sx={{borderRadius: 999, minWidth: "2rem", px: 1, py: 0}}
+          >
+            <WeightIcon/>
+          </Button>
+          <Button
+            value={'calories'}
+            onClick={toggleSelectedMetric}
+            variant={selectedMetrics.includes('calories') ? "contained" : "outlined"}
+            sx={{borderRadius: 999, minWidth: "2rem", px: 1, py: 0}}
+          >
+            <FoodIcon/>
+          </Button>
+          <Button
+            value={'steps'}
+            onClick={toggleSelectedMetric}
+            variant={selectedMetrics.includes('steps') ? "contained" : "outlined"}
+            sx={{borderRadius: 999, minWidth: "2rem", px: 1, py: 0}}
+          >
+            <StepsIcon/>
+          </Button>
+        </Box>
         <ButtonGroup>
           {ranges.map(r => (
             <Button
