@@ -125,7 +125,7 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
     xaxis: {type: "datetime", min: selection.xaxis.min, max: selection.xaxis.max},
     yaxis: [
       {
-        title: {text: metricLabelify(selectedMetrics[0] ?? '')},
+        title: {text: metricLabelify(selectedMetrics[0] ?? 'Metric')},
         labels: {formatter: val => formatLabel(val, selectedMetrics[0])},
       },
       {
