@@ -15,8 +15,7 @@
     "postinstall": "prisma generate",
     "check": "npm run test && npm run lint && npm run build",
     "prepare": "husky",
-    "db:reset": "prisma db push --force-reset && prisma generate && ts-node prisma/seed.ts",
-    "db:reset:all": "dotenv -e .env.remote -- prisma db push --force-reset && dotenv -e .env.remote -- prisma generate && dotenv -e .env.remote -- ts-node prisma/seed.ts && dotenv -e .env -- prisma db push --force-reset && dotenv -e .env -- prisma generate && dotenv -e .env -- ts-node prisma/seed.ts"
+    "db:reset": "prisma db push --force-reset && prisma generate && ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
