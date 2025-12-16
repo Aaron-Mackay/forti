@@ -193,3 +193,47 @@ export async function findOverlappingBlockEvent(userId: string, startDate: Date,
     },
   });
 }
+
+export async function getAllLinkedPlans(userId: string) {
+  const [userPlans, clientPlans] = await Promise.all([
+    prisma.plan.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        name: true,
+      },
+    }),
+
+    prisma.plan.findMany({
+      where: {
+        user: { coachId: userId },
+      },
+      select: {
+        id: true,
+        name: true,
+        user: { select: { id: true, name: true } },
+      },
+    }),
+  ])
+
+  return {
+    userPlans,
+    clientPlans,
+  }
+}
+
+export async function getUserFromPlan(planId: string) {
+  const plan = await prisma.plan.findUnique({
+    where: { id: Number(planId) },
+    select: {
+      user: {
+        select: {
+          id: true,
+          coachId: true,
+        },
+      },
+    },
+  });
+
+  return plan?.user || null;
+}

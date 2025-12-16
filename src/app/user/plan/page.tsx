@@ -1,25 +1,37 @@
-import {getExercisesAndCategories, getUserData} from "@lib/api";
-import {PlanTable} from "./PlanTable";
-import {WorkoutEditorProvider} from "@/context/WorkoutEditorContext";
+import {getAllLinkedPlans} from "@lib/api";
 import React from "react";
-import {notFound} from "next/navigation";
 import getLoggedInUser from "@lib/getLoggedInUser";
+import {Card, CardHeader, Link, ListItem, ListItemButton, ListItemText} from "@mui/material";
+import CustomAppBar from "@/components/CustomAppBar";
 
 const PlanPage = async () => {
-  const userId = (await getLoggedInUser()).id
-  const userData = await getUserData(userId)
-  if (!userData) {
-    return notFound()
-  }
-  const {allExercises, categories} = await getExercisesAndCategories()
+  const user = await getLoggedInUser()
+  const plans = await getAllLinkedPlans(user.id)
 
   return (
-    <WorkoutEditorProvider userData={userData} allExercises={allExercises}>
-      <PlanTable
-        lockedInEditMode={false}
-        categories={categories}
-      />
-    </WorkoutEditorProvider>
+    <>
+      <CustomAppBar title="Plans"/>
+      <Card sx={{display: "flex", flexDirection: "column"}}>
+        <CardHeader title={`${user.name}'s Plans`}/>
+        {plans.userPlans.map((plan) => (
+          <ListItem key={plan.id}>
+            <ListItemButton component={Link} href={`/user/plan/${plan.id}`}>
+              <ListItemText primary={plan.name}/>
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </Card>
+      <Card sx={{display: "flex", flexDirection: "column"}}>
+        <CardHeader title="Client Plans"/>
+        {plans.clientPlans.map((plan) => (
+          <ListItem key={plan.id}>
+            <ListItemButton component={Link} href={`/user/plan/${plan.id}`}>
+              <ListItemText primary={plan.name} secondary={plan.user.name}/>
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </Card>
+    </>
   )
 };
 
