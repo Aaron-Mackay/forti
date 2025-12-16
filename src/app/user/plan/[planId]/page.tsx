@@ -1,4 +1,4 @@
-import {getExercisesAndCategories, getUserData} from "@lib/api";
+import {getExercisesAndCategories, getUserData, getUserFromPlan} from "@lib/api";
 import {PlanTable} from "../PlanTable";
 import {WorkoutEditorProvider} from "@/context/WorkoutEditorContext";
 import React from "react";
@@ -6,8 +6,14 @@ import {notFound} from "next/navigation";
 import getLoggedInUser from "@lib/getLoggedInUser";
 
 const PlanPage = async ({params}: { params: Promise<{ planId: string }> }) => {
-  const userId = (await getLoggedInUser()).id
-  const userData = await getUserData(userId)
+  const planId = (await params).planId
+  const userDetails = await getUserFromPlan(planId)
+  const loggedInUserId = (await getLoggedInUser()).id
+
+  if (userDetails?.id !== loggedInUserId && userDetails?.coachId !== loggedInUserId) {
+    return notFound()
+  }
+  const userData = await getUserData(userDetails.id)
   if (!userData) {
     return notFound()
   }
@@ -18,7 +24,7 @@ const PlanPage = async ({params}: { params: Promise<{ planId: string }> }) => {
       <PlanTable
         lockedInEditMode={false}
         categories={categories}
-        planId={(await params).planId}
+        planId={planId}
       />
     </WorkoutEditorProvider>
   )
