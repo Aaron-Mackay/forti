@@ -84,6 +84,45 @@ describe('reducer', () => {
     expect(original.workouts[0].exercises[0].sets[0].weight).toBe('100');
   });
 
+  it('DUPLICATE_WORKOUT duplicates a workout in a week with new IDs', () => {
+    const workout = new WorkoutBuilder(1002)
+      .addExercise(
+        new ExerciseBuilder(1003)
+          .addSet(
+            new SetBuilder(1004).build()
+          )
+          .build()
+      )
+      .build()
+    const week = new WeekBuilder(1001)
+      .addWorkout(workout)
+      .build();
+    const plan = new PlanBuilder(1)
+      .addWeek(week)
+      .build();
+    const state = new UserBuilder(1)
+      .addPlan(plan)
+      .build();
+
+    const action: WorkoutEditorAction = {type: 'DUPLICATE_WORKOUT', planId: 1, weekId: 1001, workoutId: 1002};
+    const newState = reducer(state, action, mockUuid);
+    expect(newState.plans[0].weeks[0].workouts.length).toBe(2);
+    const [original, duplicate] = newState.plans[0].weeks[0].workouts;
+    expect(duplicate.id).not.toBe(original.id);
+    expect(duplicate.exercises[0].id).not.toBe(original.exercises[0].id);
+    expect(duplicate.exercises[0].id).not.toBe(original.exercises[0].id);
+    expect(duplicate.exercises[0].sets[0].id).not.toBe(original.exercises[0].sets[0].id);
+    // Sets in duplicate should have null weight/reps
+    expect(duplicate.exercises[0].sets[0].weight).toBeNull();
+    expect(duplicate.exercises[0].sets[0].reps).toBeNull();
+
+    // Deep clone check: mutate duplicate, original should not change
+    duplicate.name = 'Changed Name';
+    duplicate.exercises[0].sets[0].weight = '999';
+    expect(original.name).toBe('Workout');
+    expect(original.exercises[0].sets[0].weight).toBe('100');
+  });
+
   it('ADD_WORKOUT adds a workout to the specified week', () => {
     const plan = new PlanBuilder(1)
       .addWeek(new WeekBuilder(1).build())
