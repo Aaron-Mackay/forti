@@ -237,3 +237,12 @@ export async function getUserFromPlan(planId: string) {
 
   return plan?.user || null;
 }
+
+export async function getCoachFromUser(userId: string) {
+  return await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      coachId: true,
+    }
+  })
+}

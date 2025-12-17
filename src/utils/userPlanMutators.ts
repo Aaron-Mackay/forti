@@ -126,6 +126,19 @@ export function duplicateWeek(user: UserPrisma, planId: number, weekId: number, 
   }));
 }
 
+export function duplicateWorkout(user: UserPrisma, planId: number, weekId: number, workoutId: number, createUuid: CreateUuid): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week => ({
+        ...week,
+        workouts: [
+          ...week.workouts,
+          duplicateWorkoutData(week.workouts.find(wo => wo.id === workoutId)!, createUuid, week.workouts.length + 1),
+        ]
+      })
+    )
+  );
+}
+
 function duplicateWeekData(week: WeekPrisma, newOrder: number, createUuid: CreateUuid): WeekPrisma {
   return {
     ...week,
@@ -135,9 +148,10 @@ function duplicateWeekData(week: WeekPrisma, newOrder: number, createUuid: Creat
   };
 }
 
-function duplicateWorkoutData(workout: WorkoutPrisma, createUuid: CreateUuid): WorkoutPrisma {
+function duplicateWorkoutData(workout: WorkoutPrisma, createUuid: CreateUuid, newOrder?: number): WorkoutPrisma {
   return {
     ...workout,
+    order: newOrder || workout.order,
     id: createUuid(),
     exercises: workout.exercises.map(ex => duplicateExerciseData(ex, createUuid)),
   };
@@ -193,7 +207,7 @@ export function updateSetCount(user: UserPrisma, planId: number, weekId: number,
             const sortedSets = [...exercise.sets].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
             return {
               ...exercise,
-              sets: sortedSets.slice(0, setCount).map((set, idx) => ({ ...set, order: idx + 1 })),
+              sets: sortedSets.slice(0, setCount).map((set, idx) => ({...set, order: idx + 1})),
             };
           }
           if (setCount > exercise.sets.length) {
@@ -201,7 +215,7 @@ export function updateSetCount(user: UserPrisma, planId: number, weekId: number,
               ...exercise,
               sets: [
                 ...exercise.sets,
-                ...Array.from({ length: setCount - exercise.sets.length }).map((_, idx) => ({
+                ...Array.from({length: setCount - exercise.sets.length}).map((_, idx) => ({
                   id: createUuid(),
                   workoutExerciseId: exerciseId,
                   order: exercise.sets.length + idx + 1,
@@ -452,40 +466,41 @@ export function addWorkoutWithExerciseWithSet(
       const newWorkoutId = createUuid()
       const newExerciseId = createUuid()
       return {
-      ...week,
-      workouts: [
-        ...week.workouts,
-        {
-          id: newWorkoutId,
-          name: `Workout ${week.workouts.length + 1}`,
-          order: week.workouts.length + 1,
-          notes: "",
-          exercises: [
-            {
-              id: newExerciseId,
-              exerciseId: dummyExercise.id,
-              repRange: "",
-              restTime: "",
-              order: 1,
-              exercise: dummyExercise,
-              sets: [
-                {
-                  id: createUuid(),
-                  workoutExerciseId: newExerciseId,
-                  order: 1,
-                  reps: null,
-                  weight: null,
-                }
-              ],
-              workoutId: newWorkoutId,
-              notes: "",
-            },
-          ],
-          weekId,
-          dateCompleted: null,
-        },
-      ],
-    }})
+        ...week,
+        workouts: [
+          ...week.workouts,
+          {
+            id: newWorkoutId,
+            name: `Workout ${week.workouts.length + 1}`,
+            order: week.workouts.length + 1,
+            notes: "",
+            exercises: [
+              {
+                id: newExerciseId,
+                exerciseId: dummyExercise.id,
+                repRange: "",
+                restTime: "",
+                order: 1,
+                exercise: dummyExercise,
+                sets: [
+                  {
+                    id: createUuid(),
+                    workoutExerciseId: newExerciseId,
+                    order: 1,
+                    reps: null,
+                    weight: null,
+                  }
+                ],
+                workoutId: newWorkoutId,
+                notes: "",
+              },
+            ],
+            weekId,
+            dateCompleted: null,
+          },
+        ],
+      }
+    })
   );
 }
 

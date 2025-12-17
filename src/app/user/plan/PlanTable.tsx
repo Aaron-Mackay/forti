@@ -37,7 +37,7 @@ export const PlanTable: React.FC<{
   return (
     <>
       <CustomAppBar title={"Plan"}/>
-      <Box sx={{p: 1, overflow: 'auto'}} >
+      <Box sx={{p: 1, overflow: 'auto'}}>
         {!lockedInEditMode && (
           <EditModeToggle
             isInEditMode={isInEditMode}
@@ -52,20 +52,27 @@ export const PlanTable: React.FC<{
 
         <h1>User: {userDataState.name}</h1>
 
-        {plan.weeks.map((week) => (
-          <Week
-            key={week.id}
-            planId={plan.id}
-            week={week}
-            isInEditMode={isInEditMode}
-            categories={categories}
-            allExercises={allExercises}
-          />
+        {plan.weeks.map((week, i) => (
+          <div key={i}>
+            <Week
+              key={week.id}
+              planId={plan.id}
+              week={week}
+              isInEditMode={isInEditMode}
+              categories={categories}
+              allExercises={allExercises}
+            />
+            {isInEditMode && i === plan.weeks.length - 1 && (
+              <Button onClick={() => dispatch({type: 'DUPLICATE_WEEK', planId: Number(planId), weekId: week.id})}>
+                Duplicate Week
+              </Button>
+            )}
+          </div>
         ))}
 
         {isInEditMode && (
           // todo fix this too
-          <Button onClick={() => dispatch({type: 'ADD_WEEK', planId: 1})}>
+          <Button onClick={() => dispatch({type: 'ADD_WEEK', planId: Number(planId)})}>
             Add Week
           </Button>
         )}

@@ -52,6 +52,9 @@ const Week = ({
               allExercises={allExercises}
               weekWorkoutCount={week.workouts.length}
             />
+            <Button onClick={() => dispatch({type: 'DUPLICATE_WORKOUT', planId, weekId: week.id, workoutId: workout.id})}>
+              Duplicate Workout
+            </Button>
           </TableContainer>
         ))}
       </Box>
