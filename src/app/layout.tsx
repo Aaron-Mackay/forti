@@ -1,5 +1,8 @@
 import type {Metadata, Viewport} from "next";
-import {Roboto} from "next/font/google";
+import "@fontsource/roboto/300.css";
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/500.css";
+import "@fontsource/roboto/700.css";
 import "./globals.css";
 import {Box, GlobalStyles, ThemeProvider} from "@mui/material";
 import {AppRouterCacheProvider} from "@mui/material-nextjs/v14-appRouter";
@@ -8,12 +11,6 @@ import {SpeedInsights} from "@vercel/speed-insights/next"
 import {Analytics} from "@vercel/analytics/next"
 import {DateLocalizationProvider} from "@lib/providers/DateLocalizationProvider";
 import AuthProvider from "@lib/providers/AuthProvider";
-
-const roboto = Roboto({
-  weight: ["300", "400", "500", "700"],
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Forti",
@@ -29,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={roboto.className}>
+    <html lang="en">
     <body>
     <AppRouterCacheProvider>
       <ThemeProvider theme={theme}>

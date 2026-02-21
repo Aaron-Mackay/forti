@@ -655,6 +655,68 @@ describe('reducer', () => {
     expect(newState.plans[0].weeks[1].id).toBe(12);
   });
 
+  it('UPDATE_PLAN_NAME updates the plan name', () => {
+    const plan = new PlanBuilder(1).build();
+    const state = new UserBuilder(1).addPlan(plan).build();
+    const action: WorkoutEditorAction = { type: 'UPDATE_PLAN_NAME', planId: 1, name: 'My New Plan' };
+    const newState = reducer(state, action, mockUuid);
+    expect(newState.plans[0].name).toBe('My New Plan');
+  });
+
+  it('ADD_EXERCISE_WITH_SET adds an exercise with one blank set', () => {
+    const week = new WeekBuilder(1).addWorkout(new WorkoutBuilder(2).build()).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const state = new UserBuilder(1).addPlan(plan).build();
+    const action: WorkoutEditorAction = { type: 'ADD_EXERCISE_WITH_SET', planId: 1, weekId: 1, workoutId: 2 };
+    const newState = reducer(state, action, mockUuid);
+    const exercises = newState.plans[0].weeks[0].workouts[0].exercises;
+    expect(exercises).toHaveLength(1);
+    expect(exercises[0].sets).toHaveLength(1);
+    expect(exercises[0].sets[0].reps).toBeNull();
+    expect(exercises[0].sets[0].weight).toBeNull();
+  });
+
+  it('ADD_WORKOUT_WITH_EXERCISE_WITH_SET adds a workout with an exercise and a set', () => {
+    const week = new WeekBuilder(1).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const state = new UserBuilder(1).addPlan(plan).build();
+    const action: WorkoutEditorAction = { type: 'ADD_WORKOUT_WITH_EXERCISE_WITH_SET', planId: 1, weekId: 1 };
+    const newState = reducer(state, action, mockUuid);
+    const workouts = newState.plans[0].weeks[0].workouts;
+    expect(workouts).toHaveLength(1);
+    expect(workouts[0].exercises).toHaveLength(1);
+    expect(workouts[0].exercises[0].sets).toHaveLength(1);
+    expect(workouts[0].name).toBe('Workout 1');
+  });
+
+  it('UPDATE_SET_COUNT increases the set count', () => {
+    const exercise = new ExerciseBuilder(3).addSet(new SetBuilder(10, 1).build()).build();
+    const workout = new WorkoutBuilder(2).addExercise(exercise).build();
+    const week = new WeekBuilder(1).addWorkout(workout).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const state = new UserBuilder(1).addPlan(plan).build();
+    const action: WorkoutEditorAction = { type: 'UPDATE_SET_COUNT', planId: 1, weekId: 1, workoutId: 2, workoutExerciseId: 3, setCount: 3 };
+    const newState = reducer(state, action, mockUuid);
+    expect(newState.plans[0].weeks[0].workouts[0].exercises[0].sets).toHaveLength(3);
+  });
+
+  it('UPDATE_SET_COUNT decreases the set count', () => {
+    const exercise = new ExerciseBuilder(3)
+      .addSet(new SetBuilder(10, 1).build())
+      .addSet(new SetBuilder(11, 2).build())
+      .addSet(new SetBuilder(12, 3).build())
+      .build();
+    const workout = new WorkoutBuilder(2).addExercise(exercise).build();
+    const week = new WeekBuilder(1).addWorkout(workout).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const state = new UserBuilder(1).addPlan(plan).build();
+    const action: WorkoutEditorAction = { type: 'UPDATE_SET_COUNT', planId: 1, weekId: 1, workoutId: 2, workoutExerciseId: 3, setCount: 1 };
+    const newState = reducer(state, action, mockUuid);
+    const sets = newState.plans[0].weeks[0].workouts[0].exercises[0].sets;
+    expect(sets).toHaveLength(1);
+    expect(sets[0].id).toBe(10);
+  });
+
   it('REMOVE_EXERCISE, on item in the middle, updates order properties', () => {
     const workout = new WorkoutBuilder(100, 1)
               .addExercise(new ExerciseBuilder(200, 1).build())
