@@ -21,7 +21,9 @@
     "moduleResolution": "node", // Use Node's module resolution
     "baseUrl": ".", // Base directory for resolving non-relative paths
     "paths": {
-      "@/*": ["src/*"],
+      "@/*": [
+        "src/*"
+      ],
       "@lib/*": [
         "src/lib/*"
       ],
@@ -33,7 +35,7 @@
     "noEmit": true,
     "incremental": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "plugins": [
       {
         "name": "next"
@@ -47,7 +49,8 @@
     "src/**/*",
     // Include the seed file if it’s outside src,
     ".next/types/**/*.ts",
-    "node_modules/vitest/globals.d.ts"
+    "node_modules/vitest/globals.d.ts",
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules", // Exclude node_modules from compilation
