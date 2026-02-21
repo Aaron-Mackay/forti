@@ -13,6 +13,29 @@ describe('parsePlan', () => {
       .toEqual(partiallyFilledParsedData.weeks[0].workouts[0].exercises[0])
   })
 
+  test('parses two weeks from data with two EXERCISE header rows', () => {
+    const parsedData = parsePlan(goodData)
+    expect(parsedData.weeks).toHaveLength(2)
+  })
+
+  test('each week has the correct order', () => {
+    const parsedData = parsePlan(goodData)
+    expect(parsedData.weeks[0].order).toBe(1)
+    expect(parsedData.weeks[1].order).toBe(2)
+  })
+
+  test('week 1 has five workouts (one per day column)', () => {
+    const parsedData = parsePlan(goodData)
+    // The fixture has 5 workout columns per week
+    expect(parsedData.weeks[0].workouts).toHaveLength(5)
+  })
+
+  test('throws when exercise block header does not match expected columns', () => {
+    // Replace the SETS/REPS column header with something unexpected
+    const badData = goodData.replace('SETS/REPS', 'WRONG_COL')
+    expect(() => parsePlan(badData)).toThrow()
+  })
+
   const partiallyFilledParsedData: UserPrisma = {
     id: 5,
     name: "TestName",
