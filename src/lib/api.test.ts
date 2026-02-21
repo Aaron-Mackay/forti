@@ -9,7 +9,9 @@ vi.mock('@/lib/prisma', () => ({
     user: { findMany: vi.fn(), findUnique: vi.fn() },
     exercise: { findMany: vi.fn() },
     workoutExercise: { findUnique: vi.fn() },
-    event: { findMany: vi.fn() }
+    event: { findMany: vi.fn() },
+    dayMetric: { findMany: vi.fn(), upsert: vi.fn() },
+    plan: { findMany: vi.fn(), findUnique: vi.fn() },
   },
 }));
 
@@ -106,6 +108,113 @@ describe('API functions', () => {
       (fetchWrapper.fetchJson as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Failed to fetch /api/saveUserWorkoutData'));
 
       await expect(api.saveUserWorkoutData({} as UserPrisma)).rejects.toThrow('Failed to fetch /api/saveUserWorkoutData');
+    });
+  });
+
+  describe('getUserDayMetrics', () => {
+    it('returns day metrics ordered by date ascending', async () => {
+      const mockMetrics = [
+        { id: 1, userId: 'u1', date: new Date('2024-01-01') },
+        { id: 2, userId: 'u1', date: new Date('2024-01-02') },
+      ];
+      (prisma.dayMetric.findMany as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockMetrics);
+
+      const result = await api.getUserDayMetrics('u1');
+      expect(result).toEqual(mockMetrics);
+      expect(prisma.dayMetric.findMany).toHaveBeenCalledWith({
+        where: { userId: 'u1' },
+        orderBy: { date: 'asc' },
+      });
+    });
+  });
+
+  describe('updateUserDayMetric', () => {
+    it('upserts a day metric and returns the result', async () => {
+      const metric = {
+        userId: 'u1',
+        date: new Date('2024-06-15'),
+        workout: true,
+        weight: 80,
+        steps: 8000,
+        sleepMins: 420,
+        calories: 2200,
+        protein: 160,
+        carbs: 250,
+        fat: 60,
+      };
+      const upserted = { id: 7, ...metric };
+      (prisma.dayMetric.upsert as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(upserted);
+
+      const result = await api.updateUserDayMetric(metric);
+      expect(result).toEqual(upserted);
+      expect(prisma.dayMetric.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId_date: { userId: 'u1', date: metric.date } },
+          update: metric,
+          create: metric,
+        }),
+      );
+    });
+  });
+
+  describe('savePlan', () => {
+    it('posts a plan and returns the upload response', async () => {
+      const mockResponse = { planId: 99 };
+      (fetchWrapper.fetchJson as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      const plan = { id: 0, userId: 'u1', order: 1, name: 'My Plan', description: null, weeks: [] };
+      const result = await api.savePlan(plan as unknown as Parameters<typeof api.savePlan>[0]);
+      expect(fetchWrapper.fetchJson).toHaveBeenCalledWith('/api/plan', expect.objectContaining({ method: 'POST' }));
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('getAllLinkedPlans', () => {
+    it('returns own plans and client plans', async () => {
+      const userPlans = [{ id: 1, name: 'Plan A' }];
+      const clientPlans = [{ id: 2, name: 'Plan B', user: { id: 'c1', name: 'Client' } }];
+      (prisma.plan.findMany as unknown as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce(userPlans)
+        .mockResolvedValueOnce(clientPlans);
+
+      const result = await api.getAllLinkedPlans('u1');
+      expect(result.userPlans).toEqual(userPlans);
+      expect(result.clientPlans).toEqual(clientPlans);
+    });
+  });
+
+  describe('getUserFromPlan', () => {
+    it('returns the user associated with a plan', async () => {
+      const mockUser = { id: 'u1', coachId: null };
+      (prisma.plan.findUnique as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+        user: mockUser,
+      });
+
+      const result = await api.getUserFromPlan('5');
+      expect(result).toEqual(mockUser);
+    });
+
+    it('returns null when the plan does not exist', async () => {
+      (prisma.plan.findUnique as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+      const result = await api.getUserFromPlan('999');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getCoachFromUser', () => {
+    it('returns the coachId for a user', async () => {
+      (prisma.user.findUnique as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ coachId: 'coach-1' });
+
+      const result = await api.getCoachFromUser('u1');
+      expect(result).toEqual({ coachId: 'coach-1' });
+    });
+
+    it('returns null coachId when the user has no coach', async () => {
+      (prisma.user.findUnique as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ coachId: null });
+
+      const result = await api.getCoachFromUser('u1');
+      expect(result?.coachId).toBeNull();
     });
   });
 });
