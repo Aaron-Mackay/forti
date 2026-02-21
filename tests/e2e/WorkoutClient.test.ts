@@ -1,17 +1,87 @@
-import { test, expect, devices } from '@playwright/test';
+/**
+ * Workout page tests (/user/workout).
+ *
+ * Covers: plan/week/workout selection drill-down, stopwatch visibility,
+ * exercise list, exercise detail view, and back navigation.
+ *
+ * Seed data (Bob):
+ *   "Bob's Plan 1" → Week 1 → Workout 1 (Plan 1 - Week 1)
+ *   Exercises include: Bench Press, Squat, Deadlift, etc.
+ */
+import { test, expect } from '@playwright/test';
 
-test.use({
-  ...devices['iPhone 13'],
-});
+test.describe('Workout page', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/user/workout');
+  });
 
-test('test', async ({ page }) => {
-  await page.goto('http://localhost:3000/user/1/workout');
-  await page.getByRole('button', { name: 'Plan 1 - Aaron\'s Plan 1' }).click();
-  await page.getByRole('button', { name: 'Week 1' }).click();
-  await page.getByRole('button', { name: 'Workout 1 (Plan 1 - Week 1)' }).click();
-  await expect(page.getByRole('button', { name: 'Start stopwatch' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Bench Press' })).toBeVisible();
-  await page.getByRole('button', { name: 'Bench Press' }).click();
-  await expect(page.getByText('123')).toBeVisible();
-  await expect(page.getByText('Set 1WeightWeightRepsReps').first()).toBeVisible();
+  test('renders the Training app bar title', async ({ page }) => {
+    await expect(page.getByRole('banner')).toContainText('Training');
+  });
+
+  test('shows the plans list on first load', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /Plan/i }).first()).toBeVisible();
+  });
+
+  test('selecting a plan reveals the weeks list', async ({ page }) => {
+    await page.getByRole('button', { name: /Plan/i }).first().click();
+    await expect(page.getByRole('button', { name: /Week/i }).first()).toBeVisible();
+  });
+
+  test('selecting a week reveals the workouts list', async ({ page }) => {
+    await page.getByRole('button', { name: /Plan/i }).first().click();
+    await page.getByRole('button', { name: /Week/i }).first().click();
+    await expect(page.getByRole('button', { name: /Workout/i }).first()).toBeVisible();
+  });
+
+  test('selecting a workout reveals the stopwatch and exercise list', async ({ page }) => {
+    await page.getByRole('button', { name: /Plan/i }).first().click();
+    await page.getByRole('button', { name: /Week/i }).first().click();
+    await page.getByRole('button', { name: /Workout/i }).first().click();
+
+    await expect(page.getByRole('button', { name: 'Start stopwatch' })).toBeVisible();
+    // Seeded exercises should be visible
+    await expect(page.getByRole('button', { name: 'Bench Press' })).toBeVisible();
+  });
+
+  test('selecting an exercise opens the detail view with sets', async ({ page }) => {
+    await page.getByRole('button', { name: /Plan/i }).first().click();
+    await page.getByRole('button', { name: /Week/i }).first().click();
+    await page.getByRole('button', { name: /Workout/i }).first().click();
+    await page.getByRole('button', { name: 'Bench Press' }).click();
+
+    // Exercise detail renders "Set 1" label
+    await expect(page.getByText(/Set 1/i)).toBeVisible();
+  });
+
+  test('back button in exercise detail returns to exercises list', async ({ page }) => {
+    await page.getByRole('button', { name: /Plan/i }).first().click();
+    await page.getByRole('button', { name: /Week/i }).first().click();
+    await page.getByRole('button', { name: /Workout/i }).first().click();
+    await page.getByRole('button', { name: 'Bench Press' }).click();
+
+    await page.getByRole('button', { name: /back/i }).click();
+
+    // Back at exercise list level — stopwatch button is visible again
+    await expect(page.getByRole('button', { name: 'Start stopwatch' })).toBeVisible();
+  });
+
+  test('back button from workout returns to workouts list', async ({ page }) => {
+    await page.getByRole('button', { name: /Plan/i }).first().click();
+    await page.getByRole('button', { name: /Week/i }).first().click();
+    await page.getByRole('button', { name: /Workout/i }).first().click();
+
+    await page.getByRole('button', { name: /back/i }).click();
+
+    await expect(page.getByRole('button', { name: /Workout/i }).first()).toBeVisible();
+  });
+
+  test('back button from week returns to plans list', async ({ page }) => {
+    await page.getByRole('button', { name: /Plan/i }).first().click();
+    await page.getByRole('button', { name: /Week/i }).first().click();
+
+    await page.getByRole('button', { name: /back/i }).click();
+
+    await expect(page.getByRole('button', { name: /Plan/i }).first()).toBeVisible();
+  });
 });
