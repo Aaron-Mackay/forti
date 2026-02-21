@@ -6,6 +6,8 @@ if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
 
+echo '{"async": true, "asyncTimeout": 300000}'
+
 # Install GitHub CLI if not already present
 if ! command -v gh &> /dev/null; then
   apt-get install -y gh
