@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Box, Tab, Tabs, Typography } from '@mui/material';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import { PlanPrisma } from '@/types/dataTypes';
 import MobileExerciseCard from './MobileExerciseCard';
 
@@ -36,6 +37,17 @@ const MobilePlanView = ({ plan }: MobilePlanViewProps) => {
           >
             {workout.name || `Workout ${workout.order}`}
           </Typography>
+          {workout.notes && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 1}}
+              noWrap
+            >
+              <ChatBubbleOutlineIcon sx={{fontSize: 12}}/>
+              {workout.notes}
+            </Typography>
+          )}
           {workout.exercises.map((exerciseLink, i) => (
             <MobileExerciseCard
               key={exerciseLink.id}

@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import {Button, TableBody, TableCell, TableHead, TableRow} from '@mui/material';
+import {Button, TableBody, TableCell, TableHead, TableRow, Typography} from '@mui/material';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import ExerciseRow from './ExerciseRow';
 import {ToggleableEditableField} from './ToggleableEditableField';
 import {useWorkoutEditorContext} from '@/context/WorkoutEditorContext';
@@ -59,6 +60,18 @@ const Workout = ({
           }
         />
       </h4>
+
+      {workout.notes && (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5}}
+          noWrap
+        >
+          <ChatBubbleOutlineIcon sx={{fontSize: 12}}/>
+          {workout.notes}
+        </Typography>
+      )}
 
       {isInEditMode && (
         <>
