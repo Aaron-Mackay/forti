@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, {useState} from 'react';
 import {Button, TableBody, TableCell, TableHead, TableRow, Typography} from '@mui/material';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import ExerciseRow from './ExerciseRow';
@@ -35,6 +35,7 @@ const Workout = ({
                    weekWorkoutCount
                  }: WorkoutProps) => {
   const {dispatch} = useWorkoutEditorContext();
+  const [noteExpanded, setNoteExpanded] = useState(false);
 
   const baseColumns = 5; // first 5 fixed cols
   const setColumns = Math.max(...workout.exercises.map(e => e.sets.length)) * 2; // each set has 2 cols
@@ -63,13 +64,16 @@ const Workout = ({
 
       {workout.notes && (
         <Typography
+          component="div"
           variant="caption"
           color="text.secondary"
-          sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5}}
-          noWrap
+          onClick={() => setNoteExpanded(v => !v)}
+          sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5, cursor: 'pointer', overflow: 'hidden'}}
         >
-          <ChatBubbleOutlineIcon sx={{fontSize: 12}}/>
-          {workout.notes}
+          <ChatBubbleOutlineIcon sx={{fontSize: 12, flexShrink: 0}}/>
+          <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: noteExpanded ? 'normal' : 'nowrap'}}>
+            {workout.notes}
+          </span>
         </Typography>
       )}
 
