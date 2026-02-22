@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as api from './api';
+import * as clientApi from './clientApi';
 import prisma from '@/lib/prisma';
 import * as fetchWrapper from './fetchWrapper';
 import {EventPrisma, UserPrisma} from "@/types/dataTypes";
@@ -95,7 +96,7 @@ describe('API functions', () => {
       (fetchWrapper.fetchJson as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
       const userData = { id: 1, name: 'Test User' } as UserPrisma;
-      const result = await api.saveUserWorkoutData(userData);
+      const result = await clientApi.saveUserWorkoutData(userData);
       expect(fetchWrapper.fetchJson).toHaveBeenCalledWith('/api/saveUserWorkoutData', {
         method: 'POST',
         body: JSON.stringify(userData),
@@ -107,7 +108,7 @@ describe('API functions', () => {
     it('throws error if save fails', async () => {
       (fetchWrapper.fetchJson as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Failed to fetch /api/saveUserWorkoutData'));
 
-      await expect(api.saveUserWorkoutData({} as UserPrisma)).rejects.toThrow('Failed to fetch /api/saveUserWorkoutData');
+      await expect(clientApi.saveUserWorkoutData({} as UserPrisma)).rejects.toThrow('Failed to fetch /api/saveUserWorkoutData');
     });
   });
 
@@ -163,7 +164,7 @@ describe('API functions', () => {
       (fetchWrapper.fetchJson as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
       const plan = { id: 0, userId: 'u1', order: 1, name: 'My Plan', description: null, weeks: [] };
-      const result = await api.savePlan(plan as unknown as Parameters<typeof api.savePlan>[0]);
+      const result = await clientApi.savePlan(plan as unknown as Parameters<typeof clientApi.savePlan>[0]);
       expect(fetchWrapper.fetchJson).toHaveBeenCalledWith('/api/plan', expect.objectContaining({ method: 'POST' }));
       expect(result).toEqual(mockResponse);
     });
