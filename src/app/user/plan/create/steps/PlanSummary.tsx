@@ -5,7 +5,7 @@ import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import {savePlan} from "@lib/api";
+import {savePlan} from "@lib/clientApi";
 import {useRouter} from "next/navigation";
 
 
