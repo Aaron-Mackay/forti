@@ -8,7 +8,7 @@
  *   "Bob's Plan 1" → Week 1 → Workout 1 (Plan 1 - Week 1)
  *   Exercises include: Bench Press, Squat, Deadlift, etc.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Workout page', () => {
   test.beforeEach(async ({ page }) => {

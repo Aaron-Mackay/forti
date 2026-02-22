@@ -4,7 +4,7 @@
  * Covers: plan listing, navigating into a plan, viewing weeks/workouts,
  * and toggling edit mode.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Plans list page', () => {
   test.beforeEach(async ({ page }) => {

@@ -4,7 +4,7 @@
  * Covers: page load, FullCalendar rendering, date selection, event/block FABs,
  * creating a new custom event, and the bottom drawer interactions.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Calendar page', () => {
   test.beforeEach(async ({ page }) => {

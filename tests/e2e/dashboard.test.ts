@@ -4,7 +4,7 @@
  * Verifies the authenticated user lands on a working dashboard that shows
  * their name, the welcome greeting, and the main chart container.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Dashboard', () => {
   test.beforeEach(async ({ page }) => {
