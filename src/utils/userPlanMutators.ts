@@ -310,6 +310,34 @@ export function updateWorkoutName(user: UserPrisma, planId: number, weekId: numb
   );
 }
 
+export function updateWorkoutNotes(user: UserPrisma, planId: number, weekId: number, workoutId: number, notes: string): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout => ({...workout, notes}))
+    )
+  );
+}
+
+export function updateWorkoutExerciseNotes(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, notes: string): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout =>
+        updateExercise(workout, exerciseId, exercise => ({...exercise, notes}))
+      )
+    )
+  );
+}
+
+export function updateUserExerciseNote(user: UserPrisma, exerciseId: number, note: string): UserPrisma {
+  const exists = user.userExerciseNotes.some(n => n.exerciseId === exerciseId);
+  return {
+    ...user,
+    userExerciseNotes: exists
+      ? user.userExerciseNotes.map(n => n.exerciseId === exerciseId ? {...n, note} : n)
+      : [...user.userExerciseNotes, {id: -1, userId: user.id, exerciseId, note}],
+  };
+}
+
 export function updateUserSets(
   user: UserPrisma,
   planId: number,

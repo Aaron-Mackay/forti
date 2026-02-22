@@ -1,8 +1,11 @@
 'use client';
 
-import {Box, Container, List, ListItem, ListItemButton, ListItemText, Typography} from '@mui/material';
+import {useState} from 'react';
+import {Box, Container, Collapse, IconButton, List, ListItem, ListItemButton, ListItemText, TextField, Typography} from '@mui/material';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
+import EditIcon from '@mui/icons-material/Edit';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import {WorkoutPrisma} from '@/types/dataTypes';
 import Stopwatch from "./Stopwatch";
 import './exercisesListView.css'
@@ -12,6 +15,7 @@ export default function ExercisesListView({
                                             workout,
                                             onBack,
                                             onSelectExercise,
+                                            onWorkoutNoteBlur,
                                             stopwatchIsRunning,
                                             stopwatchStartTimestamp,
                                             stopwatchPausedTime,
@@ -23,6 +27,7 @@ export default function ExercisesListView({
   workout: WorkoutPrisma;
   onBack: () => void;
   onSelectExercise: (exerciseId: number) => void;
+  onWorkoutNoteBlur: (note: string) => void;
   stopwatchIsRunning: boolean;
   stopwatchStartTimestamp: number | null;
   stopwatchPausedTime: number;
@@ -31,6 +36,11 @@ export default function ExercisesListView({
   isStopwatchVisible: boolean;
   setIsStopwatchVisible: (isVisible: boolean) => void;
 }) {
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [noteValue, setNoteValue] = useState(workout.notes ?? '');
+
+  const hasNote = noteValue.trim().length > 0;
+
   return (
     <Box sx={{
       minHeight: '100dvh',
@@ -51,9 +61,33 @@ export default function ExercisesListView({
           flex: 1
         }}
       >
-        <Typography variant="subtitle1" gutterBottom>
-          Exercises
-        </Typography>
+        <Box sx={{display: 'flex', alignItems: 'center', mb: 1}}>
+          <Typography variant="subtitle1" sx={{flex: 1}}>
+            Exercises
+          </Typography>
+          <IconButton
+            size="small"
+            onClick={() => setNotesOpen(o => !o)}
+            color={hasNote ? 'primary' : 'default'}
+            aria-label="Toggle workout notes"
+          >
+            {notesOpen || hasNote ? <EditIcon fontSize="small"/> : <EditOutlinedIcon fontSize="small"/>}
+          </IconButton>
+        </Box>
+        <Collapse in={notesOpen}>
+          <TextField
+            multiline
+            fullWidth
+            minRows={2}
+            maxRows={5}
+            placeholder="Workout notes..."
+            value={noteValue}
+            onChange={e => setNoteValue(e.target.value)}
+            onBlur={() => onWorkoutNoteBlur(noteValue)}
+            size="small"
+            sx={{mb: 1}}
+          />
+        </Collapse>
         <List
           className={"maskedOverflow"}
           sx={{
