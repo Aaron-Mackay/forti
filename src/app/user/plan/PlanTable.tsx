@@ -9,7 +9,8 @@ import Week from "./Week";
 import EditModeToggle from "./EditModeToggle";
 import ScreenSizeWarningBanner from "@/components/ScreenSizeWarningBanner";
 import CustomAppBar from "@/components/CustomAppBar";
-import {Box} from "@mui/material";
+import {Box, useMediaQuery, useTheme} from "@mui/material";
+import MobilePlanView from "./MobilePlanView";
 
 export const PlanTable: React.FC<{
   lockedInEditMode: boolean;
@@ -18,6 +19,8 @@ export const PlanTable: React.FC<{
 }> = ({lockedInEditMode = false, categories, planId}) => {
   const [isInEditMode, setIsInEditMode] = useState(lockedInEditMode);
   const {state: userDataState, dispatch, allExercises} = useWorkoutEditorContext();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const handleSave = () => {
     saveUserWorkoutData(userDataState)
@@ -52,31 +55,37 @@ export const PlanTable: React.FC<{
 
         <h1>User: {userDataState.name}</h1>
 
-        {plan.weeks.map((week, i) => (
-          <div key={i}>
-            <Week
-              key={week.id}
-              planId={plan.id}
-              week={week}
-              isInEditMode={isInEditMode}
-              categories={categories}
-              allExercises={allExercises}
-            />
-            {isInEditMode && i === plan.weeks.length - 1 && (
-              <Button onClick={() => dispatch({type: 'DUPLICATE_WEEK', planId: Number(planId), weekId: week.id})}>
-                Duplicate Week
+        {isMobile ? (
+          <MobilePlanView plan={plan} />
+        ) : (
+          <>
+            {plan.weeks.map((week, i) => (
+              <div key={i}>
+                <Week
+                  key={week.id}
+                  planId={plan.id}
+                  week={week}
+                  isInEditMode={isInEditMode}
+                  categories={categories}
+                  allExercises={allExercises}
+                />
+                {isInEditMode && i === plan.weeks.length - 1 && (
+                  <Button onClick={() => dispatch({type: 'DUPLICATE_WEEK', planId: Number(planId), weekId: week.id})}>
+                    Duplicate Week
+                  </Button>
+                )}
+              </div>
+            ))}
+
+            {isInEditMode && (
+              // todo fix this too
+              <Button onClick={() => dispatch({type: 'ADD_WEEK', planId: Number(planId)})}>
+                Add Week
               </Button>
             )}
-          </div>
-        ))}
-
-        {isInEditMode && (
-          // todo fix this too
-          <Button onClick={() => dispatch({type: 'ADD_WEEK', planId: Number(planId)})}>
-            Add Week
-          </Button>
+            <ScreenSizeWarningBanner/>
+          </>
         )}
-        <ScreenSizeWarningBanner/>
       </Box>
     </>
   );
