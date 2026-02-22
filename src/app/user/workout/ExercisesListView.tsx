@@ -61,7 +61,7 @@ export default function ExercisesListView({
           flex: 1
         }}
       >
-        <Box sx={{display: 'flex', alignItems: 'center', mb: notesOpen ? 0 : 1}}>
+        <Box sx={{display: 'flex', alignItems: 'center', mb: 1}}>
           <Typography variant="subtitle1" sx={{flex: 1}}>
             Exercises
           </Typography>
