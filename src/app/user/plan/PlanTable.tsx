@@ -3,7 +3,7 @@
 import React, {useState} from "react";
 import {redirect} from "next/navigation";
 import {useWorkoutEditorContext} from "@/context/WorkoutEditorContext";
-import {saveUserWorkoutData} from "@lib/api";
+import {saveUserWorkoutData} from "@lib/clientApi";
 import Button from "@mui/material/Button";
 import Week from "./Week";
 import EditModeToggle from "./EditModeToggle";

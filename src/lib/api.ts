@@ -1,8 +1,6 @@
 import {Exercise} from '@prisma/client';
 import prisma from '@/lib/prisma';
-import {fetchJson} from './fetchWrapper';
 import {DayMetricPrisma, EventPrisma, PlanPrisma, UserPrisma} from "@/types/dataTypes";
-import {PlanUploadResponse} from "@/app/api/plan/route";
 
 export async function getUsers() {
   return prisma.user.findMany();
@@ -83,25 +81,6 @@ export async function updateUserDayMetric(dayMetric: Omit<DayMetricPrisma, 'id'>
     create: dayMetric
   });
 }
-
-export async function saveUserWorkoutData(userData: UserPrisma) {
-  // todo validation (zod?)
-  return fetchJson('/api/saveUserWorkoutData', {
-    method: 'POST',
-    body: JSON.stringify(userData),
-    headers: {'Content-Type': 'application/json'},
-  });
-}
-
-export async function savePlan(plan: PlanPrisma): Promise<PlanUploadResponse> {
-  // todo validation (zod?)
-  return fetchJson('/api/plan', {
-    method: 'POST',
-    body: JSON.stringify(plan),
-    headers: {'Content-Type': 'application/json'},
-  });
-}
-
 
 export async function saveUserEvent(eventData: Omit<EventPrisma, 'id'>) {
   return await prisma.event.create({
