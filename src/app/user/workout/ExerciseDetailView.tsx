@@ -31,17 +31,14 @@ import CustomAppBar from "@/components/CustomAppBar";
 function ExerciseSlide({
   ex,
   userExerciseNote,
-  onExerciseNoteBlur,
   onFormCueBlur,
   handleSetUpdate,
 }: {
   ex: WorkoutExercisePrisma;
   userExerciseNote: UserExerciseNote | undefined;
-  onExerciseNoteBlur: (workoutExerciseId: number, note: string) => void;
   onFormCueBlur: (exerciseId: number, note: string) => void;
   handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
 }) {
-  const [sessionNote, setSessionNote] = useState(ex.notes ?? '');
   const [formCue, setFormCue] = useState(userExerciseNote?.note ?? '');
   const [formCueOpen, setFormCueOpen] = useState(false);
 
@@ -81,7 +78,7 @@ function ExerciseSlide({
             {formCueOpen || hasFormCue ? <InfoIcon fontSize="small"/> : <InfoOutlinedIcon fontSize="small"/>}
           </IconButton>
           <Typography variant="caption" color={hasFormCue ? 'warning.main' : 'text.secondary'}>
-            Form cues
+            Your exercise notes
           </Typography>
         </Box>
         <Collapse in={formCueOpen}>
@@ -90,7 +87,7 @@ function ExerciseSlide({
             fullWidth
             minRows={2}
             maxRows={4}
-            placeholder="Add form cues for this exercise..."
+            placeholder="Add form cues and notes for this exercise..."
             value={formCue}
             onChange={e => setFormCue(e.target.value)}
             onBlur={() => onFormCueBlur(ex.exerciseId, formCue)}
@@ -105,20 +102,6 @@ function ExerciseSlide({
           />
         </Collapse>
       </Box>
-
-      {/* Session note */}
-      <TextField
-        multiline
-        fullWidth
-        minRows={1}
-        maxRows={3}
-        placeholder="Session note..."
-        value={sessionNote}
-        onChange={e => setSessionNote(e.target.value)}
-        onBlur={() => onExerciseNoteBlur(ex.id, sessionNote)}
-        size="small"
-        sx={{mb: 1, width: '100%'}}
-      />
 
       <List sx={{width: '100%'}}>
         {ex.sets.length === 0 && (
@@ -163,7 +146,6 @@ export default function ExerciseDetailView({
                                              onBack,
                                              onSlideChange,
                                              handleSetUpdate,
-                                             onExerciseNoteBlur,
                                              onFormCueBlur,
                                              snackbar,
                                              handleSnackbarClose,
@@ -181,7 +163,6 @@ export default function ExerciseDetailView({
   onBack: () => void;
   onSlideChange: (swiper: SwiperType) => void;
   handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
-  onExerciseNoteBlur: (workoutExerciseId: number, note: string) => void;
   onFormCueBlur: (exerciseId: number, note: string) => void;
   snackbar: { open: boolean; message: string; severity: 'success' | 'info' };
   handleSnackbarClose: () => void;
@@ -239,7 +220,6 @@ export default function ExerciseDetailView({
               <ExerciseSlide
                 ex={ex}
                 userExerciseNote={userExerciseNotes.find(n => n.exerciseId === ex.exerciseId)}
-                onExerciseNoteBlur={onExerciseNoteBlur}
                 onFormCueBlur={onFormCueBlur}
                 handleSetUpdate={handleSetUpdate}
               />

@@ -4,8 +4,8 @@ import {useState} from 'react';
 import {Box, Container, Collapse, IconButton, List, ListItem, ListItemButton, ListItemText, TextField, Typography} from '@mui/material';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
-import NoteAltIcon from '@mui/icons-material/NoteAlt';
-import NoteAltOutlinedIcon from '@mui/icons-material/NoteAltOutlined';
+import EditIcon from '@mui/icons-material/Edit';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import {WorkoutPrisma} from '@/types/dataTypes';
 import Stopwatch from "./Stopwatch";
 import './exercisesListView.css'
@@ -71,7 +71,7 @@ export default function ExercisesListView({
             color={hasNote ? 'primary' : 'default'}
             aria-label="Toggle workout notes"
           >
-            {notesOpen || hasNote ? <NoteAltIcon fontSize="small"/> : <NoteAltOutlinedIcon fontSize="small"/>}
+            {notesOpen || hasNote ? <EditIcon fontSize="small"/> : <EditOutlinedIcon fontSize="small"/>}
           </IconButton>
         </Box>
         <Collapse in={notesOpen}>

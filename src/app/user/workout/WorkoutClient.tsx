@@ -10,7 +10,6 @@ import ExercisesListView from './ExercisesListView';
 import ExerciseDetailView from './ExerciseDetailView';
 import {
   updateUserSets,
-  updateWorkoutExerciseNotes,
   updateWorkoutNotes,
   updateUserExerciseNote,
 } from "@/utils/userPlanMutators";
@@ -135,12 +134,6 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
     queueOrSendRequest(`/api/workout/${selectedWorkoutId}`, 'PATCH', {notes: note});
   };
 
-  const handleExerciseNoteBlur = (workoutExerciseId: number, note: string) => {
-    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
-    setUserData(prev => updateWorkoutExerciseNotes(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, workoutExerciseId, note));
-    queueOrSendRequest(`/api/workoutExercise/${workoutExerciseId}`, 'PATCH', {notes: note});
-  };
-
   const handleFormCueBlur = (exerciseId: number, note: string) => {
     setUserData(prev => updateUserExerciseNote(prev, exerciseId, note));
     fetch(`/api/exerciseNote/${exerciseId}`, {
@@ -169,7 +162,6 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
           }
         }}
         handleSetUpdate={handleSetUpdate}
-        onExerciseNoteBlur={handleExerciseNoteBlur}
         onFormCueBlur={handleFormCueBlur}
         snackbar={snackbar}
         handleSnackbarClose={handleSnackbarClose}
