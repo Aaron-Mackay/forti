@@ -46,6 +46,7 @@ export async function getUserData(userId: string): Promise<UserPrisma | null> {
           },
         },
       },
+      userExerciseNotes: true,
     },
   });
 

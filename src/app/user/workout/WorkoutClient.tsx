@@ -2,13 +2,18 @@
 
 import React, {useEffect, useState} from 'react';
 import {queueOrSendRequest, syncQueuedRequests} from '@/utils/offlineSync';
-import {SetUpdatePayload, UserPrisma} from '@/types/dataTypes';
+import {UserPrisma} from '@/types/dataTypes';
 
 import WeeksListView from './WeeksListView';
 import WorkoutsListView from './WorkoutsListView';
 import ExercisesListView from './ExercisesListView';
 import ExerciseDetailView from './ExerciseDetailView';
-import {updateUserSets} from "@/utils/userPlanMutators";
+import {
+  updateUserSets,
+  updateWorkoutExerciseNotes,
+  updateWorkoutNotes,
+  updateUserExerciseNote,
+} from "@/utils/userPlanMutators";
 import PlansListView from "@/app/user/workout/PlansListView";
 
 type SnackbarState = {
@@ -106,7 +111,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
     // Fire PATCH request in background
     queueOrSendRequest(`/api/sets/${updatedSets[setIdx].id}`, 'PATCH', {
       [field]: field === 'reps' ? Number(value) : value,
-    } as SetUpdatePayload)
+    })
       .then(() => {
         setSnackbar({
           open: true,
@@ -124,6 +129,27 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
       });
   };
 
+  const handleWorkoutNoteBlur = (note: string) => {
+    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
+    setUserData(prev => updateWorkoutNotes(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, note));
+    queueOrSendRequest(`/api/workout/${selectedWorkoutId}`, 'PATCH', {notes: note});
+  };
+
+  const handleExerciseNoteBlur = (workoutExerciseId: number, note: string) => {
+    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
+    setUserData(prev => updateWorkoutExerciseNotes(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, workoutExerciseId, note));
+    queueOrSendRequest(`/api/workoutExercise/${workoutExerciseId}`, 'PATCH', {notes: note});
+  };
+
+  const handleFormCueBlur = (exerciseId: number, note: string) => {
+    setUserData(prev => updateUserExerciseNote(prev, exerciseId, note));
+    fetch(`/api/exerciseNote/${exerciseId}`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({note}),
+    });
+  };
+
   const handleSnackbarClose = () => {
     setSnackbar((s) => ({...s, open: false}));
   };
@@ -134,6 +160,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
       <ExerciseDetailView
         workout={selectedWorkout}
         activeExerciseId={selectedExerciseId}
+        userExerciseNotes={userDataState.userExerciseNotes}
         onBack={goBack}
         onSlideChange={(swiper) => {
           const newExercise = selectedWorkout.exercises[swiper.activeIndex];
@@ -142,6 +169,8 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
           }
         }}
         handleSetUpdate={handleSetUpdate}
+        onExerciseNoteBlur={handleExerciseNoteBlur}
+        onFormCueBlur={handleFormCueBlur}
         snackbar={snackbar}
         handleSnackbarClose={handleSnackbarClose}
         stopwatchIsRunning={stopwatch.isRunning}
@@ -161,6 +190,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
         workout={selectedWorkout}
         onBack={goBack}
         onSelectExercise={setSelectedExerciseId}
+        onWorkoutNoteBlur={handleWorkoutNoteBlur}
         stopwatchIsRunning={stopwatch.isRunning}
         stopwatchStartTimestamp={stopwatch.startTimestamp}
         stopwatchPausedTime={stopwatch.pausedTime}

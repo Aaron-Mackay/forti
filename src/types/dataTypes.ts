@@ -23,6 +23,7 @@ export type UserPrisma = Prisma.UserGetPayload<{
         },
       },
     },
+    userExerciseNotes: true,
   },
 }>;
 

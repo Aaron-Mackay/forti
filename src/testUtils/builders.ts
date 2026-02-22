@@ -18,6 +18,7 @@ export class UserBuilder {
       email: "test@test.com",
       name: "Test User",
       plans: [],
+      userExerciseNotes: [],
       image: null,
       emailVerified: null,
       coachId: null
