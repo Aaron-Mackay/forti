@@ -22,6 +22,7 @@ import {
   updateSetCount,
   updateSetReps,
   updateSetWeight,
+  updateWorkoutDateCompleted,
   updateWorkoutName,
 } from './userPlanMutators';
 import { Dir } from '@lib/useWorkoutEditor';
@@ -592,5 +593,44 @@ describe('duplicateWorkout', () => {
     const user = buildBaseUser();
     const result = duplicateWorkout(user, 1, 101, 201, mockUuid);
     expect(result.plans[0].weeks[0].workouts[1].order).toBe(2);
+  });
+});
+
+// ─── updateWorkoutDateCompleted ───────────────────────────────────────────────
+
+describe('updateWorkoutDateCompleted', () => {
+  it('sets dateCompleted on the target workout', () => {
+    const user = buildBaseUser();
+    const date = new Date('2024-06-15T10:00:00.000Z');
+    const result = updateWorkoutDateCompleted(user, 1, 101, 201, date);
+    expect(result.plans[0].weeks[0].workouts[0].dateCompleted).toEqual(date);
+  });
+
+  it('clears dateCompleted when passed null', () => {
+    const set = new SetBuilder(401, 1).build();
+    const exercise = new ExerciseBuilder(301, 1).addSet(set).build();
+    const workout = new WorkoutBuilder(201, 1).addExercise(exercise).build();
+    workout.dateCompleted = new Date('2024-01-01');
+    const week = new WeekBuilder(101, 1).addWorkout(workout).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const user = new UserBuilder(1).addPlan(plan).build();
+
+    const result = updateWorkoutDateCompleted(user, 1, 101, 201, null);
+    expect(result.plans[0].weeks[0].workouts[0].dateCompleted).toBeNull();
+  });
+
+  it('does not affect other workouts in the same week', () => {
+    const set = new SetBuilder(401, 1).build();
+    const exercise = new ExerciseBuilder(301, 1).addSet(set).build();
+    const workout1 = new WorkoutBuilder(201, 1).addExercise(exercise).build();
+    const workout2 = new WorkoutBuilder(202, 2).build();
+    const week = new WeekBuilder(101, 1).addWorkout(workout1).addWorkout(workout2).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const user = new UserBuilder(1).addPlan(plan).build();
+
+    const date = new Date('2024-06-15');
+    const result = updateWorkoutDateCompleted(user, 1, 101, 201, date);
+    expect(result.plans[0].weeks[0].workouts[0].dateCompleted).toEqual(date);
+    expect(result.plans[0].weeks[0].workouts[1].dateCompleted).toBeNull();
   });
 });
