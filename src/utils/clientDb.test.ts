@@ -1,9 +1,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import 'fake-indexeddb/auto';
 import {addRequest, clearRequests, getAllRequests, openDatabase,} from './clientDb';
-import {SetUpdatePayload} from "@/types/dataTypes";
-
-const mockPayload: SetUpdatePayload = {
+const mockPayload: Record<string, unknown> = {
   weight: "100"
 }
 
