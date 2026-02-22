@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Alert,
   Box,
@@ -28,16 +28,20 @@ import {UserExerciseNote} from '@prisma/client';
 import Stopwatch from "./Stopwatch";
 import CustomAppBar from "@/components/CustomAppBar";
 
+type PreviousSet = {weight: string | null; reps: number | null};
+
 function ExerciseSlide({
   ex,
   userExerciseNote,
   onFormCueBlur,
   handleSetUpdate,
+  previousSets,
 }: {
   ex: WorkoutExercisePrisma;
   userExerciseNote: UserExerciseNote | undefined;
   onFormCueBlur: (exerciseId: number, note: string) => void;
   handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
+  previousSets: PreviousSet[] | undefined;
 }) {
   const [formCue, setFormCue] = useState(userExerciseNote?.note ?? '');
   const [formCueOpen, setFormCueOpen] = useState(false);
@@ -109,31 +113,46 @@ function ExerciseSlide({
             No sets recorded.
           </Typography>
         )}
-        {ex.sets.map((set: SetPrisma, setIdx) => (
-          <ListItem key={set.id} disablePadding sx={{alignItems: 'flex-end', mb: 1}}>
-            <ListItemText primary={`Set ${setIdx + 1}`} sx={{minWidth: 60, flex: 'none', mr: 2}}/>
-            <TextField
-              label="Weight"
-              size="small"
-              autoComplete="off"
-              value={set.weight ?? ''}
-              onChange={(e) => handleSetUpdate(setIdx, 'weight', e.target.value)}
-              sx={{mr: 1, width: 100}}
-            />
-            <TextField
-              label="Reps"
-              type="text"
-              size="small"
-              autoComplete="off"
-              value={set.reps ?? ''}
-              onChange={(e) => {
-                handleSetUpdate(setIdx, 'reps', e.target.value);
-              }}
-              sx={{width: 80}}
-              inputProps={{inputMode: 'numeric', pattern: '[0-9]*'}}
-            />
-          </ListItem>
-        ))}
+        {ex.sets.map((set: SetPrisma, setIdx) => {
+          const prev = previousSets?.[setIdx];
+          return (
+            <ListItem key={set.id} disablePadding sx={{alignItems: 'flex-start', mb: 1, flexDirection: 'column'}}>
+              <Box sx={{display: 'flex', alignItems: 'flex-end', width: '100%'}}>
+                <ListItemText primary={`Set ${setIdx + 1}`} sx={{minWidth: 60, flex: 'none', mr: 2}}/>
+                <TextField
+                  label="Weight"
+                  size="small"
+                  autoComplete="off"
+                  value={set.weight ?? ''}
+                  onChange={(e) => handleSetUpdate(setIdx, 'weight', e.target.value)}
+                  sx={{mr: 1, width: 100}}
+                />
+                <TextField
+                  label="Reps"
+                  type="text"
+                  size="small"
+                  autoComplete="off"
+                  value={set.reps ?? ''}
+                  onChange={(e) => {
+                    handleSetUpdate(setIdx, 'reps', e.target.value);
+                  }}
+                  sx={{width: 80}}
+                  inputProps={{inputMode: 'numeric', pattern: '[0-9]*'}}
+                />
+              </Box>
+              {prev && (
+                <Typography
+                  variant="caption"
+                  color="text.disabled"
+                  sx={{pl: '76px', mt: 0.25}}
+                  aria-label={`Previous: ${prev.weight ?? '—'} × ${prev.reps ?? '—'}`}
+                >
+                  Last: {prev.weight ?? '—'} × {prev.reps ?? '—'}
+                </Typography>
+              )}
+            </ListItem>
+          );
+        })}
       </List>
     </Paper>
   );
@@ -141,6 +160,7 @@ function ExerciseSlide({
 
 export default function ExerciseDetailView({
                                              workout,
+                                             currentWorkoutId,
                                              activeExerciseId,
                                              userExerciseNotes,
                                              onBack,
@@ -158,6 +178,7 @@ export default function ExerciseDetailView({
                                              setIsStopwatchVisible
                                            }: {
   workout: WorkoutPrisma;
+  currentWorkoutId: number;
   activeExerciseId: number;
   userExerciseNotes: UserExerciseNote[];
   onBack: () => void;
@@ -175,6 +196,31 @@ export default function ExerciseDetailView({
   setIsStopwatchVisible: (isVisible: boolean) => void;
 }) {
   const paginationRef = useRef<HTMLDivElement | null>(null);
+  // Keyed by exerciseId (global Exercise table id)
+  const [previousSetsMap, setPreviousSetsMap] = useState<Map<number, PreviousSet[]>>(new Map());
+
+  const fetchPreviousSets = (exerciseId: number) => {
+    if (previousSetsMap.has(exerciseId)) return;
+    fetch(`/api/exercises/${exerciseId}/previous-sets?currentWorkoutId=${currentWorkoutId}`)
+      .then(res => res.ok ? res.json() : [])
+      .then((sets: PreviousSet[]) => {
+        setPreviousSetsMap(prev => new Map(prev).set(exerciseId, sets));
+      })
+      .catch(() => {/* ignore fetch errors — previous data is optional */});
+  };
+
+  // Fetch for the initially active exercise on mount
+  useEffect(() => {
+    const initial = workout.exercises.find(e => e.id === activeExerciseId);
+    if (initial) fetchPreviousSets(initial.exerciseId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSlideChange = (swiper: SwiperType) => {
+    onSlideChange(swiper);
+    const ex = workout.exercises[swiper.activeIndex];
+    if (ex) fetchPreviousSets(ex.exerciseId);
+  };
 
   return (
     <Box sx={{
@@ -198,7 +244,7 @@ export default function ExerciseDetailView({
       >
         <Swiper
           initialSlide={workout.exercises.findIndex((e) => e.id === activeExerciseId)}
-          onSlideChange={onSlideChange}
+          onSlideChange={handleSlideChange}
           modules={[Pagination]}
           pagination={{
             el: '.custom-swiper-pagination',
@@ -222,6 +268,7 @@ export default function ExerciseDetailView({
                 userExerciseNote={userExerciseNotes.find(n => n.exerciseId === ex.exerciseId)}
                 onFormCueBlur={onFormCueBlur}
                 handleSetUpdate={handleSetUpdate}
+                previousSets={previousSetsMap.get(ex.exerciseId)}
               />
             </SwiperSlide>
           ))}

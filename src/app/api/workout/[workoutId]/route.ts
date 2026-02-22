@@ -4,10 +4,22 @@ import getLoggedInUser from '@lib/getLoggedInUser';
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ workoutId: string }> }) {
   const params = await props.params;
-  const {notes} = await req.json();
+  const body = await req.json();
+  const { notes, dateCompleted } = body;
 
-  if (typeof notes !== 'string') {
+  const hasNotes = 'notes' in body;
+  const hasDateCompleted = 'dateCompleted' in body;
+
+  if (!hasNotes && !hasDateCompleted) {
+    return NextResponse.json({error: 'At least one of notes or dateCompleted must be provided'}, {status: 400});
+  }
+
+  if (hasNotes && typeof notes !== 'string') {
     return NextResponse.json({error: 'notes must be a string'}, {status: 400});
+  }
+
+  if (hasDateCompleted && dateCompleted !== null && typeof dateCompleted !== 'string') {
+    return NextResponse.json({error: 'dateCompleted must be an ISO string or null'}, {status: 400});
   }
 
   try {
@@ -32,9 +44,13 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
       return NextResponse.json({error: 'Forbidden'}, {status: 403});
     }
 
+    const updateData: { notes?: string; dateCompleted?: Date | null } = {};
+    if (hasNotes) updateData.notes = notes;
+    if (hasDateCompleted) updateData.dateCompleted = dateCompleted ? new Date(dateCompleted) : null;
+
     const updated = await prisma.workout.update({
       where: {id: workoutId},
-      data: {notes},
+      data: updateData,
     });
 
     return NextResponse.json(updated);
