@@ -1,10 +1,8 @@
-import {SetUpdatePayload} from "@/types/dataTypes";
-
 interface OfflineRequest {
   id?: number;
   url: string;
   method: string;
-  body: SetUpdatePayload;
+  body: Record<string, unknown>;
 }
 
 export function openDatabase(): Promise<IDBDatabase> {

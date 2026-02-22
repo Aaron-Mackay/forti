@@ -1,10 +1,12 @@
 'use client';
 
-import React, {useRef} from 'react';
+import React, {useRef, useState} from 'react';
 import {
   Alert,
   Box,
+  Collapse,
   Container,
+  IconButton,
   List,
   ListItem,
   ListItemText,
@@ -13,22 +15,156 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import InfoIcon from '@mui/icons-material/Info';
 import {Swiper, SwiperSlide} from 'swiper/react';
 import {Pagination} from 'swiper/modules';
 import {Swiper as SwiperType} from 'swiper/types';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import './styles.css';
-import {SetPrisma, WorkoutPrisma} from '@/types/dataTypes';
+import {SetPrisma, WorkoutExercisePrisma, WorkoutPrisma} from '@/types/dataTypes';
+import {UserExerciseNote} from '@prisma/client';
 import Stopwatch from "./Stopwatch";
 import CustomAppBar from "@/components/CustomAppBar";
+
+function ExerciseSlide({
+  ex,
+  userExerciseNote,
+  onExerciseNoteBlur,
+  onFormCueBlur,
+  handleSetUpdate,
+}: {
+  ex: WorkoutExercisePrisma;
+  userExerciseNote: UserExerciseNote | undefined;
+  onExerciseNoteBlur: (workoutExerciseId: number, note: string) => void;
+  onFormCueBlur: (exerciseId: number, note: string) => void;
+  handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
+}) {
+  const [sessionNote, setSessionNote] = useState(ex.notes ?? '');
+  const [formCue, setFormCue] = useState(userExerciseNote?.note ?? '');
+  const [formCueOpen, setFormCueOpen] = useState(false);
+
+  const hasFormCue = formCue.trim().length > 0;
+
+  return (
+    <Paper
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+        p: 2,
+        alignItems: 'center',
+      }}
+    >
+      <Typography variant="h6" align="center">
+        {ex.exercise.name}
+      </Typography>
+      <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', m: 1, width: '100%'}}>
+        <Typography variant="subtitle1" gutterBottom>
+          Rest: {ex.restTime}
+        </Typography>
+        <Typography variant="subtitle1" gutterBottom>
+          Reps: {ex.repRange}
+        </Typography>
+      </Box>
+
+      {/* Form cues */}
+      <Box sx={{width: '100%', mb: 1}}>
+        <Box
+          sx={{display: 'flex', alignItems: 'center', cursor: 'pointer'}}
+          onClick={() => setFormCueOpen(o => !o)}
+        >
+          <IconButton size="small" color={hasFormCue ? 'warning' : 'default'} sx={{mr: 0.5}}>
+            {formCueOpen || hasFormCue ? <InfoIcon fontSize="small"/> : <InfoOutlinedIcon fontSize="small"/>}
+          </IconButton>
+          <Typography variant="caption" color={hasFormCue ? 'warning.main' : 'text.secondary'}>
+            Form cues
+          </Typography>
+        </Box>
+        <Collapse in={formCueOpen}>
+          <TextField
+            multiline
+            fullWidth
+            minRows={2}
+            maxRows={4}
+            placeholder="Add form cues for this exercise..."
+            value={formCue}
+            onChange={e => setFormCue(e.target.value)}
+            onBlur={() => onFormCueBlur(ex.exerciseId, formCue)}
+            size="small"
+            sx={{
+              mt: 0.5,
+              '& .MuiOutlinedInput-root': {
+                borderColor: 'warning.main',
+                '&.Mui-focused fieldset': {borderColor: 'warning.main'},
+              },
+            }}
+          />
+        </Collapse>
+      </Box>
+
+      {/* Session note */}
+      <TextField
+        multiline
+        fullWidth
+        minRows={1}
+        maxRows={3}
+        placeholder="Session note..."
+        value={sessionNote}
+        onChange={e => setSessionNote(e.target.value)}
+        onBlur={() => onExerciseNoteBlur(ex.id, sessionNote)}
+        size="small"
+        sx={{mb: 1, width: '100%'}}
+      />
+
+      <List sx={{width: '100%'}}>
+        {ex.sets.length === 0 && (
+          <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
+            No sets recorded.
+          </Typography>
+        )}
+        {ex.sets.map((set: SetPrisma, setIdx) => (
+          <ListItem key={set.id} disablePadding sx={{alignItems: 'flex-end', mb: 1}}>
+            <ListItemText primary={`Set ${setIdx + 1}`} sx={{minWidth: 60, flex: 'none', mr: 2}}/>
+            <TextField
+              label="Weight"
+              size="small"
+              autoComplete="off"
+              value={set.weight ?? ''}
+              onChange={(e) => handleSetUpdate(setIdx, 'weight', e.target.value)}
+              sx={{mr: 1, width: 100}}
+            />
+            <TextField
+              label="Reps"
+              type="text"
+              size="small"
+              autoComplete="off"
+              value={set.reps ?? ''}
+              onChange={(e) => {
+                handleSetUpdate(setIdx, 'reps', e.target.value);
+              }}
+              sx={{width: 80}}
+              inputProps={{inputMode: 'numeric', pattern: '[0-9]*'}}
+            />
+          </ListItem>
+        ))}
+      </List>
+    </Paper>
+  );
+}
 
 export default function ExerciseDetailView({
                                              workout,
                                              activeExerciseId,
+                                             userExerciseNotes,
                                              onBack,
                                              onSlideChange,
                                              handleSetUpdate,
+                                             onExerciseNoteBlur,
+                                             onFormCueBlur,
                                              snackbar,
                                              handleSnackbarClose,
                                              stopwatchIsRunning,
@@ -41,9 +177,12 @@ export default function ExerciseDetailView({
                                            }: {
   workout: WorkoutPrisma;
   activeExerciseId: number;
+  userExerciseNotes: UserExerciseNote[];
   onBack: () => void;
   onSlideChange: (swiper: SwiperType) => void;
   handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
+  onExerciseNoteBlur: (workoutExerciseId: number, note: string) => void;
+  onFormCueBlur: (exerciseId: number, note: string) => void;
   snackbar: { open: boolean; message: string; severity: 'success' | 'info' };
   handleSnackbarClose: () => void;
   stopwatchIsRunning: boolean;
@@ -97,61 +236,13 @@ export default function ExerciseDetailView({
         >
           {workout.exercises.map((ex) => (
             <SwiperSlide key={ex.id} style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-              <Paper
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  flex: 1,
-                  maxWidth: '100%',
-                  boxSizing: 'border-box',
-                  p: 2,
-                  alignItems: 'center',
-                }}
-              >
-                <Typography variant="h6" align="center">
-                  {ex.exercise.name}
-                </Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', m: 1, width: '100%' }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  Rest: {ex.restTime}
-                </Typography>
-                <Typography variant="subtitle1" gutterBottom>
-                  Reps: {ex.repRange}
-                </Typography>
-                </Box>
-                <List>
-                  {ex.sets.length === 0 && (
-                    <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
-                      No sets recorded.
-                    </Typography>
-                  )}
-                  {ex.sets.map((set: SetPrisma, setIdx) => (
-                    <ListItem key={set.id} disablePadding sx={{alignItems: 'flex-end', mb: 1}}>
-                      <ListItemText primary={`Set ${setIdx + 1}`} sx={{minWidth: 60, flex: 'none', mr: 2}}/>
-                      <TextField
-                        label="Weight"
-                        size="small"
-                        autoComplete="off"
-                        value={set.weight ?? ''}
-                        onChange={(e) => handleSetUpdate(setIdx, 'weight', e.target.value)}
-                        sx={{mr: 1, width: 100}}
-                      />
-                      <TextField
-                        label="Reps"
-                        type="text"
-                        size="small"
-                        autoComplete="off"
-                        value={set.reps ?? ''}
-                        onChange={(e) => {
-                          handleSetUpdate(setIdx, 'reps', e.target.value);
-                        }}
-                        sx={{width: 80}}
-                        inputProps={{inputMode: 'numeric', pattern: '[0-9]*'}}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              </Paper>
+              <ExerciseSlide
+                ex={ex}
+                userExerciseNote={userExerciseNotes.find(n => n.exerciseId === ex.exerciseId)}
+                onExerciseNoteBlur={onExerciseNoteBlur}
+                onFormCueBlur={onFormCueBlur}
+                handleSetUpdate={handleSetUpdate}
+              />
             </SwiperSlide>
           ))}
         </Swiper>

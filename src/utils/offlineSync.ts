@@ -1,11 +1,9 @@
 import {addRequest, clearRequests, getAllRequests, openDatabase} from './clientDb';
 
-import {SetUpdatePayload} from "@/types/dataTypes";
-
 interface OfflineRequest {
   url: string;
   method: string;
-  body: SetUpdatePayload;
+  body: Record<string, unknown>;
 }
 
 const MAX_RETRIES = 3;
@@ -45,7 +43,7 @@ export async function getQueuedRequests(): Promise<number> {
 }
 
 
-export async function queueOrSendRequest(url: string, method: string, body: SetUpdatePayload): Promise<void> {
+export async function queueOrSendRequest(url: string, method: string, body: Record<string, unknown>): Promise<void> {
   const req: OfflineRequest = {url, method, body};
 
 
