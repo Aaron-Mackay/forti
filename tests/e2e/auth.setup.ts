@@ -3,7 +3,7 @@
  * Logs in via the Demo button and saves session cookies so all other
  * test files can reuse the authenticated state without re-logging in.
  */
-import { test as setup, expect } from '@playwright/test';
+import { test as setup, expect } from './fixtures';
 import path from 'path';
 
 const authFile = path.join(__dirname, '../../playwright/.auth/user.json');
