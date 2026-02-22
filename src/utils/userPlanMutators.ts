@@ -318,6 +318,14 @@ export function updateWorkoutNotes(user: UserPrisma, planId: number, weekId: num
   );
 }
 
+export function updateWorkoutDateCompleted(user: UserPrisma, planId: number, weekId: number, workoutId: number, dateCompleted: Date | null): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, workout => ({...workout, dateCompleted}))
+    )
+  );
+}
+
 export function updateWorkoutExerciseNotes(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, notes: string): UserPrisma {
   return updatePlan(user, planId, plan =>
     updateWeek(plan, weekId, week =>

@@ -11,6 +11,7 @@ import ExerciseDetailView from './ExerciseDetailView';
 import {
   updateUserSets,
   updateWorkoutNotes,
+  updateWorkoutDateCompleted,
   updateUserExerciseNote,
 } from "@/utils/userPlanMutators";
 import PlansListView from "@/app/user/workout/PlansListView";
@@ -134,6 +135,32 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
     queueOrSendRequest(`/api/workout/${selectedWorkoutId}`, 'PATCH', {notes: note});
   };
 
+  const handleCompleteWorkout = (completed: boolean) => {
+    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
+
+    const prevUserData = userDataState;
+    const dateCompleted = completed ? new Date() : null;
+
+    setUserData(prev =>
+      updateWorkoutDateCompleted(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, dateCompleted)
+    );
+
+    queueOrSendRequest(`/api/workout/${selectedWorkoutId}`, 'PATCH', {
+      dateCompleted: dateCompleted ? dateCompleted.toISOString() : null,
+    })
+      .then(() => {
+        setSnackbar({
+          open: true,
+          message: completed ? 'Workout completed!' : 'Workout marked incomplete',
+          severity: 'success',
+        });
+      })
+      .catch(() => {
+        setUserData(prevUserData);
+        setSnackbar({open: true, message: 'Failed to update workout', severity: 'info'});
+      });
+  };
+
   const handleFormCueBlur = (exerciseId: number, note: string) => {
     setUserData(prev => updateUserExerciseNote(prev, exerciseId, note));
     fetch(`/api/exerciseNote/${exerciseId}`, {
@@ -152,6 +179,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
     return (
       <ExerciseDetailView
         workout={selectedWorkout}
+        currentWorkoutId={selectedWorkout.id}
         activeExerciseId={selectedExerciseId}
         userExerciseNotes={userDataState.userExerciseNotes}
         onBack={goBack}
@@ -183,6 +211,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
         onBack={goBack}
         onSelectExercise={setSelectedExerciseId}
         onWorkoutNoteBlur={handleWorkoutNoteBlur}
+        onCompleteWorkout={handleCompleteWorkout}
         stopwatchIsRunning={stopwatch.isRunning}
         stopwatchStartTimestamp={stopwatch.startTimestamp}
         stopwatchPausedTime={stopwatch.pausedTime}

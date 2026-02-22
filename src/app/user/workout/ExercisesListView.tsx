@@ -1,9 +1,11 @@
 'use client';
 
 import {useState} from 'react';
-import {Box, Container, Collapse, IconButton, List, ListItem, ListItemButton, ListItemText, TextField, Typography} from '@mui/material';
+import {Box, Button, Container, Collapse, IconButton, List, ListItem, ListItemButton, ListItemText, TextField, Typography} from '@mui/material';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import {WorkoutPrisma} from '@/types/dataTypes';
@@ -16,6 +18,7 @@ export default function ExercisesListView({
                                             onBack,
                                             onSelectExercise,
                                             onWorkoutNoteBlur,
+                                            onCompleteWorkout,
                                             stopwatchIsRunning,
                                             stopwatchStartTimestamp,
                                             stopwatchPausedTime,
@@ -28,6 +31,7 @@ export default function ExercisesListView({
   onBack: () => void;
   onSelectExercise: (exerciseId: number) => void;
   onWorkoutNoteBlur: (note: string) => void;
+  onCompleteWorkout: (completed: boolean) => void;
   stopwatchIsRunning: boolean;
   stopwatchStartTimestamp: number | null;
   stopwatchPausedTime: number;
@@ -40,6 +44,10 @@ export default function ExercisesListView({
   const [noteValue, setNoteValue] = useState(workout.notes ?? '');
 
   const hasNote = noteValue.trim().length > 0;
+  const isCompleted = !!workout.dateCompleted;
+  const completedDate = workout.dateCompleted
+    ? new Date(workout.dateCompleted).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'})
+    : null;
 
   return (
     <Box sx={{
@@ -113,6 +121,16 @@ export default function ExercisesListView({
             </ListItem>
           ))}
         </List>
+        <Button
+          variant={isCompleted ? 'contained' : 'outlined'}
+          color="success"
+          fullWidth
+          onClick={() => onCompleteWorkout(!isCompleted)}
+          startIcon={isCompleted ? <CheckCircleIcon/> : <CheckCircleOutlineIcon/>}
+          sx={{mb: 1}}
+        >
+          {isCompleted ? `Completed ${completedDate}` : 'Mark as Complete'}
+        </Button>
         <Stopwatch
           isRunning={stopwatchIsRunning}
           startTimestamp={stopwatchStartTimestamp}
