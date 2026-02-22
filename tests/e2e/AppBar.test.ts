@@ -5,7 +5,7 @@
  * active-route highlighting, sign out option, and back-button behaviour
  * on pages that render a back arrow instead of the hamburger.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('AppBar navigation drawer', () => {
   test.beforeEach(async ({ page }) => {

@@ -4,7 +4,7 @@
  * These tests intentionally run WITHOUT the authenticated storageState so
  * they exercise the public login page as an unauthenticated visitor would.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // Override the project-level storageState so these tests start logged out
 test.use({ storageState: { cookies: [], origins: [] } });
