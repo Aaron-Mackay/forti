@@ -111,6 +111,12 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
     expect(res.status).toBe(400);
   });
 
+  it('returns 400 for a zero or negative exerciseId', async () => {
+    const [req, props] = makeRequest('0');
+    const res = await GET(req, props);
+    expect(res.status).toBe(400);
+  });
+
   it('orders results by dateCompleted descending to get the most recent', async () => {
     mockFindFirst.mockResolvedValue({id: 10, sets: mockSets});
     const [req, props] = makeRequest('5', 99);

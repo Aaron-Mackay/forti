@@ -28,7 +28,7 @@ import {UserExerciseNote} from '@prisma/client';
 import Stopwatch from "./Stopwatch";
 import CustomAppBar from "@/components/CustomAppBar";
 
-type PreviousSet = {weight: string | null; reps: number | null};
+type PreviousSet = {weight: string | null; reps: number | null; order: number};
 
 function ExerciseSlide({
   ex,
@@ -114,7 +114,7 @@ function ExerciseSlide({
           </Typography>
         )}
         {ex.sets.map((set: SetPrisma, setIdx) => {
-          const prev = previousSets?.[setIdx];
+          const prev = previousSets?.find(s => s.order === set.order);
           return (
             <ListItem key={set.id} disablePadding sx={{alignItems: 'flex-start', mb: 1, flexDirection: 'column'}}>
               <Box sx={{display: 'flex', alignItems: 'flex-end', width: '100%'}}>
