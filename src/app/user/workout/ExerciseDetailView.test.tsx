@@ -96,8 +96,8 @@ describe('ExerciseDetailView', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve([
-        {weight: '80', reps: 10},
-        {weight: '80', reps: 9},
+        {weight: '80', reps: 10, order: 1},
+        {weight: '80', reps: 9, order: 2},
       ]),
     }));
 
@@ -114,7 +114,7 @@ describe('ExerciseDetailView', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve([
-        {weight: null, reps: null},
+        {weight: null, reps: null, order: 1},
       ]),
     }));
 
