@@ -7,7 +7,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ exerciseI
   const exerciseId = Number(params.exerciseId);
   const currentWorkoutId = Number(req.nextUrl.searchParams.get('currentWorkoutId')) || undefined;
 
-  if (isNaN(exerciseId)) {
+  if (isNaN(exerciseId) || exerciseId <= 0) {
     return NextResponse.json({error: 'Invalid exerciseId'}, {status: 400});
   }
 
