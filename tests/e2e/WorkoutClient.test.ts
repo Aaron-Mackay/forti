@@ -2,7 +2,7 @@
  * Workout page tests (/user/workout).
  *
  * Covers: plan/week/workout selection drill-down, stopwatch visibility,
- * exercise list, exercise detail view, and back navigation.
+ * exercise list, exercise detail view, back navigation, and previous set data.
  *
  * Seed data (Bob):
  *   "Bob's Plan 1" → Week 1 → Workout 1 (Plan 1 - Week 1)
@@ -83,5 +83,69 @@ test.describe('Workout page', () => {
     await page.getByRole('button', { name: /back/i }).click();
 
     await expect(page.getByRole('button', { name: /Plan/i }).first()).toBeVisible();
+  });
+
+  test.describe('previous set data in exercise detail', () => {
+    test('displays previous weight and reps below each matching set', async ({ page }) => {
+      await page.route('**/api/exercises/*/previous-sets**', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            { order: 1, weight: '65', reps: 10 },
+            { order: 2, weight: '70', reps: 8 },
+          ]),
+        });
+      });
+
+      await page.getByRole('button', { name: /Plan/i }).first().click();
+      await page.getByRole('button', { name: /Week/i }).first().click();
+      await page.getByRole('button', { name: /Workout/i }).first().click();
+      await page.getByRole('button', { name: 'Bench Press' }).click();
+      await expect(page.getByText(/Set 1/i)).toBeVisible();
+
+      await expect(page.getByText('Last: 65 × 10')).toBeVisible();
+      await expect(page.getByText('Last: 70 × 8')).toBeVisible();
+    });
+
+    test('shows em dash for null weight or reps in previous set', async ({ page }) => {
+      await page.route('**/api/exercises/*/previous-sets**', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            { order: 1, weight: null, reps: 10 },
+            { order: 2, weight: '65', reps: null },
+          ]),
+        });
+      });
+
+      await page.getByRole('button', { name: /Plan/i }).first().click();
+      await page.getByRole('button', { name: /Week/i }).first().click();
+      await page.getByRole('button', { name: /Workout/i }).first().click();
+      await page.getByRole('button', { name: 'Bench Press' }).click();
+      await expect(page.getByText(/Set 1/i)).toBeVisible();
+
+      await expect(page.getByText('Last: — × 10')).toBeVisible();
+      await expect(page.getByText('Last: 65 × —')).toBeVisible();
+    });
+
+    test('shows no previous data when the API returns an empty array', async ({ page }) => {
+      await page.route('**/api/exercises/*/previous-sets**', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([]),
+        });
+      });
+
+      await page.getByRole('button', { name: /Plan/i }).first().click();
+      await page.getByRole('button', { name: /Week/i }).first().click();
+      await page.getByRole('button', { name: /Workout/i }).first().click();
+      await page.getByRole('button', { name: 'Bench Press' }).click();
+      await expect(page.getByText(/Set 1/i)).toBeVisible();
+
+      await expect(page.getByText(/^Last:/)).not.toBeVisible();
+    });
   });
 });
