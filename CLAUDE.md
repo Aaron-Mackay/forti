@@ -58,6 +58,15 @@ All three must pass for a commit to succeed. Do not bypass with `--no-verify`.
 
 ---
 
+## Commit Discipline
+
+Prefer atomic commits — one logical change per commit. When implementing
+multiple distinct concerns (new utility, refactor, security fix, etc.),
+split them into separate commits. Each intermediate commit must still pass
+`npm run check`.
+
+---
+
 ## Directory Structure
 
 ```
