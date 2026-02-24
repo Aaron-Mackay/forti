@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import {NextRequest, NextResponse} from 'next/server';
 import getLoggedInUser from '@lib/getLoggedInUser';
+import {extractErrorMessage} from "@lib/apiError";
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
   const params = await props.params;
@@ -44,10 +45,6 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
     return NextResponse.json(updated);
   } catch (err: unknown) {
     console.error(err);
-    let message = 'Unknown error';
-    if (err && typeof err === 'object' && 'message' in err) {
-      message = String((err as {message: unknown}).message);
-    }
-    return NextResponse.json({error: message}, {status: 500});
+    return NextResponse.json({error: extractErrorMessage(err)}, {status: 500});
   }
 }
