@@ -28,8 +28,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const permissionResult = await confirmPermission(parsed.data.userId);
-    if (permissionResult) return permissionResult;
+    await confirmPermission(parsed.data.userId);
 
     const completeEvent = {
       description: null,
@@ -57,6 +56,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(uploadedEvent);
   } catch (error) {
+    if (error instanceof NextResponse) return error;
     console.error(error);
     return NextResponse.json({error: 'Failed to create event'}, {status: 500});
   }

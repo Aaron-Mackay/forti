@@ -11,13 +11,13 @@ export type PlanUploadResponse = {
 export async function POST(req: NextRequest) {
   try {
     const receivedPlan = await req.json() as PlanPrisma;
-    const permissionResult = await confirmPermission(receivedPlan.userId);
-    if (permissionResult) return permissionResult;
+    await confirmPermission(receivedPlan.userId);
 
     const uploadedPlanId = await saveUserPlan(receivedPlan);
 
     return NextResponse.json({ success: true, planId: uploadedPlanId } as PlanUploadResponse, { status: 200 });
   } catch (error) {
+    if (error instanceof NextResponse) return error;
     console.error(error);
     return NextResponse.json({ success: false, error: 'Failed to create plan' } as PlanUploadResponse, { status: 500 })
   }

@@ -29,8 +29,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const permissionResult = await confirmPermission(parsed.data.userId);
-    if (permissionResult) return permissionResult;
+    await confirmPermission(parsed.data.userId);
 
     const completeDayMetric = {
       workout: false,
@@ -47,6 +46,7 @@ export async function POST(req: NextRequest) {
     const updated = await updateUserDayMetric(completeDayMetric);
     return NextResponse.json(updated);
   } catch (err: unknown) {
+    if (err instanceof NextResponse) return err;
     console.error(err);
     return NextResponse.json({error: 'Failed to update day metric'}, {status: 500});
   }
