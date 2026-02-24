@@ -1,6 +1,7 @@
 import {NextResponse} from "next/server";
 import {EmailParams, MailerSend, Recipient, Sender} from "mailersend";
 import {getServerSession} from "next-auth/next";
+import {authOptions} from "@lib/auth";
 
 export async function POST(req: Request) {
   try {
@@ -8,7 +9,7 @@ export async function POST(req: Request) {
     const description = formData.get("description")?.toString() || "No description provided";
     const screenshot = formData.get("screenshot") as File | null;
 
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     const userEmail = session?.user?.email ?? "unknown";
 
     const attachments = [];
