@@ -49,9 +49,12 @@
     "react": "^19.0.0",
     "react-apexcharts": "^1.7.0",
     "react-dom": "^19.0.0",
-    "swiper": "^11.2.8",
+    "swiper": "^12.1.2",
     "typescript-eslint": "^8.34.0",
     "zod": "^4.0.5"
+  },
+  "overrides": {
+    "qs": "^6.15.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
