@@ -11,6 +11,7 @@ import {SpeedInsights} from "@vercel/speed-insights/next"
 import {Analytics} from "@vercel/analytics/next"
 import {DateLocalizationProvider} from "@lib/providers/DateLocalizationProvider";
 import AuthProvider from "@lib/providers/AuthProvider";
+import NextTopLoader from "nextjs-toploader";
 
 export const metadata: Metadata = {
   title: "Forti",
@@ -29,6 +30,7 @@ export default function RootLayout({
     <html lang="en">
     <body>
     <AppRouterCacheProvider>
+      <NextTopLoader color={PRIMARY_COLOUR} showSpinner={false} />
       <ThemeProvider theme={theme}>
         <GlobalStyles
           styles={{
