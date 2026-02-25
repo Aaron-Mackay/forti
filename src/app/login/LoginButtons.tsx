@@ -1,24 +1,33 @@
 "use client";
 
-import { Button, Box } from "@mui/material";
+import { useState } from "react";
+import { Button, Box, CircularProgress } from "@mui/material";
 import GoogleIcon from "@mui/icons-material/Google";
 import PersonIcon from "@mui/icons-material/Person";
 import { signIn } from "next-auth/react";
 
 export default function LoginButtons() {
+  const [loading, setLoading] = useState<"google" | "demo" | null>(null);
+
+  const handleSignIn = async (provider: "google" | "demo") => {
+    setLoading(provider);
+    await signIn(provider, { callbackUrl: "/user" });
+  };
+
   return (
     <Box display="flex" flexDirection="column" gap={2}>
       <Button
         fullWidth
         variant="outlined"
-        startIcon={<GoogleIcon />}
+        startIcon={loading === "google" ? <CircularProgress size={18} color="inherit" /> : <GoogleIcon />}
+        disabled={loading !== null}
         sx={{
           py: 1.2,
           textTransform: "none",
           fontSize: "1rem",
           borderRadius: 2,
         }}
-        onClick={() => signIn("google", { callbackUrl: "/user" })}
+        onClick={() => handleSignIn("google")}
       >
         Continue with Google
       </Button>
@@ -26,14 +35,15 @@ export default function LoginButtons() {
       <Button
         fullWidth
         variant="contained"
-        startIcon={<PersonIcon />}
+        startIcon={loading === "demo" ? <CircularProgress size={18} color="inherit" /> : <PersonIcon />}
+        disabled={loading !== null}
         sx={{
           py: 1.2,
           textTransform: "none",
           fontSize: "1rem",
           borderRadius: 2,
         }}
-        onClick={() => signIn("demo", { callbackUrl: "/user" })}
+        onClick={() => handleSignIn("demo")}
       >
         Try Demo
       </Button>
