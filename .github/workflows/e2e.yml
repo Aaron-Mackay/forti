@@ -64,6 +64,15 @@ jobs:
       - name: Run E2E tests
         run: npm run test:e2e
 
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Playwright E2E Results
+          path: test-results/junit.xml
+          reporter: java-junit
+          fail-on-error: 'false'
+
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: always()
