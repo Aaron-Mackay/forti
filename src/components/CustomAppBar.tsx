@@ -129,7 +129,7 @@ export default function CustomAppBar(
               <ArrowBackIcon/>
             </IconButton>
             :
-            <IconButton edge="start" color="inherit" aria-label="back" onClick={() => setDrawerOpen(true)} sx={{mr: 2}}>
+            <IconButton edge="start" color="inherit" aria-label="menu" onClick={() => setDrawerOpen(true)} sx={{mr: 2}}>
               <MenuIcon/>
             </IconButton>}
           <Typography variant="h6" noWrap component="div" sx={{flexGrow: 1}}>
