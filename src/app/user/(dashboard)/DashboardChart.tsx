@@ -280,7 +280,7 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
 
   return (
     <Box sx={{height: '100%'}}>
-      <Box ref={chartRef} sx={{position: 'relative', touchAction: 'none'}}>
+      <Box ref={chartRef} sx={{position: 'relative', touchAction: 'none', zIndex: 0}}>
         <Chart options={mainOptions} series={series} type="line" height={CHART_HEIGHT}/>
         {/* Transparent overlay to capture gestures */}
         <Box
