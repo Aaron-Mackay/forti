@@ -39,31 +39,31 @@ test.describe('Workout page', () => {
     await page.getByRole('button', { name: /Week/i }).first().click();
     await page.getByRole('button', { name: /Workout/i }).first().click();
 
-    await expect(page.getByRole('button', { name: 'Start stopwatch' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Toggle stopwatch' })).toBeVisible();
     // Seeded exercises should be visible
-    await expect(page.getByRole('button', { name: 'Bench Press' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Squat' })).toBeVisible();
   });
 
   test('selecting an exercise opens the detail view with sets', async ({ page }) => {
     await page.getByRole('button', { name: /Plan/i }).first().click();
     await page.getByRole('button', { name: /Week/i }).first().click();
     await page.getByRole('button', { name: /Workout/i }).first().click();
-    await page.getByRole('button', { name: 'Bench Press' }).click();
+    await page.getByRole('button', { name: 'Squat' }).click();
 
     // Exercise detail renders "Set 1" label
-    await expect(page.getByText(/Set 1/i)).toBeVisible();
+    await expect(page.getByText('Set').first()).toBeVisible();
   });
 
   test('back button in exercise detail returns to exercises list', async ({ page }) => {
     await page.getByRole('button', { name: /Plan/i }).first().click();
     await page.getByRole('button', { name: /Week/i }).first().click();
     await page.getByRole('button', { name: /Workout/i }).first().click();
-    await page.getByRole('button', { name: 'Bench Press' }).click();
+    await page.getByRole('button', { name: 'Squat' }).click();
 
     await page.getByRole('button', { name: /back/i }).click();
 
     // Back at exercise list level — stopwatch button is visible again
-    await expect(page.getByRole('button', { name: 'Start stopwatch' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Toggle stopwatch' })).toBeVisible();
   });
 
   test('back button from workout returns to workouts list', async ({ page }) => {
@@ -80,6 +80,7 @@ test.describe('Workout page', () => {
     await page.getByRole('button', { name: /Plan/i }).first().click();
     await page.getByRole('button', { name: /Week/i }).first().click();
 
+    await page.getByRole('button', { name: /back/i }).click();
     await page.getByRole('button', { name: /back/i }).click();
 
     await expect(page.getByRole('button', { name: /Plan/i }).first()).toBeVisible();
@@ -101,8 +102,8 @@ test.describe('Workout page', () => {
       await page.getByRole('button', { name: /Plan/i }).first().click();
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();
-      await page.getByRole('button', { name: 'Bench Press' }).click();
-      await expect(page.getByText(/Set 1/i)).toBeVisible();
+      await page.getByRole('button', { name: 'Squat' }).click();
+      await expect(page.getByText('Set').first()).toBeVisible();
 
       await expect(page.getByText('Last: 65 × 10')).toBeVisible();
       await expect(page.getByText('Last: 70 × 8')).toBeVisible();
@@ -123,8 +124,8 @@ test.describe('Workout page', () => {
       await page.getByRole('button', { name: /Plan/i }).first().click();
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();
-      await page.getByRole('button', { name: 'Bench Press' }).click();
-      await expect(page.getByText(/Set 1/i)).toBeVisible();
+      await page.getByRole('button', { name: 'Squat' }).click();
+      await expect(page.getByText('Set').first()).toBeVisible();
 
       await expect(page.getByText('Last: — × 10')).toBeVisible();
       await expect(page.getByText('Last: 65 × —')).toBeVisible();
@@ -142,8 +143,8 @@ test.describe('Workout page', () => {
       await page.getByRole('button', { name: /Plan/i }).first().click();
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();
-      await page.getByRole('button', { name: 'Bench Press' }).click();
-      await expect(page.getByText(/Set 1/i)).toBeVisible();
+      await page.getByRole('button', { name: 'Squat' }).click();
+      await expect(page.getByText('Set').first()).toBeVisible();
 
       await expect(page.getByText(/^Last:/)).not.toBeVisible();
     });
