@@ -24,4 +24,9 @@ echo "[session-start] Running npm install at $(date)"
 npm install
 echo "[session-start] npm install complete at $(date)"
 
+# Install Playwright browsers
+echo "[session-start] Installing Playwright browsers at $(date)"
+npx playwright install --with-deps chromium
+echo "[session-start] Playwright browsers installed at $(date)"
+
 echo "[session-start] Setup complete at $(date)"
