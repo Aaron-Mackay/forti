@@ -26,7 +26,7 @@ echo "[session-start] npm install complete at $(date)"
 
 # Install Playwright browsers
 echo "[session-start] Installing Playwright browsers at $(date)"
-npx playwright install --with-deps chromium
-echo "[session-start] Playwright browsers installed at $(date)"
+npx playwright install --with-deps chromium || echo "[session-start] Playwright browser install skipped (already cached or download unavailable)"
+echo "[session-start] Playwright browsers step complete at $(date)"
 
 echo "[session-start] Setup complete at $(date)"
