@@ -3,45 +3,7 @@ import {NextResponse} from "next/server";
 import confirmPermission from "@lib/confirmPermission";
 import {z} from "zod";
 import {extractErrorMessage} from "@lib/apiError";
-
-const SetInputSchema = z.object({
-  weight: z.string().nullable().optional(),
-  reps: z.number().int().nullable().optional(),
-  order: z.number().int(),
-});
-
-const ExerciseInputSchema = z.object({
-  exercise: z.object({
-    id: z.number().optional().nullable(),
-    name: z.string(),
-    category: z.string(),
-  }),
-  order: z.number().int(),
-  repRange: z.string().nullable().optional(),
-  restTime: z.string().nullable().optional(),
-  notes: z.string().nullable().optional(),
-  sets: z.array(SetInputSchema),
-});
-
-const WorkoutInputSchema = z.object({
-  name: z.string(),
-  notes: z.string().nullable().optional(),
-  order: z.number().int(),
-  dateCompleted: z.string().nullable().optional(),
-  exercises: z.array(ExerciseInputSchema),
-});
-
-const WeekInputSchema = z.object({
-  order: z.number().int(),
-  workouts: z.array(WorkoutInputSchema),
-});
-
-const PlanInputSchema = z.object({
-  name: z.string(),
-  description: z.string().nullable().optional(),
-  order: z.number().int(),
-  weeks: z.array(WeekInputSchema),
-});
+import {PlanInputSchema} from "@lib/planSchemas";
 
 const SaveUserDataSchema = z.object({
   id: z.string(),

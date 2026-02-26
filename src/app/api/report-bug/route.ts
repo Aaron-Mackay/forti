@@ -12,6 +12,18 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
     const userEmail = session?.user?.email ?? "unknown";
 
+    const MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024; // 5 MB
+    const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+
+    if (screenshot) {
+      if (screenshot.size > MAX_SCREENSHOT_BYTES) {
+        return NextResponse.json({error: "Screenshot must be under 5 MB"}, {status: 400});
+      }
+      if (!ALLOWED_MIME_TYPES.includes(screenshot.type)) {
+        return NextResponse.json({error: "Screenshot must be a JPEG, PNG, GIF, or WebP image"}, {status: 400});
+      }
+    }
+
     const attachments = [];
 
     if (screenshot) {
