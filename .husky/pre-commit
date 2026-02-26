@@ -1,5 +1,7 @@
 export NVM_DIR="$HOME/.nvm"
-. "$NVM_DIR/nvm.sh"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+  . "$NVM_DIR/nvm.sh"
+  nvm use
+fi
 
-nvm use
 npm run check
