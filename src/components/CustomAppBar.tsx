@@ -69,6 +69,13 @@ export default function CustomAppBar(
     }
   }
 
+  // Close the drawer when the route changes so navigation completes before
+  // the drawer unmounts (avoids a race condition in Next.js App Router where
+  // closing the drawer mid-transition could cancel the router.push).
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
+
   useEffect(() => {
     if (drawerOpen) {
       document.body.style.overflow = 'hidden';
@@ -159,7 +166,7 @@ export default function CustomAppBar(
         <Divider/>
 
         {/* Scrollable content */}
-        <Box sx={{flexGrow: 1, overflowY: 'auto'}} onClick={() => setDrawerOpen(false)}>
+        <Box sx={{flexGrow: 1, overflowY: 'auto'}}>
           <List>
             <ListLink icon={<HomeIcon/>} text="Home" href="/user"/>
             <ListLink icon={<CalendarIcon/>} text="Calendar" href="/user/calendar"/>
