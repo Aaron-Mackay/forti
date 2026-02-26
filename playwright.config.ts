@@ -13,6 +13,12 @@ export default defineConfig({
         ['html', { open: 'never' }],
       ]
     : [['html', { open: 'on-failure' }]],
+  // In CI, Next.js dev server compiles pages on first access (~5s per page).
+  // Raise expect timeout to 15s so URL/visibility assertions don't time out
+  // during first-load compilation.
+  expect: {
+    timeout: 15_000,
+  },
   use: {
     baseURL: process.env.BASE_URL ?? 'http://localhost:3000',
     trace: 'on-first-retry',
