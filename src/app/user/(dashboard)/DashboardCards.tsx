@@ -175,7 +175,7 @@ export default function DashboardCards({userData, dayMetrics, events, today}: Da
                 <Typography variant="body2" color="text.secondary" sx={{mb: 1}}>
                   Nothing logged today.
                 </Typography>
-                <Box sx={{mt: 'auto'}}>
+                <Box>
                   <Button
                     component={Link}
                     href="/user/calendar"

@@ -50,6 +50,16 @@ test.describe('Dashboard', () => {
       expect(hasMetrics || noMetrics).toBe(true);
     });
 
+    test('Log metrics button is not clipped when no metrics are logged today', async ({ page }) => {
+      const logMetrics = page.getByRole('link', { name: 'Log metrics' });
+      const isVisible = await logMetrics.isVisible();
+      if (!isVisible) {
+        // Today already has metrics logged — nothing to assert
+        return;
+      }
+      await expect(logMetrics).toBeInViewport();
+    });
+
     test('renders the This Week training count card', async ({ page }) => {
       await expect(page.getByText('This Week')).toBeVisible();
       // The count is an h4 containing a non-negative integer
