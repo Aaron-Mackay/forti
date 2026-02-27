@@ -88,7 +88,7 @@ forti/
 │   ├── types/               # Shared TypeScript types
 │   ├── utils/               # Standalone utilities (offline sync, CSV import)
 │   ├── testUtils/           # Test helpers
-│   └── middleware.ts        # Auth guard for all routes
+│   └── proxy.ts             # Auth guard for all routes
 ├── prisma/
 │   ├── schema.prisma        # Database schema
 │   └── seed.ts              # Seed script (2 demo users + full data)
@@ -131,7 +131,7 @@ All API routes that require authentication must call `requireSession()` from `sr
 
 ## Authentication
 
-**Middleware** (`src/middleware.ts`): Checks for `next-auth.session-token` cookie and redirects unauthenticated users to `/login`. Allows public access to `/login`, `/_next`, `/api/auth`, and any file with an extension.
+**Proxy** (`src/proxy.ts`): Checks for `next-auth.session-token` cookie and redirects unauthenticated users to `/login`. Allows public access to `/login`, `/_next`, `/api/auth`, and any file with an extension.
 
 **Auth config** (`src/lib/auth.ts`):
 - **Google OAuth** — requires `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` env vars
