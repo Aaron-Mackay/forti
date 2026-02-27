@@ -1,5 +1,6 @@
 import prisma from '../src/lib/prisma';
 import { BlockSubtype, EventType } from "@prisma/client";
+const exercisesData = require('./exercises.json');
 
 function getRandomBetween(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -12,17 +13,9 @@ async function main() {
     CASCADE
   `);
 
-  // Seed Exercises
-  const descLoremIpsum = "DESC - Lorem ipsum dolor sit amet, consectetur adipiscing elit...";
+  // Seed Exercises from exercises.json
   await prisma.exercise.createMany({
-    data: [
-      { name: 'Bench Press', category: 'Chest', description: descLoremIpsum },
-      { name: 'Squat', category: 'Legs', description: descLoremIpsum },
-      { name: 'Deadlift', category: 'Back', description: descLoremIpsum },
-      { name: 'Overhead Press', category: 'Shoulders', description: descLoremIpsum },
-      { name: 'Barbell Row', category: 'Back', description: descLoremIpsum },
-      { name: 'Pull Ups', category: 'Back', description: descLoremIpsum },
-    ],
+    data: exercisesData,
   });
 
   const allExercises = await prisma.exercise.findMany({ orderBy: { name: 'asc' } });
