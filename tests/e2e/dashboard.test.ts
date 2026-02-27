@@ -32,7 +32,7 @@ test.describe('Dashboard', () => {
 
   test.describe('DashboardCards', () => {
     test('renders the Next Workout card with a Go button', async ({ page }) => {
-      // Seed data: 10 workouts with random completion; at least one is always incomplete
+      // Seed data: Week 1 of each plan is always completed; Week 2 is always incomplete
       await expect(page.getByText('Next Workout')).toBeVisible();
       await expect(page.getByRole('link', { name: 'Go' })).toBeVisible();
     });
@@ -70,12 +70,12 @@ test.describe('Dashboard', () => {
     });
 
     test('does not render an Active Block card when no block is active', async ({ page }) => {
-      // Seed blocks are Bulk (Aug 2025) and Cut (Sep 2025) — both past in CI
+      // Seed uses a fixed date of 2024-06-01 so all blocks are well past CI's real today (~2026)
       await expect(page.getByText('Active Block')).not.toBeVisible();
     });
 
     test('does not render an Upcoming Events card when no events fall within 7 days', async ({ page }) => {
-      // All seed events are in 2025 — none fall within 7 days of today in CI
+      // Seed uses a fixed date of 2024-06-01 so all events are well past CI's real today (~2026)
       await expect(page.getByText('Upcoming (7 days)')).not.toBeVisible();
     });
   });
