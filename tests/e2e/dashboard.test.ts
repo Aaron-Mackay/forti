@@ -35,6 +35,8 @@ test.describe('Dashboard', () => {
       // Seed data: Week 1 of each plan is always completed; Week 2 is always incomplete
       await expect(page.getByText('Next Workout')).toBeVisible();
       await expect(page.getByRole('link', { name: 'Go' })).toBeVisible();
+      // Week number displayed should match week.order (1-indexed, no +1 offset)
+      await expect(page.getByText(/Week 2/)).toBeVisible();
     });
 
     test('Go button links to the workout page', async ({ page }) => {

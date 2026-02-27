@@ -126,10 +126,10 @@ export default function DashboardCards({userData, dayMetrics, events, today}: Da
                   {nextWorkout.workout.name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{mb: 1}}>
-                  {nextWorkout.plan.name} · Week {nextWorkout.week.order + 1} ·{" "}
+                  {nextWorkout.plan.name} · Week {nextWorkout.week.order} ·{" "}
                   {nextWorkout.workout.exercises.length} exercise{nextWorkout.workout.exercises.length !== 1 ? "s" : ""}
                 </Typography>
-                <Box sx={{mt: 'auto'}}>
+                <Box>
                   <Button
                     component={Link}
                     href="/user/workout"
@@ -168,7 +168,7 @@ export default function DashboardCards({userData, dayMetrics, events, today}: Da
                 {todayMetric.calories != null && (
                   <Typography variant="body2">Calories: <strong>{todayMetric.calories.toLocaleString()}</strong></Typography>
                 )}
-                <Box sx={{mt: 'auto', pt: 1}}>
+                <Box>
                   <Button
                     component={Link}
                     href="/user/calendar"
