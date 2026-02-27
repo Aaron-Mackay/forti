@@ -6,6 +6,12 @@ function getRandomBetween(min: number, max: number): number {
   return Math.random() * (max - min) + min;
 }
 
+function daysAgo(n: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
+}
+
 async function main() {
   // Clear existing data
   await prisma.$executeRawUnsafe(`
@@ -20,6 +26,22 @@ async function main() {
 
   const allExercises = await prisma.exercise.findMany({ orderBy: { name: 'asc' } });
   const findEx = (exerciseName: string) => allExercises.find(e => e.name === exerciseName)!;
+
+  // Deterministic exercise groups — same exercises repeat across weeks/plans
+  // so the "previous sets" feature always has data to display.
+  const groupA = [findEx('Bench Press'), findEx('Squat'), findEx('Deadlift')];
+  const groupB = [findEx('Overhead Press'), findEx('Barbell Row'), findEx('Pull Ups')];
+
+  // Completion schedule: one entry per workout in loop order (plan → week → workout).
+  // Plan 0: 2 weeks × 2 workouts = 4  |  Plan 1: 3 weeks × 2 workouts = 6  →  10 total
+  // The last two (Plan 1 Week 2) are left incomplete so the user has a current workout to do.
+  const workoutCompletionDates: (Date | null)[] = [
+    daysAgo(46), daysAgo(43), // Plan 1, Week 1
+    daysAgo(39), daysAgo(36), // Plan 1, Week 2
+    daysAgo(32), daysAgo(29), // Plan 2, Week 1
+    daysAgo(25), daysAgo(22), // Plan 2, Week 2
+    null, null,               // Plan 2, Week 3 — current / incomplete
+  ];
 
   // Seed Users, Plans, Weeks, Workouts, Sets, etc.
   for (const [_index, name] of ['Aaron', 'Bob'].entries()) {
@@ -86,6 +108,7 @@ async function main() {
 
     // Create multiple Plans per User
     const planCount = 2;
+    let workoutCounter = 0; // indexes into workoutCompletionDates
     for (let planIdx = 0; planIdx < planCount; planIdx++) {
       const plan = await prisma.plan.create({
         data: {
@@ -109,6 +132,8 @@ async function main() {
         // For each Week, create Workouts
         const workoutCount = 2;
         for (let woIdx = 0; woIdx < workoutCount; woIdx++) {
+          const completionDate = workoutCompletionDates[workoutCounter++] ?? null;
+
           const workout = await prisma.workout.create({
             data: {
               weekId: week.id,
@@ -118,14 +143,11 @@ async function main() {
             },
           });
 
-          let allSetsDone = true;
-
-          // First workout always has Bench Press, Squat, Deadlift so E2E tests
-          // that look for 'Squat' in Plan 1 → Week 1 → Workout 1 are deterministic.
-          const isFirstWorkout = planIdx === 0 && weekIdx === 0 && woIdx === 0;
-          const selectedExercises = isFirstWorkout
-            ? [findEx('Bench Press'), findEx('Squat'), findEx('Deadlift')]
-            : [...allExercises].sort(() => 0.5 - Math.random()).slice(0, 2 + Math.floor(Math.random() * 2));
+          // Alternate between two fixed exercise groups so the same exercises
+          // repeat across weeks/plans — required for "previous sets" to work.
+          // Group A (woIdx 0): Bench Press, Squat, Deadlift  ← also satisfies E2E tests
+          // Group B (woIdx 1): Overhead Press, Barbell Row, Pull Ups
+          const selectedExercises = woIdx % 2 === 0 ? groupA : groupB;
 
           for (let i = 0; i < selectedExercises.length; i++) {
             const exercise = selectedExercises[i];
@@ -141,32 +163,24 @@ async function main() {
             });
 
             const setCount = Math.floor(getRandomBetween(2, 5));
-            let exerciseHasDoneSets = false;
 
             for (let s = 0; s < setCount; s++) {
-              const setIsDone = Math.random() < 0.7; // 70% chance set is completed
-              if (setIsDone) exerciseHasDoneSets = true;
-
+              // Sets are fully completed for historical workouts, empty for current ones.
               await prisma.exerciseSet.create({
                 data: {
                   workoutExerciseId: workoutExercise.id,
                   order: s + 1,
-                  reps: setIsDone ? 8 + Math.floor(Math.random() * 5) : null,
-                  weight: setIsDone ? (Math.round(Math.random() * 50 + 30)).toString() : null,
+                  reps: completionDate !== null ? 8 + Math.floor(Math.random() * 5) : null,
+                  weight: completionDate !== null ? (Math.round(Math.random() * 50 + 30)).toString() : null,
                 },
               });
             }
-
-            if (!exerciseHasDoneSets) {
-              allSetsDone = false;
-            }
           }
 
-          // If all sets are done, mark workout as completed
-          if (allSetsDone) {
+          if (completionDate !== null) {
             await prisma.workout.update({
               where: { id: workout.id },
-              data: { dateCompleted: new Date() },
+              data: { dateCompleted: completionDate },
             });
           }
         }
