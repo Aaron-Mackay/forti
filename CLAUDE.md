@@ -8,7 +8,7 @@ This file provides context for AI assistants working on the Forti codebase.
 
 **Forti** is a full-stack fitness tracking web application. Users can plan and execute weekly workouts, log daily health metrics, manage training blocks (Bulk, Cut, Deload, etc.), and view historical trends. It also supports a coach-client relationship model.
 
-- **Framework:** Next.js 15 (App Router) + React 19
+- **Framework:** Next.js 16 (App Router) + React 19
 - **Language:** TypeScript (strict mode)
 - **Database:** PostgreSQL via Prisma ORM (Neon serverless in production)
 - **Auth:** NextAuth.js (Google OAuth + demo credentials)
@@ -120,6 +120,10 @@ All routes live under `src/app/api/` and follow Next.js App Router conventions:
 | `api/sets/[setId]` | Update individual exercise sets |
 | `api/users` | User management |
 | `api/report-bug` | Bug report submission (uses mailersend) |
+| `api/workout/[workoutId]` | Workout CRUD |
+| `api/workoutExercise/[workoutExerciseId]` | Workout exercise management |
+| `api/exercises/[exerciseId]/previous-sets` | Fetch previous sets for an exercise |
+| `api/exerciseNote/[exerciseId]` | Exercise notes CRUD |
 
 All API routes that require authentication must call `requireSession()` from `src/lib/requireSession.ts`.
 
@@ -216,11 +220,19 @@ Test files are co-located with source files or in `tests/`:
 ```
 src/lib/api.test.ts
 src/lib/dateUtils.test.ts
+src/lib/dayMetrics.test.ts
+src/lib/events.test.ts
+src/lib/fetchWrapper.test.ts
 src/lib/useWorkoutEditor.test.ts
 src/utils/clientDb.test.ts
 src/utils/offlineSync.test.ts
 src/utils/sheetUpload.test.ts
+src/utils/userPlanMutators.test.ts
+src/app/api/workout/[workoutId]/route.test.ts
+src/app/api/exercises/[exerciseId]/previous-sets/route.test.ts
 src/app/user/workout/Stopwatch.test.tsx
+src/app/user/workout/ExercisesListView.test.tsx
+src/app/user/workout/ExerciseDetailView.test.tsx
 tests/ToggleableEditableField.test.tsx
 ```
 
