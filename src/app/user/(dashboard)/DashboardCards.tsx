@@ -132,7 +132,7 @@ export default function DashboardCards({userData, dayMetrics, events, today}: Da
                 <Box>
                   <Button
                     component={Link}
-                    href="/user/workout"
+                    href={`/user/workout?workoutId=${nextWorkout.workout.id}`}
                     variant="contained"
                     size="small"
                   >
