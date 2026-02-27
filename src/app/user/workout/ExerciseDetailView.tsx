@@ -78,10 +78,10 @@ function ExerciseSlide({
           sx={{display: 'flex', alignItems: 'center', cursor: 'pointer'}}
           onClick={() => setFormCueOpen(o => !o)}
         >
-          <IconButton size="small" color={hasFormCue ? 'warning' : 'default'} sx={{mr: 0.5}}>
+          <IconButton size="small" color={hasFormCue ? 'primary' : 'default'} sx={{mr: 0.5}}>
             {formCueOpen || hasFormCue ? <InfoIcon fontSize="small"/> : <InfoOutlinedIcon fontSize="small"/>}
           </IconButton>
-          <Typography variant="caption" color={hasFormCue ? 'warning.main' : 'text.secondary'}>
+          <Typography variant="caption" color={hasFormCue ? 'primary' : 'text.secondary'}>
             Your exercise notes
           </Typography>
         </Box>
