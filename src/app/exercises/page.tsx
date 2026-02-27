@@ -1,5 +1,6 @@
 import React from "react";
 import {getExercises} from "@lib/api";
+import { AddExerciseForm } from "./AddExerciseForm";
 
 export default async function ExercisesPage ()  {
   const exercises = await getExercises()
@@ -7,6 +8,8 @@ export default async function ExercisesPage ()  {
   return (
     <div className="container mt-4">
       <h1>All Exercises</h1>
+
+      <AddExerciseForm />
 
       {(
         <table className="table table-striped mt-3">
