@@ -10,6 +10,8 @@ import { test, expect } from './fixtures';
 test.describe('AppBar navigation drawer', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/user');
+    // Wait for the page to be interactive before asserting on nav elements
+    await expect(page.getByRole('button', { name: /menu/i })).toBeVisible({ timeout: 15_000 });
   });
 
   test('hamburger button opens the navigation drawer', async ({ page }) => {
