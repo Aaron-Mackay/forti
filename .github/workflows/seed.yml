@@ -1,0 +1,53 @@
+name: Seed Database
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target database environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      confirm_destroy:
+        description: >-
+          I understand this will DELETE ALL DATA for the demo users in the target
+          database (prod: demo users only; dev: all data)
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  seed:
+    name: Seed ${{ github.event.inputs.environment }} database
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Require confirmation
+        if: ${{ github.event.inputs.confirm_destroy != 'true' }}
+        run: |
+          echo "❌ You must tick 'confirm_destroy' to proceed. Aborting."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Seed dev database (full reset of all demo data)
+        if: ${{ github.event.inputs.environment == 'dev' }}
+        env:
+          DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
+        run: npm run seed
+
+      - name: Seed prod database (Bob demo account only, real users untouched)
+        if: ${{ github.event.inputs.environment == 'prod' }}
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: npm run seed:demo
