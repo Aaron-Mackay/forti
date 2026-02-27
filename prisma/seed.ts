@@ -25,7 +25,8 @@ async function main() {
     ],
   });
 
-  const allExercises = await prisma.exercise.findMany();
+  const allExercises = await prisma.exercise.findMany({ orderBy: { name: 'asc' } });
+  const findEx = (exerciseName: string) => allExercises.find(e => e.name === exerciseName)!;
 
   // Seed Users, Plans, Weeks, Workouts, Sets, etc.
   for (const [_index, name] of ['Aaron', 'Bob'].entries()) {
@@ -38,10 +39,10 @@ async function main() {
 
     await prisma.userExerciseNote.createMany({
       data: [
-        { userId: user.id, exerciseId: allExercises[0].id, note: 'Warm up properly to protect elbow' },
-        { userId: user.id, exerciseId: allExercises[1].id, note: 'Squat properly' },
-        { userId: user.id, exerciseId: allExercises[3].id, note: 'Wrench and twist' },
-        { userId: user.id, exerciseId: allExercises[4].id, note: 'Don’t fall over' },
+        { userId: user.id, exerciseId: findEx('Bench Press').id, note: 'Warm up properly to protect elbow' },
+        { userId: user.id, exerciseId: findEx('Squat').id, note: 'Squat properly' },
+        { userId: user.id, exerciseId: findEx('Overhead Press').id, note: 'Wrench and twist' },
+        { userId: user.id, exerciseId: findEx('Barbell Row').id, note: 'Don\'t fall over' },
       ],
     });
 
@@ -126,9 +127,12 @@ async function main() {
 
           let allSetsDone = true;
 
-          const selectedExercises = allExercises
-            .sort(() => 0.5 - Math.random())
-            .slice(0, 2 + Math.floor(Math.random() * 2)); // 2–3 exercises
+          // First workout always has Bench Press, Squat, Deadlift so E2E tests
+          // that look for 'Squat' in Plan 1 → Week 1 → Workout 1 are deterministic.
+          const isFirstWorkout = planIdx === 0 && weekIdx === 0 && woIdx === 0;
+          const selectedExercises = isFirstWorkout
+            ? [findEx('Bench Press'), findEx('Squat'), findEx('Deadlift')]
+            : [...allExercises].sort(() => 0.5 - Math.random()).slice(0, 2 + Math.floor(Math.random() * 2));
 
           for (let i = 0; i < selectedExercises.length; i++) {
             const exercise = selectedExercises[i];

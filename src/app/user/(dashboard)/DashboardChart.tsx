@@ -16,10 +16,13 @@ import StepsIcon from '@mui/icons-material/DirectionsWalkRounded';
 
 const CHART_HEIGHT = 350;
 
-const Chart = dynamic(() => import("react-apexcharts"), {
-  ssr: false,
-  loading: () => <Skeleton variant="rounded" height={CHART_HEIGHT - 15} sx={{my: '15px'}}/>
-});
+const Chart = dynamic(
+  () => import("react-apexcharts").catch(() => ({ default: () => null })),
+  {
+    ssr: false,
+    loading: () => <Skeleton variant="rounded" height={CHART_HEIGHT - 15} sx={{my: '15px'}}/>
+  }
+);
 
 type Selection = {
   xaxis: { min: number; max: number };
@@ -277,7 +280,7 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
 
   return (
     <Box sx={{height: '100%'}}>
-      <Box ref={chartRef} sx={{position: 'relative', touchAction: 'none'}}>
+      <Box ref={chartRef} sx={{position: 'relative', touchAction: 'none', zIndex: 0}}>
         <Chart options={mainOptions} series={series} type="line" height={CHART_HEIGHT}/>
         {/* Transparent overlay to capture gestures */}
         <Box

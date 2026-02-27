@@ -88,6 +88,10 @@ test.describe('AppBar — Plan detail back button', () => {
 });
 
 test.describe('AppBar — Log Out', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/user');   // ← was missing
+  });
+
   test('clicking Log Out redirects to /login', async ({ page }) => {
     await page.getByRole('button', { name: /menu/i }).click();
     await page.getByRole('button', { name: /Log Out/i }).click();

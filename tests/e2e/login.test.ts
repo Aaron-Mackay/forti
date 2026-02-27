@@ -18,8 +18,11 @@ test.describe('Login page', () => {
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
     // The card-level "Forti" heading is visible on small viewports
     const fortiHeading = page.getByRole('heading', { name: 'Forti' });
-    // Either the page-level card heading or the left-panel heading is present
-    await expect(fortiHeading.or(page.getByText('Welcome to Forti'))).toBeVisible();
+    if (await fortiHeading.isVisible()) {
+      await expect(fortiHeading).toBeVisible();
+    } else {
+      await expect(page.getByText('Welcome to Forti')).toBeVisible();
+    }
   });
 
   test('shows "Continue with Google" button', async ({ page }) => {
