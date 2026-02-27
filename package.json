@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint src",
     "seed": "ts-node prisma/seed.ts",
+    "seed:demo": "ts-node prisma/seed-demo.ts",
     "local-db": "psql -h localhost -U postgres -d postgres",
     "test": "vitest run",
     "test:e2e": "start-server-and-test dev http://localhost:3000 'playwright test'",

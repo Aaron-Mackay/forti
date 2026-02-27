@@ -41,16 +41,25 @@ function getTodayMetric(dayMetrics: DayMetricPrisma[], today: Date) {
   ) ?? null;
 }
 
-function getWeeklyTrainingCount(dayMetrics: DayMetricPrisma[], today: Date): number {
+function getWeeklyTrainingCount(userData: UserPrisma | null, today: Date): number {
+  if (!userData) return 0;
   const dayOfWeek = today.getDay();
   const monday = new Date(today);
   monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
   monday.setHours(0, 0, 0, 0);
 
-  return dayMetrics.filter(dm => {
-    const d = new Date(dm.date);
-    return d >= monday && d <= today && dm.workout === true;
-  }).length;
+  let count = 0;
+  for (const plan of userData.plans) {
+    for (const week of plan.weeks) {
+      for (const workout of week.workouts) {
+        if (workout.dateCompleted) {
+          const completed = new Date(workout.dateCompleted);
+          if (completed >= monday && completed <= today) count++;
+        }
+      }
+    }
+  }
+  return count;
 }
 
 function getActiveBlock(events: EventPrisma[], today: Date) {
@@ -96,7 +105,7 @@ interface DashboardCardsProps {
 export default function DashboardCards({userData, dayMetrics, events, today}: DashboardCardsProps) {
   const nextWorkout = findNextWorkout(userData);
   const todayMetric = getTodayMetric(dayMetrics, today);
-  const weeklyCount = getWeeklyTrainingCount(dayMetrics, today);
+  const weeklyCount = getWeeklyTrainingCount(userData, today);
   const activeBlock = getActiveBlock(events, today);
   const upcomingEvents = getUpcomingEvents(events, today);
 
@@ -117,10 +126,10 @@ export default function DashboardCards({userData, dayMetrics, events, today}: Da
                   {nextWorkout.workout.name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{mb: 1}}>
-                  {nextWorkout.plan.name} · Week {nextWorkout.week.order + 1} ·{" "}
+                  {nextWorkout.plan.name} · Week {nextWorkout.week.order} ·{" "}
                   {nextWorkout.workout.exercises.length} exercise{nextWorkout.workout.exercises.length !== 1 ? "s" : ""}
                 </Typography>
-                <Box sx={{mt: 'auto'}}>
+                <Box>
                   <Button
                     component={Link}
                     href="/user/workout"
@@ -159,7 +168,7 @@ export default function DashboardCards({userData, dayMetrics, events, today}: Da
                 {todayMetric.calories != null && (
                   <Typography variant="body2">Calories: <strong>{todayMetric.calories.toLocaleString()}</strong></Typography>
                 )}
-                <Box sx={{mt: 'auto', pt: 1}}>
+                <Box sx={{mt: 1}}>
                   <Button
                     component={Link}
                     href="/user/calendar"
@@ -276,7 +285,7 @@ export default function DashboardCards({userData, dayMetrics, events, today}: Da
                   </Typography>
                 )}
               </Box>
-              <Box sx={{mt: 'auto'}}>
+              <Box>
                 <Button
                   component={Link}
                   href="/user/calendar"

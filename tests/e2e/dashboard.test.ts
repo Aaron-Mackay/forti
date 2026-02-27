@@ -32,9 +32,12 @@ test.describe('Dashboard', () => {
 
   test.describe('DashboardCards', () => {
     test('renders the Next Workout card with a Go button', async ({ page }) => {
-      // Seed data: 10 workouts with random completion; at least one is always incomplete
+      // Seed data: Week 1 of each plan is always completed; Week 2 is always incomplete
       await expect(page.getByText('Next Workout')).toBeVisible();
       await expect(page.getByRole('link', { name: 'Go' })).toBeVisible();
+      // Week number displayed should match week.order (1-indexed, no +1 offset).
+      // The workout name also contains "Week 2", so scope to the subtitle which uses · separators.
+      await expect(page.getByText(/· Week 2/)).toBeVisible();
     });
 
     test('Go button links to the workout page', async ({ page }) => {
@@ -42,22 +45,25 @@ test.describe('Dashboard', () => {
       await expect(goLink).toHaveAttribute('href', '/user/workout');
     });
 
+    test('Go button is not clipped by card overflow', async ({ page }) => {
+      await expect(page.getByRole('link', { name: 'Go' })).toBeInViewport();
+    });
+
     test('renders the Today card', async ({ page }) => {
-      await expect(page.getByText('Today')).toBeVisible();
+      // Use first() to avoid strict mode violation — "Today" can appear more than once
+      // on the page (e.g. in the chart canvas or other DOM nodes).
+      await expect(page.getByText('Today').first()).toBeVisible();
       // Seed data: today's metrics may or may not be logged (random) — both states are valid
       const hasMetrics = await page.getByRole('link', { name: 'View calendar' }).isVisible();
       const noMetrics = await page.getByRole('link', { name: 'Log metrics' }).isVisible();
       expect(hasMetrics || noMetrics).toBe(true);
     });
 
-    test('Log metrics button is not clipped when no metrics are logged today', async ({ page }) => {
+    test('Today card action button is not clipped by card overflow', async ({ page }) => {
+      const viewCalendar = page.getByRole('link', { name: 'View calendar' });
       const logMetrics = page.getByRole('link', { name: 'Log metrics' });
-      const isVisible = await logMetrics.isVisible();
-      if (!isVisible) {
-        // Today already has metrics logged — nothing to assert
-        return;
-      }
-      await expect(logMetrics).toBeInViewport();
+      const button = (await viewCalendar.isVisible()) ? viewCalendar : logMetrics;
+      await expect(button).toBeInViewport();
     });
 
     test('renders the This Week training count card', async ({ page }) => {
@@ -70,12 +76,12 @@ test.describe('Dashboard', () => {
     });
 
     test('does not render an Active Block card when no block is active', async ({ page }) => {
-      // Seed blocks are Bulk (Aug 2025) and Cut (Sep 2025) — both past in CI
+      // Seed uses a fixed date of 2024-06-01 so all blocks are well past CI's real today (~2026)
       await expect(page.getByText('Active Block')).not.toBeVisible();
     });
 
     test('does not render an Upcoming Events card when no events fall within 7 days', async ({ page }) => {
-      // All seed events are in 2025 — none fall within 7 days of today in CI
+      // Seed uses a fixed date of 2024-06-01 so all events are well past CI's real today (~2026)
       await expect(page.getByText('Upcoming (7 days)')).not.toBeVisible();
     });
   });

@@ -1,6 +1,7 @@
 import prisma from '../src/lib/prisma';
 import { BlockSubtype, EventType } from "@prisma/client";
-const exercisesData = require('./exercises.json');
+import { seedBobData } from './lib/bobSeedData';
+import exercisesData from './exercises.json';
 
 function getRandomBetween(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -43,177 +44,167 @@ async function main() {
     null, null,               // Plan 2, Week 3 — current / incomplete
   ];
 
-  // Seed Users, Plans, Weeks, Workouts, Sets, etc.
-  for (const [_index, name] of ['Aaron', 'Bob'].entries()) {
-    const user = await prisma.user.create({
+  // ── Seed Aaron ────────────────────────────────────────────────────────────
+  const aaron = await prisma.user.create({
+    data: { name: 'Aaron', email: 'aaron@example.com' },
+  });
+
+  await prisma.userExerciseNote.createMany({
+    data: [
+      { userId: aaron.id, exerciseId: findEx('Bench Press').id, note: 'Warm up properly to protect elbow' },
+      { userId: aaron.id, exerciseId: findEx('Squat').id, note: 'Squat properly' },
+      { userId: aaron.id, exerciseId: findEx('Overhead Press').id, note: 'Wrench and twist' },
+      { userId: aaron.id, exerciseId: findEx('Barbell Row').id, note: "Don't fall over" },
+    ],
+  });
+
+  await prisma.event.createMany({
+    data: [
+      {
+        userId: aaron.id,
+        name: 'Training Week 1',
+        description: "Start of Aaron's program'",
+        startDate: new Date('2025-06-01'),
+        endDate: new Date('2025-06-07'),
+        eventType: EventType.CustomEvent
+      },
+      {
+        userId: aaron.id,
+        name: 'Holiday',
+        description: 'Recovery week',
+        startDate: new Date('2025-08-15'),
+        endDate: new Date('2025-08-20'),
+        eventType: EventType.CustomEvent
+      },
+      {
+        userId: aaron.id,
+        name: 'Bulk',
+        startDate: new Date('2025-08-01'),
+        endDate: new Date('2025-08-31'),
+        eventType: EventType.BlockEvent,
+        blockSubtype: BlockSubtype.Bulk
+      },
+      {
+        userId: aaron.id,
+        name: 'Cut',
+        startDate: new Date('2025-09-01'),
+        endDate: new Date('2025-09-21'),
+        eventType: EventType.BlockEvent,
+        blockSubtype: BlockSubtype.Cut
+      },
+      {
+        userId: aaron.id,
+        name: 'Custom',
+        startDate: new Date('2025-07-01'),
+        endDate: new Date('2025-07-21'),
+        customColor: 'red',
+        eventType: EventType.CustomEvent
+      },
+    ],
+  });
+
+  const planCount = 2;
+  let workoutCounter = 0;
+  for (let planIdx = 0; planIdx < planCount; planIdx++) {
+    const plan = await prisma.plan.create({
       data: {
-        name,
-        email: `${name.toLowerCase()}@example.com`,
+        userId: aaron.id,
+        order: planIdx + 1,
+        name: `Aaron's Plan ${planIdx + 1}`,
+        description: `Training block ${planIdx + 1} for Aaron`,
       },
     });
 
-    await prisma.userExerciseNote.createMany({
-      data: [
-        { userId: user.id, exerciseId: findEx('Bench Press').id, note: 'Warm up properly to protect elbow' },
-        { userId: user.id, exerciseId: findEx('Squat').id, note: 'Squat properly' },
-        { userId: user.id, exerciseId: findEx('Overhead Press').id, note: 'Wrench and twist' },
-        { userId: user.id, exerciseId: findEx('Barbell Row').id, note: 'Don\'t fall over' },
-      ],
-    });
-
-    await prisma.event.createMany({
-      data: [
-        {
-          userId: user.id,
-          name: 'Training Week 1',
-          description: `Start of ${user.name}'s program'`,
-          startDate: new Date('2025-06-01'),
-          endDate: new Date('2025-06-07'),
-          eventType: EventType.CustomEvent
-        },
-        {
-          userId: user.id,
-          name: 'Holiday',
-          description: 'Recovery week',
-          startDate: new Date('2025-08-15'),
-          endDate: new Date('2025-08-20'),
-          eventType: EventType.CustomEvent
-        },
-        {
-          userId: user.id,
-          name: 'Bulk',
-          startDate: new Date('2025-08-01'),
-          endDate: new Date('2025-08-31'),
-          eventType: EventType.BlockEvent,
-          blockSubtype: BlockSubtype.Bulk
-        },
-        {
-          userId: user.id,
-          name: 'Cut',
-          startDate: new Date('2025-09-01'),
-          endDate: new Date('2025-09-21'),
-          eventType: EventType.BlockEvent,
-          blockSubtype: BlockSubtype.Cut
-        },
-        {
-          userId: user.id,
-          name: 'Custom',
-          startDate: new Date('2025-07-01'),
-          endDate: new Date('2025-07-21'),
-          customColor: 'red',
-          eventType: EventType.CustomEvent
-        },
-      ],
-    });
-
-    // Create multiple Plans per User
-    const planCount = 2;
-    let workoutCounter = 0; // indexes into workoutCompletionDates
-    for (let planIdx = 0; planIdx < planCount; planIdx++) {
-      const plan = await prisma.plan.create({
-        data: {
-          userId: user.id,
-          order: planIdx + 1,
-          name: `${user.name}'s Plan ${planIdx + 1}`,
-          description: `Training block ${planIdx + 1} for ${user.name}`,
-        },
+    const weekCount = 2 + planIdx;
+    for (let weekIdx = 0; weekIdx < weekCount; weekIdx++) {
+      const week = await prisma.week.create({
+        data: { planId: plan.id, order: weekIdx + 1 },
       });
 
-      // For each Plan, create Weeks
-      const weekCount = 2 + planIdx; // 2 weeks in Plan 1, 3 in Plan 2, etc.
-      for (let weekIdx = 0; weekIdx < weekCount; weekIdx++) {
-        const week = await prisma.week.create({
+      const workoutCount = 2;
+      for (let woIdx = 0; woIdx < workoutCount; woIdx++) {
+        const completionDate = workoutCompletionDates[workoutCounter++] ?? null;
+
+        const workout = await prisma.workout.create({
           data: {
-            planId: plan.id,
-            order: weekIdx + 1,
+            weekId: week.id,
+            name: `Workout ${woIdx + 1} (Plan ${planIdx + 1} - Week ${weekIdx + 1})`,
+            notes: woIdx % 2 === 0 ? 'Felt strong today 💪' : null,
+            order: woIdx + 1,
           },
         });
 
-        // For each Week, create Workouts
-        const workoutCount = 2;
-        for (let woIdx = 0; woIdx < workoutCount; woIdx++) {
-          const completionDate = workoutCompletionDates[workoutCounter++] ?? null;
+        const selectedExercises = woIdx % 2 === 0 ? groupA : groupB;
 
-          const workout = await prisma.workout.create({
+        for (let i = 0; i < selectedExercises.length; i++) {
+          const exercise = selectedExercises[i];
+
+          const workoutExercise = await prisma.workoutExercise.create({
             data: {
-              weekId: week.id,
-              name: `Workout ${woIdx + 1} (Plan ${planIdx + 1} - Week ${weekIdx + 1})`,
-              notes: woIdx % 2 === 0 ? 'Felt strong today 💪' : null,
-              order: woIdx + 1,
+              workoutId: workout.id,
+              exerciseId: exercise.id,
+              order: i + 1,
+              restTime: "90",
+              repRange: "8-12",
             },
           });
 
-          // Alternate between two fixed exercise groups so the same exercises
-          // repeat across weeks/plans — required for "previous sets" to work.
-          // Group A (woIdx 0): Bench Press, Squat, Deadlift  ← also satisfies E2E tests
-          // Group B (woIdx 1): Overhead Press, Barbell Row, Pull Ups
-          const selectedExercises = woIdx % 2 === 0 ? groupA : groupB;
+          const setCount = Math.floor(getRandomBetween(2, 5));
 
-          for (let i = 0; i < selectedExercises.length; i++) {
-            const exercise = selectedExercises[i];
-
-            const workoutExercise = await prisma.workoutExercise.create({
+          for (let s = 0; s < setCount; s++) {
+            await prisma.exerciseSet.create({
               data: {
-                workoutId: workout.id,
-                exerciseId: exercise.id,
-                order: i + 1,
-                restTime: "90",
-                repRange: "8-12",
+                workoutExerciseId: workoutExercise.id,
+                order: s + 1,
+                reps: completionDate !== null ? 8 + Math.floor(Math.random() * 5) : null,
+                weight: completionDate !== null ? (Math.round(Math.random() * 50 + 30)).toString() : null,
               },
-            });
-
-            const setCount = Math.floor(getRandomBetween(2, 5));
-
-            for (let s = 0; s < setCount; s++) {
-              // Sets are fully completed for historical workouts, empty for current ones.
-              await prisma.exerciseSet.create({
-                data: {
-                  workoutExerciseId: workoutExercise.id,
-                  order: s + 1,
-                  reps: completionDate !== null ? 8 + Math.floor(Math.random() * 5) : null,
-                  weight: completionDate !== null ? (Math.round(Math.random() * 50 + 30)).toString() : null,
-                },
-              });
-            }
-          }
-
-          if (completionDate !== null) {
-            await prisma.workout.update({
-              where: { id: workout.id },
-              data: { dateCompleted: completionDate },
             });
           }
         }
+
+        if (completionDate !== null) {
+          await prisma.workout.update({
+            where: { id: workout.id },
+            data: { dateCompleted: completionDate },
+          });
+        }
       }
     }
-
-    // Seed DayMetrics for the last 60 days
-    const today = new Date();
-    const dayMetricsData = [];
-    for (let i = 0; i < 60; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-
-      const maybeNull = (val: any) => Math.random() < 0.3 ? null : val;
-
-      dayMetricsData.push({
-        userId: user.id,
-        date,
-        weight: maybeNull(Number((Math.random() * 2 + 82).toFixed(1))),
-        steps: maybeNull(Math.floor(Math.random() * (10000 - 2000 + 1)) + 2000),
-        sleepMins: maybeNull(Math.floor(Math.random() * (540 - 360 + 1)) + 360),
-        calories: maybeNull(Math.floor(Math.random() * (2500 - 1500 + 1)) + 1500),
-        protein: maybeNull(Math.floor(Math.random() * 200)),
-        carbs: maybeNull(Math.floor(Math.random() * 400)),
-        fat: maybeNull(Math.floor(Math.random() * 100)),
-        workout: Math.random() < 0.5,
-      });
-    }
-    await prisma.dayMetric.createMany({ data: dayMetricsData });
   }
 
+  // Seed DayMetrics for Aaron for the last 60 days
+  const today = new Date();
+  const dayMetricsData = [];
+  for (let i = 0; i < 60; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    const maybeNull = (val: any) => Math.random() < 0.3 ? null : val;
+    dayMetricsData.push({
+      userId: aaron.id,
+      date,
+      weight: maybeNull(Number((Math.random() * 2 + 82).toFixed(1))),
+      steps: maybeNull(Math.floor(Math.random() * (10000 - 2000 + 1)) + 2000),
+      sleepMins: maybeNull(Math.floor(Math.random() * (540 - 360 + 1)) + 360),
+      calories: maybeNull(Math.floor(Math.random() * (2500 - 1500 + 1)) + 1500),
+      protein: maybeNull(Math.floor(Math.random() * 200)),
+      carbs: maybeNull(Math.floor(Math.random() * 400)),
+      fat: maybeNull(Math.floor(Math.random() * 100)),
+      workout: Math.random() < 0.5,
+    });
+  }
+  await prisma.dayMetric.createMany({ data: dayMetricsData });
+
+  // ── Seed Bob (demo login user) ────────────────────────────────────────────
+  // A fixed past date is used so E2E tests running against real-today (~2026)
+  // see no active blocks and no upcoming events.
+  const bob = await prisma.user.create({
+    data: { name: 'Bob', email: 'bob@example.com' },
+  });
+  await seedBobData(bob, new Date('2024-06-01'));
+
   const dbUrl = process.env.DATABASE_URL ?? "";
-  const dbLoc = dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1") ? 'local' : 'neon'
+  const dbLoc = dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1") ? 'local' : 'neon';
   console.log(`✅ Seeded ${dbLoc} database with Plans, Weeks, Workouts (partial & full), Sets (partial & full), Events, and DayMetrics`);
 }
 
