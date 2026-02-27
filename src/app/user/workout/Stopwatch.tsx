@@ -90,7 +90,7 @@ const Stopwatch: React.FC<StopwatchProps> = ({
           <button
             className={`stopwatch-sidebutton-circle ${isRunning && !isStopwatchVisible && " active-stopwatch"}`}
             onClick={() => setIsStopwatchVisible(!isStopwatchVisible)}
-            aria-label="Hide stopwatch"
+            aria-label="Toggle stopwatch"
           >
             {isStopwatchVisible ? <KeyboardArrowDownOutlinedIcon/> : <TimerOutlinedIcon />}
           </button>

@@ -14,6 +14,7 @@
     "local-db": "psql -h localhost -U postgres -d postgres",
     "test": "vitest run",
     "test:e2e": "start-server-and-test dev http://localhost:3000 'playwright test'",
+    "test:e2e:preview": "BASE_URL=https://www.preview.forti-training.co.uk playwright test",
     "rebuild-prisma": "prisma db push && prisma generate",
     "postinstall": "prisma generate",
     "check": "npm run test && npm run lint && npm run build",
@@ -58,7 +59,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@playwright/test": "^1.54.1",
+    "@playwright/test": "1.56.1",
     "@svgr/webpack": "^8.1.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",

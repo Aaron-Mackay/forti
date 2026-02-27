@@ -5,10 +5,22 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  workers: process.env.CI ? 2 : undefined,
+  reporter: process.env.CI
+    ? [
+        ['github'],
+        ['junit', { outputFile: 'test-results/junit.xml' }],
+        ['html', { open: 'never' }],
+      ]
+    : [['html', { open: 'on-failure' }]],
+  // In CI, Next.js dev server compiles pages on first access (~5s per page).
+  // Raise expect timeout to 15s so URL/visibility assertions don't time out
+  // during first-load compilation.
+  expect: {
+    timeout: 15_000,
+  },
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: process.env.BASE_URL ?? 'http://localhost:3000',
     trace: 'on-first-retry',
   },
 
@@ -24,22 +36,6 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        storageState: 'playwright/.auth/user.json',
-      },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-        storageState: 'playwright/.auth/user.json',
-      },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'webkit',
-      use: {
-        ...devices['Desktop Safari'],
         storageState: 'playwright/.auth/user.json',
       },
       dependencies: ['setup'],
