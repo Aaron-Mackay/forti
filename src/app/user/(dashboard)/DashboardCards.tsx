@@ -285,7 +285,7 @@ export default function DashboardCards({userData, dayMetrics, events, today}: Da
                   </Typography>
                 )}
               </Box>
-              <Box sx={{mt: 'auto'}}>
+              <Box>
                 <Button
                   component={Link}
                   href="/user/calendar"
