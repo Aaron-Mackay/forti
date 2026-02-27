@@ -44,6 +44,10 @@ test.describe('Dashboard', () => {
       await expect(goLink).toHaveAttribute('href', '/user/workout');
     });
 
+    test('Go button is not clipped by card overflow', async ({ page }) => {
+      await expect(page.getByRole('link', { name: 'Go' })).toBeInViewport();
+    });
+
     test('renders the Today card', async ({ page }) => {
       await expect(page.getByText('Today')).toBeVisible();
       // Seed data: today's metrics may or may not be logged (random) — both states are valid
@@ -52,14 +56,11 @@ test.describe('Dashboard', () => {
       expect(hasMetrics || noMetrics).toBe(true);
     });
 
-    test('Log metrics button is not clipped when no metrics are logged today', async ({ page }) => {
+    test('Today card action button is not clipped by card overflow', async ({ page }) => {
+      const viewCalendar = page.getByRole('link', { name: 'View calendar' });
       const logMetrics = page.getByRole('link', { name: 'Log metrics' });
-      const isVisible = await logMetrics.isVisible();
-      if (!isVisible) {
-        // Today already has metrics logged — nothing to assert
-        return;
-      }
-      await expect(logMetrics).toBeInViewport();
+      const button = (await viewCalendar.isVisible()) ? viewCalendar : logMetrics;
+      await expect(button).toBeInViewport();
     });
 
     test('renders the This Week training count card', async ({ page }) => {
