@@ -37,6 +37,35 @@ function updateSet(exercise: WorkoutExercisePrisma, setId: number, updateFn: (se
   };
 }
 
+function withWorkout(
+  user: UserPrisma, planId: number, weekId: number, workoutId: number,
+  fn: (workout: WorkoutPrisma) => WorkoutPrisma
+): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, fn)
+    )
+  );
+}
+
+function withExercise(
+  user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number,
+  fn: (exercise: WorkoutExercisePrisma) => WorkoutExercisePrisma
+): UserPrisma {
+  return withWorkout(user, planId, weekId, workoutId, workout =>
+    updateExercise(workout, exerciseId, fn)
+  );
+}
+
+function withSet(
+  user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, setId: number,
+  fn: (set: SetPrisma) => SetPrisma
+): UserPrisma {
+  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise =>
+    updateSet(exercise, setId, fn)
+  );
+}
+
 export function updateExerciseInUser(
   user: UserPrisma,
   planId: number,
@@ -56,13 +85,10 @@ export function updateExerciseInUser(
     description: null,
   };
 
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout =>
-        updateExercise(workout, workoutExerciseId, exercise => ({...exercise, exercise: newExercise}))
-      )
-    )
-  );
+  return withExercise(user, planId, weekId, workoutId, workoutExerciseId, exercise => ({
+    ...exercise,
+    exercise: newExercise,
+  }));
 }
 
 export function updatePlanName(user: UserPrisma, planId: number, name: string): UserPrisma {
@@ -79,6 +105,7 @@ export function moveWorkout(user: UserPrisma, planId: number, weekId: number, in
     updateWeek(plan, weekId, week => moveWorkoutInWeek(week, index, dir))
   );
 }
+
 
 function moveWorkoutInWeek(week: WeekPrisma, index: number, dir: Dir): WeekPrisma {
   const newWorkouts = [...week.workouts];
@@ -109,10 +136,8 @@ function moveExerciseInWorkout(workout: WorkoutPrisma, index: number, dir: numbe
 }
 
 export function moveExercise(user: UserPrisma, planId: number, weekId: number, workoutId: number, index: number, dir: number): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout => moveExerciseInWorkout(workout, index, dir))
-    )
+  return withWorkout(user, planId, weekId, workoutId, workout =>
+    moveExerciseInWorkout(workout, index, dir)
   );
 }
 
@@ -166,174 +191,100 @@ function duplicateExerciseData(exercise: WorkoutExercisePrisma, createUuid: Crea
 }
 
 export function removeExercise(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout => ({
-        ...workout,
-        exercises: workout.exercises.filter(ex => ex.id !== exerciseId).map((ex, idx) => ({...ex, order: idx + 1})),
-      }))
-    )
-  );
+  return withWorkout(user, planId, weekId, workoutId, workout => ({
+    ...workout,
+    exercises: workout.exercises.filter(ex => ex.id !== exerciseId).map((ex, idx) => ({...ex, order: idx + 1})),
+  }));
 }
 
 export function addSet(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, createUuid: CreateUuid): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout =>
-        updateExercise(workout, exerciseId, exercise => ({
-          ...exercise,
-          sets: [
-            ...exercise.sets,
-            {
-              id: createUuid(),
-              workoutExerciseId: exerciseId,
-              order: exercise.sets.length + 1,
-              reps: null,
-              weight: null,
-            },
-          ],
-        }))
-      )
-    )
-  );
+  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({
+    ...exercise,
+    sets: [
+      ...exercise.sets,
+      {
+        id: createUuid(),
+        workoutExerciseId: exerciseId,
+        order: exercise.sets.length + 1,
+        reps: null,
+        weight: null,
+      },
+    ],
+  }));
 }
 
 export function updateSetCount(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, setCount: number, createUuid: CreateUuid): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout =>
-        updateExercise(workout, exerciseId, exercise => {
-          if (setCount < exercise.sets.length) {
-            const sortedSets = [...exercise.sets].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-            return {
-              ...exercise,
-              sets: sortedSets.slice(0, setCount).map((set, idx) => ({...set, order: idx + 1})),
-            };
-          }
-          if (setCount > exercise.sets.length) {
-            return {
-              ...exercise,
-              sets: [
-                ...exercise.sets,
-                ...Array.from({length: setCount - exercise.sets.length}).map((_, idx) => ({
-                  id: createUuid(),
-                  workoutExerciseId: exerciseId,
-                  order: exercise.sets.length + idx + 1,
-                  reps: null,
-                  weight: null,
-                })),
-              ],
-            };
-          }
-          return exercise;
-        })
-      )
-    )
-  );
+  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => {
+    if (setCount < exercise.sets.length) {
+      const sortedSets = [...exercise.sets].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      return {
+        ...exercise,
+        sets: sortedSets.slice(0, setCount).map((set, idx) => ({...set, order: idx + 1})),
+      };
+    }
+    if (setCount > exercise.sets.length) {
+      return {
+        ...exercise,
+        sets: [
+          ...exercise.sets,
+          ...Array.from({length: setCount - exercise.sets.length}).map((_, idx) => ({
+            id: createUuid(),
+            workoutExerciseId: exerciseId,
+            order: exercise.sets.length + idx + 1,
+            reps: null,
+            weight: null,
+          })),
+        ],
+      };
+    }
+    return exercise;
+  });
 }
 
 export function updateSetWeight(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, setId: number, weight: string): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout =>
-        updateExercise(workout, exerciseId, exercise =>
-          updateSet(exercise, setId, set => ({...set, weight}))
-        )
-      )
-    )
-  );
+  return withSet(user, planId, weekId, workoutId, exerciseId, setId, set => ({...set, weight}));
 }
 
 export function updateSetReps(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, setId: number, reps: number): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout =>
-        updateExercise(workout, exerciseId, exercise =>
-          updateSet(exercise, setId, set => ({...set, reps}))
-        )
-      )
-    )
-  );
+  return withSet(user, planId, weekId, workoutId, exerciseId, setId, set => ({...set, reps}));
 }
 
 export function updateRepRange(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, repRange: string): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout =>
-        updateExercise(workout, exerciseId, exercise => ({...exercise, repRange}))
-      )
-    )
-  );
+  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({...exercise, repRange}));
 }
 
 export function updateRestTime(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, restTime: string): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout =>
-        updateExercise(workout, exerciseId, exercise => ({...exercise, restTime}))
-      )
-    )
-  );
+  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({...exercise, restTime}));
 }
 
 export function updateCategory(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, category: string): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout =>
-        updateExercise(workout, exerciseId, exercise => ({
-          ...exercise,
-          exercise: {...exercise.exercise, category, name: ""},
-        }))
-      )
-    )
-  );
+  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({
+    ...exercise,
+    exercise: {...exercise.exercise, category, name: ""},
+  }));
 }
 
 export function removeLastSet(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout =>
-        updateExercise(workout, exerciseId, exercise => ({
-          ...exercise,
-          sets: exercise.sets.slice(0, -1).map((set, idx) => ({...set, order: idx + 1})),
-        }))
-      )
-    )
-  );
+  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({
+    ...exercise,
+    sets: exercise.sets.slice(0, -1).map((set, idx) => ({...set, order: idx + 1})),
+  }));
 }
 
 export function updateWorkoutName(user: UserPrisma, planId: number, weekId: number, workoutId: number, name: string): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout => ({...workout, name}))
-    )
-  );
+  return withWorkout(user, planId, weekId, workoutId, workout => ({...workout, name}));
 }
 
 export function updateWorkoutNotes(user: UserPrisma, planId: number, weekId: number, workoutId: number, notes: string): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout => ({...workout, notes}))
-    )
-  );
+  return withWorkout(user, planId, weekId, workoutId, workout => ({...workout, notes}));
 }
 
 export function updateWorkoutDateCompleted(user: UserPrisma, planId: number, weekId: number, workoutId: number, dateCompleted: Date | null): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout => ({...workout, dateCompleted}))
-    )
-  );
+  return withWorkout(user, planId, weekId, workoutId, workout => ({...workout, dateCompleted}));
 }
 
 export function updateWorkoutExerciseNotes(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, notes: string): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout =>
-        updateExercise(workout, exerciseId, exercise => ({...exercise, notes}))
-      )
-    )
-  );
+  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({...exercise, notes}));
 }
 
 export function updateUserExerciseNote(user: UserPrisma, exerciseId: number, note: string): UserPrisma {
@@ -354,13 +305,7 @@ export function updateUserSets(
   exerciseId: number,
   newSets: SetPrisma[]
 ): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout =>
-        updateExercise(workout, exerciseId, exercise => ({...exercise, sets: newSets}))
-      )
-    )
-  );
+  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({...exercise, sets: newSets}));
 }
 
 export function addExercise(

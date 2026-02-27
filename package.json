@@ -44,14 +44,18 @@
     "mailersend": "^2.6.0",
     "next": "^16.1.6",
     "next-auth": "^4.24.11",
+    "nextjs-toploader": "^3.9.17",
     "node-fetch": "^3.3.2",
     "node-html-parser": "^7.0.1",
     "react": "^19.0.0",
     "react-apexcharts": "^1.7.0",
     "react-dom": "^19.0.0",
-    "swiper": "^11.2.8",
+    "swiper": "^12.1.2",
     "typescript-eslint": "^8.34.0",
     "zod": "^4.0.5"
+  },
+  "overrides": {
+    "qs": "^6.15.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

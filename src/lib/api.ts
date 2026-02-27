@@ -101,53 +101,55 @@ function omit<T extends object, K extends keyof T>(
 }
 
 export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
-  const uploadedPlan = await prisma.plan.create({
-    data: {
-      ...omit(planData, ["weeks", "id", "userId"]),
-      user: {connect: {id: planData.userId}}
-    }
-  })
-  for (const week of planData.weeks) {
-    const uploadedWeek = await prisma.week.create({
-      data: {...omit(week, ["workouts", "id"]), planId: uploadedPlan.id}
-    })
-    for (const workout of week.workouts) {
-      const uploadedWorkout = await prisma.workout.create({
-        data: {...omit(workout, ["exercises", "id"]), weekId: uploadedWeek.id}
-      })
-      for (const exercise of workout.exercises) {
-        const exerciseRecord = await prisma.exercise.upsert({
-          where: {
-            name_category: {
+  return prisma.$transaction(async (tx) => {
+    const uploadedPlan = await tx.plan.create({
+      data: {
+        ...omit(planData, ["weeks", "id", "userId"]),
+        user: {connect: {id: planData.userId}}
+      }
+    });
+    for (const week of planData.weeks) {
+      const uploadedWeek = await tx.week.create({
+        data: {...omit(week, ["workouts", "id"]), planId: uploadedPlan.id}
+      });
+      for (const workout of week.workouts) {
+        const uploadedWorkout = await tx.workout.create({
+          data: {...omit(workout, ["exercises", "id"]), weekId: uploadedWeek.id}
+        });
+        for (const exercise of workout.exercises) {
+          const exerciseRecord = await tx.exercise.upsert({
+            where: {
+              name_category: {
+                name: exercise.exercise.name,
+                category: exercise.exercise.category!,
+              },
+            },
+            update: {},
+            create: {
               name: exercise.exercise.name,
               category: exercise.exercise.category!,
             },
-          },
-          update: {},
-          create: {
-            name: exercise.exercise.name,
-            category: exercise.exercise.category!,
-          },
-        });
+          });
 
-        const uploadedWorkoutExercise = await prisma.workoutExercise.create({
-          data: {
-            workoutId: uploadedWorkout.id,
-            order: exercise.order,
-            restTime: exercise.restTime,
-            repRange: exercise.repRange,
-            exerciseId: exerciseRecord.id,
-          },
-        });
-        for (const set of exercise.sets) {
-          await prisma.exerciseSet.create({
-            data: {...omit(set, ["id"]), workoutExerciseId: uploadedWorkoutExercise.id}
-          })
+          const uploadedWorkoutExercise = await tx.workoutExercise.create({
+            data: {
+              workoutId: uploadedWorkout.id,
+              order: exercise.order,
+              restTime: exercise.restTime,
+              repRange: exercise.repRange,
+              exerciseId: exerciseRecord.id,
+            },
+          });
+          for (const set of exercise.sets) {
+            await tx.exerciseSet.create({
+              data: {...omit(set, ["id"]), workoutExerciseId: uploadedWorkoutExercise.id}
+            });
+          }
         }
       }
     }
-  }
-  return uploadedPlan.id
+    return uploadedPlan.id;
+  });
 }
 
 export async function deleteUserEvent(eventId: number, userId: string) {

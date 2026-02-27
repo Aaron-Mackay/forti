@@ -1,17 +1,30 @@
 import prisma from '@/lib/prisma';
-import {WeekPrisma, WorkoutPrisma} from "@/types/dataTypes";
 import {NextResponse} from "next/server";
 import confirmPermission from "@lib/confirmPermission";
+import {z} from "zod";
+import {extractErrorMessage} from "@lib/apiError";
+import {PlanInputSchema} from "@lib/planSchemas";
+
+const SaveUserDataSchema = z.object({
+  id: z.string(),
+  plans: z.array(PlanInputSchema),
+});
 
 export async function POST(req: Request) {
-  const userData = await req.json();
+  let body: z.infer<typeof SaveUserDataSchema>;
+  try {
+    body = SaveUserDataSchema.parse(await req.json());
+  } catch {
+    return NextResponse.json({error: "Invalid request body"}, {status: 400});
+  }
 
-  const userId = userData.id;
-  const permissionResult = await confirmPermission(userId);
-  if (permissionResult) return permissionResult;
+  const userId = body.id;
 
-  if (!userId) {
-    return NextResponse.json({error: "Missing userId"}, {status: 400});
+  try {
+    await confirmPermission(userId);
+  } catch (err) {
+    if (err instanceof NextResponse) return err;
+    throw err;
   }
 
 
@@ -59,18 +72,18 @@ export async function POST(req: Request) {
       });
 
       // 2. Recreate all plans, weeks, workouts, etc.
-      for (const plan of userData.plans) {
+      for (const plan of body.plans) {
         await tx.plan.create({
           data: {
             userId,
             order: plan.order,
             name: plan.name,
-            description: plan.description,
+            description: plan.description ?? null,
             weeks: {
-              create: plan.weeks.map((week: WeekPrisma) => ({
+              create: plan.weeks.map((week) => ({
                 order: week.order,
                 workouts: {
-                  create: week.workouts.map((workout: WorkoutPrisma) => ({
+                  create: week.workouts.map((workout) => ({
                     name: workout.name,
                     notes: workout.notes,
                     order: workout.order,
@@ -119,12 +132,6 @@ export async function POST(req: Request) {
     return NextResponse.json({success: true}, {status: 200});
   } catch (err: unknown) {
     console.error("Save error:", err);
-
-    let message = "Unknown error";
-    if (err && typeof err === "object" && "message" in err) {
-      message = String((err as { message: unknown }).message);
-    }
-
-    return NextResponse.json({error: message}, {status: 500});
+    return NextResponse.json({error: extractErrorMessage(err)}, {status: 500});
   }
 }
