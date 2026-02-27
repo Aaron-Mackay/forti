@@ -35,8 +35,9 @@ test.describe('Dashboard', () => {
       // Seed data: Week 1 of each plan is always completed; Week 2 is always incomplete
       await expect(page.getByText('Next Workout')).toBeVisible();
       await expect(page.getByRole('link', { name: 'Go' })).toBeVisible();
-      // Week number displayed should match week.order (1-indexed, no +1 offset)
-      await expect(page.getByText(/Week 2/)).toBeVisible();
+      // Week number displayed should match week.order (1-indexed, no +1 offset).
+      // The workout name also contains "Week 2", so scope to the subtitle which uses · separators.
+      await expect(page.getByText(/· Week 2/)).toBeVisible();
     });
 
     test('Go button links to the workout page', async ({ page }) => {
@@ -49,7 +50,9 @@ test.describe('Dashboard', () => {
     });
 
     test('renders the Today card', async ({ page }) => {
-      await expect(page.getByText('Today')).toBeVisible();
+      // Use first() to avoid strict mode violation — "Today" can appear more than once
+      // on the page (e.g. in the chart canvas or other DOM nodes).
+      await expect(page.getByText('Today').first()).toBeVisible();
       // Seed data: today's metrics may or may not be logged (random) — both states are valid
       const hasMetrics = await page.getByRole('link', { name: 'View calendar' }).isVisible();
       const noMetrics = await page.getByRole('link', { name: 'Log metrics' }).isVisible();
