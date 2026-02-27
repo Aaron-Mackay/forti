@@ -1,6 +1,7 @@
 'use client';
 
 import React, {useEffect, useState} from 'react';
+import {useSearchParams} from 'next/navigation';
 import {queueOrSendRequest, syncQueuedRequests} from '@/utils/offlineSync';
 import {UserPrisma} from '@/types/dataTypes';
 
@@ -24,10 +25,29 @@ type SnackbarState = {
 
 type Field = 'weight' | 'reps';
 
+function findWorkoutContext(userData: UserPrisma, workoutId: number) {
+  for (const plan of userData.plans) {
+    for (const week of plan.weeks) {
+      for (const workout of week.workouts) {
+        if (workout.id === workoutId) {
+          return {planId: plan.id, weekId: week.id, workoutId: workout.id};
+        }
+      }
+    }
+  }
+  return null;
+}
+
 export default function WorkoutClient({userData}: { userData: UserPrisma }) {
-  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
-  const [selectedWeekId, setSelectedWeekId] = useState<number | null>(null);
-  const [selectedWorkoutId, setSelectedWorkoutId] = useState<number | null>(null);
+  const searchParams = useSearchParams();
+  const workoutIdParam = searchParams.get('workoutId');
+  const initialContext = workoutIdParam
+    ? findWorkoutContext(userData, Number(workoutIdParam))
+    : null;
+
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(initialContext?.planId ?? null);
+  const [selectedWeekId, setSelectedWeekId] = useState<number | null>(initialContext?.weekId ?? null);
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState<number | null>(initialContext?.workoutId ?? null);
   const [selectedExerciseId, setSelectedExerciseId] = useState<number | null>(null);
 
   const [snackbar, setSnackbar] = useState<SnackbarState>({

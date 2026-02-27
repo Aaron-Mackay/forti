@@ -3,6 +3,8 @@ import WorkoutClient from './WorkoutClient';
 import {notFound} from "next/navigation";
 import NetworkStatusBanner from "@/components/NetworkStatusBanner";
 import getLoggedInUser from "@lib/getLoggedInUser";
+import {Loading} from "@/components/Loading";
+import {Suspense} from "react";
 
 export default async function DashboardPage() {
   const userId = (await getLoggedInUser()).id
@@ -13,6 +15,8 @@ export default async function DashboardPage() {
 
   return <>
     <NetworkStatusBanner/>
-    <WorkoutClient userData={userData}/>
+    <Suspense fallback={<Loading/>}>
+      <WorkoutClient userData={userData}/>
+    </Suspense>
   </>
 }
