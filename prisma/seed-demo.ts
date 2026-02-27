@@ -5,13 +5,13 @@
  *   1. Upserts the canonical exercise library (global, additive only)
  *   2. Upserts the Bob demo account (bob@example.com)
  *   3. Upserts Bob's exercise notes
- *   4. Creates Bob's events and plans IF he has none (leaves existing data untouched)
- *   5. Refreshes Bob's DayMetrics for the last 60 days so the chart always has recent data
+ *   4. Resets Bob's events with relative dates so they are always current
+ *   5. Resets Bob's plans and workouts
+ *   6. Refreshes Bob's DayMetrics for the last 60 days
  *
  * What it does NOT do:
  *   - Truncate any tables
  *   - Touch Aaron or any other user
- *   - Modify existing plans, workouts, or events
  */
 
 import prisma from '../src/lib/prisma';
@@ -27,6 +27,10 @@ async function main() {
   const dbUrl = process.env.DATABASE_URL ?? "";
   const isLocal = dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1");
   console.log(`🌱 Running demo seed against ${isLocal ? 'local' : 'remote (Neon)'} database…`);
+
+  const today = new Date();
+  const daysAgo      = (n: number) => { const d = new Date(today); d.setDate(today.getDate() - n); return d; };
+  const daysFromNow  = (n: number) => { const d = new Date(today); d.setDate(today.getDate() + n); return d; };
 
   // ─── 1. Upsert exercises ───────────────────────────────────────────────────
   const descLoremIpsum = "DESC - Lorem ipsum dolor sit amet, consectetur adipiscing elit...";
@@ -76,145 +80,149 @@ async function main() {
   }
   console.log(`  ✓ Exercise notes upserted`);
 
-  // ─── 4a. Create events if Bob has none ────────────────────────────────────
-  const existingEventCount = await prisma.event.count({ where: { userId: bob.id } });
-  if (existingEventCount === 0) {
-    await prisma.event.createMany({
-      data: [
-        {
-          userId: bob.id,
-          name: 'Training Week 1',
-          description: "Start of Bob's program'",
-          startDate: new Date('2025-06-01'),
-          endDate:   new Date('2025-06-07'),
-          eventType: EventType.CustomEvent,
-        },
-        {
-          userId: bob.id,
-          name: 'Holiday',
-          description: 'Recovery week',
-          startDate: new Date('2025-08-15'),
-          endDate:   new Date('2025-08-20'),
-          eventType: EventType.CustomEvent,
-        },
-        {
-          userId: bob.id,
-          name: 'Bulk',
-          startDate: new Date('2025-08-01'),
-          endDate:   new Date('2025-08-31'),
-          eventType: EventType.BlockEvent,
-          blockSubtype: BlockSubtype.Bulk,
-        },
-        {
-          userId: bob.id,
-          name: 'Cut',
-          startDate: new Date('2025-09-01'),
-          endDate:   new Date('2025-09-21'),
-          eventType: EventType.BlockEvent,
-          blockSubtype: BlockSubtype.Cut,
-        },
-        {
-          userId: bob.id,
-          name: 'Custom',
-          startDate:   new Date('2025-07-01'),
-          endDate:     new Date('2025-07-21'),
-          customColor: 'red',
-          eventType:   EventType.CustomEvent,
-        },
-      ],
-    });
-    console.log(`  ✓ Events created`);
-  } else {
-    console.log(`  – Events skipped (Bob already has ${existingEventCount})`);
-  }
+  // ─── 4. Reset events (relative dates so they're always current) ───────────
+  await prisma.event.deleteMany({ where: { userId: bob.id } });
+  await prisma.event.createMany({
+    data: [
+      // Custom event starting tomorrow — shows in "Upcoming (7 days)" dashboard card
+      {
+        userId:      bob.id,
+        name:        'Training Week 1',
+        description: "Start of Bob's program",
+        startDate:   daysFromNow(1),
+        endDate:     daysFromNow(7),
+        eventType:   EventType.CustomEvent,
+      },
+      // Holiday in ~4 weeks — visible on the calendar
+      {
+        userId:      bob.id,
+        name:        'Holiday',
+        description: 'Recovery week',
+        startDate:   daysFromNow(28),
+        endDate:     daysFromNow(33),
+        eventType:   EventType.CustomEvent,
+      },
+      // Active Bulk block (started 3 weeks ago, ends 5 weeks from now)
+      // — shows "Active Block" card on the dashboard
+      {
+        userId:       bob.id,
+        name:         'Bulk',
+        startDate:    daysAgo(21),
+        endDate:      daysFromNow(35),
+        eventType:    EventType.BlockEvent,
+        blockSubtype: BlockSubtype.Bulk,
+      },
+      // Upcoming Cut block (~8–14 weeks away) — visible in the calendar
+      {
+        userId:       bob.id,
+        name:         'Cut',
+        startDate:    daysFromNow(56),
+        endDate:      daysFromNow(77),
+        eventType:    EventType.BlockEvent,
+        blockSubtype: BlockSubtype.Cut,
+      },
+      // Custom coloured event in the recent past — visible on the calendar
+      {
+        userId:      bob.id,
+        name:        'Custom',
+        startDate:   daysAgo(30),
+        endDate:     daysAgo(10),
+        customColor: 'red',
+        eventType:   EventType.CustomEvent,
+      },
+    ],
+  });
+  console.log(`  ✓ Events reset`);
 
-  // ─── 4b. Create plans/workouts if Bob has none ────────────────────────────
-  const existingPlanCount = await prisma.plan.count({ where: { userId: bob.id } });
-  if (existingPlanCount === 0) {
-    const planCount = 2;
-    for (let planIdx = 0; planIdx < planCount; planIdx++) {
-      const plan = await prisma.plan.create({
-        data: {
-          userId:      bob.id,
-          order:       planIdx + 1,
-          name:        `Bob's Plan ${planIdx + 1}`,
-          description: `Training block ${planIdx + 1} for Bob`,
-        },
+  // ─── 5. Reset plans and workouts ──────────────────────────────────────────
+  // Cascade delete removes weeks → workouts → exercises → sets automatically.
+  await prisma.plan.deleteMany({ where: { userId: bob.id } });
+
+  const planCount = 2;
+  for (let planIdx = 0; planIdx < planCount; planIdx++) {
+    const plan = await prisma.plan.create({
+      data: {
+        userId:      bob.id,
+        order:       planIdx + 1,
+        name:        `Bob's Plan ${planIdx + 1}`,
+        description: `Training block ${planIdx + 1} for Bob`,
+      },
+    });
+
+    const weekCount = 2 + planIdx; // 2 weeks in Plan 1, 3 in Plan 2
+    for (let weekIdx = 0; weekIdx < weekCount; weekIdx++) {
+      const week = await prisma.week.create({
+        data: { planId: plan.id, order: weekIdx + 1 },
       });
 
-      const weekCount = 2 + planIdx; // 2 weeks in Plan 1, 3 in Plan 2
-      for (let weekIdx = 0; weekIdx < weekCount; weekIdx++) {
-        const week = await prisma.week.create({
-          data: { planId: plan.id, order: weekIdx + 1 },
+      for (let woIdx = 0; woIdx < 2; woIdx++) {
+        const workout = await prisma.workout.create({
+          data: {
+            weekId: week.id,
+            name:   `Workout ${woIdx + 1} (Plan ${planIdx + 1} - Week ${weekIdx + 1})`,
+            notes:  woIdx % 2 === 0 ? 'Felt strong today 💪' : null,
+            order:  woIdx + 1,
+          },
         });
 
-        for (let woIdx = 0; woIdx < 2; woIdx++) {
-          const workout = await prisma.workout.create({
+        // Plan 1 → Week 1 → Workout 1: deterministic exercises, always completed
+        // (gives a non-zero "This Week" count on the dashboard)
+        // Plan 1 → Week 1 → Workout 2: always left incomplete
+        // (ensures there is always a "Next Workout" to show on the dashboard)
+        const isFirstWorkout  = planIdx === 0 && weekIdx === 0 && woIdx === 0;
+        const isSecondWorkout = planIdx === 0 && weekIdx === 0 && woIdx === 1;
+
+        const selectedExercises = isFirstWorkout
+          ? [findEx('Bench Press'), findEx('Squat'), findEx('Deadlift')]
+          : [...allExercises].sort(() => 0.5 - Math.random()).slice(0, 2 + Math.floor(Math.random() * 2));
+
+        let allSetsDone = true;
+
+        for (let i = 0; i < selectedExercises.length; i++) {
+          const workoutExercise = await prisma.workoutExercise.create({
             data: {
-              weekId: week.id,
-              name:   `Workout ${woIdx + 1} (Plan ${planIdx + 1} - Week ${weekIdx + 1})`,
-              notes:  woIdx % 2 === 0 ? 'Felt strong today 💪' : null,
-              order:  woIdx + 1,
+              workoutId:  workout.id,
+              exerciseId: selectedExercises[i].id,
+              order:      i + 1,
+              restTime:   "90",
+              repRange:   "8-12",
             },
           });
 
-          let allSetsDone = true;
+          const setCount = Math.floor(randomBetween(2, 5));
+          let exerciseHasDoneSets = false;
 
-          // First workout is deterministic so E2E tests that look for specific
-          // exercises in Plan 1 → Week 1 → Workout 1 are stable.
-          const isFirstWorkout = planIdx === 0 && weekIdx === 0 && woIdx === 0;
-          const selectedExercises = isFirstWorkout
-            ? [findEx('Bench Press'), findEx('Squat'), findEx('Deadlift')]
-            : [...allExercises].sort(() => 0.5 - Math.random()).slice(0, 2 + Math.floor(Math.random() * 2));
-
-          for (let i = 0; i < selectedExercises.length; i++) {
-            const workoutExercise = await prisma.workoutExercise.create({
+          for (let s = 0; s < setCount; s++) {
+            // Second workout always has empty sets so it stays incomplete
+            const done = isSecondWorkout ? false : (isFirstWorkout ? true : Math.random() < 0.7);
+            if (done) exerciseHasDoneSets = true;
+            await prisma.exerciseSet.create({
               data: {
-                workoutId:  workout.id,
-                exerciseId: selectedExercises[i].id,
-                order:      i + 1,
-                restTime:   "90",
-                repRange:   "8-12",
+                workoutExerciseId: workoutExercise.id,
+                order:  s + 1,
+                reps:   done ? 8 + Math.floor(Math.random() * 5) : null,
+                weight: done ? (Math.round(Math.random() * 50 + 30)).toString() : null,
               },
             });
-
-            const setCount = Math.floor(randomBetween(2, 5));
-            let exerciseHasDoneSets = false;
-
-            for (let s = 0; s < setCount; s++) {
-              const done = Math.random() < 0.7;
-              if (done) exerciseHasDoneSets = true;
-              await prisma.exerciseSet.create({
-                data: {
-                  workoutExerciseId: workoutExercise.id,
-                  order:  s + 1,
-                  reps:   done ? 8 + Math.floor(Math.random() * 5) : null,
-                  weight: done ? (Math.round(Math.random() * 50 + 30)).toString() : null,
-                },
-              });
-            }
-
-            if (!exerciseHasDoneSets) allSetsDone = false;
           }
 
-          if (allSetsDone) {
-            await prisma.workout.update({
-              where: { id: workout.id },
-              data:  { dateCompleted: new Date() },
-            });
-          }
+          if (!exerciseHasDoneSets) allSetsDone = false;
+        }
+
+        if (allSetsDone) {
+          await prisma.workout.update({
+            where: { id: workout.id },
+            data:  { dateCompleted: today },
+          });
         }
       }
     }
-    console.log(`  ✓ Plans created`);
-  } else {
-    console.log(`  – Plans skipped (Bob already has ${existingPlanCount})`);
   }
+  console.log(`  ✓ Plans reset`);
 
-  // ─── 5. Refresh DayMetrics ────────────────────────────────────────────────
+  // ─── 6. Refresh DayMetrics ────────────────────────────────────────────────
   await prisma.dayMetric.deleteMany({ where: { userId: bob.id } });
 
-  const today = new Date();
   await prisma.dayMetric.createMany({
     data: Array.from({ length: 60 }, (_, i) => {
       const date = new Date(today);
