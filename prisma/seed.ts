@@ -1,7 +1,7 @@
 import prisma from '../src/lib/prisma';
 import { BlockSubtype, EventType } from "@prisma/client";
 import { seedBobData } from './lib/bobSeedData';
-const exercisesData = require('./exercises.json');
+import exercisesData from './exercises.json';
 
 function getRandomBetween(min: number, max: number): number {
   return Math.random() * (max - min) + min;
