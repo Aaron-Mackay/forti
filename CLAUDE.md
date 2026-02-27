@@ -242,7 +242,13 @@ tests/ToggleableEditableField.test.tsx
 - **Location:** `tests/e2e/`
 - **Browsers:** Chromium, Firefox, WebKit
 - **Run command:** `npm run test:e2e` (boots dev server on port 3000 first)
-- Tests: `AppBar.test.ts`, `WorkoutClient.test.ts`
+- Tests: `AppBar.test.ts`, `WorkoutClient.test.ts`, `dashboard.test.ts`, `calendar.test.ts`, `plans.test.ts`, `login.test.ts`
+
+**IMPORTANT — UI changes require E2E tests:** When adding or modifying UI components or pages, E2E tests covering the new or changed behaviour must be added or updated in the same commit. Place tests in `tests/e2e/<page>.test.ts`, mirroring the page being changed. Always import `test` and `expect` from `./fixtures` (not directly from `@playwright/test`) so that unhandled page errors automatically fail the test:
+
+```ts
+import { test, expect } from './fixtures';
+```
 
 ---
 
