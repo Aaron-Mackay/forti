@@ -168,7 +168,7 @@ export default function DashboardCards({userData, dayMetrics, events, today}: Da
                 {todayMetric.calories != null && (
                   <Typography variant="body2">Calories: <strong>{todayMetric.calories.toLocaleString()}</strong></Typography>
                 )}
-                <Box>
+                <Box sx={{mt: 1}}>
                   <Button
                     component={Link}
                     href="/user/calendar"
