@@ -1,0 +1,947 @@
+[
+  {
+    "name": "Bench Press",
+    "category": "Chest",
+    "description": "Lie on a flat bench, lower barbell to chest, press back up explosively."
+  },
+  {
+    "name": "Squat",
+    "category": "Legs",
+    "description": "Barbell on shoulders, squat down to parallel, drive through heels."
+  },
+  {
+    "name": "Deadlift",
+    "category": "Back",
+    "description": "Stand with feet hip-width apart, lift bar from ground to hips."
+  },
+  {
+    "name": "Overhead Press",
+    "category": "Shoulders",
+    "description": "Standing, press barbell overhead from shoulders."
+  },
+  {
+    "name": "Barbell Row",
+    "category": "Back",
+    "description": "Bend at hips, pull bar to chest, explosive drive off floor."
+  },
+  {
+    "name": "Pull Ups",
+    "category": "Back",
+    "description": "Overhand grip, pull body up to bar, explosive back exercise."
+  },
+  {
+    "name": "Barbell Bench Press",
+    "category": "Chest",
+    "description": "Lie on a flat bench, lower barbell to chest, press back up explosively."
+  },
+  {
+    "name": "Incline Barbell Bench Press",
+    "category": "Chest",
+    "description": "Bench at 30-45° incline, lower bar to upper chest, press up."
+  },
+  {
+    "name": "Decline Barbell Bench Press",
+    "category": "Chest",
+    "description": "Bench angled downward, lower bar to lower chest, press up."
+  },
+  {
+    "name": "Dumbbell Bench Press",
+    "category": "Chest",
+    "description": "Dumbbells at chest level, press up, control descent."
+  },
+  {
+    "name": "Incline Dumbbell Bench Press",
+    "category": "Chest",
+    "description": "Inclined bench, press dumbbells at angle targeting upper chest."
+  },
+  {
+    "name": "Dumbbell Flyes",
+    "category": "Chest",
+    "description": "Lying back, arc dumbbells in controlled motion, focus on chest stretch."
+  },
+  {
+    "name": "Incline Dumbbell Flyes",
+    "category": "Chest",
+    "description": "Inclined bench, perform dumbbell flyes for upper chest activation."
+  },
+  {
+    "name": "Machine Chest Press",
+    "category": "Chest",
+    "description": "Seated on machine, press handles forward, control return."
+  },
+  {
+    "name": "Chest Dips",
+    "category": "Chest",
+    "description": "Leaning forward on dips station, lower and press back up."
+  },
+  {
+    "name": "Weighted Chest Dips",
+    "category": "Chest",
+    "description": "Chest dips with added weight for increased resistance."
+  },
+  {
+    "name": "Push-ups",
+    "category": "Chest",
+    "description": "Standard bodyweight press from plank position."
+  },
+  {
+    "name": "Incline Push-ups",
+    "category": "Chest",
+    "description": "Hands elevated, reduces difficulty and targets upper chest."
+  },
+  {
+    "name": "Decline Push-ups",
+    "category": "Chest",
+    "description": "Feet elevated, increases difficulty and targets upper chest."
+  },
+  {
+    "name": "Weighted Push-ups",
+    "category": "Chest",
+    "description": "Push-ups with weight vest or plate on back."
+  },
+  {
+    "name": "Cable Flyes",
+    "category": "Chest",
+    "description": "High or low cable position, arc arms together focusing on squeeze."
+  },
+  {
+    "name": "Smith Machine Bench Press",
+    "category": "Chest",
+    "description": "Barbell guided on smith machine, control vertical pressing motion."
+  },
+  {
+    "name": "Barbell Squat",
+    "category": "Legs",
+    "description": "Barbell on shoulders, squat down to parallel, drive through heels."
+  },
+  {
+    "name": "Front Squat",
+    "category": "Legs",
+    "description": "Barbell in front rack position, squat maintaining upright posture."
+  },
+  {
+    "name": "Goblet Squat",
+    "category": "Legs",
+    "description": "Hold dumbbell at chest, squat to depth, emphasizes form."
+  },
+  {
+    "name": "Dumbbell Squat",
+    "category": "Legs",
+    "description": "Dumbbells at sides or shoulders, perform squat movement."
+  },
+  {
+    "name": "Leg Press",
+    "category": "Legs",
+    "description": "Machine-based, push platform away, control descent."
+  },
+  {
+    "name": "Hack Squat",
+    "category": "Legs",
+    "description": "Angled machine, squat in guided path, great for quad focus."
+  },
+  {
+    "name": "Smith Machine Squat",
+    "category": "Legs",
+    "description": "Barbell on guided rails, squat to desired depth."
+  },
+  {
+    "name": "Bulgarian Split Squat",
+    "category": "Legs",
+    "description": "Rear foot elevated, forward leg squats deep, great for unilateral work."
+  },
+  {
+    "name": "Lunges",
+    "category": "Legs",
+    "description": "Step forward, lower back knee, alternate legs."
+  },
+  {
+    "name": "Walking Lunges",
+    "category": "Legs",
+    "description": "Forward stepping lunges across a distance."
+  },
+  {
+    "name": "Reverse Lunges",
+    "category": "Legs",
+    "description": "Step backward instead of forward, easier on knees."
+  },
+  {
+    "name": "Dumbbell Lunges",
+    "category": "Legs",
+    "description": "Holding dumbbells, perform standard lunge pattern."
+  },
+  {
+    "name": "Leg Extensions",
+    "category": "Legs",
+    "description": "Machine-based, extend legs to full, focus on quad contraction."
+  },
+  {
+    "name": "Leg Curls",
+    "category": "Legs",
+    "description": "Machine or lying down, curl legs up, target hamstrings."
+  },
+  {
+    "name": "Lying Leg Curl",
+    "category": "Legs",
+    "description": "Lying face down on machine, curl feet toward glutes."
+  },
+  {
+    "name": "Seated Leg Curl",
+    "category": "Legs",
+    "description": "Seated position, pull pad down, isolate hamstrings."
+  },
+  {
+    "name": "Romanian Deadlift",
+    "category": "Legs",
+    "description": "Hinge at hips, minimal knee bend, feel hamstring stretch."
+  },
+  {
+    "name": "Leg Press Machine Squat",
+    "category": "Legs",
+    "description": "Alternative leg press position emphasis on glutes and hamstrings."
+  },
+  {
+    "name": "Jump Squats",
+    "category": "Legs",
+    "description": "Squat then explosively jump, plyometric leg exercise."
+  },
+  {
+    "name": "Barbell Deadlift",
+    "category": "Back",
+    "description": "Stand with feet hip-width apart, lift bar from ground to hips."
+  },
+  {
+    "name": "Sumo Deadlift",
+    "category": "Back",
+    "description": "Wider stance, toes out, emphasis on glutes and adductors."
+  },
+  {
+    "name": "Romanian Deadlift (Back focus)",
+    "category": "Back",
+    "description": "Hip hinge movement emphasizing hamstring and back extensors."
+  },
+  {
+    "name": "Trap Bar Deadlift",
+    "category": "Back",
+    "description": "Hexagonal bar deadlift, reduced strain on lower back."
+  },
+  {
+    "name": "Deficit Deadlift",
+    "category": "Back",
+    "description": "Stand on platform, increased range of motion for strength building."
+  },
+  {
+    "name": "Barbell Rows",
+    "category": "Back",
+    "description": "Bend at hips, pull bar to chest, explosive drive off floor."
+  },
+  {
+    "name": "Pendlay Rows",
+    "category": "Back",
+    "description": "Torso parallel to ground, pull bar to lower chest."
+  },
+  {
+    "name": "Incline Barbell Rows",
+    "category": "Back",
+    "description": "Upper body inclined, pull bar emphasizing upper back."
+  },
+  {
+    "name": "Dumbbell Rows",
+    "category": "Back",
+    "description": "Single arm or alternating, row dumbbell to hip."
+  },
+  {
+    "name": "Single Arm Dumbbell Rows",
+    "category": "Back",
+    "description": "One knee down, row dumbbell for unilateral back work."
+  },
+  {
+    "name": "Barbell Bent-Over Rows",
+    "category": "Back",
+    "description": "Bent over position, pull barbell toward torso."
+  },
+  {
+    "name": "T-Bar Rows",
+    "category": "Back",
+    "description": "Machine or landmine variation, pull toward chest."
+  },
+  {
+    "name": "Seal Rows",
+    "category": "Back",
+    "description": "Chest on bench, row without hip drive, pure back."
+  },
+  {
+    "name": "Machine Rows",
+    "category": "Back",
+    "description": "Seated machine, pull handles toward body."
+  },
+  {
+    "name": "Lat Pulldowns",
+    "category": "Back",
+    "description": "Seated, pull bar down to chest, emphasize lat contraction."
+  },
+  {
+    "name": "Wide Grip Lat Pulldown",
+    "category": "Back",
+    "description": "Wider grip variation, increased lat stretch and activation."
+  },
+  {
+    "name": "Close Grip Lat Pulldown",
+    "category": "Back",
+    "description": "Narrow grip, more bicep involvement."
+  },
+  {
+    "name": "Reverse Grip Lat Pulldown",
+    "category": "Back",
+    "description": "Underhand grip variation, different back activation pattern."
+  },
+  {
+    "name": "Pull-ups",
+    "category": "Back",
+    "description": "Overhand grip, pull body up to bar, explosive back exercise."
+  },
+  {
+    "name": "Pull-up (Weighted)",
+    "category": "Back",
+    "description": "Pull-ups with added weight for strength building."
+  },
+  {
+    "name": "Chin-ups",
+    "category": "Back",
+    "description": "Underhand grip, pull up to bar, more bicep focused."
+  },
+  {
+    "name": "Chin-up (Weighted)",
+    "category": "Back",
+    "description": "Weighted chin-ups for progressive strength."
+  },
+  {
+    "name": "Assisted Pull-ups",
+    "category": "Back",
+    "description": "Machine-assisted, build toward full bodyweight pull-ups."
+  },
+  {
+    "name": "Negative Pull-ups",
+    "category": "Back",
+    "description": "Jump to top, lower yourself slowly, build eccentric strength."
+  },
+  {
+    "name": "Band-Assisted Pull-ups",
+    "category": "Back",
+    "description": "Resistance band assistance for pull-up progression."
+  },
+  {
+    "name": "Chest-Supported Rows",
+    "category": "Back",
+    "description": "Torso supported on incline, row without momentum."
+  },
+  {
+    "name": "Smith Machine Rows",
+    "category": "Back",
+    "description": "Guided barbell rows on smith machine."
+  },
+  {
+    "name": "Cable Rows",
+    "category": "Back",
+    "description": "Seated cable machine, pull toward body."
+  },
+  {
+    "name": "Hammer Strength Rows",
+    "category": "Back",
+    "description": "Plate-loaded machine, neutral grip rows."
+  },
+  {
+    "name": "Back Extensions",
+    "category": "Back",
+    "description": "Hyperextension bench, extend lower back, target erectors."
+  },
+  {
+    "name": "Weighted Back Extensions",
+    "category": "Back",
+    "description": "Back extension holding weight for increased resistance."
+  },
+  {
+    "name": "Dumbbell Pullover",
+    "category": "Back",
+    "description": "Lying perpendicular on bench, pull dumbbell over chest."
+  },
+  {
+    "name": "Machine Pullover",
+    "category": "Back",
+    "description": "Seated machine pullover, stretch and contract chest and back."
+  },
+  {
+    "name": "Reverse Pec Deck Flyes",
+    "category": "Back",
+    "description": "Seated, pull handles out emphasizing rear delts and back."
+  },
+  {
+    "name": "Face Pulls",
+    "category": "Back",
+    "description": "High cable or rope, pull toward face, rear delt and upper back focus."
+  },
+  {
+    "name": "Barbell Overhead Press",
+    "category": "Shoulders",
+    "description": "Standing, press barbell overhead from shoulders."
+  },
+  {
+    "name": "Dumbbell Overhead Press",
+    "category": "Shoulders",
+    "description": "Standing or seated, press dumbbells overhead."
+  },
+  {
+    "name": "Machine Overhead Press",
+    "category": "Shoulders",
+    "description": "Guided machine press, stable overhead pressing."
+  },
+  {
+    "name": "Smith Machine Overhead Press",
+    "category": "Shoulders",
+    "description": "Barbell on rails, controlled overhead pressing."
+  },
+  {
+    "name": "Seated Barbell Press",
+    "category": "Shoulders",
+    "description": "Seated on bench, reduce leg drive for pure shoulder work."
+  },
+  {
+    "name": "Seated Dumbbell Press",
+    "category": "Shoulders",
+    "description": "Seated position, press dumbbells overhead unilaterally."
+  },
+  {
+    "name": "Push Press",
+    "category": "Shoulders",
+    "description": "Slight knee bend, explosive leg drive to press more weight."
+  },
+  {
+    "name": "Dumbbell Lateral Raises",
+    "category": "Shoulders",
+    "description": "Standing, raise dumbbells out to sides, isolate lateral delts."
+  },
+  {
+    "name": "Cable Lateral Raises",
+    "category": "Shoulders",
+    "description": "Cable machine, lateral raise for side delt isolation."
+  },
+  {
+    "name": "Machine Lateral Raises",
+    "category": "Shoulders",
+    "description": "Plate-loaded machine, controlled lateral raise."
+  },
+  {
+    "name": "Plate Lateral Raises",
+    "category": "Shoulders",
+    "description": "Hold single plate, raise out to side for shoulder width."
+  },
+  {
+    "name": "Dumbbell Front Raises",
+    "category": "Shoulders",
+    "description": "Raise dumbbells in front, front delt emphasis."
+  },
+  {
+    "name": "Barbell Front Raises",
+    "category": "Shoulders",
+    "description": "Barbell in front, raise to shoulder height."
+  },
+  {
+    "name": "Cable Front Raises",
+    "category": "Shoulders",
+    "description": "Single cable, raise in front isolating front delts."
+  },
+  {
+    "name": "Reverse Pec Deck Flyes (Rear Delt)",
+    "category": "Shoulders",
+    "description": "Machine-based, rear delt fly focusing on rear shoulders."
+  },
+  {
+    "name": "Dumbbell Reverse Flyes",
+    "category": "Shoulders",
+    "description": "Bent over, raise dumbbells out emphasizing rear delts."
+  },
+  {
+    "name": "Cable Reverse Flyes",
+    "category": "Shoulders",
+    "description": "Crossover cables, perform reverse fly for rear delts."
+  },
+  {
+    "name": "Upright Rows",
+    "category": "Shoulders",
+    "description": "Pull bar or dumbbells up to neck height, traps and shoulders."
+  },
+  {
+    "name": "Barbell Upright Rows",
+    "category": "Shoulders",
+    "description": "Barbell variation of upright rows."
+  },
+  {
+    "name": "Dumbbell Upright Rows",
+    "category": "Shoulders",
+    "description": "Dumbbell version of upright rows."
+  },
+  {
+    "name": "Shrugs",
+    "category": "Shoulders",
+    "description": "Raise shoulders toward ears, isolate upper traps."
+  },
+  {
+    "name": "Barbell Shrugs",
+    "category": "Shoulders",
+    "description": "Barbell shrugs for trap development."
+  },
+  {
+    "name": "Dumbbell Shrugs",
+    "category": "Shoulders",
+    "description": "Dumbbell shrugs for unilateral trap work."
+  },
+  {
+    "name": "Weighted Shrugs",
+    "category": "Shoulders",
+    "description": "Shrugs with added weight plates or harness."
+  },
+  {
+    "name": "Cable Shrugs",
+    "category": "Shoulders",
+    "description": "Cable machine shrugs for continuous tension."
+  },
+  {
+    "name": "Smith Machine Shrugs",
+    "category": "Shoulders",
+    "description": "Smith machine shrugs for stability."
+  },
+  {
+    "name": "Barbell Curls",
+    "category": "Arms",
+    "description": "Standing, curl barbell toward shoulders, bicep focus."
+  },
+  {
+    "name": "EZ-Bar Curls",
+    "category": "Arms",
+    "description": "Angled bar, reduced wrist strain, effective bicep curl."
+  },
+  {
+    "name": "Dumbbell Curls",
+    "category": "Arms",
+    "description": "Standing or seated, curl dumbbells for bicep development."
+  },
+  {
+    "name": "Incline Dumbbell Curls",
+    "category": "Arms",
+    "description": "Reclined on incline, curl for extended range of motion."
+  },
+  {
+    "name": "Hammer Curls",
+    "category": "Arms",
+    "description": "Neutral grip dumbbells, curl emphasizing brachialis."
+  },
+  {
+    "name": "Machine Curls",
+    "category": "Arms",
+    "description": "Plate-loaded or pin-loaded curls, guided movement."
+  },
+  {
+    "name": "Cable Curls",
+    "category": "Arms",
+    "description": "Cable machine, continuous tension throughout curl."
+  },
+  {
+    "name": "Seated Cable Curls",
+    "category": "Arms",
+    "description": "Seated on bench, cable curl preventing momentum."
+  },
+  {
+    "name": "Preacher Curls",
+    "category": "Arms",
+    "description": "Seated on preacher bench, control full range curl."
+  },
+  {
+    "name": "EZ-Bar Preacher Curls",
+    "category": "Arms",
+    "description": "EZ-bar on preacher bench, emphasis on bicep contraction."
+  },
+  {
+    "name": "Concentration Curls",
+    "category": "Arms",
+    "description": "Seated, curl single dumbbell focusing on peak contraction."
+  },
+  {
+    "name": "Unilateral Machine Curls",
+    "category": "Arms",
+    "description": "One-arm machine curls for unilateral strength."
+  },
+  {
+    "name": "Cable Rope Curls",
+    "category": "Arms",
+    "description": "Cable with rope attachment, excellent for peak contraction."
+  },
+  {
+    "name": "21s Curls",
+    "category": "Arms",
+    "description": "Combination curl set: 7 bottom range, 7 top range, 7 full range."
+  },
+  {
+    "name": "Tricep Dips",
+    "category": "Arms",
+    "description": "Bench dips or dip station, tricep-focused descent."
+  },
+  {
+    "name": "Weighted Tricep Dips",
+    "category": "Arms",
+    "description": "Dips with added weight for increased resistance."
+  },
+  {
+    "name": "Tricep Pushdowns",
+    "category": "Arms",
+    "description": "High cable, push rope or bar down extending arms."
+  },
+  {
+    "name": "V-Bar Tricep Pushdowns",
+    "category": "Arms",
+    "description": "Angled bar attachment, effective tricep isolation."
+  },
+  {
+    "name": "Rope Tricep Pushdowns",
+    "category": "Arms",
+    "description": "Rope attachment, full range tricep extension."
+  },
+  {
+    "name": "Overhead Tricep Extensions",
+    "category": "Arms",
+    "description": "Dumbbell or cable overhead, extend triceps upward."
+  },
+  {
+    "name": "Dumbbell Overhead Tricep Extensions",
+    "category": "Arms",
+    "description": "Single or double dumbbell, tricep extension overhead."
+  },
+  {
+    "name": "Barbell Overhead Tricep Extensions",
+    "category": "Arms",
+    "description": "EZ-bar or straight bar overhead, tricep focus."
+  },
+  {
+    "name": "Cable Overhead Tricep Extensions",
+    "category": "Arms",
+    "description": "Cable machine, continuous tension overhead extension."
+  },
+  {
+    "name": "Tricep Rope Extensions",
+    "category": "Arms",
+    "description": "Rope attachment overhead, unique tricep stimulus."
+  },
+  {
+    "name": "Close Grip Bench Press",
+    "category": "Arms",
+    "description": "Narrower grip, shift emphasis toward triceps."
+  },
+  {
+    "name": "Tricep Machine Press",
+    "category": "Arms",
+    "description": "Guided machine, isolated tricep pressing movement."
+  },
+  {
+    "name": "French Press",
+    "category": "Arms",
+    "description": "Lying down, lower dumbbell behind head, tricep extension."
+  },
+  {
+    "name": "Skullcrushers",
+    "category": "Arms",
+    "description": "EZ-bar or dumbbells, lower toward forehead, tricep focus."
+  },
+  {
+    "name": "Machine Dips",
+    "category": "Arms",
+    "description": "Plate-loaded dips machine, controlled tricep work."
+  },
+  {
+    "name": "Lateral Tricep Extensions",
+    "category": "Arms",
+    "description": "Single dumbbell, extend out to side for tricep activation."
+  },
+  {
+    "name": "Crunches",
+    "category": "Core",
+    "description": "Lie down, bring ribcage toward pelvis, isolate abs."
+  },
+  {
+    "name": "Decline Crunches",
+    "category": "Core",
+    "description": "Decline bench, crunches with increased range of motion."
+  },
+  {
+    "name": "Machine Crunches",
+    "category": "Core",
+    "description": "Plate-loaded machine, guided crunch movement."
+  },
+  {
+    "name": "Cable Crunches",
+    "category": "Core",
+    "description": "High cable, crunch down focusing on abs."
+  },
+  {
+    "name": "Rope Cable Crunches",
+    "category": "Core",
+    "description": "Cable with rope attachment, effective ab contraction."
+  },
+  {
+    "name": "Ab Wheel Rollouts",
+    "category": "Core",
+    "description": "Kneel or stand, roll wheel forward extending abs."
+  },
+  {
+    "name": "Seated Ab Wheel Rollouts",
+    "category": "Core",
+    "description": "Seated variation, easier progression for ab wheel."
+  },
+  {
+    "name": "Standing Ab Wheel Rollouts",
+    "category": "Core",
+    "description": "Standing variation, increased difficulty and range."
+  },
+  {
+    "name": "Planks",
+    "category": "Core",
+    "description": "Static hold, maintain straight body line for core endurance."
+  },
+  {
+    "name": "Weighted Planks",
+    "category": "Core",
+    "description": "Plank with weight plate on back for resistance."
+  },
+  {
+    "name": "Side Planks",
+    "category": "Core",
+    "description": "Side-lying plank, target obliques and lateral core."
+  },
+  {
+    "name": "Weighted Side Planks",
+    "category": "Core",
+    "description": "Side plank with added weight resistance."
+  },
+  {
+    "name": "Hanging Leg Raises",
+    "category": "Core",
+    "description": "Hang from bar, raise legs toward chest."
+  },
+  {
+    "name": "Weighted Hanging Leg Raises",
+    "category": "Core",
+    "description": "Leg raises with dumbbell between feet."
+  },
+  {
+    "name": "Ab Bench Leg Raises",
+    "category": "Core",
+    "description": "Decline bench, raise legs toward chest."
+  },
+  {
+    "name": "Machine Leg Raises",
+    "category": "Core",
+    "description": "Plate-loaded machine, guided leg raise movement."
+  },
+  {
+    "name": "Sit-ups",
+    "category": "Core",
+    "description": "Full body crunch from lying to seated position."
+  },
+  {
+    "name": "Weighted Sit-ups",
+    "category": "Core",
+    "description": "Sit-ups holding weight for increased resistance."
+  },
+  {
+    "name": "Decline Sit-ups",
+    "category": "Core",
+    "description": "On decline bench, increased range of motion for abs."
+  },
+  {
+    "name": "Cable Woodchops",
+    "category": "Core",
+    "description": "Rotational movement, cable resistance, obliques and core."
+  },
+  {
+    "name": "High Cable Woodchops",
+    "category": "Core",
+    "description": "High cable position, chop diagonally down."
+  },
+  {
+    "name": "Low Cable Woodchops",
+    "category": "Core",
+    "description": "Low cable position, chop diagonally up."
+  },
+  {
+    "name": "Medicine Ball Slams",
+    "category": "Core",
+    "description": "Hold medicine ball, slam it forcefully to ground."
+  },
+  {
+    "name": "Medicine Ball Rotational Throws",
+    "category": "Core",
+    "description": "Rotational throw with medicine ball against wall."
+  },
+  {
+    "name": "Pallof Press",
+    "category": "Core",
+    "description": "Cable at side, press away resisting rotation."
+  },
+  {
+    "name": "Anti-Rotation Pallof Press",
+    "category": "Core",
+    "description": "Pallof variation emphasizing anti-rotational core strength."
+  },
+  {
+    "name": "Bird Dogs",
+    "category": "Core",
+    "description": "Quadruped position, extend opposite arm and leg."
+  },
+  {
+    "name": "Dead Bugs",
+    "category": "Core",
+    "description": "Supine, lower opposite arm and leg, core stability."
+  },
+  {
+    "name": "Russian Twists",
+    "category": "Core",
+    "description": "Seated, rotate holding weight, oblique activation."
+  },
+  {
+    "name": "Dumbbell Russian Twists",
+    "category": "Core",
+    "description": "Russian twist holding single or dual dumbbells."
+  },
+  {
+    "name": "Ab Coaster",
+    "category": "Core",
+    "description": "Kneeling machine, pull knees toward chest."
+  },
+  {
+    "name": "Treadmill",
+    "category": "Cardio",
+    "description": "Running or walking on motorized belt for cardiovascular work."
+  },
+  {
+    "name": "Incline Treadmill",
+    "category": "Cardio",
+    "description": "Treadmill with elevation, increased intensity and glute work."
+  },
+  {
+    "name": "Decline Treadmill",
+    "category": "Cardio",
+    "description": "Downhill treadmill variation, reduces impact."
+  },
+  {
+    "name": "Stationary Bike",
+    "category": "Cardio",
+    "description": "Upright or recumbent bike, low-impact cardio."
+  },
+  {
+    "name": "Rowing Machine",
+    "category": "Cardio",
+    "description": "Full-body cardio, emphasizing back and legs."
+  },
+  {
+    "name": "Elliptical Trainer",
+    "category": "Cardio",
+    "description": "Low-impact cardiovascular machine, leg and arm movement."
+  },
+  {
+    "name": "Stair Climber",
+    "category": "Cardio",
+    "description": "Step machine, intense leg and cardiovascular work."
+  },
+  {
+    "name": "Jumping Rope",
+    "category": "Cardio",
+    "description": "Rope jumping for explosive cardio and footwork."
+  },
+  {
+    "name": "Battle Ropes",
+    "category": "Cardio",
+    "description": "Heavy ropes, alternate arm waves for cardio and power."
+  },
+  {
+    "name": "Burpees",
+    "category": "Cardio",
+    "description": "Squat to plank, push-up, jump up explosive full-body movement."
+  },
+  {
+    "name": "Mountain Climbers",
+    "category": "Cardio",
+    "description": "Plank position, alternating knee drive for core and cardio."
+  },
+  {
+    "name": "Rowing",
+    "category": "Cardio",
+    "description": "Water rowing for full-body cardiovascular challenge."
+  },
+  {
+    "name": "Swimming",
+    "category": "Cardio",
+    "description": "Low-impact full-body cardio in water."
+  },
+  {
+    "name": "Sprints",
+    "category": "Cardio",
+    "description": "High-intensity running for explosive power and cardio."
+  },
+  {
+    "name": "Sled Push",
+    "category": "Cardio",
+    "description": "Push weighted sled, intense leg and cardiovascular workout."
+  },
+  {
+    "name": "Sled Drag",
+    "category": "Cardio",
+    "description": "Drag weighted sled backward, glute and leg focus."
+  },
+  {
+    "name": "Farmer's Carry",
+    "category": "Cardio",
+    "description": "Carry heavy weight, walk for distance, grip and core work."
+  },
+  {
+    "name": "Sled Sprint",
+    "category": "Cardio",
+    "description": "Explosive sled push for power and speed development."
+  },
+  {
+    "name": "Box Jumps",
+    "category": "Cardio",
+    "description": "Jump onto elevated platform, explosive leg power."
+  },
+  {
+    "name": "Medicine Ball Push",
+    "category": "Cardio",
+    "description": "Push medicine ball into wall with power and force."
+  },
+  {
+    "name": "Kettlebell Swings",
+    "category": "Cardio",
+    "description": "Explosive hip hinge, kettlebell swing for power and cardio."
+  },
+  {
+    "name": "Kettlebell Snatches",
+    "category": "Cardio",
+    "description": "Single-arm kettlebell snatch, explosive full-body movement."
+  },
+  {
+    "name": "Assault Bike",
+    "category": "Cardio",
+    "description": "Fan bike providing resistance based on effort, high intensity."
+  },
+  {
+    "name": "TRX Suspended Trainer",
+    "category": "Cardio",
+    "description": "Bodyweight suspension training, variable difficulty cardio."
+  },
+  {
+    "name": "Incline Walk",
+    "category": "Cardio",
+    "description": "Walking on incline treadmill or hill for low-impact cardio."
+  },
+  {
+    "name": "Spin Bike",
+    "category": "Cardio",
+    "description": "High-resistance stationary bike for intense leg cardio."
+  }
+]
