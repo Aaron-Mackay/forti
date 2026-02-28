@@ -157,7 +157,7 @@ export function AiImportDialog({ open, onClose, onImportSuccess }: AiImportDialo
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={loading}
-          aria-label="Workout plan text"
+          inputProps={{ 'aria-label': 'Workout plan text' }}
         />
         {error && (
           <Alert severity="error" sx={{ mt: 2 }}>
@@ -179,7 +179,6 @@ export function AiImportDialog({ open, onClose, onImportSuccess }: AiImportDialo
           disabled={loading || !input.trim()}
           variant="contained"
           startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
-          aria-label={loading ? 'Importing plan…' : 'Import plan with AI'}
         >
           {loading ? 'Importing…' : 'Import'}
         </Button>
