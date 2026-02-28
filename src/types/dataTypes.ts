@@ -58,3 +58,38 @@ export const EXERCISE_EQUIPMENT = [
 ] as const;
 
 export type ExerciseEquipment = typeof EXERCISE_EQUIPMENT[number];
+
+export const EXERCISE_MUSCLES = [
+  'upper-traps',
+  'ant-delts',
+  'lat-delts',
+  'post-delts',
+  'clav-pec',
+  'sternal-pec',
+  'biceps',
+  'triceps',
+  'forearms',
+  'abs',
+  'obliques',
+  'mid-traps',
+  'lower-traps',
+  'lower-back',
+  'lats',
+  'adductors',
+  'quads',
+  'glutes',
+  'hamstrings',
+  'calves',
+] as const;
+
+export type ExerciseMuscle = typeof EXERCISE_MUSCLES[number];
+
+// Used for structural validation of exercises.json.
+// Equipment/muscle values are validated at runtime against the typed constants.
+export type SeedExercise = {
+  name: string;
+  category: string;
+  description: string;
+  equipment: string[];
+  muscles?: string[];
+};

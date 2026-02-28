@@ -2,6 +2,24 @@ import prisma from '../src/lib/prisma';
 import { BlockSubtype, EventType } from "@prisma/client";
 import { seedBobData } from './lib/bobSeedData';
 import exercisesData from './exercises.json';
+import { EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, SeedExercise } from '../src/types/dataTypes';
+
+const exercises = exercisesData satisfies SeedExercise[];
+
+function validateExercises(data: SeedExercise[]): void {
+  for (const ex of data) {
+    for (const eq of ex.equipment) {
+      if (!EXERCISE_EQUIPMENT.includes(eq as never)) {
+        throw new Error(`Invalid equipment "${eq}" in exercise "${ex.name}"`);
+      }
+    }
+    for (const muscle of ex.muscles ?? []) {
+      if (!EXERCISE_MUSCLES.includes(muscle as never)) {
+        throw new Error(`Invalid muscle "${muscle}" in exercise "${ex.name}"`);
+      }
+    }
+  }
+}
 
 function getRandomBetween(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -21,8 +39,9 @@ async function main() {
   `);
 
   // Seed Exercises from exercises.json
+  validateExercises(exercises);
   await prisma.exercise.createMany({
-    data: exercisesData,
+    data: exercises,
   });
 
   const allExercises = await prisma.exercise.findMany({ orderBy: { name: 'asc' } });

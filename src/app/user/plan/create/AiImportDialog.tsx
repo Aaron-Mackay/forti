@@ -66,7 +66,8 @@ function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPrisma): Pl
                   name: ex.exercise.name,
                   category: ex.exercise.category,
                   description: null,
-                  equipment: []
+                  equipment: [],
+                  muscles: [],
                 },
                 sets: ex.sets.map((set): SetPrisma => ({
                   id: nextId(),
