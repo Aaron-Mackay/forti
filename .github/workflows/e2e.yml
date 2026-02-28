@@ -13,9 +13,13 @@ concurrency:
 
 jobs:
   e2e:
-    name: Playwright E2E
+    name: Playwright E2E (shard ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     permissions:
       checks: write
       contents: read
@@ -78,13 +82,13 @@ jobs:
         run: npm run build
 
       - name: Run E2E tests
-        run: npx start-server-and-test start http://localhost:3000 'npx playwright test'
+        run: npx start-server-and-test start http://localhost:3000 'npx playwright test --shard=${{ matrix.shard }}/3'
 
       - name: Publish test results
         uses: dorny/test-reporter@v1
         if: always()
         with:
-          name: Playwright E2E Results
+          name: Playwright E2E Results (shard ${{ matrix.shard }}/3)
           path: test-results/junit.xml
           reporter: java-junit
           fail-on-error: 'false'
@@ -93,6 +97,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report
+          name: playwright-report-shard-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 7
