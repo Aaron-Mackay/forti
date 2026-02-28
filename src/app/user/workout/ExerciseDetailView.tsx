@@ -48,7 +48,6 @@ function ExerciseSlide({
   const [formCueOpen, setFormCueOpen] = useState(false);
 
   const hasFormCue = formCue.trim().length > 0;
-  console.log(ex)
 
   return (
     <Paper
@@ -65,14 +64,16 @@ function ExerciseSlide({
       <Typography variant="h6" align="center">
         {ex.exercise.name}
       </Typography>
-      <MuscleHighlight muscles={ex.exercise.muscles} exerciseId={ex.exerciseId}/>
       <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', m: 1, width: '100%'}}>
-        <Typography variant="subtitle1" gutterBottom>
-          Rest: {ex.restTime}
-        </Typography>
-        <Typography variant="subtitle1" gutterBottom>
-          Reps: {ex.repRange}
-        </Typography>
+        <Box>
+          <Typography variant="subtitle1" gutterBottom>
+            Rest: {ex.restTime}
+          </Typography>
+          <Typography variant="subtitle1" gutterBottom>
+            Reps: {ex.repRange}
+          </Typography>
+        </Box>
+        <MuscleHighlight muscles={ex.exercise.muscles} exerciseId={ex.exerciseId} size={40}/>
       </Box>
 
       {/* Form cues */}
