@@ -54,6 +54,16 @@ test.describe('Workout page', () => {
     await expect(page.getByText('Set').first()).toBeVisible();
   });
 
+  test('exercise detail shows anatomy diagram for exercises with muscles', async ({ page }) => {
+    await page.getByRole('button', { name: /Plan/i }).first().click();
+    await page.getByRole('button', { name: /Week/i }).first().click();
+    await page.getByRole('button', { name: /Workout/i }).first().click();
+    await page.getByRole('button', { name: 'Squat' }).click();
+
+    await expect(page.getByText('Set').first()).toBeVisible();
+    await expect(page.locator('[id^="anatomy-"]')).toBeVisible();
+  });
+
   test('back button in exercise detail returns to exercises list', async ({ page }) => {
     await page.getByRole('button', { name: /Plan/i }).first().click();
     await page.getByRole('button', { name: /Week/i }).first().click();
