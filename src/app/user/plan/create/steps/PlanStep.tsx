@@ -46,7 +46,6 @@ const PlanStep = ({weekCount, setWeekCount, onImportSuccess}: PlanStepProps) => 
         size="small"
         startIcon={<AutoAwesomeIcon />}
         onClick={() => setDialogOpen(true)}
-        aria-label="Import plan with AI"
       >
         Import with AI
       </Button>
