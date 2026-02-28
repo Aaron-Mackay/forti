@@ -18,7 +18,7 @@
     "category": "Back",
     "description": "Stand with feet hip-width apart, lift bar from ground to hips.",
     "equipment": ["barbell"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "hamstrings", "glutes", "lower-back"]
+    "muscles": ["upper-traps","mid-traps", "lower-traps", "hamstrings", "glutes", "lower-back"]
   },
   {
     "name": "Overhead Press",
@@ -287,18 +287,11 @@
     "muscles": ["quads", "glutes", "calves"]
   },
   {
-    "name": "Barbell Deadlift",
-    "category": "Back",
-    "description": "Stand with feet hip-width apart, lift bar from ground to hips.",
-    "equipment": ["barbell"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "hamstrings", "glutes", "lower-back"]
-  },
-  {
     "name": "Sumo Deadlift",
     "category": "Back",
     "description": "Wider stance, toes out, emphasis on glutes and adductors.",
     "equipment": ["barbell"],
-    "muscles": ["glutes", "adductors", "hamstrings", "lats", "lower-back"]
+    "muscles": ["upper-traps","mid-traps", "lower-traps", "glutes", "adductors", "hamstrings", "lats", "lower-back"]
   },
   {
     "name": "Romanian Deadlift (Back focus)",
@@ -312,77 +305,77 @@
     "category": "Back",
     "description": "Hexagonal bar deadlift, reduced strain on lower back.",
     "equipment": ["speciality bar"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "hamstrings", "glutes", "quads", "lower-back"]
+    "muscles": ["upper-traps", "lats", "mid-traps", "lower-traps", "hamstrings", "glutes", "quads", "lower-back"]
   },
   {
     "name": "Deficit Deadlift",
     "category": "Back",
     "description": "Stand on platform, increased range of motion for strength building.",
     "equipment": ["barbell"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "hamstrings", "glutes", "lower-back"]
+    "muscles": ["upper-traps", "lats", "mid-traps", "lower-traps", "hamstrings", "glutes", "lower-back"]
   },
   {
     "name": "Barbell Rows",
     "category": "Back",
     "description": "Bend at hips, pull bar to chest, explosive drive off floor.",
     "equipment": ["barbell"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "biceps"]
+    "muscles": ["post-delts","lats", "mid-traps", "lower-traps", "biceps"]
   },
   {
     "name": "Pendlay Rows",
     "category": "Back",
     "description": "Torso parallel to ground, pull bar to lower chest.",
     "equipment": ["barbell"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "biceps"]
+    "muscles": ["post-delts","lats", "mid-traps", "lower-traps", "biceps"]
   },
   {
     "name": "Incline Barbell Rows",
     "category": "Back",
     "description": "Upper body inclined, pull bar emphasizing upper back.",
     "equipment": ["barbell", "adjustable bench"],
-    "muscles": ["mid-traps", "lower-traps", "lats", "biceps"]
+    "muscles": ["post-delts","mid-traps", "lower-traps", "lats", "biceps"]
   },
   {
     "name": "Dumbbell Rows",
     "category": "Back",
     "description": "Single arm or alternating, row dumbbell to hip.",
     "equipment": ["dumbbell"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "biceps"]
+    "muscles": ["post-delts","lats", "mid-traps", "lower-traps", "biceps"]
   },
   {
     "name": "Single Arm Dumbbell Rows",
     "category": "Back",
     "description": "One knee down, row dumbbell for unilateral back work.",
     "equipment": ["dumbbell"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "biceps"]
+    "muscles": ["post-delts","lats", "mid-traps", "lower-traps", "biceps"]
   },
   {
     "name": "Barbell Bent-Over Rows",
     "category": "Back",
     "description": "Bent over position, pull barbell toward torso.",
     "equipment": ["barbell"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "biceps"]
+    "muscles": ["post-delts","lats", "mid-traps", "lower-traps", "biceps"]
   },
   {
     "name": "T-Bar Rows",
     "category": "Back",
     "description": "Machine or landmine variation, pull toward chest.",
     "equipment": ["speciality bar"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "biceps"]
+    "muscles": ["post-delts","lats", "mid-traps", "lower-traps", "biceps"]
   },
   {
     "name": "Seal Rows",
     "category": "Back",
     "description": "Chest on bench, row without hip drive, pure back.",
     "equipment": ["barbell", "adjustable bench"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "biceps"]
+    "muscles": ["post-delts","lats", "mid-traps", "lower-traps", "biceps"]
   },
   {
     "name": "Machine Rows",
     "category": "Back",
     "description": "Seated machine, pull handles toward body.",
     "equipment": ["machine"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "biceps"]
+    "muscles": ["post-delts","lats", "mid-traps", "lower-traps", "biceps"]
   },
   {
     "name": "Lat Pulldowns",
@@ -408,7 +401,7 @@
   {
     "name": "Reverse Grip Lat Pulldown",
     "category": "Back",
-    "description": "Underhand grip variation, different back activation pattern.",
+    "description": "Underhand grip variation, slightly different back activation pattern.",
     "equipment": ["cable", "machine"],
     "muscles": ["lats", "biceps"]
   },
@@ -466,28 +459,28 @@
     "category": "Back",
     "description": "Torso supported on incline, row without momentum.",
     "equipment": ["dumbbell", "adjustable bench"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "biceps"]
+    "muscles": ["post-delts","lats", "mid-traps", "lower-traps", "biceps"]
   },
   {
     "name": "Smith Machine Rows",
     "category": "Back",
     "description": "Guided barbell rows on smith machine.",
     "equipment": ["smith machine"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "biceps"]
+    "muscles": ["post-delts","lats", "mid-traps", "lower-traps", "biceps"]
   },
   {
     "name": "Cable Rows",
     "category": "Back",
     "description": "Seated cable machine, pull toward body.",
     "equipment": ["cable"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "biceps"]
+    "muscles": ["post-delts","lats", "mid-traps", "lower-traps", "biceps"]
   },
   {
     "name": "Hammer Strength Rows",
     "category": "Back",
     "description": "Plate-loaded machine, neutral grip rows.",
     "equipment": ["machine"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "biceps"]
+    "muscles": ["post-delts","lats", "mid-traps", "lower-traps", "biceps"]
   },
   {
     "name": "Back Extensions",

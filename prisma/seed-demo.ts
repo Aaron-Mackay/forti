@@ -13,6 +13,25 @@
 
 import prisma from '../src/lib/prisma';
 import { EXERCISE_DEFS, EXERCISE_DESCRIPTION, seedBobData } from './lib/bobSeedData';
+import {EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, SeedExercise} from "../src/types/dataTypes";
+import exercisesData from './exercises.json';
+
+const exercises = exercisesData satisfies SeedExercise[];
+
+function validateExercises(data: SeedExercise[]): void {
+  for (const ex of data) {
+    for (const eq of ex.equipment) {
+      if (!EXERCISE_EQUIPMENT.includes(eq as never)) {
+        throw new Error(`Invalid equipment "${eq}" in exercise "${ex.name}"`);
+      }
+    }
+    for (const muscle of ex.muscles ?? []) {
+      if (!EXERCISE_MUSCLES.includes(muscle as never)) {
+        throw new Error(`Invalid muscle "${muscle}" in exercise "${ex.name}"`);
+      }
+    }
+  }
+}
 
 async function main() {
   const dbUrl = process.env.DATABASE_URL ?? '';
@@ -20,14 +39,15 @@ async function main() {
   console.log(`🌱 Running demo seed against ${isLocal ? 'local' : 'remote (Neon)'} database…`);
 
   // Upsert exercises (global, safe to run at any time)
-  for (const ex of EXERCISE_DEFS) {
+  validateExercises(exercises);
+  for (const ex of exercises) {
     await prisma.exercise.upsert({
       where:  { name_category: { name: ex.name, category: ex.category } },
       update: {},
-      create: { ...ex, description: EXERCISE_DESCRIPTION },
+      create: { ...ex, description: ex.description ?? EXERCISE_DESCRIPTION },
     });
   }
-  console.log(`  ✓ Exercises upserted (${EXERCISE_DEFS.length})`);
+  console.log(`  ✓ Exercises upserted`);
 
   // Upsert Bob
   const bob = await prisma.user.upsert({

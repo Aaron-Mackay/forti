@@ -2,7 +2,7 @@ import prisma from '../src/lib/prisma';
 import { BlockSubtype, EventType } from "@prisma/client";
 import { seedBobData } from './lib/bobSeedData';
 import exercisesData from './exercises.json';
-import { EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, SeedExercise } from '../src/types/dataTypes';
+import { EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, SeedExercise } from '@/types/dataTypes';
 
 const exercises = exercisesData satisfies SeedExercise[];
 
