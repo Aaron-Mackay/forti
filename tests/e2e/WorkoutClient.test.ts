@@ -61,7 +61,7 @@ test.describe('Workout page', () => {
     await page.getByRole('button', { name: 'Squat' }).click();
 
     await expect(page.getByText('Set').first()).toBeVisible();
-    await expect(page.locator('[id^="anatomy-"]')).toBeVisible();
+    await expect(page.locator('[id^="anatomy-"]').first()).toBeVisible();
   });
 
   test('back button in exercise detail returns to exercises list', async ({ page }) => {

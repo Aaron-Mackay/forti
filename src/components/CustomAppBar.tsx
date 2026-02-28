@@ -32,7 +32,7 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AddIcon from "@mui/icons-material/Add";
 import SpecificPlan from '@mui/icons-material/InsertInvitation';
-import {signOut, useSession} from "next-auth/react";
+import {signOut} from "next-auth/react";
 
 const APPBAR_HEIGHT = 56;
 export const HEIGHT_EXC_APPBAR = `calc(100dvh - ${APPBAR_HEIGHT}px)`
@@ -48,7 +48,6 @@ export default function CustomAppBar(
   }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const { data: session } = useSession();
   const pathname = usePathname();
   const [planNestedOpen, setPlanNestedOpen] = useState(() => pathname.includes('/plan'))
   const [planCount, setPlanCount] = useState<number | null>(null);
@@ -87,26 +86,12 @@ export default function CustomAppBar(
     };
   }, [drawerOpen]);
 
-  // Step 2: Get session and user info
-
-
-  // Step 3: Fetch plan count when session is available
   useEffect(() => {
-    async function fetchPlanCount() {
-      if (session?.user?.id) {
-        try {
-          const res = await fetch(`/api/plans/count`);
-          if (res.ok) {
-            const data = await res.json();
-            setPlanCount(data.count);
-          }
-        } catch (_e) {
-          setPlanCount(null);
-        }
-      }
-    }
-    fetchPlanCount();
-  }, [session?.user?.id]);
+    fetch(`/api/plans/count`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => data && setPlanCount(data.count))
+      .catch(() => setPlanCount(null));
+  }, []);
 
   const ListLink = ({icon, text, href, disabled, nested}
                     : { icon: ReactNode, text: string, href: string, disabled?: boolean, nested?: boolean }) => {

@@ -250,6 +250,8 @@ tests/ToggleableEditableField.test.tsx
 import { test, expect } from './fixtures';
 ```
 
+**Playwright strict mode:** Playwright locators operate in strict mode by default — if a locator matches more than one element, the assertion throws a strict mode violation. When a locator might match multiple elements (e.g. the same component rendered in a Swiper/carousel with multiple slides), always narrow it: use `.first()`, `.last()`, `.nth(n)`, or a more specific selector. Never leave a locator that could ambiguously resolve to multiple elements.
+
 ---
 
 ## Linting Rules
