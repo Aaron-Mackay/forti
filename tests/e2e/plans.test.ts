@@ -6,48 +6,6 @@
  */
 import { test, expect } from './fixtures';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/** Minimal valid Anthropic API response shape for the tool-use path. */
-function makeAnthropicToolUseResponse(planName: string) {
-  return {
-    id: 'msg_mock',
-    type: 'message',
-    role: 'assistant',
-    content: [
-      {
-        type: 'tool_use',
-        id: 'tu_mock',
-        name: 'create_workout_plan',
-        input: {
-          name: planName,
-          weeks: [
-            {
-              workouts: [
-                {
-                  name: 'Push Day',
-                  exercises: [
-                    { name: 'Bench Press', category: 'Chest', repRange: '8-12', restTime: '90', sets: [{ weight: '80', reps: 8 }] },
-                    { name: 'OHP', category: 'Shoulders', repRange: '8-12', restTime: '90', sets: [{ reps: 10 }] },
-                  ],
-                },
-                {
-                  name: 'Pull Day',
-                  exercises: [
-                    { name: 'Barbell Row', category: 'Back', repRange: '8-12', restTime: '90', sets: [{ weight: '60', reps: 8 }] },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      },
-    ],
-    model: 'claude-opus-4-6',
-    stop_reason: 'tool_use',
-    usage: { input_tokens: 100, output_tokens: 200 },
-  };
-}
 
 test.describe('Plans list page', () => {
   test.beforeEach(async ({ page }) => {
