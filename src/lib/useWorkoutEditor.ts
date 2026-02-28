@@ -82,6 +82,7 @@ export type WorkoutEditorAction =
   exercises: Exercise[];
   category: string
 }
+  | { type: 'REPLACE_PLAN'; planId: number; plan: PlanPrisma }
 
 export type CreateUuid = () => number;
 
@@ -292,6 +293,14 @@ export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, 
       const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId: workoutExerciseId});
       if (!exercise) return userDataState;
       return userPlanMutators.updateExerciseInUser(userDataState, planId, weekId, workoutId, workoutExerciseId, exerciseName, exercises, category, createUuid)
+    }
+
+    case 'REPLACE_PLAN': {
+      const { planId, plan } = action;
+      return {
+        ...userDataState,
+        plans: userDataState.plans.map((p) => (p.id === planId ? plan : p)),
+      };
     }
 
     default:

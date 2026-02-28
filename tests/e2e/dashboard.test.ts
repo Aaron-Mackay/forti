@@ -40,9 +40,9 @@ test.describe('Dashboard', () => {
       await expect(page.getByText(/· Week 2/)).toBeVisible();
     });
 
-    test('Go button links to the workout page', async ({ page }) => {
+    test('Go button links to the workout page with a workoutId param', async ({ page }) => {
       const goLink = page.getByRole('link', { name: 'Go' });
-      await expect(goLink).toHaveAttribute('href', '/user/workout');
+      await expect(goLink).toHaveAttribute('href', /^\/user\/workout\?workoutId=\d+$/);
     });
 
     test('Go button is not clipped by card overflow', async ({ page }) => {
