@@ -157,7 +157,7 @@ export function AiImportDialog({ open, onClose, onImportSuccess }: AiImportDialo
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={loading}
-          inputProps={{ 'aria-label': 'Workout plan text' }}
+          slotProps={{ htmlInput: { 'aria-label': 'Workout plan text' } }}
         />
         {error && (
           <Alert severity="error" sx={{ mt: 2 }}>
