@@ -61,55 +61,54 @@ function ExerciseSlide({
         alignItems: 'center',
       }}
     >
-      <Typography variant="h6" align="center">
-        {ex.exercise.name}
-      </Typography>
-      <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', m: 1, width: '100%'}}>
-        <Box>
+      {/* Header row: name/rest/reps/notes toggle on left, anatomy on right */}
+      <Box sx={{display: 'flex', alignItems: 'stretch', width: '100%', mb: 1}}>
+        <Box sx={{flex: 1}}>
+          <Typography variant="h6">
+            {ex.exercise.name}
+          </Typography>
           <Typography variant="subtitle1" gutterBottom>
             Rest: {ex.restTime}
           </Typography>
           <Typography variant="subtitle1" gutterBottom>
             Reps: {ex.repRange}
           </Typography>
+          <Box
+            sx={{display: 'flex', alignItems: 'center', cursor: 'pointer'}}
+            onClick={() => setFormCueOpen(o => !o)}
+          >
+            <IconButton size="small" color={hasFormCue ? 'primary' : 'default'} sx={{mr: 0.5}}>
+              {formCueOpen || hasFormCue ? <InfoIcon fontSize="small"/> : <InfoOutlinedIcon fontSize="small"/>}
+            </IconButton>
+            <Typography variant="caption" color={hasFormCue ? 'primary' : 'text.secondary'}>
+              Your exercise notes
+            </Typography>
+          </Box>
         </Box>
-        <MuscleHighlight muscles={ex.exercise.muscles} exerciseId={ex.exerciseId} size={40}/>
+        <MuscleHighlight muscles={ex.exercise.muscles} exerciseId={ex.exerciseId}/>
       </Box>
 
-      {/* Form cues */}
-      <Box sx={{width: '100%', mb: 1}}>
-        <Box
-          sx={{display: 'flex', alignItems: 'center', cursor: 'pointer'}}
-          onClick={() => setFormCueOpen(o => !o)}
-        >
-          <IconButton size="small" color={hasFormCue ? 'primary' : 'default'} sx={{mr: 0.5}}>
-            {formCueOpen || hasFormCue ? <InfoIcon fontSize="small"/> : <InfoOutlinedIcon fontSize="small"/>}
-          </IconButton>
-          <Typography variant="caption" color={hasFormCue ? 'primary' : 'text.secondary'}>
-            Your exercise notes
-          </Typography>
-        </Box>
-        <Collapse in={formCueOpen}>
-          <TextField
-            multiline
-            fullWidth
-            minRows={2}
-            maxRows={4}
-            placeholder="Add form cues and notes for this exercise..."
-            value={formCue}
-            onChange={e => setFormCue(e.target.value)}
-            onBlur={() => onFormCueBlur(ex.exerciseId, formCue)}
-            size="small"
-            sx={{
-              mt: 0.5,
-              '& .MuiOutlinedInput-root': {
-                borderColor: 'warning.main',
-                '&.Mui-focused fieldset': {borderColor: 'warning.main'},
-              },
-            }}
-          />
-        </Collapse>
-      </Box>
+      {/* Form cue textarea */}
+      <Collapse in={formCueOpen} sx={{width: '100%', mb: 1}}>
+        <TextField
+          multiline
+          fullWidth
+          minRows={2}
+          maxRows={4}
+          placeholder="Add form cues and notes for this exercise..."
+          value={formCue}
+          onChange={e => setFormCue(e.target.value)}
+          onBlur={() => onFormCueBlur(ex.exerciseId, formCue)}
+          size="small"
+          sx={{
+            mt: 0.5,
+            '& .MuiOutlinedInput-root': {
+              borderColor: 'warning.main',
+              '&.Mui-focused fieldset': {borderColor: 'warning.main'},
+            },
+          }}
+        />
+      </Collapse>
 
       <List sx={{width: '100%'}}>
         {ex.sets.length === 0 && (

@@ -2,7 +2,7 @@ import {Box} from '@mui/material';
 import FrontBody from './front.svg';
 import BackBody from './back.svg';
 
-export default function MuscleHighlight({muscles, exerciseId, size = 80}: {muscles: string[]; exerciseId: number; size?: number}) {
+export default function MuscleHighlight({muscles, exerciseId}: {muscles: string[]; exerciseId: number}) {
   if (muscles.length === 0) return null;
 
   const id = `anatomy-${exerciseId}`;
@@ -11,10 +11,10 @@ export default function MuscleHighlight({muscles, exerciseId, size = 80}: {muscl
     .join('\n');
 
   return (
-    <Box id={id} sx={{display: 'flex', gap: 0.5}}>
+    <Box id={id} sx={{display: 'flex', gap: 0.5, height: '100%'}}>
       <style>{css}</style>
-      <Box sx={{width: size}}><FrontBody/></Box>
-      <Box sx={{width: size}}><BackBody/></Box>
+      <FrontBody style={{height: '100%', width: 'auto'}}/>
+      <BackBody style={{height: '100%', width: 'auto'}}/>
     </Box>
   );
 }
