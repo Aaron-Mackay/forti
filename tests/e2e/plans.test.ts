@@ -190,6 +190,9 @@ test.describe('AI plan import (Create Plan page)', () => {
     await expect(page.getByRole('dialog')).not.toBeVisible();
     await expect(page.getByText(/step 4/i)).toBeVisible();
     await expect(page.getByText('AI Push Pull Plan')).toBeVisible();
+
+    // Exercises live inside collapsed accordions — expand the first workout to verify
+    await page.getByRole('button', { name: 'Push Day' }).click();
     await expect(page.getByText('Bench Press')).toBeVisible();
   });
 
