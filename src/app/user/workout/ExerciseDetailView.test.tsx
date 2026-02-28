@@ -44,7 +44,7 @@ function buildWorkout(): WorkoutPrisma {
         repRange: '8-12',
         restTime: '90s',
         notes: '',
-        exercise: {id: 100, name: 'Bench Press', category: 'Chest', description: null},
+        exercise: {id: 100, name: 'Bench Press', category: 'Chest', description: null, equipment: []},
         sets: [
           {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: '100'},
           {id: 2, workoutExerciseId: 10, order: 2, reps: 6, weight: '90'},
