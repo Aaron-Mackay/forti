@@ -145,6 +145,7 @@ model Exercise {
   name             String
   category         String?
   description      String?
+  equipment        String[]           @default([])
   workoutLinks     WorkoutExercise[]
   UserExerciseNote UserExerciseNote[]
 

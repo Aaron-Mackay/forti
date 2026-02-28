@@ -29,7 +29,8 @@ export default function PlanBuilderWithContext({userData, allExercises}: {
       category: "none",
       name: "",
       id: PLACEHOLDER_ID,
-      description: null
+      description: null,
+      equipment: []
     },
     exerciseId: PLACEHOLDER_ID,
     repRange: "",

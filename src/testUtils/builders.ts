@@ -170,6 +170,7 @@ export class ExerciseBuilder {
         name: "Bench Press",
         category: "Chest",
         description: null,
+        equipment: [],
       },
       sets: [],
     };

@@ -83,6 +83,7 @@ export function updateExerciseInUser(
     name: exerciseName,
     id: createUuid(),
     description: null,
+    equipment: [],
   };
 
   return withExercise(user, planId, weekId, workoutId, workoutExerciseId, exercise => ({
@@ -506,4 +507,5 @@ const dummyExercise: Exercise = {
   category: "none",
   name: "",
   description: null,
+  equipment: [],
 };

@@ -95,7 +95,7 @@ describe('API functions', () => {
       const mockResponse = { success: true };
       (fetchWrapper.fetchJson as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
-      const userData = { id: 1, name: 'Test User' } as UserPrisma;
+      const userData = { id: 1, name: 'Test User' } as unknown as UserPrisma;
       const result = await clientApi.saveUserWorkoutData(userData);
       expect(fetchWrapper.fetchJson).toHaveBeenCalledWith('/api/saveUserWorkoutData', {
         method: 'POST',
