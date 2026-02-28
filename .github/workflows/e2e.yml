@@ -64,8 +64,15 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
+      - name: Build Next.js app
+        # Use a production build so Next.js serves routes via webpack, not
+        # Turbopack. Turbopack has a known issue in Next.js 16 where the
+        # [...nextauth] catch-all API route returns 404 in dev mode, causing
+        # every E2E test to fail at the auth-setup step.
+        run: npm run build
+
       - name: Run E2E tests
-        run: npm run test:e2e
+        run: npx start-server-and-test start http://localhost:3000 'npx playwright test'
 
       - name: Publish test results
         uses: dorny/test-reporter@v1

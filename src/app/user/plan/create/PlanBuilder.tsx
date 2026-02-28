@@ -45,10 +45,15 @@ export const PlanBuilder = () => {
     }
   }
 
+  const handleImportSuccess = (importedWeekCount: string) => {
+    setWeekCount(importedWeekCount)
+    setActiveStep(3) // jump to Summary so the user can review before saving
+  }
+
   const steps = [
     {
       title: 'Plan',
-      component: <PlanStep setWeekCount={setWeekCount} weekCount={weekCount}/>,
+      component: <PlanStep setWeekCount={setWeekCount} weekCount={weekCount} onImportSuccess={handleImportSuccess}/>,
     },
     {
       title: 'Week',

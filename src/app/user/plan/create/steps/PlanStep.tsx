@@ -1,14 +1,18 @@
-import React from 'react';
-import {Box, Divider, TextField, Typography} from '@mui/material';
+import React, { useState } from 'react';
+import {Box, Button, Divider, TextField, Typography} from '@mui/material';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import {useNewPlan} from "@/app/user/plan/create/useNewPlan";
+import {AiImportDialog} from "@/app/user/plan/create/AiImportDialog";
 
 type PlanStepProps = {
   weekCount: string,
   setWeekCount: (val: string) => void
+  onImportSuccess: (weekCount: string) => void
 }
 
-const PlanStep = ({weekCount, setWeekCount}: PlanStepProps) => {
+const PlanStep = ({weekCount, setWeekCount, onImportSuccess}: PlanStepProps) => {
   const {statePlan, dispatch} = useNewPlan()
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   return <Box>
     <Typography variant="h6" sx={{
@@ -36,6 +40,24 @@ const PlanStep = ({weekCount, setWeekCount}: PlanStepProps) => {
         }
       />
     </Box>
+    <Box sx={{display: 'flex', justifyContent: 'center', mt: 2}}>
+      <Button
+        variant="outlined"
+        size="small"
+        startIcon={<AutoAwesomeIcon />}
+        onClick={() => setDialogOpen(true)}
+      >
+        Import with AI
+      </Button>
+    </Box>
+    <AiImportDialog
+      open={dialogOpen}
+      onClose={() => setDialogOpen(false)}
+      onImportSuccess={(wc) => {
+        setDialogOpen(false)
+        onImportSuccess(wc)
+      }}
+    />
     <Divider sx={{my: 2}}/>
     <Typography variant="h6" sx={{
       mb: 1,
