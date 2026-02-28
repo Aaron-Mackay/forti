@@ -18,7 +18,7 @@
     "category": "Back",
     "description": "Stand with feet hip-width apart, lift bar from ground to hips.",
     "equipment": ["barbell"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "hamstrings", "glutes"]
+    "muscles": ["lats", "mid-traps", "lower-traps", "hamstrings", "glutes", "lower-back"]
   },
   {
     "name": "Overhead Press",
@@ -270,7 +270,7 @@
     "category": "Legs",
     "description": "Hinge at hips, minimal knee bend, feel hamstring stretch.",
     "equipment": ["barbell"],
-    "muscles": ["hamstrings", "glutes"]
+    "muscles": ["hamstrings", "glutes", "lower-back"]
   },
   {
     "name": "Leg Press Machine Squat",
@@ -291,35 +291,35 @@
     "category": "Back",
     "description": "Stand with feet hip-width apart, lift bar from ground to hips.",
     "equipment": ["barbell"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "hamstrings", "glutes"]
+    "muscles": ["lats", "mid-traps", "lower-traps", "hamstrings", "glutes", "lower-back"]
   },
   {
     "name": "Sumo Deadlift",
     "category": "Back",
     "description": "Wider stance, toes out, emphasis on glutes and adductors.",
     "equipment": ["barbell"],
-    "muscles": ["glutes", "adductors", "hamstrings", "lats"]
+    "muscles": ["glutes", "adductors", "hamstrings", "lats", "lower-back"]
   },
   {
     "name": "Romanian Deadlift (Back focus)",
     "category": "Back",
     "description": "Hip hinge movement emphasizing hamstring and back extensors.",
     "equipment": ["barbell"],
-    "muscles": ["hamstrings", "glutes", "lower-traps"]
+    "muscles": ["hamstrings", "glutes", "lower-traps", "lower-back"]
   },
   {
     "name": "Trap Bar Deadlift",
     "category": "Back",
     "description": "Hexagonal bar deadlift, reduced strain on lower back.",
     "equipment": ["speciality bar"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "hamstrings", "glutes", "quads"]
+    "muscles": ["lats", "mid-traps", "lower-traps", "hamstrings", "glutes", "quads", "lower-back"]
   },
   {
     "name": "Deficit Deadlift",
     "category": "Back",
     "description": "Stand on platform, increased range of motion for strength building.",
     "equipment": ["barbell"],
-    "muscles": ["lats", "mid-traps", "lower-traps", "hamstrings", "glutes"]
+    "muscles": ["lats", "mid-traps", "lower-traps", "hamstrings", "glutes", "lower-back"]
   },
   {
     "name": "Barbell Rows",
@@ -494,14 +494,14 @@
     "category": "Back",
     "description": "Hyperextension bench, extend lower back, target erectors.",
     "equipment": ["machine"],
-    "muscles": ["glutes", "hamstrings"]
+    "muscles": ["glutes", "hamstrings", "lower-back"]
   },
   {
     "name": "Weighted Back Extensions",
     "category": "Back",
     "description": "Back extension holding weight for increased resistance.",
     "equipment": ["machine"],
-    "muscles": ["glutes", "hamstrings"]
+    "muscles": ["glutes", "hamstrings", "lower-back"]
   },
   {
     "name": "Dumbbell Pullover",
