@@ -27,6 +27,7 @@ import {SetPrisma, WorkoutExercisePrisma, WorkoutPrisma} from '@/types/dataTypes
 import {UserExerciseNote} from '@prisma/client';
 import Stopwatch from "./Stopwatch";
 import CustomAppBar from "@/components/CustomAppBar";
+import MuscleHighlight from "@/components/MuscleHighlight";
 
 type PreviousSet = {weight: string | null; reps: number | null; order: number};
 
@@ -47,6 +48,7 @@ function ExerciseSlide({
   const [formCueOpen, setFormCueOpen] = useState(false);
 
   const hasFormCue = formCue.trim().length > 0;
+  console.log(ex)
 
   return (
     <Paper
@@ -63,6 +65,7 @@ function ExerciseSlide({
       <Typography variant="h6" align="center">
         {ex.exercise.name}
       </Typography>
+      <MuscleHighlight muscles={ex.exercise.muscles} exerciseId={ex.exerciseId}/>
       <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', m: 1, width: '100%'}}>
         <Typography variant="subtitle1" gutterBottom>
           Rest: {ex.restTime}

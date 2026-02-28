@@ -16,6 +16,10 @@ vi.mock('swiper/react', () => ({
 vi.mock('swiper/modules', () => ({Pagination: {}}));
 vi.mock('swiper/css', () => ({}));
 vi.mock('swiper/css/pagination', () => ({}));
+vi.mock('@/components/MuscleHighlight', () => ({
+  default: ({muscles, exerciseId}: {muscles: string[]; exerciseId: number}) =>
+    muscles.length > 0 ? <div data-testid={`anatomy-${exerciseId}`}/> : null,
+}));
 
 const stopwatchProps = {
   stopwatchIsRunning: false,
@@ -149,5 +153,17 @@ describe('ExerciseDetailView', () => {
       expect(fetch).toHaveBeenCalled();
     });
     expect(screen.queryByText(/last:/i)).not.toBeInTheDocument();
+  });
+
+  it('renders the anatomy diagram when the exercise has muscles', () => {
+    const workout = buildWorkout();
+    workout.exercises[0].exercise.muscles = ['sternal-pec', 'triceps'];
+    render(<ExerciseDetailView {...defaultProps} workout={workout}/>);
+    expect(screen.getByTestId('anatomy-100')).toBeInTheDocument();
+  });
+
+  it('does not render the anatomy diagram when the exercise has no muscles', () => {
+    render(<ExerciseDetailView {...defaultProps}/>);
+    expect(screen.queryByTestId('anatomy-100')).not.toBeInTheDocument();
   });
 });
