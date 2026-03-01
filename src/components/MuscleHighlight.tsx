@@ -2,8 +2,8 @@ import {Box} from '@mui/material';
 import FrontBody from './front.svg';
 import BackBody from './back.svg';
 
-export default function MuscleHighlight({muscles, exerciseId}: {muscles: string[]; exerciseId: number}) {
-  if (muscles.length === 0) return null;
+export default function MuscleHighlight({muscles, exerciseId, alwaysShow}: {muscles: string[]; exerciseId: number; alwaysShow?: boolean}) {
+  if (muscles.length === 0 && !alwaysShow) return null;
 
   const id = `anatomy-${exerciseId}`;
   const css = muscles
