@@ -180,6 +180,63 @@ describe('POST /api/plan/ai-import', () => {
       expect(body.error).toMatch(/parse/i);
     });
 
+    it('includes parseIssues in the response when Zod validation fails', async () => {
+      mockMessagesCreate.mockResolvedValue(
+        makeToolUseResponse({ name: '', weeks: [] }),
+      );
+
+      const req = makeRequest({ input: 'some text' });
+      const res = await POST(req);
+      const body = await res.json();
+
+      expect(Array.isArray(body.parseIssues)).toBe(true);
+      expect(body.parseIssues.length).toBeGreaterThan(0);
+    });
+
+    it('formats a flat path issue as "fieldName: message"', async () => {
+      mockMessagesCreate.mockResolvedValue(
+        makeToolUseResponse({ name: '', weeks: [{ workouts: [] }] }), // name is empty string
+      );
+
+      const req = makeRequest({ input: 'some text' });
+      const res = await POST(req);
+      const body = await res.json();
+
+      const nameIssue = (body.parseIssues as string[]).find((s: string) => s.startsWith('name:'));
+      expect(nameIssue).toBeDefined();
+      expect(nameIssue).toMatch(/name:.*character/i);
+    });
+
+    it('formats a nested path issue with bracket notation for indices', async () => {
+      mockMessagesCreate.mockResolvedValue(
+        makeToolUseResponse({
+          name: 'Plan',
+          weeks: [{ workouts: [{ name: 'Day 1', exercises: [{ name: '', sets: [] }] }] }],
+        }),
+      );
+
+      const req = makeRequest({ input: 'some text' });
+      const res = await POST(req);
+      const body = await res.json();
+
+      const nestedIssue = (body.parseIssues as string[]).find((s: string) =>
+        s.includes('weeks[0]'),
+      );
+      expect(nestedIssue).toBeDefined();
+      expect(nestedIssue).toMatch(/weeks\[0\]\.workouts\[0\]\.exercises\[0\]\.name/);
+    });
+
+    it('caps parseIssues at 5 entries even when more issues exist', async () => {
+      // Provide a completely null input — Zod will generate many issues
+      mockMessagesCreate.mockResolvedValue(makeToolUseResponse(null));
+
+      const req = makeRequest({ input: 'some text' });
+      const res = await POST(req);
+      const body = await res.json();
+
+      expect((body.parseIssues as string[]).length).toBeLessThanOrEqual(5);
+    });
+
     it('returns 503 when Anthropic returns 429 rate-limit error', async () => {
       const { default: Anthropic } = await import('@anthropic-ai/sdk');
       mockMessagesCreate.mockRejectedValue(new Anthropic.APIError(429, 'rate limited'));

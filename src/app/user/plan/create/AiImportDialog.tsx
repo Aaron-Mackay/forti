@@ -98,6 +98,7 @@ export function AiImportDialog({ open, onClose, onImportSuccess }: AiImportDialo
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [parseIssues, setParseIssues] = useState<string[]>([]);
 
   const { dispatch } = useWorkoutEditorContext();
   const { statePlan } = useNewPlan();
@@ -105,6 +106,7 @@ export function AiImportDialog({ open, onClose, onImportSuccess }: AiImportDialo
   const handleClose = () => {
     if (loading) return;
     setError(null);
+    setParseIssues([]);
     onClose();
   };
 
@@ -119,10 +121,11 @@ export function AiImportDialog({ open, onClose, onImportSuccess }: AiImportDialo
         body: JSON.stringify({ input }),
       });
 
-      const data: { plan?: ParsedPlan; error?: string } = await res.json();
+      const data: { plan?: ParsedPlan; error?: string; parseIssues?: string[] } = await res.json();
 
       if (!res.ok || !data.plan) {
         setError(data.error ?? 'Something went wrong. Please try again.');
+        setParseIssues(data.parseIssues ?? []);
         return;
       }
 
@@ -130,6 +133,7 @@ export function AiImportDialog({ open, onClose, onImportSuccess }: AiImportDialo
       dispatch({ type: 'REPLACE_PLAN', planId: PLACEHOLDER_ID, plan: planPrisma });
 
       setInput('');
+      setParseIssues([]);
       onClose();
       onImportSuccess(planPrisma.weeks.length.toString());
     } catch {
@@ -165,6 +169,15 @@ export function AiImportDialog({ open, onClose, onImportSuccess }: AiImportDialo
           <Alert severity="error" sx={{ mt: 2 }}>
             <Box>
               <Typography variant="body2">{error}</Typography>
+              {parseIssues.length > 0 && (
+                <Box component="ul" sx={{ mt: 1, mb: 0, pl: 2 }}>
+                  {parseIssues.map((issue, i) => (
+                    <Typography key={i} component="li" variant="body2">
+                      {issue}
+                    </Typography>
+                  ))}
+                </Box>
+              )}
               <Typography variant="body2" sx={{ mt: 0.5 }} color="text.secondary">
                 You can still build the plan manually using the form.
               </Typography>

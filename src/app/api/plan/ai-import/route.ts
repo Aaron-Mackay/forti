@@ -7,7 +7,7 @@ const MAX_INPUT_BYTES = 50_000; // 50 KB — generous for any realistic workout 
 
 export type AiImportResponse =
   | { plan: ReturnType<typeof parseAiPlanResponse> }
-  | { error: string };
+  | { error: string; parseIssues?: string[] };
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -65,8 +65,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   } catch (err) {
     if (err instanceof AiParseError) {
       console.error('AI plan parse error:', err.message, err.issues);
+      const parseIssues = err.issues.slice(0, 5).map((issue) => {
+        const path = issue.path.reduce<string>((acc, segment, i) => {
+          if (typeof segment === 'number') return `${acc}[${segment}]`;
+          return i === 0 ? String(segment) : `${acc}.${String(segment)}`;
+        }, '');
+        return path ? `${path}: ${issue.message}` : issue.message;
+      });
       return NextResponse.json(
-        { error: 'Could not parse the plan structure returned by AI' },
+        { error: 'Could not parse the plan structure returned by AI', parseIssues },
         { status: 422 },
       );
     }
