@@ -10,6 +10,10 @@ import ExerciseCard from './ExerciseCard';
 import {AddExerciseForm} from './AddExerciseForm';
 import CustomAppBar, {HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar';
 
+function toTitleCase(str: string) {
+  return str.split(/[-\s]+/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
+
 export default function ExercisesClient({
   initialExercises,
   categories,
@@ -60,18 +64,22 @@ export default function ExercisesClient({
         />
         <Autocomplete
           multiple
+          disableCloseOnSelect
           options={[...EXERCISE_MUSCLES]}
           value={selectedMuscles}
-          onChange={(_e, val: ExerciseMuscle[]) => setSelectedMuscles(val)}
+          onChange={(_e, val) => setSelectedMuscles(val as ExerciseMuscle[])}
+          getOptionLabel={toTitleCase}
           renderInput={params => <TextField {...params} label="Muscles" size="small"/>}
           sx={{flex: '1 1 250px'}}
           size="small"
         />
         <Autocomplete
           multiple
+          disableCloseOnSelect
           options={[...EXERCISE_EQUIPMENT]}
           value={selectedEquipment}
-          onChange={(_e, val: ExerciseEquipment[]) => setSelectedEquipment(val)}
+          onChange={(_e, val) => setSelectedEquipment(val as ExerciseEquipment[])}
+          getOptionLabel={toTitleCase}
           renderInput={params => <TextField {...params} label="Equipment" size="small"/>}
           sx={{flex: '1 1 250px'}}
           size="small"

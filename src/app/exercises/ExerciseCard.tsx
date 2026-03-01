@@ -5,7 +5,7 @@ import {Box, Card, CardContent, Chip, Typography} from '@mui/material';
 import MuscleHighlight from '@/components/MuscleHighlight';
 
 function toTitleCase(str: string) {
-  return str.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  return str.split(/[-\s]+/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
 export default function ExerciseCard({exercise}: {exercise: Exercise}) {
@@ -37,7 +37,7 @@ export default function ExerciseCard({exercise}: {exercise: Exercise}) {
         {exercise.equipment.length > 0 && (
           <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5}}>
             {exercise.equipment.map(eq => (
-              <Chip key={eq} label={eq} size="small" sx={{fontSize: '0.7rem'}}/>
+              <Chip key={eq} label={toTitleCase(eq)} size="small" sx={{fontSize: '0.7rem'}}/>
             ))}
           </Box>
         )}
