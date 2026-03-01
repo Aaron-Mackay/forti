@@ -8,6 +8,7 @@ import {useRouter} from 'next/navigation';
 import {EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, ExerciseEquipment, ExerciseMuscle} from '@/types/dataTypes';
 import ExerciseCard from './ExerciseCard';
 import {AddExerciseForm} from './AddExerciseForm';
+import CustomAppBar, {HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar';
 
 export default function ExercisesClient({
   initialExercises,
@@ -37,10 +38,11 @@ export default function ExercisesClient({
   };
 
   return (
-    <Box sx={{p: {xs: 2, sm: 3}}}>
+    <>
+      <CustomAppBar title="Exercises"/>
+      <Box sx={{height: HEIGHT_EXC_APPBAR, overflowY: 'auto', p: {xs: 2, sm: 3}}}>
       {/* Header */}
-      <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3}}>
-        <Typography variant="h4">Exercises</Typography>
+      <Box sx={{display: 'flex', justifyContent: 'flex-end', mb: 3}}>
         <Button variant="contained" startIcon={<AddIcon/>} onClick={() => setAddDialogOpen(true)}>
           Add Exercise
         </Button>
@@ -106,6 +108,7 @@ export default function ExercisesClient({
         onExerciseAdded={handleExerciseAdded}
         existingCategories={categories}
       />
-    </Box>
+      </Box>
+    </>
   );
 }

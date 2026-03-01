@@ -132,6 +132,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, existingCategor
               </Typography>
               <Autocomplete
                 multiple
+                disableCloseOnSelect
                 options={[...EXERCISE_EQUIPMENT]}
                 value={equipment}
                 onChange={(_e, val: ExerciseEquipment[]) => setEquipment(val)}
@@ -152,6 +153,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, existingCategor
               </Typography>
               <Autocomplete
                 multiple
+                disableCloseOnSelect
                 options={[...EXERCISE_MUSCLES]}
                 value={muscles}
                 onChange={(_e, val: ExerciseMuscle[]) => setMuscles(val)}
