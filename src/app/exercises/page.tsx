@@ -1,36 +1,9 @@
-import React from "react";
-import {getExercises} from "@lib/api";
-import { AddExerciseForm } from "./AddExerciseForm";
+import React from 'react';
+import {getExercises} from '@lib/api';
+import ExercisesClient from './ExercisesClient';
 
-export default async function ExercisesPage ()  {
-  const exercises = await getExercises()
-
-  return (
-    <div className="container mt-4">
-      <h1>All Exercises</h1>
-
-      <AddExerciseForm />
-
-      {(
-        <table className="table table-striped mt-3">
-          <thead>
-          <tr>
-            <th>Name</th>
-            <th>Category</th>
-            <th>Description</th>
-          </tr>
-          </thead>
-          <tbody>
-          {exercises.map((exercise) => (
-            <tr key={exercise.id}>
-              <td>{exercise.name}</td>
-              <td>{exercise.category || "-"}</td>
-              <td>{exercise.description || "-"}</td>
-            </tr>
-          ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  );
+export default async function ExercisesPage() {
+  const exercises = await getExercises();
+  const categories = [...new Set(exercises.map(e => e.category).filter(Boolean))] as string[];
+  return <ExercisesClient initialExercises={exercises} categories={categories} />;
 }
