@@ -4,19 +4,27 @@ import {Exercise} from '@prisma/client';
 import {Box, Card, CardContent, Chip, Typography} from '@mui/material';
 import MuscleHighlight from '@/components/MuscleHighlight';
 
+function toTitleCase(str: string) {
+  return str.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
+
 export default function ExerciseCard({exercise}: {exercise: Exercise}) {
   return (
     <Card variant="outlined" sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
       <CardContent sx={{flex: 1, display: 'flex', flexDirection: 'column', gap: 1}}>
-        {/* Name + category */}
-        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1}}>
-          <Typography variant="subtitle1" sx={{fontWeight: 600, flex: 1, lineHeight: 1.3}}>
-            {exercise.name}
-          </Typography>
-          {exercise.category && (
-            <Chip label={exercise.category} size="small" color="primary" variant="outlined" sx={{flexShrink: 0}}/>
-          )}
-        </Box>
+        {/* Name */}
+        <Typography variant="subtitle1" sx={{fontWeight: 600, lineHeight: 1.3}}>
+          {exercise.name}
+        </Typography>
+
+        {/* Muscle chips */}
+        {exercise.muscles.length > 0 && (
+          <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5}}>
+            {exercise.muscles.map(m => (
+              <Chip key={m} label={toTitleCase(m)} size="small" color="primary" variant="outlined" sx={{fontSize: '0.7rem'}}/>
+            ))}
+          </Box>
+        )}
 
         {/* Anatomy diagram */}
         {exercise.muscles.length > 0 && (
