@@ -4,6 +4,5 @@ import ExercisesClient from './ExercisesClient';
 
 export default async function ExercisesPage() {
   const exercises = await getExercises();
-  const categories = [...new Set(exercises.map(e => e.category).filter(Boolean))] as string[];
-  return <ExercisesClient initialExercises={exercises} categories={categories} />;
+  return <ExercisesClient initialExercises={exercises} />;
 }

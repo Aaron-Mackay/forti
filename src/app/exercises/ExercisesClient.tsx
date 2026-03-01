@@ -16,10 +16,8 @@ function toTitleCase(str: string) {
 
 export default function ExercisesClient({
   initialExercises,
-  categories,
 }: {
   initialExercises: Exercise[];
-  categories: string[];
 }) {
   const router = useRouter();
   const [searchText, setSearchText] = useState('');
@@ -114,7 +112,6 @@ export default function ExercisesClient({
         open={addDialogOpen}
         onClose={() => setAddDialogOpen(false)}
         onExerciseAdded={handleExerciseAdded}
-        existingCategories={categories}
       />
       </Box>
     </>

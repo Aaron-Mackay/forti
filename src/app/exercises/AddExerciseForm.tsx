@@ -21,12 +21,10 @@ interface AddExerciseFormProps {
   open: boolean;
   onClose: () => void;
   onExerciseAdded?: () => void;
-  existingCategories: string[];
 }
 
-export function AddExerciseForm({open, onClose, onExerciseAdded, existingCategories}: AddExerciseFormProps) {
+export function AddExerciseForm({open, onClose, onExerciseAdded}: AddExerciseFormProps) {
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [equipment, setEquipment] = useState<ExerciseEquipment[]>([]);
   const [muscles, setMuscles] = useState<ExerciseMuscle[]>([]);
@@ -38,7 +36,6 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, existingCategor
   const handleClose = () => {
     if (loading) return;
     setName('');
-    setCategory(null);
     setDescription('');
     setEquipment([]);
     setMuscles([]);
@@ -62,7 +59,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, existingCategor
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           name: name.trim(),
-          category: category || null,
+          category: null,
           description: description.trim() || null,
           equipment,
           muscles,
@@ -72,7 +69,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, existingCategor
       if (!response.ok) {
         const errorData = await response.json();
         if (response.status === 409) {
-          setError('An exercise with this name and category already exists');
+          setError('An exercise with this name already exists');
         } else {
           setError(errorData.error || 'Failed to add exercise');
         }
@@ -114,14 +111,6 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, existingCategor
               fullWidth
               autoComplete="off"
               placeholder="e.g., Barbell Bench Press"
-            />
-
-            <Autocomplete
-              freeSolo
-              options={existingCategories}
-              value={category ?? ''}
-              onInputChange={(_e, val) => setCategory(val || null)}
-              renderInput={params => <TextField {...params} label="Category" placeholder="e.g., Chest"/>}
             />
 
             <TextField
