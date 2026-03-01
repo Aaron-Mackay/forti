@@ -43,15 +43,8 @@ export default function ExercisesClient({
     <>
       <CustomAppBar title="Exercises"/>
       <Box sx={{height: HEIGHT_EXC_APPBAR, overflowY: 'auto', p: {xs: 2, sm: 3}}}>
-      {/* Header */}
-      <Box sx={{display: 'flex', justifyContent: 'flex-end', mb: 3}}>
-        <Button variant="contained" startIcon={<AddIcon/>} onClick={() => setAddDialogOpen(true)}>
-          Add Exercise
-        </Button>
-      </Box>
-
       {/* Filters */}
-      <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3}}>
+      <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3, alignItems: 'center'}}>
         <TextField
           label="Search"
           value={searchText}
@@ -82,6 +75,14 @@ export default function ExercisesClient({
           sx={{flex: '1 1 250px'}}
           size="small"
         />
+        <Button
+          variant="contained"
+          startIcon={<AddIcon/>}
+          onClick={() => setAddDialogOpen(true)}
+          sx={{flexShrink: 0}}
+        >
+          ADD
+        </Button>
       </Box>
 
       {/* Exercise grid */}
