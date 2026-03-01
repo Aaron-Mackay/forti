@@ -3,18 +3,32 @@ import { requireSession } from '@lib/requireSession';
 import { z } from 'zod';
 import prisma from '@lib/prisma';
 import { Prisma } from '@prisma/client';
+import { EXERCISE_EQUIPMENT, EXERCISE_MUSCLES } from '@/types/dataTypes';
 
 const CreateExerciseSchema = z.object({
   name: z.string().min(1, 'Exercise name is required'),
   category: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
+  equipment: z.array(z.enum(EXERCISE_EQUIPMENT)).min(1, 'At least one piece of equipment is required'),
+  muscles: z.array(z.enum(EXERCISE_MUSCLES)).min(1, 'At least one muscle is required'),
 });
 
 export type CreateExerciseRequest = z.infer<typeof CreateExerciseSchema>;
 
+export async function GET(_req: NextRequest) {
+  try {
+    await requireSession();
+    const exercises = await prisma.exercise.findMany({ orderBy: { name: 'asc' } });
+    return NextResponse.json(exercises);
+  } catch (err: unknown) {
+    if (err instanceof NextResponse) return err;
+    console.error(err);
+    return NextResponse.json({ error: 'Failed to fetch exercises' }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
-    // Require authentication
     await requireSession();
 
     const json = await req.json();
@@ -27,7 +41,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, category, description } = parsed.data;
+    const { name, category, description, equipment, muscles } = parsed.data;
 
     // Build the where clause for unique lookup
     // Type assertion is needed because Prisma's type system doesn't handle nullable fields in unique constraints well
@@ -50,12 +64,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create the exercise
     const exercise = await prisma.exercise.create({
       data: {
         name,
-        category: category === null || category === undefined ? null : category,
-        description: description === null || description === undefined ? null : description,
+        category: category ?? null,
+        description: description ?? null,
+        equipment,
+        muscles,
       },
     });
 

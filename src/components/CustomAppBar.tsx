@@ -32,6 +32,7 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AddIcon from "@mui/icons-material/Add";
 import SpecificPlan from '@mui/icons-material/InsertInvitation';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import {signOut} from "next-auth/react";
 
 const APPBAR_HEIGHT = 56;
@@ -156,6 +157,7 @@ export default function CustomAppBar(
             <ListLink icon={<HomeIcon/>} text="Home" href="/user"/>
             <ListLink icon={<CalendarIcon/>} text="Calendar" href="/user/calendar"/>
             <ListLink icon={<WorkoutIcon/>} text="Training" href="/user/workout"/>
+            <ListLink icon={<LibraryBooksIcon/>} text="Exercises" href="/exercises"/>
             {planCount
             ? <>
                 <ListItemButton onClick={handleClick}>
