@@ -64,6 +64,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ plan } satisfies AiImportResponse);
   } catch (err) {
     if (err instanceof AiParseError) {
+      console.error('AI plan parse error:', err.message, err.issues);
       return NextResponse.json(
         { error: 'Could not parse the plan structure returned by AI' },
         { status: 422 },
