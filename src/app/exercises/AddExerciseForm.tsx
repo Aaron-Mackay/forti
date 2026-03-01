@@ -126,45 +126,37 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, existingCategor
               placeholder="Optional: brief description or form cues"
             />
 
-            <Box>
-              <Typography variant="body2" color={equipment.length === 0 ? 'error' : 'text.secondary'} sx={{mb: 1}}>
-                Equipment (required)
-              </Typography>
-              <Autocomplete
-                multiple
-                options={[...EXERCISE_EQUIPMENT]}
-                value={equipment}
-                onChange={(_e, val: ExerciseEquipment[]) => setEquipment(val)}
-                renderInput={params => (
-                  <TextField
-                    {...params}
-                    placeholder={equipment.length === 0 ? 'Select equipment...' : ''}
-                    error={equipment.length === 0}
-                    helperText={equipment.length === 0 ? 'Select at least one' : undefined}
-                  />
-                )}
-              />
-            </Box>
+            <Autocomplete
+              multiple
+              options={[...EXERCISE_EQUIPMENT]}
+              value={equipment}
+              onChange={(_e, val: ExerciseEquipment[]) => setEquipment(val)}
+              renderInput={params => (
+                <TextField
+                  {...params}
+                  label="Equipment (required)"
+                  placeholder={equipment.length === 0 ? 'Select equipment...' : ''}
+                  error={equipment.length === 0}
+                  helperText={equipment.length === 0 ? 'Select at least one' : undefined}
+                />
+              )}
+            />
 
-            <Box>
-              <Typography variant="body2" color={muscles.length === 0 ? 'error' : 'text.secondary'} sx={{mb: 1}}>
-                Muscles (required)
-              </Typography>
-              <Autocomplete
-                multiple
-                options={[...EXERCISE_MUSCLES]}
-                value={muscles}
-                onChange={(_e, val: ExerciseMuscle[]) => setMuscles(val)}
-                renderInput={params => (
-                  <TextField
-                    {...params}
-                    placeholder={muscles.length === 0 ? 'Select muscles...' : ''}
-                    error={muscles.length === 0}
-                    helperText={muscles.length === 0 ? 'Select at least one' : undefined}
-                  />
-                )}
-              />
-            </Box>
+            <Autocomplete
+              multiple
+              options={[...EXERCISE_MUSCLES]}
+              value={muscles}
+              onChange={(_e, val: ExerciseMuscle[]) => setMuscles(val)}
+              renderInput={params => (
+                <TextField
+                  {...params}
+                  label="Muscles (required)"
+                  placeholder={muscles.length === 0 ? 'Select muscles...' : ''}
+                  error={muscles.length === 0}
+                  helperText={muscles.length === 0 ? 'Select at least one' : undefined}
+                />
+              )}
+            />
           </Box>
 
           {/* Right column — live anatomy preview */}

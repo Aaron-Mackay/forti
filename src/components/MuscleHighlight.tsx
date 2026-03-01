@@ -3,8 +3,6 @@ import FrontBody from './front.svg';
 import BackBody from './back.svg';
 
 export default function MuscleHighlight({muscles, exerciseId}: {muscles: string[]; exerciseId: number}) {
-  if (muscles.length === 0) return null;
-
   const id = `anatomy-${exerciseId}`;
   const css = muscles
     .map(k => `#${id} [data-muscle="${k}"] { fill: #e8453c !important; }`)
