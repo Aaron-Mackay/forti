@@ -1,9 +1,9 @@
 'use client';
 
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useSearchParams} from 'next/navigation';
 import {queueOrSendRequest, syncQueuedRequests} from '@/utils/offlineSync';
-import {UserPrisma} from '@/types/dataTypes';
+import {UserPrisma, WorkoutPrisma} from '@/types/dataTypes';
 
 import WeeksListView from './WeeksListView';
 import WorkoutsListView from './WorkoutsListView';
@@ -16,6 +16,7 @@ import {
   updateUserExerciseNote,
 } from "@/utils/userPlanMutators";
 import PlansListView from "@/app/user/workout/PlansListView";
+import WorkoutCompletionModal from "@/app/user/workout/WorkoutCompletionModal";
 
 type SnackbarState = {
   open: boolean;
@@ -49,6 +50,9 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
   const [selectedWeekId, setSelectedWeekId] = useState<number | null>(initialContext?.weekId ?? null);
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<number | null>(initialContext?.workoutId ?? null);
   const [selectedExerciseId, setSelectedExerciseId] = useState<number | null>(null);
+
+  type CompletionModal = {workout: WorkoutPrisma; done: number; total: number};
+  const [completionModal, setCompletionModal] = useState<CompletionModal | null>(null);
 
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
@@ -158,6 +162,11 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
   const handleCompleteWorkout = (completed: boolean) => {
     if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
 
+    if (completed && selectedWeek && selectedWorkout) {
+      const done = selectedWeek.workouts.filter(w => w.dateCompleted && w.id !== selectedWorkoutId).length + 1;
+      setCompletionModal({workout: selectedWorkout, done, total: selectedWeek.workouts.length});
+    }
+
     const prevUserData = userDataState;
     const dateCompleted = completed ? new Date() : null;
 
@@ -195,8 +204,9 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
   };
 
   // View switching
+  let view;
   if (selectedPlan && selectedWeek && selectedWorkout && selectedExerciseId) {
-    return (
+    view = (
       <ExerciseDetailView
         workout={selectedWorkout}
         currentWorkoutId={selectedWorkout.id}
@@ -222,10 +232,8 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
         setIsStopwatchVisible={setIsStopwatchVisible}
       />
     );
-  }
-
-  if (selectedPlan && selectedWeek && selectedWorkout) {
-    return (
+  } else if (selectedPlan && selectedWeek && selectedWorkout) {
+    view = (
       <ExercisesListView
         workout={selectedWorkout}
         onBack={goBack}
@@ -241,29 +249,38 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
         setIsStopwatchVisible={setIsStopwatchVisible}
       />
     );
-  }
-
-  if (selectedPlan && selectedWeek) {
-    return (
+  } else if (selectedPlan && selectedWeek) {
+    view = (
       <WorkoutsListView
         week={selectedWeek}
         onBack={goBack}
         onSelectWorkout={setSelectedWorkoutId}
       />
     );
-  }
-
-  if (selectedPlan) {
-    return (
+  } else if (selectedPlan) {
+    view = (
       <WeeksListView
         plan={selectedPlan}
         onBack={goBack}
         onSelectWeek={setSelectedWeekId}
       />
     );
+  } else {
+    view = <PlansListView userData={userDataState} onSelectPlan={setSelectedPlanId}/>;
   }
 
   return (
-    <PlansListView userData={userDataState} onSelectPlan={setSelectedPlanId}/>
+    <>
+      {view}
+      {completionModal && (
+        <WorkoutCompletionModal
+          open={!!completionModal}
+          onClose={() => setCompletionModal(null)}
+          workout={completionModal.workout}
+          weekWorkoutsCompleted={completionModal.done}
+          weekWorkoutsTotal={completionModal.total}
+        />
+      )}
+    </>
   );
 }

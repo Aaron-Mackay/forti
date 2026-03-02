@@ -86,6 +86,66 @@ test.describe('Workout page', () => {
     await expect(page.getByRole('button', { name: /Workout/i }).first()).toBeVisible();
   });
 
+  test.describe('workout completion modal', () => {
+    test.beforeEach(async ({ page }) => {
+      // Intercept PATCH to avoid mutating the DB across test runs
+      await page.route('**/api/workout/**', async (route) => {
+        if (route.request().method() === 'PATCH') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({id: 1, dateCompleted: new Date().toISOString()}),
+          });
+        } else {
+          await route.continue();
+        }
+      });
+
+      await page.getByRole('button', { name: /Plan/i }).first().click();
+      await page.getByRole('button', { name: /Week/i }).first().click();
+      await page.getByRole('button', { name: /Workout/i }).first().click();
+      await expect(page.getByRole('button', { name: 'Squat' })).toBeVisible();
+
+      // If the workout is already marked complete, unmark it first so we can test the modal trigger
+      const alreadyCompleted = page.getByRole('button', { name: /^Completed/ });
+      if (await alreadyCompleted.isVisible()) {
+        await alreadyCompleted.click();
+        await expect(page.getByRole('button', { name: 'Mark as Complete' })).toBeVisible();
+      }
+    });
+
+    test('clicking Mark as Complete opens the completion modal', async ({ page }) => {
+      await page.getByRole('button', { name: 'Mark as Complete' }).click();
+      await expect(page.getByRole('dialog')).toBeVisible();
+    });
+
+    test('completion modal shows ordinal workout count for the week', async ({ page }) => {
+      await page.getByRole('button', { name: 'Mark as Complete' }).click();
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await expect(page.getByText(/workouts done this week/i)).toBeVisible();
+    });
+
+    test('completion modal shows muscle set count chips', async ({ page }) => {
+      await page.getByRole('button', { name: 'Mark as Complete' }).click();
+      await expect(page.getByRole('dialog')).toBeVisible();
+      // At least one muscle chip with set count should be present (seed data has sets with reps)
+      await expect(page.getByText(/\d+ sets?/).first()).toBeVisible();
+    });
+
+    test('completion modal shows anatomy model', async ({ page }) => {
+      await page.getByRole('button', { name: 'Mark as Complete' }).click();
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await expect(page.locator('[id^="anatomy-"]').first()).toBeVisible();
+    });
+
+    test('completion modal closes when the X button is clicked', async ({ page }) => {
+      await page.getByRole('button', { name: 'Mark as Complete' }).click();
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await page.getByRole('button', { name: 'Close' }).click();
+      await expect(page.getByRole('dialog')).not.toBeVisible();
+    });
+  });
+
   test('back button from week returns to plans list', async ({ page }) => {
     await page.getByRole('button', { name: /Plan/i }).first().click();
     await page.getByRole('button', { name: /Week/i }).first().click();

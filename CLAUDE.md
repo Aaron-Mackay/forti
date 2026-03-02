@@ -57,6 +57,18 @@ npm run check = npm run test && npm run lint && npm run build
 
 All three must pass for a commit to succeed. Do not bypass with `--no-verify`.
 
+**Before committing — run affected E2E tests:** If the commit creates, modifies, or could affect any E2E test file (or the UI/pages those tests cover), run the relevant test file(s) with Playwright before committing:
+
+```bash
+# If a dev server is already running on port 3000:
+npx playwright test tests/e2e/<affected>.test.ts
+
+# Otherwise start one first:
+npm run dev &   # wait for ready, then run above
+```
+
+All affected E2E tests must pass before the commit is made.
+
 ---
 
 ## Commit Discipline
