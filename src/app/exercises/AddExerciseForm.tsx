@@ -177,7 +177,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded}: AddExerciseFor
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={loading}
+          disabled={loading || !canSubmit}
           startIcon={loading ? <CircularProgress size={16} color="inherit"/> : null}
         >
           {loading ? 'Adding...' : 'Add Exercise'}

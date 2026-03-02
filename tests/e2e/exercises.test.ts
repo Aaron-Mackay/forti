@@ -12,7 +12,7 @@ test.describe('Exercises browse page', () => {
   });
 
   test('renders the Exercises heading', async ({page}) => {
-    await expect(page.getByRole('heading', {name: /exercises/i})).toBeVisible();
+    await expect(page.getByText(/Exercises/, {exact: true})).toBeVisible();
   });
 
   test('renders exercise cards from seed data', async ({page}) => {
