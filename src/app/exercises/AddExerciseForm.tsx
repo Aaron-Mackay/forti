@@ -12,7 +12,6 @@ import {
   DialogContent,
   DialogTitle,
   TextField,
-  Typography,
 } from '@mui/material';
 import {EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, ExerciseEquipment, ExerciseMuscle} from '@/types/dataTypes';
 import MuscleHighlight from '@/components/MuscleHighlight';
@@ -123,49 +122,41 @@ export function AddExerciseForm({open, onClose, onExerciseAdded}: AddExerciseFor
               placeholder="Optional: brief description or form cues"
             />
 
-            <Box>
-              <Typography variant="body2" color={touchedEquipment && equipment.length === 0 ? 'error' : 'text.secondary'} sx={{mb: 1}}>
-                Equipment (required)
-              </Typography>
-              <Autocomplete
-                multiple
-                disableCloseOnSelect
-                options={[...EXERCISE_EQUIPMENT]}
-                value={equipment}
-                onChange={(_e, val: ExerciseEquipment[]) => setEquipment(val)}
-                onBlur={() => setTouchedEquipment(true)}
-                renderInput={params => (
-                  <TextField
-                    {...params}
-                    placeholder={equipment.length === 0 ? 'Select equipment...' : ''}
-                    error={touchedEquipment && equipment.length === 0}
-                    helperText={touchedEquipment && equipment.length === 0 ? 'Select at least one' : undefined}
-                  />
-                )}
-              />
-            </Box>
+            <Autocomplete
+              multiple
+              disableCloseOnSelect
+              options={[...EXERCISE_EQUIPMENT]}
+              value={equipment}
+              onChange={(_e, val: ExerciseEquipment[]) => setEquipment(val)}
+              onBlur={() => setTouchedEquipment(true)}
+              renderInput={params => (
+                <TextField
+                  {...params}
+                  label="Equipment (required)"
+                  placeholder={equipment.length === 0 ? 'Select equipment...' : ''}
+                  error={touchedEquipment && equipment.length === 0}
+                  helperText={touchedEquipment && equipment.length === 0 ? 'Select at least one' : undefined}
+                />
+              )}
+            />
 
-            <Box>
-              <Typography variant="body2" color={touchedMuscles && muscles.length === 0 ? 'error' : 'text.secondary'} sx={{mb: 1}}>
-                Muscles (required)
-              </Typography>
-              <Autocomplete
-                multiple
-                disableCloseOnSelect
-                options={[...EXERCISE_MUSCLES]}
-                value={muscles}
-                onChange={(_e, val: ExerciseMuscle[]) => setMuscles(val)}
-                onBlur={() => setTouchedMuscles(true)}
-                renderInput={params => (
-                  <TextField
-                    {...params}
-                    placeholder={muscles.length === 0 ? 'Select muscles...' : ''}
-                    error={touchedMuscles && muscles.length === 0}
-                    helperText={touchedMuscles && muscles.length === 0 ? 'Select at least one' : undefined}
-                  />
-                )}
-              />
-            </Box>
+            <Autocomplete
+              multiple
+              disableCloseOnSelect
+              options={[...EXERCISE_MUSCLES]}
+              value={muscles}
+              onChange={(_e, val: ExerciseMuscle[]) => setMuscles(val)}
+              onBlur={() => setTouchedMuscles(true)}
+              renderInput={params => (
+                <TextField
+                  {...params}
+                  label="Muscles (required)"
+                  placeholder={muscles.length === 0 ? 'Select muscles...' : ''}
+                  error={touchedMuscles && muscles.length === 0}
+                  helperText={touchedMuscles && muscles.length === 0 ? 'Select at least one' : undefined}
+                />
+              )}
+            />
           </Box>
 
           {/* Right column — live anatomy preview */}
@@ -186,7 +177,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded}: AddExerciseFor
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={loading}
+          disabled={loading || !canSubmit}
           startIcon={loading ? <CircularProgress size={16} color="inherit"/> : null}
         >
           {loading ? 'Adding...' : 'Add Exercise'}
