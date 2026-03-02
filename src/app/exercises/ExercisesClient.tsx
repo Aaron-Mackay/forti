@@ -8,13 +8,16 @@ import {useRouter} from 'next/navigation';
 import {EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, ExerciseEquipment, ExerciseMuscle} from '@/types/dataTypes';
 import ExerciseCard from './ExerciseCard';
 import {AddExerciseForm} from './AddExerciseForm';
+import CustomAppBar, {HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar';
+
+function toTitleCase(str: string) {
+  return str.split(/[-\s]+/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
 
 export default function ExercisesClient({
   initialExercises,
-  categories,
 }: {
   initialExercises: Exercise[];
-  categories: string[];
 }) {
   const router = useRouter();
   const [searchText, setSearchText] = useState('');
@@ -37,17 +40,11 @@ export default function ExercisesClient({
   };
 
   return (
-    <Box sx={{p: {xs: 2, sm: 3}}}>
-      {/* Header */}
-      <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3}}>
-        <Typography variant="h4">Exercises</Typography>
-        <Button variant="contained" startIcon={<AddIcon/>} onClick={() => setAddDialogOpen(true)}>
-          Add Exercise
-        </Button>
-      </Box>
-
+    <>
+      <CustomAppBar title="Exercises"/>
+      <Box sx={{height: HEIGHT_EXC_APPBAR, overflowY: 'auto', p: {xs: 2, sm: 3}}}>
       {/* Filters */}
-      <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3}}>
+      <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3, alignItems: 'center'}}>
         <TextField
           label="Search"
           value={searchText}
@@ -58,22 +55,34 @@ export default function ExercisesClient({
         />
         <Autocomplete
           multiple
+          disableCloseOnSelect
           options={[...EXERCISE_MUSCLES]}
           value={selectedMuscles}
-          onChange={(_e, val: ExerciseMuscle[]) => setSelectedMuscles(val)}
+          onChange={(_e, val) => setSelectedMuscles(val as ExerciseMuscle[])}
+          getOptionLabel={toTitleCase}
           renderInput={params => <TextField {...params} label="Muscles" size="small"/>}
           sx={{flex: '1 1 250px'}}
           size="small"
         />
         <Autocomplete
           multiple
+          disableCloseOnSelect
           options={[...EXERCISE_EQUIPMENT]}
           value={selectedEquipment}
-          onChange={(_e, val: ExerciseEquipment[]) => setSelectedEquipment(val)}
+          onChange={(_e, val) => setSelectedEquipment(val as ExerciseEquipment[])}
+          getOptionLabel={toTitleCase}
           renderInput={params => <TextField {...params} label="Equipment" size="small"/>}
           sx={{flex: '1 1 250px'}}
           size="small"
         />
+        <Button
+          variant="contained"
+          startIcon={<AddIcon/>}
+          onClick={() => setAddDialogOpen(true)}
+          sx={{flexShrink: 0}}
+        >
+          ADD
+        </Button>
       </Box>
 
       {/* Exercise grid */}
@@ -104,8 +113,8 @@ export default function ExercisesClient({
         open={addDialogOpen}
         onClose={() => setAddDialogOpen(false)}
         onExerciseAdded={handleExerciseAdded}
-        existingCategories={categories}
       />
-    </Box>
+      </Box>
+    </>
   );
 }

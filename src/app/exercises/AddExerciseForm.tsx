@@ -12,7 +12,6 @@ import {
   DialogContent,
   DialogTitle,
   TextField,
-  Typography,
 } from '@mui/material';
 import {EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, ExerciseEquipment, ExerciseMuscle} from '@/types/dataTypes';
 import MuscleHighlight from '@/components/MuscleHighlight';
@@ -21,30 +20,35 @@ interface AddExerciseFormProps {
   open: boolean;
   onClose: () => void;
   onExerciseAdded?: () => void;
-  existingCategories: string[];
 }
 
-export function AddExerciseForm({open, onClose, onExerciseAdded, existingCategories}: AddExerciseFormProps) {
+export function AddExerciseForm({open, onClose, onExerciseAdded}: AddExerciseFormProps) {
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [equipment, setEquipment] = useState<ExerciseEquipment[]>([]);
   const [muscles, setMuscles] = useState<ExerciseMuscle[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [touchedEquipment, setTouchedEquipment] = useState(false);
+  const [touchedMuscles, setTouchedMuscles] = useState(false);
 
   const handleClose = () => {
     if (loading) return;
     setName('');
-    setCategory(null);
     setDescription('');
     setEquipment([]);
     setMuscles([]);
     setError(null);
+    setTouchedEquipment(false);
+    setTouchedMuscles(false);
     onClose();
   };
 
   const handleSubmit = async () => {
+    setTouchedEquipment(true);
+    setTouchedMuscles(true);
+    if (!canSubmit) return;
+
     setLoading(true);
     setError(null);
 
@@ -54,7 +58,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, existingCategor
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           name: name.trim(),
-          category: category || null,
+          category: null,
           description: description.trim() || null,
           equipment,
           muscles,
@@ -64,7 +68,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, existingCategor
       if (!response.ok) {
         const errorData = await response.json();
         if (response.status === 409) {
-          setError('An exercise with this name and category already exists');
+          setError('An exercise with this name already exists');
         } else {
           setError(errorData.error || 'Failed to add exercise');
         }
@@ -108,14 +112,6 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, existingCategor
               placeholder="e.g., Barbell Bench Press"
             />
 
-            <Autocomplete
-              freeSolo
-              options={existingCategories}
-              value={category ?? ''}
-              onInputChange={(_e, val) => setCategory(val || null)}
-              renderInput={params => <TextField {...params} label="Category" placeholder="e.g., Chest"/>}
-            />
-
             <TextField
               label="Description"
               value={description}
@@ -128,32 +124,36 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, existingCategor
 
             <Autocomplete
               multiple
+              disableCloseOnSelect
               options={[...EXERCISE_EQUIPMENT]}
               value={equipment}
               onChange={(_e, val: ExerciseEquipment[]) => setEquipment(val)}
+              onBlur={() => setTouchedEquipment(true)}
               renderInput={params => (
                 <TextField
                   {...params}
                   label="Equipment (required)"
                   placeholder={equipment.length === 0 ? 'Select equipment...' : ''}
-                  error={equipment.length === 0}
-                  helperText={equipment.length === 0 ? 'Select at least one' : undefined}
+                  error={touchedEquipment && equipment.length === 0}
+                  helperText={touchedEquipment && equipment.length === 0 ? 'Select at least one' : undefined}
                 />
               )}
             />
 
             <Autocomplete
               multiple
+              disableCloseOnSelect
               options={[...EXERCISE_MUSCLES]}
               value={muscles}
               onChange={(_e, val: ExerciseMuscle[]) => setMuscles(val)}
+              onBlur={() => setTouchedMuscles(true)}
               renderInput={params => (
                 <TextField
                   {...params}
                   label="Muscles (required)"
                   placeholder={muscles.length === 0 ? 'Select muscles...' : ''}
-                  error={muscles.length === 0}
-                  helperText={muscles.length === 0 ? 'Select at least one' : undefined}
+                  error={touchedMuscles && muscles.length === 0}
+                  helperText={touchedMuscles && muscles.length === 0 ? 'Select at least one' : undefined}
                 />
               )}
             />
@@ -161,13 +161,10 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, existingCategor
 
           {/* Right column — live anatomy preview */}
           <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-            <Typography variant="body2" color="text.secondary" sx={{mb: 1}}>
-              Muscles preview
-            </Typography>
             <Box sx={{flex: 1, width: '100%', minHeight: 200}}>
               {/* exerciseId={0} is safe here: the dialog is modal so only one
                   anatomy-0 scope exists on the page at a time */}
-              <MuscleHighlight muscles={muscles} exerciseId={0}/>
+              <MuscleHighlight muscles={muscles} exerciseId={0} alwaysShow/>
             </Box>
           </Box>
         </Box>
@@ -180,7 +177,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, existingCategor
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={loading || !canSubmit}
+          disabled={loading}
           startIcon={loading ? <CircularProgress size={16} color="inherit"/> : null}
         >
           {loading ? 'Adding...' : 'Add Exercise'}

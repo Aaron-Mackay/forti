@@ -68,24 +68,24 @@ test.describe('Add Exercise dialog', () => {
   });
 
   test('Add Exercise button opens the dialog', async ({page}) => {
-    await page.getByRole('button', {name: /add exercise/i}).click();
+    await page.getByRole('button', {name: /^add$/i}).click();
     await expect(page.getByRole('dialog')).toBeVisible();
   });
 
   test('Cancel closes the dialog', async ({page}) => {
-    await page.getByRole('button', {name: /add exercise/i}).click();
+    await page.getByRole('button', {name: /^add$/i}).click();
     await page.getByRole('button', {name: /cancel/i}).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
   });
 
   test('Add button is disabled when name is empty', async ({page}) => {
-    await page.getByRole('button', {name: /add exercise/i}).click();
+    await page.getByRole('button', {name: /^add$/i}).click();
     const addBtn = page.getByRole('dialog').getByRole('button', {name: /^add exercise$/i});
     await expect(addBtn).toBeDisabled();
   });
 
   test('Add button is disabled when equipment is not selected', async ({page}) => {
-    await page.getByRole('button', {name: /add exercise/i}).click();
+    await page.getByRole('button', {name: /^add$/i}).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Exercise Name').fill('Test Exercise');
     // Select muscles but not equipment
@@ -98,7 +98,7 @@ test.describe('Add Exercise dialog', () => {
   });
 
   test('Add button is disabled when muscles are not selected', async ({page}) => {
-    await page.getByRole('button', {name: /add exercise/i}).click();
+    await page.getByRole('button', {name: /^add$/i}).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Exercise Name').fill('Test Exercise');
     // Select equipment but not muscles
@@ -111,7 +111,7 @@ test.describe('Add Exercise dialog', () => {
   });
 
   test('anatomy preview appears when muscles are selected', async ({page}) => {
-    await page.getByRole('button', {name: /add exercise/i}).click();
+    await page.getByRole('button', {name: /^add$/i}).click();
     const dialog = page.getByRole('dialog');
     // Before selection — anatomy-0 scoped element still exists (empty highlight)
     const anatomyWrapper = dialog.locator('#anatomy-0');
@@ -138,7 +138,7 @@ test.describe('Add Exercise dialog', () => {
       }
     });
 
-    await page.getByRole('button', {name: /add exercise/i}).click();
+    await page.getByRole('button', {name: /^add$/i}).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Exercise Name').fill('Bench Press');
 
@@ -179,7 +179,7 @@ test.describe('Add Exercise dialog', () => {
       }
     });
 
-    await page.getByRole('button', {name: /add exercise/i}).click();
+    await page.getByRole('button', {name: /^add$/i}).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Exercise Name').fill('E2E Test Exercise');
 

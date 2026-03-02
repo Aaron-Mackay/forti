@@ -34,7 +34,8 @@ npm run check            # Run tests + lint + build (what pre-commit runs)
 # Database
 npm run db:reset         # Force-reset DB, regenerate Prisma client, seed data
 npm run rebuild-prisma   # Push schema changes and regenerate Prisma client
-npm run seed             # Seed database with demo data only
+npm run seed             # Seed database (2 demo users + full data)
+npm run seed:demo        # Seed demo data only (Bob's account)
 
 # Local DB access
 npm run local-db         # psql -h localhost -U postgres -d postgres
@@ -327,3 +328,15 @@ Type declarations for this pattern are in `svgr.d.ts`.
 - **Coach-client:** A `User` can have a `coachId` pointing to another user. Coaches can view client plans.
 - **Mobile-first UI:** Uses `dvh` (dynamic viewport height) units for mobile compatibility. Calendar and some pages use bottom drawers on mobile.
 - **Vercel Analytics:** `@vercel/analytics` and `@vercel/speed-insights` are integrated in the app layout.
+
+---
+
+## Working Style
+
+Before starting implementation on ambiguous tasks, ask 1–2 targeted clarifying questions rather than making assumptions. Good triggers for asking:
+
+- The task touches multiple areas with unclear scope (e.g. "add a stats page" — which stats?)
+- There are meaningfully different implementation approaches with real trade-offs
+- A requirement seems to conflict with an existing pattern in the codebase
+
+Keep questions short and specific. One good question is better than several vague ones. If the intent is reasonably clear from context, proceed and note any assumptions made.
