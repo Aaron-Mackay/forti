@@ -263,6 +263,8 @@ tests/ToggleableEditableField.test.tsx
 import { test, expect } from './fixtures';
 ```
 
+**New pages/routes:** When adding a new page route, also update the route table in `.claude/skills/playwright-cli/SKILL.md` and `.claude/agents/frontend-tester.md` so the frontend-tester agent knows about it.
+
 **Playwright strict mode:** Playwright locators operate in strict mode by default — if a locator matches more than one element, the assertion throws a strict mode violation. When a locator might match multiple elements (e.g. the same component rendered in a Swiper/carousel with multiple slides), always narrow it: use `.first()`, `.last()`, `.nth(n)`, or a more specific selector. Never leave a locator that could ambiguously resolve to multiple elements.
 
 ---
@@ -352,3 +354,33 @@ Before starting implementation on ambiguous tasks, ask 1–2 targeted clarifying
 - A requirement seems to conflict with an existing pattern in the codebase
 
 Keep questions short and specific. One good question is better than several vague ones. If the intent is reasonably clear from context, proceed and note any assumptions made.
+
+## UI Planning Rule
+
+Before writing code for any UI that is more than a simple, self-contained component
+(e.g. a button, badge, input field, or icon), you must first output:
+
+1. **Layout Spec** — a brief structured list of the page/component sections,
+   what content/data each contains, and any key interactions. Note any
+   scroll behavior, fixed/sticky elements, or bottom nav usage.
+2. **ASCII Wireframe** — a simple ASCII diagram showing the rough vertical
+   layout at ~390px mobile width. Default to single-column stacking unless
+   there is a clear reason for side-by-side elements.
+
+Wait for explicit approval before writing any code.
+
+### All UIs are assumed to be mobile web unless stated otherwise:
+- Wireframes should reflect portrait orientation and touch interaction
+- Flag any layout that would require horizontal scrolling or small tap targets
+
+### Examples of UIs that require this step:
+- Full pages or views
+- Multi-section components (e.g. dashboards, modals with complex content, bottom sheets)
+- Navigation structures (top nav, bottom tab bars, drawers)
+- Any layout where vertical ordering or scroll behavior matters
+
+### Examples that can skip this step:
+- Buttons, badges, chips
+- Single input fields or simple form controls
+- Icons or small visual indicators
+- Trivial wrappers or style-only changes
