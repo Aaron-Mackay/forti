@@ -28,6 +28,7 @@ export default async function UserPage() {
           dayMetrics={userDayMetrics}
           events={allEvents}
           today={new Date()}
+          userId={user.id}
         />
         <DashboardChart dayMetrics={userDayMetrics} blocks={userBlocks}/>
       </Paper>

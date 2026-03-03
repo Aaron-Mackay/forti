@@ -49,21 +49,25 @@ test.describe('Dashboard', () => {
       await expect(page.getByRole('link', { name: 'Go' })).toBeInViewport();
     });
 
-    test('renders the Today card', async ({ page }) => {
+    test('renders the Today card with metric buttons', async ({ page }) => {
       // Use first() to avoid strict mode violation — "Today" can appear more than once
       // on the page (e.g. in the chart canvas or other DOM nodes).
       await expect(page.getByText('Today').first()).toBeVisible();
-      // Seed data: today's metrics may or may not be logged (random) — both states are valid
-      const hasMetrics = await page.getByRole('link', { name: 'View calendar' }).isVisible();
-      const noMetrics = await page.getByRole('link', { name: 'Log metrics' }).isVisible();
-      expect(hasMetrics || noMetrics).toBe(true);
+      // Today card always shows metric icon buttons regardless of whether metrics are logged
+      const todayCard = page.locator('.MuiCard-root').filter({ hasText: 'Today' }).first();
+      await expect(todayCard.getByRole('button').first()).toBeVisible();
     });
 
-    test('Today card action button is not clipped by card overflow', async ({ page }) => {
-      const viewCalendar = page.getByRole('link', { name: 'View calendar' });
-      const logMetrics = page.getByRole('link', { name: 'Log metrics' });
-      const button = (await viewCalendar.isVisible()) ? viewCalendar : logMetrics;
-      await expect(button).toBeInViewport();
+    test('Today card metric buttons are not clipped by card overflow', async ({ page }) => {
+      const todayCard = page.locator('.MuiCard-root').filter({ hasText: 'Today' }).first();
+      await expect(todayCard.getByRole('button').first()).toBeInViewport();
+    });
+
+    test('clicking a Today metric button opens the input drawer', async ({ page }) => {
+      const todayCard = page.locator('.MuiCard-root').filter({ hasText: 'Today' }).first();
+      // First button is weight — always has a click handler
+      await todayCard.getByRole('button').first().click();
+      await expect(page.getByRole('button', { name: 'Save' })).toBeVisible();
     });
 
     test('renders the This Week training count card', async ({ page }) => {
