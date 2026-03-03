@@ -16,6 +16,7 @@ export const DayMetricInput: React.FC<{
   selectedDate: Date | null;
   userId: string;
   setDayMetricsStateCb: (date: Date, metrics: DayMetricPrisma | null) => void;
+  hideBack?: boolean;
 }> = ({
         setSelectedMetric,
         selectedMetric,
@@ -24,7 +25,8 @@ export const DayMetricInput: React.FC<{
         dateDayMetrics,
         selectedDate,
         userId,
-        setDayMetricsStateCb
+        setDayMetricsStateCb,
+        hideBack = false,
       }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -59,13 +61,15 @@ export const DayMetricInput: React.FC<{
   }
 
   return (<>
-    <IconButton
-      onClick={() => setSelectedMetric(null)}
-      sx={{position: 'absolute', top: 8, left: 8, zIndex: 1}}
-      aria-label="Back"
-    >
-      <ArrowBackIcon/>
-    </IconButton>
+    {!hideBack && (
+      <IconButton
+        onClick={() => setSelectedMetric(null)}
+        sx={{position: 'absolute', top: 8, left: 8, zIndex: 1}}
+        aria-label="Back"
+      >
+        <ArrowBackIcon/>
+      </IconButton>
+    )}
     <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 1}}>
       <Typography variant="subtitle1" mb={1}>Update {selectedMetric}</Typography>
       <Box sx={{display: 'flex', flexDirection: 'row', gap: 2, width: '100%'}}>
