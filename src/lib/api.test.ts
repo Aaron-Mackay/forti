@@ -134,7 +134,6 @@ describe('API functions', () => {
       const metric = {
         userId: 'u1',
         date: new Date('2024-06-15'),
-        workout: true,
         weight: 80,
         steps: 8000,
         sleepMins: 420,

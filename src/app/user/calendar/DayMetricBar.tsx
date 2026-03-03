@@ -5,7 +5,6 @@ import {DayMetricPrisma} from "@/types/dataTypes";
 import WeightIcon from '@mui/icons-material/Scale';
 import FoodIcon from '@mui/icons-material/RestaurantRounded';
 import StepsIcon from '@mui/icons-material/DirectionsWalkRounded';
-import WorkoutIcon from '@mui/icons-material/FitnessCenterRounded';
 import SleepIcon from '@mui/icons-material/HotelRounded';
 import {minToHhMm} from "@/app/user/calendar/utils";
 
@@ -40,7 +39,7 @@ export const DayMetricsBar: React.FC<{
         setSelectedMetric,
         setInputValue
       }) => {
-  const {weight = null, calories = null, steps = null, workout = null, sleepMins = null} = dateDayMetrics || {};
+  const {weight = null, calories = null, steps = null, sleepMins = null} = dateDayMetrics || {};
   return (
     <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
       <DayMetricButton value={weight} icon={<WeightIcon/>} onClick={() => {
@@ -59,8 +58,6 @@ export const DayMetricsBar: React.FC<{
         setSelectedMetric('sleepMins')
         setInputValue(sleepMins)
       }}/>
-      <DayMetricButton value={workout} icon={<WorkoutIcon/>}/>
-      {/* todo: this should just show if a workout happened, and link to it */}
     </Box>
   );
 }

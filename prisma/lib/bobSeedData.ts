@@ -237,7 +237,6 @@ export async function seedBobData(bob: { id: string }, today: Date): Promise<voi
         protein:   maybeNull(Math.floor(Math.random() * 200)),
         carbs:     maybeNull(Math.floor(Math.random() * 400)),
         fat:       maybeNull(Math.floor(Math.random() * 100)),
-        workout: Math.random() < 0.5,
       };
     }),
   });

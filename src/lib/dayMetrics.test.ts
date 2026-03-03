@@ -13,7 +13,6 @@ const metric: DayMetricPrisma = {
   id: 1,
   userId: 'user-1',
   date: new Date('2024-06-15'),
-  workout: true,
   weight: 80.5,
   steps: 10000,
   sleepMins: 480,

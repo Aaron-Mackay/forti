@@ -6,7 +6,6 @@ import confirmPermission from "@lib/confirmPermission";
 const DayMetricSchema = z.object({
   userId: z.string(),
   date: z.coerce.date(), // Accepts string or Date, coerces to Date
-  workout: z.boolean().optional(),
   weight: z.number().optional().nullable(),
   steps: z.number().int().optional().nullable(),
   sleepMins: z.number().int().optional().nullable(),
@@ -32,7 +31,6 @@ export async function POST(req: NextRequest) {
     await confirmPermission(parsed.data.userId);
 
     const completeDayMetric = {
-      workout: false,
       weight: null,
       steps: null,
       sleepMins: null,

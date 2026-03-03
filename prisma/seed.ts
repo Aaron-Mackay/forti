@@ -209,7 +209,6 @@ async function main() {
       protein: maybeNull(Math.floor(Math.random() * 200)),
       carbs: maybeNull(Math.floor(Math.random() * 400)),
       fat: maybeNull(Math.floor(Math.random() * 100)),
-      workout: Math.random() < 0.5,
     });
   }
   await prisma.dayMetric.createMany({ data: dayMetricsData });
