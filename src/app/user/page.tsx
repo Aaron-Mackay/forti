@@ -6,15 +6,19 @@ import DashboardChart from "@/app/user/(dashboard)/DashboardChart";
 import DashboardCards from "@/app/user/(dashboard)/DashboardCards";
 import {getUserData, getUserDayMetrics, getUserEvents} from "@lib/api";
 import {EventType} from "@prisma/client";
+import prisma from "@lib/prisma";
+import {parseDashboardSettings} from "@/types/settingsTypes";
 
 export default async function UserPage() {
   const user = await getLoggedInUser()
-  const [userDayMetrics, allEvents, userData] = await Promise.all([
+  const [userDayMetrics, allEvents, userData, userRecord] = await Promise.all([
     getUserDayMetrics(user.id),
     getUserEvents(user.id),
     getUserData(user.id),
+    prisma.user.findUnique({ where: { id: user.id }, select: { settings: true } }),
   ])
   const userBlocks = allEvents.filter(ev => ev.eventType === EventType.BlockEvent)
+  const settings = parseDashboardSettings(userRecord?.settings)
 
   return (
     <>
@@ -29,8 +33,9 @@ export default async function UserPage() {
           events={allEvents}
           today={new Date()}
           userId={user.id}
+          settings={settings}
         />
-        <DashboardChart dayMetrics={userDayMetrics} blocks={userBlocks}/>
+        {settings.showMetricsChart && <DashboardChart dayMetrics={userDayMetrics} blocks={userBlocks}/>}
       </Paper>
     </>
   );

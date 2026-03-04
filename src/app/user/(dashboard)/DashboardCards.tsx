@@ -16,6 +16,7 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import UpcomingIcon from "@mui/icons-material/Upcoming";
 import Link from "next/link";
 import {DayMetricPrisma, EventPrisma, UserPrisma} from "@/types/dataTypes";
+import {DashboardSettings} from "@/types/settingsTypes";
 import {EventType} from "@prisma/client";
 import {convertDateToDateString} from "@lib/dateUtils";
 import {getDefinedBlockColor} from "@/app/user/calendar/utils";
@@ -103,9 +104,10 @@ interface DashboardCardsProps {
   events: EventPrisma[];
   today: Date;
   userId: string;
+  settings: DashboardSettings;
 }
 
-export default function DashboardCards({userData, dayMetrics, events, today, userId}: DashboardCardsProps) {
+export default function DashboardCards({userData, dayMetrics, events, today, userId, settings}: DashboardCardsProps) {
   const nextWorkout = findNextWorkout(userData);
   const [todayMetricState, setTodayMetricState] = useState<DayMetricPrisma | null>(
     getTodayMetric(dayMetrics, today)
@@ -126,7 +128,7 @@ export default function DashboardCards({userData, dayMetrics, events, today, use
       <Grid container spacing={2} sx={{mb: 2}}>
 
         {/* Next Workout */}
-        <Grid size={{xs: 12, sm: 6, md: 4}}>
+        {settings.showNextWorkout && <Grid size={{xs: 12, sm: 6, md: 4}}>
           <Card variant="outlined" sx={{height: '100%'}}>
             <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
               <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
@@ -160,10 +162,10 @@ export default function DashboardCards({userData, dayMetrics, events, today, use
               )}
             </CardContent>
           </Card>
-        </Grid>
+        </Grid>}
 
         {/* Today's Metrics */}
-        <Grid size={{xs: 12, sm: 6, md: 4}}>
+        {settings.showTodaysMetrics && <Grid size={{xs: 12, sm: 6, md: 4}}>
           <Card variant="outlined" sx={{height: '100%'}}>
             <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
               <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
@@ -177,10 +179,10 @@ export default function DashboardCards({userData, dayMetrics, events, today, use
               />
             </CardContent>
           </Card>
-        </Grid>
+        </Grid>}
 
         {/* Weekly Training */}
-        <Grid size={{xs: 12, sm: 6, md: 4}}>
+        {settings.showWeeklyTraining && <Grid size={{xs: 12, sm: 6, md: 4}}>
           <Card variant="outlined" sx={{height: '100%'}}>
             <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
               <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
@@ -195,10 +197,10 @@ export default function DashboardCards({userData, dayMetrics, events, today, use
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
+        </Grid>}
 
         {/* Active Training Block (conditional) */}
-        {activeBlock && (
+        {settings.showActiveBlock && activeBlock && (
           <Grid size={{xs: 12, sm: 6, md: 4}}>
             <Card
               variant="outlined"
@@ -242,7 +244,7 @@ export default function DashboardCards({userData, dayMetrics, events, today, use
         )}
 
         {/* Upcoming Events (conditional) */}
-        {upcomingEvents.length > 0 && (
+        {settings.showUpcomingEvents && upcomingEvents.length > 0 && (
           <Grid size={{xs: 12, sm: 6, md: 4}}>
             <Card variant="outlined" sx={{height: '100%'}}>
               <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
