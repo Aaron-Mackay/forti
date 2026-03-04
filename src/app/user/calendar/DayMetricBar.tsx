@@ -1,5 +1,5 @@
 import React from "react";
-import {Box, Button} from "@mui/material";
+import {Box, ButtonBase, Typography} from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import {DayMetricPrisma} from "@/types/dataTypes";
 import WeightIcon from '@mui/icons-material/Scale';
@@ -19,14 +19,29 @@ const DayMetricButton = ({
   value: boolean | string | number | null | undefined;
   onClick?: () => void;
 }) => (
-  <Button
+  <ButtonBase
     onClick={onClick}
-    variant="outlined"
-    sx={{borderRadius: 999, minWidth: "4rem", px: 1, py: 0}}
+    sx={{
+      flex: 1,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 0.25,
+      borderRadius: 4,
+      bgcolor: "action.hover",
+      py: 1,
+      px: 0.5,
+      minHeight: "3.5rem",
+    }}
   >
     {icon}
-    {value || <AddRoundedIcon/>}
-  </Button>
+    {value ? (
+      <Typography variant="caption" lineHeight={1}>{value}</Typography>
+    ) : (
+      <AddRoundedIcon sx={{fontSize: "1rem"}}/>
+    )}
+  </ButtonBase>
 );
 
 
@@ -41,7 +56,7 @@ export const DayMetricsBar: React.FC<{
       }) => {
   const {weight = null, calories = null, steps = null, sleepMins = null} = dateDayMetrics || {};
   return (
-    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+    <Box display="flex" gap={1} alignItems="center" mb={1}>
       <DayMetricButton value={weight} icon={<WeightIcon/>} onClick={() => {
         setSelectedMetric('weight')
         setInputValue(weight)
