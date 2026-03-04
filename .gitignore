@@ -49,3 +49,4 @@ node_modules/
 /playwright/.cache/
 /playwright/.auth/
 /.claude/settings.local.json
+/.playwright-cli/
