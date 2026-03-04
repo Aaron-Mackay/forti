@@ -21,6 +21,7 @@ export class UserBuilder {
       userExerciseNotes: [],
       image: null,
       emailVerified: null,
+      settings: null,
       coachId: null
     };
   }
