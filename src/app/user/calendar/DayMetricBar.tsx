@@ -29,7 +29,7 @@ const DayMetricButton = ({
       justifyContent: "center",
       gap: 0.25,
       borderRadius: 4,
-      bgcolor: "action.hover",
+      bgcolor: "grey.200",
       py: 1,
       px: 0.5,
       minHeight: "3.5rem",
