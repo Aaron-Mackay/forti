@@ -8,6 +8,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "if [ \"$VERCEL_ENV\" = \"production\" ]; then prisma migrate deploy; fi",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint src",
     "seed": "ts-node prisma/seed.ts",
@@ -16,11 +18,9 @@
     "test": "vitest run",
     "test:e2e": "start-server-and-test dev http://localhost:3000 'playwright test'",
     "test:e2e:preview": "BASE_URL=https://www.preview.forti-training.co.uk playwright test",
-    "rebuild-prisma": "prisma db push && prisma generate",
-    "postinstall": "prisma generate",
+    "rebuild-prisma": "prisma migrate dev --name \"\" && prisma generate",
     "check": "npm run test && npm run lint && npm run build",
-    "prepare": "husky",
-    "db:reset": "prisma db push --force-reset && prisma generate && ts-node prisma/seed.ts"
+    "prepare": "husky"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
