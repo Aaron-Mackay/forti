@@ -34,6 +34,7 @@ playwright-cli state-save playwright/.auth/user.json
 | `http://localhost:3000/user` | Dashboard |
 | `http://localhost:3000/user/calendar` | Calendar & day metrics |
 | `http://localhost:3000/user/plan` | Training plan editor |
+| `http://localhost:3000/user/settings` | User settings (dashboard card visibility toggles) |
 | `http://localhost:3000/user/workout/<id>` | Active workout |
 | `http://localhost:3000/exercises` | Exercise library |
 | `http://localhost:3000/login` | Login (public) |

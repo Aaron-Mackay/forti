@@ -30,6 +30,7 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import LogoutIcon from '@mui/icons-material/Logout';
+import SettingsIcon from '@mui/icons-material/Settings';
 import AddIcon from "@mui/icons-material/Add";
 import SpecificPlan from '@mui/icons-material/InsertInvitation';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
@@ -181,6 +182,7 @@ export default function CustomAppBar(
         <Box>
           <List>
             <ListLink icon={<BugReportIcon/>} text="Report Bug" href="/report-bug"/>
+            <ListLink icon={<SettingsIcon/>} text="Settings" href="/user/settings"/>
             <ListItem disablePadding>
               <ListItemButton onClick={() => signOut({callbackUrl: '/login'})}>
                 <ListItemIcon><LogoutIcon/></ListItemIcon>

@@ -25,6 +25,8 @@ model User {
   userExerciseNotes UserExerciseNote[]
   dayMetrics        DayMetric[]
 
+  settings          Json?
+
   // self relation (coach <-> clients)
   coachId           String?
   coach             User?              @relation("CoachClients", fields: [coachId], references: [id])
