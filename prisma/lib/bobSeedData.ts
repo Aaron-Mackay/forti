@@ -176,7 +176,7 @@ export async function seedBobData(bob: { id: string }, today: Date): Promise<voi
         const workout = await prisma.workout.create({
           data: {
             weekId: week.id,
-            name:   `${wo.name} (Plan ${planIdx + 1} - Week ${weekIdx + 1})`,
+            name:   wo.name,
             notes:  woIdx % 2 === 0 ? 'Felt strong today 💪' : null,
             order:  woIdx + 1,
           },
