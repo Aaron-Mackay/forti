@@ -71,7 +71,6 @@ export async function getUserDayMetrics(userId: string) {
 }
 
 export async function updateUserDayMetric(dayMetric: Omit<DayMetricPrisma, 'id'>) {
-  console.log(dayMetric)
   return await prisma.dayMetric.upsert({
     where: {
       userId_date: {

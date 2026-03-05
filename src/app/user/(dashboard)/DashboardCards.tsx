@@ -2,8 +2,8 @@
 import React, {useState} from "react";
 import {
   Box,
-  Button,
   Card,
+  CardActionArea,
   CardContent,
   Chip,
   Grid,
@@ -14,6 +14,7 @@ import TodayIcon from "@mui/icons-material/Today";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import UpcomingIcon from "@mui/icons-material/Upcoming";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import Link from "next/link";
 import {DayMetricPrisma, EventPrisma, UserPrisma} from "@/types/dataTypes";
 import {DashboardSettings} from "@/types/settingsTypes";
@@ -130,37 +131,38 @@ export default function DashboardCards({userData, dayMetrics, events, today, use
         {/* Next Workout */}
         {settings.showNextWorkout && <Grid size={{xs: 12, sm: 6, md: 4}}>
           <Card variant="outlined" sx={{height: '100%'}}>
-            <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-              <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
-                <FitnessCenterIcon color="primary" fontSize="small"/>
-                <Typography variant="overline" color="text.secondary">Next Workout</Typography>
-              </Box>
-              {nextWorkout ? (
-                <>
+            {nextWorkout ? (
+              <CardActionArea
+                component={Link}
+                href={`/user/workout?workoutId=${nextWorkout.workout.id}`}
+                sx={{height: '100%'}}
+              >
+                <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+                  <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
+                    <FitnessCenterIcon color="primary" fontSize="small"/>
+                    <Typography variant="overline" color="text.secondary" sx={{flexGrow: 1}}>Next Workout</Typography>
+                    <ChevronRightIcon fontSize="small" color="action"/>
+                  </Box>
                   <Typography variant="h6" sx={{fontWeight: 600, lineHeight: 1.2, mb: 0.5}}>
                     {nextWorkout.workout.name}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{mb: 1}}>
+                  <Typography variant="body2" color="text.secondary">
                     {nextWorkout.plan.name} · Week {nextWorkout.week.order} ·{" "}
                     {nextWorkout.workout.exercises.length} exercise{nextWorkout.workout.exercises.length !== 1 ? "s" : ""}
                   </Typography>
-                  <Box>
-                    <Button
-                      component={Link}
-                      href={`/user/workout?workoutId=${nextWorkout.workout.id}`}
-                      variant="contained"
-                      size="small"
-                    >
-                      Go
-                    </Button>
-                  </Box>
-                </>
-              ) : (
+                </CardContent>
+              </CardActionArea>
+            ) : (
+              <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+                <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
+                  <FitnessCenterIcon color="primary" fontSize="small"/>
+                  <Typography variant="overline" color="text.secondary">Next Workout</Typography>
+                </Box>
                 <Typography variant="body2" color="text.secondary">
                   No workouts planned yet.
                 </Typography>
-              )}
-            </CardContent>
+              </CardContent>
+            )}
           </Card>
         </Grid>}
 
@@ -210,35 +212,38 @@ export default function DashboardCards({userData, dayMetrics, events, today, use
                   (activeBlock.blockSubtype ? getDefinedBlockColor(activeBlock.blockSubtype) : undefined),
               }}
             >
-              <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
-                  <CalendarMonthIcon fontSize="small" sx={{
-                    color: activeBlock.customColor ??
-                      (activeBlock.blockSubtype ? getDefinedBlockColor(activeBlock.blockSubtype) : "inherit"),
-                  }}/>
-                  <Typography variant="overline" color="text.secondary">Active Block</Typography>
-                </Box>
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 0.5}}>
-                  <Typography variant="h6" sx={{fontWeight: 600}}>
-                    {activeBlock.name}
+              <CardActionArea component={Link} href="/user/calendar" sx={{height: '100%'}}>
+                <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+                  <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
+                    <CalendarMonthIcon fontSize="small" sx={{
+                      color: activeBlock.customColor ??
+                        (activeBlock.blockSubtype ? getDefinedBlockColor(activeBlock.blockSubtype) : "inherit"),
+                    }}/>
+                    <Typography variant="overline" color="text.secondary" sx={{flexGrow: 1}}>Active Block</Typography>
+                    <ChevronRightIcon fontSize="small" color="action"/>
+                  </Box>
+                  <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 0.5}}>
+                    <Typography variant="h6" sx={{fontWeight: 600}}>
+                      {activeBlock.name}
+                    </Typography>
+                    {activeBlock.blockSubtype && (
+                      <Chip
+                        label={activeBlock.blockSubtype}
+                        size="small"
+                        sx={{
+                          bgcolor: activeBlock.customColor ??
+                            (activeBlock.blockSubtype ? getDefinedBlockColor(activeBlock.blockSubtype) : undefined),
+                          color: '#fff',
+                          fontWeight: 600,
+                        }}
+                      />
+                    )}
+                  </Box>
+                  <Typography variant="body2" color="text.secondary">
+                    {daysRemaining(new Date(activeBlock.endDate), today)} days remaining
                   </Typography>
-                  {activeBlock.blockSubtype && (
-                    <Chip
-                      label={activeBlock.blockSubtype}
-                      size="small"
-                      sx={{
-                        bgcolor: activeBlock.customColor ??
-                          (activeBlock.blockSubtype ? getDefinedBlockColor(activeBlock.blockSubtype) : undefined),
-                        color: '#fff',
-                        fontWeight: 600,
-                      }}
-                    />
-                  )}
-                </Box>
-                <Typography variant="body2" color="text.secondary">
-                  {daysRemaining(new Date(activeBlock.endDate), today)} days remaining
-                </Typography>
-              </CardContent>
+                </CardContent>
+              </CardActionArea>
             </Card>
           </Grid>
         )}
@@ -247,36 +252,29 @@ export default function DashboardCards({userData, dayMetrics, events, today, use
         {settings.showUpcomingEvents && upcomingEvents.length > 0 && (
           <Grid size={{xs: 12, sm: 6, md: 4}}>
             <Card variant="outlined" sx={{height: '100%'}}>
-              <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
-                  <UpcomingIcon color="info" fontSize="small"/>
-                  <Typography variant="overline" color="text.secondary">Upcoming (7 days)</Typography>
-                </Box>
-                <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.5, mb: 1}}>
-                  {upcomingEvents.slice(0, 4).map(ev => (
-                    <Typography key={ev.id} variant="body2">
-                      <strong>{convertDateToDateString(new Date(ev.startDate)).slice(5)}</strong>
-                      {" — "}
-                      {ev.name}
-                    </Typography>
-                  ))}
-                  {upcomingEvents.length > 4 && (
-                    <Typography variant="body2" color="text.secondary">
-                      +{upcomingEvents.length - 4} more
-                    </Typography>
-                  )}
-                </Box>
-                <Box>
-                  <Button
-                    component={Link}
-                    href="/user/calendar"
-                    variant="outlined"
-                    size="small"
-                  >
-                    View calendar
-                  </Button>
-                </Box>
-              </CardContent>
+              <CardActionArea component={Link} href="/user/calendar" sx={{height: '100%'}}>
+                <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+                  <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
+                    <UpcomingIcon color="info" fontSize="small"/>
+                    <Typography variant="overline" color="text.secondary" sx={{flexGrow: 1}}>Upcoming (7 days)</Typography>
+                    <ChevronRightIcon fontSize="small" color="action"/>
+                  </Box>
+                  <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.5}}>
+                    {upcomingEvents.slice(0, 4).map(ev => (
+                      <Typography key={ev.id} variant="body2">
+                        <strong>{convertDateToDateString(new Date(ev.startDate)).slice(5)}</strong>
+                        {" — "}
+                        {ev.name}
+                      </Typography>
+                    ))}
+                    {upcomingEvents.length > 4 && (
+                      <Typography variant="body2" color="text.secondary">
+                        +{upcomingEvents.length - 4} more
+                      </Typography>
+                    )}
+                  </Box>
+                </CardContent>
+              </CardActionArea>
             </Card>
           </Grid>
         )}
