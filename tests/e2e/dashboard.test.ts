@@ -31,22 +31,23 @@ test.describe('Dashboard', () => {
   });
 
   test.describe('DashboardCards', () => {
-    test('renders the Next Workout card with a Go button', async ({ page }) => {
+    test('renders the Next Workout card linking to the workout', async ({ page }) => {
       // Seed data: Week 1 of each plan is always completed; Week 2 is always incomplete
       await expect(page.getByText('Next Workout')).toBeVisible();
-      await expect(page.getByRole('link', { name: 'Go' })).toBeVisible();
+      // The entire card is now a clickable link — no separate "Go" button
+      await expect(page.getByRole('link').filter({ hasText: 'Next Workout' })).toBeVisible();
       // Week number displayed should match week.order (1-indexed, no +1 offset).
       // The workout name also contains "Week 2", so scope to the subtitle which uses · separators.
       await expect(page.getByText(/· Week 2/)).toBeVisible();
     });
 
-    test('Go button links to the workout page with a workoutId param', async ({ page }) => {
-      const goLink = page.getByRole('link', { name: 'Go' });
-      await expect(goLink).toHaveAttribute('href', /^\/user\/workout\?workoutId=\d+$/);
+    test('Next Workout card links to the workout page with a workoutId param', async ({ page }) => {
+      const cardLink = page.getByRole('link').filter({ hasText: 'Next Workout' });
+      await expect(cardLink).toHaveAttribute('href', /^\/user\/workout\?workoutId=\d+$/);
     });
 
-    test('Go button is not clipped by card overflow', async ({ page }) => {
-      await expect(page.getByRole('link', { name: 'Go' })).toBeInViewport();
+    test('Next Workout card is not clipped by card overflow', async ({ page }) => {
+      await expect(page.getByRole('link').filter({ hasText: 'Next Workout' })).toBeInViewport();
     });
 
     test('renders the Today card with metric buttons', async ({ page }) => {
