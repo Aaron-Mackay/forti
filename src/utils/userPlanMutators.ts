@@ -213,6 +213,7 @@ export function addSet(user: UserPrisma, planId: number, weekId: number, workout
         order: exercise.sets.length + 1,
         reps: null,
         weight: null,
+        e1rm: null,
       },
     ],
   }));
@@ -238,6 +239,7 @@ export function updateSetCount(user: UserPrisma, planId: number, weekId: number,
             order: exercise.sets.length + idx + 1,
             reps: null,
             weight: null,
+            e1rm: null,
           })),
         ],
       };
@@ -373,6 +375,7 @@ export function addExerciseWithSet(
                   order: 1,
                   reps: null,
                   weight: null,
+                  e1rm: null,
                 }
               ],
               workoutId: workout.id,
@@ -476,6 +479,7 @@ export function addWorkoutWithExerciseWithSet(
                     order: 1,
                     reps: null,
                     weight: null,
+                    e1rm: null,
                   }
                 ],
                 workoutId: newWorkoutId,

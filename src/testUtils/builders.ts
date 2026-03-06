@@ -204,6 +204,7 @@ export class SetBuilder {
       order,
       reps: 8,
       weight: "100",
+      e1rm: null,
     };
   }
   build(): SetPrisma {
