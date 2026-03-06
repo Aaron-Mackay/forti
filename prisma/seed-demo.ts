@@ -16,7 +16,7 @@ import { EXERCISE_DESCRIPTION, seedBobData } from './lib/bobSeedData';
 import {EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, SeedExercise} from "../src/types/dataTypes";
 import exercisesData from './exercises.json';
 
-const exercises = exercisesData satisfies SeedExercise[];
+const exercises = exercisesData as unknown as SeedExercise[];
 
 function validateExercises(data: SeedExercise[]): void {
   for (const ex of data) {
