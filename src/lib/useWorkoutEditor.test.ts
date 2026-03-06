@@ -1,6 +1,7 @@
 import {Dir, reducer, WorkoutEditorAction} from './useWorkoutEditor';
 import {ExerciseBuilder, SetBuilder, UserBuilder, WeekBuilder, WorkoutBuilder, PlanBuilder} from '@/testUtils/builders';
 import {describe, expect, it} from "vitest";
+import {ExerciseCategory} from "@prisma/client";
 import {SetPrisma, UserPrisma} from "@/types/dataTypes";
 import {updateUserSets} from "@/utils/userPlanMutators";
 
@@ -405,10 +406,10 @@ describe('reducer', () => {
       weekId: 1,
       workoutId: 2,
       workoutExerciseId: 3,
-      category: 'Back',
+      category: 'resistance',
     };
     const newState = reducer(state, action, mockUuid);
-    expect(newState.plans[0].weeks[0].workouts[0].exercises[0].exercise.category).toBe('Back');
+    expect(newState.plans[0].weeks[0].workouts[0].exercises[0].exercise.category).toBe('resistance');
     expect(newState.plans[0].weeks[0].workouts[0].exercises[0].exercise.name).toBe('');
   });
 
@@ -427,8 +428,8 @@ describe('reducer', () => {
       .addPlan(plan)
       .build();
     const exercises = [
-      {id: 1, name: 'Bench Press', category: 'Chest', description: null, equipment: [], muscles: []},
-      {id: 2, name: 'Pull Up', category: 'Back', description: null, equipment: [], muscles: []},
+      {id: 1, name: 'Bench Press', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+      {id: 2, name: 'Pull Up', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
     ];
     const action: WorkoutEditorAction = {
       type: 'UPDATE_EXERCISE',
@@ -438,11 +439,11 @@ describe('reducer', () => {
       workoutExerciseId: 3,
       exerciseName: 'Pull Up',
       exercises,
-      category: 'Back',
+      category: 'resistance',
     };
     const newState = reducer(state, action, mockUuid);
     expect(newState.plans[0].weeks[0].workouts[0].exercises[0].exercise.name).toBe('Pull Up');
-    expect(newState.plans[0].weeks[0].workouts[0].exercises[0].exercise.category).toBe('Back');
+    expect(newState.plans[0].weeks[0].workouts[0].exercises[0].exercise.category).toBe('resistance');
   });
 
   it('MOVE_WORKOUT does not move workout out of bounds', () => {

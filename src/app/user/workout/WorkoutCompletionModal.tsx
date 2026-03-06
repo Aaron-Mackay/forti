@@ -32,7 +32,7 @@ export default function WorkoutCompletionModal({
   for (const ex of workout.exercises) {
     const completedSets = ex.sets.filter(s => s.reps !== null && s.reps > 0).length;
     if (completedSets === 0) continue;
-    for (const muscle of ex.exercise.muscles) {
+    for (const muscle of [...ex.exercise.primaryMuscles, ...ex.exercise.secondaryMuscles]) {
       muscleSetCounts.set(muscle, (muscleSetCounts.get(muscle) ?? 0) + completedSets);
     }
   }
@@ -81,7 +81,7 @@ export default function WorkoutCompletionModal({
           </Box>
         )}
         <Box sx={{flex: 1, minHeight: 0}}>
-          <MuscleHighlight muscles={highlightedMuscles} exerciseId={workout.id} alwaysShow />
+          <MuscleHighlight primaryMuscles={highlightedMuscles} exerciseId={workout.id} alwaysShow />
         </Box>
       </DialogContent>
     </Dialog>

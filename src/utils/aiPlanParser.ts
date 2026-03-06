@@ -12,7 +12,7 @@ const AiSetSchema = z.object({
 
 const AiExerciseSchema = z.object({
   name: z.string().min(1),
-  category: z.string().optional().default('Other'),
+  category: z.string().optional().default('resistance'),
   repRange: z.string().nullable().optional(),
   restTime: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
@@ -117,7 +117,7 @@ export const AI_PLAN_TOOL = {
                         category: {
                           type: 'string',
                           description:
-                            'Muscle group / category, e.g. Chest, Back, Legs, Shoulders, Arms, Cardio, Other',
+                            'Exercise category: "resistance" or "cardio"',
                         },
                         repRange: {
                           type: 'string',

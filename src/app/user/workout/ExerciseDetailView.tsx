@@ -85,7 +85,7 @@ function ExerciseSlide({
             </Typography>
           </Box>
         </Box>
-        <MuscleHighlight muscles={ex.exercise.muscles} exerciseId={ex.exerciseId}/>
+        <MuscleHighlight primaryMuscles={ex.exercise.primaryMuscles} secondaryMuscles={ex.exercise.secondaryMuscles} exerciseId={ex.exerciseId}/>
       </Box>
 
       {/* Form cue textarea */}

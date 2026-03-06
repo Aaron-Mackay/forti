@@ -4,6 +4,7 @@ import confirmPermission from "@lib/confirmPermission";
 import {z} from "zod";
 import {extractErrorMessage} from "@lib/apiError";
 import {PlanInputSchema} from "@lib/planSchemas";
+import {ExerciseCategory} from "@prisma/client";
 
 const SaveUserDataSchema = z.object({
   id: z.string(),
@@ -98,12 +99,14 @@ export async function POST(req: Request) {
                               where: {
                                 name_category: {
                                   name: exercise.exercise.name,
-                                  category: exercise.exercise.category,
+                                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                  category: exercise.exercise.category as any as ExerciseCategory,
                                 },
                               },
                               create: {
                                 name: exercise.exercise.name,
-                                category: exercise.exercise.category,
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                category: exercise.exercise.category as any as ExerciseCategory,
                               },
                             },
                           },

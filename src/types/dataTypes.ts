@@ -1,4 +1,4 @@
-import {Prisma, Event, DayMetric} from "@prisma/client";
+import {Prisma, Event, DayMetric, ExerciseCategory} from "@prisma/client";
 
 export type EventPrisma = Event
 export type DayMetricPrisma = DayMetric
@@ -84,12 +84,15 @@ export const EXERCISE_MUSCLES = [
 
 export type ExerciseMuscle = typeof EXERCISE_MUSCLES[number];
 
+export { ExerciseCategory };
+
 // Used for structural validation of exercises.json.
 // Equipment/muscle values are validated at runtime against the typed constants.
 export type SeedExercise = {
   name: string;
-  category: string;
+  category: ExerciseCategory;
   description: string;
   equipment: string[];
-  muscles?: string[];
+  primaryMuscles?: string[];
+  secondaryMuscles?: string[];
 };

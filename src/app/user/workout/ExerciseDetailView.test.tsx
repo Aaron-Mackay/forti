@@ -6,6 +6,7 @@ vi.mock('next-auth/react', () => ({useSession: () => ({data: null, status: 'unau
 vi.mock('next/navigation', () => ({usePathname: () => '/user/workout', useRouter: () => ({push: vi.fn()})}));
 
 import ExerciseDetailView from './ExerciseDetailView';
+import {ExerciseCategory} from '@prisma/client';
 import {WorkoutPrisma} from '@/types/dataTypes';
 
 // Swiper doesn't render well in jsdom — mock the parts we need
@@ -17,8 +18,8 @@ vi.mock('swiper/modules', () => ({Pagination: {}}));
 vi.mock('swiper/css', () => ({}));
 vi.mock('swiper/css/pagination', () => ({}));
 vi.mock('@/components/MuscleHighlight', () => ({
-  default: ({muscles, exerciseId}: {muscles: string[]; exerciseId: number}) =>
-    muscles.length > 0 ? <div data-testid={`anatomy-${exerciseId}`}/> : null,
+  default: ({primaryMuscles, exerciseId}: {primaryMuscles: string[]; secondaryMuscles?: string[]; exerciseId: number}) =>
+    primaryMuscles.length > 0 ? <div data-testid={`anatomy-${exerciseId}`}/> : null,
 }));
 
 const stopwatchProps = {
@@ -48,7 +49,7 @@ function buildWorkout(): WorkoutPrisma {
         repRange: '8-12',
         restTime: '90s',
         notes: '',
-        exercise: {id: 100, name: 'Bench Press', category: 'Chest', description: null, equipment: [], muscles: []},
+        exercise: {id: 100, name: 'Bench Press', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
         sets: [
           {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: '100'},
           {id: 2, workoutExerciseId: 10, order: 2, reps: 6, weight: '90'},
@@ -157,7 +158,7 @@ describe('ExerciseDetailView', () => {
 
   it('renders the anatomy diagram when the exercise has muscles', () => {
     const workout = buildWorkout();
-    workout.exercises[0].exercise.muscles = ['sternal-pec', 'triceps'];
+    workout.exercises[0].exercise.primaryMuscles = ['sternal-pec', 'triceps'];
     render(<ExerciseDetailView {...defaultProps} workout={workout}/>);
     expect(screen.getByTestId('anatomy-100')).toBeInTheDocument();
   });

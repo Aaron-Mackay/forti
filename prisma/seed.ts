@@ -4,7 +4,8 @@ import { seedBobData } from './lib/bobSeedData';
 import exercisesData from './exercises.json';
 import { EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, SeedExercise } from '../src/types/dataTypes';
 
-const exercises = exercisesData satisfies SeedExercise[];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const exercises = exercisesData as any as SeedExercise[];
 
 function validateExercises(data: SeedExercise[]): void {
   for (const ex of data) {
@@ -13,9 +14,14 @@ function validateExercises(data: SeedExercise[]): void {
         throw new Error(`Invalid equipment "${eq}" in exercise "${ex.name}"`);
       }
     }
-    for (const muscle of ex.muscles ?? []) {
+    for (const muscle of ex.primaryMuscles ?? []) {
       if (!EXERCISE_MUSCLES.includes(muscle as never)) {
-        throw new Error(`Invalid muscle "${muscle}" in exercise "${ex.name}"`);
+        throw new Error(`Invalid primary muscle "${muscle}" in exercise "${ex.name}"`);
+      }
+    }
+    for (const muscle of ex.secondaryMuscles ?? []) {
+      if (!EXERCISE_MUSCLES.includes(muscle as never)) {
+        throw new Error(`Invalid secondary muscle "${muscle}" in exercise "${ex.name}"`);
       }
     }
   }

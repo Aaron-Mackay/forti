@@ -59,6 +59,11 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+enum ExerciseCategory {
+  resistance
+  cardio
+}
+
 enum EventType {
   BlockEvent
   CustomEvent
@@ -144,10 +149,11 @@ model Workout {
 model Exercise {
   id               Int                @id @default(autoincrement())
   name             String
-  category         String?
+  category         ExerciseCategory?
   description      String?
   equipment        String[]           @default([])
-  muscles          String[]           @default([])
+  primaryMuscles   String[]           @default([])
+  secondaryMuscles String[]           @default([])
   workoutLinks     WorkoutExercise[]
   UserExerciseNote UserExerciseNote[]
 

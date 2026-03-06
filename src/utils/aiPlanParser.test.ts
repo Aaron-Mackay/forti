@@ -81,9 +81,9 @@ describe('parseAiPlanResponse — happy path', () => {
 // ── Missing optional fields → sensible defaults ───────────────────────────────
 
 describe('parseAiPlanResponse — optional fields', () => {
-  it('defaults category to "Other" when omitted', () => {
+  it('defaults category to "resistance" when omitted', () => {
     const plan = parseAiPlanResponse(minimalValidInput);
-    expect(plan.weeks[0].workouts[0].exercises[0].exercise.category).toBe('Other');
+    expect(plan.weeks[0].workouts[0].exercises[0].exercise.category).toBe('resistance');
   });
 
   it('sets repRange, restTime, notes to null when omitted', () => {
@@ -146,7 +146,7 @@ describe('parseAiPlanResponse — optional fields', () => {
               exercises: [
                 {
                   name: 'Bench',
-                  category: 'Chest',
+                  category: 'resistance',
                   repRange: '8-12',
                   restTime: '90',
                   notes: 'Pause at bottom',
@@ -161,7 +161,7 @@ describe('parseAiPlanResponse — optional fields', () => {
 
     const plan = parseAiPlanResponse(input);
     const ex = plan.weeks[0].workouts[0].exercises[0];
-    expect(ex.exercise.category).toBe('Chest');
+    expect(ex.exercise.category).toBe('resistance');
     expect(ex.repRange).toBe('8-12');
     expect(ex.restTime).toBe('90');
     expect(ex.notes).toBe('Pause at bottom');

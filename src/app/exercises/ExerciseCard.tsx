@@ -17,19 +17,32 @@ export default function ExerciseCard({exercise}: {exercise: Exercise}) {
           {exercise.name}
         </Typography>
 
-        {/* Muscle chips */}
-        {exercise.muscles.length > 0 && (
+        {/* Primary muscle chips */}
+        {exercise.primaryMuscles.length > 0 && (
           <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5}}>
-            {exercise.muscles.map(m => (
+            {exercise.primaryMuscles.map(m => (
               <Chip key={m} label={toTitleCase(m)} size="small" color="primary" variant="outlined" sx={{fontSize: '0.7rem'}}/>
             ))}
           </Box>
         )}
 
+        {/* Secondary muscle chips */}
+        {exercise.secondaryMuscles.length > 0 && (
+          <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5}}>
+            {exercise.secondaryMuscles.map(m => (
+              <Chip key={m} label={toTitleCase(m)} size="small" color="warning" variant="outlined" sx={{fontSize: '0.7rem'}}/>
+            ))}
+          </Box>
+        )}
+
         {/* Anatomy diagram */}
-        {exercise.muscles.length > 0 && (
+        {(exercise.primaryMuscles.length > 0 || exercise.secondaryMuscles.length > 0) && (
           <Box sx={{height: 100}}>
-            <MuscleHighlight muscles={exercise.muscles} exerciseId={exercise.id}/>
+            <MuscleHighlight
+              primaryMuscles={exercise.primaryMuscles}
+              secondaryMuscles={exercise.secondaryMuscles}
+              exerciseId={exercise.id}
+            />
           </Box>
         )}
 

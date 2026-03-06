@@ -34,7 +34,7 @@ import {
   WeekBuilder,
   WorkoutBuilder,
 } from '@/testUtils/builders';
-import { Exercise } from '@prisma/client';
+import { Exercise, ExerciseCategory } from '@prisma/client';
 
 let nextId = 100;
 const mockUuid = () => nextId++;
@@ -499,9 +499,9 @@ describe('updateRestTime', () => {
 describe('updateCategory', () => {
   it('updates category and resets exercise name', () => {
     const user = buildBaseUser();
-    const result = updateCategory(user, 1, 101, 201, 301, 'Back');
+    const result = updateCategory(user, 1, 101, 201, 301, 'resistance');
     const ex = result.plans[0].weeks[0].workouts[0].exercises[0].exercise;
-    expect(ex.category).toBe('Back');
+    expect(ex.category).toBe('resistance');
     expect(ex.name).toBe('');
   });
 });
@@ -510,13 +510,13 @@ describe('updateCategory', () => {
 
 describe('updateExerciseInUser', () => {
   const allExercises: Exercise[] = [
-    { id: 1, name: 'Squat', category: 'Legs', description: null, equipment: [], muscles: [] },
-    { id: 2, name: 'Bench Press', category: 'Chest', description: null, equipment: [], muscles: [] },
+    { id: 1, name: 'Squat', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [] },
+    { id: 2, name: 'Bench Press', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [] },
   ];
 
   it('sets exercise to an existing one from the list', () => {
     const user = buildBaseUser();
-    const result = updateExerciseInUser(user, 1, 101, 201, 301, 'Squat', allExercises, 'Legs', mockUuid);
+    const result = updateExerciseInUser(user, 1, 101, 201, 301, 'Squat', allExercises, 'resistance', mockUuid);
     const ex = result.plans[0].weeks[0].workouts[0].exercises[0].exercise;
     expect(ex.name).toBe('Squat');
     expect(ex.id).toBe(1);
@@ -524,10 +524,10 @@ describe('updateExerciseInUser', () => {
 
   it('creates a new exercise object when name is not in the list', () => {
     const user = buildBaseUser();
-    const result = updateExerciseInUser(user, 1, 101, 201, 301, 'New Move', [], 'Custom', mockUuid);
+    const result = updateExerciseInUser(user, 1, 101, 201, 301, 'New Move', [], 'resistance', mockUuid);
     const ex = result.plans[0].weeks[0].workouts[0].exercises[0].exercise;
     expect(ex.name).toBe('New Move');
-    expect(ex.category).toBe('Custom');
+    expect(ex.category).toBe('resistance');
     expect(ex.id).toBe(100); // assigned via mockUuid
   });
 });

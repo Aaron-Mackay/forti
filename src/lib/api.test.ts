@@ -48,10 +48,10 @@ describe('API functions', () => {
   describe('getExercisesAndCategories', () => {
     it('returns exercises and unique categories', async () => {
       const mockExercises = [
-        { id: 1, name: 'Squat', category: 'Legs' },
-        { id: 2, name: 'Bench Press', category: 'Chest' },
-        { id: 3, name: 'Deadlift', category: 'Back' },
-        { id: 4, name: 'Leg Curl', category: 'Legs' },
+        { id: 1, name: 'Squat', category: 'resistance' },
+        { id: 2, name: 'Bench Press', category: 'resistance' },
+        { id: 3, name: 'Deadlift', category: 'resistance' },
+        { id: 4, name: 'Leg Curl', category: 'cardio' },
         { id: 5, name: 'No Category', category: null },
       ];
       (prisma.exercise.findMany as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockExercises);
@@ -59,7 +59,7 @@ describe('API functions', () => {
       const { allExercises, categories } = await api.getExercisesAndCategories();
 
       expect(allExercises).toEqual(mockExercises);
-      expect(categories).toEqual(['Legs', 'Chest', 'Back']);
+      expect(categories).toEqual(['resistance', 'cardio']);
     });
   });
 

@@ -1,3 +1,4 @@
+import {ExerciseCategory} from "@prisma/client";
 import {
   SetPrisma,
   UserPrisma,
@@ -169,10 +170,11 @@ export class ExerciseBuilder {
       exercise: {
         id: -1,
         name: "Bench Press",
-        category: "Chest",
+        category: ExerciseCategory.resistance,
         description: null,
         equipment: [],
-        muscles: [],
+        primaryMuscles: [],
+        secondaryMuscles: [],
       },
       sets: [],
     };
