@@ -4,7 +4,8 @@ import { seedBobData } from './lib/bobSeedData';
 import exercisesData from './exercises.json';
 import { EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, SeedExercise } from '../src/types/dataTypes';
 
-const exercises = exercisesData satisfies SeedExercise[];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const exercises = exercisesData as any as SeedExercise[];
 
 function validateExercises(data: SeedExercise[]): void {
   for (const ex of data) {

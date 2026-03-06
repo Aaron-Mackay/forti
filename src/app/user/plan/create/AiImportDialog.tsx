@@ -64,7 +64,8 @@ function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPrisma): Pl
                 exercise: {
                   id: PLACEHOLDER_ID,
                   name: ex.exercise.name,
-                  category: ex.exercise.category,
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  category: ex.exercise.category as any,
                   description: null,
                   equipment: [],
                   primaryMuscles: [],

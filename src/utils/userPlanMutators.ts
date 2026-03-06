@@ -78,8 +78,10 @@ export function updateExerciseInUser(
   createUuid: CreateUuid
 ): UserPrisma {
   //todo if exercise isn't in exercises, add it to db
-  const newExercise = exercises.find(e => e.category === category && e.name === exerciseName) || {
-    category,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const newExercise = exercises.find(e => e.category === (category as any) && e.name === exerciseName) || {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    category: category as any,
     name: exerciseName,
     id: createUuid(),
     description: null,
@@ -263,7 +265,8 @@ export function updateRestTime(user: UserPrisma, planId: number, weekId: number,
 export function updateCategory(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, category: string): UserPrisma {
   return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({
     ...exercise,
-    exercise: {...exercise.exercise, category, name: ""},
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    exercise: {...exercise.exercise, category: category as any, name: ""},
   }));
 }
 
@@ -506,7 +509,7 @@ export function removeWorkout(
 
 const dummyExercise: Exercise = {
   id: -1,
-  category: "none",
+  category: null,
   name: "",
   description: null,
   equipment: [],

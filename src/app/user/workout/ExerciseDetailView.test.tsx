@@ -6,6 +6,7 @@ vi.mock('next-auth/react', () => ({useSession: () => ({data: null, status: 'unau
 vi.mock('next/navigation', () => ({usePathname: () => '/user/workout', useRouter: () => ({push: vi.fn()})}));
 
 import ExerciseDetailView from './ExerciseDetailView';
+import {ExerciseCategory} from '@prisma/client';
 import {WorkoutPrisma} from '@/types/dataTypes';
 
 // Swiper doesn't render well in jsdom — mock the parts we need
@@ -48,7 +49,7 @@ function buildWorkout(): WorkoutPrisma {
         repRange: '8-12',
         restTime: '90s',
         notes: '',
-        exercise: {id: 100, name: 'Bench Press', category: 'Chest', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+        exercise: {id: 100, name: 'Bench Press', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
         sets: [
           {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: '100'},
           {id: 2, workoutExerciseId: 10, order: 2, reps: 6, weight: '90'},

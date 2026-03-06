@@ -26,7 +26,7 @@ export default function PlanBuilderWithContext({userData, allExercises}: {
     order: 1,
     workoutId: PLACEHOLDER_ID,
     exercise: {
-      category: "none",
+      category: null,
       name: "",
       id: PLACEHOLDER_ID,
       description: null,

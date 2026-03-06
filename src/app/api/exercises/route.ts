@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import { z } from 'zod';
 import prisma from '@lib/prisma';
-import { Prisma } from '@prisma/client';
+import { ExerciseCategory, Prisma } from '@prisma/client';
 import { EXERCISE_EQUIPMENT, EXERCISE_MUSCLES } from '@/types/dataTypes';
 
 const CreateExerciseSchema = z.object({
@@ -68,7 +68,8 @@ export async function POST(req: NextRequest) {
     const exercise = await prisma.exercise.create({
       data: {
         name,
-        category: category ?? null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        category: (category ?? null) as any as ExerciseCategory | null,
         description: description ?? null,
         equipment,
         primaryMuscles,
