@@ -89,7 +89,7 @@ test.describe('Add Exercise dialog', () => {
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Exercise Name').fill('Test Exercise');
     // Select muscles but not equipment
-    const musclesInput = dialog.getByLabel('Muscles (required)');
+    const musclesInput = dialog.getByLabel('Primary Muscles (required)');
     await musclesInput.click();
     await page.getByRole('option', {name: 'biceps'}).click();
     await page.keyboard.press('Escape');
@@ -117,7 +117,7 @@ test.describe('Add Exercise dialog', () => {
     const anatomyWrapper = dialog.locator('#anatomy-0');
     await expect(anatomyWrapper).toBeVisible();
     // Select a muscle and confirm the wrapper is still visible (SVGs rendered)
-    const musclesInput = dialog.getByLabel('Muscles (required)');
+    const musclesInput = dialog.getByLabel('Primary Muscles (required)');
     await musclesInput.click();
     await page.getByRole('option', {name: 'biceps'}).click();
     await page.keyboard.press('Escape');
@@ -147,7 +147,7 @@ test.describe('Add Exercise dialog', () => {
     await page.getByRole('option', {name: 'barbell'}).click();
     await page.keyboard.press('Escape');
 
-    const musclesInput = dialog.getByLabel('Muscles (required)');
+    const musclesInput = dialog.getByLabel('Primary Muscles (required)');
     await musclesInput.click();
     await page.getByRole('option', {name: 'sternal-pec'}).click();
     await page.keyboard.press('Escape');
@@ -171,7 +171,8 @@ test.describe('Add Exercise dialog', () => {
             category: 'Test',
             description: null,
             equipment: ['barbell'],
-            muscles: ['biceps'],
+            primaryMuscles: ['biceps'],
+            secondaryMuscles: [],
           }),
         });
       } else {
@@ -188,7 +189,7 @@ test.describe('Add Exercise dialog', () => {
     await page.getByRole('option', {name: 'barbell'}).click();
     await page.keyboard.press('Escape');
 
-    const musclesInput = dialog.getByLabel('Muscles (required)');
+    const musclesInput = dialog.getByLabel('Primary Muscles (required)');
     await musclesInput.click();
     await page.getByRole('option', {name: 'biceps'}).click();
     await page.keyboard.press('Escape');

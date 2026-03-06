@@ -147,7 +147,8 @@ model Exercise {
   category         String?
   description      String?
   equipment        String[]           @default([])
-  muscles          String[]           @default([])
+  primaryMuscles   String[]           @default([])
+  secondaryMuscles String[]           @default([])
   workoutLinks     WorkoutExercise[]
   UserExerciseNote UserExerciseNote[]
 

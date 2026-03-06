@@ -427,8 +427,8 @@ describe('reducer', () => {
       .addPlan(plan)
       .build();
     const exercises = [
-      {id: 1, name: 'Bench Press', category: 'Chest', description: null, equipment: [], muscles: []},
-      {id: 2, name: 'Pull Up', category: 'Back', description: null, equipment: [], muscles: []},
+      {id: 1, name: 'Bench Press', category: 'Chest', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+      {id: 2, name: 'Pull Up', category: 'Back', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
     ];
     const action: WorkoutEditorAction = {
       type: 'UPDATE_EXERCISE',

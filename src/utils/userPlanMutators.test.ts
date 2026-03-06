@@ -510,8 +510,8 @@ describe('updateCategory', () => {
 
 describe('updateExerciseInUser', () => {
   const allExercises: Exercise[] = [
-    { id: 1, name: 'Squat', category: 'Legs', description: null, equipment: [], muscles: [] },
-    { id: 2, name: 'Bench Press', category: 'Chest', description: null, equipment: [], muscles: [] },
+    { id: 1, name: 'Squat', category: 'Legs', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [] },
+    { id: 2, name: 'Bench Press', category: 'Chest', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [] },
   ];
 
   it('sets exercise to an existing one from the list', () => {

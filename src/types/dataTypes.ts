@@ -91,5 +91,6 @@ export type SeedExercise = {
   category: string;
   description: string;
   equipment: string[];
-  muscles?: string[];
+  primaryMuscles?: string[];
+  secondaryMuscles?: string[];
 };

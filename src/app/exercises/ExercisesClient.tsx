@@ -29,7 +29,7 @@ export default function ExercisesClient({
     return initialExercises.filter(ex => {
       if (searchText && !ex.name.toLowerCase().includes(searchText.toLowerCase())) return false;
       if (selectedEquipment.length && !selectedEquipment.every(e => ex.equipment.includes(e))) return false;
-      if (selectedMuscles.length && !selectedMuscles.some(m => ex.muscles.includes(m))) return false;
+      if (selectedMuscles.length && !selectedMuscles.some(m => ex.primaryMuscles.includes(m) || ex.secondaryMuscles.includes(m))) return false;
       return true;
     });
   }, [initialExercises, searchText, selectedEquipment, selectedMuscles]);

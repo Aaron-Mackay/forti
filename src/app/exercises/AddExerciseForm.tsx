@@ -26,27 +26,29 @@ export function AddExerciseForm({open, onClose, onExerciseAdded}: AddExerciseFor
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [equipment, setEquipment] = useState<ExerciseEquipment[]>([]);
-  const [muscles, setMuscles] = useState<ExerciseMuscle[]>([]);
+  const [primaryMuscles, setPrimaryMuscles] = useState<ExerciseMuscle[]>([]);
+  const [secondaryMuscles, setSecondaryMuscles] = useState<ExerciseMuscle[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [touchedEquipment, setTouchedEquipment] = useState(false);
-  const [touchedMuscles, setTouchedMuscles] = useState(false);
+  const [touchedPrimaryMuscles, setTouchedPrimaryMuscles] = useState(false);
 
   const handleClose = () => {
     if (loading) return;
     setName('');
     setDescription('');
     setEquipment([]);
-    setMuscles([]);
+    setPrimaryMuscles([]);
+    setSecondaryMuscles([]);
     setError(null);
     setTouchedEquipment(false);
-    setTouchedMuscles(false);
+    setTouchedPrimaryMuscles(false);
     onClose();
   };
 
   const handleSubmit = async () => {
     setTouchedEquipment(true);
-    setTouchedMuscles(true);
+    setTouchedPrimaryMuscles(true);
     if (!canSubmit) return;
 
     setLoading(true);
@@ -61,7 +63,8 @@ export function AddExerciseForm({open, onClose, onExerciseAdded}: AddExerciseFor
           category: null,
           description: description.trim() || null,
           equipment,
-          muscles,
+          primaryMuscles,
+          secondaryMuscles,
         }),
       });
 
@@ -84,7 +87,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded}: AddExerciseFor
     }
   };
 
-  const canSubmit = name.trim().length > 0 && equipment.length > 0 && muscles.length > 0;
+  const canSubmit = name.trim().length > 0 && equipment.length > 0 && primaryMuscles.length > 0;
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
@@ -144,16 +147,31 @@ export function AddExerciseForm({open, onClose, onExerciseAdded}: AddExerciseFor
               multiple
               disableCloseOnSelect
               options={[...EXERCISE_MUSCLES]}
-              value={muscles}
-              onChange={(_e, val: ExerciseMuscle[]) => setMuscles(val)}
-              onBlur={() => setTouchedMuscles(true)}
+              value={primaryMuscles}
+              onChange={(_e, val: ExerciseMuscle[]) => setPrimaryMuscles(val)}
+              onBlur={() => setTouchedPrimaryMuscles(true)}
               renderInput={params => (
                 <TextField
                   {...params}
-                  label="Muscles (required)"
-                  placeholder={muscles.length === 0 ? 'Select muscles...' : ''}
-                  error={touchedMuscles && muscles.length === 0}
-                  helperText={touchedMuscles && muscles.length === 0 ? 'Select at least one' : undefined}
+                  label="Primary Muscles (required)"
+                  placeholder={primaryMuscles.length === 0 ? 'Select primary muscles...' : ''}
+                  error={touchedPrimaryMuscles && primaryMuscles.length === 0}
+                  helperText={touchedPrimaryMuscles && primaryMuscles.length === 0 ? 'Select at least one' : undefined}
+                />
+              )}
+            />
+
+            <Autocomplete
+              multiple
+              disableCloseOnSelect
+              options={[...EXERCISE_MUSCLES]}
+              value={secondaryMuscles}
+              onChange={(_e, val: ExerciseMuscle[]) => setSecondaryMuscles(val)}
+              renderInput={params => (
+                <TextField
+                  {...params}
+                  label="Secondary Muscles (optional)"
+                  placeholder={secondaryMuscles.length === 0 ? 'Select secondary muscles...' : ''}
                 />
               )}
             />
@@ -164,7 +182,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded}: AddExerciseFor
             <Box sx={{flex: 1, width: '100%', minHeight: 200}}>
               {/* exerciseId={0} is safe here: the dialog is modal so only one
                   anatomy-0 scope exists on the page at a time */}
-              <MuscleHighlight muscles={muscles} exerciseId={0} alwaysShow/>
+              <MuscleHighlight primaryMuscles={primaryMuscles} secondaryMuscles={secondaryMuscles} exerciseId={0} alwaysShow/>
             </Box>
           </Box>
         </Box>

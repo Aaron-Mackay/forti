@@ -172,7 +172,8 @@ export class ExerciseBuilder {
         category: "Chest",
         description: null,
         equipment: [],
-        muscles: [],
+        primaryMuscles: [],
+        secondaryMuscles: [],
       },
       sets: [],
     };

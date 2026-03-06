@@ -10,7 +10,8 @@ const CreateExerciseSchema = z.object({
   category: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   equipment: z.array(z.enum(EXERCISE_EQUIPMENT)).min(1, 'At least one piece of equipment is required'),
-  muscles: z.array(z.enum(EXERCISE_MUSCLES)).min(1, 'At least one muscle is required'),
+  primaryMuscles: z.array(z.enum(EXERCISE_MUSCLES)).min(1, 'At least one primary muscle is required'),
+  secondaryMuscles: z.array(z.enum(EXERCISE_MUSCLES)).default([]),
 });
 
 export type CreateExerciseRequest = z.infer<typeof CreateExerciseSchema>;
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, category, description, equipment, muscles } = parsed.data;
+    const { name, category, description, equipment, primaryMuscles, secondaryMuscles } = parsed.data;
 
     // Build the where clause for unique lookup
     // Type assertion is needed because Prisma's type system doesn't handle nullable fields in unique constraints well
@@ -70,7 +71,8 @@ export async function POST(req: NextRequest) {
         category: category ?? null,
         description: description ?? null,
         equipment,
-        muscles,
+        primaryMuscles,
+        secondaryMuscles,
       },
     });
 
