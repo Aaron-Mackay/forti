@@ -12,7 +12,7 @@
  */
 
 import prisma from '../src/lib/prisma';
-import { EXERCISE_DEFS, EXERCISE_DESCRIPTION, seedBobData } from './lib/bobSeedData';
+import { EXERCISE_DESCRIPTION, seedBobData } from './lib/bobSeedData';
 import {EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, SeedExercise} from "../src/types/dataTypes";
 import exercisesData from './exercises.json';
 
@@ -25,9 +25,14 @@ function validateExercises(data: SeedExercise[]): void {
         throw new Error(`Invalid equipment "${eq}" in exercise "${ex.name}"`);
       }
     }
-    for (const muscle of ex.muscles ?? []) {
+    for (const muscle of ex.primaryMuscles ?? []) {
       if (!EXERCISE_MUSCLES.includes(muscle as never)) {
-        throw new Error(`Invalid muscle "${muscle}" in exercise "${ex.name}"`);
+        throw new Error(`Invalid primary muscle "${muscle}" in exercise "${ex.name}"`);
+      }
+    }
+    for (const muscle of ex.secondaryMuscles ?? []) {
+      if (!EXERCISE_MUSCLES.includes(muscle as never)) {
+        throw new Error(`Invalid secondary muscle "${muscle}" in exercise "${ex.name}"`);
       }
     }
   }
