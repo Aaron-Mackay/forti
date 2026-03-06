@@ -8,8 +8,13 @@ fi
 
 npm run check
 
-npx prisma migrate diff \
-  --from-migrations prisma/migrations \
-  --to-schema-datamodel prisma/schema.prisma \
-  --shadow-database-url "$DATABASE_URL" \
-  --exit-code || (echo "❌ schema.prisma has changes without a migration. Run: npx prisma migrate dev --name your_change" && exit 1)
+DB_HOST=$(echo "$DATABASE_URL" | sed 's|.*@\([^:/]*\).*|\1|')
+if pg_isready -h "$DB_HOST" -t 3 -q 2>/dev/null; then
+  npx prisma migrate diff \
+    --from-migrations prisma/migrations \
+    --to-schema-datamodel prisma/schema.prisma \
+    --shadow-database-url "$DATABASE_URL" \
+    --exit-code || (echo "❌ schema.prisma has changes without a migration. Run: npx prisma migrate dev --name your_change" && exit 1)
+else
+  echo "⚠️  DB not reachable — skipping schema drift check"
+fi
