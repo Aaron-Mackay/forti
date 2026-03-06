@@ -48,7 +48,12 @@ async function main() {
   for (const ex of exercises) {
     await prisma.exercise.upsert({
       where:  { name_category: { name: ex.name, category: ex.category } },
-      update: {},
+      update: {
+        equipment:        ex.equipment,
+        primaryMuscles:   ex.primaryMuscles,
+        secondaryMuscles: ex.secondaryMuscles ?? [],
+        description:      ex.description ?? EXERCISE_DESCRIPTION,
+      },
       create: { ...ex, description: ex.description ?? EXERCISE_DESCRIPTION },
     });
   }
