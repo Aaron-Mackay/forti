@@ -1,4 +1,4 @@
-name: Migrate Database
+name: Recalculate E1RM
 
 on:
   workflow_dispatch:
@@ -10,23 +10,23 @@ on:
         options:
           - dev
           - prod
-      confirm_migrate:
+      confirm_recalculate:
         description: >-
-          I understand this will apply schema migrations to the target database
+          I understand this will overwrite all e1rm values in the target database
         required: true
         type: boolean
         default: false
 
 jobs:
-  migrate:
-    name: Migrate ${{ github.event.inputs.environment }} database
+  recalculate:
+    name: Recalculate e1rm (${{ github.event.inputs.environment }})
     runs-on: ubuntu-latest
 
     steps:
       - name: Require confirmation
-        if: ${{ github.event.inputs.confirm_migrate != 'true' }}
+        if: ${{ github.event.inputs.confirm_recalculate != 'true' }}
         run: |
-          echo "❌ You must tick 'confirm_migrate' to proceed. Aborting."
+          echo "❌ You must tick 'confirm_recalculate' to proceed. Aborting."
           exit 1
 
       - uses: actions/checkout@v4
@@ -39,14 +39,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Migrate dev database
+      - name: Recalculate e1rm (dev)
         if: ${{ github.event.inputs.environment == 'dev' }}
         env:
           DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
-        run: npm run rebuild-prisma
+        run: npm run recalculate-e1rm
 
-      - name: Migrate prod database
+      - name: Recalculate e1rm (prod)
         if: ${{ github.event.inputs.environment == 'prod' }}
         env:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
-        run: npx prisma migrate deploy
+        run: npm run recalculate-e1rm
