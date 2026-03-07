@@ -98,8 +98,8 @@ test.describe('Exercises browse page', () => {
 
       await page.locator('.MuiCard-root').first().click();
       await expect(page.getByText('Est. 1RM Progress')).toBeVisible();
-      // Click the MUI backdrop to close
-      await page.locator('.MuiBackdrop-root').click({ force: true });
+      // Close the drawer with Escape (reliable across all browsers including mobile)
+      await page.keyboard.press('Escape');
       await expect(page.getByText('Est. 1RM Progress')).not.toBeVisible();
     });
   });
