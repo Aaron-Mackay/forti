@@ -18,7 +18,7 @@ test.describe('Plans list page', () => {
 
   test("shows the demo user's plans section", async ({ page }) => {
     // Seed creates "Bob's Plans" section header
-    await expect(page.getByText(/Bob's Plans/i)).toBeVisible();
+    await expect(page.getByText(/Bob's Plans/i).first()).toBeVisible();
   });
 
   test('lists at least one plan for the demo user', async ({ page }) => {
@@ -49,7 +49,7 @@ test.describe('Plan detail page', () => {
   });
 
   test("shows the demo user's name in the plan heading", async ({ page }) => {
-    await expect(page.getByText(/User: Bob/i)).toBeVisible();
+    await expect(page.getByText(/User: Bob/i).first()).toBeVisible();
   });
 
   test('displays at least one week', async ({ page }) => {

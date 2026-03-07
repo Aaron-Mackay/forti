@@ -18,7 +18,7 @@ test.describe('Dashboard', () => {
 
   test('shows a personalised welcome greeting for the demo user', async ({ page }) => {
     // Seed data: demo user is Bob — greeting should contain "Bob"
-    await expect(page.getByText(/Welcome Bob/i)).toBeVisible();
+    await expect(page.getByText(/Welcome Bob/i).first()).toBeVisible();
   });
 
   test('renders the metrics chart container', async ({ page }) => {
@@ -33,7 +33,7 @@ test.describe('Dashboard', () => {
   test.describe('DashboardCards', () => {
     test('renders the Next Workout card linking to the workout', async ({ page }) => {
       // Seed data: Week 1 of each plan is always completed; Week 2 is always incomplete
-      await expect(page.getByText('Next Workout')).toBeVisible();
+      await expect(page.getByText('Next Workout').first()).toBeVisible();
       // The entire card is now a clickable link — no separate "Go" button
       await expect(page.getByRole('link').filter({ hasText: 'Next Workout' })).toBeVisible();
       // Week number displayed should match week.order (1-indexed, no +1 offset).
