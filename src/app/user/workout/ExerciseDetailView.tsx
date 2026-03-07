@@ -140,7 +140,9 @@ function ExerciseSlide({
                   size="small"
                   autoComplete="off"
                   value={set.weight?.toString() ?? ''}
-                  onChange={(e) => handleSetUpdate(setIdx, 'weight', e.target.value)}
+                  onChange={(e) => {
+                    handleSetUpdate(setIdx, 'weight', e.target.value)
+                  }}
                   sx={{mr: 1, width: 100}}
                 />
                 <TextField
@@ -150,6 +152,7 @@ function ExerciseSlide({
                   autoComplete="off"
                   value={set.reps ?? ''}
                   onChange={(e) => {
+                    if (!/^\d*$/.test(e.target.value)) return;
                     handleSetUpdate(setIdx, 'reps', e.target.value);
                   }}
                   sx={{width: 80}}

@@ -35,7 +35,9 @@ export default async function UserPage() {
           userId={user.id}
           settings={settings}
         />
-        {settings.showMetricsChart && <DashboardChart dayMetrics={userDayMetrics} blocks={userBlocks}/>}
+        {settings.showMetricsChart
+          && userDayMetrics.length > 0
+          && <DashboardChart dayMetrics={userDayMetrics} blocks={userBlocks}/>}
       </Paper>
     </>
   );
