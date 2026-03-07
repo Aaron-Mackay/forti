@@ -15,6 +15,7 @@ import prisma from '../src/lib/prisma';
 import { EXERCISE_DESCRIPTION, seedBobData } from './lib/bobSeedData';
 import {EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, SeedExercise} from "../src/types/dataTypes";
 import exercisesData from './exercises.json';
+import { computeE1rm } from '../src/lib/e1rm';
 
 const exercises = exercisesData as unknown as SeedExercise[];
 
@@ -70,6 +71,16 @@ async function main() {
   // Reset all of Bob's data relative to today
   await seedBobData(bob, new Date());
   console.log('  ✓ Bob\'s data reset');
+
+  // Backfill e1rm for all of Bob's sets
+  const bobSets = await prisma.exerciseSet.findMany({
+    where: { workoutExercise: { workout: { week: { plan: { userId: bob.id } } } } },
+    select: { id: true, weight: true, reps: true },
+  });
+  for (const set of bobSets) {
+    await prisma.exerciseSet.update({ where: { id: set.id }, data: { e1rm: computeE1rm(set.weight, set.reps) } });
+  }
+  console.log(`  ✓ e1rm backfilled (${bobSets.length} sets)`);
 
   console.log('\n✅ Demo seed complete');
 }

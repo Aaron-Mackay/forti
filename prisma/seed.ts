@@ -3,6 +3,7 @@ import { BlockSubtype, EventType } from "@prisma/client";
 import { seedBobData } from './lib/bobSeedData';
 import exercisesData from './exercises.json';
 import { EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, SeedExercise } from '../src/types/dataTypes';
+import { computeE1rm } from '../src/lib/e1rm';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const exercises = exercisesData as any as SeedExercise[];
@@ -226,6 +227,12 @@ async function main() {
     data: { name: 'Bob', email: 'bob@example.com' },
   });
   await seedBobData(bob, new Date('2024-06-01'));
+
+  // Backfill e1rm for all seeded sets
+  const allSets = await prisma.exerciseSet.findMany({ select: { id: true, weight: true, reps: true } });
+  for (const set of allSets) {
+    await prisma.exerciseSet.update({ where: { id: set.id }, data: { e1rm: computeE1rm(set.weight, set.reps) } });
+  }
 
   const dbUrl = process.env.DATABASE_URL ?? "";
   const dbLoc = dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1") ? 'local' : 'neon';
