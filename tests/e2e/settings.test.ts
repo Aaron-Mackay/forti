@@ -52,7 +52,7 @@ test.describe('Settings page — UI', () => {
     expect(logoutBox!.y).toBeGreaterThan(settingsBox!.y);
   });
 
-  test('shows all 6 dashboard card labels', async ({ page }) => {
+  test('shows all 7 dashboard card labels', async ({ page }) => {
     await expect(page.getByLabel('Next Workout').first()).toBeVisible();
     const labels = [
       'Next Workout',
@@ -61,6 +61,7 @@ test.describe('Settings page — UI', () => {
       'Active Block',
       'Upcoming Events',
       'Metrics Chart',
+      "Stopwatch"
     ];
     for (const label of labels) {
       await expect(page.getByText(label).first()).toBeVisible();
@@ -89,7 +90,7 @@ test.describe('Settings page — state', () => {
     const switches = page.getByRole('switch');
     await expect(switches.first()).toBeVisible();
     const count = await switches.count();
-    expect(count).toBe(6);
+    expect(count).toBe(7);
     for (let i = 0; i < count; i++) {
       await expect(switches.nth(i)).toBeChecked();
     }
