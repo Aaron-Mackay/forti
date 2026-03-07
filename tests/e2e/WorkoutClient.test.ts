@@ -176,7 +176,7 @@ test.describe('Workout page', () => {
       await repsField.fill('5');
 
       // Epley: 100 * (1 + 5/30) = 116.7 kg
-      await expect(page.getByText(/Est\. 1RM: 116\.7 kg/)).toBeVisible();
+      await expect(page.getByText(/Est\. 1RM: 116\.7 kg/).first()).toBeVisible();
     });
 
     test('shows e1rm sparkline when history exists', async ({page}) => {
@@ -197,8 +197,8 @@ test.describe('Workout page', () => {
       await page.getByRole('button', {name: 'Squat'}).click();
       await expect(page.getByText('Set').first()).toBeVisible();
 
-      await expect(page.getByText('Est. 1RM history')).toBeVisible();
-      await expect(page.getByText(/Best: 90\.0 kg/)).toBeVisible();
+      await expect(page.getByText('Est. 1RM history').first()).toBeVisible();
+      await expect(page.getByText(/Best: 90\.0 kg/).first()).toBeVisible();
     });
   });
 
@@ -209,8 +209,8 @@ test.describe('Workout page', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify([
-            { order: 1, weight: '65', reps: 10 },
-            { order: 2, weight: '70', reps: 8 },
+            { order: 1, weight: 65, reps: 10 },
+            { order: 2, weight: 70, reps: 8 },
           ]),
         });
       });
@@ -232,7 +232,7 @@ test.describe('Workout page', () => {
           contentType: 'application/json',
           body: JSON.stringify([
             { order: 1, weight: null, reps: 10 },
-            { order: 2, weight: '65', reps: null },
+            { order: 2, weight: 65, reps: null },
           ]),
         });
       });
