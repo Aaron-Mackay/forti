@@ -10,12 +10,19 @@ on:
         options:
           - dev
           - prod
+      migration_name:
+        description: 'Migration name (dev only — auto-generated from timestamp if blank)'
+        required: false
+        type: string
       confirm_migrate:
         description: >-
           I understand this will apply schema migrations to the target database
         required: true
         type: boolean
         default: false
+
+permissions:
+  contents: write
 
 jobs:
   migrate:
@@ -43,7 +50,35 @@ jobs:
         if: ${{ github.event.inputs.environment == 'dev' }}
         env:
           DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
-        run: npm run rebuild-prisma
+        run: |
+          NAME="${{ github.event.inputs.migration_name }}"
+          if [ -z "$NAME" ]; then
+            NAME="migration_$(date +%Y%m%d%H%M%S)"
+          fi
+          # Reset clears any drift and re-applies all existing migrations cleanly
+          npx prisma migrate reset --force --skip-seed
+          # Create a new migration if schema.prisma has unapplied changes, then apply it
+          npx prisma migrate dev --name "$NAME" --skip-seed
+          npx prisma generate
+
+      - name: Commit generated migration
+        if: ${{ github.event.inputs.environment == 'dev' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain prisma/migrations)" ]; then
+            git add prisma/migrations
+            git commit -m "chore: add migration ${{ github.event.inputs.migration_name || 'auto' }}"
+            git push
+          else
+            echo "No new migration files — schema already covered by existing migrations."
+          fi
+
+      - name: Seed dev database
+        if: ${{ github.event.inputs.environment == 'dev' }}
+        env:
+          DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
+        run: npm run seed
 
       - name: Migrate prod database
         if: ${{ github.event.inputs.environment == 'prod' }}
