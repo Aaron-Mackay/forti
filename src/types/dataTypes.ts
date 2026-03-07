@@ -36,7 +36,7 @@ export type SetPrisma = WorkoutExercisePrisma['sets'][number];
 
 
 export type SetUpdatePayload =
-  | { weight: string }
+  | { weight: number }
   | { reps: number };
 
 export const EXERCISE_EQUIPMENT = [

@@ -2,7 +2,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import 'fake-indexeddb/auto';
 import {addRequest, clearRequests, getAllRequests, openDatabase,} from './clientDb';
 const mockPayload: Record<string, unknown> = {
-  weight: "100"
+  weight: 100
 }
 
 describe('clientDb (Vitest)', () => {

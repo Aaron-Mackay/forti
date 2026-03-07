@@ -151,7 +151,7 @@ const ExerciseRow = ({
               <ToggleableEditableField
                 inputProps={{style: { textAlign: 'center'}, inputMode: 'numeric'}}
                 isInEditMode={isInEditMode}
-                value={set?.weight ?? ''}
+                value={set?.weight?.toString() ?? ''}
                 onChange={(val) =>
                   dispatch({
                     type: 'UPDATE_SET_WEIGHT',
@@ -160,7 +160,7 @@ const ExerciseRow = ({
                     workoutId,
                     weekId,
                     setId: set.id,
-                    weight: val,
+                    weight: val === '' ? null : parseFloat(val),
                   })
                 }
               />

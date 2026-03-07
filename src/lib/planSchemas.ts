@@ -1,7 +1,7 @@
 import {z} from "zod";
 
 export const SetInputSchema = z.object({
-  weight: z.string().nullable().optional(),
+  weight: z.number().nullable().optional(),
   reps: z.number().int().nullable().optional(),
   order: z.number().int(),
 });

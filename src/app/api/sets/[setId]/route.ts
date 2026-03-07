@@ -8,10 +8,10 @@ import {computeE1rm} from "@lib/e1rm";
 export async function PATCH(req: NextRequest, props: { params: Promise<{ setId: string }> }) {
   const params = await props.params;
   const {reps, weight} = await req.json();
-  const data: { [p: string]: string | number | null } = {};
+  const data: { [p: string]: number | null } = {};
 
   if (typeof reps === 'number') data.reps = reps;
-  if (typeof weight === 'string') data.weight = weight;
+  if (typeof weight === 'number') data.weight = weight;
 
   if (!Object.keys(data).length) {
     return NextResponse.json({error: 'No valid fields provided'}, {status: 400});
@@ -48,7 +48,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ setId: 
     }
 
     // Merge incoming values with existing to compute e1rm even when only one field changes
-    const mergedWeight = typeof data.weight === 'string' ? data.weight : set.weight;
+    const mergedWeight = typeof data.weight === 'number' ? data.weight : set.weight;
     const mergedReps = typeof data.reps === 'number' ? data.reps : set.reps;
     data.e1rm = computeE1rm(mergedWeight, mergedReps);
 

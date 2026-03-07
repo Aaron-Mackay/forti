@@ -183,7 +183,7 @@ async function main() {
                 workoutExerciseId: workoutExercise.id,
                 order: s + 1,
                 reps: completionDate !== null ? 8 + Math.floor(Math.random() * 5) : null,
-                weight: completionDate !== null ? (Math.round(Math.random() * 50 + 30)).toString() : null,
+                weight: completionDate !== null ? Math.round(Math.random() * 50 + 30) : null,
               },
             });
           }

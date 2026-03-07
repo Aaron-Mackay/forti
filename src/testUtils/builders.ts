@@ -203,7 +203,7 @@ export class SetBuilder {
       workoutExerciseId: -1,
       order,
       reps: 8,
-      weight: "100",
+      weight: 100,
       e1rm: null,
     };
   }

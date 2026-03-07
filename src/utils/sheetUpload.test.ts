@@ -62,20 +62,20 @@ describe('parsePlan', () => {
                   {
                     id: 1,
                     reps: 12,
-                    weight: "5",
+                    weight: 5,
                     order: 1
                   },
                   {
                     "id": 2,
                     "order": 2,
                     "reps": 15,
-                    "weight": "3",
+                    "weight": 3,
                   },
                   {
                     "id": 3,
                     "order": 3,
                     "reps": null,
-                    "weight": "3",
+                    "weight": 3,
                   },
                 ]
               }

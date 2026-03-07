@@ -54,8 +54,8 @@ function buildWorkout(): WorkoutPrisma {
         notes: '',
         exercise: {id: 100, name: 'Bench Press', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
         sets: [
-          {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: '100'},
-          {id: 2, workoutExerciseId: 10, order: 2, reps: 6, weight: '90'},
+          {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100},
+          {id: 2, workoutExerciseId: 10, order: 2, reps: 6, weight: 90},
         ],
       },
     ],
@@ -104,8 +104,8 @@ describe('ExerciseDetailView', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve([
-        {weight: '80', reps: 10, order: 1},
-        {weight: '80', reps: 9, order: 2},
+        {weight: 80, reps: 10, order: 1},
+        {weight: 80, reps: 9, order: 2},
       ]),
     }));
 

@@ -248,7 +248,7 @@ export function updateSetCount(user: UserPrisma, planId: number, weekId: number,
   });
 }
 
-export function updateSetWeight(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, setId: number, weight: string): UserPrisma {
+export function updateSetWeight(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, setId: number, weight: number | null): UserPrisma {
   return withSet(user, planId, weekId, workoutId, exerciseId, setId, set => ({...set, weight}));
 }
 

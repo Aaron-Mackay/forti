@@ -203,7 +203,7 @@ export async function seedBobData(bob: { id: string }, today: Date): Promise<voi
                 workoutExerciseId: workoutExercise.id,
                 order:  s + 1,
                 reps:   isFirstWeek ? base.reps : null,
-                weight: isFirstWeek && base.weight > 0 ? base.weight.toString() : null,
+                weight: isFirstWeek && base.weight > 0 ? base.weight : null,
               },
             });
           }

@@ -80,9 +80,9 @@ describe('reducer', () => {
 
     // Deep clone check: mutate duplicate, original should not change
     duplicate.workouts[0].name = 'Changed Name';
-    duplicate.workouts[0].exercises[0].sets[0].weight = '999';
+    duplicate.workouts[0].exercises[0].sets[0].weight = 999;
     expect(original.workouts[0].name).toBe('Workout');
-    expect(original.workouts[0].exercises[0].sets[0].weight).toBe('100');
+    expect(original.workouts[0].exercises[0].sets[0].weight).toBe(100);
   });
 
   it('DUPLICATE_WORKOUT duplicates a workout in a week with new IDs', () => {
@@ -119,9 +119,9 @@ describe('reducer', () => {
 
     // Deep clone check: mutate duplicate, original should not change
     duplicate.name = 'Changed Name';
-    duplicate.exercises[0].sets[0].weight = '999';
+    duplicate.exercises[0].sets[0].weight = 999;
     expect(original.name).toBe('Workout');
-    expect(original.exercises[0].sets[0].weight).toBe('100');
+    expect(original.exercises[0].sets[0].weight).toBe(100);
   });
 
   it('ADD_WORKOUT adds a workout to the specified week', () => {
@@ -313,10 +313,10 @@ describe('reducer', () => {
       weekId: 1,
       workoutId: 2,
       setId: 10,
-      weight: '200'
+      weight: 200
     };
     const newState = reducer(state, action, mockUuid);
-    expect(newState.plans[0].weeks[0].workouts[0].exercises[0].sets[0].weight).toBe('200');
+    expect(newState.plans[0].weeks[0].workouts[0].exercises[0].sets[0].weight).toBe(200);
   });
 
   it('UPDATE_SET_REPS updates the set reps', () => {
@@ -539,7 +539,7 @@ describe('reducer', () => {
       weekId: 1,
       workoutId: 2,
       setId: 999,
-      weight: '200'};
+      weight: 200};
     const newState = reducer(state, action, mockUuid);
     expect(newState).toEqual(prevState);
   });

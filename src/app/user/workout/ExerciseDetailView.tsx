@@ -31,7 +31,7 @@ import MuscleHighlight from "@/components/MuscleHighlight";
 import {computeE1rm} from '@/lib/e1rm';
 import E1rmSparkline from './E1rmSparkline';
 
-type PreviousSet = {weight: string | null; reps: number | null; order: number};
+type PreviousSet = {weight: number | null; reps: number | null; order: number};
 
 function ExerciseSlide({
   ex,
@@ -134,7 +134,7 @@ function ExerciseSlide({
                   label="Weight"
                   size="small"
                   autoComplete="off"
-                  value={set.weight ?? ''}
+                  value={set.weight?.toString() ?? ''}
                   onChange={(e) => handleSetUpdate(setIdx, 'weight', e.target.value)}
                   sx={{mr: 1, width: 100}}
                 />

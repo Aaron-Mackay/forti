@@ -446,8 +446,8 @@ describe('updateSetCount', () => {
 describe('updateSetWeight', () => {
   it('updates the weight of the target set', () => {
     const user = buildBaseUser();
-    const result = updateSetWeight(user, 1, 101, 201, 301, 401, '250');
-    expect(result.plans[0].weeks[0].workouts[0].exercises[0].sets[0].weight).toBe('250');
+    const result = updateSetWeight(user, 1, 101, 201, 301, 401, 250);
+    expect(result.plans[0].weeks[0].workouts[0].exercises[0].sets[0].weight).toBe(250);
   });
 
   it('does not affect other sets', () => {
@@ -459,8 +459,8 @@ describe('updateSetWeight', () => {
     const week = new WeekBuilder(101, 1).addWorkout(workout).build();
     const plan = new PlanBuilder(1).addWeek(week).build();
     const user = new UserBuilder(1).addPlan(plan).build();
-    const result = updateSetWeight(user, 1, 101, 201, 301, 401, '999');
-    expect(result.plans[0].weeks[0].workouts[0].exercises[0].sets[1].weight).toBe('100');
+    const result = updateSetWeight(user, 1, 101, 201, 301, 401, 999);
+    expect(result.plans[0].weeks[0].workouts[0].exercises[0].sets[1].weight).toBe(100);
   });
 });
 

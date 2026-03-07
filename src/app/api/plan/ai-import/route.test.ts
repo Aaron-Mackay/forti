@@ -64,7 +64,7 @@ const validPlanInput = {
       workouts: [
         {
           name: 'Push',
-          exercises: [{ name: 'Bench Press', sets: [{ weight: '80', reps: 8 }] }],
+          exercises: [{ name: 'Bench Press', sets: [{ weight: 80, reps: 8 }] }],
         },
       ],
     },

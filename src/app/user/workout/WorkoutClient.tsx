@@ -124,7 +124,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
     if (!selectedExercise) return;
 
     const updatedSets = selectedExercise.sets.map((set, idx) =>
-      idx === setIdx ? {...set, [field]: field === 'weight' ? value : Number(value)} : set
+      idx === setIdx ? {...set, [field]: field === 'weight' ? (value === '' ? null : parseFloat(value)) : Number(value)} : set
     );
 
     // Optimistically update userDataState
@@ -134,7 +134,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
 
     // Fire PATCH request in background
     queueOrSendRequest(`/api/sets/${updatedSets[setIdx].id}`, 'PATCH', {
-      [field]: field === 'reps' ? Number(value) : value,
+      [field]: field === 'reps' ? Number(value) : (value === '' ? null : parseFloat(value)),
     })
       .then(() => {
         setSnackbar({

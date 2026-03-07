@@ -30,7 +30,7 @@ export type WorkoutEditorAction =
   workoutId: number;
   exerciseId: number;
   setId: number;
-  weight: string
+  weight: number | null
 }
   | {
   type: 'UPDATE_SET_REPS';

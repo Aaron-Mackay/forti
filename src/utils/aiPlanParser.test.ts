@@ -11,7 +11,7 @@ const minimalValidInput = {
         {
           name: 'Push',
           exercises: [
-            { name: 'Bench Press', sets: [{ weight: '80', reps: 8 }] },
+            { name: 'Bench Press', sets: [{ weight: 80, reps: 8 }] },
           ],
         },
       ],
@@ -150,7 +150,7 @@ describe('parseAiPlanResponse — optional fields', () => {
                   repRange: '8-12',
                   restTime: '90',
                   notes: 'Pause at bottom',
-                  sets: [{ weight: '80', reps: 10 }],
+                  sets: [{ weight: 80, reps: 10 }],
                 },
               ],
             },

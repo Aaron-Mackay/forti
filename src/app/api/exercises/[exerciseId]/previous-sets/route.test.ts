@@ -31,8 +31,8 @@ function makeRequest(exerciseId: string, currentWorkoutId?: number): [NextReques
 }
 
 const mockSets = [
-  {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: '100'},
-  {id: 2, workoutExerciseId: 10, order: 2, reps: 8, weight: '100'},
+  {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100},
+  {id: 2, workoutExerciseId: 10, order: 2, reps: 8, weight: 100},
 ];
 
 beforeEach(() => {

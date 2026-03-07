@@ -38,7 +38,7 @@ function buildWorkout(overrides: Partial<WorkoutPrisma> = {}): WorkoutPrisma {
         notes: '',
         exercise: {id: 100, name: 'Bench Press', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
         sets: [
-          {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: '100'},
+          {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100},
           {id: 2, workoutExerciseId: 10, order: 2, reps: null, weight: null},
         ],
       },

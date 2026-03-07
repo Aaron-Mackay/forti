@@ -6,7 +6,7 @@ import { z } from 'zod';
 // flexibility in what it returns.
 
 const AiSetSchema = z.object({
-  weight: z.string().nullable().optional(),
+  weight: z.number().nullable().optional(),
   reps: z.number().int().nullable().optional(),
 });
 
@@ -56,7 +56,7 @@ export type ParsedPlan = {
         repRange: string | null | undefined;
         restTime: string | null | undefined;
         notes: string | null | undefined;
-        sets: Array<{ order: number; weight: string | null | undefined; reps: number | null | undefined }>;
+        sets: Array<{ order: number; weight: number | null | undefined; reps: number | null | undefined }>;
       }>;
     }>;
   }>;
@@ -134,8 +134,8 @@ export const AI_PLAN_TOOL = {
                             type: 'object',
                             properties: {
                               weight: {
-                                type: 'string',
-                                description: 'Weight as a string, e.g. "60" or "60kg". Omit if unknown.',
+                                type: 'number',
+                                description: 'Weight in kg as a number, e.g. 60. Omit if unknown.',
                               },
                               reps: { type: 'integer', description: 'Number of reps. Omit if unknown.' },
                             },

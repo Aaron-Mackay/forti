@@ -96,7 +96,7 @@ const parseSets = (exerciseRow: string[]): SetPrisma[] => {
     const set: SetPrisma = {
       id: (i - 6),
       order: (i - 6),
-      weight: exerciseRow[i],
+      weight: exerciseRow[i] ? parseFloat(exerciseRow[i]) : null,
       reps: Number(exerciseRow[i + 3]) || null
     }
     parsedSets.push(set)

@@ -181,7 +181,7 @@ model ExerciseSet {
   workoutExercise   WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
   workoutExerciseId Int
   reps              Int?
-  weight            String?
+  weight            Float?
   // Estimated 1-rep max (Epley formula: weight * (1 + reps/30)). Computed on write.
   e1rm              Float?
 
