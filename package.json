@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "postbuild": "if [ \"$VERCEL_ENV\" = \"production\" ]; then prisma migrate resolve --rolled-back 0003_exercise_category_enum 2>/dev/null || true; prisma migrate resolve --rolled-back 0005_exercise_set_weight_float 2>/dev/null || true; prisma migrate deploy; fi",
+    "postbuild": "if [ \"$VERCEL_ENV\" = \"production\" ]; then prisma migrate deploy; fi",
     "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint src",
