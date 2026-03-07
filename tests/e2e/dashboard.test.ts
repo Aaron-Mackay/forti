@@ -72,7 +72,7 @@ test.describe('Dashboard', () => {
     });
 
     test('renders the This Week training count card', async ({ page }) => {
-      await expect(page.getByText('This Week')).toBeVisible();
+      await expect(page.getByText('This Week').first()).toBeVisible();
       // Scope to the specific card to avoid matching the "Welcome Bob" h4
       const thisWeekCard = page.locator('.MuiCard-root').filter({ hasText: 'This Week' });
       const countEl = thisWeekCard.locator('h4');
