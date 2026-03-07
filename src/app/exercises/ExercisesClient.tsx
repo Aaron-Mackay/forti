@@ -8,6 +8,7 @@ import {useRouter} from 'next/navigation';
 import {EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, ExerciseEquipment, ExerciseMuscle} from '@/types/dataTypes';
 import ExerciseCard from './ExerciseCard';
 import {AddExerciseForm} from './AddExerciseForm';
+import ExerciseDetailDrawer from './ExerciseDetailDrawer';
 import CustomAppBar, {HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar';
 
 function toTitleCase(str: string) {
@@ -24,6 +25,7 @@ export default function ExercisesClient({
   const [selectedMuscles, setSelectedMuscles] = useState<ExerciseMuscle[]>([]);
   const [selectedEquipment, setSelectedEquipment] = useState<ExerciseEquipment[]>([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
 
   const filtered = useMemo(() => {
     return initialExercises.filter(ex => {
@@ -100,7 +102,13 @@ export default function ExercisesClient({
           }}
         >
           {filtered.map(exercise => (
-            <ExerciseCard key={exercise.id} exercise={exercise}/>
+            <Box
+              key={exercise.id}
+              onClick={() => setSelectedExercise(exercise)}
+              sx={{cursor: 'pointer'}}
+            >
+              <ExerciseCard exercise={exercise}/>
+            </Box>
           ))}
         </Box>
       ) : (
@@ -113,6 +121,10 @@ export default function ExercisesClient({
         open={addDialogOpen}
         onClose={() => setAddDialogOpen(false)}
         onExerciseAdded={handleExerciseAdded}
+      />
+      <ExerciseDetailDrawer
+        exercise={selectedExercise}
+        onClose={() => setSelectedExercise(null)}
       />
       </Box>
     </>

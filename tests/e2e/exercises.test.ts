@@ -1,8 +1,9 @@
 /**
  * Exercise exploration page tests (/exercises).
  *
- * Covers: exercise card grid, text/muscle/equipment filters, and the
- * Add Exercise dialog (including live anatomy preview and validation).
+ * Covers: exercise card grid, text/muscle/equipment filters, the
+ * Add Exercise dialog (including live anatomy preview and validation),
+ * and the exercise detail drawer with e1rm history chart.
  */
 import {test, expect} from './fixtures';
 
@@ -59,6 +60,48 @@ test.describe('Exercises browse page', () => {
     // Open drawer via menu button
     await page.getByRole('button', {name: /menu/i}).click();
     await expect(page.getByRole('link', {name: 'Exercises'})).toBeVisible();
+  });
+
+  test.describe('exercise detail drawer', () => {
+    test('clicking an exercise card opens the detail drawer', async ({page}) => {
+      await page.route('**/api/exercises/*/e1rm-history**', route =>
+        route.fulfill({status: 200, contentType: 'application/json', body: '[]'}),
+      );
+
+      await page.locator('.MuiCard-root').first().click();
+      // Drawer opens — look for the "Est. 1RM Progress" heading
+      await expect(page.getByText('Est. 1RM Progress')).toBeVisible();
+    });
+
+    test('drawer shows e1rm chart when history exists', async ({page}) => {
+      await page.route('**/api/exercises/*/e1rm-history**', route =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {date: '2025-01-10T00:00:00.000Z', bestE1rm: 80},
+            {date: '2025-03-10T00:00:00.000Z', bestE1rm: 95},
+          ]),
+        }),
+      );
+
+      await page.locator('.MuiCard-root').first().click();
+      await expect(page.getByText('Est. 1RM Progress')).toBeVisible();
+      // ApexCharts renders an SVG when data is present
+      await expect(page.locator('.apexcharts-canvas').first()).toBeVisible();
+    });
+
+    test('drawer closes when clicking outside', async ({page}) => {
+      await page.route('**/api/exercises/*/e1rm-history**', route =>
+        route.fulfill({status: 200, contentType: 'application/json', body: '[]'}),
+      );
+
+      await page.locator('.MuiCard-root').first().click();
+      await expect(page.getByText('Est. 1RM Progress')).toBeVisible();
+      // Click the MUI backdrop to close
+      await page.locator('.MuiBackdrop-root').click();
+      await expect(page.getByText('Est. 1RM Progress')).not.toBeVisible();
+    });
   });
 });
 

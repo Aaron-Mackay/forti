@@ -28,6 +28,8 @@ import {UserExerciseNote} from '@prisma/client';
 import Stopwatch from "./Stopwatch";
 import CustomAppBar from "@/components/CustomAppBar";
 import MuscleHighlight from "@/components/MuscleHighlight";
+import {computeE1rm} from '@/lib/e1rm';
+import E1rmSparkline from './E1rmSparkline';
 
 type PreviousSet = {weight: string | null; reps: number | null; order: number};
 
@@ -37,12 +39,14 @@ function ExerciseSlide({
   onFormCueBlur,
   handleSetUpdate,
   previousSets,
+  currentWorkoutId,
 }: {
   ex: WorkoutExercisePrisma;
   userExerciseNote: UserExerciseNote | undefined;
   onFormCueBlur: (exerciseId: number, note: string) => void;
   handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
   previousSets: PreviousSet[] | undefined;
+  currentWorkoutId: number;
 }) {
   const [formCue, setFormCue] = useState(userExerciseNote?.note ?? '');
   const [formCueOpen, setFormCueOpen] = useState(false);
@@ -88,6 +92,9 @@ function ExerciseSlide({
         <MuscleHighlight primaryMuscles={ex.exercise.primaryMuscles} secondaryMuscles={ex.exercise.secondaryMuscles} exerciseId={ex.exerciseId}/>
       </Box>
 
+      {/* E1RM sparkline */}
+      <E1rmSparkline exerciseId={ex.exerciseId} currentWorkoutId={currentWorkoutId}/>
+
       {/* Form cue textarea */}
       <Collapse in={formCueOpen} sx={{width: '100%', mb: 1}}>
         <TextField
@@ -118,6 +125,7 @@ function ExerciseSlide({
         )}
         {ex.sets.map((set: SetPrisma, setIdx) => {
           const prev = previousSets?.find(s => s.order === set.order);
+          const liveE1rm = computeE1rm(set.weight, set.reps);
           return (
             <ListItem key={set.id} disablePadding sx={{alignItems: 'flex-start', mb: 1, flexDirection: 'column'}}>
               <Box sx={{display: 'flex', alignItems: 'flex-end', width: '100%'}}>
@@ -151,6 +159,16 @@ function ExerciseSlide({
                   aria-label={`Previous: ${prev.weight ?? '—'} × ${prev.reps ?? '—'}`}
                 >
                   Last: {prev.weight ?? '—'} × {prev.reps ?? '—'}
+                </Typography>
+              )}
+              {liveE1rm !== null && (
+                <Typography
+                  variant="caption"
+                  color="primary"
+                  sx={{pl: '76px', mt: 0.25}}
+                  aria-label={`Estimated 1RM: ${liveE1rm.toFixed(1)} kg`}
+                >
+                  Est. 1RM: {liveE1rm.toFixed(1)} kg
                 </Typography>
               )}
             </ListItem>
@@ -272,6 +290,7 @@ export default function ExerciseDetailView({
                 onFormCueBlur={onFormCueBlur}
                 handleSetUpdate={handleSetUpdate}
                 previousSets={previousSetsMap.get(ex.exerciseId)}
+                currentWorkoutId={currentWorkoutId}
               />
             </SwiperSlide>
           ))}
