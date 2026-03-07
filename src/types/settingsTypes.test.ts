@@ -1,22 +1,22 @@
-import { parseDashboardSettings, DEFAULT_DASHBOARD_SETTINGS } from './settingsTypes';
+import { parseDashboardSettings, DEFAULT_SETTINGS } from './settingsTypes';
 
 describe('parseDashboardSettings', () => {
   it('returns all defaults for null', () => {
-    expect(parseDashboardSettings(null)).toEqual(DEFAULT_DASHBOARD_SETTINGS);
+    expect(parseDashboardSettings(null)).toEqual(DEFAULT_SETTINGS);
   });
 
   it('returns all defaults for undefined', () => {
-    expect(parseDashboardSettings(undefined)).toEqual(DEFAULT_DASHBOARD_SETTINGS);
+    expect(parseDashboardSettings(undefined)).toEqual(DEFAULT_SETTINGS);
   });
 
   it('returns all defaults for empty object', () => {
-    expect(parseDashboardSettings({})).toEqual(DEFAULT_DASHBOARD_SETTINGS);
+    expect(parseDashboardSettings({})).toEqual(DEFAULT_SETTINGS);
   });
 
   it('returns all defaults for non-object types', () => {
-    expect(parseDashboardSettings('string')).toEqual(DEFAULT_DASHBOARD_SETTINGS);
-    expect(parseDashboardSettings(42)).toEqual(DEFAULT_DASHBOARD_SETTINGS);
-    expect(parseDashboardSettings([])).toEqual(DEFAULT_DASHBOARD_SETTINGS);
+    expect(parseDashboardSettings('string')).toEqual(DEFAULT_SETTINGS);
+    expect(parseDashboardSettings(42)).toEqual(DEFAULT_SETTINGS);
+    expect(parseDashboardSettings([])).toEqual(DEFAULT_SETTINGS);
   });
 
   it('applies a single override, leaving others as defaults', () => {
@@ -47,6 +47,7 @@ describe('parseDashboardSettings', () => {
       showActiveBlock: false,
       showUpcomingEvents: false,
       showMetricsChart: false,
+      showStopwatch: false,
     };
     expect(parseDashboardSettings(allFalse)).toEqual(allFalse);
   });

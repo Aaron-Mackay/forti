@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {
   Alert,
   Box,
@@ -10,9 +10,10 @@ import {
   Switch,
   Typography,
 } from '@mui/material';
-import {DashboardSettings, DEFAULT_DASHBOARD_SETTINGS, parseDashboardSettings} from '@/types/settingsTypes';
+import { Settings } from '@/types/settingsTypes';
+import { useSettings } from '@lib/providers/SettingsProvider';
 
-const CARD_LABELS: {key: keyof DashboardSettings; label: string}[] = [
+const CARD_LABELS: {key: keyof Settings; label: string}[] = [
   {key: 'showNextWorkout',    label: 'Next Workout'},
   {key: 'showTodaysMetrics',  label: "Today's Metrics"},
   {key: 'showWeeklyTraining', label: 'Weekly Training'},
@@ -21,60 +22,58 @@ const CARD_LABELS: {key: keyof DashboardSettings; label: string}[] = [
   {key: 'showMetricsChart',   label: 'Metrics Chart'},
 ];
 
+const WORKOUT_LABELS: {key: keyof Settings; label: string}[] = [
+  {key: 'showStopwatch', label: 'Stopwatch'}
+];
+
 export default function SettingsClient() {
-  const [settings, setSettings] = useState<DashboardSettings>(DEFAULT_DASHBOARD_SETTINGS);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { settings, loading, error, clearError, updateSetting } = useSettings();
 
-  useEffect(() => {
-    fetch('/api/user/settings')
-      .then(res => res.ok ? res.json() : Promise.reject(res))
-      .then(data => {
-        setSettings(parseDashboardSettings(data.settings));
-        setLoading(false);
-      })
-      .catch(() => {
-        setError('Failed to load settings.');
-        setLoading(false);
-      });
-  }, []);
-
-  const handleToggle = async (key: keyof DashboardSettings) => {
-    const prev = settings;
-    const updated = {...settings, [key]: !settings[key]};
-    setSettings(updated);
-    setError(null);
-
-    try {
-      const res = await fetch('/api/user/settings', {
-        method: 'PATCH',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({settings: {[key]: updated[key]}}),
-      });
-      if (!res.ok) throw new Error();
-    } catch {
-      setSettings(prev);
-      setError('Failed to save setting. Please try again.');
-    }
+  const handleToggle = (key: keyof Settings) => {
+    updateSetting(key, !settings[key]);
   };
 
   return (
     <Box sx={{pt: 2, pb: 4, maxWidth: 480}}>
-      <Typography variant="h5" sx={{mb: 3}}>Settings</Typography>
-
       {error && (
-        <Alert severity="error" sx={{mb: 2}} onClose={() => setError(null)}>
+        <Alert severity="error" sx={{mb: 2}} onClose={clearError}>
           {error}
         </Alert>
       )}
 
       <Typography variant="overline" color="text.secondary">Dashboard Cards</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{mb: 1}}>
-        Choose which sections appear on your dashboard.
-      </Typography>
-
-      <Box>
+      <Box sx={{mb: 2}}>
         {CARD_LABELS.map(({key, label}, i) => (
+          <React.Fragment key={key}>
+            {i > 0 && <Divider/>}
+            {loading
+              ? (
+                <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1}}>
+                  <Typography variant="body1">{label}</Typography>
+                  <Skeleton variant="rounded" width={52} height={32}/>
+                </Box>
+              )
+              : (
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings[key]}
+                      onChange={() => handleToggle(key)}
+                    />
+                  }
+                  label={label}
+                  labelPlacement="start"
+                  sx={{width: '100%', mx: 0, justifyContent: 'space-between'}}
+                />
+              )
+            }
+          </React.Fragment>
+        ))}
+      </Box>
+
+      <Typography variant="overline" color="text.secondary">Workout</Typography>
+      <Box>
+        {WORKOUT_LABELS.map(({key, label}, i) => (
           <React.Fragment key={key}>
             {i > 0 && <Divider/>}
             {loading

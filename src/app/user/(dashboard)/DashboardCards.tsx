@@ -17,7 +17,7 @@ import UpcomingIcon from "@mui/icons-material/Upcoming";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import Link from "next/link";
 import {DayMetricPrisma, EventPrisma, UserPrisma} from "@/types/dataTypes";
-import {DashboardSettings} from "@/types/settingsTypes";
+import {Settings} from "@/types/settingsTypes";
 import {EventType} from "@prisma/client";
 import {convertDateToDateString} from "@lib/dateUtils";
 import {getDefinedBlockColor} from "@/app/user/calendar/utils";
@@ -105,7 +105,7 @@ interface DashboardCardsProps {
   events: EventPrisma[];
   today: Date;
   userId: string;
-  settings: DashboardSettings;
+  settings: Settings;
 }
 
 export default function DashboardCards({userData, dayMetrics, events, today, userId, settings}: DashboardCardsProps) {

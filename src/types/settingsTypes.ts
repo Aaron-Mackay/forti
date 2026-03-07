@@ -1,26 +1,28 @@
-export interface DashboardSettings {
+export interface Settings {
   showNextWorkout: boolean;
   showTodaysMetrics: boolean;
   showWeeklyTraining: boolean;
   showActiveBlock: boolean;
   showUpcomingEvents: boolean;
   showMetricsChart: boolean;
+  showStopwatch: boolean;
 }
 
-export const DEFAULT_DASHBOARD_SETTINGS: DashboardSettings = {
+export const DEFAULT_SETTINGS: Settings = {
   showNextWorkout: true,
   showTodaysMetrics: true,
   showWeeklyTraining: true,
   showActiveBlock: true,
   showUpcomingEvents: true,
   showMetricsChart: true,
+  showStopwatch: true
 };
 
-export function parseDashboardSettings(raw: unknown): DashboardSettings {
+export function parseDashboardSettings(raw: unknown): Settings {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-    return { ...DEFAULT_DASHBOARD_SETTINGS };
+    return { ...DEFAULT_SETTINGS };
   }
-  const s = raw as Partial<DashboardSettings>;
+  const s = raw as Partial<Settings>;
   return {
     showNextWorkout:    s.showNextWorkout    ?? true,
     showTodaysMetrics:  s.showTodaysMetrics  ?? true,
@@ -28,5 +30,6 @@ export function parseDashboardSettings(raw: unknown): DashboardSettings {
     showActiveBlock:    s.showActiveBlock    ?? true,
     showUpcomingEvents: s.showUpcomingEvents ?? true,
     showMetricsChart:   s.showMetricsChart   ?? true,
+    showStopwatch:      s.showStopwatch      ?? true,
   };
 }

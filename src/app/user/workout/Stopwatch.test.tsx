@@ -2,6 +2,11 @@ import React from "react";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import Stopwatch from "./Stopwatch";
+import { DEFAULT_SETTINGS } from "@/types/settingsTypes";
+
+vi.mock("@lib/providers/SettingsProvider", () => ({
+  useSettings: () => ({ settings: DEFAULT_SETTINGS, loading: false, error: null, clearError: vi.fn(), updateSetting: vi.fn() }),
+}));
 
 describe("Stopwatch", () => {
   let originalRequestAnimationFrame: typeof window.requestAnimationFrame;

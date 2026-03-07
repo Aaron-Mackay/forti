@@ -4,6 +4,7 @@ import TimerOutlinedIcon from '@mui/icons-material/TimerOutlined';
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined';
 import "./stopwatch.css";
 import {Collapse} from "@mui/material";
+import {useSettings} from "@lib/providers/SettingsProvider";
 
 type StopwatchProps = {
   isRunning: boolean;
@@ -24,6 +25,7 @@ const Stopwatch: React.FC<StopwatchProps> = ({
                                                isStopwatchVisible,
                                                setIsStopwatchVisible
                                              }) => {
+  const { settings } = useSettings();
   const [displayTime, setDisplayTime] = useState(pausedTime);
 
   useEffect(() => {
@@ -47,6 +49,8 @@ const Stopwatch: React.FC<StopwatchProps> = ({
       if (animationFrame) cancelAnimationFrame(animationFrame);
     };
   }, [isRunning, startTimestamp, pausedTime]);
+
+  if (!settings.showStopwatch) return null;
 
   // time is incremented by 1 if running elsewhere, but displayed here.
   const minutes = Math.floor(displayTime / 600)

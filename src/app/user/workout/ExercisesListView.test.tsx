@@ -4,6 +4,9 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 
 vi.mock('next-auth/react', () => ({useSession: () => ({data: null, status: 'unauthenticated'})}));
 vi.mock('next/navigation', () => ({usePathname: () => '/user/workout', useRouter: () => ({push: vi.fn()})}));
+vi.mock('@lib/providers/SettingsProvider', () => ({
+  useSettings: () => ({settings: {showStopwatch: true}, loading: false, error: null, clearError: vi.fn(), updateSetting: vi.fn()}),
+}));
 
 import ExercisesListView from './ExercisesListView';
 import {ExerciseCategory} from '@prisma/client';
