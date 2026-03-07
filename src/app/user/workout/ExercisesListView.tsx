@@ -1,7 +1,19 @@
 'use client';
 
 import {useState} from 'react';
-import {Box, Button, Container, Collapse, IconButton, List, ListItem, ListItemButton, ListItemText, TextField, Typography} from '@mui/material';
+import {
+  Box,
+  Button,
+  Collapse,
+  Container,
+  IconButton,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  TextField,
+  Typography
+} from '@mui/material';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -9,9 +21,9 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import {WorkoutPrisma} from '@/types/dataTypes';
-import Stopwatch from "./Stopwatch";
 import './exercisesListView.css'
 import CustomAppBar from "@/components/CustomAppBar";
+import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 
 export default function ExercisesListView({
                                             workout,
@@ -24,8 +36,6 @@ export default function ExercisesListView({
                                             stopwatchPausedTime,
                                             onStopwatchStartStop,
                                             onStopwatchReset,
-                                            isStopwatchVisible,
-                                            setIsStopwatchVisible
                                           }: {
   workout: WorkoutPrisma;
   onBack: () => void;
@@ -37,8 +47,6 @@ export default function ExercisesListView({
   stopwatchPausedTime: number;
   onStopwatchStartStop: () => void;
   onStopwatchReset: () => void;
-  isStopwatchVisible: boolean;
-  setIsStopwatchVisible: (isVisible: boolean) => void;
 }) {
   const [notesOpen, setNotesOpen] = useState(false);
   const [noteValue, setNoteValue] = useState(workout.notes ?? '');
@@ -131,14 +139,12 @@ export default function ExercisesListView({
         >
           {isCompleted ? `Completed ${completedDate}` : 'Mark as Complete'}
         </Button>
-        <Stopwatch
+        <AppBarStopwatch
           isRunning={stopwatchIsRunning}
           startTimestamp={stopwatchStartTimestamp}
           pausedTime={stopwatchPausedTime}
           onStartStop={onStopwatchStartStop}
           onReset={onStopwatchReset}
-          isStopwatchVisible={isStopwatchVisible}
-          setIsStopwatchVisible={setIsStopwatchVisible}
         />
       </Container>
     </Box>

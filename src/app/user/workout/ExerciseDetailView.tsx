@@ -25,22 +25,22 @@ import 'swiper/css/pagination';
 import './styles.css';
 import {SetPrisma, WorkoutExercisePrisma, WorkoutPrisma} from '@/types/dataTypes';
 import {UserExerciseNote} from '@prisma/client';
-import Stopwatch from "./Stopwatch";
 import CustomAppBar from "@/components/CustomAppBar";
 import MuscleHighlight from "@/components/MuscleHighlight";
 import {computeE1rm} from '@/lib/e1rm';
 import E1rmSparkline from './E1rmSparkline';
+import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 
-type PreviousSet = {weight: number | null; reps: number | null; order: number};
+type PreviousSet = { weight: number | null; reps: number | null; order: number };
 
 function ExerciseSlide({
-  ex,
-  userExerciseNote,
-  onFormCueBlur,
-  handleSetUpdate,
-  previousSets,
-  currentWorkoutId,
-}: {
+                         ex,
+                         userExerciseNote,
+                         onFormCueBlur,
+                         handleSetUpdate,
+                         previousSets,
+                         currentWorkoutId,
+                       }: {
   ex: WorkoutExercisePrisma;
   userExerciseNote: UserExerciseNote | undefined;
   onFormCueBlur: (exerciseId: number, note: string) => void;
@@ -55,14 +55,18 @@ function ExerciseSlide({
 
   return (
     <Paper
+      elevation={1}
       sx={{
         display: 'flex',
         flexDirection: 'column',
         flex: 1,
-        maxWidth: '100%',
+        maxWidth: '100',
+        mx: 1,
         boxSizing: 'border-box',
         p: 2,
         alignItems: 'center',
+        border: '1px solid',
+        borderColor: 'divider',
       }}
     >
       {/* Header row: name/rest/reps/notes toggle on left, anatomy on right */}
@@ -89,7 +93,8 @@ function ExerciseSlide({
             </Typography>
           </Box>
         </Box>
-        <MuscleHighlight primaryMuscles={ex.exercise.primaryMuscles} secondaryMuscles={ex.exercise.secondaryMuscles} exerciseId={ex.exerciseId}/>
+        <MuscleHighlight primaryMuscles={ex.exercise.primaryMuscles} secondaryMuscles={ex.exercise.secondaryMuscles}
+                         exerciseId={ex.exerciseId}/>
       </Box>
 
       {/* E1RM sparkline */}
@@ -195,8 +200,6 @@ export default function ExerciseDetailView({
                                              stopwatchPausedTime,
                                              onStopwatchStartStop,
                                              onStopwatchReset,
-                                             isStopwatchVisible,
-                                             setIsStopwatchVisible
                                            }: {
   workout: WorkoutPrisma;
   currentWorkoutId: number;
@@ -213,8 +216,6 @@ export default function ExerciseDetailView({
   stopwatchPausedTime: number;
   onStopwatchStartStop: () => void;
   onStopwatchReset: () => void;
-  isStopwatchVisible: boolean;
-  setIsStopwatchVisible: (isVisible: boolean) => void;
 }) {
   const paginationRef = useRef<HTMLDivElement | null>(null);
   // Keyed by exerciseId (global Exercise table id)
@@ -227,7 +228,8 @@ export default function ExerciseDetailView({
       .then((sets: PreviousSet[]) => {
         setPreviousSetsMap(prev => new Map(prev).set(exerciseId, sets));
       })
-      .catch(() => {/* ignore fetch errors — previous data is optional */});
+      .catch(() => {/* ignore fetch errors — previous data is optional */
+      });
   };
 
   // Fetch for the initially active exercise on mount
@@ -260,7 +262,8 @@ export default function ExerciseDetailView({
           minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
-          flex: 1
+          flex: 1,
+          px: 0
         }}
       >
         <Swiper
@@ -306,16 +309,14 @@ export default function ExerciseDetailView({
             mt: 1,
           }}
         />
-        <Stopwatch
-          isRunning={stopwatchIsRunning}
-          startTimestamp={stopwatchStartTimestamp}
-          pausedTime={stopwatchPausedTime}
-          onStartStop={onStopwatchStartStop}
-          onReset={onStopwatchReset}
-          isStopwatchVisible={isStopwatchVisible}
-          setIsStopwatchVisible={setIsStopwatchVisible}
-        />
       </Container>
+      <AppBarStopwatch
+        isRunning={stopwatchIsRunning}
+        startTimestamp={stopwatchStartTimestamp}
+        pausedTime={stopwatchPausedTime}
+        onStartStop={onStopwatchStartStop}
+        onReset={onStopwatchReset}
+      />
       <Snackbar
         open={snackbar.open}
         autoHideDuration={2500}

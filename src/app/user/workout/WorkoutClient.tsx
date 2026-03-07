@@ -10,10 +10,10 @@ import WorkoutsListView from './WorkoutsListView';
 import ExercisesListView from './ExercisesListView';
 import ExerciseDetailView from './ExerciseDetailView';
 import {
-  updateUserSets,
-  updateWorkoutNotes,
-  updateWorkoutDateCompleted,
   updateUserExerciseNote,
+  updateUserSets,
+  updateWorkoutDateCompleted,
+  updateWorkoutNotes,
 } from "@/utils/userPlanMutators";
 import PlansListView from "@/app/user/workout/PlansListView";
 import WorkoutCompletionModal from "@/app/user/workout/WorkoutCompletionModal";
@@ -51,7 +51,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<number | null>(initialContext?.workoutId ?? null);
   const [selectedExerciseId, setSelectedExerciseId] = useState<number | null>(null);
 
-  type CompletionModal = {workout: WorkoutPrisma; done: number; total: number};
+  type CompletionModal = { workout: WorkoutPrisma; done: number; total: number };
   const [completionModal, setCompletionModal] = useState<CompletionModal | null>(null);
 
   const [snackbar, setSnackbar] = useState<SnackbarState>({
@@ -62,7 +62,6 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
   const [userDataState, setUserData] = useState(userData);
 
   // shared stopwatch state so it can be running in multiple views
-  const [isStopwatchVisible, setIsStopwatchVisible] = useState(false);
   const [stopwatch, setStopwatch] = useState({
     time: 0,
     isRunning: false,
@@ -124,7 +123,10 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
     if (!selectedExercise) return;
 
     const updatedSets = selectedExercise.sets.map((set, idx) =>
-      idx === setIdx ? {...set, [field]: field === 'weight' ? (value === '' ? null : parseFloat(value)) : Number(value)} : set
+      idx === setIdx ? {
+        ...set,
+        [field]: field === 'weight' ? (value === '' ? null : parseFloat(value)) : Number(value)
+      } : set
     );
 
     // Optimistically update userDataState
@@ -228,8 +230,6 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
         stopwatchPausedTime={stopwatch.pausedTime}
         onStopwatchStartStop={handleStartStop}
         onStopwatchReset={handleReset}
-        isStopwatchVisible={isStopwatchVisible}
-        setIsStopwatchVisible={setIsStopwatchVisible}
       />
     );
   } else if (selectedPlan && selectedWeek && selectedWorkout) {
@@ -245,8 +245,6 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
         stopwatchPausedTime={stopwatch.pausedTime}
         onStopwatchStartStop={handleStartStop}
         onStopwatchReset={handleReset}
-        isStopwatchVisible={isStopwatchVisible}
-        setIsStopwatchVisible={setIsStopwatchVisible}
       />
     );
   } else if (selectedPlan && selectedWeek) {

@@ -36,7 +36,7 @@ import SpecificPlan from '@mui/icons-material/InsertInvitation';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import {signOut} from "next-auth/react";
 
-const APPBAR_HEIGHT = 56;
+export const APPBAR_HEIGHT = 56;
 export const HEIGHT_EXC_APPBAR = `calc(100dvh - ${APPBAR_HEIGHT}px)`
 export default function CustomAppBar(
   {
@@ -160,7 +160,7 @@ export default function CustomAppBar(
             <ListLink icon={<WorkoutIcon/>} text="Training" href="/user/workout"/>
             <ListLink icon={<LibraryBooksIcon/>} text="Exercises" href="/exercises"/>
             {planCount
-            ? <>
+              ? <>
                 <ListItemButton onClick={handleClick}>
                   <ListItemIcon><ListAltIcon/></ListItemIcon>
                   <ListItemText primary="Planning"/>
@@ -170,8 +170,8 @@ export default function CustomAppBar(
                   <ListLink nested icon={<AddIcon/>} text="Build Plan" href="/user/plan/create"/>
                   <ListLink nested icon={<SpecificPlan/>} text="User Plans" href="/user/plan"/>
                 </Collapse>
-            </>
-            : <ListLink icon={<AddIcon/>} text="Build Plan" href="/user/plan/create"/>}
+              </>
+              : <ListLink icon={<AddIcon/>} text="Build Plan" href="/user/plan/create"/>}
 
           </List>
         </Box>

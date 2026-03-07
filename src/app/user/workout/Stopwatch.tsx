@@ -3,7 +3,7 @@ import RestartAltRoundedIcon from '@mui/icons-material/RestartAltRounded';
 import TimerOutlinedIcon from '@mui/icons-material/TimerOutlined';
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined';
 import "./stopwatch.css";
-import {Collapse} from "@mui/material";
+import {Box, Collapse} from "@mui/material";
 import {useSettings} from "@lib/providers/SettingsProvider";
 
 type StopwatchProps = {
@@ -25,7 +25,7 @@ const Stopwatch: React.FC<StopwatchProps> = ({
                                                isStopwatchVisible,
                                                setIsStopwatchVisible
                                              }) => {
-  const { settings } = useSettings();
+  const {settings} = useSettings();
   const [displayTime, setDisplayTime] = useState(pausedTime);
 
   useEffect(() => {
@@ -57,19 +57,9 @@ const Stopwatch: React.FC<StopwatchProps> = ({
   const seconds = Math.floor((displayTime % 600) / 10)
   const deciseconds = displayTime % 10;
   return (
-    <>
-      {/*<Collapse in={!isStopwatchVisible} sx={{position: "absolute", bottom: 25, right: 25, aspectRatio: "1"}}>*/}
-      {/*  <button*/}
-      {/*    className="stopwatch-sidebutton-circle"*/}
-      {/*    onClick={() => setIsStopwatchVisible(true)}*/}
-      {/*    aria-label="Show stopwatch"*/}
-      {/*  >*/}
-      {/*    <TimerOutlinedIcon/>*/}
-      {/*  </button>*/}
-      {/*</Collapse>*/}
-
-        <div className="stopwatch-outer-container">
-          <Collapse in={isStopwatchVisible}>
+    <Box sx={{position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 10}}>
+      <div className="stopwatch-outer-container">
+        <Collapse in={isStopwatchVisible}>
           <button
             className="stopwatch-sidebutton-circle"
             onClick={onReset}
@@ -77,8 +67,8 @@ const Stopwatch: React.FC<StopwatchProps> = ({
           >
             <RestartAltRoundedIcon/>
           </button>
-          </Collapse>
-          <Collapse in={isStopwatchVisible}>
+        </Collapse>
+        <Collapse in={isStopwatchVisible}>
           <button
             className={`stopwatch-circle${isRunning ? " running" : ""}`}
             onClick={onStartStop}
@@ -90,16 +80,16 @@ const Stopwatch: React.FC<StopwatchProps> = ({
               {deciseconds.toString()}
             </span>
           </button>
-          </Collapse>
-          <button
-            className={`stopwatch-sidebutton-circle ${isRunning && !isStopwatchVisible && " active-stopwatch"}`}
-            onClick={() => setIsStopwatchVisible(!isStopwatchVisible)}
-            aria-label="Toggle stopwatch"
-          >
-            {isStopwatchVisible ? <KeyboardArrowDownOutlinedIcon/> : <TimerOutlinedIcon />}
-          </button>
-        </div>
-    </>
+        </Collapse>
+        <button
+          className={`stopwatch-sidebutton-circle ${isRunning && !isStopwatchVisible && " active-stopwatch"}`}
+          onClick={() => setIsStopwatchVisible(!isStopwatchVisible)}
+          aria-label="Toggle stopwatch"
+        >
+          {isStopwatchVisible ? <KeyboardArrowDownOutlinedIcon/> : <TimerOutlinedIcon/>}
+        </button>
+      </div>
+    </Box>
   );
 };
 

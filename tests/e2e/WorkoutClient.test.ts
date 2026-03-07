@@ -39,7 +39,7 @@ test.describe('Workout page', () => {
     await page.getByRole('button', { name: /Week/i }).first().click();
     await page.getByRole('button', { name: /Workout/i }).first().click();
 
-    await expect(page.getByRole('button', { name: 'Toggle stopwatch' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /start stopwatch|stop stopwatch/i })).toBeVisible();
     // Seeded exercises should be visible
     await expect(page.getByRole('button', { name: 'Squat' })).toBeVisible();
   });
@@ -73,7 +73,7 @@ test.describe('Workout page', () => {
     await page.getByRole('button', { name: /back/i }).click();
 
     // Back at exercise list level — stopwatch button is visible again
-    await expect(page.getByRole('button', { name: 'Toggle stopwatch' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /start stopwatch|stop stopwatch/i })).toBeVisible();
   });
 
   test('back button from workout returns to workouts list', async ({ page }) => {
