@@ -17,7 +17,8 @@ export default function PlanBuilderWithContext({userData, allExercises}: {
     workoutExerciseId: PLACEHOLDER_ID,
     reps: null,
     weight: null,
-    order: 1
+    order: 1,
+    e1rm: null,
   }
 
   const placeholderExercise: WorkoutExercisePrisma = {

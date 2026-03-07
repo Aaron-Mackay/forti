@@ -77,6 +77,7 @@ function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPrisma): Pl
                   order: set.order,
                   weight: set.weight ?? null,
                   reps: set.reps ?? null,
+                  e1rm: null,
                 })),
               };
             }),

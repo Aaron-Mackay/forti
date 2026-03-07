@@ -1,0 +1,52 @@
+name: Migrate Database
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target database environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      confirm_migrate:
+        description: >-
+          I understand this will apply schema migrations to the target database
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  migrate:
+    name: Migrate ${{ github.event.inputs.environment }} database
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Require confirmation
+        if: ${{ github.event.inputs.confirm_migrate != 'true' }}
+        run: |
+          echo "❌ You must tick 'confirm_migrate' to proceed. Aborting."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Migrate dev database
+        if: ${{ github.event.inputs.environment == 'dev' }}
+        env:
+          DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
+        run: npm run rebuild-prisma
+
+      - name: Migrate prod database
+        if: ${{ github.event.inputs.environment == 'prod' }}
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: npx prisma migrate deploy

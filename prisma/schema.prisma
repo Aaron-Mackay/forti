@@ -182,6 +182,8 @@ model ExerciseSet {
   workoutExerciseId Int
   reps              Int?
   weight            String?
+  // Estimated 1-rep max (Epley formula: weight * (1 + reps/30)). Computed on write.
+  e1rm              Float?
 
   @@unique([workoutExerciseId, order])
 }

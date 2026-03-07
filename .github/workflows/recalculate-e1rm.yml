@@ -1,0 +1,52 @@
+name: Recalculate E1RM
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target database environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      confirm_recalculate:
+        description: >-
+          I understand this will overwrite all e1rm values in the target database
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  recalculate:
+    name: Recalculate e1rm (${{ github.event.inputs.environment }})
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Require confirmation
+        if: ${{ github.event.inputs.confirm_recalculate != 'true' }}
+        run: |
+          echo "❌ You must tick 'confirm_recalculate' to proceed. Aborting."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Recalculate e1rm (dev)
+        if: ${{ github.event.inputs.environment == 'dev' }}
+        env:
+          DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
+        run: npm run recalculate-e1rm
+
+      - name: Recalculate e1rm (prod)
+        if: ${{ github.event.inputs.environment == 'prod' }}
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: npm run recalculate-e1rm

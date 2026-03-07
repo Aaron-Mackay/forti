@@ -156,6 +156,52 @@ test.describe('Workout page', () => {
     await expect(page.getByRole('button', { name: /Plan/i }).first()).toBeVisible();
   });
 
+  test.describe('e1rm display in exercise detail', () => {
+    test('shows Est. 1RM when weight and reps are entered', async ({page}) => {
+      // Stub e1rm-history so the sparkline resolves immediately (no history)
+      await page.route('**/api/exercises/*/e1rm-history**', route =>
+        route.fulfill({status: 200, contentType: 'application/json', body: '[]'}),
+      );
+
+      await page.getByRole('button', {name: /Plan/i}).first().click();
+      await page.getByRole('button', {name: /Week/i}).first().click();
+      await page.getByRole('button', {name: /Workout/i}).first().click();
+      await page.getByRole('button', {name: 'Squat'}).click();
+      await expect(page.getByText('Set').first()).toBeVisible();
+
+      // Fill in weight and reps for the first set
+      const weightField = page.getByLabel('Weight').first();
+      const repsField = page.getByLabel('Reps').first();
+      await weightField.fill('100');
+      await repsField.fill('5');
+
+      // Epley: 100 * (1 + 5/30) = 116.7 kg
+      await expect(page.getByText(/Est\. 1RM: 116\.7 kg/)).toBeVisible();
+    });
+
+    test('shows e1rm sparkline when history exists', async ({page}) => {
+      await page.route('**/api/exercises/*/e1rm-history**', route =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {date: '2025-01-10T00:00:00.000Z', bestE1rm: 80},
+            {date: '2025-02-10T00:00:00.000Z', bestE1rm: 90},
+          ]),
+        }),
+      );
+
+      await page.getByRole('button', {name: /Plan/i}).first().click();
+      await page.getByRole('button', {name: /Week/i}).first().click();
+      await page.getByRole('button', {name: /Workout/i}).first().click();
+      await page.getByRole('button', {name: 'Squat'}).click();
+      await expect(page.getByText('Set').first()).toBeVisible();
+
+      await expect(page.getByText('Est. 1RM history')).toBeVisible();
+      await expect(page.getByText(/Best: 90\.0 kg/)).toBeVisible();
+    });
+  });
+
   test.describe('previous set data in exercise detail', () => {
     test('displays previous weight and reps below each matching set', async ({ page }) => {
       await page.route('**/api/exercises/*/previous-sets**', async (route) => {

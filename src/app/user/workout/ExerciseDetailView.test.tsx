@@ -21,6 +21,9 @@ vi.mock('@/components/MuscleHighlight', () => ({
   default: ({primaryMuscles, exerciseId}: {primaryMuscles: string[]; secondaryMuscles?: string[]; exerciseId: number}) =>
     primaryMuscles.length > 0 ? <div data-testid={`anatomy-${exerciseId}`}/> : null,
 }));
+vi.mock('./E1rmSparkline', () => ({
+  default: () => <div data-testid="e1rm-sparkline"/>,
+}));
 
 const stopwatchProps = {
   stopwatchIsRunning: false,

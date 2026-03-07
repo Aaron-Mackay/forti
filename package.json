@@ -13,6 +13,7 @@
     "start": "next start",
     "lint": "eslint src",
     "seed": "ts-node prisma/seed.ts",
+    "recalculate-e1rm": "ts-node scripts/recalculate-e1rm.ts",
     "seed:demo": "ts-node prisma/seed-demo.ts",
     "local-db": "psql -h localhost -U postgres -d postgres",
     "test": "vitest run",
