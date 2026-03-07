@@ -9,6 +9,7 @@ vi.mock('@lib/providers/SettingsProvider', () => ({
 }));
 
 import ExerciseDetailView from './ExerciseDetailView';
+import {StopwatchProvider} from './StopwatchContext';
 import {ExerciseCategory} from '@prisma/client';
 import {WorkoutPrisma} from '@/types/dataTypes';
 
@@ -27,16 +28,6 @@ vi.mock('@/components/MuscleHighlight', () => ({
 vi.mock('./E1rmSparkline', () => ({
   default: () => <div data-testid="e1rm-sparkline"/>,
 }));
-
-const stopwatchProps = {
-  stopwatchIsRunning: false,
-  stopwatchStartTimestamp: null,
-  stopwatchPausedTime: 0,
-  onStopwatchStartStop: vi.fn(),
-  onStopwatchReset: vi.fn(),
-  isStopwatchVisible: false,
-  setIsStopwatchVisible: vi.fn(),
-};
 
 function buildWorkout(): WorkoutPrisma {
   return {
@@ -57,8 +48,8 @@ function buildWorkout(): WorkoutPrisma {
         notes: '',
         exercise: {id: 100, name: 'Bench Press', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
         sets: [
-          {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100},
-          {id: 2, workoutExerciseId: 10, order: 2, reps: 6, weight: 90},
+          {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100, e1rm: null},
+          {id: 2, workoutExerciseId: 10, order: 2, reps: 6, weight: 90, e1rm: null},
         ],
       },
     ],
@@ -76,8 +67,15 @@ const defaultProps = {
   onFormCueBlur: vi.fn(),
   snackbar: {open: false, message: '', severity: 'success' as const},
   handleSnackbarClose: vi.fn(),
-  ...stopwatchProps,
 };
+
+function renderView(props: React.ComponentProps<typeof ExerciseDetailView>) {
+  return render(
+    <StopwatchProvider>
+      <ExerciseDetailView {...props}/>
+    </StopwatchProvider>
+  );
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -89,13 +87,13 @@ beforeEach(() => {
 
 describe('ExerciseDetailView', () => {
   it('renders set weight and reps inputs', () => {
-    render(<ExerciseDetailView {...defaultProps} />);
+    renderView(defaultProps);
     expect(screen.getAllByLabelText(/weight/i)).toHaveLength(2);
     expect(screen.getAllByLabelText(/reps/i)).toHaveLength(2);
   });
 
   it('fetches previous sets on mount for the active exercise', async () => {
-    render(<ExerciseDetailView {...defaultProps} />);
+    renderView(defaultProps);
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining('/api/exercises/100/previous-sets?currentWorkoutId=1')
@@ -112,7 +110,7 @@ describe('ExerciseDetailView', () => {
       ]),
     }));
 
-    render(<ExerciseDetailView {...defaultProps} />);
+    renderView(defaultProps);
 
     await waitFor(() => {
       expect(screen.getAllByText(/last:/i)).toHaveLength(2);
@@ -129,7 +127,7 @@ describe('ExerciseDetailView', () => {
       ]),
     }));
 
-    render(<ExerciseDetailView {...defaultProps} />);
+    renderView(defaultProps);
 
     await waitFor(() => {
       expect(screen.getByText('Last: — × —')).toBeInTheDocument();
@@ -142,7 +140,7 @@ describe('ExerciseDetailView', () => {
       json: () => Promise.resolve([]),
     }));
 
-    render(<ExerciseDetailView {...defaultProps} />);
+    renderView(defaultProps);
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalled();
@@ -153,7 +151,7 @@ describe('ExerciseDetailView', () => {
   it('does not show previous set rows when fetch fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network error')));
 
-    render(<ExerciseDetailView {...defaultProps} />);
+    renderView(defaultProps);
 
     // Give it time to settle
     await waitFor(() => {
@@ -165,12 +163,12 @@ describe('ExerciseDetailView', () => {
   it('renders the anatomy diagram when the exercise has muscles', () => {
     const workout = buildWorkout();
     workout.exercises[0].exercise.primaryMuscles = ['sternal-pec', 'triceps'];
-    render(<ExerciseDetailView {...defaultProps} workout={workout}/>);
+    renderView({...defaultProps, workout});
     expect(screen.getByTestId('anatomy-100')).toBeInTheDocument();
   });
 
   it('does not render the anatomy diagram when the exercise has no muscles', () => {
-    render(<ExerciseDetailView {...defaultProps}/>);
+    renderView(defaultProps);
     expect(screen.queryByTestId('anatomy-100')).not.toBeInTheDocument();
   });
 });

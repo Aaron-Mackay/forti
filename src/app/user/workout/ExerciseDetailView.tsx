@@ -198,11 +198,6 @@ export default function ExerciseDetailView({
                                              onFormCueBlur,
                                              snackbar,
                                              handleSnackbarClose,
-                                             stopwatchIsRunning,
-                                             stopwatchStartTimestamp,
-                                             stopwatchPausedTime,
-                                             onStopwatchStartStop,
-                                             onStopwatchReset,
                                            }: {
   workout: WorkoutPrisma;
   currentWorkoutId: number;
@@ -214,11 +209,6 @@ export default function ExerciseDetailView({
   onFormCueBlur: (exerciseId: number, note: string) => void;
   snackbar: { open: boolean; message: string; severity: 'success' | 'info' };
   handleSnackbarClose: () => void;
-  stopwatchIsRunning: boolean;
-  stopwatchStartTimestamp: number | null;
-  stopwatchPausedTime: number;
-  onStopwatchStartStop: () => void;
-  onStopwatchReset: () => void;
 }) {
   const paginationRef = useRef<HTMLDivElement | null>(null);
   // Keyed by exerciseId (global Exercise table id)
@@ -313,13 +303,7 @@ export default function ExerciseDetailView({
           }}
         />
       </Container>
-      <AppBarStopwatch
-        isRunning={stopwatchIsRunning}
-        startTimestamp={stopwatchStartTimestamp}
-        pausedTime={stopwatchPausedTime}
-        onStartStop={onStopwatchStartStop}
-        onReset={onStopwatchReset}
-      />
+      <AppBarStopwatch/>
       <Snackbar
         open={snackbar.open}
         autoHideDuration={2500}

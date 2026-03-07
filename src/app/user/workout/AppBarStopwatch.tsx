@@ -5,23 +5,12 @@ import PauseIcon from '@mui/icons-material/Pause';
 import {Box, IconButton, Typography} from "@mui/material";
 import {useSettings} from "@lib/providers/SettingsProvider";
 import {APPBAR_HEIGHT} from "@/components/CustomAppBar";
+import {useStopwatch} from "@/app/user/workout/StopwatchContext";
 
-type AppBarStopwatchProps = {
-  isRunning: boolean;
-  startTimestamp: number | null;
-  pausedTime: number; // in deciseconds
-  onStartStop: () => void;
-  onReset: () => void;
-};
-
-const AppBarStopwatch: React.FC<AppBarStopwatchProps> = ({
-                                                           isRunning,
-                                                           startTimestamp,
-                                                           pausedTime,
-                                                           onStartStop,
-                                                           onReset,
-                                                         }) => {
+const AppBarStopwatch: React.FC = () => {
   const {settings} = useSettings();
+  const {stopwatch, handleStartStop, handleReset} = useStopwatch();
+  const {isRunning, startTimestamp, pausedTime} = stopwatch;
   const [displayTime, setDisplayTime] = useState(pausedTime);
 
   useEffect(() => {
@@ -30,7 +19,7 @@ const AppBarStopwatch: React.FC<AppBarStopwatchProps> = ({
     const update = () => {
       if (isRunning && startTimestamp !== null) {
         const elapsed = Math.floor((Date.now() - startTimestamp) / 100);
-        const currentDisplayTime = pausedTime + elapsed
+        const currentDisplayTime = pausedTime + elapsed;
         if (currentDisplayTime !== lastDisplayedTime) {
           setDisplayTime(currentDisplayTime);
           lastDisplayedTime = currentDisplayTime;
@@ -48,9 +37,8 @@ const AppBarStopwatch: React.FC<AppBarStopwatchProps> = ({
 
   if (!settings.showStopwatch) return null;
 
-  // time is incremented by 1 if running elsewhere, but displayed here.
-  const minutes = Math.floor(displayTime / 600)
-  const seconds = Math.floor((displayTime % 600) / 10)
+  const minutes = Math.floor(displayTime / 600);
+  const seconds = Math.floor((displayTime % 600) / 10);
   return (
     <Box sx={{
       position: 'fixed',
@@ -62,7 +50,7 @@ const AppBarStopwatch: React.FC<AppBarStopwatchProps> = ({
       alignItems: 'center',
       color: 'white',
     }}>
-      <IconButton onClick={onReset} aria-label="Reset stopwatch" size="small" sx={{color: 'inherit'}}>
+      <IconButton onClick={handleReset} aria-label="Reset stopwatch" size="small" sx={{color: 'inherit'}}>
         <RestartAltRoundedIcon/>
       </IconButton>
       <Typography
@@ -71,7 +59,7 @@ const AppBarStopwatch: React.FC<AppBarStopwatchProps> = ({
       >
         {minutes.toString()}:{seconds.toString().padStart(2, "0")}
       </Typography>
-      <IconButton onClick={onStartStop} aria-label={isRunning ? "Stop stopwatch" : "Start stopwatch"} size="small"
+      <IconButton onClick={handleStartStop} aria-label={isRunning ? "Stop stopwatch" : "Start stopwatch"} size="small"
                   sx={{color: 'inherit'}}>
         {isRunning ? <PauseIcon/> : <PlayArrowIcon/>}
       </IconButton>

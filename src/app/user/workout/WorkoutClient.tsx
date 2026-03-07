@@ -17,6 +17,7 @@ import {
 } from "@/utils/userPlanMutators";
 import PlansListView from "@/app/user/workout/PlansListView";
 import WorkoutCompletionModal from "@/app/user/workout/WorkoutCompletionModal";
+import {StopwatchProvider} from "@/app/user/workout/StopwatchContext";
 
 type SnackbarState = {
   open: boolean;
@@ -60,33 +61,6 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
     severity: 'success',
   });
   const [userDataState, setUserData] = useState(userData);
-
-  // shared stopwatch state so it can be running in multiple views
-  const [stopwatch, setStopwatch] = useState({
-    time: 0,
-    isRunning: false,
-    startTimestamp: null as null | number,
-    pausedTime: 0
-  });
-  const handleStartStop = () => {
-    if (stopwatch.isRunning) {
-      setStopwatch(sw => ({
-        ...sw,
-        isRunning: false,
-        pausedTime: sw.startTimestamp !== null ? sw.pausedTime + Math.floor((Date.now() - (sw.startTimestamp ?? 0)) / 100) : sw.pausedTime,
-        startTimestamp: null
-      }));
-    } else {
-      setStopwatch(sw => ({
-        ...sw,
-        isRunning: true,
-        startTimestamp: Date.now()
-      }));
-    }
-  };
-  const handleReset = () => {
-    setStopwatch({time: 0, isRunning: false, startTimestamp: null, pausedTime: 0});
-  };
 
   // Sync queued requests when coming online
   useEffect(() => {
@@ -225,11 +199,6 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
         onFormCueBlur={handleFormCueBlur}
         snackbar={snackbar}
         handleSnackbarClose={handleSnackbarClose}
-        stopwatchIsRunning={stopwatch.isRunning}
-        stopwatchStartTimestamp={stopwatch.startTimestamp}
-        stopwatchPausedTime={stopwatch.pausedTime}
-        onStopwatchStartStop={handleStartStop}
-        onStopwatchReset={handleReset}
       />
     );
   } else if (selectedPlan && selectedWeek && selectedWorkout) {
@@ -240,11 +209,6 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
         onSelectExercise={setSelectedExerciseId}
         onWorkoutNoteBlur={handleWorkoutNoteBlur}
         onCompleteWorkout={handleCompleteWorkout}
-        stopwatchIsRunning={stopwatch.isRunning}
-        stopwatchStartTimestamp={stopwatch.startTimestamp}
-        stopwatchPausedTime={stopwatch.pausedTime}
-        onStopwatchStartStop={handleStartStop}
-        onStopwatchReset={handleReset}
       />
     );
   } else if (selectedPlan && selectedWeek) {
@@ -268,7 +232,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
   }
 
   return (
-    <>
+    <StopwatchProvider>
       {view}
       {completionModal && (
         <WorkoutCompletionModal
@@ -279,6 +243,6 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
           weekWorkoutsTotal={completionModal.total}
         />
       )}
-    </>
+    </StopwatchProvider>
   );
 }

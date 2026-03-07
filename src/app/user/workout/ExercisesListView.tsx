@@ -31,22 +31,12 @@ export default function ExercisesListView({
                                             onSelectExercise,
                                             onWorkoutNoteBlur,
                                             onCompleteWorkout,
-                                            stopwatchIsRunning,
-                                            stopwatchStartTimestamp,
-                                            stopwatchPausedTime,
-                                            onStopwatchStartStop,
-                                            onStopwatchReset,
                                           }: {
   workout: WorkoutPrisma;
   onBack: () => void;
   onSelectExercise: (exerciseId: number) => void;
   onWorkoutNoteBlur: (note: string) => void;
   onCompleteWorkout: (completed: boolean) => void;
-  stopwatchIsRunning: boolean;
-  stopwatchStartTimestamp: number | null;
-  stopwatchPausedTime: number;
-  onStopwatchStartStop: () => void;
-  onStopwatchReset: () => void;
 }) {
   const [notesOpen, setNotesOpen] = useState(false);
   const [noteValue, setNoteValue] = useState(workout.notes ?? '');
@@ -139,13 +129,7 @@ export default function ExercisesListView({
         >
           {isCompleted ? `Completed ${completedDate}` : 'Mark as Complete'}
         </Button>
-        <AppBarStopwatch
-          isRunning={stopwatchIsRunning}
-          startTimestamp={stopwatchStartTimestamp}
-          pausedTime={stopwatchPausedTime}
-          onStartStop={onStopwatchStartStop}
-          onReset={onStopwatchReset}
-        />
+        <AppBarStopwatch/>
       </Container>
     </Box>
   );

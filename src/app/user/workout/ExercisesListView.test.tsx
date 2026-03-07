@@ -9,18 +9,9 @@ vi.mock('@lib/providers/SettingsProvider', () => ({
 }));
 
 import ExercisesListView from './ExercisesListView';
+import {StopwatchProvider} from './StopwatchContext';
 import {ExerciseCategory} from '@prisma/client';
 import {WorkoutPrisma} from '@/types/dataTypes';
-
-const stopwatchProps = {
-  stopwatchIsRunning: false,
-  stopwatchStartTimestamp: null,
-  stopwatchPausedTime: 0,
-  onStopwatchStartStop: vi.fn(),
-  onStopwatchReset: vi.fn(),
-  isStopwatchVisible: false,
-  setIsStopwatchVisible: vi.fn(),
-};
 
 function buildWorkout(overrides: Partial<WorkoutPrisma> = {}): WorkoutPrisma {
   return {
@@ -41,13 +32,21 @@ function buildWorkout(overrides: Partial<WorkoutPrisma> = {}): WorkoutPrisma {
         notes: '',
         exercise: {id: 100, name: 'Bench Press', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
         sets: [
-          {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100},
-          {id: 2, workoutExerciseId: 10, order: 2, reps: null, weight: null},
+          {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100, e1rm: null},
+          {id: 2, workoutExerciseId: 10, order: 2, reps: null, weight: null, e1rm: null},
         ],
       },
     ],
     ...overrides,
   };
+}
+
+function renderView(props: React.ComponentProps<typeof ExercisesListView>) {
+  return render(
+    <StopwatchProvider>
+      <ExercisesListView {...props}/>
+    </StopwatchProvider>
+  );
 }
 
 describe('ExercisesListView', () => {
@@ -61,89 +60,71 @@ describe('ExercisesListView', () => {
   });
 
   it('renders exercise names', () => {
-    render(
-      <ExercisesListView
-        workout={buildWorkout()}
-        onBack={onBack}
-        onSelectExercise={onSelectExercise}
-        onWorkoutNoteBlur={onWorkoutNoteBlur}
-        onCompleteWorkout={onCompleteWorkout}
-        {...stopwatchProps}
-      />
-    );
+    renderView({
+      workout: buildWorkout(),
+      onBack,
+      onSelectExercise,
+      onWorkoutNoteBlur,
+      onCompleteWorkout,
+    });
     expect(screen.getByText('Bench Press')).toBeInTheDocument();
   });
 
   it('shows "Mark as Complete" button when workout is not completed', () => {
-    render(
-      <ExercisesListView
-        workout={buildWorkout({dateCompleted: null})}
-        onBack={onBack}
-        onSelectExercise={onSelectExercise}
-        onWorkoutNoteBlur={onWorkoutNoteBlur}
-        onCompleteWorkout={onCompleteWorkout}
-        {...stopwatchProps}
-      />
-    );
+    renderView({
+      workout: buildWorkout({dateCompleted: null}),
+      onBack,
+      onSelectExercise,
+      onWorkoutNoteBlur,
+      onCompleteWorkout,
+    });
     expect(screen.getByRole('button', {name: /mark as complete/i})).toBeInTheDocument();
   });
 
   it('shows completed date when workout is already completed', () => {
     const date = new Date('2024-06-15T00:00:00.000Z');
-    render(
-      <ExercisesListView
-        workout={buildWorkout({dateCompleted: date})}
-        onBack={onBack}
-        onSelectExercise={onSelectExercise}
-        onWorkoutNoteBlur={onWorkoutNoteBlur}
-        onCompleteWorkout={onCompleteWorkout}
-        {...stopwatchProps}
-      />
-    );
+    renderView({
+      workout: buildWorkout({dateCompleted: date}),
+      onBack,
+      onSelectExercise,
+      onWorkoutNoteBlur,
+      onCompleteWorkout,
+    });
     expect(screen.getByRole('button', {name: /completed/i})).toBeInTheDocument();
   });
 
   it('calls onCompleteWorkout(true) when clicking Mark as Complete', () => {
-    render(
-      <ExercisesListView
-        workout={buildWorkout({dateCompleted: null})}
-        onBack={onBack}
-        onSelectExercise={onSelectExercise}
-        onWorkoutNoteBlur={onWorkoutNoteBlur}
-        onCompleteWorkout={onCompleteWorkout}
-        {...stopwatchProps}
-      />
-    );
+    renderView({
+      workout: buildWorkout({dateCompleted: null}),
+      onBack,
+      onSelectExercise,
+      onWorkoutNoteBlur,
+      onCompleteWorkout,
+    });
     fireEvent.click(screen.getByRole('button', {name: /mark as complete/i}));
     expect(onCompleteWorkout).toHaveBeenCalledWith(true);
   });
 
   it('calls onCompleteWorkout(false) when clicking to uncomplete', () => {
-    render(
-      <ExercisesListView
-        workout={buildWorkout({dateCompleted: new Date()})}
-        onBack={onBack}
-        onSelectExercise={onSelectExercise}
-        onWorkoutNoteBlur={onWorkoutNoteBlur}
-        onCompleteWorkout={onCompleteWorkout}
-        {...stopwatchProps}
-      />
-    );
+    renderView({
+      workout: buildWorkout({dateCompleted: new Date()}),
+      onBack,
+      onSelectExercise,
+      onWorkoutNoteBlur,
+      onCompleteWorkout,
+    });
     fireEvent.click(screen.getByRole('button', {name: /completed/i}));
     expect(onCompleteWorkout).toHaveBeenCalledWith(false);
   });
 
   it('calls onSelectExercise when clicking an exercise', () => {
-    render(
-      <ExercisesListView
-        workout={buildWorkout()}
-        onBack={onBack}
-        onSelectExercise={onSelectExercise}
-        onWorkoutNoteBlur={onWorkoutNoteBlur}
-        onCompleteWorkout={onCompleteWorkout}
-        {...stopwatchProps}
-      />
-    );
+    renderView({
+      workout: buildWorkout(),
+      onBack,
+      onSelectExercise,
+      onWorkoutNoteBlur,
+      onCompleteWorkout,
+    });
     fireEvent.click(screen.getByText('Bench Press'));
     expect(onSelectExercise).toHaveBeenCalledWith(10);
   });
