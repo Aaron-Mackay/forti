@@ -4,6 +4,9 @@ import {GET} from './route';
 
 vi.mock('@/lib/prisma', () => ({
   default: {
+    workout: {
+      findUnique: vi.fn(),
+    },
     workoutExercise: {
       findFirst: vi.fn(),
     },
@@ -17,6 +20,7 @@ vi.mock('@lib/getLoggedInUser', () => ({
 import prisma from '@/lib/prisma';
 import getLoggedInUser from '@lib/getLoggedInUser';
 
+const mockFindUnique = prisma.workout.findUnique as ReturnType<typeof vi.fn>;
 const mockFindFirst = prisma.workoutExercise.findFirst as ReturnType<typeof vi.fn>;
 const mockGetLoggedInUser = getLoggedInUser as ReturnType<typeof vi.fn>;
 
@@ -38,6 +42,7 @@ const mockSets = [
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetLoggedInUser.mockResolvedValue({id: 'user-1'});
+  mockFindUnique.mockResolvedValue({dateCompleted: null});
 });
 
 describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
@@ -124,6 +129,50 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
     expect(mockFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         orderBy: {workout: {dateCompleted: 'desc'}},
+      })
+    );
+  });
+
+  it('excludes workouts completed after the current workout when it is completed', async () => {
+    const currentDate = new Date('2026-01-15T12:00:00Z');
+    const setsFromA = [
+      {id: 3, workoutExerciseId: 20, order: 1, reps: 5, weight: 80},
+    ];
+    mockFindUnique.mockResolvedValue({dateCompleted: currentDate});
+    mockFindFirst.mockResolvedValue({id: 20, sets: setsFromA});
+
+    const [req, props] = makeRequest('5', 2); // workout B = id 2
+    const res = await GET(req, props);
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual(setsFromA);
+
+    expect(mockFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          workout: expect.objectContaining({
+            dateCompleted: {not: null, lt: currentDate},
+          }),
+        }),
+      })
+    );
+  });
+
+  it('does not add a date upper-bound when the current workout is in-progress', async () => {
+    mockFindUnique.mockResolvedValue({dateCompleted: null});
+    mockFindFirst.mockResolvedValue({id: 10, sets: mockSets});
+
+    const [req, props] = makeRequest('5', 99);
+    await GET(req, props);
+
+    expect(mockFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          workout: expect.objectContaining({
+            dateCompleted: {not: null},
+          }),
+        }),
       })
     );
   });

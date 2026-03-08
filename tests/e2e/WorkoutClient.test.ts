@@ -169,24 +169,24 @@ test.describe('Workout page', () => {
       await page.getByRole('button', {name: 'Squat'}).click();
       await expect(page.getByText('Set').first()).toBeVisible();
 
-      // Fill in weight and reps for the first set
-      const weightField = page.getByLabel('Weight').first();
-      const repsField = page.getByLabel('Reps').first();
-      await weightField.fill('100');
-      await repsField.fill('5');
+      // Scope to active slide — all slides render in DOM simultaneously
+      const activeSlide = page.locator('.swiper-slide-active');
+      await activeSlide.getByLabel('Weight').first().fill('100');
+      await activeSlide.getByLabel('Reps').first().fill('5');
 
-      // Epley: 100 * (1 + 5/30) = 116.7 kg
-      await expect(page.getByText(/Est\. 1RM: 116\.7 kg/).first()).toBeVisible();
+      // Epley: 100 * (1 + 5/30) = 116.7 kg — shown in disabled Est. 1RM field
+      await expect(activeSlide.getByLabel('Est. 1RM').first()).toHaveValue('116.7');
     });
 
     test('shows e1rm sparkline when history exists', async ({page}) => {
+      // Use a historicalBest that exceeds any possible seeded today-e1rm so isNewBest stays false
       await page.route('**/api/exercises/*/e1rm-history**', route =>
         route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify([
-            {date: '2025-01-10T00:00:00.000Z', bestE1rm: 80},
-            {date: '2025-02-10T00:00:00.000Z', bestE1rm: 90},
+            {date: '2025-01-10T00:00:00.000Z', bestE1rm: 150},
+            {date: '2025-02-10T00:00:00.000Z', bestE1rm: 200},
           ]),
         }),
       );
@@ -197,8 +197,10 @@ test.describe('Workout page', () => {
       await page.getByRole('button', {name: 'Squat'}).click();
       await expect(page.getByText('Set').first()).toBeVisible();
 
-      await expect(page.getByText('Est. 1RM history').first()).toBeVisible();
-      await expect(page.getByText(/Best: 90\.0 kg/).first()).toBeVisible();
+      // Scope to active slide — all slides render in DOM simultaneously
+      const activeSlide = page.locator('.swiper-slide-active');
+      await expect(activeSlide.getByText('Est. 1RM history')).toBeVisible();
+      await expect(activeSlide.getByText(/Personal Best: 200\.0 kg/)).toBeVisible();
     });
   });
 
@@ -221,8 +223,9 @@ test.describe('Workout page', () => {
       await page.getByRole('button', { name: 'Squat' }).click();
       await expect(page.getByText('Set').first()).toBeVisible();
 
-      await expect(page.getByText('Last: 65 × 10')).toBeVisible();
-      await expect(page.getByText('Last: 70 × 8')).toBeVisible();
+      const activeSlide = page.locator('.swiper-slide-active');
+      await expect(activeSlide.getByText('Prev: 65 × 10')).toBeVisible();
+      await expect(activeSlide.getByText('Prev: 70 × 8')).toBeVisible();
     });
 
     test('shows em dash for null weight or reps in previous set', async ({ page }) => {
@@ -243,8 +246,9 @@ test.describe('Workout page', () => {
       await page.getByRole('button', { name: 'Squat' }).click();
       await expect(page.getByText('Set').first()).toBeVisible();
 
-      await expect(page.getByText('Last: — × 10')).toBeVisible();
-      await expect(page.getByText('Last: 65 × —')).toBeVisible();
+      const activeSlide = page.locator('.swiper-slide-active');
+      await expect(activeSlide.getByText('Prev: — × 10')).toBeVisible();
+      await expect(activeSlide.getByText('Prev: 65 × —')).toBeVisible();
     });
 
     test('shows no previous data when the API returns an empty array', async ({ page }) => {
@@ -262,7 +266,8 @@ test.describe('Workout page', () => {
       await page.getByRole('button', { name: 'Squat' }).click();
       await expect(page.getByText('Set').first()).toBeVisible();
 
-      await expect(page.getByText(/^Last:/)).not.toBeVisible();
+      // aria-label="Previous: ..." is only set when actual previous data exists — absent when API returns []
+      await expect(page.locator('[aria-label^="Previous:"]')).toHaveCount(0);
     });
   });
 });

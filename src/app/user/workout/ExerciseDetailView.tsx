@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {
   Alert,
   Box,
@@ -11,6 +11,7 @@ import {
   ListItem,
   ListItemText,
   Paper,
+  Skeleton,
   Snackbar,
   TextField,
   Typography,
@@ -30,6 +31,8 @@ import MuscleHighlight from "@/components/MuscleHighlight";
 import {computeE1rm} from '@/lib/e1rm';
 import E1rmSparkline from './E1rmSparkline';
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
 
 type PreviousSet = { weight: number | null; reps: number | null; order: number };
 
@@ -39,19 +42,31 @@ function ExerciseSlide({
                          onFormCueBlur,
                          handleSetUpdate,
                          previousSets,
-                         currentWorkoutId,
+                         history,
                        }: {
   ex: WorkoutExercisePrisma;
   userExerciseNote: UserExerciseNote | undefined;
   onFormCueBlur: (exerciseId: number, note: string) => void;
   handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
   previousSets: PreviousSet[] | undefined;
-  currentWorkoutId: number;
+  history: E1rmHistoryPoint[] | null;
 }) {
   const [formCue, setFormCue] = useState(userExerciseNote?.note ?? '');
   const [formCueOpen, setFormCueOpen] = useState(false);
 
   const hasFormCue = formCue.trim().length > 0;
+
+  const todayBestE1rm = ex.sets.reduce<number | null>((best, set) => {
+    const e = computeE1rm(set.weight, set.reps);
+    return e === null ? best : best === null ? e : Math.max(best, e);
+  }, null);
+
+  const historicalBest = history && history.length > 0
+    ? Math.max(...history.map(p => p.bestE1rm))
+    : null;
+
+  const isNewBest = todayBestE1rm !== null && historicalBest !== null
+    && todayBestE1rm > historicalBest;
 
   return (
     <Paper
@@ -98,7 +113,12 @@ function ExerciseSlide({
       </Box>
 
       {/* E1RM sparkline */}
-      <E1rmSparkline exerciseId={ex.exerciseId} currentWorkoutId={currentWorkoutId}/>
+      <E1rmSparkline
+        exerciseId={ex.exerciseId}
+        history={history}
+        todayE1RM={todayBestE1rm}
+        isNewBest={isNewBest}
+      />
 
       {/* Form cue textarea */}
       <Collapse in={formCueOpen} sx={{width: '100%', mb: 1}}>
@@ -133,8 +153,22 @@ function ExerciseSlide({
           const liveE1rm = computeE1rm(set.weight, set.reps);
           return (
             <ListItem key={set.id} disablePadding sx={{alignItems: 'flex-start', mb: 1, flexDirection: 'column'}}>
-              <Box sx={{display: 'flex', alignItems: 'flex-end', width: '100%'}}>
-                <ListItemText primary={`Set ${setIdx + 1}`} sx={{minWidth: 60, flex: 'none', mr: 2}}/>
+              <Box sx={{display: 'flex', alignItems: 'flex-end', width: '100%', gap: 1}}>
+                <Box>
+                  <ListItemText primary={`Set ${setIdx + 1}`} sx={{minWidth: 60, flex: 'none', mr: 2}}/>
+                  {previousSets === undefined ? (
+                    <Skeleton variant="text" width={70} height={21} sx={{mt: 0.25}}/>
+                  ) : (
+                    <Typography
+                      variant="caption"
+                      color="text.disabled"
+                      sx={{mt: 0.25, visibility: prev ? 'visible' : 'hidden', width: 70}}
+                      aria-label={prev ? `Previous: ${prev.weight ?? '—'} × ${prev.reps ?? '—'}` : undefined}
+                    >
+                      Prev: {prev?.weight ?? '—'} × {prev?.reps ?? '—'}
+                    </Typography>
+                  )}
+                </Box>
                 <TextField
                   label="Weight"
                   size="small"
@@ -143,7 +177,10 @@ function ExerciseSlide({
                   onChange={(e) => {
                     handleSetUpdate(setIdx, 'weight', e.target.value)
                   }}
-                  sx={{mr: 1, width: 100}}
+                  sx={{
+                    minWidth: 80,
+                    '& input': {textAlign: 'center'}
+                  }}
                 />
                 <TextField
                   label="Reps"
@@ -155,30 +192,38 @@ function ExerciseSlide({
                     if (!/^\d*$/.test(e.target.value)) return;
                     handleSetUpdate(setIdx, 'reps', e.target.value);
                   }}
-                  sx={{width: 80}}
+                  sx={{
+                    minWidth: 60,
+                    '& input': {textAlign: 'center'}
+                  }}
                   inputProps={{inputMode: 'numeric', pattern: '[0-9]*'}}
                 />
+                <Box>
+                  <TextField
+                    label="Est. 1RM"
+                    size="small"
+                    disabled
+                    slotProps={{inputLabel: {shrink: true}}}
+                    sx={{
+                      minWidth: 75,
+                      '& input': {textAlign: 'center'}
+                    }}
+                    value={liveE1rm ? liveE1rm.toFixed(1) : "-"}
+                  />
+                  {liveE1rm !== null && liveE1rm === todayBestE1rm  && liveE1rm > (historicalBest || 0) && (
+                    <EmojiEventsIcon
+                      sx={{
+                        position: 'absolute',
+                        right: "-12px",
+                        bottom: "-12px",
+                        pointerEvents: 'none', // prevents clicks on the icon from blocking the field
+                        color: 'gold',
+                      }}
+                    />
+                  )}
+                </Box>
+
               </Box>
-              {prev && (
-                <Typography
-                  variant="caption"
-                  color="text.disabled"
-                  sx={{pl: '76px', mt: 0.25}}
-                  aria-label={`Previous: ${prev.weight ?? '—'} × ${prev.reps ?? '—'}`}
-                >
-                  Last: {prev.weight ?? '—'} × {prev.reps ?? '—'}
-                </Typography>
-              )}
-              {liveE1rm !== null && (
-                <Typography
-                  variant="caption"
-                  color="primary"
-                  sx={{pl: '76px', mt: 0.25}}
-                  aria-label={`Estimated 1RM: ${liveE1rm.toFixed(1)} kg`}
-                >
-                  Est. 1RM: {liveE1rm.toFixed(1)} kg
-                </Typography>
-              )}
             </ListItem>
           );
         })}
@@ -213,6 +258,7 @@ export default function ExerciseDetailView({
   const paginationRef = useRef<HTMLDivElement | null>(null);
   // Keyed by exerciseId (global Exercise table id)
   const [previousSetsMap, setPreviousSetsMap] = useState<Map<number, PreviousSet[]>>(new Map());
+  const [e1rmHistoryMap, setE1rmHistoryMap] = useState<Map<number, E1rmHistoryPoint[] | null>>(new Map());
 
   const fetchPreviousSets = (exerciseId: number) => {
     if (previousSetsMap.has(exerciseId)) return;
@@ -225,17 +271,34 @@ export default function ExerciseDetailView({
       });
   };
 
+  const fetchE1rmHistory = (exerciseId: number) => {
+    if (e1rmHistoryMap.has(exerciseId)) return;
+    setE1rmHistoryMap(prev => new Map(prev).set(exerciseId, null));
+    fetch(`/api/exercises/${exerciseId}/e1rm-history?currentWorkoutId=${currentWorkoutId}`)
+      .then(r => (r.ok ? r.json() : []))
+      .then((data: E1rmHistoryPoint[]) =>
+        setE1rmHistoryMap(prev => new Map(prev).set(exerciseId, data))
+      )
+      .catch(() => setE1rmHistoryMap(prev => new Map(prev).set(exerciseId, [])));
+  };
+
   // Fetch for the initially active exercise on mount
   useEffect(() => {
     const initial = workout.exercises.find(e => e.id === activeExerciseId);
-    if (initial) fetchPreviousSets(initial.exerciseId);
+    if (initial) {
+      fetchPreviousSets(initial.exerciseId);
+      fetchE1rmHistory(initial.exerciseId);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSlideChange = (swiper: SwiperType) => {
     onSlideChange(swiper);
     const ex = workout.exercises[swiper.activeIndex];
-    if (ex) fetchPreviousSets(ex.exerciseId);
+    if (ex) {
+      fetchPreviousSets(ex.exerciseId);
+      fetchE1rmHistory(ex.exerciseId);
+    }
   };
 
   return (
@@ -286,7 +349,7 @@ export default function ExerciseDetailView({
                 onFormCueBlur={onFormCueBlur}
                 handleSetUpdate={handleSetUpdate}
                 previousSets={previousSetsMap.get(ex.exerciseId)}
-                currentWorkoutId={currentWorkoutId}
+                history={e1rmHistoryMap.get(ex.exerciseId) ?? null}
               />
             </SwiperSlide>
           ))}

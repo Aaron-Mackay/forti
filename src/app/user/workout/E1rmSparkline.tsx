@@ -1,7 +1,6 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import {useEffect, useState} from 'react';
 import {Box, Skeleton, Typography} from '@mui/material';
 import {format} from 'date-fns';
 import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
@@ -13,27 +12,52 @@ const Chart = dynamic(
 
 export default function E1rmSparkline({
   exerciseId,
-  currentWorkoutId,
+  history,
+  todayE1RM,
+  isNewBest,
 }: {
   exerciseId: number;
-  currentWorkoutId: number;
+  history: E1rmHistoryPoint[] | null;
+  todayE1RM: number | null;
+  isNewBest: boolean;
 }) {
-  const [history, setHistory] = useState<E1rmHistoryPoint[] | null>(null);
+  if (history === null) {
+    return (
+      <Box sx={{width: '100%', mb: 1}}>
+        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', px: 0.5, mb: 0.5}}>
+          <Skeleton variant="text" width={100}/>
+          <Skeleton variant="text" width={80}/>
+        </Box>
+        <Skeleton variant="rounded" height={80}/>
+      </Box>
+    );
+  }
 
-  useEffect(() => {
-    fetch(`/api/exercises/${exerciseId}/e1rm-history?currentWorkoutId=${currentWorkoutId}`)
-      .then(r => (r.ok ? r.json() : []))
-      .then(setHistory)
-      .catch(() => setHistory([]));
-  }, [exerciseId, currentWorkoutId]);
-
-  if (history === null) return <Skeleton variant="rounded" height={80} sx={{mb: 1}}/>;
   const valid = history.filter(p => typeof p.bestE1rm === 'number');
-  if (valid.length === 0) return null;
+  if (valid.length === 0 && todayE1RM === null) return null;
 
-  const series = [{name: 'Best e1RM', data: valid.map(p => parseFloat(p.bestE1rm.toFixed(1)))}];
-  const categories = valid.map(p => format(new Date(p.date), 'dd MMM'));
-  const latest = valid[valid.length - 1].bestE1rm;
+  const historicalBest = valid.length > 0 ? valid[valid.length - 1].bestE1rm : null;
+  const displayBest = Math.max(todayE1RM || 0, (historicalBest || 0))
+
+  // Build series: historical points + optional live "Now" point
+  const historicalData = valid.map(p => parseFloat(p.bestE1rm.toFixed(1)));
+  const historicalCategories = valid.map(p => format(new Date(p.date), 'dd MMM'));
+
+  const seriesData = todayE1RM !== null
+    ? [...historicalData, parseFloat(todayE1RM.toFixed(1))]
+    : historicalData;
+  const categories = todayE1RM !== null
+    ? [...historicalCategories, 'Now']
+    : historicalCategories;
+
+  if (seriesData.length === 0) return null;
+
+  // Discrete marker override: colour only the live "Now" point green
+  const discreteMarkers = todayE1RM !== null
+    ? [{seriesIndex: 0, dataPointIndex: seriesData.length - 1, fillColor: '#2e7d32', strokeColor: '#2e7d32', size: 5}]
+    : [];
+
+  const series = [{name: 'Best e1RM', data: seriesData}];
 
   return (
     <Box sx={{width: '100%', mb: 1}}>
@@ -41,9 +65,15 @@ export default function E1rmSparkline({
         <Typography variant="caption" color="text.secondary">
           Est. 1RM history
         </Typography>
-        <Typography variant="caption" color="primary" fontWeight={600}>
-          Best: {latest.toFixed(1)} kg
-        </Typography>
+        {displayBest !== null && (
+          <Typography
+            variant="caption"
+            color={isNewBest ? 'success.main' : 'primary'}
+            fontWeight={600}
+          >
+            {isNewBest ? 'New best' : 'Personal Best'}: {displayBest.toFixed(1)} kg
+          </Typography>
+        )}
       </Box>
       <Chart
         type="line"
@@ -57,7 +87,10 @@ export default function E1rmSparkline({
             toolbar: {show: false},
           },
           stroke: {curve: 'smooth', width: 2},
-          markers: {size: 3},
+          markers: {
+            size: 4,
+            discrete: discreteMarkers,
+          },
           tooltip: {
             x: {formatter: (_v, {dataPointIndex}) => categories[dataPointIndex] ?? ''},
             y: {formatter: v => `${v} kg`},

@@ -5,9 +5,10 @@ import {extractErrorMessage} from '@lib/apiError';
 
 export type E1rmHistoryPoint = {date: string; bestE1rm: number};
 
-export async function GET(_req: NextRequest, props: {params: Promise<{exerciseId: string}>}) {
+export async function GET(req: NextRequest, props: {params: Promise<{exerciseId: string}>}) {
   const params = await props.params;
   const exerciseId = Number(params.exerciseId);
+  const currentWorkoutId = Number(req.nextUrl.searchParams.get('currentWorkoutId')) || undefined;
 
   if (isNaN(exerciseId) || exerciseId <= 0) {
     return NextResponse.json({error: 'Invalid exerciseId'}, {status: 400});
@@ -16,11 +17,23 @@ export async function GET(_req: NextRequest, props: {params: Promise<{exerciseId
   try {
     const user = await getLoggedInUser();
 
+    let currentWorkoutCompletedAt: Date | null = null;
+    if (currentWorkoutId !== undefined) {
+      const currentWorkout = await prisma.workout.findUnique({
+        where: {id: currentWorkoutId},
+        select: {dateCompleted: true},
+      });
+      currentWorkoutCompletedAt = currentWorkout?.dateCompleted ?? null;
+    }
+
     const workoutExercises = await prisma.workoutExercise.findMany({
       where: {
         exerciseId,
         workout: {
-          dateCompleted: {not: null},
+          dateCompleted: {
+            not: null,
+            ...(currentWorkoutCompletedAt !== null ? {lt: currentWorkoutCompletedAt} : {}),
+          },
           week: {plan: {userId: user.id}},
         },
       },

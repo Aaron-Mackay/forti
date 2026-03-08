@@ -113,10 +113,10 @@ describe('ExerciseDetailView', () => {
     renderView(defaultProps);
 
     await waitFor(() => {
-      expect(screen.getAllByText(/last:/i)).toHaveLength(2);
+      expect(screen.getAllByText(/prev:/i)).toHaveLength(2);
     });
-    expect(screen.getByText('Last: 80 × 10')).toBeInTheDocument();
-    expect(screen.getByText('Last: 80 × 9')).toBeInTheDocument();
+    expect(screen.getByText('Prev: 80 × 10')).toBeInTheDocument();
+    expect(screen.getByText('Prev: 80 × 9')).toBeInTheDocument();
   });
 
   it('shows — for null previous weight or reps', async () => {
@@ -129,8 +129,9 @@ describe('ExerciseDetailView', () => {
 
     renderView(defaultProps);
 
+    // aria-label is set only when a previous set exists; null weight/reps render as —
     await waitFor(() => {
-      expect(screen.getByText('Last: — × —')).toBeInTheDocument();
+      expect(screen.getByLabelText('Previous: — × —')).toBeInTheDocument();
     });
   });
 
@@ -145,7 +146,8 @@ describe('ExerciseDetailView', () => {
     await waitFor(() => {
       expect(fetch).toHaveBeenCalled();
     });
-    expect(screen.queryByText(/last:/i)).not.toBeInTheDocument();
+    // Elements with visibility:hidden still exist in DOM; check no aria-label (only set when prev data exists)
+    expect(screen.queryByLabelText(/previous:/i)).not.toBeInTheDocument();
   });
 
   it('does not show previous set rows when fetch fails', async () => {
@@ -157,7 +159,7 @@ describe('ExerciseDetailView', () => {
     await waitFor(() => {
       expect(fetch).toHaveBeenCalled();
     });
-    expect(screen.queryByText(/last:/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/previous:/i)).not.toBeInTheDocument();
   });
 
   it('renders the anatomy diagram when the exercise has muscles', () => {

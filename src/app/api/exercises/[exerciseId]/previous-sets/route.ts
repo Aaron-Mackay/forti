@@ -15,11 +15,23 @@ export async function GET(req: NextRequest, props: { params: Promise<{ exerciseI
   try {
     const user = await getLoggedInUser();
 
+    let currentWorkoutCompletedAt: Date | null = null;
+    if (currentWorkoutId !== undefined) {
+      const currentWorkout = await prisma.workout.findUnique({
+        where: {id: currentWorkoutId},
+        select: {dateCompleted: true},
+      });
+      currentWorkoutCompletedAt = currentWorkout?.dateCompleted ?? null;
+    }
+
     const previousWorkoutExercise = await prisma.workoutExercise.findFirst({
       where: {
         exerciseId,
         workout: {
-          dateCompleted: {not: null},
+          dateCompleted: {
+            not: null,
+            ...(currentWorkoutCompletedAt !== null ? {lt: currentWorkoutCompletedAt} : {}),
+          },
           ...(currentWorkoutId !== undefined ? {id: {not: currentWorkoutId}} : {}),
           week: {
             plan: {userId: user.id},
