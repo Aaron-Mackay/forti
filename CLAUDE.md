@@ -69,6 +69,20 @@ npm run dev &   # wait for ready, then run above
 
 All affected E2E tests must pass before the commit is made.
 
+**After visual changes — prompt for manual testing:** When a change affects visible UI behaviour that cannot be verified by automated tests (e.g. touch interactions, tooltip rendering, animations, chart behaviour), output a "Manual Test Required" block at the end of your response before asking the user to commit. Format:
+
+```
+## Manual Test Required
+
+Steps:
+1. Start the dev server: `npm run dev`
+2. Open [URL / page] in the browser (or Chrome DevTools with touch emulation)
+3. [Specific interaction to test]
+4. Expected result: [what should happen]
+
+Confirm the above before committing.
+```
+
 ---
 
 ## Commit Discipline
