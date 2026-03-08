@@ -174,7 +174,7 @@ test.describe('Workout page', () => {
       await activeSlide.getByLabel('Weight').first().fill('100');
       await activeSlide.getByLabel('Reps').first().fill('5');
 
-      // Epley: 100 * (1 + 5/30) = 116.7 kg — shown in disabled Est. 1RM field
+      // Epley: 100 * (1 + 5/30) = 116.7 — shown in disabled Est. 1RM field
       await expect(activeSlide.getByLabel('Est. 1RM').first()).toHaveValue('116.7');
     });
 
@@ -200,7 +200,7 @@ test.describe('Workout page', () => {
       // Scope to active slide — all slides render in DOM simultaneously
       const activeSlide = page.locator('.swiper-slide-active');
       await expect(activeSlide.getByText('Est. 1RM history')).toBeVisible();
-      await expect(activeSlide.getByText(/Personal Best: 200\.0 kg/)).toBeVisible();
+      await expect(activeSlide.getByText(/Personal Best: 200\.0/)).toBeVisible();
     });
   });
 

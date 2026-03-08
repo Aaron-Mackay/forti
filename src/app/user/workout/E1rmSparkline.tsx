@@ -71,34 +71,49 @@ export default function E1rmSparkline({
             color={isNewBest ? 'success.main' : 'primary'}
             fontWeight={600}
           >
-            {isNewBest ? 'New best' : 'Personal Best'}: {displayBest.toFixed(1)} kg
+            {isNewBest ? 'New best' : 'Personal Best'}: {displayBest.toFixed(1)}
           </Typography>
         )}
       </Box>
-      <Chart
-        type="line"
-        height={80}
-        series={series}
-        options={{
-          chart: {
-            id: `e1rm-sparkline-${exerciseId}`,
-            sparkline: {enabled: true},
-            animations: {enabled: false},
-            toolbar: {show: false},
-          },
-          stroke: {curve: 'smooth', width: 2},
-          markers: {
-            size: 4,
-            discrete: discreteMarkers,
-          },
+      {/* swiper-no-swiping prevents Swiper from intercepting touch events on this chart */}
+      <Box className="swiper-no-swiping">
+        <Chart
+          type="line"
+          height={80}
+          series={series}
+          options={{
+            chart: {
+              selection: {enabled: false},
+              zoom: {enabled: false},
+              id: `e1rm-sparkline-${exerciseId}`,
+              animations: {enabled: false},
+              toolbar: {show: false},
+            },
+            stroke: {curve: 'smooth', width: 2},
+            markers: {
+              size: 4,
+              discrete: discreteMarkers,
+            },
           tooltip: {
             x: {formatter: (_v, {dataPointIndex}) => categories[dataPointIndex] ?? ''},
-            y: {formatter: v => `${v} kg`},
           },
-          colors: ['#1976d2'],
-          xaxis: {categories},
-        }}
-      />
+            colors: ['#1976d2'],
+            xaxis: {
+              categories,
+              labels: {show: false},
+              axisBorder: {show: false},
+              axisTicks: {show: false},
+            },
+            yaxis: {
+              labels: {show: false},
+            },
+            grid: {
+              show: false,
+              padding: {left: 0, right: 8, top: 5, bottom: 0},
+            },
+          }}
+        />
+      </Box>
     </Box>
   );
 }

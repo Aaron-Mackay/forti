@@ -43,7 +43,7 @@ function E1rmChart({exercise}: {exercise: Exercise}) {
     );
   }
 
-  const series = [{name: 'Best e1RM (kg)', data: history.map(p => parseFloat(p.bestE1rm.toFixed(1)))}];
+  const series = [{name: 'Best e1RM', data: history.map(p => parseFloat(p.bestE1rm.toFixed(1)))}];
   const categories = history.map(p => format(new Date(p.date), 'dd MMM yy'));
 
   return (
@@ -63,12 +63,6 @@ function E1rmChart({exercise}: {exercise: Exercise}) {
           categories,
           labels: {rotate: -30, style: {fontSize: '11px'}},
           tickAmount: Math.min(history.length, 6),
-        },
-        yaxis: {
-          labels: {formatter: v => `${v} kg`},
-        },
-        tooltip: {
-          y: {formatter: v => `${v} kg`},
         },
         colors: ['#1976d2'],
       }}
