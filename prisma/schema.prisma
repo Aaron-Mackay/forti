@@ -31,6 +31,8 @@ model User {
   coachId           String?
   coach             User?              @relation("CoachClients", fields: [coachId], references: [id])
   clients          User[]             @relation("CoachClients")
+
+  aiUsageLogs       AiUsageLog[]
 }
 
 model Account {
@@ -199,4 +201,13 @@ model UserExerciseNote {
   @@unique([userId, exerciseId])
   @@index([userId])
   @@index([exerciseId])
+}
+
+model AiUsageLog {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
