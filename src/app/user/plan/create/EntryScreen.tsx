@@ -4,6 +4,8 @@ import { Box, Card, CardActionArea, CardContent, Typography } from '@mui/materia
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import EditIcon from '@mui/icons-material/Edit'
 import ListAltIcon from '@mui/icons-material/ListAlt'
+import UploadFileIcon from '@mui/icons-material/UploadFile'
+import { useRouter } from 'next/navigation'
 
 type EntryScreenProps = {
   onSelectTemplates: () => void
@@ -12,6 +14,8 @@ type EntryScreenProps = {
 }
 
 export const EntryScreen = ({ onSelectTemplates, onSelectAi, onSelectScratch }: EntryScreenProps) => {
+  const router = useRouter()
+
   return (
     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Typography variant="h5" fontWeight={600} sx={{ mb: 1 }}>
@@ -44,6 +48,22 @@ export const EntryScreen = ({ onSelectTemplates, onSelectAi, onSelectScratch }: 
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Answer a few questions and let AI design your plan
+              </Typography>
+            </Box>
+          </CardContent>
+        </CardActionArea>
+      </Card>
+
+      <Card variant="outlined">
+        <CardActionArea onClick={() => router.push('/user/plan/upload')} data-testid="entry-upload">
+          <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <UploadFileIcon sx={{ fontSize: 36, color: 'text.secondary', flexShrink: 0 }} />
+            <Box>
+              <Typography variant="subtitle1" fontWeight={600}>
+                Import from spreadsheet
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Upload a CSV or Excel file with your existing plan
               </Typography>
             </Box>
           </CardContent>
