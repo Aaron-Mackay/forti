@@ -2,7 +2,7 @@
  * Training plans tests (/user/plan and /user/plan/[planId]).
  *
  * Covers: plan listing, navigating into a plan, viewing weeks/workouts,
- * toggling edit mode, and AI plan import.
+ * toggling edit mode, and plan creation via the new entry screen.
  */
 import { test, expect } from './fixtures';
 
@@ -81,31 +81,137 @@ test.describe('Plan detail page', () => {
   });
 });
 
-// ── AI Plan Import ────────────────────────────────────────────────────────────
+// ── Create Plan entry screen ──────────────────────────────────────────────────
 
-test.describe('AI plan import (Create Plan page)', () => {
+test.describe('Create Plan entry screen', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/user/plan/create');
   });
 
-  test('shows the "Import with AI" button on the Plan step', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /import with ai/i })).toBeVisible();
+  test('shows the "How do you want to start?" heading', async ({ page }) => {
+    await expect(page.getByText(/how do you want to start/i)).toBeVisible();
   });
 
-  test('opens the AI import dialog when the button is clicked', async ({ page }) => {
-    await page.getByRole('button', { name: /import with ai/i }).click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByRole('dialog')).toContainText('Import Plan with AI');
+  test('shows the "From a template" option', async ({ page }) => {
+    await expect(page.getByText(/from a template/i)).toBeVisible();
   });
 
-  test('closes the dialog when Cancel is clicked', async ({ page }) => {
-    await page.getByRole('button', { name: /import with ai/i }).click();
-    await page.getByRole('button', { name: /cancel/i }).click();
-    await expect(page.getByRole('dialog')).not.toBeVisible();
+  test('shows the "Build with AI" option', async ({ page }) => {
+    await expect(page.getByText(/build with ai/i)).toBeVisible();
   });
 
-  test('successful import populates plan and advances to Summary', async ({ page }) => {
-    // Intercept the Anthropic API at the Next.js route level
+  test('shows the "Start from scratch" option', async ({ page }) => {
+    await expect(page.getByText(/start from scratch/i)).toBeVisible();
+  });
+
+  test('clicking "Start from scratch" shows the plan editor', async ({ page }) => {
+    await page.getByText(/start from scratch/i).click();
+    await expect(page.getByLabel(/plan name/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /save plan/i })).toBeVisible();
+  });
+
+  test('clicking "Build with AI" shows the AI form', async ({ page }) => {
+    await page.getByText(/build with ai/i).click();
+    await expect(page.getByText(/how many days per week/i)).toBeVisible();
+    await expect(page.getByText(/main goal/i)).toBeVisible();
+    await expect(page.getByText(/experience level/i)).toBeVisible();
+  });
+
+  test('back arrow on AI form returns to entry screen', async ({ page }) => {
+    await page.getByText(/build with ai/i).click();
+    await page.getByRole('button', { name: /back/i }).click();
+    await expect(page.getByText(/how do you want to start/i)).toBeVisible();
+  });
+
+  test('clicking "From a template" shows the template browser', async ({ page }) => {
+    await page.getByText(/from a template/i).click();
+    await expect(page.getByText(/push \/ pull \/ legs/i)).toBeVisible();
+  });
+
+  test('back arrow on template browser returns to entry screen', async ({ page }) => {
+    await page.getByText(/from a template/i).click();
+    await page.getByRole('button', { name: /back/i }).click();
+    await expect(page.getByText(/how do you want to start/i)).toBeVisible();
+  });
+
+  test('back arrow on plan editor returns to entry screen', async ({ page }) => {
+    await page.getByText(/start from scratch/i).click();
+    await page.getByRole('button', { name: /back/i }).click();
+    await expect(page.getByText(/how do you want to start/i)).toBeVisible();
+  });
+});
+
+// ── Template browser ──────────────────────────────────────────────────────────
+
+test.describe('Template browser', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/user/plan/create');
+    await page.getByText(/from a template/i).click();
+  });
+
+  test('shows all templates by default', async ({ page }) => {
+    await expect(page.getByText(/push \/ pull \/ legs/i)).toBeVisible();
+    await expect(page.getByText(/full body 3/i)).toBeVisible();
+    await expect(page.getByText(/upper \/ lower/i)).toBeVisible();
+  });
+
+  test('filter chips filter templates by category', async ({ page }) => {
+    await page.getByRole('button', { name: /^hypertrophy$/i }).click();
+    await expect(page.getByText(/push \/ pull \/ legs/i)).toBeVisible();
+    // Non-hypertrophy templates should not be visible
+    await expect(page.getByText(/5\/3\/1/i)).not.toBeVisible();
+  });
+
+  test('"All" chip restores full list', async ({ page }) => {
+    await page.getByRole('button', { name: /^hypertrophy$/i }).click();
+    await page.getByRole('button', { name: /^all$/i }).click();
+    await expect(page.getByText(/5\/3\/1/i)).toBeVisible();
+  });
+
+  test('clicking Preview opens a bottom sheet with template details', async ({ page }) => {
+    await page.getByRole('button', { name: /preview/i }).first().click();
+    await expect(page.getByRole('button', { name: /use this template/i })).toBeVisible();
+  });
+
+  test('"Use this template" loads the template into the plan editor', async ({ page }) => {
+    await page.getByRole('button', { name: /preview/i }).first().click();
+    await page.getByRole('button', { name: /use this template/i }).click();
+    // Should navigate to the plan editor with the template name pre-filled
+    await expect(page.getByLabel(/plan name/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /save plan/i })).toBeVisible();
+    // Template name should be in the plan name field
+    const planNameValue = await page.getByLabel(/plan name/i).inputValue();
+    expect(planNameValue.length).toBeGreaterThan(0);
+  });
+
+  test('Cancel button in preview closes the bottom sheet', async ({ page }) => {
+    await page.getByRole('button', { name: /preview/i }).first().click();
+    await expect(page.getByRole('button', { name: /use this template/i })).toBeVisible();
+    await page.getByRole('button', { name: /^cancel$/i }).click();
+    await expect(page.getByRole('button', { name: /use this template/i })).not.toBeVisible();
+  });
+});
+
+// ── AI plan creation ──────────────────────────────────────────────────────────
+
+test.describe('AI plan creation', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/user/plan/create');
+    await page.getByText(/build with ai/i).click();
+  });
+
+  test('Generate button is disabled until all chips are selected', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /generate my plan/i })).toBeDisabled();
+  });
+
+  test('Generate button enables after selecting days, goal, and level', async ({ page }) => {
+    await page.getByRole('button', { name: /4 days/i }).click();
+    await page.getByRole('button', { name: /muscle/i }).click();
+    await page.getByRole('button', { name: /intermediate/i }).click();
+    await expect(page.getByRole('button', { name: /generate my plan/i })).not.toBeDisabled();
+  });
+
+  test('successful generation navigates to the plan editor', async ({ page }) => {
     await page.route('**/api/plan/ai-import', (route) => {
       route.fulfill({
         status: 200,
@@ -126,12 +232,12 @@ test.describe('AI plan import (Create Plan page)', () => {
                     dateCompleted: null,
                     exercises: [
                       {
-                        exercise: { name: 'Bench Press', category: 'Chest' },
+                        exercise: { name: 'Bench Press', category: 'resistance' },
                         order: 1,
                         repRange: '8-12',
                         restTime: '90',
                         notes: null,
-                        sets: [{ order: 1, weight: '80', reps: 8 }],
+                        sets: [{ order: 1, weight: null, reps: 8 }],
                       },
                     ],
                   },
@@ -143,22 +249,30 @@ test.describe('AI plan import (Create Plan page)', () => {
       });
     });
 
-    await page.getByRole('button', { name: /import with ai/i }).click();
-    const dialog = page.getByRole('dialog');
-    await dialog.getByLabel(/workout plan text/i).fill('Bench 3x8, OHP 3x10');
-    await dialog.getByRole('button', { name: /^import$/i }).click();
+    await page.getByRole('button', { name: /4 days/i }).click();
+    await page.getByRole('button', { name: /muscle/i }).click();
+    await page.getByRole('button', { name: /intermediate/i }).click();
+    await page.getByRole('button', { name: /generate my plan/i }).click();
 
-    // Dialog closes and we jump to the Summary step
-    await expect(page.getByRole('dialog')).not.toBeVisible();
-    await expect(page.getByText(/step 4/i)).toBeVisible();
-    await expect(page.getByText('AI Push Pull Plan')).toBeVisible();
-
-    // Exercises live inside collapsed accordions — expand the first workout to verify
-    await page.getByRole('button', { name: 'Push Day' }).click();
-    await expect(page.getByText('Bench Press')).toBeVisible();
+    // Should land on the plan editor with the generated plan name pre-filled
+    await expect(page.getByDisplayValue('AI Push Pull Plan')).toBeVisible();
+    await expect(page.getByRole('button', { name: /save plan/i })).toBeVisible();
   });
 
-  test('shows an error message when the AI service is unavailable', async ({ page }) => {
+  test('"Prefer to describe your own plan?" link switches to freeform mode', async ({ page }) => {
+    await page.getByRole('button', { name: /prefer to describe your own plan/i }).click();
+    await expect(page.getByLabel(/plan description/i)).toBeVisible();
+    await expect(page.getByText(/describe your plan/i)).toBeVisible();
+  });
+
+  test('freeform Generate button enables after typing a description', async ({ page }) => {
+    await page.getByRole('button', { name: /prefer to describe your own plan/i }).click();
+    await expect(page.getByRole('button', { name: /generate my plan/i })).toBeDisabled();
+    await page.getByLabel(/plan description/i).fill('3 day push pull legs');
+    await expect(page.getByRole('button', { name: /generate my plan/i })).not.toBeDisabled();
+  });
+
+  test('shows an error when the AI service is unavailable', async ({ page }) => {
     await page.route('**/api/plan/ai-import', (route) => {
       route.fulfill({
         status: 503,
@@ -167,19 +281,50 @@ test.describe('AI plan import (Create Plan page)', () => {
       });
     });
 
-    await page.getByRole('button', { name: /import with ai/i }).click();
-    const dialog = page.getByRole('dialog');
-    await dialog.getByLabel(/workout plan text/i).fill('some workout text');
-    await dialog.getByRole('button', { name: /^import$/i }).click();
+    await page.getByRole('button', { name: /4 days/i }).click();
+    await page.getByRole('button', { name: /muscle/i }).click();
+    await page.getByRole('button', { name: /intermediate/i }).click();
+    await page.getByRole('button', { name: /generate my plan/i }).click();
 
-    await expect(dialog.getByRole('alert')).toBeVisible();
-    await expect(dialog.getByRole('alert')).toContainText(/unavailable/i);
-    // Dialog stays open so the user can retry or cancel
-    await expect(dialog).toBeVisible();
+    await expect(page.getByRole('alert')).toBeVisible();
+    await expect(page.getByRole('alert')).toContainText(/unavailable/i);
+    // AI form remains visible so the user can retry
+    await expect(page.getByRole('button', { name: /generate my plan/i })).toBeVisible();
+  });
+});
+
+// ── Plan editor (scratch) ─────────────────────────────────────────────────────
+
+test.describe('Plan editor (scratch)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/user/plan/create');
+    await page.getByText(/start from scratch/i).click();
   });
 
-  test('Import button is disabled when text area is empty', async ({ page }) => {
-    await page.getByRole('button', { name: /import with ai/i }).click();
-    await expect(page.getByRole('button', { name: /^import$/i })).toBeDisabled();
+  test('shows the plan name field', async ({ page }) => {
+    await expect(page.getByLabel(/plan name/i)).toBeVisible();
+  });
+
+  test('shows the duration field', async ({ page }) => {
+    await expect(page.getByLabel(/duration/i)).toBeVisible();
+  });
+
+  test('shows an Add workout day button', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /add workout day/i })).toBeVisible();
+  });
+
+  test('Save Plan button is disabled when plan name is empty', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /save plan/i })).toBeDisabled();
+  });
+
+  test('Save Plan button enables after typing a plan name', async ({ page }) => {
+    await page.getByLabel(/plan name/i).fill('My Test Plan');
+    await expect(page.getByRole('button', { name: /save plan/i })).not.toBeDisabled();
+  });
+
+  test('clicking Add workout day adds a new workout card', async ({ page }) => {
+    const initialCards = await page.getByLabel(/workout name/i).count();
+    await page.getByRole('button', { name: /add workout day/i }).click();
+    await expect(page.getByLabel(/workout name/i)).toHaveCount(initialCards + 1);
   });
 });

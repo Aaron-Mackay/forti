@@ -8,6 +8,17 @@ vi.mock('@lib/requireSession', () => ({
   requireSession: vi.fn(),
 }));
 
+const { mockAiUsageLog } = vi.hoisted(() => ({
+  mockAiUsageLog: {
+    count: vi.fn().mockResolvedValue(0),
+    create: vi.fn().mockResolvedValue({}),
+  },
+}));
+
+vi.mock('@lib/prisma', () => ({
+  default: { aiUsageLog: mockAiUsageLog },
+}));
+
 vi.mock('@anthropic-ai/sdk', async () => {
   class MockAPIError extends Error {
     status: number;
@@ -75,6 +86,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockRequireSession.mockResolvedValue({ user: { id: 'user-1' } });
   mockMessagesCreate.mockResolvedValue(makeToolUseResponse(validPlanInput));
+  mockAiUsageLog.count.mockResolvedValue(0);
+  mockAiUsageLog.create.mockResolvedValue({});
 });
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -272,6 +285,59 @@ describe('POST /api/plan/ai-import', () => {
       const req = makeRequest({ input: 'some workout' });
       const res = await POST(req);
       expect(res.status).toBe(500);
+    });
+  });
+
+  describe('body size cap', () => {
+    it('returns 413 when Content-Length header exceeds 100 KB', async () => {
+      const req = new NextRequest('http://localhost/api/plan/ai-import', {
+        method: 'POST',
+        body: JSON.stringify({ input: 'hi' }),
+        headers: { 'Content-Type': 'application/json', 'Content-Length': '200000' },
+      });
+      const res = await POST(req);
+      expect(res.status).toBe(413);
+      const body = await res.json();
+      expect(body.error).toMatch(/too large/i);
+    });
+
+    it('returns 413 when streamed body exceeds 100 KB', async () => {
+      const bigBody = JSON.stringify({ input: 'a'.repeat(95_000) });
+      const req = new NextRequest('http://localhost/api/plan/ai-import', {
+        method: 'POST',
+        body: bigBody,
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const res = await POST(req);
+      expect(res.status).toBe(413);
+    });
+  });
+
+  describe('rate limiting', () => {
+    it('returns 429 when user has reached the 10 request/hour limit', async () => {
+      mockAiUsageLog.count.mockResolvedValue(10);
+
+      const req = makeRequest({ input: 'some workout' });
+      const res = await POST(req);
+      expect(res.status).toBe(429);
+      const body = await res.json();
+      expect(body.error).toMatch(/rate limit/i);
+    });
+
+    it('proceeds when user is under the rate limit', async () => {
+      mockAiUsageLog.count.mockResolvedValue(9);
+
+      const req = makeRequest({ input: 'some workout' });
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+    });
+
+    it('records a usage log entry on each successful request', async () => {
+      const req = makeRequest({ input: 'some workout' });
+      await POST(req);
+      expect(mockAiUsageLog.create).toHaveBeenCalledWith({
+        data: { userId: 'user-1' },
+      });
     });
   });
 });

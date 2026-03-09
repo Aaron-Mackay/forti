@@ -1,5 +1,4 @@
 import {getExercises, getUserData} from "@lib/api";
-import CustomAppBar from "@/components/CustomAppBar";
 import {notFound} from "next/navigation";
 import PlanBuilderWithContext from "@/app/user/plan/create/PlanBuilderWithContext";
 import {Exercise} from "@prisma/client";
@@ -12,11 +11,7 @@ const PlanCreatePage = async () => {
   if (!userData) {
     return notFound()
   }
-  return (<>
-      <CustomAppBar title={`Create Plan`}/>
-      <PlanBuilderWithContext userData={userData} allExercises={allExercises}/>
-    </>
-  )
+  return <PlanBuilderWithContext userData={userData} allExercises={allExercises}/>
 };
 
 export default PlanCreatePage;

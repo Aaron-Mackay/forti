@@ -167,11 +167,11 @@ export default function CustomAppBar(
                   {planNestedOpen ? <ExpandLess/> : <ExpandMore/>}
                 </ListItemButton>
                 <Collapse in={planNestedOpen} timeout="auto" unmountOnExit>
-                  <ListLink nested icon={<AddIcon/>} text="Build Plan" href="/user/plan/create"/>
+                  <ListLink nested icon={<AddIcon/>} text="Create Plan" href="/user/plan/create"/>
                   <ListLink nested icon={<SpecificPlan/>} text="User Plans" href="/user/plan"/>
                 </Collapse>
               </>
-              : <ListLink icon={<AddIcon/>} text="Build Plan" href="/user/plan/create"/>}
+              : <ListLink icon={<AddIcon/>} text="Create Plan" href="/user/plan/create"/>}
 
           </List>
         </Box>

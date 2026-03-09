@@ -70,7 +70,7 @@ export default function PlanBuilderWithContext({userData, allExercises}: {
   return (
     <WorkoutEditorProvider allExercises={allExercises}
                            userData={{...userData, plans: [...userData.plans, placeholderPlan]}}>
-      <PlanBuilder/>
+      <PlanBuilder blankPlan={placeholderPlan}/>
     </WorkoutEditorProvider>
   );
 }
