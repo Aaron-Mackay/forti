@@ -16,10 +16,12 @@ export type WorkoutEditorAction =
   | { type: 'ADD_WORKOUT_WITH_EXERCISE_WITH_SET'; planId: number, weekId: number }
   | { type: 'REMOVE_WORKOUT'; planId: number, weekId: number; workoutId: number; }
   | { type: 'MOVE_WORKOUT'; planId: number, weekId: number; dir: Dir, index: number }
+  | { type: 'REORDER_WORKOUT'; planId: number, weekId: number; fromIndex: number; toIndex: number }
   | { type: 'ADD_EXERCISE'; planId: number, weekId: number; workoutId: number; }
   | { type: 'ADD_EXERCISE_WITH_SET'; planId: number, weekId: number; workoutId: number; }
   | { type: 'REMOVE_EXERCISE'; planId: number, weekId: number; workoutId: number; exerciseId: number }
   | { type: 'MOVE_EXERCISE'; planId: number, weekId: number; workoutId: number; dir: Dir, index: number }
+  | { type: 'REORDER_EXERCISE'; planId: number, weekId: number; workoutId: number; fromIndex: number; toIndex: number }
   | { type: 'ADD_SET'; planId: number, weekId: number; workoutId: number; exerciseId: number }
   | { type: 'REMOVE_SET'; planId: number, weekId: number; workoutId: number; exerciseId: number }
   | { type: 'UPDATE_WORKOUT_NAME'; planId: number, weekId: number; workoutId: number; name: string }
@@ -207,11 +209,25 @@ export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, 
       return userPlanMutators.moveWorkout(userDataState, planId, weekId, index, dir)
     }
 
+    case 'REORDER_WORKOUT': {
+      const { planId, weekId, fromIndex, toIndex } = action;
+      const week = getNestedOrWarn({planId, weekId});
+      if (!week) return userDataState;
+      return userPlanMutators.reorderWorkout(userDataState, planId, weekId, fromIndex, toIndex)
+    }
+
     case 'MOVE_EXERCISE': {
       const { planId, weekId, workoutId, dir, index } = action;
       const workout = getNestedOrWarn({planId, weekId, workoutId});
       if (!workout) return userDataState;
       return userPlanMutators.moveExercise(userDataState, planId, weekId, workoutId, index, dir)
+    }
+
+    case 'REORDER_EXERCISE': {
+      const { planId, weekId, workoutId, fromIndex, toIndex } = action;
+      const workout = getNestedOrWarn({planId, weekId, workoutId});
+      if (!workout) return userDataState;
+      return userPlanMutators.reorderExercise(userDataState, planId, weekId, workoutId, fromIndex, toIndex)
     }
 
     case 'REMOVE_EXERCISE': {

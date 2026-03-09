@@ -15,6 +15,23 @@ import {
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import DragHandleIcon from '@mui/icons-material/DragHandle'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useNewPlan } from './useNewPlan'
 import { PLACEHOLDER_ID } from './PlanBuilderWithContext'
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext'
@@ -25,9 +42,9 @@ import { Exercise } from '@prisma/client'
 import { ActionDispatch } from 'react'
 import { WorkoutEditorAction } from '@lib/useWorkoutEditor'
 
-// ── Exercise row ──────────────────────────────────────────────────────────────
+// ── Sortable exercise row ──────────────────────────────────────────────────────
 
-const ExerciseRow = ({
+const SortableExerciseRow = ({
   ex,
   exerciseCount,
   allExercises,
@@ -40,9 +57,22 @@ const ExerciseRow = ({
   dispatch: ActionDispatch<[WorkoutEditorAction]>
   planId: number
 }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: ex.id,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+    <Box ref={setNodeRef} style={style} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <IconButton size="small" sx={{ cursor: 'grab', touchAction: 'none' }} {...attributes} {...listeners}>
+          <DragHandleIcon fontSize="small" />
+        </IconButton>
         <Autocomplete
           freeSolo
           sx={{ flex: 1 }}
@@ -83,7 +113,7 @@ const ExerciseRow = ({
           </IconButton>
         )}
       </Box>
-      <Box sx={{ display: 'flex', gap: 1 }}>
+      <Box sx={{ display: 'flex', gap: 1, pl: '40px' }}>
         <TextField
           size="small"
           sx={{ flex: 1 }}
@@ -143,9 +173,9 @@ const ExerciseRow = ({
   )
 }
 
-// ── Workout card ──────────────────────────────────────────────────────────────
+// ── Sortable workout card ──────────────────────────────────────────────────────
 
-const WorkoutCard = ({
+const SortableWorkoutCard = ({
   workout,
   showDelete,
   allExercises,
@@ -158,9 +188,49 @@ const WorkoutCard = ({
   dispatch: ActionDispatch<[WorkoutEditorAction]>
   planId: number
 }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: workout.id,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+  )
+
+  const handleExerciseDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const exercises = workout.exercises
+    const fromIndex = exercises.findIndex((ex) => ex.id === active.id)
+    const toIndex = exercises.findIndex((ex) => ex.id === over.id)
+    if (fromIndex === -1 || toIndex === -1) return
+    dispatch({
+      type: 'REORDER_EXERCISE',
+      planId,
+      weekId: PLACEHOLDER_ID,
+      workoutId: workout.id,
+      fromIndex,
+      toIndex,
+    })
+  }
+
   return (
-    <Paper variant="outlined" sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Paper
+      ref={setNodeRef}
+      style={style}
+      variant="outlined"
+      sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}
+    >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <IconButton size="small" sx={{ cursor: 'grab', touchAction: 'none' }} {...attributes} {...listeners}>
+          <DragHandleIcon fontSize="small" />
+        </IconButton>
         <TextField
           size="small"
           sx={{ flex: 1 }}
@@ -177,6 +247,19 @@ const WorkoutCard = ({
             })
           }
         />
+        <IconButton
+          size="small"
+          onClick={() =>
+            dispatch({
+              type: 'DUPLICATE_WORKOUT',
+              planId,
+              weekId: PLACEHOLDER_ID,
+              workoutId: workout.id,
+            })
+          }
+        >
+          <ContentCopyIcon fontSize="small" />
+        </IconButton>
         {showDelete && (
           <IconButton
             size="small"
@@ -196,18 +279,22 @@ const WorkoutCard = ({
 
       <Divider />
 
-      {workout.exercises.map((ex, i) => (
-        <React.Fragment key={ex.id}>
-          {i > 0 && <Divider />}
-          <ExerciseRow
-            ex={ex}
-            exerciseCount={workout.exercises.length}
-            allExercises={allExercises}
-            dispatch={dispatch}
-            planId={planId}
-          />
-        </React.Fragment>
-      ))}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleExerciseDragEnd}>
+        <SortableContext items={workout.exercises.map((ex) => ex.id)} strategy={verticalListSortingStrategy}>
+          {workout.exercises.map((ex, i) => (
+            <React.Fragment key={ex.id}>
+              {i > 0 && <Divider />}
+              <SortableExerciseRow
+                ex={ex}
+                exerciseCount={workout.exercises.length}
+                allExercises={allExercises}
+                dispatch={dispatch}
+                planId={planId}
+              />
+            </React.Fragment>
+          ))}
+        </SortableContext>
+      </DndContext>
 
       <Button
         size="small"
@@ -264,6 +351,26 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount }: PlanEditorScreenPr
     }
   }
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+  )
+
+  const handleWorkoutDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const fromIndex = workouts.findIndex((wo) => wo.id === active.id)
+    const toIndex = workouts.findIndex((wo) => wo.id === over.id)
+    if (fromIndex === -1 || toIndex === -1) return
+    dispatch({
+      type: 'REORDER_WORKOUT',
+      planId: statePlan.id,
+      weekId: PLACEHOLDER_ID,
+      fromIndex,
+      toIndex,
+    })
+  }
+
   return (
     <>
       {/* Scrollable content with bottom padding for sticky button */}
@@ -305,16 +412,20 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount }: PlanEditorScreenPr
         </Typography>
 
         <Box sx={{ p: 2, pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {workouts.map((wo) => (
-            <WorkoutCard
-              key={wo.id}
-              workout={wo}
-              showDelete={workouts.length > 1}
-              allExercises={allExercises}
-              dispatch={dispatch}
-              planId={statePlan.id}
-            />
-          ))}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleWorkoutDragEnd}>
+            <SortableContext items={workouts.map((wo) => wo.id)} strategy={verticalListSortingStrategy}>
+              {workouts.map((wo) => (
+                <SortableWorkoutCard
+                  key={wo.id}
+                  workout={wo}
+                  showDelete={workouts.length > 1}
+                  allExercises={allExercises}
+                  dispatch={dispatch}
+                  planId={statePlan.id}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
 
           <Button
             startIcon={<AddIcon />}

@@ -111,6 +111,26 @@ export function moveWorkout(user: UserPrisma, planId: number, weekId: number, in
   );
 }
 
+export function reorderWorkout(user: UserPrisma, planId: number, weekId: number, fromIndex: number, toIndex: number): UserPrisma {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week => {
+      const newWorkouts = [...week.workouts];
+      const [removed] = newWorkouts.splice(fromIndex, 1);
+      newWorkouts.splice(toIndex, 0, removed);
+      return { ...week, workouts: newWorkouts.map((w, i) => ({ ...w, order: i + 1 })) };
+    })
+  );
+}
+
+export function reorderExercise(user: UserPrisma, planId: number, weekId: number, workoutId: number, fromIndex: number, toIndex: number): UserPrisma {
+  return withWorkout(user, planId, weekId, workoutId, workout => {
+    const newExercises = [...workout.exercises];
+    const [removed] = newExercises.splice(fromIndex, 1);
+    newExercises.splice(toIndex, 0, removed);
+    return { ...workout, exercises: newExercises.map((ex, i) => ({ ...ex, order: i + 1 })) };
+  });
+}
+
 
 function moveWorkoutInWeek(week: WeekPrisma, index: number, dir: Dir): WeekPrisma {
   const newWorkouts = [...week.workouts];
