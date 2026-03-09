@@ -5,8 +5,9 @@ import CustomAppBar from '@/components/CustomAppBar'
 import { EntryScreen } from './EntryScreen'
 import { AiFormScreen } from './AiFormScreen'
 import { PlanEditorScreen } from './PlanEditorScreen'
+import { TemplateBrowserScreen } from './TemplateBrowserScreen'
 
-type View = 'entry' | 'ai' | 'editor'
+type View = 'entry' | 'templates' | 'ai' | 'editor'
 
 export const PlanBuilder = () => {
   const [view, setView] = useState<View>('entry')
@@ -15,9 +16,11 @@ export const PlanBuilder = () => {
   const appBarProps: React.ComponentProps<typeof CustomAppBar> =
     view === 'entry'
       ? { title: 'Create Plan' }
-      : view === 'ai'
-        ? { title: 'Build with AI', showBack: true, onBack: () => setView('entry') }
-        : { title: 'New Plan', showBack: true, onBack: () => setView('entry') }
+      : view === 'templates'
+        ? { title: 'Choose a Template', showBack: true, onBack: () => setView('entry') }
+        : view === 'ai'
+          ? { title: 'Build with AI', showBack: true, onBack: () => setView('entry') }
+          : { title: 'New Plan', showBack: true, onBack: () => setView('entry') }
 
   return (
     <>
@@ -25,8 +28,18 @@ export const PlanBuilder = () => {
 
       {view === 'entry' && (
         <EntryScreen
+          onSelectTemplates={() => setView('templates')}
           onSelectAi={() => setView('ai')}
           onSelectScratch={() => setView('editor')}
+        />
+      )}
+
+      {view === 'templates' && (
+        <TemplateBrowserScreen
+          onSelect={(wc) => {
+            setWeekCount(wc)
+            setView('editor')
+          }}
         />
       )}
 

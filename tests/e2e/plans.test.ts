@@ -92,6 +92,10 @@ test.describe('Create Plan entry screen', () => {
     await expect(page.getByText(/how do you want to start/i)).toBeVisible();
   });
 
+  test('shows the "From a template" option', async ({ page }) => {
+    await expect(page.getByText(/from a template/i)).toBeVisible();
+  });
+
   test('shows the "Build with AI" option', async ({ page }) => {
     await expect(page.getByText(/build with ai/i)).toBeVisible();
   });
@@ -119,10 +123,72 @@ test.describe('Create Plan entry screen', () => {
     await expect(page.getByText(/how do you want to start/i)).toBeVisible();
   });
 
+  test('clicking "From a template" shows the template browser', async ({ page }) => {
+    await page.getByText(/from a template/i).click();
+    await expect(page.getByText(/push \/ pull \/ legs/i)).toBeVisible();
+  });
+
+  test('back arrow on template browser returns to entry screen', async ({ page }) => {
+    await page.getByText(/from a template/i).click();
+    await page.getByRole('button', { name: /back/i }).click();
+    await expect(page.getByText(/how do you want to start/i)).toBeVisible();
+  });
+
   test('back arrow on plan editor returns to entry screen', async ({ page }) => {
     await page.getByText(/start from scratch/i).click();
     await page.getByRole('button', { name: /back/i }).click();
     await expect(page.getByText(/how do you want to start/i)).toBeVisible();
+  });
+});
+
+// ── Template browser ──────────────────────────────────────────────────────────
+
+test.describe('Template browser', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/user/plan/create');
+    await page.getByText(/from a template/i).click();
+  });
+
+  test('shows all templates by default', async ({ page }) => {
+    await expect(page.getByText(/push \/ pull \/ legs/i)).toBeVisible();
+    await expect(page.getByText(/full body 3/i)).toBeVisible();
+    await expect(page.getByText(/upper \/ lower/i)).toBeVisible();
+  });
+
+  test('filter chips filter templates by category', async ({ page }) => {
+    await page.getByRole('button', { name: /^hypertrophy$/i }).click();
+    await expect(page.getByText(/push \/ pull \/ legs/i)).toBeVisible();
+    // Non-hypertrophy templates should not be visible
+    await expect(page.getByText(/5\/3\/1/i)).not.toBeVisible();
+  });
+
+  test('"All" chip restores full list', async ({ page }) => {
+    await page.getByRole('button', { name: /^hypertrophy$/i }).click();
+    await page.getByRole('button', { name: /^all$/i }).click();
+    await expect(page.getByText(/5\/3\/1/i)).toBeVisible();
+  });
+
+  test('clicking Preview opens a bottom sheet with template details', async ({ page }) => {
+    await page.getByRole('button', { name: /preview/i }).first().click();
+    await expect(page.getByRole('button', { name: /use this template/i })).toBeVisible();
+  });
+
+  test('"Use this template" loads the template into the plan editor', async ({ page }) => {
+    await page.getByRole('button', { name: /preview/i }).first().click();
+    await page.getByRole('button', { name: /use this template/i }).click();
+    // Should navigate to the plan editor with the template name pre-filled
+    await expect(page.getByLabel(/plan name/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /save plan/i })).toBeVisible();
+    // Template name should be in the plan name field
+    const planNameValue = await page.getByLabel(/plan name/i).inputValue();
+    expect(planNameValue.length).toBeGreaterThan(0);
+  });
+
+  test('Cancel button in preview closes the bottom sheet', async ({ page }) => {
+    await page.getByRole('button', { name: /preview/i }).first().click();
+    await expect(page.getByRole('button', { name: /use this template/i })).toBeVisible();
+    await page.getByRole('button', { name: /^cancel$/i }).click();
+    await expect(page.getByRole('button', { name: /use this template/i })).not.toBeVisible();
   });
 });
 
