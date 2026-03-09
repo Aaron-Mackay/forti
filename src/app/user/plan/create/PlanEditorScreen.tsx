@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import {
   Alert,
   Autocomplete,
@@ -194,15 +194,19 @@ const WorkoutCard = ({
         )}
       </Box>
 
-      {workout.exercises.map((ex) => (
-        <ExerciseRow
-          key={ex.id}
-          ex={ex}
-          exerciseCount={workout.exercises.length}
-          allExercises={allExercises}
-          dispatch={dispatch}
-          planId={planId}
-        />
+      <Divider />
+
+      {workout.exercises.map((ex, i) => (
+        <React.Fragment key={ex.id}>
+          {i > 0 && <Divider />}
+          <ExerciseRow
+            ex={ex}
+            exerciseCount={workout.exercises.length}
+            allExercises={allExercises}
+            dispatch={dispatch}
+            planId={planId}
+          />
+        </React.Fragment>
       ))}
 
       <Button
