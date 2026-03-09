@@ -3,6 +3,8 @@
 import { Box, Container, List, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
 import { UserPrisma } from '@/types/dataTypes';
 import CustomAppBar from "@/components/CustomAppBar";
+import ProgressIcon from '@/lib/ProgressIcon';
+import { getPlanStatus } from '@/lib/workoutProgress';
 
 export default function PlansListView({
   userData,
@@ -20,7 +22,9 @@ export default function PlansListView({
         </Typography>
         <List>
           {userData.plans.map((plan) => (
-            <ListItem key={plan.id} disablePadding>
+            <ListItem key={plan.id} disablePadding secondaryAction={
+              <ProgressIcon status={getPlanStatus(plan)} />
+            }>
               <ListItemButton onClick={() => onSelectPlan(plan.id)}>
                 <ListItemText primary={`Plan ${plan.order} - ${plan.name}`} />
               </ListItemButton>
