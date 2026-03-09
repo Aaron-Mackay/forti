@@ -13,10 +13,11 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import DeleteIcon from '@mui/icons-material/Delete'
+import CloseIcon from '@mui/icons-material/Close'
 import AddIcon from '@mui/icons-material/Add'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import {
   DndContext,
   closestCenter,
@@ -70,7 +71,7 @@ const SortableExerciseRow = ({
   return (
     <Box ref={setNodeRef} style={style} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <IconButton size="small" sx={{ cursor: 'grab', touchAction: 'none' }} {...attributes} {...listeners}>
+        <IconButton size="small" sx={{ cursor: 'grab', touchAction: 'none', color: 'text.disabled' }} {...attributes} {...listeners}>
           <DragHandleIcon fontSize="small" />
         </IconButton>
         <Autocomplete
@@ -109,7 +110,7 @@ const SortableExerciseRow = ({
               })
             }
           >
-            <DeleteIcon fontSize="small" />
+            <CloseIcon fontSize="small" />
           </IconButton>
         )}
       </Box>
@@ -229,7 +230,7 @@ const SortableWorkoutCard = ({
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <IconButton size="small" sx={{ cursor: 'grab', touchAction: 'none' }} {...attributes} {...listeners}>
-          <DragHandleIcon fontSize="small" />
+          <DragIndicatorIcon fontSize="small" />
         </IconButton>
         <TextField
           size="small"
@@ -272,7 +273,7 @@ const SortableWorkoutCard = ({
               })
             }
           >
-            <DeleteIcon fontSize="small" />
+            <CloseIcon fontSize="small" />
           </IconButton>
         )}
       </Box>

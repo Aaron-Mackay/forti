@@ -95,7 +95,21 @@ const FULL_BODY_3X: PlanTemplate = {
   meta: { name: 'Full Body 3×Week', daysPerWeek: 3, durationWeeks: 4, level: 'Beginner', goal: 'General' },
   categories: ['Beginner', 'General'],
   plan: singleWeekPlan('Full Body 3×Week', '3 days/wk · 4 weeks · Beginner · General', [
-    workout('Full Body', 1, [
+    workout('Full Body A', 1, [
+      ex('Squat', 1, 3, '5', '180'),
+      ex('Bench Press', 2, 3, '5', '180'),
+      ex('Barbell Row', 3, 3, '5', '180'),
+      ex('Overhead Press', 4, 3, '5', '120'),
+      ex('Deadlift', 5, 1, '5', '180'),
+    ]),
+    workout('Full Body B', 2, [
+      ex('Squat', 1, 3, '5', '180'),
+      ex('Overhead Press', 2, 3, '5', '180'),
+      ex('Deadlift', 3, 1, '5', '180'),
+      ex('Barbell Row', 4, 3, '5', '180'),
+      ex('Bench Press', 5, 3, '5', '180'),
+    ]),
+    workout('Full Body C', 3, [
       ex('Squat', 1, 3, '5', '180'),
       ex('Bench Press', 2, 3, '5', '180'),
       ex('Barbell Row', 3, 3, '5', '180'),
