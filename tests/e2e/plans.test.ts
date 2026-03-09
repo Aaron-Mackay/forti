@@ -259,6 +259,19 @@ test.describe('AI plan creation', () => {
     await expect(page.getByRole('button', { name: /save plan/i })).toBeVisible();
   });
 
+  test('"Prefer to describe your own plan?" link switches to freeform mode', async ({ page }) => {
+    await page.getByRole('button', { name: /prefer to describe your own plan/i }).click();
+    await expect(page.getByLabel(/plan description/i)).toBeVisible();
+    await expect(page.getByText(/describe your plan/i)).toBeVisible();
+  });
+
+  test('freeform Generate button enables after typing a description', async ({ page }) => {
+    await page.getByRole('button', { name: /prefer to describe your own plan/i }).click();
+    await expect(page.getByRole('button', { name: /generate my plan/i })).toBeDisabled();
+    await page.getByLabel(/plan description/i).fill('3 day push pull legs');
+    await expect(page.getByRole('button', { name: /generate my plan/i })).not.toBeDisabled();
+  });
+
   test('shows an error when the AI service is unavailable', async ({ page }) => {
     await page.route('**/api/plan/ai-import', (route) => {
       route.fulfill({

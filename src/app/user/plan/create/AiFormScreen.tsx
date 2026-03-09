@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Alert,
   Box,
@@ -30,35 +30,60 @@ type AiFormScreenProps = {
 }
 
 export const AiFormScreen = ({ onSuccess }: AiFormScreenProps) => {
+  const [mode, setMode] = useState<'guided' | 'freeform'>('guided')
+
+  // Guided mode state
   const [days, setDays] = useState<string | null>(null)
   const [goal, setGoal] = useState<string | null>(null)
   const [level, setLevel] = useState<string | null>(null)
   const [extra, setExtra] = useState('')
+
+  // Freeform mode state
+  const [freeformText, setFreeformText] = useState('')
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const { dispatch } = useWorkoutEditorContext()
   const { statePlan } = useNewPlan()
 
-  const canGenerate = !!days && !!goal && !!level
+  // Abort in-flight fetch when the user navigates away
+  const abortRef = useRef<AbortController | null>(null)
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
+    }
+  }, [])
+
+  const canGenerate =
+    mode === 'guided' ? !!days && !!goal && !!level : freeformText.trim().length > 0
 
   const handleGenerate = async () => {
     if (!canGenerate) return
+
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
     setLoading(true)
     setError(null)
 
-    const inputText = [
-      `Create a ${days} days per week ${goal} training plan for a ${level} lifter.`,
-      extra.trim() ? `Additional notes: ${extra.trim()}` : '',
-    ]
-      .filter(Boolean)
-      .join(' ')
+    const inputText =
+      mode === 'guided'
+        ? [
+            `Create a ${days} days per week ${goal} training plan for a ${level} lifter.`,
+            extra.trim() ? `Additional notes: ${extra.trim()}` : '',
+          ]
+            .filter(Boolean)
+            .join(' ')
+        : freeformText.trim()
 
     try {
       const res = await fetch('/api/plan/ai-import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input: inputText }),
+        signal: controller.signal,
       })
 
       const data: { plan?: ParsedPlan; error?: string } = await res.json()
@@ -71,7 +96,8 @@ export const AiFormScreen = ({ onSuccess }: AiFormScreenProps) => {
       const planPrisma = parsedPlanToPlanPrisma(data.plan, statePlan)
       dispatch({ type: 'REPLACE_PLAN', planId: PLACEHOLDER_ID, plan: planPrisma })
       onSuccess(planPrisma.weeks.length.toString())
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return
       setError('Network error — please check your connection and try again.')
     } finally {
       setLoading(false)
@@ -99,6 +125,59 @@ export const AiFormScreen = ({ onSuccess }: AiFormScreenProps) => {
       </Box>
     )
   }
+
+  // ── Freeform mode ────────────────────────────────────────────────────────────
+
+  if (mode === 'freeform') {
+    return (
+      <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Button
+          variant="text"
+          size="small"
+          sx={{ alignSelf: 'flex-start' }}
+          onClick={() => setMode('guided')}
+        >
+          ← Use guided setup instead
+        </Button>
+
+        <Box>
+          <Typography variant="h6" fontWeight={600}>
+            Describe your plan
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Paste a training programme, describe your goals, or outline exercises and
+            sets — AI will structure it into a plan for you.
+          </Typography>
+        </Box>
+
+        <TextField
+          fullWidth
+          multiline
+          rows={8}
+          placeholder={
+            'e.g. "3 day push/pull/legs, bench press 4×8-12, row 4×6-8, squat 4×5, no barbells, 45 min sessions"'
+          }
+          value={freeformText}
+          onChange={(e) => setFreeformText(e.target.value)}
+          inputProps={{ 'aria-label': 'Plan description' }}
+        />
+
+        {error && <Alert severity="error">{error}</Alert>}
+
+        <Button
+          variant="contained"
+          size="large"
+          disabled={!canGenerate}
+          startIcon={<AutoAwesomeIcon />}
+          onClick={handleGenerate}
+        >
+          Generate my plan
+        </Button>
+      </Box>
+    )
+  }
+
+  // ── Guided mode ──────────────────────────────────────────────────────────────
 
   return (
     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -182,6 +261,14 @@ export const AiFormScreen = ({ onSuccess }: AiFormScreenProps) => {
         onClick={handleGenerate}
       >
         Generate my plan
+      </Button>
+
+      <Button
+        variant="text"
+        size="small"
+        onClick={() => setMode('freeform')}
+      >
+        Prefer to describe your own plan?
       </Button>
     </Box>
   )

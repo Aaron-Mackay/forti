@@ -215,3 +215,52 @@ describe('AiFormScreen — errors', () => {
     })
   })
 })
+
+// ── Freeform mode ──────────────────────────────────────────────────────────────
+
+describe('AiFormScreen — freeform mode', () => {
+  it('shows freeform textarea after clicking the toggle link', () => {
+    renderScreen()
+    fireEvent.click(screen.getByRole('button', { name: /prefer to describe your own plan/i }))
+    expect(screen.getByLabelText(/plan description/i)).toBeInTheDocument()
+  })
+
+  it('Generate button is disabled when freeform textarea is empty', () => {
+    renderScreen()
+    fireEvent.click(screen.getByRole('button', { name: /prefer to describe your own plan/i }))
+    expect(screen.getByRole('button', { name: /generate my plan/i })).toBeDisabled()
+  })
+
+  it('Generate button enables after typing in freeform textarea', () => {
+    renderScreen()
+    fireEvent.click(screen.getByRole('button', { name: /prefer to describe your own plan/i }))
+    fireEvent.change(screen.getByLabelText(/plan description/i), {
+      target: { value: '3 day PPL, bench 4x8-12' },
+    })
+    expect(screen.getByRole('button', { name: /generate my plan/i })).not.toBeDisabled()
+  })
+
+  it('sends freeform text directly as the API input', async () => {
+    mockFetchResponse(minimalParsedPlan)
+
+    renderScreen()
+    fireEvent.click(screen.getByRole('button', { name: /prefer to describe your own plan/i }))
+    fireEvent.change(screen.getByLabelText(/plan description/i), {
+      target: { value: '3 day PPL, bench 4x8-12' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /generate my plan/i }))
+
+    await waitFor(() => {
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body)
+      expect(body.input).toBe('3 day PPL, bench 4x8-12')
+    })
+  })
+
+  it('"Use guided setup instead" link returns to guided mode', () => {
+    renderScreen()
+    fireEvent.click(screen.getByRole('button', { name: /prefer to describe your own plan/i }))
+    fireEvent.click(screen.getByRole('button', { name: /use guided setup instead/i }))
+    expect(screen.getByText('3 days')).toBeInTheDocument()
+    expect(screen.queryByLabelText(/plan description/i)).not.toBeInTheDocument()
+  })
+})
