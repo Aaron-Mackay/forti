@@ -335,9 +335,10 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount }: PlanEditorScreenPr
           left: 0,
           right: 0,
           p: 2,
-          bgcolor: 'background.paper',
+          backgroundColor: 'background.paper',
           borderTop: 1,
           borderColor: 'divider',
+          zIndex: 1,
         }}
       >
         <Button
