@@ -1,0 +1,53 @@
+name: Neon DB Backup Branch
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Every day at 2am UTC
+  workflow_dispatch:        # Allow manual runs
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create backup branch
+        run: |
+          DATETIME=$(date +%Y-%m-%d_%H-%M-%S)
+          BRANCH_NAME="backup-$DATETIME"
+
+          echo "Creating branch: $BRANCH_NAME"
+          curl -s -X POST \
+            "https://console.neon.tech/api/v2/projects/${{ secrets.NEON_PROJECT_ID }}/branches" \
+            -H "Authorization: Bearer ${{ secrets.NEON_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"branch\": {\"name\": \"$BRANCH_NAME\"}}" \
+            | jq '.'
+      - name: Delete oldest backup branch if at limit
+        run: |
+          BACKUP_LIMIT=7
+          
+          ALL_BRANCHES=$(curl -s \
+            "https://console.neon.tech/api/v2/projects/${{ secrets.NEON_PROJECT_ID }}/branches" \
+            -H "Authorization: Bearer ${{ secrets.NEON_API_KEY }}")
+          
+          BACKUP_COUNT=$(echo "$ALL_BRANCHES" | jq '[.branches[] | select(.name | startswith("backup-"))] | length')
+          echo "Backup branches: $BACKUP_COUNT / $BACKUP_LIMIT"
+          
+          if [ "$BACKUP_COUNT" -ge "$BACKUP_LIMIT" ]; then
+            OLDEST=$(echo "$ALL_BRANCHES" | jq -r '
+              .branches
+              | map(select(.name | startswith("backup-")))
+              | sort_by(.created_at)
+              | first
+              | .name + " " + .id
+            ')
+          
+            NAME=$(echo "$OLDEST" | cut -d' ' -f1)
+            ID=$(echo "$OLDEST" | cut -d' ' -f2)
+          
+            echo "At backup limit — deleting oldest: $NAME ($ID)"
+            curl -s -X DELETE \
+              "https://console.neon.tech/api/v2/projects/${{ secrets.NEON_PROJECT_ID }}/branches/$ID" \
+              -H "Authorization: Bearer ${{ secrets.NEON_API_KEY }}"
+          else
+            echo "Under backup limit, no deletion needed."
+          fi

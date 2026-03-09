@@ -1,13 +1,15 @@
 'use client';
 
 import React, {useState} from 'react';
-import {Button, TableBody, TableCell, TableHead, TableRow, Typography} from '@mui/material';
+import {Box, Button, TableBody, TableCell, TableHead, TableRow, Typography} from '@mui/material';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import ExerciseRow from './ExerciseRow';
 import {ToggleableEditableField} from './ToggleableEditableField';
 import {useWorkoutEditorContext} from '@/context/WorkoutEditorContext';
 import {Exercise} from "@prisma/client";
 import {CompactTable} from './CompactUI';
+import ProgressIcon from '@/lib/ProgressIcon';
+import {getWorkoutStatus} from '@/lib/workoutProgress';
 
 import {WorkoutPrisma} from "@/types/dataTypes";
 import {Dir} from "@lib/useWorkoutEditor";
@@ -44,7 +46,7 @@ const Workout = ({
 
   return (
     <>
-      <h4 className="mt-3">
+      <Box component="h4" className="mt-3" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
         Workout {workout.order} -{' '}
         <ToggleableEditableField
           inputProps={{style: {textAlign: 'center'}}}
@@ -60,7 +62,8 @@ const Workout = ({
             })
           }
         />
-      </h4>
+        <ProgressIcon status={getWorkoutStatus(workout)} />
+      </Box>
 
       {workout.notes && (
         <Typography

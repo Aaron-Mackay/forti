@@ -3,6 +3,8 @@
 import { Box, Container, List, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
 import { WeekPrisma } from '@/types/dataTypes';
 import CustomAppBar from "@/components/CustomAppBar";
+import ProgressIcon from '@/lib/ProgressIcon';
+import { getWorkoutStatus } from '@/lib/workoutProgress';
 
 export default function WorkoutsListView({
   week,
@@ -22,7 +24,9 @@ export default function WorkoutsListView({
         </Typography>
         <List>
           {week.workouts.map((workout) => (
-            <ListItem key={workout.id} disablePadding>
+            <ListItem key={workout.id} disablePadding secondaryAction={
+              <ProgressIcon status={getWorkoutStatus(workout)} />
+            }>
               <ListItemButton onClick={() => onSelectWorkout(workout.id)}>
                 <ListItemText primary={workout.name} />
               </ListItemButton>

@@ -1,3 +1,4 @@
+export PATH="/opt/node22/bin:$PATH"
 export NVM_DIR="$HOME/.nvm"
 if [ -f .env ]; then set -a; . .env; set +a; fi
 
