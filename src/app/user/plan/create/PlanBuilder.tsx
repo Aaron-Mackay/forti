@@ -6,18 +6,24 @@ import { EntryScreen } from './EntryScreen'
 import { AiFormScreen } from './AiFormScreen'
 import { PlanEditorScreen } from './PlanEditorScreen'
 import { TemplateBrowserScreen } from './TemplateBrowserScreen'
+import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext'
+import { PlanPrisma } from '@/types/dataTypes'
+import { PLACEHOLDER_ID } from './PlanBuilderWithContext'
 
 type View = 'entry' | 'templates' | 'ai' | 'editor'
 
-export const PlanBuilder = () => {
+export const PlanBuilder = ({ blankPlan }: { blankPlan: PlanPrisma }) => {
   const [view, setView] = useState<View>('entry')
   const [weekCount, setWeekCount] = useState('6')
+  const { dispatch } = useWorkoutEditorContext()
+
+  const resetPlan = () => dispatch({ type: 'REPLACE_PLAN', planId: PLACEHOLDER_ID, plan: blankPlan })
 
   const appBarProps: React.ComponentProps<typeof CustomAppBar> =
     view === 'entry'
       ? { title: 'Create Plan' }
       : view === 'templates'
-        ? { title: 'Choose a Template', showBack: true, onBack: () => setView('entry') }
+        ? { title: 'Choose a Template', showBack: true, onBack: () => { resetPlan(); setView('entry') } }
         : view === 'ai'
           ? { title: 'Build with AI', showBack: true, onBack: () => setView('entry') }
           : { title: 'New Plan', showBack: true, onBack: () => setView('entry') }
