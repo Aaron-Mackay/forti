@@ -255,7 +255,7 @@ test.describe('AI plan creation', () => {
     await page.getByRole('button', { name: /generate my plan/i }).click();
 
     // Should land on the plan editor with the generated plan name pre-filled
-    await expect(page.getByDisplayValue('AI Push Pull Plan')).toBeVisible();
+    await expect(page.getByRole('textbox', { name: /plan name/i })).toHaveValue('AI Push Pull Plan');
     await expect(page.getByRole('button', { name: /save plan/i })).toBeVisible();
   });
 
