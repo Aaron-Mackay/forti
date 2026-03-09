@@ -6,8 +6,30 @@ import * as Assert from "assert";
 
 import {SetPrisma, UserPrisma, WorkoutExercisePrisma, WorkoutPrisma} from "@/types/dataTypes";
 
+const splitRow = (row: string, delimiter: string): string[] => {
+  if (delimiter === "\t") return row.split("\t");
+  const cells: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < row.length; i++) {
+    const ch = row[i];
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+    } else if (ch === delimiter && !inQuotes) {
+      cells.push(current);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  cells.push(current);
+  return cells;
+};
+
 export const parsePlan = (data: string): UserPrisma => {
-  const arr2d = data.trim().split("\n").map(row => row.split("\t"));
+  const lines = data.trim().split("\n");
+  const delimiter = lines[0].includes("\t") ? "\t" : ",";
+  const arr2d = lines.map(row => splitRow(row, delimiter));
 
   const headerRowIndexes: number[] = []
   arr2d.forEach((row, rowIndex) => {
