@@ -5,9 +5,10 @@ import {extractErrorMessage} from "@lib/apiError";
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
   const params = await props.params;
-  const {notes} = await req.json();
+  const body = await req.json();
+  const {notes, cardioDuration, cardioDistance, cardioResistance} = body;
 
-  if (typeof notes !== 'string') {
+  if ('notes' in body && typeof notes !== 'string') {
     return NextResponse.json({error: 'notes must be a string'}, {status: 400});
   }
 
@@ -37,9 +38,21 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
       return NextResponse.json({error: 'Forbidden'}, {status: 403});
     }
 
+    const updateData: {
+      notes?: string;
+      cardioDuration?: number | null;
+      cardioDistance?: number | null;
+      cardioResistance?: number | null;
+    } = {};
+
+    if ('notes' in body) updateData.notes = notes;
+    if ('cardioDuration' in body) updateData.cardioDuration = cardioDuration ?? null;
+    if ('cardioDistance' in body) updateData.cardioDistance = cardioDistance ?? null;
+    if ('cardioResistance' in body) updateData.cardioResistance = cardioResistance ?? null;
+
     const updated = await prisma.workoutExercise.update({
       where: {id: workoutExerciseId},
-      data: {notes},
+      data: updateData,
     });
 
     return NextResponse.json(updated);

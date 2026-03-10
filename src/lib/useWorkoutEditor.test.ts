@@ -853,4 +853,88 @@ describe("updateUserSets", () => {
 
     expect(updatedUser).toEqual(user);
   });
+
+  it('UPDATE_CARDIO_DATA updates cardioDuration on a cardio exercise', () => {
+    const exercise = new ExerciseBuilder(300).build();
+    const workout = new WorkoutBuilder(200).addExercise(exercise).build();
+    const week = new WeekBuilder(100).addWorkout(workout).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const state = new UserBuilder(1).addPlan(plan).build();
+
+    const action: WorkoutEditorAction = {
+      type: 'UPDATE_CARDIO_DATA',
+      planId: 1,
+      weekId: 100,
+      workoutId: 200,
+      exerciseId: 300,
+      field: 'cardioDuration',
+      value: 30,
+    };
+    const newState = reducer(state, action, mockUuid);
+    const updatedEx = newState.plans[0].weeks[0].workouts[0].exercises[0];
+    expect(updatedEx.cardioDuration).toBe(30);
+  });
+
+  it('UPDATE_CARDIO_DATA updates cardioDistance on a cardio exercise', () => {
+    const exercise = new ExerciseBuilder(300).build();
+    const workout = new WorkoutBuilder(200).addExercise(exercise).build();
+    const week = new WeekBuilder(100).addWorkout(workout).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const state = new UserBuilder(1).addPlan(plan).build();
+
+    const action: WorkoutEditorAction = {
+      type: 'UPDATE_CARDIO_DATA',
+      planId: 1,
+      weekId: 100,
+      workoutId: 200,
+      exerciseId: 300,
+      field: 'cardioDistance',
+      value: 5.2,
+    };
+    const newState = reducer(state, action, mockUuid);
+    const updatedEx = newState.plans[0].weeks[0].workouts[0].exercises[0];
+    expect(updatedEx.cardioDistance).toBe(5.2);
+  });
+
+  it('UPDATE_CARDIO_DATA sets cardio field to null', () => {
+    const exercise = new ExerciseBuilder(300).build();
+    const workout = new WorkoutBuilder(200).addExercise(exercise).build();
+    const week = new WeekBuilder(100).addWorkout(workout).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const state = new UserBuilder(1).addPlan(plan).build();
+
+    // First set a value
+    let newState = reducer(state, {
+      type: 'UPDATE_CARDIO_DATA',
+      planId: 1, weekId: 100, workoutId: 200, exerciseId: 300,
+      field: 'cardioDuration', value: 45,
+    }, mockUuid);
+    expect(newState.plans[0].weeks[0].workouts[0].exercises[0].cardioDuration).toBe(45);
+
+    // Then clear it
+    newState = reducer(newState, {
+      type: 'UPDATE_CARDIO_DATA',
+      planId: 1, weekId: 100, workoutId: 200, exerciseId: 300,
+      field: 'cardioDuration', value: null,
+    }, mockUuid);
+    expect(newState.plans[0].weeks[0].workouts[0].exercises[0].cardioDuration).toBeNull();
+  });
+
+  it('UPDATE_CARDIO_DATA does not mutate other exercises', () => {
+    const exercise1 = new ExerciseBuilder(300).build();
+    const exercise2 = new ExerciseBuilder(301).build();
+    const workout = new WorkoutBuilder(200).addExercise(exercise1).addExercise(exercise2).build();
+    const week = new WeekBuilder(100).addWorkout(workout).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const state = new UserBuilder(1).addPlan(plan).build();
+
+    const newState = reducer(state, {
+      type: 'UPDATE_CARDIO_DATA',
+      planId: 1, weekId: 100, workoutId: 200, exerciseId: 300,
+      field: 'cardioDuration', value: 20,
+    }, mockUuid);
+
+    expect(newState.plans[0].weeks[0].workouts[0].exercises[0].cardioDuration).toBe(20);
+    expect(newState.plans[0].weeks[0].workouts[0].exercises[1].cardioDuration).toBeNull();
+  });
 });

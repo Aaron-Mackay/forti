@@ -177,6 +177,9 @@ export class ExerciseBuilder {
         secondaryMuscles: [],
       },
       sets: [],
+      cardioDuration: null,
+      cardioDistance: null,
+      cardioResistance: null,
     };
   }
   addSet(set: SetPrisma) {

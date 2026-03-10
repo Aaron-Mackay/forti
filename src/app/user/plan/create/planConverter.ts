@@ -65,6 +65,9 @@ export function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPris
                   reps: set.reps ?? null,
                   e1rm: null,
                 })),
+                cardioDuration: null,
+                cardioDistance: null,
+                cardioResistance: null,
               }
             }),
           }

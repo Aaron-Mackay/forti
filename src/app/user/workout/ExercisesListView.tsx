@@ -111,9 +111,22 @@ export default function ExercisesListView({
                   sx={{flex: 1}}
                 />
                 <Box sx={{display: 'flex', alignItems: 'center', ml: 2}}>
-                  {ex.sets.map((set, idx) => (
-                    set.reps ? <TaskAltIcon key={idx}/> : <PanoramaFishEyeIcon key={idx}/>
-                  ))}
+                  {ex.exercise.category === 'cardio' ? (
+                    ex.cardioDuration != null || ex.cardioDistance != null ? (
+                      <Typography variant="caption" color="text.secondary">
+                        {[
+                          ex.cardioDuration != null ? `${ex.cardioDuration} min` : null,
+                          ex.cardioDistance != null ? `${ex.cardioDistance} km` : null,
+                        ].filter(Boolean).join(' · ')}
+                      </Typography>
+                    ) : (
+                      <PanoramaFishEyeIcon />
+                    )
+                  ) : (
+                    ex.sets.map((set, idx) => (
+                      set.reps ? <TaskAltIcon key={idx}/> : <PanoramaFishEyeIcon key={idx}/>
+                    ))
+                  )}
                 </Box>
               </ListItemButton>
             </ListItem>

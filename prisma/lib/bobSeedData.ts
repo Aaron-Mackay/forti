@@ -36,7 +36,7 @@ const PLAN_TEMPLATES = [
     description: 'Training block 1 for Bob',
     weekCount:   2,
     workoutTemplates: [
-      { name: 'Workout A', exercises: ['Bench Press', 'Squat', 'Deadlift'] },
+      { name: 'Workout A', exercises: ['Bench Press', 'Squat', 'Deadlift', 'Treadmill'] },
       { name: 'Workout B', exercises: ['Overhead Press', 'Barbell Row', 'Pull Ups'] },
     ],
     // How many days ago each Week-1 workout was completed
@@ -184,28 +184,36 @@ export async function seedBobData(bob: { id: string }, today: Date): Promise<voi
 
         for (let i = 0; i < wo.exercises.length; i++) {
           const exerciseName = wo.exercises[i];
+          const exerciseRecord = findEx(exerciseName);
+          const isCardio = exerciseRecord.category === 'cardio';
           const base = EXERCISE_BASES[exerciseName] ?? { weight: 60, reps: 8 };
 
           const workoutExercise = await prisma.workoutExercise.create({
             data: {
-              workoutId:  workout.id,
-              exerciseId: findEx(exerciseName).id,
-              order:      i + 1,
-              restTime:   '90',
-              repRange:   '8-12',
+              workoutId:       workout.id,
+              exerciseId:      exerciseRecord.id,
+              order:           i + 1,
+              restTime:        isCardio ? null : '90',
+              repRange:        isCardio ? null : '8-12',
+              // Seed cardio data for completed (Week 1) workouts
+              cardioDuration:  isCardio && isFirstWeek ? 30 : null,
+              cardioDistance:  isCardio && isFirstWeek ? 5 : null,
+              cardioResistance: isCardio && isFirstWeek ? 3 : null,
             },
           });
 
-          // 3 sets per exercise; Week 1 filled in, subsequent weeks empty
-          for (let s = 0; s < 3; s++) {
-            await prisma.exerciseSet.create({
-              data: {
-                workoutExerciseId: workoutExercise.id,
-                order:  s + 1,
-                reps:   isFirstWeek ? base.reps : null,
-                weight: isFirstWeek && base.weight > 0 ? base.weight : null,
-              },
-            });
+          if (!isCardio) {
+            // 3 sets per resistance exercise; Week 1 filled in, subsequent weeks empty
+            for (let s = 0; s < 3; s++) {
+              await prisma.exerciseSet.create({
+                data: {
+                  workoutExerciseId: workoutExercise.id,
+                  order:  s + 1,
+                  reps:   isFirstWeek ? base.reps : null,
+                  weight: isFirstWeek && base.weight > 0 ? base.weight : null,
+                },
+              });
+            }
           }
         }
 

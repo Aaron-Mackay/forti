@@ -204,6 +204,79 @@ test.describe('Workout page', () => {
     });
   });
 
+  test.describe('cardio exercise in workout', () => {
+    test('shows cardio summary chip for a cardio exercise with logged data', async ({ page }) => {
+      await page.getByRole('button', { name: /Plan/i }).first().click();
+      await page.getByRole('button', { name: /Week/i }).first().click();
+      await page.getByRole('button', { name: /Workout/i }).first().click();
+
+      // Treadmill is seeded in Workout A of Plan 1 (first workout)
+      await expect(page.getByRole('button', { name: 'Treadmill' })).toBeVisible();
+    });
+
+    test('cardio exercise opens CardioSlide with duration/distance inputs', async ({ page }) => {
+      await page.route('**/api/exercises/*/previous-cardio**', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(null),
+        });
+      });
+
+      await page.getByRole('button', { name: /Plan/i }).first().click();
+      await page.getByRole('button', { name: /Week/i }).first().click();
+      await page.getByRole('button', { name: /Workout/i }).first().click();
+      await page.getByRole('button', { name: 'Treadmill' }).click();
+
+      await expect(page.getByLabel(/Duration/i).first()).toBeVisible();
+      await expect(page.getByLabel(/Distance/i).first()).toBeVisible();
+      await expect(page.getByLabel(/Resistance/i).first()).toBeVisible();
+    });
+
+    test('cardio slide computes and shows pace from duration and distance inputs', async ({ page }) => {
+      await page.route('**/api/exercises/*/previous-cardio**', async (route) => {
+        await route.fulfill({status: 200, contentType: 'application/json', body: 'null'});
+      });
+      await page.route('**/api/workoutExercise/**', async (route) => {
+        if (route.request().method() === 'PATCH') {
+          await route.fulfill({status: 200, contentType: 'application/json', body: '{}'});
+        } else {
+          await route.continue();
+        }
+      });
+
+      await page.getByRole('button', { name: /Plan/i }).first().click();
+      await page.getByRole('button', { name: /Week/i }).first().click();
+      await page.getByRole('button', { name: /Workout/i }).first().click();
+      await page.getByRole('button', { name: 'Treadmill' }).click();
+
+      const activeSlide = page.locator('.swiper-slide-active');
+      await activeSlide.getByLabel(/Duration/i).fill('30');
+      await activeSlide.getByLabel(/Distance/i).fill('5');
+
+      // 30 min / 5 km = 6:00 /km
+      await expect(activeSlide.getByText(/6:00 \/km/)).toBeVisible();
+    });
+
+    test('cardio slide shows previous session summary when API returns data', async ({ page }) => {
+      await page.route('**/api/exercises/*/previous-cardio**', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({cardioDuration: 25, cardioDistance: 4, cardioResistance: null}),
+        });
+      });
+
+      await page.getByRole('button', { name: /Plan/i }).first().click();
+      await page.getByRole('button', { name: /Week/i }).first().click();
+      await page.getByRole('button', { name: /Workout/i }).first().click();
+      await page.getByRole('button', { name: 'Treadmill' }).click();
+
+      const activeSlide = page.locator('.swiper-slide-active');
+      await expect(activeSlide.getByText(/Last session: 25 min · 4 km/)).toBeVisible();
+    });
+  });
+
   test.describe('previous set data in exercise detail', () => {
     test('displays previous weight and reps below each matching set', async ({ page }) => {
       await page.route('**/api/exercises/*/previous-sets**', async (route) => {

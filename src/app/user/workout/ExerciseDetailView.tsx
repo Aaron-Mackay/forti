@@ -18,6 +18,7 @@ import {UserExerciseNote} from '@prisma/client';
 import CustomAppBar from "@/components/CustomAppBar";
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 import ExerciseSlide, {PreviousSet} from './ExerciseSlide';
+import CardioSlide, {PreviousCardio} from './CardioSlide';
 import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
 
 export default function ExerciseDetailView({
@@ -29,6 +30,7 @@ export default function ExerciseDetailView({
   onSlideChange,
   handleSetUpdate,
   onFormCueBlur,
+  onCardioUpdate,
   snackbar,
   handleSnackbarClose,
 }: {
@@ -40,6 +42,7 @@ export default function ExerciseDetailView({
   onSlideChange: (swiper: SwiperType) => void;
   handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
   onFormCueBlur: (exerciseId: number, note: string) => void;
+  onCardioUpdate: (workoutExerciseId: number, field: 'cardioDuration' | 'cardioDistance' | 'cardioResistance', value: number | null) => void;
   snackbar: { open: boolean; message: string; severity: 'success' | 'info' };
   handleSnackbarClose: () => void;
 }) {
@@ -47,6 +50,7 @@ export default function ExerciseDetailView({
   // Keyed by exerciseId (global Exercise table id)
   const [previousSetsMap, setPreviousSetsMap] = useState<Map<number, PreviousSet[]>>(new Map());
   const [e1rmHistoryMap, setE1rmHistoryMap] = useState<Map<number, E1rmHistoryPoint[] | null>>(new Map());
+  const [previousCardioMap, setPreviousCardioMap] = useState<Map<number, PreviousCardio | null>>(new Map());
 
   const fetchPreviousSets = (exerciseId: number) => {
     if (previousSetsMap.has(exerciseId)) return;
@@ -70,12 +74,27 @@ export default function ExerciseDetailView({
       .catch(() => setE1rmHistoryMap(prev => new Map(prev).set(exerciseId, [])));
   };
 
+  const fetchPreviousCardio = (exerciseId: number) => {
+    if (previousCardioMap.has(exerciseId)) return;
+    fetch(`/api/exercises/${exerciseId}/previous-cardio?currentWorkoutId=${currentWorkoutId}`)
+      .then(res => res.ok ? res.json() : null)
+      .then((data: PreviousCardio | null) => {
+        setPreviousCardioMap(prev => new Map(prev).set(exerciseId, data));
+      })
+      .catch(() => {/* ignore fetch errors — previous data is optional */
+      });
+  };
+
   // Fetch for the initially active exercise on mount
   useEffect(() => {
     const initial = workout.exercises.find(e => e.id === activeExerciseId);
     if (initial) {
-      fetchPreviousSets(initial.exerciseId);
-      fetchE1rmHistory(initial.exerciseId);
+      if (initial.exercise.category === 'cardio') {
+        fetchPreviousCardio(initial.exerciseId);
+      } else {
+        fetchPreviousSets(initial.exerciseId);
+        fetchE1rmHistory(initial.exerciseId);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -84,8 +103,12 @@ export default function ExerciseDetailView({
     onSlideChange(swiper);
     const ex = workout.exercises[swiper.activeIndex];
     if (ex) {
-      fetchPreviousSets(ex.exerciseId);
-      fetchE1rmHistory(ex.exerciseId);
+      if (ex.exercise.category === 'cardio') {
+        fetchPreviousCardio(ex.exerciseId);
+      } else {
+        fetchPreviousSets(ex.exerciseId);
+        fetchE1rmHistory(ex.exerciseId);
+      }
     }
   };
 
@@ -131,14 +154,24 @@ export default function ExerciseDetailView({
         >
           {workout.exercises.map((ex) => (
             <SwiperSlide key={ex.id} style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-              <ExerciseSlide
-                ex={ex}
-                userExerciseNote={userExerciseNotes.find(n => n.exerciseId === ex.exerciseId)}
-                onFormCueBlur={onFormCueBlur}
-                handleSetUpdate={handleSetUpdate}
-                previousSets={previousSetsMap.get(ex.exerciseId)}
-                history={e1rmHistoryMap.get(ex.exerciseId) ?? null}
-              />
+              {ex.exercise.category === 'cardio' ? (
+                <CardioSlide
+                  ex={ex}
+                  userExerciseNote={userExerciseNotes.find(n => n.exerciseId === ex.exerciseId)}
+                  onFormCueBlur={onFormCueBlur}
+                  onCardioUpdate={(field, value) => onCardioUpdate(ex.id, field, value)}
+                  previousCardio={previousCardioMap.get(ex.exerciseId)}
+                />
+              ) : (
+                <ExerciseSlide
+                  ex={ex}
+                  userExerciseNote={userExerciseNotes.find(n => n.exerciseId === ex.exerciseId)}
+                  onFormCueBlur={onFormCueBlur}
+                  handleSetUpdate={handleSetUpdate}
+                  previousSets={previousSetsMap.get(ex.exerciseId)}
+                  history={e1rmHistoryMap.get(ex.exerciseId) ?? null}
+                />
+              )}
             </SwiperSlide>
           ))}
         </Swiper>
