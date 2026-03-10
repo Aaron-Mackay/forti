@@ -331,9 +331,7 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount }: PlanEditorScreenPr
 
   const workouts = statePlan.weeks[0].workouts
 
-  const canSave =
-    !!statePlan.name.trim() &&
-    workouts.every((wo) => wo.exercises.every((ex) => ex.exercise.name.trim()))
+  const canSave = !!statePlan.name.trim()
 
   const handleSave = async () => {
     setSaving(true)

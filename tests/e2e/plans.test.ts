@@ -97,7 +97,7 @@ test.describe('Create Plan entry screen', () => {
   });
 
   test('shows the "Build with AI" option', async ({ page }) => {
-    await expect(page.getByText(/build with ai/i)).toBeVisible();
+    await expect(page.getByText(/build with ai/i).first()).toBeVisible();
   });
 
   test('shows the "Start from scratch" option', async ({ page }) => {
@@ -111,14 +111,14 @@ test.describe('Create Plan entry screen', () => {
   });
 
   test('clicking "Build with AI" shows the AI form', async ({ page }) => {
-    await page.getByText(/build with ai/i).click();
+    await page.getByText(/build with ai/i).first().click();
     await expect(page.getByText(/how many days per week/i)).toBeVisible();
     await expect(page.getByText(/main goal/i)).toBeVisible();
     await expect(page.getByText(/experience level/i)).toBeVisible();
   });
 
   test('back arrow on AI form returns to entry screen', async ({ page }) => {
-    await page.getByText(/build with ai/i).click();
+    await page.getByText(/build with ai/i).first().click();
     await page.getByRole('button', { name: /back/i }).click();
     await expect(page.getByText(/how do you want to start/i)).toBeVisible();
   });
@@ -197,7 +197,7 @@ test.describe('Template browser', () => {
 test.describe('AI plan creation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/user/plan/create');
-    await page.getByText(/build with ai/i).click();
+    await page.getByText(/build with ai/i).first().click();
   });
 
   test('Generate button is disabled until all chips are selected', async ({ page }) => {
@@ -286,8 +286,10 @@ test.describe('AI plan creation', () => {
     await page.getByRole('button', { name: /intermediate/i }).click();
     await page.getByRole('button', { name: /generate my plan/i }).click();
 
-    await expect(page.getByRole('alert')).toBeVisible();
-    await expect(page.getByRole('alert')).toContainText(/unavailable/i);
+    // Use filter to exclude the Next.js route announcer which also has role="alert"
+    const errorAlert = page.getByRole('alert').filter({ hasText: /unavailable/i });
+    await expect(errorAlert).toBeVisible();
+    await expect(errorAlert).toContainText(/unavailable/i);
     // AI form remains visible so the user can retry
     await expect(page.getByRole('button', { name: /generate my plan/i })).toBeVisible();
   });

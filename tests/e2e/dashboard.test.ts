@@ -38,7 +38,7 @@ test.describe('Dashboard', () => {
       await expect(page.getByRole('link').filter({ hasText: 'Next Workout' })).toBeVisible();
       // Week number displayed should match week.order (1-indexed, no +1 offset).
       // The workout name also contains "Week 2", so scope to the subtitle which uses · separators.
-      await expect(page.getByText(/· Week 2/)).toBeVisible();
+      await expect(page.getByText(/· Week 2/).first()).toBeVisible();
     });
 
     test('Next Workout card links to the workout page with a workoutId param', async ({ page }) => {
@@ -74,7 +74,7 @@ test.describe('Dashboard', () => {
     test('renders the This Week training count card', async ({ page }) => {
       await expect(page.getByText('This Week').first()).toBeVisible();
       // Scope to the specific card to avoid matching the "Welcome Bob" h4
-      const thisWeekCard = page.locator('.MuiCard-root').filter({ hasText: 'This Week' });
+      const thisWeekCard = page.locator('.MuiCard-root').filter({ hasText: 'This Week' }).first();
       const countEl = thisWeekCard.locator('h4');
       const text = await countEl.textContent();
       expect(Number(text)).toBeGreaterThanOrEqual(0);
