@@ -163,16 +163,19 @@ model Exercise {
 }
 
 model WorkoutExercise {
-  id         Int           @id @default(autoincrement())
-  workout    Workout       @relation(fields: [workoutId], references: [id], onDelete: Cascade)
-  workoutId  Int
-  exercise   Exercise      @relation(fields: [exerciseId], references: [id])
-  exerciseId Int
-  order      Int
-  restTime   String?
-  repRange   String?
-  notes      String?
-  sets       ExerciseSet[]
+  id               Int           @id @default(autoincrement())
+  workout          Workout       @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  workoutId        Int
+  exercise         Exercise      @relation(fields: [exerciseId], references: [id])
+  exerciseId       Int
+  order            Int
+  restTime         String?
+  repRange         String?
+  notes            String?
+  sets             ExerciseSet[]
+  cardioDuration   Float?        // minutes
+  cardioDistance   Float?        // km
+  cardioResistance Float?        // average resistance / incline
 
   @@unique([workoutId, order])
 }

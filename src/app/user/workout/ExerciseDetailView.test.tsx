@@ -51,6 +51,9 @@ function buildWorkout(): WorkoutPrisma {
           {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100, e1rm: null},
           {id: 2, workoutExerciseId: 10, order: 2, reps: 6, weight: 90, e1rm: null},
         ],
+        cardioDuration: null,
+        cardioDistance: null,
+        cardioResistance: null,
       },
     ],
   };
@@ -65,6 +68,7 @@ const defaultProps = {
   onSlideChange: vi.fn(),
   handleSetUpdate: vi.fn(),
   onFormCueBlur: vi.fn(),
+  onCardioUpdate: vi.fn(),
   snackbar: {open: false, message: '', severity: 'success' as const},
   handleSnackbarClose: vi.fn(),
 };

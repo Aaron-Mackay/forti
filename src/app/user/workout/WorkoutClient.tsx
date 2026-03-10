@@ -10,6 +10,7 @@ import WorkoutsListView from './WorkoutsListView';
 import ExercisesListView from './ExercisesListView';
 import ExerciseDetailView from './ExerciseDetailView';
 import {
+  updateCardioData,
   updateUserExerciseNote,
   updateUserSets,
   updateWorkoutDateCompleted,
@@ -166,6 +167,18 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
       });
   };
 
+  const handleCardioUpdate = (
+    workoutExerciseId: number,
+    field: 'cardioDuration' | 'cardioDistance' | 'cardioResistance',
+    value: number | null
+  ) => {
+    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
+    setUserData(prev =>
+      updateCardioData(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, workoutExerciseId, field, value)
+    );
+    queueOrSendRequest(`/api/workoutExercise/${workoutExerciseId}`, 'PATCH', {[field]: value});
+  };
+
   const handleFormCueBlur = (exerciseId: number, note: string) => {
     setUserData(prev => updateUserExerciseNote(prev, exerciseId, note));
     fetch(`/api/exerciseNote/${exerciseId}`, {
@@ -197,6 +210,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
         }}
         handleSetUpdate={handleSetUpdate}
         onFormCueBlur={handleFormCueBlur}
+        onCardioUpdate={handleCardioUpdate}
         snackbar={snackbar}
         handleSnackbarClose={handleSnackbarClose}
       />

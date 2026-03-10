@@ -35,6 +35,9 @@ function buildWorkout(overrides: Partial<WorkoutPrisma> = {}): WorkoutPrisma {
           {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100, e1rm: null},
           {id: 2, workoutExerciseId: 10, order: 2, reps: null, weight: null, e1rm: null},
         ],
+        cardioDuration: null,
+        cardioDistance: null,
+        cardioResistance: null,
       },
     ],
     ...overrides,
@@ -127,5 +130,94 @@ describe('ExercisesListView', () => {
     });
     fireEvent.click(screen.getByText('Bench Press'));
     expect(onSelectExercise).toHaveBeenCalledWith(10);
+  });
+
+  it('shows cardio summary text when cardio exercise has duration and distance logged', () => {
+    const cardioWorkout = buildWorkout({
+      exercises: [
+        {
+          id: 20,
+          workoutId: 1,
+          exerciseId: 200,
+          order: 1,
+          repRange: null,
+          restTime: null,
+          notes: null,
+          exercise: {id: 200, name: 'Treadmill', category: ExerciseCategory.cardio, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+          sets: [],
+          cardioDuration: 30,
+          cardioDistance: 5,
+          cardioResistance: null,
+        },
+      ],
+    });
+    renderView({
+      workout: cardioWorkout,
+      onBack,
+      onSelectExercise,
+      onWorkoutNoteBlur,
+      onCompleteWorkout,
+    });
+    expect(screen.getByText('30 min · 5 km')).toBeInTheDocument();
+  });
+
+  it('shows only duration in cardio summary when distance is null', () => {
+    const cardioWorkout = buildWorkout({
+      exercises: [
+        {
+          id: 20,
+          workoutId: 1,
+          exerciseId: 200,
+          order: 1,
+          repRange: null,
+          restTime: null,
+          notes: null,
+          exercise: {id: 200, name: 'Treadmill', category: ExerciseCategory.cardio, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+          sets: [],
+          cardioDuration: 45,
+          cardioDistance: null,
+          cardioResistance: null,
+        },
+      ],
+    });
+    renderView({
+      workout: cardioWorkout,
+      onBack,
+      onSelectExercise,
+      onWorkoutNoteBlur,
+      onCompleteWorkout,
+    });
+    expect(screen.getByText('45 min')).toBeInTheDocument();
+  });
+
+  it('shows empty circle for cardio exercise with no data logged', () => {
+    const cardioWorkout = buildWorkout({
+      exercises: [
+        {
+          id: 20,
+          workoutId: 1,
+          exerciseId: 200,
+          order: 1,
+          repRange: null,
+          restTime: null,
+          notes: null,
+          exercise: {id: 200, name: 'Treadmill', category: ExerciseCategory.cardio, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+          sets: [],
+          cardioDuration: null,
+          cardioDistance: null,
+          cardioResistance: null,
+        },
+      ],
+    });
+    renderView({
+      workout: cardioWorkout,
+      onBack,
+      onSelectExercise,
+      onWorkoutNoteBlur,
+      onCompleteWorkout,
+    });
+    // PanoramaFishEye icon rendered as svg
+    expect(screen.queryByText(/min/)).not.toBeInTheDocument();
+    expect(screen.getByText('Treadmill')).toBeInTheDocument();
   });
 });

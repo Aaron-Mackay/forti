@@ -315,6 +315,20 @@ export function updateWorkoutExerciseNotes(user: UserPrisma, planId: number, wee
   return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({...exercise, notes}));
 }
 
+export function updateCardioData(
+  user: UserPrisma,
+  planId: number,
+  weekId: number,
+  workoutId: number,
+  exerciseId: number,
+  field: 'cardioDuration' | 'cardioDistance' | 'cardioResistance',
+  value: number | null
+): UserPrisma {
+  return withExercise(user, planId, weekId, workoutId, exerciseId,
+    ex => ({...ex, [field]: value})
+  );
+}
+
 export function updateUserExerciseNote(user: UserPrisma, exerciseId: number, note: string): UserPrisma {
   const exists = user.userExerciseNotes.some(n => n.exerciseId === exerciseId);
   return {
@@ -359,6 +373,9 @@ export function addExercise(
             sets: [],
             workoutId: workout.id,
             notes: "",
+            cardioDuration: null,
+            cardioDistance: null,
+            cardioResistance: null,
           },
         ],
       }))
@@ -400,6 +417,9 @@ export function addExerciseWithSet(
               ],
               workoutId: workout.id,
               notes: "",
+              cardioDuration: null,
+              cardioDistance: null,
+              cardioResistance: null,
             },
           ],
         };
@@ -504,6 +524,9 @@ export function addWorkoutWithExerciseWithSet(
                 ],
                 workoutId: newWorkoutId,
                 notes: "",
+                cardioDuration: null,
+                cardioDistance: null,
+                cardioResistance: null,
               },
             ],
             weekId,

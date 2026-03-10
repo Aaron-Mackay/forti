@@ -85,6 +85,15 @@ export type WorkoutEditorAction =
   category: string
 }
   | { type: 'REPLACE_PLAN'; planId: number; plan: PlanPrisma }
+  | {
+  type: 'UPDATE_CARDIO_DATA';
+  planId: number;
+  weekId: number;
+  workoutId: number;
+  exerciseId: number;
+  field: 'cardioDuration' | 'cardioDistance' | 'cardioResistance';
+  value: number | null;
+}
 
 export type CreateUuid = () => number;
 
@@ -317,6 +326,13 @@ export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, 
         ...userDataState,
         plans: userDataState.plans.map((p) => (p.id === planId ? plan : p)),
       };
+    }
+
+    case 'UPDATE_CARDIO_DATA': {
+      const { planId, weekId, workoutId, exerciseId, field, value } = action;
+      const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId});
+      if (!exercise) return userDataState;
+      return userPlanMutators.updateCardioData(userDataState, planId, weekId, workoutId, exerciseId, field, value);
     }
 
     default:
