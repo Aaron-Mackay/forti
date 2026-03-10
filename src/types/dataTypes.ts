@@ -15,6 +15,7 @@ export type UserPrisma = Prisma.UserGetPayload<{
                   include: {
                     exercise: true,
                     sets: true,
+                    substitutedFor: true,
                   },
                 },
               },

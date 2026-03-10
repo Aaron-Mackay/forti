@@ -17,6 +17,7 @@ import {
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import InfoIcon from '@mui/icons-material/Info';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import MuscleHighlight from '@/components/MuscleHighlight';
 import E1rmSparkline from './E1rmSparkline';
 import {computeE1rm} from '@/lib/e1rm';
@@ -33,6 +34,7 @@ export default function ExerciseSlide({
   handleSetUpdate,
   previousSets,
   history,
+  onSubstitute,
 }: {
   ex: WorkoutExercisePrisma;
   userExerciseNote: UserExerciseNote | undefined;
@@ -40,6 +42,7 @@ export default function ExerciseSlide({
   handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
   previousSets: PreviousSet[] | undefined;
   history: E1rmHistoryPoint[] | null;
+  onSubstitute?: () => void;
 }) {
   const [formCue, setFormCue] = useState(userExerciseNote?.note ?? '');
   const [formCueOpen, setFormCueOpen] = useState(false);
@@ -86,9 +89,31 @@ export default function ExerciseSlide({
       {/* Header row: name/rest/reps/notes toggle on left, anatomy on right */}
       <Box sx={{display: 'flex', alignItems: 'stretch', width: '100%', mb: 1}}>
         <Box sx={{flex: 1}}>
-          <Typography variant="h6">
-            {ex.exercise.name}
-          </Typography>
+          <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+            <Typography variant="h6" sx={{flex: 1}}>
+              {ex.exercise.name}
+            </Typography>
+            {onSubstitute && (
+              <IconButton
+                size="small"
+                onClick={onSubstitute}
+                aria-label="Substitute exercise"
+                title="Substitute exercise"
+              >
+                <SwapHorizIcon fontSize="small" />
+              </IconButton>
+            )}
+          </Box>
+          {ex.substitutedFor && (
+            <Typography variant="caption" color="warning.main" sx={{display: 'block', mb: 0.5}}>
+              Originally: {ex.substitutedFor.name}
+            </Typography>
+          )}
+          {ex.isAdded && !ex.substitutedFor && (
+            <Typography variant="caption" color="info.main" sx={{display: 'block', mb: 0.5}}>
+              Added during workout
+            </Typography>
+          )}
           <Typography variant="subtitle1" gutterBottom>
             Rest: {ex.restTime}
           </Typography>

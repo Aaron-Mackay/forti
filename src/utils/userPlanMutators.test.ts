@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   addExercise,
+  addExerciseToWorkout,
   addExerciseWithSet,
   addSet,
   addWeek,
@@ -14,6 +15,7 @@ import {
   removeLastSet,
   removeWeek,
   removeWorkout,
+  substituteExercise,
   updateCategory,
   updateExerciseInUser,
   updatePlanName,
@@ -632,5 +634,108 @@ describe('updateWorkoutDateCompleted', () => {
     const result = updateWorkoutDateCompleted(user, 1, 101, 201, date);
     expect(result.plans[0].weeks[0].workouts[0].dateCompleted).toEqual(date);
     expect(result.plans[0].weeks[0].workouts[1].dateCompleted).toBeNull();
+  });
+});
+
+// ─── substituteExercise ──────────────────────────────────────────────────────
+
+describe('substituteExercise', () => {
+  it('swaps the exercise and records the original exerciseId', () => {
+    const user = buildBaseUser();
+    const newExercise = {
+      id: 999,
+      name: 'Dumbbell Bench Press',
+      category: 'resistance' as ExerciseCategory,
+      description: null,
+      equipment: [],
+      primaryMuscles: [],
+      secondaryMuscles: [],
+    };
+
+    const result = substituteExercise(user, 1, 101, 201, 301, newExercise, -1);
+    const ex = result.plans[0].weeks[0].workouts[0].exercises[0];
+
+    expect(ex.exercise.name).toBe('Dumbbell Bench Press');
+    expect(ex.substitutedForId).toBe(-1); // original exerciseId
+  });
+
+  it('preserves substitutedForId if already set (does not overwrite)', () => {
+    const set = new SetBuilder(401, 1).build();
+    const exercise = new ExerciseBuilder(301, 1).addSet(set).build();
+    exercise.substitutedForId = 50; // already substituted once
+    const workout = new WorkoutBuilder(201, 1).addExercise(exercise).build();
+    const week = new WeekBuilder(101, 1).addWorkout(workout).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const user = new UserBuilder(1).addPlan(plan).build();
+
+    const anotherExercise = {
+      id: 999,
+      name: 'Cable Fly',
+      category: 'resistance' as ExerciseCategory,
+      description: null,
+      equipment: [],
+      primaryMuscles: [],
+      secondaryMuscles: [],
+    };
+
+    const result = substituteExercise(user, 1, 101, 201, 301, anotherExercise, -1);
+    const ex = result.plans[0].weeks[0].workouts[0].exercises[0];
+
+    // substitutedForId should remain 50 (the original), not overwritten with -1
+    expect(ex.substitutedForId).toBe(50);
+    expect(ex.exercise.name).toBe('Cable Fly');
+  });
+
+  it('does not affect other exercises in the workout', () => {
+    const set1 = new SetBuilder(401, 1).build();
+    const set2 = new SetBuilder(402, 1).build();
+    const exercise1 = new ExerciseBuilder(301, 1).addSet(set1).build();
+    const exercise2 = new ExerciseBuilder(302, 2).addSet(set2).build();
+    const workout = new WorkoutBuilder(201, 1).addExercise(exercise1).addExercise(exercise2).build();
+    const week = new WeekBuilder(101, 1).addWorkout(workout).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const user = new UserBuilder(1).addPlan(plan).build();
+
+    const newExercise = {
+      id: 999,
+      name: 'Dumbbell Bench Press',
+      category: 'resistance' as ExerciseCategory,
+      description: null,
+      equipment: [],
+      primaryMuscles: [],
+      secondaryMuscles: [],
+    };
+
+    const result = substituteExercise(user, 1, 101, 201, 301, newExercise, -1);
+    const exercises = result.plans[0].weeks[0].workouts[0].exercises;
+
+    expect(exercises[0].exercise.name).toBe('Dumbbell Bench Press');
+    expect(exercises[1].exercise.name).toBe('Bench Press'); // unchanged
+  });
+});
+
+// ─── addExerciseToWorkout ────────────────────────────────────────────────────
+
+describe('addExerciseToWorkout', () => {
+  it('appends the new exercise to the end of the workout', () => {
+    const user = buildBaseUser();
+    const newEx = new ExerciseBuilder(999, 2).build();
+    newEx.isAdded = true;
+
+    const result = addExerciseToWorkout(user, 1, 101, 201, newEx);
+    const exercises = result.plans[0].weeks[0].workouts[0].exercises;
+
+    expect(exercises).toHaveLength(2);
+    expect(exercises[1].id).toBe(999);
+    expect(exercises[1].isAdded).toBe(true);
+  });
+
+  it('does not mutate the original user object', () => {
+    const user = buildBaseUser();
+    const newEx = new ExerciseBuilder(999, 2).build();
+
+    addExerciseToWorkout(user, 1, 101, 201, newEx);
+
+    expect(user.plans[0].weeks[0].workouts[0].exercises).toHaveLength(1);
   });
 });

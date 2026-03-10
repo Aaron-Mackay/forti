@@ -42,6 +42,9 @@ export default function PlanBuilderWithContext({userData, allExercises}: {
     cardioDuration: null,
     cardioDistance: null,
     cardioResistance: null,
+    substitutedForId: null,
+    substitutedFor: null,
+    isAdded: false,
   }
 
   const placeholderWorkout: WorkoutPrisma = {

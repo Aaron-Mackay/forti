@@ -31,6 +31,7 @@ export default function ExerciseDetailView({
   handleSetUpdate,
   onFormCueBlur,
   onCardioUpdate,
+  onSubstituteExercise,
   snackbar,
   handleSnackbarClose,
 }: {
@@ -43,6 +44,7 @@ export default function ExerciseDetailView({
   handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
   onFormCueBlur: (exerciseId: number, note: string) => void;
   onCardioUpdate: (workoutExerciseId: number, field: 'cardioDuration' | 'cardioDistance' | 'cardioResistance', value: number | null) => void;
+  onSubstituteExercise: (workoutExerciseId: number) => void;
   snackbar: { open: boolean; message: string; severity: 'success' | 'info' };
   handleSnackbarClose: () => void;
 }) {
@@ -170,6 +172,7 @@ export default function ExerciseDetailView({
                   handleSetUpdate={handleSetUpdate}
                   previousSets={previousSetsMap.get(ex.exerciseId)}
                   history={e1rmHistoryMap.get(ex.exerciseId) ?? null}
+                  onSubstitute={() => onSubstituteExercise(ex.id)}
                 />
               )}
             </SwiperSlide>
