@@ -89,11 +89,11 @@ test.describe('Create Plan entry screen', () => {
   });
 
   test('shows the "How do you want to start?" heading', async ({ page }) => {
-    await expect(page.getByText(/how do you want to start/i)).toBeVisible();
+    await expect(page.getByText(/how do you want to start/i).first()).toBeVisible();
   });
 
   test('shows the "From a template" option', async ({ page }) => {
-    await expect(page.getByText(/from a template/i)).toBeVisible();
+    await expect(page.getByText(/from a template/i).first()).toBeVisible();
   });
 
   test('shows the "Build with AI" option', async ({ page }) => {
@@ -101,43 +101,43 @@ test.describe('Create Plan entry screen', () => {
   });
 
   test('shows the "Start from scratch" option', async ({ page }) => {
-    await expect(page.getByText(/start from scratch/i)).toBeVisible();
+    await expect(page.getByText(/start from scratch/i).first()).toBeVisible();
   });
 
   test('clicking "Start from scratch" shows the plan editor', async ({ page }) => {
-    await page.getByText(/start from scratch/i).click();
+    await page.getByTestId('entry-scratch').click();
     await expect(page.getByLabel(/plan name/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /save plan/i })).toBeVisible();
   });
 
   test('clicking "Build with AI" shows the AI form', async ({ page }) => {
-    await page.getByText(/build with ai/i).first().click();
+    await page.getByTestId('entry-ai').click();
     await expect(page.getByText(/how many days per week/i)).toBeVisible();
     await expect(page.getByText(/main goal/i)).toBeVisible();
     await expect(page.getByText(/experience level/i)).toBeVisible();
   });
 
   test('back arrow on AI form returns to entry screen', async ({ page }) => {
-    await page.getByText(/build with ai/i).first().click();
+    await page.getByTestId('entry-ai').click();
     await page.getByRole('button', { name: /back/i }).click();
-    await expect(page.getByText(/how do you want to start/i)).toBeVisible();
+    await expect(page.getByText(/how do you want to start/i).first()).toBeVisible();
   });
 
   test('clicking "From a template" shows the template browser', async ({ page }) => {
-    await page.getByText(/from a template/i).click();
+    await page.getByTestId('entry-templates').click();
     await expect(page.getByText(/push \/ pull \/ legs/i)).toBeVisible();
   });
 
   test('back arrow on template browser returns to entry screen', async ({ page }) => {
-    await page.getByText(/from a template/i).click();
+    await page.getByTestId('entry-templates').click();
     await page.getByRole('button', { name: /back/i }).click();
-    await expect(page.getByText(/how do you want to start/i)).toBeVisible();
+    await expect(page.getByText(/how do you want to start/i).first()).toBeVisible();
   });
 
   test('back arrow on plan editor returns to entry screen', async ({ page }) => {
-    await page.getByText(/start from scratch/i).click();
+    await page.getByTestId('entry-scratch').click();
     await page.getByRole('button', { name: /back/i }).click();
-    await expect(page.getByText(/how do you want to start/i)).toBeVisible();
+    await expect(page.getByText(/how do you want to start/i).first()).toBeVisible();
   });
 });
 
@@ -146,7 +146,7 @@ test.describe('Create Plan entry screen', () => {
 test.describe('Template browser', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/user/plan/create');
-    await page.getByText(/from a template/i).click();
+    await page.getByTestId('entry-templates').click();
   });
 
   test('shows all templates by default', async ({ page }) => {
@@ -197,7 +197,7 @@ test.describe('Template browser', () => {
 test.describe('AI plan creation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/user/plan/create');
-    await page.getByText(/build with ai/i).first().click();
+    await page.getByTestId('entry-ai').click();
   });
 
   test('Generate button is disabled until all chips are selected', async ({ page }) => {
@@ -300,7 +300,7 @@ test.describe('AI plan creation', () => {
 test.describe('Plan editor (scratch)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/user/plan/create');
-    await page.getByText(/start from scratch/i).click();
+    await page.getByTestId('entry-scratch').click();
   });
 
   test('shows the plan name field', async ({ page }) => {
