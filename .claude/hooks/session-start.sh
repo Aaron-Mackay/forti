@@ -29,4 +29,32 @@ echo "[session-start] Installing Playwright browsers at $(date)"
 npx playwright install --with-deps chromium || echo "[session-start] Playwright browser install skipped (already cached or download unavailable)"
 echo "[session-start] Playwright browsers step complete at $(date)"
 
+# Set up local PostgreSQL for E2E tests
+# The remote environment has a postgres cluster but it starts 'down'. Start it,
+# set a password, write .env.local pointing to localhost, push the schema, and
+# seed so that auth + all E2E tests work without needing the Neon DB.
+echo "[session-start] Setting up local PostgreSQL at $(date)"
+pg_ctlcluster 16 main start 2>/dev/null || true
+
+# Set password so psql / Prisma can connect via TCP
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';" 2>/dev/null || true
+
+# Write .env.local only if it doesn't already point at localhost
+if ! grep -q "localhost" .env.local 2>/dev/null; then
+  cat > .env.local <<'EOF'
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
+NEXTAUTH_SECRET=local-dev-secret
+NEXTAUTH_URL=http://localhost:3000
+GOOGLE_CLIENT_ID=dummy
+GOOGLE_CLIENT_SECRET=dummy
+EOF
+  echo "[session-start] Wrote .env.local for local DB"
+fi
+
+# Push Prisma schema and seed (idempotent — safe to re-run)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres npx prisma db push --skip-generate 2>&1 | tail -3
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres npm run seed 2>&1 | tail -3
+
+echo "[session-start] Local PostgreSQL ready at $(date)"
+
 echo "[session-start] Setup complete at $(date)"

@@ -10,8 +10,11 @@ import WorkoutsListView from './WorkoutsListView';
 import ExercisesListView from './ExercisesListView';
 import ExerciseDetailView from './ExerciseDetailView';
 import ExercisePickerDialog from './ExercisePickerDialog';
+import AddExerciseConfigDialog from './AddExerciseConfigDialog';
+import {AddExerciseConfig} from './AddExerciseConfigDialog';
 import {
   addExerciseToWorkout,
+  removeExercise,
   substituteExercise,
   updateCardioData,
   updateUserExerciseNote,
@@ -76,6 +79,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
 
   // Add exercise dialog state
   const [showAddExercise, setShowAddExercise] = useState(false);
+  const [pendingExercise, setPendingExercise] = useState<Exercise | null>(null);
 
   // Sync queued requests when coming online
   useEffect(() => {
@@ -244,16 +248,22 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
       });
   };
 
-  const handleAddExercise = (exercise: Exercise) => {
+  const handleAddExercise = (exercise: Exercise, config: AddExerciseConfig) => {
     if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
-    setShowAddExercise(false);
 
     const order = (selectedWorkout?.exercises.length ?? 0) + 1;
 
     fetch('/api/workoutExercise', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({workoutId: selectedWorkoutId, exerciseId: exercise.id, order}),
+      body: JSON.stringify({
+        workoutId: selectedWorkoutId,
+        exerciseId: exercise.id,
+        order,
+        repRange: config.repRange,
+        restTime: config.restTime,
+        setCount: config.setCount,
+      }),
     })
       .then(r => r.ok ? r.json() : Promise.reject(r))
       .then((newWorkoutExercise: WorkoutExercisePrisma) => {
@@ -263,6 +273,17 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
         setSnackbar({open: true, message: 'Exercise added', severity: 'success'});
       })
       .catch(() => setSnackbar({open: true, message: 'Failed to add exercise', severity: 'info'}));
+  };
+
+  const handleRemoveExercise = (workoutExerciseId: number) => {
+    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
+    const prevUserData = userDataState;
+    setUserData(prev => removeExercise(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, workoutExerciseId));
+    fetch(`/api/workoutExercise/${workoutExerciseId}`, {method: 'DELETE'})
+      .catch(() => {
+        setUserData(prevUserData);
+        setSnackbar({open: true, message: 'Failed to remove exercise', severity: 'info'});
+      });
   };
 
   // View switching
@@ -298,6 +319,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
         onWorkoutNoteBlur={handleWorkoutNoteBlur}
         onCompleteWorkout={handleCompleteWorkout}
         onAddExercise={() => setShowAddExercise(true)}
+        onRemoveExercise={handleRemoveExercise}
       />
     );
   } else if (selectedPlan && selectedWeek) {
@@ -343,7 +365,19 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
         open={showAddExercise}
         title="Add Exercise"
         onClose={() => setShowAddExercise(false)}
-        onSelect={handleAddExercise}
+        onSelect={(exercise) => {
+          setShowAddExercise(false);
+          setPendingExercise(exercise);
+        }}
+      />
+      <AddExerciseConfigDialog
+        open={pendingExercise !== null}
+        exercise={pendingExercise}
+        onClose={() => setPendingExercise(null)}
+        onConfirm={(config) => {
+          if (pendingExercise) handleAddExercise(pendingExercise, config);
+          setPendingExercise(null);
+        }}
       />
     </StopwatchProvider>
   );

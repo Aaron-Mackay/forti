@@ -3,6 +3,44 @@ import {NextRequest, NextResponse} from 'next/server';
 import getLoggedInUser from '@lib/getLoggedInUser';
 import {extractErrorMessage} from "@lib/apiError";
 
+export async function DELETE(_req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
+  const params = await props.params;
+
+  try {
+    const workoutExerciseId = Number(params.workoutExerciseId);
+    const workoutExercise = await prisma.workoutExercise.findUnique({
+      where: {id: workoutExerciseId},
+      include: {
+        workout: {
+          include: {
+            week: {
+              include: {
+                plan: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!workoutExercise) {
+      return NextResponse.json({error: 'WorkoutExercise not found'}, {status: 404});
+    }
+
+    const user = await getLoggedInUser();
+    if (workoutExercise.workout.week.plan.userId !== user.id) {
+      return NextResponse.json({error: 'Forbidden'}, {status: 403});
+    }
+
+    await prisma.workoutExercise.delete({where: {id: workoutExerciseId}});
+
+    return new NextResponse(null, {status: 204});
+  } catch (err: unknown) {
+    console.error(err);
+    return NextResponse.json({error: extractErrorMessage(err)}, {status: 500});
+  }
+}
+
 export async function PATCH(req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
   const params = await props.params;
   const body = await req.json();

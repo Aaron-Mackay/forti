@@ -21,6 +21,7 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {Chip} from '@mui/material';
 import {WorkoutPrisma} from '@/types/dataTypes';
 import './exercisesListView.css'
@@ -34,6 +35,7 @@ export default function ExercisesListView({
                                             onWorkoutNoteBlur,
                                             onCompleteWorkout,
                                             onAddExercise,
+                                            onRemoveExercise,
                                           }: {
   workout: WorkoutPrisma;
   onBack: () => void;
@@ -41,6 +43,7 @@ export default function ExercisesListView({
   onWorkoutNoteBlur: (note: string) => void;
   onCompleteWorkout: (completed: boolean) => void;
   onAddExercise: () => void;
+  onRemoveExercise?: (workoutExerciseId: number) => void;
 }) {
   const [notesOpen, setNotesOpen] = useState(false);
   const [noteValue, setNoteValue] = useState(workout.notes ?? '');
@@ -109,7 +112,7 @@ export default function ExercisesListView({
         >
           {workout.exercises.map((ex) => {
             const isSubstituted = ex.substitutedForId != null;
-            const isAdded = ex.isAdded && !isSubstituted;
+            const isAdded = ex.isAdded;
             return (
               <ListItem
                 key={ex.id}
@@ -117,6 +120,8 @@ export default function ExercisesListView({
                 sx={{
                   borderLeft: isSubstituted ? '3px solid' : isAdded ? '3px solid' : 'none',
                   borderColor: isSubstituted ? 'warning.main' : 'info.main',
+                  display: 'flex',
+                  alignItems: 'center',
                 }}
               >
                 <ListItemButton onClick={() => onSelectExercise(ex.id)} sx={{display: 'flex', alignItems: 'center', flex: 1}}>
@@ -168,6 +173,17 @@ export default function ExercisesListView({
                     )}
                   </Box>
                 </ListItemButton>
+                {isAdded && onRemoveExercise && (
+                  <IconButton
+                    size="small"
+                    color="error"
+                    aria-label="Remove exercise"
+                    onClick={() => onRemoveExercise(ex.id)}
+                    sx={{mr: 0.5}}
+                  >
+                    <DeleteOutlineIcon fontSize="small" />
+                  </IconButton>
+                )}
               </ListItem>
             );
           })}
