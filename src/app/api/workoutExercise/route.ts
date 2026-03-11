@@ -5,11 +5,15 @@ import {extractErrorMessage} from "@lib/apiError";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const {workoutId, exerciseId, order} = body;
+  const {workoutId, exerciseId, order, repRange, restTime, setCount} = body;
 
   if (typeof workoutId !== 'number' || typeof exerciseId !== 'number' || typeof order !== 'number') {
     return NextResponse.json({error: 'workoutId, exerciseId and order must be numbers'}, {status: 400});
   }
+
+  const resolvedRepRange: string = typeof repRange === 'string' ? repRange : '8-12';
+  const resolvedRestTime: string = typeof restTime === 'string' ? restTime : '90';
+  const resolvedSetCount: number = typeof setCount === 'number' ? Math.min(10, Math.max(1, setCount)) : 3;
 
   try {
     const workout = await prisma.workout.findUnique({
@@ -37,12 +41,10 @@ export async function POST(req: NextRequest) {
         exerciseId,
         order,
         isAdded: true,
+        repRange: resolvedRepRange,
+        restTime: resolvedRestTime,
         sets: {
-          create: [
-            {order: 0, reps: null, weight: null},
-            {order: 1, reps: null, weight: null},
-            {order: 2, reps: null, weight: null},
-          ],
+          create: Array.from({length: resolvedSetCount}, (_, i) => ({order: i, reps: null, weight: null})),
         },
       },
       include: {
