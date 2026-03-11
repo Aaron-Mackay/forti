@@ -3,13 +3,16 @@
 import {useEffect, useState} from 'react';
 import {useSearchParams} from 'next/navigation';
 import {queueOrSendRequest, syncQueuedRequests} from '@/utils/offlineSync';
-import {UserPrisma, WorkoutPrisma} from '@/types/dataTypes';
+import {UserPrisma, WorkoutExercisePrisma, WorkoutPrisma} from '@/types/dataTypes';
 
 import WeeksListView from './WeeksListView';
 import WorkoutsListView from './WorkoutsListView';
 import ExercisesListView from './ExercisesListView';
 import ExerciseDetailView from './ExerciseDetailView';
+import ExercisePickerDialog from './ExercisePickerDialog';
 import {
+  addExerciseToWorkout,
+  substituteExercise,
   updateCardioData,
   updateUserExerciseNote,
   updateUserSets,
@@ -19,6 +22,7 @@ import {
 import PlansListView from "@/app/user/workout/PlansListView";
 import WorkoutCompletionModal from "@/app/user/workout/WorkoutCompletionModal";
 import {StopwatchProvider} from "@/app/user/workout/StopwatchContext";
+import {Exercise} from '@prisma/client';
 
 type SnackbarState = {
   open: boolean;
@@ -62,6 +66,16 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
     severity: 'success',
   });
   const [userDataState, setUserData] = useState(userData);
+
+  // Substitute dialog state: tracks the workoutExercise being substituted
+  const [substituteTarget, setSubstituteTarget] = useState<{
+    workoutExerciseId: number;
+    exerciseId: number;
+    category: string;
+  } | null>(null);
+
+  // Add exercise dialog state
+  const [showAddExercise, setShowAddExercise] = useState(false);
 
   // Sync queued requests when coming online
   useEffect(() => {
@@ -192,6 +206,65 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
     setSnackbar((s) => ({...s, open: false}));
   };
 
+  const handleSubstituteExercise = (workoutExerciseId: number) => {
+    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
+    const workout = userDataState.plans
+      .flatMap(p => p.weeks).flatMap(w => w.workouts)
+      .find(wo => wo.id === selectedWorkoutId);
+    const ex = workout?.exercises.find(e => e.id === workoutExerciseId);
+    if (!ex) return;
+    setSubstituteTarget({
+      workoutExerciseId,
+      exerciseId: ex.exerciseId,
+      category: ex.exercise.category ?? 'resistance',
+    });
+  };
+
+  const handleSubstituteConfirm = (newExercise: Exercise) => {
+    if (!(substituteTarget && selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
+    setSubstituteTarget(null);
+
+    const prevUserData = userDataState;
+    setUserData(prev =>
+      substituteExercise(
+        prev, selectedPlanId, selectedWeekId, selectedWorkoutId,
+        substituteTarget.workoutExerciseId, newExercise, substituteTarget.exerciseId
+      )
+    );
+
+    queueOrSendRequest(
+      `/api/workoutExercise/${substituteTarget.workoutExerciseId}`,
+      'PATCH',
+      {exerciseId: newExercise.id}
+    )
+      .then(() => setSnackbar({open: true, message: 'Exercise substituted', severity: 'success'}))
+      .catch(() => {
+        setUserData(prevUserData);
+        setSnackbar({open: true, message: 'Failed to substitute exercise', severity: 'info'});
+      });
+  };
+
+  const handleAddExercise = (exercise: Exercise) => {
+    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
+    setShowAddExercise(false);
+
+    const order = (selectedWorkout?.exercises.length ?? 0) + 1;
+
+    fetch('/api/workoutExercise', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({workoutId: selectedWorkoutId, exerciseId: exercise.id, order}),
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then((newWorkoutExercise: WorkoutExercisePrisma) => {
+        setUserData(prev =>
+          addExerciseToWorkout(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, newWorkoutExercise)
+        );
+        setSnackbar({open: true, message: 'Exercise added', severity: 'success'});
+      })
+      .catch(() => setSnackbar({open: true, message: 'Failed to add exercise', severity: 'info'}));
+  };
+
   // View switching
   let view;
   if (selectedPlan && selectedWeek && selectedWorkout && selectedExerciseId) {
@@ -211,6 +284,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
         handleSetUpdate={handleSetUpdate}
         onFormCueBlur={handleFormCueBlur}
         onCardioUpdate={handleCardioUpdate}
+        onSubstituteExercise={handleSubstituteExercise}
         snackbar={snackbar}
         handleSnackbarClose={handleSnackbarClose}
       />
@@ -223,6 +297,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
         onSelectExercise={setSelectedExerciseId}
         onWorkoutNoteBlur={handleWorkoutNoteBlur}
         onCompleteWorkout={handleCompleteWorkout}
+        onAddExercise={() => setShowAddExercise(true)}
       />
     );
   } else if (selectedPlan && selectedWeek) {
@@ -257,6 +332,19 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
           weekWorkoutsTotal={completionModal.total}
         />
       )}
+      <ExercisePickerDialog
+        open={substituteTarget !== null}
+        title="Substitute Exercise"
+        defaultCategory={substituteTarget?.category}
+        onClose={() => setSubstituteTarget(null)}
+        onSelect={handleSubstituteConfirm}
+      />
+      <ExercisePickerDialog
+        open={showAddExercise}
+        title="Add Exercise"
+        onClose={() => setShowAddExercise(false)}
+        onSelect={handleAddExercise}
+      />
     </StopwatchProvider>
   );
 }

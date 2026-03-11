@@ -38,6 +38,7 @@ export async function getUserData(userId: string): Promise<UserPrisma | null> {
                     include: {
                       exercise: true,
                       sets: {orderBy: {order: 'asc'}},
+                      substitutedFor: true,
                     },
                   },
                 },

@@ -156,8 +156,9 @@ model Exercise {
   equipment        String[]           @default([])
   primaryMuscles   String[]           @default([])
   secondaryMuscles String[]           @default([])
-  workoutLinks     WorkoutExercise[]
-  UserExerciseNote UserExerciseNote[]
+  workoutLinks       WorkoutExercise[]
+  substitutedByLinks WorkoutExercise[] @relation("SubstitutedExercises")
+  UserExerciseNote   UserExerciseNote[]
 
   @@unique([name, category], name: "name_category")
 }
@@ -176,6 +177,9 @@ model WorkoutExercise {
   cardioDuration   Float?        // minutes
   cardioDistance   Float?        // km
   cardioResistance Float?        // average resistance / incline
+  substitutedForId Int?          // original Exercise.id before substitution
+  substitutedFor   Exercise?     @relation("SubstitutedExercises", fields: [substitutedForId], references: [id])
+  isAdded          Boolean       @default(false) // true if added during workout (not in original plan)
 
   @@unique([workoutId, order])
 }

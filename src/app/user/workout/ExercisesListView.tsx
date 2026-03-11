@@ -20,6 +20,8 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import AddIcon from '@mui/icons-material/Add';
+import {Chip} from '@mui/material';
 import {WorkoutPrisma} from '@/types/dataTypes';
 import './exercisesListView.css'
 import CustomAppBar from "@/components/CustomAppBar";
@@ -31,12 +33,14 @@ export default function ExercisesListView({
                                             onSelectExercise,
                                             onWorkoutNoteBlur,
                                             onCompleteWorkout,
+                                            onAddExercise,
                                           }: {
   workout: WorkoutPrisma;
   onBack: () => void;
   onSelectExercise: (exerciseId: number) => void;
   onWorkoutNoteBlur: (note: string) => void;
   onCompleteWorkout: (completed: boolean) => void;
+  onAddExercise: () => void;
 }) {
   const [notesOpen, setNotesOpen] = useState(false);
   const [noteValue, setNoteValue] = useState(workout.notes ?? '');
@@ -103,35 +107,80 @@ export default function ExercisesListView({
             minHeight: 0
           }}
         >
-          {workout.exercises.map((ex) => (
-            <ListItem key={ex.id} disablePadding>
-              <ListItemButton onClick={() => onSelectExercise(ex.id)} sx={{display: 'flex', alignItems: 'center'}}>
-                <ListItemText
-                  primary={ex.exercise.name}
-                  sx={{flex: 1}}
-                />
-                <Box sx={{display: 'flex', alignItems: 'center', ml: 2}}>
-                  {ex.exercise.category === 'cardio' ? (
-                    ex.cardioDuration != null || ex.cardioDistance != null ? (
-                      <Typography variant="caption" color="text.secondary">
-                        {[
-                          ex.cardioDuration != null ? `${ex.cardioDuration} min` : null,
-                          ex.cardioDistance != null ? `${ex.cardioDistance} km` : null,
-                        ].filter(Boolean).join(' · ')}
+          {workout.exercises.map((ex) => {
+            const isSubstituted = ex.substitutedForId != null;
+            const isAdded = ex.isAdded && !isSubstituted;
+            return (
+              <ListItem
+                key={ex.id}
+                disablePadding
+                sx={{
+                  borderLeft: isSubstituted ? '3px solid' : isAdded ? '3px solid' : 'none',
+                  borderColor: isSubstituted ? 'warning.main' : 'info.main',
+                }}
+              >
+                <ListItemButton onClick={() => onSelectExercise(ex.id)} sx={{display: 'flex', alignItems: 'center', flex: 1}}>
+                  <Box sx={{flex: 1}}>
+                    <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap'}}>
+                      <ListItemText primary={ex.exercise.name} sx={{m: 0, flex: 'none'}} />
+                      {isSubstituted && (
+                        <Chip
+                          label="Sub"
+                          size="small"
+                          color="warning"
+                          variant="outlined"
+                          title={ex.substitutedFor ? `Originally: ${ex.substitutedFor.name}` : undefined}
+                          sx={{height: 18, fontSize: '0.65rem'}}
+                        />
+                      )}
+                      {isAdded && (
+                        <Chip
+                          label="Added"
+                          size="small"
+                          color="info"
+                          variant="outlined"
+                          sx={{height: 18, fontSize: '0.65rem'}}
+                        />
+                      )}
+                    </Box>
+                    {isSubstituted && ex.substitutedFor && (
+                      <Typography variant="caption" color="warning.main" sx={{display: 'block'}}>
+                        Originally: {ex.substitutedFor.name}
                       </Typography>
+                    )}
+                  </Box>
+                  <Box sx={{display: 'flex', alignItems: 'center', ml: 2}}>
+                    {ex.exercise.category === 'cardio' ? (
+                      ex.cardioDuration != null || ex.cardioDistance != null ? (
+                        <Typography variant="caption" color="text.secondary">
+                          {[
+                            ex.cardioDuration != null ? `${ex.cardioDuration} min` : null,
+                            ex.cardioDistance != null ? `${ex.cardioDistance} km` : null,
+                          ].filter(Boolean).join(' · ')}
+                        </Typography>
+                      ) : (
+                        <PanoramaFishEyeIcon />
+                      )
                     ) : (
-                      <PanoramaFishEyeIcon />
-                    )
-                  ) : (
-                    ex.sets.map((set, idx) => (
-                      set.reps ? <TaskAltIcon key={idx}/> : <PanoramaFishEyeIcon key={idx}/>
-                    ))
-                  )}
-                </Box>
-              </ListItemButton>
-            </ListItem>
-          ))}
+                      ex.sets.map((set, idx) => (
+                        set.reps ? <TaskAltIcon key={idx}/> : <PanoramaFishEyeIcon key={idx}/>
+                      ))
+                    )}
+                  </Box>
+                </ListItemButton>
+              </ListItem>
+            );
+          })}
         </List>
+        <Button
+          variant="outlined"
+          fullWidth
+          onClick={onAddExercise}
+          startIcon={<AddIcon />}
+          sx={{mb: 1}}
+        >
+          Add Exercise
+        </Button>
         <Button
           variant={isCompleted ? 'contained' : 'outlined'}
           color="success"

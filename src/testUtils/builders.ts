@@ -180,6 +180,9 @@ export class ExerciseBuilder {
       cardioDuration: null,
       cardioDistance: null,
       cardioResistance: null,
+      substitutedForId: null,
+      substitutedFor: null,
+      isAdded: false,
     };
   }
   addSet(set: SetPrisma) {

@@ -339,6 +339,37 @@ export function updateUserExerciseNote(user: UserPrisma, exerciseId: number, not
   };
 }
 
+export function substituteExercise(
+  user: UserPrisma,
+  planId: number,
+  weekId: number,
+  workoutId: number,
+  workoutExerciseId: number,
+  newExercise: Exercise,
+  originalExerciseId: number
+): UserPrisma {
+  return withExercise(user, planId, weekId, workoutId, workoutExerciseId, ex => ({
+    ...ex,
+    exercise: newExercise,
+    exerciseId: newExercise.id,
+    substitutedForId: ex.substitutedForId ?? originalExerciseId,
+    substitutedFor: ex.substitutedFor ?? ex.exercise,
+  }));
+}
+
+export function addExerciseToWorkout(
+  user: UserPrisma,
+  planId: number,
+  weekId: number,
+  workoutId: number,
+  newWorkoutExercise: WorkoutExercisePrisma
+): UserPrisma {
+  return withWorkout(user, planId, weekId, workoutId, workout => ({
+    ...workout,
+    exercises: [...workout.exercises, newWorkoutExercise],
+  }));
+}
+
 export function updateUserSets(
   user: UserPrisma,
   planId: number,
@@ -376,6 +407,9 @@ export function addExercise(
             cardioDuration: null,
             cardioDistance: null,
             cardioResistance: null,
+            substitutedForId: null,
+            substitutedFor: null,
+            isAdded: false,
           },
         ],
       }))
@@ -420,6 +454,9 @@ export function addExerciseWithSet(
               cardioDuration: null,
               cardioDistance: null,
               cardioResistance: null,
+              substitutedForId: null,
+              substitutedFor: null,
+              isAdded: false,
             },
           ],
         };
@@ -527,6 +564,9 @@ export function addWorkoutWithExerciseWithSet(
                 cardioDuration: null,
                 cardioDistance: null,
                 cardioResistance: null,
+                substitutedForId: null,
+                substitutedFor: null,
+                isAdded: false,
               },
             ],
             weekId,

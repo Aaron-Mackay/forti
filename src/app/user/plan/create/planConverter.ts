@@ -68,6 +68,9 @@ export function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPris
                 cardioDuration: null,
                 cardioDistance: null,
                 cardioResistance: null,
+                substitutedForId: null,
+                substitutedFor: null,
+                isAdded: false,
               }
             }),
           }
