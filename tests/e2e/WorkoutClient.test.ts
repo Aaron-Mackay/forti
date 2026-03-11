@@ -298,13 +298,13 @@ test.describe('Workout page', () => {
     test('selecting an exercise from picker opens the config dialog', async ({page}) => {
       await page.getByRole('button', {name: 'Add Exercise'}).click();
       await expect(page.getByRole('dialog', {name: 'Add Exercise'})).toBeVisible();
-      await page.getByRole('listitem').filter({hasText: 'Squat'}).first().click();
+      await page.getByRole('dialog', {name: 'Add Exercise'}).getByRole('button', {name: 'Squat'}).click();
       await expect(page.getByRole('dialog', {name: /Configure Exercise/i})).toBeVisible();
     });
 
     test('config dialog shows Sets, Rep Range and Rest Time controls', async ({page}) => {
       await page.getByRole('button', {name: 'Add Exercise'}).click();
-      await page.getByRole('listitem').filter({hasText: 'Squat'}).first().click();
+      await page.getByRole('dialog', {name: 'Add Exercise'}).getByRole('button', {name: 'Squat'}).click();
       const dialog = page.getByRole('dialog', {name: /Configure Exercise/i});
       await expect(dialog.getByText('Sets')).toBeVisible();
       await expect(dialog.getByLabel('Rep range')).toBeVisible();
@@ -314,7 +314,7 @@ test.describe('Workout page', () => {
     test('cancelling config dialog closes it without adding', async ({page}) => {
       const exerciseCount = await page.getByRole('listitem').count();
       await page.getByRole('button', {name: 'Add Exercise'}).click();
-      await page.getByRole('listitem').filter({hasText: 'Squat'}).first().click();
+      await page.getByRole('dialog', {name: 'Add Exercise'}).getByRole('button', {name: 'Squat'}).click();
       await page.getByRole('button', {name: 'Cancel'}).click();
       await expect(page.getByRole('dialog')).not.toBeVisible();
       await expect(page.getByRole('listitem')).toHaveCount(exerciseCount);
@@ -350,7 +350,7 @@ test.describe('Workout page', () => {
       });
 
       await page.getByRole('button', {name: 'Add Exercise'}).click();
-      await page.getByRole('listitem').filter({hasText: 'Squat'}).first().click();
+      await page.getByRole('dialog', {name: 'Add Exercise'}).getByRole('button', {name: 'Squat'}).click();
       await page.getByRole('button', {name: 'Add'}).click();
       await expect(page.getByRole('dialog')).not.toBeVisible();
     });
@@ -411,14 +411,14 @@ test.describe('Workout page', () => {
 
       // Add an exercise
       await page.getByRole('button', {name: 'Add Exercise'}).click();
-      await page.getByRole('listitem').filter({hasText: 'Squat'}).first().click();
+      await page.getByRole('dialog', {name: 'Add Exercise'}).getByRole('button', {name: 'Squat'}).click();
       await page.getByRole('button', {name: 'Add'}).click();
 
       // Navigate into the added exercise and substitute it
       await page.getByRole('button', {name: 'Leg Press'}).click();
-      await page.getByRole('button', {name: 'Substitute exercise'}).click();
+      await page.locator('.swiper-slide-active').getByRole('button', {name: 'Substitute exercise'}).click();
       await expect(page.getByRole('dialog', {name: 'Substitute Exercise'})).toBeVisible();
-      await page.getByRole('listitem').filter({hasText: 'Squat'}).first().click();
+      await page.getByRole('dialog', {name: 'Substitute Exercise'}).getByRole('button', {name: 'Squat'}).click();
 
       // Go back to the list
       await page.getByRole('button', {name: /back/i}).click();
@@ -470,7 +470,7 @@ test.describe('Workout page', () => {
 
       // Add exercise via the two-step flow
       await page.getByRole('button', {name: 'Add Exercise'}).click();
-      await page.getByRole('listitem').filter({hasText: 'Squat'}).first().click();
+      await page.getByRole('dialog', {name: 'Add Exercise'}).getByRole('button', {name: 'Squat'}).click();
       await page.getByRole('button', {name: 'Add'}).click();
 
       // The added exercise should now appear with a remove button
