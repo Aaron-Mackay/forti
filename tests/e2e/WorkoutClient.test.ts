@@ -279,6 +279,16 @@ test.describe('Workout page', () => {
 
   test.describe('add exercise config dialog', () => {
     test.beforeEach(async ({page}) => {
+      await page.route('**/api/exercises', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {id: 1, name: 'Squat', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+          ]),
+        });
+      });
+
       await page.getByRole('button', {name: /Plan/i}).first().click();
       await page.getByRole('button', {name: /Week/i}).first().click();
       await page.getByRole('button', {name: /Workout/i}).first().click();
@@ -347,6 +357,76 @@ test.describe('Workout page', () => {
   });
 
   test.describe('remove added exercise', () => {
+    test.beforeEach(async ({page}) => {
+      await page.route('**/api/exercises', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {id: 1, name: 'Squat', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+          ]),
+        });
+      });
+    });
+
+    test('remove button stays visible after an added exercise is substituted', async ({page}) => {
+      await page.route('**/api/workoutExercise', async (route) => {
+        if (route.request().method() === 'POST') {
+          await route.fulfill({
+            status: 201,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              id: 9999,
+              workoutId: 1,
+              exerciseId: 1,
+              order: 99,
+              isAdded: true,
+              repRange: '8-12',
+              restTime: '90',
+              notes: null,
+              cardioDuration: null,
+              cardioDistance: null,
+              cardioResistance: null,
+              substitutedForId: null,
+              substitutedFor: null,
+              sets: [],
+              exercise: {id: 1, name: 'Leg Press', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+            }),
+          });
+        } else {
+          await route.continue();
+        }
+      });
+      await page.route('**/api/workoutExercise/9999', async (route) => {
+        if (route.request().method() === 'PATCH') {
+          await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({})});
+        } else {
+          await route.continue();
+        }
+      });
+
+      await page.getByRole('button', {name: /Plan/i}).first().click();
+      await page.getByRole('button', {name: /Week/i}).first().click();
+      await page.getByRole('button', {name: /Workout/i}).first().click();
+
+      // Add an exercise
+      await page.getByRole('button', {name: 'Add Exercise'}).click();
+      await page.getByRole('listitem').filter({hasText: 'Squat'}).first().click();
+      await page.getByRole('button', {name: 'Add'}).click();
+
+      // Navigate into the added exercise and substitute it
+      await page.getByRole('button', {name: 'Leg Press'}).click();
+      await page.getByRole('button', {name: 'Substitute exercise'}).click();
+      await expect(page.getByRole('dialog', {name: 'Substitute Exercise'})).toBeVisible();
+      await page.getByRole('listitem').filter({hasText: 'Squat'}).first().click();
+
+      // Go back to the list
+      await page.getByRole('button', {name: /back/i}).click();
+
+      // Remove button should still be visible
+      await expect(page.getByRole('button', {name: 'Remove exercise'})).toBeVisible();
+    });
+
     test('remove button is visible for isAdded exercises and removes the exercise on click', async ({page}) => {
       await page.route('**/api/workoutExercise', async (route) => {
         if (route.request().method() === 'POST') {
