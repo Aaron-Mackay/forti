@@ -112,7 +112,7 @@ export default function ExercisesListView({
         >
           {workout.exercises.map((ex) => {
             const isSubstituted = ex.substitutedForId != null;
-            const isAdded = ex.isAdded && !isSubstituted;
+            const isAdded = ex.isAdded;
             return (
               <ListItem
                 key={ex.id}

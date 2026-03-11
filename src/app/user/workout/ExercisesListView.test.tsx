@@ -190,6 +190,39 @@ describe('ExercisesListView', () => {
     expect(screen.getByText('45 min')).toBeInTheDocument();
   });
 
+  it('shows delete button for an added exercise that has been substituted', () => {
+    const onRemoveExercise = vi.fn();
+    const workout = buildWorkout({
+      exercises: [
+        {
+          id: 10,
+          workoutId: 1,
+          exerciseId: 101,
+          order: 1,
+          repRange: '8-12',
+          restTime: '90s',
+          notes: '',
+          isAdded: true,
+          substitutedForId: 100,
+          exercise: {id: 101, name: 'Incline Press', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+          sets: [],
+          cardioDuration: null,
+          cardioDistance: null,
+          cardioResistance: null,
+        },
+      ],
+    });
+    renderView({
+      workout,
+      onBack,
+      onSelectExercise,
+      onWorkoutNoteBlur,
+      onCompleteWorkout,
+      onRemoveExercise,
+    });
+    expect(screen.getByRole('button', {name: /remove exercise/i})).toBeInTheDocument();
+  });
+
   it('shows empty circle for cardio exercise with no data logged', () => {
     const cardioWorkout = buildWorkout({
       exercises: [
