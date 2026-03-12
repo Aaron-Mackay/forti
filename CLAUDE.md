@@ -150,7 +150,10 @@ All routes live under `src/app/api/` and follow Next.js App Router conventions:
 | `api/workout/[workoutId]` | Workout CRUD |
 | `api/workoutExercise/[workoutExerciseId]` | Workout exercise management |
 | `api/exercises/[exerciseId]/previous-sets` | Fetch previous sets for an exercise |
+| `api/exercises/[exerciseId]/previous-cardio` | Fetch previous cardio data for an exercise |
+| `api/exercises/[exerciseId]/e1rm-history` | E1RM history for progress sparkline |
 | `api/exerciseNote/[exerciseId]` | Exercise notes CRUD |
+| `api/user/settings` | Save user settings (dashboard/workout toggles) |
 
 All API routes that require authentication must call `requireSession()` from `src/lib/requireSession.ts`.
 
@@ -189,6 +192,8 @@ Exercise  (global, not user-scoped; unique by name+category)
  └── UserExerciseNote[]
 
 User --[coach]--> User  (self-relation for coach-client feature)
+
+AiUsageLog (userId, createdAt) — rate-limiting/monitoring for AI plan generation
 ```
 
 **Ordering convention:** Many models use an integer `order` field with a `@@unique([parentId, order])` constraint to maintain sequence. When inserting or reordering, update these carefully.
