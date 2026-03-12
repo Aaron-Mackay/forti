@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import {
   Box,
+  Button,
   Collapse,
   IconButton,
   List,
@@ -10,6 +11,10 @@ import {
   ListItemText,
   Paper,
   Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
   TextField,
   Typography,
   alpha,
@@ -17,6 +22,7 @@ import {
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import InfoIcon from '@mui/icons-material/Info';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import MuscleHighlight from '@/components/MuscleHighlight';
 import E1rmSparkline from './E1rmSparkline';
@@ -46,8 +52,30 @@ export default function ExerciseSlide({
 }) {
   const [formCue, setFormCue] = useState(userExerciseNote?.note ?? '');
   const [formCueOpen, setFormCueOpen] = useState(false);
+  const [warmupOpen, setWarmupOpen] = useState(false);
   const [hasScrollBelow, setHasScrollBelow] = useState(true);
   const [hasScrollAbove, setHasScrollAbove] = useState(false);
+
+  // Derive working weight: first entered set weight, else first previous set weight
+  const workingWeight =
+    ex.sets.find(s => s.weight != null)?.weight ??
+    previousSets?.find(s => s.weight != null)?.weight ??
+    null;
+
+  const WARMUP_STEPS = [
+    {pct: 0.5,  reps: 10},
+    {pct: 0.6,  reps: 5},
+    {pct: 0.75, reps: 3},
+    {pct: 0.85, reps: 1},
+  ];
+
+  const warmupSets = workingWeight
+    ? WARMUP_STEPS.map(({pct, reps}) => ({
+        weight: Math.round((workingWeight * pct) / 2.5) * 2.5,
+        reps,
+        pct: Math.round(pct * 100),
+      }))
+    : null;
 
   const handleListScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
@@ -165,6 +193,38 @@ export default function ExerciseSlide({
           }}
         />
       </Collapse>
+
+      {/* Warmup suggestions */}
+      <Box sx={{width: '100%', mb: 1}}>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<FitnessCenterIcon fontSize="small"/>}
+          onClick={() => setWarmupOpen(o => !o)}
+          sx={{mb: 0.5}}
+        >
+          {warmupOpen ? 'Hide warmup sets' : 'Suggest warmup sets'}
+        </Button>
+        <Collapse in={warmupOpen}>
+          {warmupSets ? (
+            <Table size="small" sx={{'& td, & th': {py: 0.25, px: 0.75}}}>
+              <TableBody>
+                {warmupSets.map(({weight, reps, pct}) => (
+                  <TableRow key={pct}>
+                    <TableCell sx={{color: 'text.secondary', width: 40}}>{pct}%</TableCell>
+                    <TableCell sx={{fontWeight: 500}}>{weight} kg</TableCell>
+                    <TableCell sx={{color: 'text.secondary'}}>× {reps} {reps === 1 ? 'rep' : 'reps'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <Typography variant="caption" color="text.secondary" sx={{pl: 0.5}}>
+              Enter a weight in your first set (or complete a previous session) to see warmup suggestions.
+            </Typography>
+          )}
+        </Collapse>
+      </Box>
 
       <Box sx={{position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column'}}>
         <Box onScroll={handleListScroll} sx={{flex: 1, minHeight: 0, overflowY: 'auto', width: '100%'}}>
