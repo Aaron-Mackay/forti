@@ -6,15 +6,40 @@ A full-stack fitness tracking web application for planning workouts, logging dai
 
 ## Features
 
-- **Workout planning** — Build weekly training plans with exercises and sets
-- **Active workout tracking** — Execute workouts with set-by-set logging and a built-in stopwatch
-- **Daily health metrics** — Log weight, calories, steps, and other daily metrics
-- **Training blocks** — Manage Bulk, Cut, Deload, and custom training phases via a calendar
-- **Exercise library** — Browse and manage a global exercise database
-- **Historical trends** — View charts of metrics and training history over time
+### Workout Planning & Execution
+- **Structured training plans** — Build multi-week plans with weeks → workouts → exercises → sets
+- **AI plan generation** — Generate personalised programs via guided questionnaire or freeform prompt (Claude API)
+- **Plan templates** — Browse pre-built programs to start from
+- **Workout import** — Import plans from CSV / Google Sheets
+- **Active workout tracking** — Execute workouts with set-by-set logging (reps, weight, cardio metrics)
+- **Built-in stopwatch** — Configurable timer during workout sessions
+- **Exercise substitution** — Swap exercises mid-workout without losing session state
+- **Add-on exercises** — Add exercises to a workout on the fly, beyond the original plan
+
+### Progress & Analytics
+- **E1RM tracking** — Estimated one-rep max auto-computed (Epley formula) per set, with history
+- **Previous session comparison** — Last session's sets shown inline while logging current session
+- **Previous cardio data** — Last cardio metrics shown for pace/distance reference
+- **Exercise notes** — Persistent personal form cues per exercise, visible during logging
+
+### Health Metrics & Calendar
+- **Daily health metrics** — Log weight, steps, sleep, calories, and macros (protein, carbs, fat)
+- **Historical metric charts** — ApexCharts visualisations of metric trends over time
+- **Training blocks** — Schedule Bulk, Cut, Deload, Maintenance, Refeed, Prep, and custom phases on a calendar
+- **Calendar events** — Create custom calendar events alongside training blocks
+
+### Exercise Library
+- **Global exercise database** — Browse all exercises, filterable by muscle group and equipment
+- **Muscle highlighting** — Visual body diagram showing primary and secondary muscles
+- **Custom exercises** — Add new exercises to the shared library
+
+### Coach & Social
 - **Coach-client model** — Coaches can view and manage client training plans
-- **Offline support** — Works offline with background sync when reconnected
-- **Workout import** — Import workouts from CSV / Google Sheets
+
+### Platform
+- **Offline support** — Full offline capability with IndexedDB queuing and background sync on reconnect
+- **Mobile-first** — Optimised for mobile web with touch interactions and dynamic viewport units
+- **Dashboard customisation** — Toggle which cards and widgets are visible on the home screen
 
 ---
 
