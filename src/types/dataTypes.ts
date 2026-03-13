@@ -85,6 +85,29 @@ export const EXERCISE_MUSCLES = [
 
 export type ExerciseMuscle = typeof EXERCISE_MUSCLES[number];
 
+export const MUSCLE_NAMES: Record<ExerciseMuscle, string> = {
+  'upper-traps': 'Upper Traps',
+  'ant-delts': 'Front Delt',
+  'lat-delts': 'Side Delt',
+  'post-delts': 'Rear Delt',
+  'clav-pec': 'Upper Chest',
+  'sternal-pec': 'Chest',
+  'biceps': 'Biceps',
+  'triceps': 'Triceps',
+  'forearms': 'Forearms',
+  'abs': 'Abs',
+  'obliques': 'Obliques',
+  'mid-traps': 'Mid Traps',
+  'lower-traps': 'Lower Traps',
+  'lower-back': 'Lower Back',
+  'lats': 'Lats',
+  'adductors': 'Adductors',
+  'quads': 'Quads',
+  'glutes': 'Glutes',
+  'hamstrings': 'Hamstrings',
+  'calves': 'Calves',
+};
+
 export { ExerciseCategory };
 
 // Used for structural validation of exercises.json.
