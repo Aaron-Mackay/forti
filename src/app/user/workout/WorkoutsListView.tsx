@@ -5,6 +5,7 @@ import { WeekPrisma } from '@/types/dataTypes';
 import CustomAppBar from "@/components/CustomAppBar";
 import ProgressIcon from '@/lib/ProgressIcon';
 import { getWorkoutStatus } from '@/lib/workoutProgress';
+import WeekMuscleSummary from './WeekMuscleSummary';
 
 export default function WorkoutsListView({
   week,
@@ -19,6 +20,7 @@ export default function WorkoutsListView({
     <Box sx={{ minHeight: '100dvh', bgcolor: 'background.default', color: 'text.primary' }}>
       <CustomAppBar title={`Week ${week.order}`} onBack={onBack} showBack />
       <Container maxWidth="sm" sx={{ py: 2 }}>
+        <WeekMuscleSummary week={week} />
         <Typography variant="subtitle1" gutterBottom>
           Workouts
         </Typography>
