@@ -143,6 +143,37 @@ describe('AppBarStopwatch', () => {
   });
 });
 
+function setupAudioContextMock() {
+  const stopFn = vi.fn();
+  const startFn = vi.fn();
+  const connectFn = vi.fn();
+  const closeFn = vi.fn();
+  const setValueAtTimeFn = vi.fn();
+  const exponentialRampFn = vi.fn();
+  const MockAudioContext = vi.fn().mockImplementation(() => ({
+    currentTime: 0,
+    destination: {},
+    close: closeFn,
+    createOscillator: vi.fn().mockReturnValue({
+      connect: connectFn,
+      type: 'sine',
+      frequency: {value: 440},
+      start: startFn,
+      stop: stopFn,
+      onended: null,
+    }),
+    createGain: vi.fn().mockReturnValue({
+      connect: connectFn,
+      gain: {
+        setValueAtTime: setValueAtTimeFn,
+        exponentialRampToValueAtTime: exponentialRampFn,
+      },
+    }),
+  }));
+  Object.defineProperty(window, 'AudioContext', {value: MockAudioContext, configurable: true, writable: true});
+  return {MockAudioContext, startFn, stopFn};
+}
+
 describe('fireRestNotification', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -150,6 +181,7 @@ describe('fireRestNotification', () => {
 
   it('creates a Notification when permission is granted', () => {
     const MockNotification = setupNotificationMock('granted');
+    setupAudioContextMock();
     fireRestNotification();
     expect(MockNotification).toHaveBeenCalledWith('Rest timer complete', expect.objectContaining({
       body: 'Time to start your next set!',
@@ -158,7 +190,16 @@ describe('fireRestNotification', () => {
 
   it('does not create a Notification when permission is denied', () => {
     const MockNotification = setupNotificationMock('denied');
+    setupAudioContextMock();
     fireRestNotification();
     expect(MockNotification).not.toHaveBeenCalled();
+  });
+
+  it('plays three beeps via AudioContext', () => {
+    setupNotificationMock('denied');
+    const {MockAudioContext, startFn} = setupAudioContextMock();
+    fireRestNotification();
+    expect(MockAudioContext).toHaveBeenCalledTimes(1);
+    expect(startFn).toHaveBeenCalledTimes(3);
   });
 });

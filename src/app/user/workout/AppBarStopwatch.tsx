@@ -23,6 +23,29 @@ async function requestNotificationPermission(): Promise<void> {
   }
 }
 
+function playBeep(): void {
+  if (!('AudioContext' in window || 'webkitAudioContext' in window)) return;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const AudioCtx: typeof AudioContext = (window as any).AudioContext ?? (window as any).webkitAudioContext;
+  const ctx = new AudioCtx();
+  const offsets = [0, 0.18, 0.36];
+  offsets.forEach((offset, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.4, ctx.currentTime + offset);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.15);
+    osc.start(ctx.currentTime + offset);
+    osc.stop(ctx.currentTime + offset + 0.15);
+    if (i === offsets.length - 1) {
+      osc.onended = () => ctx.close();
+    }
+  });
+}
+
 export function fireRestNotification(): void {
   if ('Notification' in window && Notification.permission === 'granted') {
     new Notification('Rest timer complete', {
@@ -30,6 +53,7 @@ export function fireRestNotification(): void {
       icon: '/web-app-manifest-192x192.png',
     });
   }
+  playBeep();
   if ('vibrate' in navigator) {
     navigator.vibrate([200, 100, 200]);
   }
