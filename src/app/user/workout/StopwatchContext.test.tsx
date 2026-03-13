@@ -4,14 +4,16 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {StopwatchProvider, useStopwatch} from './StopwatchContext';
 
 function TestConsumer() {
-  const {stopwatch, handleStartStop, handleReset} = useStopwatch();
+  const {stopwatch, handleStartStop, handleReset, notifyAt, setNotifyAt} = useStopwatch();
   return (
     <div>
       <span data-testid="running">{String(stopwatch.isRunning)}</span>
       <span data-testid="pausedTime">{stopwatch.pausedTime}</span>
       <span data-testid="startTimestamp">{stopwatch.startTimestamp ?? 'null'}</span>
+      <span data-testid="notifyAt">{notifyAt ?? 'null'}</span>
       <button onClick={handleStartStop}>Toggle</button>
       <button onClick={handleReset}>Reset</button>
+      <button onClick={() => setNotifyAt(600)}>SetNotify</button>
     </div>
   );
 }
@@ -96,6 +98,27 @@ describe('StopwatchContext', () => {
     expect(screen.getByTestId('running').textContent).toBe('false');
     expect(screen.getByTestId('pausedTime').textContent).toBe('0');
     expect(screen.getByTestId('startTimestamp').textContent).toBe('null');
+  });
+
+  it('provides initial notifyAt as null', () => {
+    render(
+      <StopwatchProvider>
+        <TestConsumer/>
+      </StopwatchProvider>
+    );
+    expect(screen.getByTestId('notifyAt').textContent).toBe('null');
+  });
+
+  it('resets notifyAt to null on handleReset', () => {
+    render(
+      <StopwatchProvider>
+        <TestConsumer/>
+      </StopwatchProvider>
+    );
+    fireEvent.click(screen.getByText('SetNotify'));
+    expect(screen.getByTestId('notifyAt').textContent).toBe('600');
+    fireEvent.click(screen.getByText('Reset'));
+    expect(screen.getByTestId('notifyAt').textContent).toBe('null');
   });
 
   it('throws when useStopwatch is used outside a provider', () => {

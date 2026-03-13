@@ -10,6 +10,8 @@ type StopwatchState = {
 
 type StopwatchContextType = {
   stopwatch: StopwatchState;
+  notifyAt: number | null;
+  setNotifyAt: (val: number | null) => void;
   handleStartStop: () => void;
   handleReset: () => void;
 };
@@ -22,6 +24,7 @@ export function StopwatchProvider({children}: {children: React.ReactNode}) {
     startTimestamp: null,
     pausedTime: 0,
   });
+  const [notifyAt, setNotifyAt] = useState<number | null>(null);
 
   const handleStartStop = () => {
     setStopwatch(sw => {
@@ -42,10 +45,11 @@ export function StopwatchProvider({children}: {children: React.ReactNode}) {
 
   const handleReset = () => {
     setStopwatch({isRunning: false, startTimestamp: null, pausedTime: 0});
+    setNotifyAt(null);
   };
 
   return (
-    <StopwatchContext.Provider value={{stopwatch, handleStartStop, handleReset}}>
+    <StopwatchContext.Provider value={{stopwatch, notifyAt, setNotifyAt, handleStartStop, handleReset}}>
       {children}
     </StopwatchContext.Provider>
   );
