@@ -252,6 +252,36 @@ export function addSet(user: UserPrisma, planId: number, weekId: number, workout
   }));
 }
 
+export function addDropSet(
+  user: UserPrisma,
+  planId: number,
+  weekId: number,
+  workoutId: number,
+  exerciseId: number,
+  parentSetId: number,
+  createUuid: CreateUuid
+): UserPrisma {
+  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => {
+    const maxOrder = exercise.sets.reduce((m, s) => Math.max(m, s.order), 0);
+    return {
+      ...exercise,
+      sets: [
+        ...exercise.sets,
+        {
+          id: createUuid(),
+          workoutExerciseId: exerciseId,
+          order: maxOrder + 1,
+          reps: null,
+          weight: null,
+          e1rm: null,
+          isDropSet: true,
+          parentSetId,
+        },
+      ],
+    };
+  });
+}
+
 export function addDropSetToExercise(
   user: UserPrisma,
   planId: number,
@@ -336,10 +366,17 @@ export function updateCategory(user: UserPrisma, planId: number, weekId: number,
 }
 
 export function removeLastSet(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number): UserPrisma {
-  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({
-    ...exercise,
-    sets: exercise.sets.slice(0, -1).map((set, idx) => ({...set, order: idx + 1})),
-  }));
+  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => {
+    const regularSets = exercise.sets.filter(s => !s.isDropSet).sort((a, b) => a.order - b.order);
+    if (regularSets.length === 0) return exercise;
+    const lastRegularId = regularSets[regularSets.length - 1].id;
+    return {
+      ...exercise,
+      sets: exercise.sets
+        .filter(s => s.id !== lastRegularId && s.parentSetId !== lastRegularId)
+        .map((set, idx) => ({...set, order: idx + 1})),
+    };
+  });
 }
 
 export function updateWorkoutName(user: UserPrisma, planId: number, weekId: number, workoutId: number, name: string): UserPrisma {

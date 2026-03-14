@@ -24,6 +24,8 @@ export type WorkoutEditorAction =
   | { type: 'REORDER_EXERCISE'; planId: number, weekId: number; workoutId: number; fromIndex: number; toIndex: number }
   | { type: 'ADD_SET'; planId: number, weekId: number; workoutId: number; exerciseId: number }
   | { type: 'REMOVE_SET'; planId: number, weekId: number; workoutId: number; exerciseId: number }
+  | { type: 'ADD_DROP_SET'; planId: number; weekId: number; workoutId: number; exerciseId: number; parentSetId: number }
+  | { type: 'REMOVE_DROP_SET'; planId: number; weekId: number; workoutId: number; exerciseId: number; setId: number }
   | { type: 'UPDATE_WORKOUT_NAME'; planId: number, weekId: number; workoutId: number; name: string }
   | {
   type: 'UPDATE_SET_WEIGHT';
@@ -262,6 +264,20 @@ export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, 
         return userDataState;
       }
       return userPlanMutators.removeLastSet(userDataState, planId, weekId, workoutId, exerciseId)
+    }
+
+    case 'ADD_DROP_SET': {
+      const { planId, weekId, workoutId, exerciseId, parentSetId } = action;
+      const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId});
+      if (!exercise) return userDataState;
+      return userPlanMutators.addDropSet(userDataState, planId, weekId, workoutId, exerciseId, parentSetId, createUuid);
+    }
+
+    case 'REMOVE_DROP_SET': {
+      const { planId, weekId, workoutId, exerciseId, setId } = action;
+      const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId});
+      if (!exercise) return userDataState;
+      return userPlanMutators.removeSetById(userDataState, planId, weekId, workoutId, exerciseId, setId);
     }
 
     case 'UPDATE_WORKOUT_NAME': {

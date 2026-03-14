@@ -13,10 +13,8 @@ import ExercisePickerDialog from './ExercisePickerDialog';
 import AddExerciseConfigDialog from './AddExerciseConfigDialog';
 import {AddExerciseConfig} from './AddExerciseConfigDialog';
 import {
-  addDropSetToExercise,
   addExerciseToWorkout,
   removeExercise,
-  removeSetById,
   substituteExercise,
   updateCardioData,
   updateUserExerciseNote,
@@ -277,51 +275,6 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
       .catch(() => setSnackbar({open: true, message: 'Failed to add exercise', severity: 'info'}));
   };
 
-  const handleAddDropSet = (workoutExerciseId: number, parentSetId: number) => {
-    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
-
-    const exercise = selectedWorkout?.exercises.find(e => e.id === workoutExerciseId);
-    if (!exercise) return;
-
-    // Find the parent set and all its existing drops to determine the reference weight
-    const parentSet = exercise.sets.find(s => s.id === parentSetId);
-    if (!parentSet) return;
-    const drops = exercise.sets.filter(s => s.parentSetId === parentSetId);
-    const lastInGroup = drops.length > 0
-      ? drops.reduce((latest, s) => s.order > latest.order ? s : latest, drops[0])
-      : parentSet;
-    const referenceWeight = lastInGroup.weight ?? parentSet.weight;
-    const newWeight = referenceWeight != null
-      ? Math.round(referenceWeight * 0.8 / 2.5) * 2.5
-      : null;
-
-    fetch('/api/sets', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({workoutExerciseId, weight: newWeight, isDropSet: true, parentSetId}),
-    })
-      .then(r => r.ok ? r.json() : Promise.reject(r))
-      .then(newSet => {
-        setUserData(prev =>
-          addDropSetToExercise(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, workoutExerciseId, newSet)
-        );
-      })
-      .catch(() => setSnackbar({open: true, message: 'Failed to add drop set', severity: 'info'}));
-  };
-
-  const handleRemoveDropSet = (workoutExerciseId: number, setId: number) => {
-    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
-    const prevUserData = userDataState;
-    setUserData(prev =>
-      removeSetById(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, workoutExerciseId, setId)
-    );
-    fetch(`/api/sets/${setId}`, {method: 'DELETE'})
-      .catch(() => {
-        setUserData(prevUserData);
-        setSnackbar({open: true, message: 'Failed to remove drop set', severity: 'info'});
-      });
-  };
-
   const handleRemoveExercise = (workoutExerciseId: number) => {
     if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
     const prevUserData = userDataState;
@@ -350,8 +303,6 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
           }
         }}
         handleSetUpdate={handleSetUpdate}
-        onAddDropSet={handleAddDropSet}
-        onRemoveDropSet={handleRemoveDropSet}
         onFormCueBlur={handleFormCueBlur}
         onCardioUpdate={handleCardioUpdate}
         onSubstituteExercise={handleSubstituteExercise}

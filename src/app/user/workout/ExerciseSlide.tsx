@@ -24,7 +24,6 @@ import InfoIcon from '@mui/icons-material/Info';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import CloseIcon from '@mui/icons-material/Close';
 import MuscleHighlight from '@/components/MuscleHighlight';
 import E1rmSparkline from './E1rmSparkline';
 import {computeE1rm} from '@/lib/e1rm';
@@ -51,8 +50,6 @@ export default function ExerciseSlide({
   userExerciseNote,
   onFormCueBlur,
   handleSetUpdate,
-  onAddDropSet,
-  onRemoveDropSet,
   previousSets,
   history,
   onSubstitute,
@@ -61,8 +58,6 @@ export default function ExerciseSlide({
   userExerciseNote: UserExerciseNote | undefined;
   onFormCueBlur: (exerciseId: number, note: string) => void;
   handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
-  onAddDropSet: (parentSetId: number) => void;
-  onRemoveDropSet: (setId: number) => void;
   previousSets: PreviousSet[] | undefined;
   history: E1rmHistoryPoint[] | null;
   onSubstitute?: () => void;
@@ -361,30 +356,10 @@ export default function ExerciseSlide({
                             sx={{minWidth: 60, '& input': {textAlign: 'center'}}}
                             inputProps={{inputMode: 'numeric', pattern: '[0-9]*'}}
                           />
-                          <IconButton
-                            size="small"
-                            onClick={() => onRemoveDropSet(drop.id)}
-                            aria-label={`Remove drop set ${dropIdx + 1}`}
-                            sx={{mb: 0.5}}
-                          >
-                            <CloseIcon fontSize="small"/>
-                          </IconButton>
                         </Box>
                       </ListItem>
                     );
                   })}
-
-                  {/* Add drop set button */}
-                  <Box sx={{pl: 4, mb: 1}}>
-                    <Button
-                      size="small"
-                      variant="text"
-                      onClick={() => onAddDropSet(group.parent.id)}
-                      sx={{color: 'text.secondary', fontSize: '0.75rem', py: 0, minHeight: 0}}
-                    >
-                      + Add Drop Set
-                    </Button>
-                  </Box>
                 </Box>
               );
             })}

@@ -67,8 +67,6 @@ const defaultProps = {
   onBack: vi.fn(),
   onSlideChange: vi.fn(),
   handleSetUpdate: vi.fn(),
-  onAddDropSet: vi.fn(),
-  onRemoveDropSet: vi.fn(),
   onFormCueBlur: vi.fn(),
   onCardioUpdate: vi.fn(),
   onSubstituteExercise: vi.fn(),

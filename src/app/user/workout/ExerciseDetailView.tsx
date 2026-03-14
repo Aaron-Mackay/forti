@@ -29,8 +29,6 @@ export default function ExerciseDetailView({
   onBack,
   onSlideChange,
   handleSetUpdate,
-  onAddDropSet,
-  onRemoveDropSet,
   onFormCueBlur,
   onCardioUpdate,
   onSubstituteExercise,
@@ -44,8 +42,6 @@ export default function ExerciseDetailView({
   onBack: () => void;
   onSlideChange: (swiper: SwiperType) => void;
   handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
-  onAddDropSet: (workoutExerciseId: number, parentSetId: number) => void;
-  onRemoveDropSet: (workoutExerciseId: number, setId: number) => void;
   onFormCueBlur: (exerciseId: number, note: string) => void;
   onCardioUpdate: (workoutExerciseId: number, field: 'cardioDuration' | 'cardioDistance' | 'cardioResistance', value: number | null) => void;
   onSubstituteExercise: (workoutExerciseId: number) => void;
@@ -174,8 +170,6 @@ export default function ExerciseDetailView({
                   userExerciseNote={userExerciseNotes.find(n => n.exerciseId === ex.exerciseId)}
                   onFormCueBlur={onFormCueBlur}
                   handleSetUpdate={handleSetUpdate}
-                  onAddDropSet={(parentSetId) => onAddDropSet(ex.id, parentSetId)}
-                  onRemoveDropSet={(setId) => onRemoveDropSet(ex.id, setId)}
                   previousSets={previousSetsMap.get(ex.exerciseId)}
                   history={e1rmHistoryMap.get(ex.exerciseId) ?? null}
                   onSubstitute={() => onSubstituteExercise(ex.id)}
