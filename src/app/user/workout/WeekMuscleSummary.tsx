@@ -30,8 +30,8 @@ function effectiveSets(sets: WeekPrisma['workouts'][number]['exercises'][number]
     const drops = sets
       .filter(s => s.isDropSet && s.parentSetId === regular.id)
       .sort((a, b) => a.order - b.order);
-    drops.forEach((drop, idx) => {
-      const weight = Math.pow(0.75, idx + 1);
+    drops.forEach((drop, _idx) => {
+      const weight = 0.5;
       planned += weight;
       if (drop.reps !== null && drop.reps > 0) done += weight;
     });
