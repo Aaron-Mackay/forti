@@ -120,6 +120,8 @@ export async function POST(req: Request) {
                             weight: set.weight ?? null,
                             reps: set.reps ?? null,
                             order: set.order,
+                            isDropSet: set.isDropSet ?? false,
+                            parentSetId: set.parentSetId ?? null,
                             e1rm: computeE1rm(set.weight, set.reps),
                           })),
                         },

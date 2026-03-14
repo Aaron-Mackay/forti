@@ -48,8 +48,8 @@ function buildWorkout(): WorkoutPrisma {
         notes: '',
         exercise: {id: 100, name: 'Bench Press', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
         sets: [
-          {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100, e1rm: null},
-          {id: 2, workoutExerciseId: 10, order: 2, reps: 6, weight: 90, e1rm: null},
+          {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100, e1rm: null, isDropSet: false, parentSetId: null},
+          {id: 2, workoutExerciseId: 10, order: 2, reps: 6, weight: 90, e1rm: null, isDropSet: false, parentSetId: null},
         ],
         cardioDuration: null,
         cardioDistance: null,
@@ -67,8 +67,11 @@ const defaultProps = {
   onBack: vi.fn(),
   onSlideChange: vi.fn(),
   handleSetUpdate: vi.fn(),
+  onAddDropSet: vi.fn(),
+  onRemoveDropSet: vi.fn(),
   onFormCueBlur: vi.fn(),
   onCardioUpdate: vi.fn(),
+  onSubstituteExercise: vi.fn(),
   snackbar: {open: false, message: '', severity: 'success' as const},
   handleSnackbarClose: vi.fn(),
 };

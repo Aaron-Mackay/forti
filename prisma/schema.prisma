@@ -193,6 +193,9 @@ model ExerciseSet {
   weight            Float?
   // Estimated 1-rep max (Epley formula: weight * (1 + reps/30)). Computed on write.
   e1rm              Float?
+  isDropSet         Boolean         @default(false)
+  // For drop sets: the id of the parent ExerciseSet (stored as plain int, no relation)
+  parentSetId       Int?
 
   @@unique([workoutExerciseId, order])
 }

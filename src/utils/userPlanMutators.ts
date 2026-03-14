@@ -208,10 +208,21 @@ function duplicateWorkoutData(workout: WorkoutPrisma, createUuid: CreateUuid, ne
 }
 
 function duplicateExerciseData(exercise: WorkoutExercisePrisma, createUuid: CreateUuid): WorkoutExercisePrisma {
+  // Build old→new id map first so we can remap parentSetId
+  const idMap = new Map<number, number>();
+  for (const set of exercise.sets) {
+    idMap.set(set.id, createUuid());
+  }
   return {
     ...exercise,
     id: createUuid(),
-    sets: exercise.sets.map(set => ({...set, id: createUuid(), weight: null, reps: null})),
+    sets: exercise.sets.map(set => ({
+      ...set,
+      id: idMap.get(set.id)!,
+      weight: null,
+      reps: null,
+      parentSetId: set.parentSetId != null ? (idMap.get(set.parentSetId) ?? null) : null,
+    })),
   };
 }
 
@@ -234,8 +245,38 @@ export function addSet(user: UserPrisma, planId: number, weekId: number, workout
         reps: null,
         weight: null,
         e1rm: null,
+        isDropSet: false,
+        parentSetId: null,
       },
     ],
+  }));
+}
+
+export function addDropSetToExercise(
+  user: UserPrisma,
+  planId: number,
+  weekId: number,
+  workoutId: number,
+  exerciseId: number,
+  newSet: SetPrisma
+): UserPrisma {
+  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({
+    ...exercise,
+    sets: [...exercise.sets, newSet],
+  }));
+}
+
+export function removeSetById(
+  user: UserPrisma,
+  planId: number,
+  weekId: number,
+  workoutId: number,
+  exerciseId: number,
+  setId: number
+): UserPrisma {
+  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({
+    ...exercise,
+    sets: exercise.sets.filter(s => s.id !== setId),
   }));
 }
 
@@ -260,6 +301,8 @@ export function updateSetCount(user: UserPrisma, planId: number, weekId: number,
             reps: null,
             weight: null,
             e1rm: null,
+            isDropSet: false,
+            parentSetId: null,
           })),
         ],
       };
@@ -447,6 +490,8 @@ export function addExerciseWithSet(
                   reps: null,
                   weight: null,
                   e1rm: null,
+                  isDropSet: false,
+                  parentSetId: null,
                 }
               ],
               workoutId: workout.id,
@@ -557,6 +602,8 @@ export function addWorkoutWithExerciseWithSet(
                     reps: null,
                     weight: null,
                     e1rm: null,
+                    isDropSet: false,
+                    parentSetId: null,
                   }
                 ],
                 workoutId: newWorkoutId,
