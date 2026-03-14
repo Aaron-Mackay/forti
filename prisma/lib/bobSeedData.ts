@@ -204,8 +204,9 @@ export async function seedBobData(bob: { id: string }, today: Date): Promise<voi
 
           if (!isCardio) {
             // 3 sets per resistance exercise; Week 1 filled in, subsequent weeks empty
+            let thirdSetId: number | null = null;
             for (let s = 0; s < 3; s++) {
-              await prisma.exerciseSet.create({
+              const createdSet = await prisma.exerciseSet.create({
                 data: {
                   workoutExerciseId: workoutExercise.id,
                   order:  s + 1,
@@ -213,6 +214,38 @@ export async function seedBobData(bob: { id: string }, today: Date): Promise<voi
                   weight: isFirstWeek && base.weight > 0 ? base.weight : null,
                 },
               });
+              if (s === 2) thirdSetId = createdSet.id;
+            }
+
+            // Add drop set(s) on the last regular set for the first resistance exercise
+            // in completed (Week 1) workouts, where there's a meaningful weight to drop from
+            if (isFirstWeek && i === 0 && base.weight > 0 && thirdSetId !== null) {
+              const drop1Weight = Math.round(base.weight * 0.8 / 2.5) * 2.5;
+              const drop1 = await prisma.exerciseSet.create({
+                data: {
+                  workoutExerciseId: workoutExercise.id,
+                  order:        4,
+                  reps:         base.reps + 2,
+                  weight:       drop1Weight,
+                  isDropSet:    true,
+                  parentSetId:  thirdSetId,
+                },
+              });
+
+              // Add a second drop on Plan 2 to demonstrate chained drops
+              if (planIdx === 1) {
+                const drop2Weight = Math.round(drop1.weight! * 0.8 / 2.5) * 2.5;
+                await prisma.exerciseSet.create({
+                  data: {
+                    workoutExerciseId: workoutExercise.id,
+                    order:        5,
+                    reps:         base.reps + 4,
+                    weight:       drop2Weight,
+                    isDropSet:    true,
+                    parentSetId:  thirdSetId,
+                  },
+                });
+              }
             }
           }
         }
