@@ -59,17 +59,21 @@ function createSilentAudio(): { audio: HTMLAudioElement; ctx: AudioContext } {
 
 async function activateMediaSession(
   handleStartStop: () => void,
-  handleReset: () => void,
+  handleResetFn: () => void,
   silentAudioRef: React.MutableRefObject<HTMLAudioElement | null>,
   mediaAudioCtxRef: React.MutableRefObject<AudioContext | null>,
 ): Promise<void> {
   if (!('mediaSession' in navigator)) return;
+  if (!('AudioContext' in window || 'webkitAudioContext' in window)) return;
+  if (silentAudioRef.current) return; // already active
   const {audio, ctx} = createSilentAudio();
   silentAudioRef.current = audio;
   mediaAudioCtxRef.current = ctx;
   try {
     await audio.play();
   } catch {
+    silentAudioRef.current = null;
+    mediaAudioCtxRef.current = null;
     return; // autoplay blocked — MediaSession won't be shown
   }
   navigator.mediaSession.metadata = new MediaMetadata({
@@ -80,7 +84,7 @@ async function activateMediaSession(
   navigator.mediaSession.playbackState = 'playing';
   navigator.mediaSession.setActionHandler('play', handleStartStop);
   navigator.mediaSession.setActionHandler('pause', handleStartStop);
-  navigator.mediaSession.setActionHandler('stop', handleReset);
+  navigator.mediaSession.setActionHandler('stop', handleResetFn);
 }
 
 function deactivateMediaSession(
@@ -88,10 +92,15 @@ function deactivateMediaSession(
   mediaAudioCtxRef: React.MutableRefObject<AudioContext | null>,
 ): void {
   if (!('mediaSession' in navigator)) return;
-  silentAudioRef.current?.pause();
-  silentAudioRef.current = null;
-  mediaAudioCtxRef.current?.close();
-  mediaAudioCtxRef.current = null;
+  if (silentAudioRef.current) {
+    silentAudioRef.current.pause();
+    silentAudioRef.current.srcObject = null;
+    silentAudioRef.current = null;
+  }
+  if (mediaAudioCtxRef.current) {
+    mediaAudioCtxRef.current.close()?.catch(() => {});
+    mediaAudioCtxRef.current = null;
+  }
   navigator.mediaSession.playbackState = 'none';
   navigator.mediaSession.setActionHandler('play', null);
   navigator.mediaSession.setActionHandler('pause', null);
@@ -120,16 +129,32 @@ const AppBarStopwatch: React.FC = () => {
   const silentAudioRef = useRef<HTMLAudioElement | null>(null);
   const mediaAudioCtxRef = useRef<AudioContext | null>(null);
 
-  // Activate/deactivate the MediaSession (persistent OS notification) with transport controls
+  // Keep a ref so the rAF loop can read the latest notifyAt without re-running the effect
+  const notifyAtRef = useRef(notifyAt);
+  useEffect(() => { notifyAtRef.current = notifyAt; }, [notifyAt]);
+
+  // Sync play/pause state into MediaSession when isRunning changes.
+  // Activation happens in click handlers (requires user-gesture context for audio.play()).
   useEffect(() => {
     if (isRunning) {
-      activateMediaSession(handleStartStop, handleReset, silentAudioRef, mediaAudioCtxRef);
+      if (silentAudioRef.current) {
+        silentAudioRef.current.play().catch(() => {});
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+      }
     } else {
-      deactivateMediaSession(silentAudioRef, mediaAudioCtxRef);
+      if (silentAudioRef.current) {
+        silentAudioRef.current.pause();
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+      }
     }
-    return () => deactivateMediaSession(silentAudioRef, mediaAudioCtxRef);
-  }, [isRunning]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isRunning]);
 
+  // Full cleanup on unmount
+  useEffect(() => {
+    return () => deactivateMediaSession(silentAudioRef, mediaAudioCtxRef);
+  }, []);
+
+  // rAF loop — notifyAt is read via ref so this effect stays stable when notify fires
   useEffect(() => {
     let animationFrame: number;
     let lastDisplayedTime = pausedTime;
@@ -138,8 +163,10 @@ const AppBarStopwatch: React.FC = () => {
         const elapsed = Math.floor((Date.now() - startTimestamp) / 100);
         const currentDisplayTime = pausedTime + elapsed;
         if (currentDisplayTime !== lastDisplayedTime) {
-          if (notifyAt !== null && lastDisplayedTime < notifyAt && currentDisplayTime >= notifyAt) {
+          const na = notifyAtRef.current;
+          if (na !== null && lastDisplayedTime < na && currentDisplayTime >= na) {
             fireRestNotification();
+            notifyAtRef.current = null;
             setNotifyAt(null);
           }
           // Update MediaSession title once per second
@@ -162,12 +189,24 @@ const AppBarStopwatch: React.FC = () => {
     return () => {
       if (animationFrame) cancelAnimationFrame(animationFrame);
     };
-  }, [isRunning, startTimestamp, pausedTime, notifyAt, setNotifyAt]);
+  }, [isRunning, startTimestamp, pausedTime, setNotifyAt]);
 
   if (!settings.showStopwatch) return null;
 
   const minutes = Math.floor(displayTime / 600);
   const seconds = Math.floor((displayTime % 600) / 10);
+
+  const handlePlayPauseClick = async () => {
+    if (!isRunning) {
+      await activateMediaSession(handleStartStop, handleResetClick, silentAudioRef, mediaAudioCtxRef);
+    }
+    handleStartStop();
+  };
+
+  const handleResetClick = () => {
+    deactivateMediaSession(silentAudioRef, mediaAudioCtxRef);
+    handleReset();
+  };
 
   const handlePresetClick = async (deciseconds: number) => {
     setAnchorEl(null);
@@ -177,6 +216,10 @@ const AppBarStopwatch: React.FC = () => {
     }
     await requestNotificationPermission();
     setNotifyAt(deciseconds);
+    if (!isRunning) {
+      await activateMediaSession(handleStartStop, handleResetClick, silentAudioRef, mediaAudioCtxRef);
+      handleStartStop();
+    }
   };
 
   return (
@@ -190,7 +233,7 @@ const AppBarStopwatch: React.FC = () => {
       alignItems: 'center',
       color: 'white',
     }}>
-      <IconButton onClick={handleReset} aria-label="Reset stopwatch" size="small" sx={{color: 'inherit'}}>
+      <IconButton onClick={handleResetClick} aria-label="Reset stopwatch" size="small" sx={{color: 'inherit'}}>
         <RestartAltRoundedIcon/>
       </IconButton>
       <IconButton
@@ -209,7 +252,7 @@ const AppBarStopwatch: React.FC = () => {
       >
         {minutes.toString()}:{seconds.toString().padStart(2, "0")}
       </Typography>
-      <IconButton onClick={handleStartStop} aria-label={isRunning ? "Stop stopwatch" : "Start stopwatch"} size="small"
+      <IconButton onClick={handlePlayPauseClick} aria-label={isRunning ? "Stop stopwatch" : "Start stopwatch"} size="small"
                   sx={{color: 'inherit'}}>
         {isRunning ? <PauseIcon/> : <PlayArrowIcon/>}
       </IconButton>

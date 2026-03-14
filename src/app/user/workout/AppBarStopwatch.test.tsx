@@ -122,14 +122,11 @@ describe('AppBarStopwatch', () => {
 
     renderWithProvider();
 
-    // Select 1:00 (600 deciseconds) preset
+    // Select 1:00 (600 deciseconds) preset — this auto-starts the stopwatch
     fireEvent.click(screen.getByRole('button', {name: /set notification timer/i}));
     await act(async () => {
       fireEvent.click(screen.getByRole('button', {name: '1:00'}));
     });
-
-    // Start the stopwatch
-    fireEvent.click(screen.getByRole('button', {name: /start stopwatch/i}));
 
     // Advance time past 1 minute (60s = 600 deciseconds)
     await act(async () => {
@@ -272,7 +269,7 @@ describe('MediaSession', () => {
     expect(setActionHandler).toHaveBeenCalledWith('stop', expect.any(Function));
   });
 
-  it('deactivates MediaSession with playbackState none when stopwatch is stopped', async () => {
+  it('sets MediaSession playbackState to paused when stopwatch is paused', async () => {
     const {mediaSession} = setupMediaSessionMock();
     renderWithProvider();
     await act(async () => {
@@ -281,6 +278,19 @@ describe('MediaSession', () => {
     expect(mediaSession.playbackState).toBe('playing');
     await act(async () => {
       fireEvent.click(screen.getByRole('button', {name: /stop stopwatch/i}));
+    });
+    expect(mediaSession.playbackState).toBe('paused');
+  });
+
+  it('deactivates MediaSession with playbackState none when stopwatch is reset', async () => {
+    const {mediaSession} = setupMediaSessionMock();
+    renderWithProvider();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', {name: /start stopwatch/i}));
+    });
+    expect(mediaSession.playbackState).toBe('playing');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', {name: /reset stopwatch/i}));
     });
     expect(mediaSession.playbackState).toBe('none');
   });
