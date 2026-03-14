@@ -174,6 +174,118 @@ function setupAudioContextMock() {
   return {MockAudioContext, startFn, stopFn};
 }
 
+describe('MediaSession', () => {
+  let originalRequestAnimationFrame: typeof window.requestAnimationFrame;
+  let originalCancelAnimationFrame: typeof window.cancelAnimationFrame;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-01-01T00:00:00.000Z'));
+
+    originalRequestAnimationFrame = window.requestAnimationFrame;
+    originalCancelAnimationFrame = window.cancelAnimationFrame;
+    let rafId = 0;
+    const rafTimers = new Map<number, ReturnType<typeof setTimeout>>();
+    window.requestAnimationFrame = (cb: FrameRequestCallback): number => {
+      rafId += 1;
+      const timeout = setTimeout(() => cb(performance.now()), 16);
+      rafTimers.set(rafId, timeout);
+      return rafId;
+    };
+    window.cancelAnimationFrame = (id: number) => {
+      const timeout = rafTimers.get(id);
+      if (timeout) { clearTimeout(timeout); rafTimers.delete(id); }
+    };
+
+    // Mock MediaMetadata (not available in jsdom)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (global as any).MediaMetadata = vi.fn().mockImplementation((data: object) => ({...data}));
+
+    // Mock AudioContext with createMediaStreamDestination for silent audio
+    const MockAudioContext = vi.fn().mockImplementation(() => ({
+      currentTime: 0,
+      destination: {},
+      close: vi.fn().mockResolvedValue(undefined),
+      createMediaStreamDestination: vi.fn().mockReturnValue({stream: {}}),
+      createOscillator: vi.fn().mockReturnValue({
+        connect: vi.fn(), type: 'sine', frequency: {value: 440},
+        start: vi.fn(), stop: vi.fn(), onended: null,
+      }),
+      createGain: vi.fn().mockReturnValue({
+        connect: vi.fn(),
+        gain: {setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn()},
+      }),
+    }));
+    Object.defineProperty(window, 'AudioContext', {value: MockAudioContext, configurable: true, writable: true});
+
+    // Replace Audio constructor so jsdom's unimplemented play/pause don't fire
+    Object.defineProperty(window, 'Audio', {
+      value: vi.fn().mockImplementation(() => ({
+        play: vi.fn().mockResolvedValue(undefined),
+        pause: vi.fn(),
+        srcObject: null,
+        loop: false,
+      })),
+      configurable: true,
+      writable: true,
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    window.requestAnimationFrame = originalRequestAnimationFrame;
+    window.cancelAnimationFrame = originalCancelAnimationFrame;
+    vi.restoreAllMocks();
+  });
+
+  function setupMediaSessionMock() {
+    const setActionHandler = vi.fn();
+    const mediaSession = {
+      metadata: null as MediaMetadata | null,
+      playbackState: 'none' as MediaSessionPlaybackState,
+      setActionHandler,
+    };
+    Object.defineProperty(navigator, 'mediaSession', {value: mediaSession, configurable: true, writable: true});
+    return {mediaSession, setActionHandler};
+  }
+
+  it('activates MediaSession with playbackState playing when stopwatch starts', async () => {
+    const {mediaSession} = setupMediaSessionMock();
+    renderWithProvider();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', {name: /start stopwatch/i}));
+    });
+    expect(mediaSession.playbackState).toBe('playing');
+    expect(mediaSession.metadata).not.toBeNull();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((mediaSession.metadata as any)?.artist).toBe('Forti Workout');
+  });
+
+  it('registers play, pause, and stop action handlers when stopwatch starts', async () => {
+    const {setActionHandler} = setupMediaSessionMock();
+    renderWithProvider();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', {name: /start stopwatch/i}));
+    });
+    expect(setActionHandler).toHaveBeenCalledWith('play', expect.any(Function));
+    expect(setActionHandler).toHaveBeenCalledWith('pause', expect.any(Function));
+    expect(setActionHandler).toHaveBeenCalledWith('stop', expect.any(Function));
+  });
+
+  it('deactivates MediaSession with playbackState none when stopwatch is stopped', async () => {
+    const {mediaSession} = setupMediaSessionMock();
+    renderWithProvider();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', {name: /start stopwatch/i}));
+    });
+    expect(mediaSession.playbackState).toBe('playing');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', {name: /stop stopwatch/i}));
+    });
+    expect(mediaSession.playbackState).toBe('none');
+  });
+});
+
 describe('fireRestNotification', () => {
   afterEach(() => {
     vi.restoreAllMocks();

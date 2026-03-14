@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import RestartAltRoundedIcon from '@mui/icons-material/RestartAltRounded';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
@@ -46,6 +46,58 @@ function playBeep(): void {
   });
 }
 
+function createSilentAudio(): { audio: HTMLAudioElement; ctx: AudioContext } {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const AudioCtx: typeof AudioContext = (window as any).AudioContext ?? (window as any).webkitAudioContext;
+  const ctx = new AudioCtx();
+  const dest = ctx.createMediaStreamDestination();
+  const audio = new Audio();
+  audio.srcObject = dest.stream;
+  audio.loop = true;
+  return {audio, ctx};
+}
+
+async function activateMediaSession(
+  handleStartStop: () => void,
+  handleReset: () => void,
+  silentAudioRef: React.MutableRefObject<HTMLAudioElement | null>,
+  mediaAudioCtxRef: React.MutableRefObject<AudioContext | null>,
+): Promise<void> {
+  if (!('mediaSession' in navigator)) return;
+  const {audio, ctx} = createSilentAudio();
+  silentAudioRef.current = audio;
+  mediaAudioCtxRef.current = ctx;
+  try {
+    await audio.play();
+  } catch {
+    return; // autoplay blocked — MediaSession won't be shown
+  }
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: '0:00',
+    artist: 'Forti Workout',
+    artwork: [{src: '/web-app-manifest-192x192.png', sizes: '192x192', type: 'image/png'}],
+  });
+  navigator.mediaSession.playbackState = 'playing';
+  navigator.mediaSession.setActionHandler('play', handleStartStop);
+  navigator.mediaSession.setActionHandler('pause', handleStartStop);
+  navigator.mediaSession.setActionHandler('stop', handleReset);
+}
+
+function deactivateMediaSession(
+  silentAudioRef: React.MutableRefObject<HTMLAudioElement | null>,
+  mediaAudioCtxRef: React.MutableRefObject<AudioContext | null>,
+): void {
+  if (!('mediaSession' in navigator)) return;
+  silentAudioRef.current?.pause();
+  silentAudioRef.current = null;
+  mediaAudioCtxRef.current?.close();
+  mediaAudioCtxRef.current = null;
+  navigator.mediaSession.playbackState = 'none';
+  navigator.mediaSession.setActionHandler('play', null);
+  navigator.mediaSession.setActionHandler('pause', null);
+  navigator.mediaSession.setActionHandler('stop', null);
+}
+
 export function fireRestNotification(): void {
   if ('Notification' in window && Notification.permission === 'granted') {
     new Notification('Rest timer complete', {
@@ -65,6 +117,18 @@ const AppBarStopwatch: React.FC = () => {
   const {isRunning, startTimestamp, pausedTime} = stopwatch;
   const [displayTime, setDisplayTime] = useState(pausedTime);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const silentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const mediaAudioCtxRef = useRef<AudioContext | null>(null);
+
+  // Activate/deactivate the MediaSession (persistent OS notification) with transport controls
+  useEffect(() => {
+    if (isRunning) {
+      activateMediaSession(handleStartStop, handleReset, silentAudioRef, mediaAudioCtxRef);
+    } else {
+      deactivateMediaSession(silentAudioRef, mediaAudioCtxRef);
+    }
+    return () => deactivateMediaSession(silentAudioRef, mediaAudioCtxRef);
+  }, [isRunning]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let animationFrame: number;
@@ -77,6 +141,14 @@ const AppBarStopwatch: React.FC = () => {
           if (notifyAt !== null && lastDisplayedTime < notifyAt && currentDisplayTime >= notifyAt) {
             fireRestNotification();
             setNotifyAt(null);
+          }
+          // Update MediaSession title once per second
+          const prevSec = Math.floor(lastDisplayedTime / 10);
+          const currSec = Math.floor(currentDisplayTime / 10);
+          if (currSec !== prevSec && 'mediaSession' in navigator && navigator.mediaSession.metadata) {
+            const m = Math.floor(currentDisplayTime / 600);
+            const s = Math.floor((currentDisplayTime % 600) / 10);
+            navigator.mediaSession.metadata.title = `${m}:${s.toString().padStart(2, '0')}`;
           }
           setDisplayTime(currentDisplayTime);
           lastDisplayedTime = currentDisplayTime;
