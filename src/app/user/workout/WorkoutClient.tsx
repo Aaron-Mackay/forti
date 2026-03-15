@@ -122,7 +122,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
     const autoFillMap = new Map<number, number>(); // setId → weight
     if (field === 'weight' && parsedValue !== null && !primarySet.isDropSet) {
       selectedExercise.sets
-        .filter(s => s.isDropSet && s.parentSetId === primarySet.id && s.weight === null)
+        .filter(s => s.isDropSet && s.parentSetId === primarySet.id && s.reps === null)
         .sort((a, b) => a.order - b.order)
         .forEach((drop, i) => {
           const dropWeight = Math.round((parsedValue * Math.pow(0.8, i + 1)) / 2.5) * 2.5;
