@@ -280,8 +280,12 @@ export default function ExerciseSlide({
                         size="small"
                         autoComplete="off"
                         value={group.parent.weight?.toString() ?? ''}
-                        onChange={(e) => handleSetUpdate(parentSetIdx, 'weight', e.target.value)}
+                        onChange={(e) => {
+                          if (!/^\d*\.?\d*$/.test(e.target.value)) return;
+                          handleSetUpdate(parentSetIdx, 'weight', e.target.value);
+                        }}
                         sx={{minWidth: 80, '& input': {textAlign: 'center'}}}
+                        inputProps={{inputMode: 'decimal'}}
                       />
                       <TextField
                         label="Reps"
@@ -340,8 +344,12 @@ export default function ExerciseSlide({
                             size="small"
                             autoComplete="off"
                             value={drop.weight?.toString() ?? ''}
-                            onChange={(e) => handleSetUpdate(dropSetIdx, 'weight', e.target.value)}
+                            onChange={(e) => {
+                              if (!/^\d*\.?\d*$/.test(e.target.value)) return;
+                              handleSetUpdate(dropSetIdx, 'weight', e.target.value);
+                            }}
                             sx={{minWidth: 80, '& input': {textAlign: 'center'}}}
+                            inputProps={{inputMode: 'decimal'}}
                           />
                           <TextField
                             label="Reps"
