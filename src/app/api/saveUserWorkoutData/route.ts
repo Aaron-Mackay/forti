@@ -75,64 +75,82 @@ export async function POST(req: Request) {
 
       // 2. Recreate all plans, weeks, workouts, etc.
       for (const plan of body.plans) {
-        await tx.plan.create({
-          data: {
-            userId,
-            order: plan.order,
-            name: plan.name,
-            description: plan.description ?? null,
-            weeks: {
-              create: plan.weeks.map((week) => ({
-                order: week.order,
-                workouts: {
-                  create: week.workouts.map((workout) => ({
-                    name: workout.name,
-                    notes: workout.notes,
-                    order: workout.order,
-                    dateCompleted: workout.dateCompleted ? new Date(workout.dateCompleted) : null,
-                    exercises: {
-                  create: workout.exercises
-                    .map(exercise => ({
-                        exercise: exercise.exercise.id
-                          ? {connect: {id: exercise.exercise.id}}
-                          : {
-                            connectOrCreate: {
-                              where: {
-                                name_category: {
-                                  name: exercise.exercise.name,
-                                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                  category: exercise.exercise.category as any as ExerciseCategory,
-                                },
-                              },
-                              create: {
-                                name: exercise.exercise.name,
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                category: exercise.exercise.category as any as ExerciseCategory,
-                              },
-                            },
-                          },
-                        order: exercise.order,
-                        repRange: exercise.repRange,
-                        restTime: exercise.restTime,
-                        notes: exercise.notes,
-                        sets: {
-                        create: exercise.sets.map(set => ({
-                            weight: set.weight ?? null,
-                            reps: set.reps ?? null,
-                            order: set.order,
-                            isDropSet: set.isDropSet ?? false,
-                            parentSetId: set.parentSetId ?? null,
-                            e1rm: computeE1rm(set.weight, set.reps),
-                          })),
-                        },
-                      })),
-                    },
-                  })),
-                },
-              })),
-            },
-          },
+        const createdPlan = await tx.plan.create({
+          data: {userId, order: plan.order, name: plan.name, description: plan.description ?? null},
         });
+        for (const week of plan.weeks) {
+          const createdWeek = await tx.week.create({
+            data: {order: week.order, planId: createdPlan.id},
+          });
+          for (const workout of week.workouts) {
+            const createdWorkout = await tx.workout.create({
+              data: {
+                name: workout.name,
+                notes: workout.notes,
+                order: workout.order,
+                dateCompleted: workout.dateCompleted ? new Date(workout.dateCompleted) : null,
+                weekId: createdWeek.id,
+              },
+            });
+            for (const exercise of workout.exercises) {
+              const exerciseRecord = await tx.exercise.upsert({
+                where: {
+                  name_category: {
+                    name: exercise.exercise.name,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    category: exercise.exercise.category as any as ExerciseCategory,
+                  },
+                },
+                update: {},
+                create: {
+                  name: exercise.exercise.name,
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  category: exercise.exercise.category as any as ExerciseCategory,
+                },
+              });
+              const createdExercise = await tx.workoutExercise.create({
+                data: {
+                  workoutId: createdWorkout.id,
+                  exerciseId: exerciseRecord.id,
+                  order: exercise.order,
+                  repRange: exercise.repRange,
+                  restTime: exercise.restTime,
+                  notes: exercise.notes,
+                },
+              });
+              const idMap = new Map<number, number>();
+              const regularSets = exercise.sets.filter(s => !s.isDropSet);
+              const dropSets = exercise.sets.filter(s => s.isDropSet);
+              for (const set of regularSets) {
+                const created = await tx.exerciseSet.create({
+                  data: {
+                    workoutExerciseId: createdExercise.id,
+                    weight: set.weight ?? null,
+                    reps: set.reps ?? null,
+                    order: set.order,
+                    isDropSet: false,
+                    parentSetId: null,
+                    e1rm: computeE1rm(set.weight, set.reps),
+                  },
+                });
+                if (set.id != null) idMap.set(set.id, created.id);
+              }
+              for (const set of dropSets) {
+                await tx.exerciseSet.create({
+                  data: {
+                    workoutExerciseId: createdExercise.id,
+                    weight: set.weight ?? null,
+                    reps: set.reps ?? null,
+                    order: set.order,
+                    isDropSet: true,
+                    parentSetId: set.parentSetId != null ? (idMap.get(set.parentSetId) ?? null) : null,
+                    e1rm: computeE1rm(set.weight, set.reps),
+                  },
+                });
+              }
+            }
+          }
+        }
       }
     });
 
