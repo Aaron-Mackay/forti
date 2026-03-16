@@ -116,11 +116,25 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
     if (!selectedExercise) return;
 
     const parsedValue = value === '' ? null : Number(value);
-    const updatedSets = selectedExercise.sets.map((set, idx) =>
-      idx === setIdx
-        ? {...set, [field]: parsedValue}
-        : set
-    );
+    const primarySet = selectedExercise.sets[setIdx];
+
+    // Auto-fill empty drop set weights at 20% reduction per drop (cascading, rounded to 2.5 kg)
+    const autoFillMap = new Map<number, number>(); // setId → weight
+    if (field === 'weight' && parsedValue !== null && !primarySet.isDropSet) {
+      selectedExercise.sets
+        .filter(s => s.isDropSet && s.parentSetId === primarySet.id && s.reps === null)
+        .sort((a, b) => a.order - b.order)
+        .forEach((drop, i) => {
+          const dropWeight = Math.round((parsedValue * Math.pow(0.8, i + 1)) / 2.5) * 2.5;
+          autoFillMap.set(drop.id, dropWeight);
+        });
+    }
+
+    const updatedSets = selectedExercise.sets.map((set, idx) => {
+      if (idx === setIdx) return {...set, [field]: parsedValue};
+      if (autoFillMap.has(set.id)) return {...set, weight: autoFillMap.get(set.id)!};
+      return set;
+    });
 
     // Optimistically update userDataState
     setUserData((prev) =>
@@ -146,6 +160,11 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
           severity: 'info',
         });
       });
+
+    // Fire PATCHes for auto-filled drop sets (offline-safe via queueOrSendRequest)
+    for (const [setId, weight] of autoFillMap) {
+      queueOrSendRequest(`/api/sets/${setId}`, 'PATCH', {weight});
+    }
   };
 
   const handleWorkoutNoteBlur = (note: string) => {

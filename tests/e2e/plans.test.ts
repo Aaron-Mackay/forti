@@ -319,8 +319,9 @@ test.describe('Plan editor (scratch)', () => {
     await expect(page.getByRole('button', { name: /save plan/i })).toBeDisabled();
   });
 
-  test('Save Plan button enables after typing a plan name', async ({ page }) => {
+  test('Save Plan button enables after typing a plan name and exercise name', async ({ page }) => {
     await page.getByLabel(/plan name/i).fill('My Test Plan');
+    await page.getByLabel(/exercise/i).first().fill('Squat');
     await expect(page.getByRole('button', { name: /save plan/i })).not.toBeDisabled();
   });
 

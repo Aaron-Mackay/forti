@@ -1,9 +1,12 @@
 import {z} from "zod";
 
 export const SetInputSchema = z.object({
+  id: z.number().optional(),
   weight: z.number().nullable().optional(),
   reps: z.number().int().nullable().optional(),
   order: z.number().int(),
+  isDropSet: z.boolean().optional().default(false),
+  parentSetId: z.number().nullable().optional(),
 });
 
 export const ExerciseInputSchema = z.object({

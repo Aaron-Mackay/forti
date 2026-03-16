@@ -16,6 +16,29 @@ function getBlueShade(doneSets: number): string {
 
 type MuscleCounts = Record<string, { planned: number; done: number }>;
 
+/**
+ * Computes effective set counts applying the drop set formula:
+ * each regular set = 1, its 1st drop = 0.75, 2nd drop = 0.75², etc.
+ */
+function effectiveSets(sets: WeekPrisma['workouts'][number]['exercises'][number]['sets']): { planned: number; done: number } {
+  const regularSets = sets.filter(s => !s.isDropSet);
+  let planned = 0;
+  let done = 0;
+  for (const regular of regularSets) {
+    planned += 1;
+    if (regular.reps !== null && regular.reps > 0) done += 1;
+    const drops = sets
+      .filter(s => s.isDropSet && s.parentSetId === regular.id)
+      .sort((a, b) => a.order - b.order);
+    drops.forEach((drop, _idx) => {
+      const weight = 0.5;
+      planned += weight;
+      if (drop.reps !== null && drop.reps > 0) done += weight;
+    });
+  }
+  return { planned, done };
+}
+
 function computeMuscleCounts(week: WeekPrisma): MuscleCounts {
   const counts: MuscleCounts = {};
 
@@ -23,8 +46,7 @@ function computeMuscleCounts(week: WeekPrisma): MuscleCounts {
     for (const ex of workout.exercises) {
       if (ex.exercise.category !== 'resistance') continue;
       const muscles = ex.exercise.primaryMuscles as string[];
-      const planned = ex.sets.length;
-      const done = ex.sets.filter(s => s.reps !== null && s.reps > 0).length;
+      const { planned, done } = effectiveSets(ex.sets);
       for (const muscle of muscles) {
         if (!counts[muscle]) counts[muscle] = { planned: 0, done: 0 };
         counts[muscle].planned += planned;
@@ -109,7 +131,7 @@ export default function WeekMuscleSummary({ week }: { week: WeekPrisma }) {
               {MUSCLE_NAMES[muscle] ?? muscle}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {done} / {planned} sets
+              {Number.isInteger(done) ? done : done.toFixed(1)} / {Number.isInteger(planned) ? planned : planned.toFixed(1)} sets
             </Typography>
           </Box>
         ))}

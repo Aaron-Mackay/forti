@@ -212,6 +212,8 @@ export class SetBuilder {
       reps: 8,
       weight: 100,
       e1rm: null,
+      isDropSet: false,
+      parentSetId: null,
     };
   }
   build(): SetPrisma {

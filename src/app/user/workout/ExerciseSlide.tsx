@@ -33,6 +33,18 @@ import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-histo
 
 export type PreviousSet = { weight: number | null; reps: number | null; order: number };
 
+type SetGroup = { parent: SetPrisma; drops: SetPrisma[] };
+
+function groupSets(sets: SetPrisma[]): SetGroup[] {
+  const regular = [...sets].filter(s => !s.isDropSet).sort((a, b) => a.order - b.order);
+  return regular.map(parent => ({
+    parent,
+    drops: sets
+      .filter(s => s.isDropSet && s.parentSetId === parent.id)
+      .sort((a, b) => a.order - b.order),
+  }));
+}
+
 export default function ExerciseSlide({
   ex,
   userExerciseNote,
@@ -85,10 +97,12 @@ export default function ExerciseSlide({
 
   const hasFormCue = formCue.trim().length > 0;
 
-  const todayBestE1rm = ex.sets.reduce<number | null>((best, set) => {
-    const e = computeE1rm(set.weight, set.reps);
-    return e === null ? best : best === null ? e : Math.max(best, e);
-  }, null);
+  const todayBestE1rm = ex.sets
+    .filter(s => !s.isDropSet)
+    .reduce<number | null>((best, set) => {
+      const e = computeE1rm(set.weight, set.reps);
+      return e === null ? best : best === null ? e : Math.max(best, e);
+    }, null);
 
   const historicalBest = history && history.length > 0
     ? Math.max(...history.map(p => p.bestE1rm))
@@ -96,6 +110,8 @@ export default function ExerciseSlide({
 
   const isNewBest = todayBestE1rm !== null && historicalBest !== null
     && todayBestE1rm > historicalBest;
+
+  const groups = groupSets(ex.sets);
 
   return (
     <Paper
@@ -234,83 +250,126 @@ export default function ExerciseSlide({
                 No sets recorded.
               </Typography>
             )}
-            {ex.sets.map((set: SetPrisma, setIdx) => {
-            const prev = previousSets?.find(s => s.order === set.order);
-            const liveE1rm = computeE1rm(set.weight, set.reps);
-            return (
-              <ListItem key={set.id} disablePadding sx={{alignItems: 'flex-start', mb: 1, flexDirection: 'column'}}>
-                <Box sx={{display: 'flex', alignItems: 'flex-end', width: '100%', gap: 1}}>
-                  <Box>
-                    <ListItemText primary={`Set ${setIdx + 1}`} sx={{minWidth: 60, flex: 'none', mr: 2}}/>
-                    {previousSets === undefined ? (
-                      <Skeleton variant="text" width={70} height={21} sx={{mt: 0.25}}/>
-                    ) : (
-                      <Typography
-                        variant="caption"
-                        color="text.disabled"
-                        sx={{mt: 0.25, visibility: prev ? 'visible' : 'hidden', width: 70}}
-                        aria-label={prev ? `Previous: ${prev.weight ?? '—'} × ${prev.reps ?? '—'}` : undefined}
-                      >
-                        Prev: {prev?.weight ?? '—'} × {prev?.reps ?? '—'}
-                      </Typography>
-                    )}
-                  </Box>
-                  <TextField
-                    label="Weight"
-                    size="small"
-                    autoComplete="off"
-                    value={set.weight?.toString() ?? ''}
-                    onChange={(e) => {
-                      handleSetUpdate(setIdx, 'weight', e.target.value)
-                    }}
-                    sx={{
-                      minWidth: 80,
-                      '& input': {textAlign: 'center'}
-                    }}
-                  />
-                  <TextField
-                    label="Reps"
-                    type="text"
-                    size="small"
-                    autoComplete="off"
-                    value={set.reps ?? ''}
-                    onChange={(e) => {
-                      if (!/^\d*$/.test(e.target.value)) return;
-                      handleSetUpdate(setIdx, 'reps', e.target.value);
-                    }}
-                    sx={{
-                      minWidth: 60,
-                      '& input': {textAlign: 'center'}
-                    }}
-                    inputProps={{inputMode: 'numeric', pattern: '[0-9]*'}}
-                  />
-                  <Box>
-                    <TextField
-                      label="Est. 1RM"
-                      size="small"
-                      disabled
-                      slotProps={{inputLabel: {shrink: true}}}
-                      sx={{
-                        minWidth: 75,
-                        '& input': {textAlign: 'center'}
-                      }}
-                      value={liveE1rm ? liveE1rm.toFixed(1) : "-"}
-                    />
-                    {liveE1rm !== null && liveE1rm === todayBestE1rm && liveE1rm > (historicalBest || 0) && (
-                      <EmojiEventsIcon
-                        sx={{
-                          position: 'absolute',
-                          right: "0",
-                          bottom: "-12px",
-                          pointerEvents: 'none',
-                          color: 'gold',
+            {groups.map((group, groupIdx) => {
+              const parentSetIdx = ex.sets.findIndex(s => s.id === group.parent.id);
+              const prev = previousSets?.find(s => s.order === group.parent.order);
+              const liveE1rm = computeE1rm(group.parent.weight, group.parent.reps);
+
+              return (
+                <Box key={group.parent.id}>
+                  {/* Parent (regular) set row */}
+                  <ListItem disablePadding sx={{alignItems: 'flex-start', mb: 0.5, flexDirection: 'column'}}>
+                    <Box sx={{display: 'flex', alignItems: 'flex-end', width: '100%', gap: 1}}>
+                      <Box>
+                        <ListItemText primary={`Set ${groupIdx + 1}`} sx={{minWidth: 60, flex: 'none', mr: 2}}/>
+                        {previousSets === undefined ? (
+                          <Skeleton variant="text" width={70} height={21} sx={{mt: 0.25}}/>
+                        ) : (
+                          <Typography
+                            variant="caption"
+                            color="text.disabled"
+                            sx={{mt: 0.25, visibility: prev ? 'visible' : 'hidden', width: 70}}
+                            aria-label={prev ? `Previous: ${prev.weight ?? '—'} × ${prev.reps ?? '—'}` : undefined}
+                          >
+                            Prev: {prev?.weight ?? '—'} × {prev?.reps ?? '—'}
+                          </Typography>
+                        )}
+                      </Box>
+                      <TextField
+                        label="Weight"
+                        size="small"
+                        autoComplete="off"
+                        value={group.parent.weight?.toString() ?? ''}
+                        onChange={(e) => {
+                          if (!/^\d*\.?\d*$/.test(e.target.value)) return;
+                          handleSetUpdate(parentSetIdx, 'weight', e.target.value);
                         }}
+                        sx={{minWidth: 80, '& input': {textAlign: 'center'}}}
+                        inputProps={{inputMode: 'decimal'}}
                       />
-                    )}
-                  </Box>
+                      <TextField
+                        label="Reps"
+                        type="text"
+                        size="small"
+                        autoComplete="off"
+                        value={group.parent.reps ?? ''}
+                        onChange={(e) => {
+                          if (!/^\d*$/.test(e.target.value)) return;
+                          handleSetUpdate(parentSetIdx, 'reps', e.target.value);
+                        }}
+                        sx={{minWidth: 60, '& input': {textAlign: 'center'}}}
+                        inputProps={{inputMode: 'numeric', pattern: '[0-9]*'}}
+                      />
+                      <Box>
+                        <TextField
+                          label="Est. 1RM"
+                          size="small"
+                          disabled
+                          slotProps={{inputLabel: {shrink: true}}}
+                          sx={{minWidth: 75, '& input': {textAlign: 'center'}}}
+                          value={liveE1rm ? liveE1rm.toFixed(1) : "-"}
+                        />
+                        {liveE1rm !== null && liveE1rm === todayBestE1rm && liveE1rm > (historicalBest || 0) && (
+                          <EmojiEventsIcon
+                            sx={{
+                              position: 'absolute',
+                              right: "0",
+                              bottom: "-12px",
+                              pointerEvents: 'none',
+                              color: 'gold',
+                            }}
+                          />
+                        )}
+                      </Box>
+                    </Box>
+                  </ListItem>
+
+                  {/* Drop set rows */}
+                  {group.drops.map((drop, dropIdx) => {
+                    const dropSetIdx = ex.sets.findIndex(s => s.id === drop.id);
+                    return (
+                      <ListItem
+                        key={drop.id}
+                        disablePadding
+                        sx={{alignItems: 'flex-end', mb: 0.5, pl: 4}}
+                      >
+                        <Box sx={{display: 'flex', alignItems: 'flex-end', width: '100%', gap: 1}}>
+                          <Box sx={{minWidth: 60, flex: 'none', mr: 2}}>
+                            <Typography variant="body2" color="text.secondary" sx={{lineHeight: '40px'}}>
+                              ↓ Drop {dropIdx + 1}
+                            </Typography>
+                          </Box>
+                          <TextField
+                            label="Weight"
+                            size="small"
+                            autoComplete="off"
+                            value={drop.weight?.toString() ?? ''}
+                            onChange={(e) => {
+                              if (!/^\d*\.?\d*$/.test(e.target.value)) return;
+                              handleSetUpdate(dropSetIdx, 'weight', e.target.value);
+                            }}
+                            sx={{minWidth: 80, '& input': {textAlign: 'center'}}}
+                            inputProps={{inputMode: 'decimal'}}
+                          />
+                          <TextField
+                            label="Reps"
+                            type="text"
+                            size="small"
+                            autoComplete="off"
+                            value={drop.reps ?? ''}
+                            onChange={(e) => {
+                              if (!/^\d*$/.test(e.target.value)) return;
+                              handleSetUpdate(dropSetIdx, 'reps', e.target.value);
+                            }}
+                            sx={{minWidth: 60, '& input': {textAlign: 'center'}}}
+                            inputProps={{inputMode: 'numeric', pattern: '[0-9]*'}}
+                          />
+                        </Box>
+                      </ListItem>
+                    );
+                  })}
                 </Box>
-              </ListItem>
-            );
+              );
             })}
           </List>
         </Box>
