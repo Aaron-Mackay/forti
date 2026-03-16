@@ -4,6 +4,45 @@ import getLoggedInUser from "@lib/getLoggedInUser";
 import {extractErrorMessage} from "@lib/apiError";
 import {computeE1rm} from "@lib/e1rm";
 
+async function getSetWithOwner(setId: number) {
+  return prisma.exerciseSet.findUnique({
+    where: {id: setId},
+    include: {
+      workoutExercise: {
+        include: {
+          workout: {
+            include: {
+              week: {
+                include: {plan: true},
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+export async function DELETE(_req: NextRequest, props: { params: Promise<{ setId: string }> }) {
+  const params = await props.params;
+  try {
+    const setId = Number(params.setId);
+    const set = await getSetWithOwner(setId);
+
+    if (!set) return NextResponse.json({error: 'Set not found'}, {status: 404});
+
+    const user = await getLoggedInUser();
+    if (set.workoutExercise.workout.week.plan.userId !== user.id) {
+      return NextResponse.json({error: 'Forbidden'}, {status: 403});
+    }
+
+    await prisma.exerciseSet.delete({where: {id: setId}});
+    return NextResponse.json({success: true});
+  } catch (err: unknown) {
+    return NextResponse.json({error: extractErrorMessage(err)}, {status: 500});
+  }
+}
+
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ setId: string }> }) {
   const params = await props.params;
@@ -19,24 +58,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ setId: 
 
   try {
     const setId = Number(params.setId);
-    const set = await prisma.exerciseSet.findUnique({
-      where: {id: setId},
-      include: {
-        workoutExercise: {
-          include: {
-            workout: {
-              include: {
-                week: {
-                  include: {
-                    plan: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
+    const set = await getSetWithOwner(setId);
 
     if (!set) {
       return NextResponse.json({error: 'Set not found'}, {status: 404});

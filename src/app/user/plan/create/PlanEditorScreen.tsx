@@ -68,6 +68,12 @@ const SortableExerciseRow = ({
     opacity: isDragging ? 0.5 : 1,
   }
 
+  const regularSets = ex.sets.filter(s => !s.isDropSet);
+  const firstRegular = regularSets[0];
+  const dropsPerSet = firstRegular
+    ? ex.sets.filter(s => s.isDropSet && s.parentSetId === firstRegular.id).length
+    : 0;
+
   return (
     <Box ref={setNodeRef} style={style} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -119,7 +125,7 @@ const SortableExerciseRow = ({
           size="small"
           sx={{ flex: 1 }}
           label="Sets"
-          value={ex.sets.length}
+          value={regularSets.length}
           autoComplete="off"
           inputMode="numeric"
           onChange={(e) =>
@@ -130,6 +136,25 @@ const SortableExerciseRow = ({
               workoutId: ex.workoutId,
               workoutExerciseId: ex.id,
               setCount: parseInt(e.target.value) || 1,
+            })
+          }
+        />
+        <TextField
+          size="small"
+          sx={{ flex: 1 }}
+          label="Drops"
+          value={dropsPerSet}
+          autoComplete="off"
+          inputMode="numeric"
+          slotProps={{ inputLabel: { shrink: true } }}
+          onChange={(e) =>
+            dispatch({
+              type: 'SET_DROPS_PER_SET',
+              planId,
+              weekId: PLACEHOLDER_ID,
+              workoutId: ex.workoutId,
+              exerciseId: ex.id,
+              dropCount: Math.max(0, parseInt(e.target.value) || 0),
             })
           }
         />
@@ -331,7 +356,10 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount }: PlanEditorScreenPr
 
   const workouts = statePlan.weeks[0].workouts
 
-  const canSave = !!statePlan.name.trim()
+  const allExercisesNamed = statePlan.weeks[0].workouts.every(wo =>
+    wo.exercises.every(ex => ex.exercise.name.trim().length > 0)
+  )
+  const canSave = !!statePlan.name.trim() && allExercisesNamed
 
   const handleSave = async () => {
     setSaving(true)

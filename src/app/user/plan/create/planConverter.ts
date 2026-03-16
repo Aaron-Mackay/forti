@@ -64,6 +64,8 @@ export function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPris
                   weight: set.weight ?? null,
                   reps: set.reps ?? null,
                   e1rm: null,
+                  isDropSet: false,
+                  parentSetId: null,
                 })),
                 cardioDuration: null,
                 cardioDistance: null,

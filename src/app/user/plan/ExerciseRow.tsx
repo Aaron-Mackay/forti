@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import {Button, TableCell, TableRow, TextField} from '@mui/material';
+import {Box, Button, IconButton, TableCell, TableRow, TextField, Typography} from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
+import CloseIcon from '@mui/icons-material/Close';
 import {createFilterOptions} from '@mui/material/Autocomplete';
 import {ToggleableEditableField} from './ToggleableEditableField';
 import {useWorkoutEditorContext} from '@/context/WorkoutEditorContext';
@@ -52,7 +53,11 @@ const ExerciseRow = ({
   const {dispatch, debouncedDispatch} = useWorkoutEditorContext();
   const category = exerciseLink.exercise?.category || "";
   const exerciseName = exerciseLink.exercise?.name || "";
-  const setCount = exerciseLink.sets.length;
+
+  const regularSets = exerciseLink.sets
+    .filter(s => !s.isDropSet)
+    .sort((a, b) => a.order - b.order);
+  const setCount = regularSets.length;
 
   return (
     <TableRow>
@@ -143,11 +148,16 @@ const ExerciseRow = ({
           }
         />
       </TableCell>
-      {Array.from({length: setCount}).map((_, i) => {
-        const set = exerciseLink.sets[i];
+
+      {regularSets.map((set) => {
+        const drops = exerciseLink.sets
+          .filter(s => s.isDropSet && s.parentSetId === set.id)
+          .sort((a, b) => a.order - b.order);
+
         return (
-          <React.Fragment key={i}>
-            <TableCell align={"center"}>
+          <React.Fragment key={set.id}>
+            {/* Weight column */}
+            <TableCell align={"center"} sx={{verticalAlign: 'top'}}>
               <ToggleableEditableField
                 inputProps={{style: { textAlign: 'center'}, inputMode: 'numeric'}}
                 isInEditMode={isInEditMode}
@@ -164,8 +174,33 @@ const ExerciseRow = ({
                   })
                 }
               />
+              {drops.map((drop) => (
+                <Box
+                  key={drop.id}
+                  sx={{mt: 0.5, pl: 0.75, borderLeft: '2px solid', borderColor: 'divider'}}
+                >
+                  <ToggleableEditableField
+                    inputProps={{style: {textAlign: 'center'}, inputMode: 'numeric'}}
+                    isInEditMode={isInEditMode}
+                    value={drop.weight?.toString() ?? ''}
+                    onChange={(val) =>
+                      dispatch({
+                        type: 'UPDATE_SET_WEIGHT',
+                        planId,
+                        exerciseId: exerciseLink.id,
+                        workoutId,
+                        weekId,
+                        setId: drop.id,
+                        weight: val === '' ? null : parseFloat(val),
+                      })
+                    }
+                  />
+                </Box>
+              ))}
             </TableCell>
-            <TableCell align={"center"}>
+
+            {/* Reps column */}
+            <TableCell align={"center"} sx={{verticalAlign: 'top'}}>
               <ToggleableEditableField
                 inputProps={{style: {textAlign: 'center'}, inputMode: 'numeric'}}
                 isInEditMode={isInEditMode}
@@ -182,10 +217,77 @@ const ExerciseRow = ({
                   })
                 }
               />
+              {drops.map((drop, dropIdx) => (
+                <Box
+                  key={drop.id}
+                  sx={{mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.25, pl: 0.75, borderLeft: '2px solid', borderColor: 'divider'}}
+                >
+                  <Box sx={{flex: 1}}>
+                    {!isInEditMode && (
+                      <Typography variant="caption" color="text.secondary" sx={{display: 'block', lineHeight: 1, mb: 0.25}}>
+                        ↓ drop {dropIdx + 1}
+                      </Typography>
+                    )}
+                    <ToggleableEditableField
+                      inputProps={{style: {textAlign: 'center'}, inputMode: 'numeric'}}
+                      isInEditMode={isInEditMode}
+                      value={drop.reps ?? ''}
+                      onChange={(val) =>
+                        dispatch({
+                          type: 'UPDATE_SET_REPS',
+                          planId,
+                          exerciseId: exerciseLink.id,
+                          workoutId,
+                          weekId,
+                          setId: drop.id,
+                          reps: parseInt(val, 10),
+                        })
+                      }
+                    />
+                  </Box>
+                  {isInEditMode && (
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        dispatch({
+                          type: 'REMOVE_DROP_SET',
+                          planId,
+                          weekId,
+                          workoutId,
+                          exerciseId: exerciseLink.id,
+                          setId: drop.id,
+                        })
+                      }
+                      aria-label={`Remove drop set ${dropIdx + 1}`}
+                    >
+                      <CloseIcon sx={{fontSize: 14}}/>
+                    </IconButton>
+                  )}
+                </Box>
+              ))}
+              {isInEditMode && (
+                <Button
+                  size="small"
+                  sx={{mt: 0.5, fontSize: '0.65rem', py: 0, minHeight: 0, color: 'text.secondary'}}
+                  onClick={() =>
+                    dispatch({
+                      type: 'ADD_DROP_SET',
+                      planId,
+                      weekId,
+                      workoutId,
+                      exerciseId: exerciseLink.id,
+                      parentSetId: set.id,
+                    })
+                  }
+                >
+                  + drop
+                </Button>
+              )}
             </TableCell>
           </React.Fragment>
         );
       })}
+
       {Array.from({length: (maxSetCount - setCount)*2}).map((_, i) => {
         return (
           <TableCell key={i}/>

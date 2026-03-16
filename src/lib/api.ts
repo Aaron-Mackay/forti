@@ -141,9 +141,22 @@ export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
               exerciseId: exerciseRecord.id,
             },
           });
-          for (const set of exercise.sets) {
-            await tx.exerciseSet.create({
+          const idMap = new Map<number, number>();
+          const regularSets = exercise.sets.filter(s => !s.isDropSet);
+          const dropSets = exercise.sets.filter(s => s.isDropSet);
+          for (const set of regularSets) {
+            const created = await tx.exerciseSet.create({
               data: {...omit(set, ["id"]), workoutExerciseId: uploadedWorkoutExercise.id}
+            });
+            idMap.set(set.id, created.id);
+          }
+          for (const set of dropSets) {
+            await tx.exerciseSet.create({
+              data: {
+                ...omit(set, ["id"]),
+                workoutExerciseId: uploadedWorkoutExercise.id,
+                parentSetId: set.parentSetId != null ? (idMap.get(set.parentSetId) ?? null) : null,
+              }
             });
           }
         }

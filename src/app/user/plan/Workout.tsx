@@ -40,7 +40,8 @@ const Workout = ({
   const [noteExpanded, setNoteExpanded] = useState(false);
 
   const baseColumns = 5; // first 5 fixed cols
-  const setColumns = Math.max(...workout.exercises.map(e => e.sets.length)) * 2; // each set has 2 cols
+  const maxRegularSetCount = Math.max(...workout.exercises.map(e => e.sets.filter(s => !s.isDropSet).length), 0);
+  const setColumns = maxRegularSetCount * 2; // each set has 2 cols
   const editModeExtraColumn = isInEditMode ? 1 : 0;
   const totalColumns = baseColumns + setColumns + editModeExtraColumn;
 
@@ -121,7 +122,7 @@ const Workout = ({
             <TableCell></TableCell>
             <TableCell></TableCell>
             <TableCell></TableCell>
-            {Array.from({length: Math.max(...workout.exercises.map((e) => e.sets.length))}).map((_, idx) => (
+            {Array.from({length: maxRegularSetCount}).map((_, idx) => (
               <React.Fragment key={idx}>
                 <TableCell colSpan={2} align={"center"}>Set {idx + 1}</TableCell>
               </React.Fragment>
@@ -133,7 +134,7 @@ const Workout = ({
             <TableCell align={"center"}>Exercise</TableCell>
             <TableCell align={"center"}>Rep Range</TableCell>
             <TableCell align={"center"}>Rest</TableCell>
-            {Array.from({length: Math.max(...workout.exercises.map((e) => e.sets.length))}).map((_, idx) => (
+            {Array.from({length: maxRegularSetCount}).map((_, idx) => (
               <React.Fragment key={idx}>
                 <TableCell align={"center"}>Weight</TableCell>
                 <TableCell align={"center"}>Reps</TableCell>
@@ -155,7 +156,7 @@ const Workout = ({
               allExercises={allExercises}
               categories={categories}
               workoutExerciseCount={workout.exercises.length}
-              maxSetCount={Math.max(...workout.exercises.map((e) => e.sets.length))}
+              maxSetCount={maxRegularSetCount}
             />
           ))}
 

@@ -167,9 +167,12 @@ export default function ExercisesListView({
                         <PanoramaFishEyeIcon />
                       )
                     ) : (
-                      ex.sets.map((set, idx) => (
-                        set.reps ? <TaskAltIcon key={idx}/> : <PanoramaFishEyeIcon key={idx}/>
-                      ))
+                      ex.sets.map((set, idx) => {
+                        const iconSx = set.isDropSet ? {fontSize: '0.85rem'} : undefined;
+                        return set.reps
+                          ? <TaskAltIcon key={idx} sx={iconSx}/>
+                          : <PanoramaFishEyeIcon key={idx} sx={iconSx}/>;
+                      })
                     )}
                   </Box>
                 </ListItemButton>
