@@ -57,8 +57,22 @@ jobs:
           fi
           # Reset clears any drift and re-applies all existing migrations cleanly
           npx prisma migrate reset --force --skip-seed
-          # Create a new migration if schema.prisma has unapplied changes, then apply it
-          npx prisma migrate dev --name "$NAME" --skip-seed
+          # Non-interactively generate a migration file for any schema changes
+          # (prisma migrate dev requires interactive confirmation for destructive changes)
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          MIGRATION_DIR="prisma/migrations/${TIMESTAMP}_${NAME}"
+          mkdir -p "$MIGRATION_DIR"
+          npx prisma migrate diff \
+            --from-schema-datasource prisma/schema.prisma \
+            --to-schema-datamodel prisma/schema.prisma \
+            --script > "$MIGRATION_DIR/migration.sql"
+          if [ -s "$MIGRATION_DIR/migration.sql" ]; then
+            echo "Schema changes detected — applying migration."
+            npx prisma migrate deploy
+          else
+            echo "No schema changes — removing empty migration directory."
+            rm -rf "$MIGRATION_DIR"
+          fi
           npx prisma generate
 
       - name: Commit generated migration
