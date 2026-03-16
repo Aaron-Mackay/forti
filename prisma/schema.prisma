@@ -53,6 +53,8 @@ model CoachRequest {
   coach     User               @relation("CoachRequests", fields: [coachId], references: [id], onDelete: Cascade)
   status    CoachRequestStatus @default(Pending)
   createdAt DateTime           @default(now())
+
+  @@index([coachId])
 }
 
 model Account {
@@ -120,7 +122,7 @@ model Event {
 model DayMetric {
   id        Int      @id @default(autoincrement())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   weight    Float?
   steps     Int?
   sleepMins Int?
@@ -214,8 +216,9 @@ model ExerciseSet {
   // Estimated 1-rep max (Epley formula: weight * (1 + reps/30)). Computed on write.
   e1rm              Float?
   isDropSet         Boolean         @default(false)
-  // For drop sets: the id of the parent ExerciseSet (stored as plain int, no relation)
   parentSetId       Int?
+  parentSet         ExerciseSet?    @relation("DropSetParent", fields: [parentSetId], references: [id], onDelete: SetNull)
+  childSets         ExerciseSet[]   @relation("DropSetParent")
 
   @@unique([workoutExerciseId, order])
 }
