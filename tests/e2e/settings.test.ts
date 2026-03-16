@@ -166,7 +166,7 @@ test.describe('Settings page — coaching section', () => {
     const input = page.getByLabel('Enter coach code');
     await input.fill('000000');
     await page.getByRole('button', { name: 'Link' }).click();
-    await expect(page.getByRole('alert')).toBeVisible();
+    await expect(page.getByText('No coach found with that code')).toBeVisible();
   });
 
   test('activating Coach Mode reveals the invite code', async ({ page }) => {
@@ -174,8 +174,9 @@ test.describe('Settings page — coaching section', () => {
     await expect(coachModeSwitch).not.toBeChecked();
     await coachModeSwitch.click();
     await expect(page.getByText('Share this code with your clients:')).toBeVisible();
-    const codeField = page.getByRole('textbox').filter({ hasText: /^\d{6}$/ });
-    await expect(codeField.or(page.locator('input[readonly]').filter({ hasText: /\d/ }))).toBeVisible();
+    const codeInput = page.locator('input[readonly]').first();
+    await expect(codeInput).toBeVisible();
+    await expect(codeInput).toHaveValue(/^\d{6}$/);
   });
 
   test('deactivating Coach Mode hides the code section', async ({ page }) => {
