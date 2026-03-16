@@ -6,6 +6,7 @@ export interface Settings {
   showUpcomingEvents: boolean;
   showMetricsChart: boolean;
   showStopwatch: boolean;
+  coachModeActive: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -15,7 +16,8 @@ export const DEFAULT_SETTINGS: Settings = {
   showActiveBlock: true,
   showUpcomingEvents: true,
   showMetricsChart: true,
-  showStopwatch: true
+  showStopwatch: true,
+  coachModeActive: false,
 };
 
 export function parseDashboardSettings(raw: unknown): Settings {
@@ -31,5 +33,6 @@ export function parseDashboardSettings(raw: unknown): Settings {
     showUpcomingEvents: s.showUpcomingEvents ?? true,
     showMetricsChart:   s.showMetricsChart   ?? true,
     showStopwatch:      s.showStopwatch      ?? true,
+    coachModeActive:    s.coachModeActive    ?? false,
   };
 }
