@@ -38,8 +38,8 @@ test.describe('Workout page', () => {
     await page.getByRole('button', { name: /Plan/i }).first().click();
     await page.getByRole('button', { name: /Week/i }).first().click();
     await expect(page.getByText('Muscle Coverage')).toBeVisible();
-    // Body SVG diagrams should be present
-    await expect(page.locator('svg').first()).toBeVisible();
+    // Body SVG diagrams should be present — scope to the WeekMuscleSummary container
+    await expect(page.locator('[id^="week-muscle-"] svg').first()).toBeVisible();
     // At least one muscle row with done/planned pattern should appear
     await expect(page.getByText(/\d+ \/ \d+ sets/).first()).toBeVisible();
   });
