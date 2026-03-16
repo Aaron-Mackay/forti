@@ -37,6 +37,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/user.json',
+        serviceWorkers: 'block',
       },
       dependencies: ['setup'],
     },
@@ -47,6 +48,7 @@ export default defineConfig({
       use: {
         ...devices['Pixel 5'],
         storageState: 'playwright/.auth/user.json',
+        serviceWorkers: 'block',
       },
       dependencies: ['setup'],
     },
@@ -55,6 +57,7 @@ export default defineConfig({
       use: {
         ...devices['iPhone 13'],
         storageState: 'playwright/.auth/user.json',
+        serviceWorkers: 'block',
       },
       dependencies: ['setup'],
     },
