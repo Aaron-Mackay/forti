@@ -23,7 +23,8 @@ export class UserBuilder {
       image: null,
       emailVerified: null,
       settings: null,
-      coachId: null
+      coachId: null,
+      coachCode: null,
     };
   }
   addPlan(plan: PlanPrisma) {

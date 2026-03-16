@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { Settings } from '@/types/settingsTypes';
 import { useSettings } from '@lib/providers/SettingsProvider';
+import CoachingSettings from './CoachingSettings';
 
 const CARD_LABELS: {key: keyof Settings; label: string}[] = [
   {key: 'showNextWorkout',    label: 'Next Workout'},
@@ -100,6 +101,9 @@ export default function SettingsClient() {
           </React.Fragment>
         ))}
       </Box>
+
+      <Divider sx={{my: 3}}/>
+      <CoachingSettings />
     </Box>
   );
 }

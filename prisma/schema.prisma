@@ -30,9 +30,29 @@ model User {
   // self relation (coach <-> clients)
   coachId           String?
   coach             User?              @relation("CoachClients", fields: [coachId], references: [id])
-  clients          User[]             @relation("CoachClients")
+  clients           User[]             @relation("CoachClients")
+
+  // coach linking system
+  coachCode             String?        @unique // 6-digit string, generated once on activation
+  sentCoachRequest      CoachRequest?  @relation("ClientRequests")
+  receivedCoachRequests CoachRequest[] @relation("CoachRequests")
 
   aiUsageLogs       AiUsageLog[]
+}
+
+enum CoachRequestStatus {
+  Pending
+  Rejected
+}
+
+model CoachRequest {
+  id        Int                @id @default(autoincrement())
+  clientId  String             @unique // one request per user at a time
+  client    User               @relation("ClientRequests", fields: [clientId], references: [id], onDelete: Cascade)
+  coachId   String
+  coach     User               @relation("CoachRequests", fields: [coachId], references: [id], onDelete: Cascade)
+  status    CoachRequestStatus @default(Pending)
+  createdAt DateTime           @default(now())
 }
 
 model Account {

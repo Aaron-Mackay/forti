@@ -52,7 +52,7 @@ test.describe('Settings page — UI', () => {
     expect(logoutBox!.y).toBeGreaterThan(settingsBox!.y);
   });
 
-  test('shows all 7 dashboard card labels', async ({ page }) => {
+  test('shows all dashboard card, workout, and coaching labels', async ({ page }) => {
     await expect(page.getByLabel('Next Workout').first()).toBeVisible();
     const labels = [
       'Next Workout',
@@ -61,11 +61,17 @@ test.describe('Settings page — UI', () => {
       'Active Block',
       'Upcoming Events',
       'Metrics Chart',
-      "Stopwatch"
+      'Stopwatch',
+      'Your Coach',
+      'Coach Mode',
     ];
     for (const label of labels) {
       await expect(page.getByText(label).first()).toBeVisible();
     }
+  });
+
+  test('coaching section shows the code input when user has no coach', async ({ page }) => {
+    await expect(page.getByLabel('Enter coach code')).toBeVisible();
   });
 });
 
@@ -86,14 +92,17 @@ test.describe('Settings page — state', () => {
     await page.request.patch('/api/user/settings', { data: { settings: ALL_ON } });
   });
 
-  test('shows 6 toggles, all checked by default', async ({ page }) => {
+  test('shows 8 toggles; dashboard/workout switches are on, Coach Mode is off by default', async ({ page }) => {
     const switches = page.getByRole('switch');
     await expect(switches.first()).toBeVisible();
     const count = await switches.count();
-    expect(count).toBe(7);
-    for (let i = 0; i < count; i++) {
+    expect(count).toBe(8);
+    // First 7 are dashboard card + stopwatch toggles (all on by default)
+    for (let i = 0; i < 7; i++) {
       await expect(switches.nth(i)).toBeChecked();
     }
+    // Coach Mode toggle (8th) is off by default
+    await expect(switches.nth(7)).not.toBeChecked();
   });
 
   test('toggle sends PATCH that saves the updated value', async ({ page }) => {
@@ -121,5 +130,63 @@ test.describe('Settings page — state', () => {
     });
     await page.goto('/user');
     await expect(page.locator('.apexcharts-canvas')).not.toBeVisible();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Coaching section tests — chromium only
+// ---------------------------------------------------------------------------
+test.describe('Settings page — coaching section', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium',
+    'State-dependent tests run on chromium only; parallel browser projects share a DB user');
+
+  test.beforeEach(async ({ page }) => {
+    // Reset: turn off coach mode, clear any lingering request, unlink any coach
+    await page.request.post('/api/coach/activate', { data: { active: false } });
+    await page.request.delete('/api/coach/request');
+    await page.request.delete('/api/coach/unlink');
+    await page.goto('/user/settings');
+    await expect(page.getByText('Your Coach')).toBeVisible();
+  });
+
+  test.afterEach(async ({ page }) => {
+    await page.request.post('/api/coach/activate', { data: { active: false } });
+    await page.request.delete('/api/coach/request');
+    await page.request.delete('/api/coach/unlink');
+  });
+
+  test('code input rejects non-6-digit values', async ({ page }) => {
+    const input = page.getByLabel('Enter coach code');
+    await input.fill('123');
+    const linkBtn = page.getByRole('button', { name: 'Link' });
+    await expect(linkBtn).toBeDisabled();
+  });
+
+  test('invalid code shows an error', async ({ page }) => {
+    const input = page.getByLabel('Enter coach code');
+    await input.fill('000000');
+    await page.getByRole('button', { name: 'Link' }).click();
+    await expect(page.getByText('No coach found with that code')).toBeVisible();
+  });
+
+  test('activating Coach Mode reveals the invite code', async ({ page }) => {
+    const coachModeSwitch = page.getByRole('switch', { name: 'Coach Mode' });
+    await expect(coachModeSwitch).not.toBeChecked();
+    await coachModeSwitch.click();
+    await expect(page.getByText('Share this code with your clients:')).toBeVisible();
+    const codeInput = page.locator('input[readonly]').first();
+    await expect(codeInput).toBeVisible();
+    await expect(codeInput).toHaveValue(/^\d{6}$/);
+  });
+
+  test('deactivating Coach Mode hides the code section', async ({ page }) => {
+    // Activate first
+    await page.request.post('/api/coach/activate', { data: { active: true } });
+    await page.reload();
+    await expect(page.getByText('Share this code with your clients:')).toBeVisible();
+    // Deactivate
+    const coachModeSwitch = page.getByRole('switch', { name: 'Coach Mode' });
+    await coachModeSwitch.click();
+    await expect(page.getByText('Share this code with your clients:')).not.toBeVisible();
   });
 });
