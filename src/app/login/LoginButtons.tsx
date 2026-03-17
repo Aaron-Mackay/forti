@@ -1,17 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { Button, Box, CircularProgress } from "@mui/material";
 import GoogleIcon from "@mui/icons-material/Google";
 import PersonIcon from "@mui/icons-material/Person";
 import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 
-export default function LoginButtons() {
+function LoginButtonsInner() {
   const [loading, setLoading] = useState<"google" | "demo" | null>(null);
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/user";
 
   const handleSignIn = async (provider: "google" | "demo") => {
     setLoading(provider);
-    await signIn(provider, { callbackUrl: "/user" });
+    await signIn(provider, { callbackUrl });
   };
 
   return (
@@ -48,5 +51,13 @@ export default function LoginButtons() {
         Try Demo
       </Button>
     </Box>
+  );
+}
+
+export default function LoginButtons() {
+  return (
+    <Suspense fallback={null}>
+      <LoginButtonsInner />
+    </Suspense>
   );
 }

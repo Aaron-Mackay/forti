@@ -364,6 +364,12 @@ Type declarations for this pattern are in `svgr.d.ts`.
 
 ---
 
+## Environment Constraints
+
+**Claude Code on Web:** E2E tests (Playwright) cannot be run in this environment — the dev server cannot reach the database and the browser automation stack is unavailable. Do not attempt to start a dev server or run `npm run test:e2e` / `npx playwright test` when running as Claude Code on the web. Unit tests (`npm run test`) and lint/build (`npm run lint`, `npm run build`) work fine and should still be run as part of the pre-commit check.
+
+---
+
 ## Working Style
 
 Before starting implementation on ambiguous tasks, ask 1–2 targeted clarifying questions rather than making assumptions. Good triggers for asking:

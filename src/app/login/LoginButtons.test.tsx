@@ -4,6 +4,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockSignIn = vi.fn();
 vi.mock('next-auth/react', () => ({ signIn: (...args: unknown[]) => mockSignIn(...args) }));
 
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 import LoginButtons from './LoginButtons';
 
 describe('LoginButtons', () => {
