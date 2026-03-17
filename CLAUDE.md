@@ -83,6 +83,8 @@ Steps:
 Confirm the above before committing.
 ```
 
+**PRs for UI-touching changes must include manual test steps in the PR body.** When creating a pull request that affects any UI (components, pages, styles, interactions), include a `## Manual Test Required` section at the bottom of the PR body using the same format above. This is read by a GitHub Action to automatically create a QA task in ClickUp. If there are genuinely no manual steps needed, omit the section entirely.
+
 ---
 
 ## Commit Discipline
