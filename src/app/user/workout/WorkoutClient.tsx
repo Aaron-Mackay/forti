@@ -1,8 +1,9 @@
 'use client';
 
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {useSearchParams} from 'next/navigation';
 import {queueOrSendRequest, syncQueuedRequests} from '@/utils/offlineSync';
+import {getUserDataCache, saveUserDataCache} from '@/utils/clientDb';
 import {UserPrisma, WorkoutExercisePrisma, WorkoutPrisma} from '@/types/dataTypes';
 
 import WeeksListView from './WeeksListView';
@@ -26,6 +27,7 @@ import PlansListView from "@/app/user/workout/PlansListView";
 import WorkoutCompletionModal from "@/app/user/workout/WorkoutCompletionModal";
 import {StopwatchProvider} from "@/app/user/workout/StopwatchContext";
 import {Exercise} from '@prisma/client';
+import {Alert, Collapse} from "@mui/material";
 
 type SnackbarState = {
   open: boolean;
@@ -34,6 +36,22 @@ type SnackbarState = {
 };
 
 type Field = 'weight' | 'reps';
+
+// Returns true if the plan structure changed in a way the user should know about
+// (plans added/removed, workouts added/removed, exercises added/removed per workout).
+function detectStructuralChange(prev: UserPrisma, next: UserPrisma): boolean {
+  if (prev.plans.length !== next.plans.length) return true;
+  for (let i = 0; i < prev.plans.length; i++) {
+    if (prev.plans[i].id !== next.plans[i].id) return true;
+    const prevWorkouts = prev.plans[i].weeks.flatMap(w => w.workouts);
+    const nextWorkouts = next.plans[i].weeks.flatMap(w => w.workouts);
+    if (prevWorkouts.length !== nextWorkouts.length) return true;
+    for (let j = 0; j < prevWorkouts.length; j++) {
+      if (prevWorkouts[j].exercises.length !== nextWorkouts[j].exercises.length) return true;
+    }
+  }
+  return false;
+}
 
 function findWorkoutContext(userData: UserPrisma, workoutId: number) {
   for (const plan of userData.plans) {
@@ -69,6 +87,10 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
     severity: 'success',
   });
   const [userDataState, setUserData] = useState(userData);
+  const [planUpdatedBanner, setPlanUpdatedBanner] = useState(false);
+
+  // Debounce timer ref for cache writes
+  const cacheWriteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Substitute dialog state: tracks the workoutExercise being substituted
   const [substituteTarget, setSubstituteTarget] = useState<{
@@ -81,11 +103,53 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [pendingExercise, setPendingExercise] = useState<Exercise | null>(null);
 
-  // Sync queued requests when coming online
+  // On mount: if offline, restore the most recent cached state (may include
+  // optimistic changes the user made offline before a hard-refresh).
+  // If online, save the fresh server data to cache.
   useEffect(() => {
-    const sync = () => syncQueuedRequests();
-    window.addEventListener('online', sync);
-    return () => window.removeEventListener('online', sync);
+    const userId = userDataState.id;
+    if (!navigator.onLine) {
+      getUserDataCache(userId).then(entry => {
+        if (entry) setUserData(entry.data);
+      }).catch(console.error);
+    } else {
+      saveUserDataCache(userId, userDataState).catch(console.error);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounced cache write: persist userDataState on every change so offline
+  // refreshes can restore the latest local state (including queued mutations).
+  useEffect(() => {
+    if (cacheWriteTimer.current) clearTimeout(cacheWriteTimer.current);
+    cacheWriteTimer.current = setTimeout(() => {
+      saveUserDataCache(userDataState.id, userDataState).catch(console.error);
+    }, 500);
+    return () => {
+      if (cacheWriteTimer.current) clearTimeout(cacheWriteTimer.current);
+    };
+  }, [userDataState]);
+
+  // On reconnect: flush the mutation queue then re-fetch fresh server data.
+  // If the server has structural changes (e.g. coach edited the plan), show a banner.
+  useEffect(() => {
+    const handleOnline = async () => {
+      await syncQueuedRequests();
+      try {
+        const response = await fetch('/api/user-data');
+        if (!response.ok) return;
+        const freshData: UserPrisma = await response.json();
+        const hadStructuralChange = detectStructuralChange(userDataState, freshData);
+        setUserData(freshData);
+        await saveUserDataCache(freshData.id, freshData).catch(console.error);
+        if (hadStructuralChange) setPlanUpdatedBanner(true);
+      } catch {
+        // Server unreachable — stay with local state
+      }
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Selectors
@@ -363,6 +427,15 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
 
   return (
     <StopwatchProvider>
+      <Collapse in={planUpdatedBanner}>
+        <Alert
+          severity="info"
+          onClose={() => setPlanUpdatedBanner(false)}
+          sx={{borderRadius: 0}}
+        >
+          Your plan was updated while you were offline — showing the latest version.
+        </Alert>
+      </Collapse>
       {view}
       {completionModal && (
         <WorkoutCompletionModal
