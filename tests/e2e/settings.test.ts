@@ -189,4 +189,16 @@ test.describe('Settings page — coaching section', () => {
     await coachModeSwitch.click();
     await expect(page.getByText('Share this code with your clients:')).not.toBeVisible();
   });
+
+  test('activating Coach Mode reveals the shareable link', async ({ page }) => {
+    await page.request.post('/api/coach/activate', { data: { active: true } });
+    await page.reload();
+    await expect(page.getByText('Or share this link:')).toBeVisible();
+    // Find the link input (second readonly input after the code input)
+    const readonlyInputs = page.locator('input[readonly]');
+    const linkInput = readonlyInputs.nth(1);
+    await expect(linkInput).toBeVisible();
+    const value = await linkInput.inputValue();
+    expect(value).toMatch(/\/coach\/\d{6}$/);
+  });
 });

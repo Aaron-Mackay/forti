@@ -39,6 +39,7 @@ export default function CoachingSettings() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [codeInput, setCodeInput] = useState('');
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [busy, setBusy] = useState<string | null>(null); // tracks which action is in-flight
 
   const load = useCallback(async () => {
@@ -142,6 +143,15 @@ export default function CoachingSettings() {
     navigator.clipboard.writeText(info.coachCode).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function handleCopyLink() {
+    if (!info?.coachCode) return;
+    const link = `${window.location.origin}/coach/${info.coachCode}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
     });
   }
 
@@ -341,7 +351,32 @@ export default function CoachingSettings() {
                 ),
               },
             }}
-            sx={{ mb: 3, maxWidth: 200 }}
+            sx={{ mb: 1.5, maxWidth: 200 }}
+          />
+
+          {/* Shareable link */}
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Or share this link:
+          </Typography>
+          <TextField
+            value={info.coachCode ? `${typeof window !== 'undefined' ? window.location.origin : ''}/coach/${info.coachCode}` : ''}
+            size="small"
+            slotProps={{
+              input: {
+                readOnly: true,
+                sx: { fontFamily: 'monospace', fontSize: '0.8rem' },
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Tooltip title={linkCopied ? 'Copied!' : 'Copy link'}>
+                      <IconButton onClick={handleCopyLink} edge="end" size="small">
+                        <ContentCopyIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{ mb: 3, maxWidth: 360 }}
           />
 
           {/* Pending requests */}
