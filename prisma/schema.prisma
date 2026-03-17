@@ -38,6 +38,8 @@ model User {
   receivedCoachRequests CoachRequest[] @relation("CoachRequests")
 
   aiUsageLogs       AiUsageLog[]
+  weeklyCheckIns    WeeklyCheckIn[]
+  pushSubscriptions PushSubscription[]
 }
 
 enum CoachRequestStatus {
@@ -234,6 +236,50 @@ model UserExerciseNote {
   @@unique([userId, exerciseId])
   @@index([userId])
   @@index([exerciseId])
+}
+
+model WeeklyCheckIn {
+  id               Int       @id @default(autoincrement())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStartDate    DateTime  @db.Date   // the Monday of the check-in week (0 = Mon convention)
+  completedAt      DateTime?            // null = not yet submitted
+
+  // Subjective ratings (1–5)
+  energyLevel      Int?
+  moodRating       Int?
+  stressLevel      Int?
+  sleepQuality     Int?
+  recoveryRating   Int?
+  adherenceRating  Int?
+
+  // Training counts
+  completedWorkouts Int?
+  plannedWorkouts   Int?
+
+  // Free text
+  weekReview       String?
+  coachMessage     String?
+  goalsNextWeek    String?
+
+  // Coach feedback (written by coach)
+  coachNotes       String?
+  coachReviewedAt  DateTime?
+
+  @@unique([userId, weekStartDate])
+  @@index([userId])
+}
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model AiUsageLog {

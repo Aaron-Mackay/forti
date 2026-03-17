@@ -1,0 +1,105 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { requireSession } from '@lib/requireSession';
+import prisma from '@lib/prisma';
+import { parseDashboardSettings } from '@/types/settingsTypes';
+import { getWeekStart, toDateOnly } from '@lib/checkInUtils';
+import { sendCheckInCoachAlert } from '@lib/notifications';
+
+/** GET /api/check-in — fetch current user's check-in history (newest first) */
+export async function GET(req: NextRequest) {
+  const session = await requireSession();
+  const userId = session.user.id;
+
+  const { searchParams } = new URL(req.url);
+  const limit = Math.min(parseInt(searchParams.get('limit') ?? '20'), 100);
+  const offset = parseInt(searchParams.get('offset') ?? '0');
+
+  const [checkIns, total] = await Promise.all([
+    prisma.weeklyCheckIn.findMany({
+      where: { userId },
+      orderBy: { weekStartDate: 'desc' },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.weeklyCheckIn.count({ where: { userId } }),
+  ]);
+
+  return NextResponse.json({ checkIns, total });
+}
+
+interface CheckInBody {
+  energyLevel?: number;
+  moodRating?: number;
+  stressLevel?: number;
+  sleepQuality?: number;
+  recoveryRating?: number;
+  adherenceRating?: number;
+  completedWorkouts?: number;
+  plannedWorkouts?: number;
+  weekReview?: string;
+  coachMessage?: string;
+  goalsNextWeek?: string;
+}
+
+/** POST /api/check-in — submit (complete) this week's check-in */
+export async function POST(req: NextRequest) {
+  const session = await requireSession();
+  const userId = session.user.id;
+
+  const body = await req.json() as CheckInBody;
+
+  // Validate ratings are 1–5 when provided
+  const ratingFields = ['energyLevel', 'moodRating', 'stressLevel', 'sleepQuality', 'recoveryRating', 'adherenceRating'] as const;
+  for (const field of ratingFields) {
+    const val = body[field];
+    if (val !== undefined && (typeof val !== 'number' || val < 1 || val > 5)) {
+      return NextResponse.json({ error: `${field} must be between 1 and 5` }, { status: 400 });
+    }
+  }
+
+  const weekStart = toDateOnly(getWeekStart(new Date()));
+
+  // Prevent re-submitting an already completed check-in
+  const existing = await prisma.weeklyCheckIn.findUnique({
+    where: { userId_weekStartDate: { userId, weekStartDate: weekStart } },
+  });
+  if (existing?.completedAt) {
+    return NextResponse.json({ error: 'Check-in for this week is already submitted' }, { status: 409 });
+  }
+
+  const checkIn = await prisma.weeklyCheckIn.upsert({
+    where: { userId_weekStartDate: { userId, weekStartDate: weekStart } },
+    create: {
+      userId,
+      weekStartDate: weekStart,
+      completedAt: new Date(),
+      ...body,
+    },
+    update: {
+      completedAt: new Date(),
+      ...body,
+    },
+  });
+
+  // Notify coach if the user has one
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      name: true,
+      settings: true,
+      coach: { select: { id: true, email: true, name: true } },
+    },
+  });
+
+  if (user?.coach) {
+    const settings = parseDashboardSettings(user.settings);
+    await sendCheckInCoachAlert({
+      coach: user.coach,
+      clientName: user.name,
+      weekStartDate: weekStart,
+      checkInDay: settings.checkInDay,
+    }).catch(err => console.error('Failed to send coach notification:', err));
+  }
+
+  return NextResponse.json({ checkIn }, { status: 201 });
+}

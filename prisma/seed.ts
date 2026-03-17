@@ -1,6 +1,7 @@
 import prisma from '../src/lib/prisma';
 import { BlockSubtype, EventType } from "@prisma/client";
 import { seedBobData } from './lib/bobSeedData';
+import { getWeekStart, toDateOnly } from '../src/lib/checkInUtils';
 import exercisesData from './exercises.json';
 import { EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, SeedExercise } from '../src/types/dataTypes';
 import { computeE1rm } from '../src/lib/e1rm';
@@ -41,7 +42,7 @@ function daysAgo(n: number): Date {
 async function main() {
   // Clear existing data
   await prisma.$executeRawUnsafe(`
-    TRUNCATE "ExerciseSet", "WorkoutExercise", "Exercise", "Workout", "Week", "Plan", "User", "Event", "UserExerciseNote", "DayMetric", "Account", "Session"
+    TRUNCATE "ExerciseSet", "WorkoutExercise", "Exercise", "Workout", "Week", "Plan", "User", "Event", "UserExerciseNote", "DayMetric", "Account", "Session", "WeeklyCheckIn", "PushSubscription"
     CASCADE
   `);
 
@@ -219,6 +220,35 @@ async function main() {
     });
   }
   await prisma.dayMetric.createMany({ data: dayMetricsData });
+
+  // ── Seed WeeklyCheckIns for Aaron ─────────────────────────────────────────
+  // Create 6 completed check-ins over the last 6 weeks
+  const checkInData = [];
+  for (let w = 1; w <= 6; w++) {
+    const refDate = new Date(today);
+    refDate.setDate(today.getDate() - w * 7);
+    const weekStart = toDateOnly(getWeekStart(refDate));
+    const completedAt = new Date(weekStart);
+    completedAt.setDate(completedAt.getDate() + 1); // completed on Tuesday of that week
+
+    checkInData.push({
+      userId: aaron.id,
+      weekStartDate: weekStart,
+      completedAt,
+      energyLevel: Math.ceil(Math.random() * 5),
+      moodRating: Math.ceil(Math.random() * 5),
+      stressLevel: Math.ceil(Math.random() * 5),
+      sleepQuality: Math.ceil(Math.random() * 5),
+      recoveryRating: Math.ceil(Math.random() * 5),
+      adherenceRating: Math.ceil(Math.random() * 5),
+      completedWorkouts: Math.floor(Math.random() * 4) + 1,
+      plannedWorkouts: 4,
+      weekReview: w % 2 === 0 ? 'Solid week overall, hit all my main lifts.' : 'Struggled with sleep mid-week but pushed through.',
+      coachMessage: w % 3 === 0 ? 'Should I increase squat weight next week?' : null,
+      goalsNextWeek: 'Stay consistent on nutrition and add 2.5kg to deadlift.',
+    });
+  }
+  await prisma.weeklyCheckIn.createMany({ data: checkInData });
 
   // ── Seed Bob (demo login user) ────────────────────────────────────────────
   // A fixed past date is used so E2E tests running against real-today (~2026)

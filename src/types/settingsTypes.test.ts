@@ -49,6 +49,7 @@ describe('parseDashboardSettings', () => {
       showMetricsChart: false,
       showStopwatch: false,
       coachModeActive: false,
+      checkInDay: 0,
     };
     expect(parseDashboardSettings(allFalse)).toEqual(allFalse);
   });
