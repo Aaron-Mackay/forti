@@ -12,6 +12,14 @@ jobs:
       pull-requests: write
 
     steps:
+      - name: Validate secrets
+        env:
+          CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
+          CLICKUP_LIST_ID: ${{ secrets.CLICKUP_LIST_ID }}
+        run: |
+          if [ -z "$CLICKUP_API_TOKEN" ]; then echo "CLICKUP_API_TOKEN secret is not set"; exit 1; fi
+          if [ -z "$CLICKUP_LIST_ID" ]; then echo "CLICKUP_LIST_ID secret is not set"; exit 1; fi
+
       - name: Extract manual test steps
         id: extract
         env:
