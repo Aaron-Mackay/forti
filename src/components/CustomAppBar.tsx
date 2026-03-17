@@ -34,7 +34,10 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import AddIcon from "@mui/icons-material/Add";
 import SpecificPlan from '@mui/icons-material/InsertInvitation';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
+import ChecklistIcon from '@mui/icons-material/Checklist';
+import GroupIcon from '@mui/icons-material/Group';
 import {signOut} from "next-auth/react";
+import {useSettings} from '@lib/providers/SettingsProvider';
 
 export const APPBAR_HEIGHT = 56;
 export const HEIGHT_EXC_APPBAR = `calc(100dvh - ${APPBAR_HEIGHT}px)`
@@ -51,6 +54,7 @@ export default function CustomAppBar(
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const pathname = usePathname();
+  const { settings } = useSettings();
   const [planNestedOpen, setPlanNestedOpen] = useState(() => pathname.includes('/plan'))
   const [planCount, setPlanCount] = useState<number | null>(null);
 
@@ -158,7 +162,11 @@ export default function CustomAppBar(
             <ListLink icon={<HomeIcon/>} text="Home" href="/user"/>
             <ListLink icon={<CalendarIcon/>} text="Calendar" href="/user/calendar"/>
             <ListLink icon={<WorkoutIcon/>} text="Training" href="/user/workout"/>
+            <ListLink icon={<ChecklistIcon/>} text="Check-in" href="/user/check-in"/>
             <ListLink icon={<LibraryBooksIcon/>} text="Exercises" href="/exercises"/>
+            {settings.coachModeActive && (
+              <ListLink icon={<GroupIcon/>} text="Client Check-ins" href="/user/coach/check-ins"/>
+            )}
             {planCount
               ? <>
                 <ListItemButton onClick={handleClick}>

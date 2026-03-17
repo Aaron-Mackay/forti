@@ -1,0 +1,183 @@
+'use client';
+
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Divider,
+  Paper,
+  Skeleton,
+  Typography,
+} from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import type { DayMetric, WeeklyCheckIn } from '@prisma/client';
+import CheckInForm from './CheckInForm';
+import CheckInHistoryCard from './CheckInHistoryCard';
+import { usePushSubscription } from '@lib/usePushSubscription';
+
+interface CurrentData {
+  checkIn: WeeklyCheckIn;
+  currentWeek: DayMetric[];
+  weekPrior: DayMetric[];
+}
+
+export default function CheckInClient() {
+  const [currentData, setCurrentData] = useState<CurrentData | null>(null);
+  const [history, setHistory] = useState<WeeklyCheckIn[]>([]);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyOffset, setHistoryOffset] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+
+  const { permission, subscribing, subscribe } = usePushSubscription();
+
+  const loadCurrent = useCallback(async () => {
+    const res = await fetch('/api/check-in/current');
+    if (!res.ok) throw new Error('Failed to load check-in');
+    return res.json() as Promise<CurrentData>;
+  }, []);
+
+  const loadHistory = useCallback(async (offset: number) => {
+    // Fetch past check-ins, excluding the current week (handled separately)
+    const res = await fetch(`/api/check-in?limit=10&offset=${offset}`);
+    if (!res.ok) throw new Error('Failed to load history');
+    return res.json() as Promise<{ checkIns: WeeklyCheckIn[]; total: number }>;
+  }, []);
+
+  useEffect(() => {
+    async function init() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [curr, hist] = await Promise.all([loadCurrent(), loadHistory(0)]);
+        setCurrentData(curr);
+        // Exclude current week from history list (it's shown separately)
+        const currentWeekKey = curr.checkIn.weekStartDate;
+        const filtered = hist.checkIns.filter(
+          c => new Date(c.weekStartDate).getTime() !== new Date(currentWeekKey).getTime()
+        );
+        setHistory(filtered);
+        setHistoryTotal(hist.total - 1); // subtract current week
+        setHistoryOffset(0);
+      } catch {
+        setError('Failed to load your check-in data. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    init();
+  }, [loadCurrent, loadHistory, submitted]);
+
+  async function loadMoreHistory() {
+    const newOffset = historyOffset + 10;
+    try {
+      const hist = await loadHistory(newOffset);
+      const currentWeekKey = currentData?.checkIn.weekStartDate;
+      const filtered = hist.checkIns.filter(
+        c => !currentWeekKey || new Date(c.weekStartDate).getTime() !== new Date(currentWeekKey).getTime()
+      );
+      setHistory(prev => [...prev, ...filtered]);
+      setHistoryOffset(newOffset);
+    } catch {
+      setError('Failed to load more history.');
+    }
+  }
+
+  const isCompleted = !!currentData?.checkIn.completedAt;
+
+  const weekLabel = currentData
+    ? new Date(currentData.checkIn.weekStartDate).toLocaleDateString('en-GB', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      })
+    : '';
+
+  return (
+    <Box sx={{ pt: 2, pb: 6, maxWidth: 600 }}>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>
+      )}
+
+      {/* Push notification prompt */}
+      {permission === 'default' && (
+        <Alert
+          severity="info"
+          sx={{ mb: 2 }}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              disabled={subscribing}
+              onClick={subscribe}
+              startIcon={subscribing ? <CircularProgress size={14} color="inherit" /> : <NotificationsActiveIcon />}
+            >
+              Enable
+            </Button>
+          }
+        >
+          Get reminded on your check-in day
+        </Alert>
+      )}
+
+      {/* This week's check-in */}
+      <Typography variant="overline" color="text.secondary">This Week</Typography>
+      <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+        {loading ? (
+          <Skeleton variant="rounded" height={120} />
+        ) : isCompleted ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CheckCircleIcon color="success" />
+            <Box>
+              <Typography variant="body1" fontWeight={600}>Check-in complete</Typography>
+              <Typography variant="body2" color="text.secondary">Week of {weekLabel}</Typography>
+            </Box>
+          </Box>
+        ) : (
+          <Box>
+            <Typography variant="body1" fontWeight={600} sx={{ mb: 0.5 }}>
+              Week of {weekLabel}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Complete your weekly check-in below.
+            </Typography>
+            {currentData && (
+              <CheckInForm
+                currentWeek={currentData.currentWeek}
+                weekPrior={currentData.weekPrior}
+                onSubmitted={() => setSubmitted(s => !s)}
+              />
+            )}
+          </Box>
+        )}
+      </Paper>
+
+      <Divider sx={{ mb: 3 }} />
+
+      {/* History */}
+      <Typography variant="overline" color="text.secondary">Previous Check-ins</Typography>
+      {loading ? (
+        <Box sx={{ mt: 1 }}>
+          {[0, 1, 2].map(i => <Skeleton key={i} variant="rounded" height={52} sx={{ mb: 1 }} />)}
+        </Box>
+      ) : history.length === 0 ? (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          No previous check-ins yet.
+        </Typography>
+      ) : (
+        <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {history.map(c => (
+            <CheckInHistoryCard key={c.id} checkIn={c} />
+          ))}
+          {history.length < historyTotal && (
+            <Button variant="text" onClick={loadMoreHistory} sx={{ mt: 1 }}>
+              Load more
+            </Button>
+          )}
+        </Box>
+      )}
+    </Box>
+  );
+}

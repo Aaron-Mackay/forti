@@ -8,7 +8,7 @@ interface SettingsContextValue {
   loading: boolean;
   error: string | null;
   clearError: () => void;
-  updateSetting: (key: keyof Settings, value: boolean) => Promise<void>;
+  updateSetting: (key: keyof Settings, value: boolean | number) => Promise<void>;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -31,7 +31,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       });
   }, []);
 
-  const updateSetting = useCallback(async (key: keyof Settings, value: boolean) => {
+  const updateSetting = useCallback(async (key: keyof Settings, value: boolean | number) => {
     const prev = settings;
     setSettings(s => ({ ...s, [key]: value }));
     setError(null);
