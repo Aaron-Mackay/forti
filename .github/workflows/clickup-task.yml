@@ -1,0 +1,94 @@
+name: Create ClickUp task for manual testing
+
+on:
+  pull_request:
+    types: [opened, edited]
+
+jobs:
+  clickup:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Extract manual test steps
+        id: extract
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          steps=$(echo "$PR_BODY" | awk '/^## Manual Test Required/{found=1; next} found && /^## /{exit} found{print}')
+          steps=$(echo "$steps" | sed '/^[[:space:]]*$/d')
+          if [ -z "$steps" ]; then
+            echo "found=false" >> $GITHUB_OUTPUT
+          else
+            echo "found=true" >> $GITHUB_OUTPUT
+            EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+            echo "steps<<$EOF" >> $GITHUB_OUTPUT
+            echo "$steps" >> $GITHUB_OUTPUT
+            echo "$EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Find existing ClickUp task ID from PR comments
+        id: find_task
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          task_id=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json comments \
+            --jq '.comments[].body | select(test("ClickUp QA task created")) | capture("/t/(?P<id>[^/\"\\s]+)").id' \
+            | head -1)
+          echo "task_id=${task_id}" >> $GITHUB_OUTPUT
+
+      - name: Create ClickUp task (new)
+        if: steps.extract.outputs.found == 'true' && steps.find_task.outputs.task_id == ''
+        id: create_task
+        env:
+          CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
+          CLICKUP_LIST_ID: ${{ secrets.CLICKUP_LIST_ID }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          TEST_STEPS: ${{ steps.extract.outputs.steps }}
+        run: |
+          description="$TEST_STEPS
+
+          ---
+          PR: $PR_URL"
+          response=$(curl -s -X POST \
+            "https://api.clickup.com/api/v2/list/$CLICKUP_LIST_ID/task" \
+            -H "Authorization: $CLICKUP_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg name "QA: $PR_TITLE" --arg desc "$description" '{name:$name,markdown_description:$desc}')")
+          task_url=$(echo "$response" | jq -r '.url // empty')
+          if [ -z "$task_url" ]; then echo "ClickUp error: $response"; exit 1; fi
+          echo "task_url=$task_url" >> $GITHUB_OUTPUT
+
+      - name: Comment ClickUp task URL on PR
+        if: steps.extract.outputs.found == 'true' && steps.find_task.outputs.task_id == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          TASK_URL: ${{ steps.create_task.outputs.task_url }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh pr comment "$PR_NUMBER" --repo "$REPO" \
+            --body "✅ ClickUp QA task created: $TASK_URL"
+
+      - name: Update existing ClickUp task
+        if: steps.extract.outputs.found == 'true' && steps.find_task.outputs.task_id != ''
+        env:
+          CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
+          TASK_ID: ${{ steps.find_task.outputs.task_id }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          TEST_STEPS: ${{ steps.extract.outputs.steps }}
+        run: |
+          description="$TEST_STEPS
+
+          ---
+          PR: $PR_URL"
+          curl -s -X PUT \
+            "https://api.clickup.com/api/v2/task/$TASK_ID" \
+            -H "Authorization: $CLICKUP_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg desc "$description" '{markdown_description:$desc}')"
