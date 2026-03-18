@@ -330,6 +330,73 @@ test.describe('Workout page', () => {
       await expect(page.getByRole('listitem')).toHaveCount(exerciseCount);
     });
 
+    test('shows create button when search has no matches', async ({page}) => {
+      await page.getByRole('button', {name: 'Add Exercise'}).click();
+      const dialog = page.getByRole('dialog', {name: 'Add Exercise'});
+      await dialog.getByLabel('Search exercises').fill('Nonexistent Exercise XYZ');
+      await expect(dialog.getByRole('button', {name: /Create "Nonexistent Exercise XYZ"/})).toBeVisible();
+    });
+
+    test('does not show create button when search is empty', async ({page}) => {
+      await page.getByRole('button', {name: 'Add Exercise'}).click();
+      const dialog = page.getByRole('dialog', {name: 'Add Exercise'});
+      await expect(dialog.getByRole('button', {name: /Create "/})).not.toBeVisible();
+    });
+
+    test('clicking create button opens the add exercise form with name pre-filled', async ({page}) => {
+      await page.route('**/api/exercises', async (route) => {
+        if (route.request().method() === 'GET') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify([
+              {id: 1, name: 'Squat', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+            ]),
+          });
+        } else {
+          await route.continue();
+        }
+      });
+      await page.getByRole('button', {name: 'Add Exercise'}).click();
+      const pickerDialog = page.getByRole('dialog', {name: 'Add Exercise'});
+      await pickerDialog.getByLabel('Search exercises').fill('Nordic Curl');
+      await pickerDialog.getByRole('button', {name: /Create "Nordic Curl"/}).click();
+      const createDialog = page.getByRole('dialog', {name: 'Add New Exercise'});
+      await expect(createDialog).toBeVisible();
+      await expect(createDialog.getByLabel('Exercise Name')).toHaveValue('Nordic Curl');
+    });
+
+    test('creating a new exercise via the picker auto-selects it', async ({page}) => {
+      const newExercise = {id: 99, name: 'Nordic Curl', category: 'resistance', description: null, equipment: ['bodyweight'], primaryMuscles: ['hamstrings'], secondaryMuscles: []};
+      await page.route('**/api/exercises', async (route) => {
+        if (route.request().method() === 'POST') {
+          await route.fulfill({status: 201, contentType: 'application/json', body: JSON.stringify(newExercise)});
+        } else {
+          await route.fulfill({
+            status: 200, contentType: 'application/json',
+            body: JSON.stringify([{id: 1, name: 'Squat', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []}]),
+          });
+        }
+      });
+      await page.getByRole('button', {name: 'Add Exercise'}).click();
+      const pickerDialog = page.getByRole('dialog', {name: 'Add Exercise'});
+      await pickerDialog.getByLabel('Search exercises').fill('Nordic Curl');
+      await pickerDialog.getByRole('button', {name: /Create "Nordic Curl"/}).click();
+      const createDialog = page.getByRole('dialog', {name: 'Add New Exercise'});
+      await createDialog.getByLabel('Exercise Name').fill('Nordic Curl');
+      // Select equipment
+      await createDialog.getByLabel('Equipment (required)').click();
+      await page.getByRole('option', {name: 'bodyweight'}).click();
+      await page.keyboard.press('Escape');
+      // Select primary muscles
+      await createDialog.getByLabel('Primary Muscles (required)').click();
+      await page.getByRole('option', {name: 'hamstrings'}).click();
+      await page.keyboard.press('Escape');
+      await createDialog.getByRole('button', {name: 'Add Exercise'}).click();
+      // Should auto-proceed to config dialog
+      await expect(page.getByRole('dialog', {name: /Configure Exercise/i})).toBeVisible();
+    });
+
     test('confirming config dialog adds the exercise', async ({page}) => {
       await page.route('**/api/workoutExercise', async (route) => {
         if (route.request().method() === 'POST') {

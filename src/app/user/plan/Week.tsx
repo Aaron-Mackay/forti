@@ -4,7 +4,6 @@ import React from 'react';
 import {Button, TableContainer} from '@mui/material';
 import Workout from './Workout';
 import {useWorkoutEditorContext} from '@/context/WorkoutEditorContext';
-import {Exercise} from "@prisma/client";
 
 import {WeekPrisma} from "@/types/dataTypes";
 import Box from "@mui/material/Box";
@@ -13,7 +12,6 @@ interface WeekProps {
   week: WeekPrisma
   isInEditMode: boolean
   categories: string[]
-  allExercises: Exercise[]
   planId: number
 }
 
@@ -21,7 +19,6 @@ const Week = ({
                 week,
                 isInEditMode,
                 categories,
-                allExercises,
                 planId
               }: WeekProps) => {
   const {dispatch} = useWorkoutEditorContext();
@@ -49,7 +46,6 @@ const Week = ({
               index={woi}
               isInEditMode={isInEditMode}
               categories={categories}
-              allExercises={allExercises}
               weekWorkoutCount={week.workouts.length}
             />
             {isInEditMode && (

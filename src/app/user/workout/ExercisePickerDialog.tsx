@@ -3,6 +3,7 @@
 import {useEffect, useState} from 'react';
 import {
   Box,
+  Button,
   CircularProgress,
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ import {
   useTheme,
 } from '@mui/material';
 import {Exercise} from '@prisma/client';
+import {AddExerciseForm} from '@/app/exercises/AddExerciseForm';
 
 interface ExercisePickerDialogProps {
   open: boolean;
@@ -42,6 +44,7 @@ export default function ExercisePickerDialog({
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>(defaultCategory ?? 'resistance');
+  const [createOpen, setCreateOpen] = useState(false);
 
   // Lazy-fetch exercises on first open
   useEffect(() => {
@@ -119,14 +122,36 @@ export default function ExercisePickerDialog({
               </ListItemButton>
             ))}
             {filtered.length === 0 && !loading && (
-              <ListItemText
-                primary="No exercises found"
-                sx={{px: 2, py: 2, color: 'text.secondary'}}
-              />
+              search.trim().length > 0 ? (
+                <Box sx={{px: 2, py: 2}}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => setCreateOpen(true)}
+                  >
+                    {`+ Create "${search}"`}
+                  </Button>
+                </Box>
+              ) : (
+                <ListItemText
+                  primary="No exercises found"
+                  sx={{px: 2, py: 2, color: 'text.secondary'}}
+                />
+              )
             )}
           </List>
         )}
       </DialogContent>
+      <AddExerciseForm
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        initialName={search}
+        onExerciseAdded={(newExercise) => {
+          setExercises(prev => [...prev, newExercise]);
+          setCreateOpen(false);
+          onSelect(newExercise);
+        }}
+      />
     </Dialog>
   );
 }

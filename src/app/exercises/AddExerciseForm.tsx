@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import {
   Alert,
   Autocomplete,
@@ -15,15 +15,17 @@ import {
 } from '@mui/material';
 import {EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, ExerciseEquipment, ExerciseMuscle} from '@/types/dataTypes';
 import MuscleHighlight from '@/components/MuscleHighlight';
+import {Exercise} from '@prisma/client';
 
 interface AddExerciseFormProps {
   open: boolean;
   onClose: () => void;
-  onExerciseAdded?: () => void;
+  onExerciseAdded?: (exercise: Exercise) => void;
+  initialName?: string;
 }
 
-export function AddExerciseForm({open, onClose, onExerciseAdded}: AddExerciseFormProps) {
-  const [name, setName] = useState('');
+export function AddExerciseForm({open, onClose, onExerciseAdded, initialName}: AddExerciseFormProps) {
+  const [name, setName] = useState(initialName ?? '');
   const [description, setDescription] = useState('');
   const [equipment, setEquipment] = useState<ExerciseEquipment[]>([]);
   const [primaryMuscles, setPrimaryMuscles] = useState<ExerciseMuscle[]>([]);
@@ -32,6 +34,11 @@ export function AddExerciseForm({open, onClose, onExerciseAdded}: AddExerciseFor
   const [error, setError] = useState<string | null>(null);
   const [touchedEquipment, setTouchedEquipment] = useState(false);
   const [touchedPrimaryMuscles, setTouchedPrimaryMuscles] = useState(false);
+
+  // Sync name when initialName changes (e.g. dialog reopens with different pre-fill)
+  useEffect(() => {
+    if (open) setName(initialName ?? '');
+  }, [open, initialName]);
 
   const handleClose = () => {
     if (loading) return;
@@ -78,8 +85,9 @@ export function AddExerciseForm({open, onClose, onExerciseAdded}: AddExerciseFor
         return;
       }
 
+      const createdExercise: Exercise = await response.json();
       handleClose();
-      if (onExerciseAdded) onExerciseAdded();
+      if (onExerciseAdded) onExerciseAdded(createdExercise);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

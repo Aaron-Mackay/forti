@@ -6,7 +6,6 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import ExerciseRow from './ExerciseRow';
 import {ToggleableEditableField} from './ToggleableEditableField';
 import {useWorkoutEditorContext} from '@/context/WorkoutEditorContext';
-import {Exercise} from "@prisma/client";
 import {CompactTable} from './CompactUI';
 import ProgressIcon from '@/lib/ProgressIcon';
 import {getWorkoutStatus} from '@/lib/workoutProgress';
@@ -22,7 +21,6 @@ interface WorkoutProps {
   workout: WorkoutPrisma
   isInEditMode: boolean
   categories: string[]
-  allExercises: Exercise[]
   weekWorkoutCount: number
 }
 
@@ -33,7 +31,6 @@ const Workout = ({
                    index,
                    isInEditMode,
                    categories,
-                   allExercises,
                    weekWorkoutCount
                  }: WorkoutProps) => {
   const {dispatch} = useWorkoutEditorContext();
@@ -153,7 +150,6 @@ const Workout = ({
               workoutId={workout.id}
               weekId={weekId}
               isInEditMode={isInEditMode}
-              allExercises={allExercises}
               categories={categories}
               workoutExerciseCount={workout.exercises.length}
               maxSetCount={maxRegularSetCount}

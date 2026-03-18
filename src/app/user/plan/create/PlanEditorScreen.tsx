@@ -42,6 +42,7 @@ import { useRouter } from 'next/navigation'
 import { Exercise } from '@prisma/client'
 import { ActionDispatch } from 'react'
 import { WorkoutEditorAction } from '@lib/useWorkoutEditor'
+import { AddExerciseForm } from '@/app/exercises/AddExerciseForm'
 
 // ── Sortable exercise row ──────────────────────────────────────────────────────
 
@@ -49,18 +50,21 @@ const SortableExerciseRow = ({
   ex,
   exerciseCount,
   allExercises,
+  addExercise,
   dispatch,
   planId,
 }: {
   ex: WorkoutExercisePrisma
   exerciseCount: number
   allExercises: Exercise[]
+  addExercise: (exercise: Exercise) => void
   dispatch: ActionDispatch<[WorkoutEditorAction]>
   planId: number
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ex.id,
   })
+  const [createOpen, setCreateOpen] = useState(false)
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -74,35 +78,48 @@ const SortableExerciseRow = ({
     ? ex.sets.filter(s => s.isDropSet && s.parentSetId === firstRegular.id).length
     : 0;
 
+  const inputValue = ex.exercise.name
+  const showCreateButton = inputValue.trim().length > 0 && !allExercises.some(e => e.name === inputValue)
+
   return (
     <Box ref={setNodeRef} style={style} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <IconButton size="small" sx={{ cursor: 'grab', touchAction: 'none', color: 'text.disabled' }} {...attributes} {...listeners}>
           <DragHandleIcon fontSize="small" />
         </IconButton>
-        <Autocomplete
-          freeSolo
-          sx={{ flex: 1 }}
-          size="small"
-          options={allExercises.map((e) => e.name)}
-          inputValue={ex.exercise.name}
-          onInputChange={(_, newValue) => {
-            dispatch({
-              type: 'UPDATE_EXERCISE',
-              planId,
-              weekId: PLACEHOLDER_ID,
-              workoutId: ex.workoutId,
-              workoutExerciseId: ex.id,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              category: (ex.exercise.category ?? 'resistance') as any,
-              exerciseName: newValue,
-              exercises: allExercises,
-            })
-          }}
-          renderInput={(params) => (
-            <TextField {...params} label="Exercise" autoComplete="off" />
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Autocomplete
+            freeSolo
+            size="small"
+            options={allExercises.map((e) => e.name)}
+            inputValue={inputValue}
+            onInputChange={(_, newValue) => {
+              dispatch({
+                type: 'UPDATE_EXERCISE',
+                planId,
+                weekId: PLACEHOLDER_ID,
+                workoutId: ex.workoutId,
+                workoutExerciseId: ex.id,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                category: (ex.exercise.category ?? 'resistance') as any,
+                exerciseName: newValue,
+                exercises: allExercises,
+              })
+            }}
+            renderInput={(params) => (
+              <TextField {...params} label="Exercise" autoComplete="off" />
+            )}
+          />
+          {showCreateButton && (
+            <Button
+              size="small"
+              sx={{ mt: 0.5, alignSelf: 'flex-start', fontSize: '0.7rem', py: 0, minHeight: 0 }}
+              onClick={() => setCreateOpen(true)}
+            >
+              {`+ Create "${inputValue}"`}
+            </Button>
           )}
-        />
+        </Box>
         {exerciseCount > 1 && (
           <IconButton
             size="small"
@@ -120,6 +137,26 @@ const SortableExerciseRow = ({
           </IconButton>
         )}
       </Box>
+      <AddExerciseForm
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        initialName={inputValue}
+        onExerciseAdded={(newExercise) => {
+          addExercise(newExercise)
+          dispatch({
+            type: 'UPDATE_EXERCISE',
+            planId,
+            weekId: PLACEHOLDER_ID,
+            workoutId: ex.workoutId,
+            workoutExerciseId: ex.id,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            category: (ex.exercise.category ?? 'resistance') as any,
+            exerciseName: newExercise.name,
+            exercises: [...allExercises, newExercise],
+          })
+          setCreateOpen(false)
+        }}
+      />
       <Box sx={{ display: 'flex', gap: 1, pl: '40px' }}>
         <TextField
           size="small"
@@ -205,12 +242,14 @@ const SortableWorkoutCard = ({
   workout,
   showDelete,
   allExercises,
+  addExercise,
   dispatch,
   planId,
 }: {
   workout: WorkoutPrisma
   showDelete: boolean
   allExercises: Exercise[]
+  addExercise: (exercise: Exercise) => void
   dispatch: ActionDispatch<[WorkoutEditorAction]>
   planId: number
 }) => {
@@ -314,6 +353,7 @@ const SortableWorkoutCard = ({
                 ex={ex}
                 exerciseCount={workout.exercises.length}
                 allExercises={allExercises}
+                addExercise={addExercise}
                 dispatch={dispatch}
                 planId={planId}
               />
@@ -349,7 +389,7 @@ type PlanEditorScreenProps = {
 
 export const PlanEditorScreen = ({ weekCount, setWeekCount }: PlanEditorScreenProps) => {
   const { statePlan, dispatch } = useNewPlan()
-  const { allExercises } = useWorkoutEditorContext()
+  const { allExercises, addExercise } = useWorkoutEditorContext()
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -447,6 +487,7 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount }: PlanEditorScreenPr
                   workout={wo}
                   showDelete={workouts.length > 1}
                   allExercises={allExercises}
+                  addExercise={addExercise}
                   dispatch={dispatch}
                   planId={statePlan.id}
                 />
