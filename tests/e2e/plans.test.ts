@@ -325,6 +325,29 @@ test.describe('Plan editor (scratch)', () => {
     await expect(page.getByRole('button', { name: /save plan/i })).not.toBeDisabled();
   });
 
+  test('shows create button when exercise name has no match', async ({ page }) => {
+    await page.getByLabel(/exercise/i).first().fill('Nonexistent Exercise XYZ');
+    await expect(page.getByRole('button', { name: /Create "Nonexistent Exercise XYZ"/ })).toBeVisible();
+  });
+
+  test('does not show create button when exercise field is empty', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /Create "/ })).not.toBeVisible();
+  });
+
+  test('does not show create button when exercise name matches an existing exercise', async ({ page }) => {
+    // Seed data contains 'Squat' — typing it should not show create button
+    await page.getByLabel(/exercise/i).first().fill('Squat');
+    await expect(page.getByRole('button', { name: /Create "/ })).not.toBeVisible();
+  });
+
+  test('clicking create button opens Add New Exercise dialog with name pre-filled', async ({ page }) => {
+    await page.getByLabel(/exercise/i).first().fill('Nordic Curl');
+    await page.getByRole('button', { name: /Create "Nordic Curl"/ }).click();
+    const dialog = page.getByRole('dialog', { name: 'Add New Exercise' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByLabel('Exercise Name')).toHaveValue('Nordic Curl');
+  });
+
   test('clicking Add workout day adds a new workout card', async ({ page }) => {
     const initialCards = await page.getByLabel(/workout name/i).count();
     await page.getByRole('button', { name: /add workout day/i }).click();

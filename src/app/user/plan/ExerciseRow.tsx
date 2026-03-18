@@ -1,18 +1,18 @@
 'use client';
 
-import React from 'react';
+import React, {useState} from 'react';
 import {Box, Button, IconButton, TableCell, TableRow, TextField, Typography} from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
 import CloseIcon from '@mui/icons-material/Close';
 import {createFilterOptions} from '@mui/material/Autocomplete';
 import {ToggleableEditableField} from './ToggleableEditableField';
 import {useWorkoutEditorContext} from '@/context/WorkoutEditorContext';
-import {Exercise} from "@prisma/client";
 import {FilterOptionsState} from "@mui/material/useAutocomplete/useAutocomplete";
 import {CompactAutocomplete} from "./CompactUI";
 
 import {WorkoutExercisePrisma} from "@/types/dataTypes";
 import {Dir} from "@lib/useWorkoutEditor";
+import {AddExerciseForm} from '@/app/exercises/AddExerciseForm';
 
 const filter = createFilterOptions<string>();
 const filterOptions = (options: string[], params: FilterOptionsState<string>) => {
@@ -32,7 +32,6 @@ interface ExerciseRowProps {
   workoutId: number
   weekId: number
   isInEditMode: boolean
-  allExercises: Exercise[]
   categories: string[]
   maxSetCount: number
   workoutExerciseCount: number
@@ -45,14 +44,15 @@ const ExerciseRow = ({
                        workoutId,
                        weekId,
                        isInEditMode,
-                       allExercises,
                        categories,
                        maxSetCount,
                        workoutExerciseCount,
                      }: ExerciseRowProps) => {
-  const {dispatch, debouncedDispatch} = useWorkoutEditorContext();
+  const {dispatch, debouncedDispatch, allExercises, addExercise} = useWorkoutEditorContext();
   const category = exerciseLink.exercise?.category || "";
   const exerciseName = exerciseLink.exercise?.name || "";
+  const [createOpen, setCreateOpen] = useState(false);
+  const showCreateButton = isInEditMode && exerciseName.trim().length > 0 && !allExercises.some(e => e.name === exerciseName);
 
   const regularSets = exerciseLink.sets
     .filter(s => !s.isDropSet)
@@ -89,28 +89,58 @@ const ExerciseRow = ({
 
       <TableCell align={"center"}>
         {isInEditMode && category ? (
-          <CompactAutocomplete
-            freeSolo
-            options={allExercises.filter((ex) => ex.category === category).map((ex) => ex.name)}
-            value={exerciseName}
-            onInputChange={(_event, newInputValue) => {
-              debouncedDispatch({
-                type: 'UPDATE_EXERCISE',
-                planId,
-                weekId,
-                workoutId,
-                workoutExerciseId: exerciseLink.id,
-                exerciseName: newInputValue,
-                exercises: allExercises,
-                category,
-              });
-            }}
-            renderInput={(params) => <TextField variant="standard" {...params}/>}
-            filterOptions={filterOptions}
-          />
+          <>
+            <CompactAutocomplete
+              freeSolo
+              options={allExercises.filter((ex) => ex.category === category).map((ex) => ex.name)}
+              value={exerciseName}
+              onInputChange={(_event, newInputValue) => {
+                debouncedDispatch({
+                  type: 'UPDATE_EXERCISE',
+                  planId,
+                  weekId,
+                  workoutId,
+                  workoutExerciseId: exerciseLink.id,
+                  exerciseName: newInputValue,
+                  exercises: allExercises,
+                  category,
+                });
+              }}
+              renderInput={(params) => <TextField variant="standard" {...params}/>}
+              filterOptions={filterOptions}
+            />
+            {showCreateButton && (
+              <Button
+                size="small"
+                sx={{mt: 0.5, fontSize: '0.65rem', py: 0, minHeight: 0}}
+                onClick={() => setCreateOpen(true)}
+              >
+                + Create &ldquo;{exerciseName}&rdquo;
+              </Button>
+            )}
+          </>
         ) : (
           exerciseName
         )}
+        <AddExerciseForm
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          initialName={exerciseName}
+          onExerciseAdded={(newExercise) => {
+            addExercise(newExercise);
+            debouncedDispatch({
+              type: 'UPDATE_EXERCISE',
+              planId,
+              weekId,
+              workoutId,
+              workoutExerciseId: exerciseLink.id,
+              exerciseName: newExercise.name,
+              exercises: [...allExercises, newExercise],
+              category,
+            });
+            setCreateOpen(false);
+          }}
+        />
       </TableCell>
 
       <TableCell align={"center"}>

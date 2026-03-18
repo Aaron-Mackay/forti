@@ -1,6 +1,6 @@
 'use client'
 
-import React, {createContext, ReactNode, useContext} from 'react';
+import React, {createContext, ReactNode, useContext, useState} from 'react';
 import {useWorkoutEditor, WorkoutEditorAction} from '@/lib/useWorkoutEditor';
 import useDebouncedDispatch from "@/utils/useDebouncedDispatch";
 
@@ -12,6 +12,7 @@ export interface WorkoutEditorContextType {
   dispatch: React.Dispatch<WorkoutEditorAction>;
   debouncedDispatch: (action: WorkoutEditorAction) => void;
   allExercises: Exercise[];
+  addExercise: (exercise: Exercise) => void;
 }
 const WorkoutEditorContext = createContext<WorkoutEditorContextType | null>(null);
 
@@ -20,12 +21,14 @@ interface WorkoutEditorProviderProps {
   children: ReactNode;
   allExercises: Exercise[];
 }
-export const WorkoutEditorProvider = ({ children, userData, allExercises }: WorkoutEditorProviderProps) => {
+export const WorkoutEditorProvider = ({ children, userData, allExercises: initialExercises }: WorkoutEditorProviderProps) => {
   const { state, dispatch } = useWorkoutEditor(userData);
   const debouncedDispatch = useDebouncedDispatch(dispatch, 250);
+  const [allExercises, setAllExercises] = useState<Exercise[]>(initialExercises);
+  const addExercise = (exercise: Exercise) => setAllExercises(prev => [...prev, exercise]);
 
   return (
-    <WorkoutEditorContext.Provider value={{ state, dispatch, debouncedDispatch, allExercises }}>
+    <WorkoutEditorContext.Provider value={{ state, dispatch, debouncedDispatch, allExercises, addExercise }}>
       {children}
     </WorkoutEditorContext.Provider>
   );

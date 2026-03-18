@@ -18,7 +18,7 @@ export const PlanTable: React.FC<{
   planId?: string;
 }> = ({lockedInEditMode = false, categories, planId}) => {
   const [isInEditMode, setIsInEditMode] = useState(lockedInEditMode);
-  const {state: userDataState, dispatch, allExercises} = useWorkoutEditorContext();
+  const {state: userDataState, dispatch} = useWorkoutEditorContext();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -67,7 +67,6 @@ export const PlanTable: React.FC<{
                   week={week}
                   isInEditMode={isInEditMode}
                   categories={categories}
-                  allExercises={allExercises}
                 />
                 {isInEditMode && i === plan.weeks.length - 1 && (
                   <Button onClick={() => dispatch({type: 'DUPLICATE_WEEK', planId: Number(planId), weekId: week.id})}>
