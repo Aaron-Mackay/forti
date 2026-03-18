@@ -116,7 +116,7 @@ const SortableExerciseRow = ({
               sx={{ mt: 0.5, alignSelf: 'flex-start', fontSize: '0.7rem', py: 0, minHeight: 0 }}
               onClick={() => setCreateOpen(true)}
             >
-              + Create &ldquo;{inputValue}&rdquo;
+              {`+ Create "${inputValue}"`}
             </Button>
           )}
         </Box>

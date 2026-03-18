@@ -129,7 +129,7 @@ export default function ExercisePickerDialog({
                     size="small"
                     onClick={() => setCreateOpen(true)}
                   >
-                    + Create &ldquo;{search}&rdquo;
+                    {`+ Create "${search}"`}
                   </Button>
                 </Box>
               ) : (

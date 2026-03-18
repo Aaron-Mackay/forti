@@ -115,7 +115,7 @@ const ExerciseRow = ({
                 sx={{mt: 0.5, fontSize: '0.65rem', py: 0, minHeight: 0}}
                 onClick={() => setCreateOpen(true)}
               >
-                + Create &ldquo;{exerciseName}&rdquo;
+                {`+ Create "${exerciseName}"`}
               </Button>
             )}
           </>
