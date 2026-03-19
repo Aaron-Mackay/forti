@@ -2,21 +2,7 @@ import prisma from '@/lib/prisma';
 import {NextRequest, NextResponse} from 'next/server';
 import getLoggedInUser from '@lib/getLoggedInUser';
 import {extractErrorMessage} from "@lib/apiError";
-
-async function getWorkoutExerciseWithOwner(workoutExerciseId: number) {
-  return prisma.workoutExercise.findUnique({
-    where: {id: workoutExerciseId},
-    include: {
-      workout: {
-        include: {
-          week: {
-            include: {plan: true},
-          },
-        },
-      },
-    },
-  });
-}
+import {getWorkoutExerciseWithOwner} from "@lib/queries";
 
 export async function DELETE(_req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
   const params = await props.params;

@@ -3,25 +3,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import getLoggedInUser from "@lib/getLoggedInUser";
 import {extractErrorMessage} from "@lib/apiError";
 import {computeE1rm} from "@lib/e1rm";
-
-async function getSetWithOwner(setId: number) {
-  return prisma.exerciseSet.findUnique({
-    where: {id: setId},
-    include: {
-      workoutExercise: {
-        include: {
-          workout: {
-            include: {
-              week: {
-                include: {plan: true},
-              },
-            },
-          },
-        },
-      },
-    },
-  });
-}
+import {getSetWithOwner} from "@lib/queries";
 
 export async function DELETE(_req: NextRequest, props: { params: Promise<{ setId: string }> }) {
   const params = await props.params;

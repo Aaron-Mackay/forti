@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import {NextRequest, NextResponse} from 'next/server';
 import getLoggedInUser from '@lib/getLoggedInUser';
 import {extractErrorMessage} from "@lib/apiError";
+import {getWorkoutWithOwner} from "@lib/queries";
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ workoutId: string }> }) {
   const params = await props.params;
@@ -25,16 +26,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
 
   try {
     const workoutId = Number(params.workoutId);
-    const workout = await prisma.workout.findUnique({
-      where: {id: workoutId},
-      include: {
-        week: {
-          include: {
-            plan: true,
-          },
-        },
-      },
-    });
+    const workout = await getWorkoutWithOwner(workoutId);
 
     if (!workout) {
       return NextResponse.json({error: 'Workout not found'}, {status: 404});
