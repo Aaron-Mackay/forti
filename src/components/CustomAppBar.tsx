@@ -38,6 +38,7 @@ import ChecklistIcon from '@mui/icons-material/Checklist';
 import GroupIcon from '@mui/icons-material/Group';
 import {signOut} from "next-auth/react";
 import {useSettings} from '@lib/providers/SettingsProvider';
+import {usePlanCount} from '@lib/hooks/api/usePlanCount';
 
 export const APPBAR_HEIGHT = 56;
 export const HEIGHT_EXC_APPBAR = `calc(100dvh - ${APPBAR_HEIGHT}px)`
@@ -56,7 +57,7 @@ export default function CustomAppBar(
   const pathname = usePathname();
   const { settings } = useSettings();
   const [planNestedOpen, setPlanNestedOpen] = useState(() => pathname.includes('/plan'))
-  const [planCount, setPlanCount] = useState<number | null>(null);
+  const planCount = usePlanCount();
 
   const handleClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     event.stopPropagation()
@@ -92,12 +93,6 @@ export default function CustomAppBar(
     };
   }, [drawerOpen]);
 
-  useEffect(() => {
-    fetch(`/api/plans/count`)
-      .then(res => res.ok ? res.json() : null)
-      .then(data => data && setPlanCount(data.count))
-      .catch(() => setPlanCount(null));
-  }, []);
 
   const ListLink = ({icon, text, href, disabled, nested}
                     : { icon: ReactNode, text: string, href: string, disabled?: boolean, nested?: boolean }) => {

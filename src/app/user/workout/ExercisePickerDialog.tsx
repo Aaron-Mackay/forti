@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect, useState} from 'react';
+import {useExerciseList} from '@lib/hooks/api/useExerciseList';
 import {
   Box,
   Button,
@@ -40,22 +41,10 @@ export default function ExercisePickerDialog({
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [loading, setLoading] = useState(false);
+  const {exercises, loading} = useExerciseList(open);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>(defaultCategory ?? 'resistance');
   const [createOpen, setCreateOpen] = useState(false);
-
-  // Lazy-fetch exercises on first open
-  useEffect(() => {
-    if (!open || exercises.length > 0) return;
-    setLoading(true);
-    fetch('/api/exercises')
-      .then(r => r.ok ? r.json() : [])
-      .then((data: Exercise[]) => setExercises(data))
-      .catch(() => {/* non-fatal */})
-      .finally(() => setLoading(false));
-  }, [open, exercises.length]);
 
   // Reset search and sync category when dialog reopens
   useEffect(() => {
