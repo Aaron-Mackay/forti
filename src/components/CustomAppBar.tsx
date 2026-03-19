@@ -36,6 +36,7 @@ import SpecificPlan from '@mui/icons-material/InsertInvitation';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import GroupIcon from '@mui/icons-material/Group';
+import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
 import {signOut} from "next-auth/react";
 import {useSettings} from '@lib/providers/SettingsProvider';
 import {usePlanCount} from '@lib/hooks/api/usePlanCount';
@@ -158,6 +159,7 @@ export default function CustomAppBar(
             <ListLink icon={<CalendarIcon/>} text="Calendar" href="/user/calendar"/>
             <ListLink icon={<WorkoutIcon/>} text="Training" href="/user/workout"/>
             <ListLink icon={<ChecklistIcon/>} text="Check-in" href="/user/check-in"/>
+            <ListLink icon={<RestaurantRoundedIcon/>} text="Nutrition" href="/user/nutrition"/>
             <ListLink icon={<LibraryBooksIcon/>} text="Exercises" href="/exercises"/>
             {settings.coachModeActive && (
               <ListLink icon={<GroupIcon/>} text="Client Check-ins" href="/user/coach/check-ins"/>

@@ -11,6 +11,12 @@ export const DayMetricSchema = z.object({
   protein: z.number().int().optional().nullable(),
   carbs: z.number().int().optional().nullable(),
   fat: z.number().int().optional().nullable(),
+  caloriesTarget: z.number().int().optional().nullable(),
+  proteinTarget: z.number().int().optional().nullable(),
+  carbsTarget: z.number().int().optional().nullable(),
+  fatTarget: z.number().int().optional().nullable(),
+  stepsTarget: z.number().int().optional().nullable(),
+  sleepMinsTarget: z.number().int().optional().nullable(),
 });
 
 export const EventSchema = z.object({
