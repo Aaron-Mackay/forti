@@ -7,6 +7,7 @@ export interface Settings {
   showMetricsChart: boolean;
   showStopwatch: boolean;
   coachModeActive: boolean;
+  showSupplements: boolean;
   // 0 = Monday … 6 = Sunday
   checkInDay: number;
 }
@@ -20,6 +21,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showMetricsChart: true,
   showStopwatch: true,
   coachModeActive: false,
+  showSupplements: false,
   checkInDay: 0,
 };
 
@@ -37,6 +39,7 @@ export function parseDashboardSettings(raw: unknown): Settings {
     showMetricsChart:   s.showMetricsChart   ?? true,
     showStopwatch:      s.showStopwatch      ?? true,
     coachModeActive:    s.coachModeActive    ?? false,
+    showSupplements:    s.showSupplements    ?? false,
     checkInDay:         typeof s.checkInDay === 'number' ? s.checkInDay : 0,
   };
 }

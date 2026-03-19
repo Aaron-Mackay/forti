@@ -52,7 +52,7 @@ test.describe('Settings page — UI', () => {
     expect(logoutBox!.y).toBeGreaterThan(settingsBox!.y);
   });
 
-  test('shows all dashboard card, workout, and coaching labels', async ({ page }) => {
+  test('shows all dashboard card, workout, features, and coaching labels', async ({ page }) => {
     await expect(page.getByLabel('Next Workout').first()).toBeVisible();
     const labels = [
       'Next Workout',
@@ -62,6 +62,7 @@ test.describe('Settings page — UI', () => {
       'Upcoming Events',
       'Metrics Chart',
       'Stopwatch',
+      'Supplements',
       'Your Coach',
       'Coach Mode',
     ];
@@ -92,17 +93,19 @@ test.describe('Settings page — state', () => {
     await page.request.patch('/api/user/settings', { data: { settings: ALL_ON } });
   });
 
-  test('shows 8 toggles; dashboard/workout switches are on, Coach Mode is off by default', async ({ page }) => {
+  test('shows 9 toggles; dashboard/workout switches are on, Supplements and Coach Mode are off by default', async ({ page }) => {
     const switches = page.getByRole('switch');
     await expect(switches.first()).toBeVisible();
     const count = await switches.count();
-    expect(count).toBe(8);
+    expect(count).toBe(9);
     // First 7 are dashboard card + stopwatch toggles (all on by default)
     for (let i = 0; i < 7; i++) {
       await expect(switches.nth(i)).toBeChecked();
     }
-    // Coach Mode toggle (8th) is off by default
+    // Supplements toggle (8th) is off by default
     await expect(switches.nth(7)).not.toBeChecked();
+    // Coach Mode toggle (9th) is off by default
+    await expect(switches.nth(8)).not.toBeChecked();
   });
 
   test('toggle sends PATCH that saves the updated value', async ({ page }) => {

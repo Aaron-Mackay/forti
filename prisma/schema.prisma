@@ -40,6 +40,7 @@ model User {
   aiUsageLogs       AiUsageLog[]
   weeklyCheckIns    WeeklyCheckIn[]
   pushSubscriptions PushSubscription[]
+  supplements       Supplement[]
 }
 
 enum CoachRequestStatus {
@@ -297,4 +298,21 @@ model AiUsageLog {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+model Supplement {
+  id        Int       @id @default(autoincrement())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  dosage    String
+  frequency String
+  notes     String?
+  startDate DateTime  @db.Date
+  endDate   DateTime? @db.Date
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
 }
