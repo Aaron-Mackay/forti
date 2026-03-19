@@ -1,6 +1,7 @@
 import prisma from '../src/lib/prisma';
 import { BlockSubtype, EventType } from "@prisma/client";
-import { seedBobData } from './lib/bobSeedData';
+import { seedTestUserData } from './lib/testUserSeedData';
+import { seedJeffDemoData } from './lib/jeffDemoSeedData';
 import { getWeekStart, toDateOnly } from '../src/lib/checkInUtils';
 import exercisesData from './exercises.json';
 import { EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, SeedExercise } from '../src/types/dataTypes';
@@ -250,13 +251,21 @@ async function main() {
   }
   await prisma.weeklyCheckIn.createMany({ data: checkInData });
 
-  // ── Seed Bob (demo login user) ────────────────────────────────────────────
+  // ── Seed TestUser (E2E test account) ─────────────────────────────────────
   // A fixed past date is used so E2E tests running against real-today (~2026)
   // see no active blocks and no upcoming events.
-  const bob = await prisma.user.create({
-    data: { name: 'Bob', email: 'bob@example.com' },
+  const testuser = await prisma.user.create({
+    data: { name: 'TestUser', email: 'testuser@example.com' },
   });
-  await seedBobData(bob, new Date('2024-06-01'));
+  await seedTestUserData(testuser, new Date('2024-06-01'));
+
+  // ── Seed Jeff Demo (public "Try Demo" login user) ─────────────────────────
+  // Today's date is used so the dashboard shows live data: active block,
+  // upcoming events, etc.
+  const jeff = await prisma.user.create({
+    data: { name: 'Jeff Demo', email: 'jeff@example.com' },
+  });
+  await seedJeffDemoData(jeff, new Date());
 
   // Backfill e1rm for all seeded sets
   const allSets = await prisma.exerciseSet.findMany({ select: { id: true, weight: true, reps: true } });

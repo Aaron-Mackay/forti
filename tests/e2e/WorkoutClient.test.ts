@@ -4,8 +4,8 @@
  * Covers: plan/week/workout selection drill-down, stopwatch visibility,
  * exercise list, exercise detail view, back navigation, and previous set data.
  *
- * Seed data (Bob):
- *   "Bob's Plan 1" → Week 1 → Workout 1 (Plan 1 - Week 1)
+ * Seed data (TestUser):
+ *   "TestUser's Plan 1" → Week 1 → Workout 1 (Plan 1 - Week 1)
  *   Exercises include: Bench Press, Squat, Deadlift, etc.
  */
 import { test, expect } from './fixtures';

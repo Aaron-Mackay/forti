@@ -1,11 +1,11 @@
 /**
- * Shared seeding logic for Bob's demo account.
+ * Shared seeding logic for the Jeff Demo public demo account.
  *
- * Used by both seed.ts (full reset, fixed past date for CI) and
+ * Used by both seed.ts (full reset, today's date for live data) and
  * seed-demo.ts (prod/dev refresh, real today date).
  *
- * Callers are responsible for ensuring Bob and exercises already exist
- * in the DB before calling seedBobData.
+ * Callers are responsible for ensuring the user and exercises already exist
+ * in the DB before calling seedJeffDemoData.
  */
 
 import prisma from '../../src/lib/prisma';
@@ -32,8 +32,8 @@ export const EXERCISE_DEFS: Array<{ name: string; category: string }> = [
 // templates across all its weeks so previous-set data is consistent.
 const PLAN_TEMPLATES = [
   {
-    name:        "Bob's Plan 1",
-    description: 'Training block 1 for Bob',
+    name:        "Jeff's Plan 1",
+    description: 'Training block 1 for Jeff',
     weekCount:   2,
     workoutTemplates: [
       { name: 'Workout A', exercises: ['Bench Press', 'Squat', 'Deadlift', 'Treadmill'] },
@@ -44,8 +44,8 @@ const PLAN_TEMPLATES = [
     completionDaysAgo: [4, 2],
   },
   {
-    name:        "Bob's Plan 2",
-    description: 'Training block 2 for Bob',
+    name:        "Jeff's Plan 2",
+    description: 'Training block 2 for Jeff',
     weekCount:   3,
     workoutTemplates: [
       { name: 'Workout A', exercises: ['Squat', 'Barbell Row', 'Bench Press'] },
@@ -68,11 +68,11 @@ const EXERCISE_BASES: Record<string, { weight: number; reps: number }> = {
 // ─── Main export ───────────────────────────────────────────────────────────
 
 /**
- * Resets and recreates all of Bob's data relative to `today`.
+ * Resets and recreates all of Jeff Demo's data relative to `today`.
  * Safe to call after a full TRUNCATE (deleteMany is a no-op) or against
  * an existing DB (deleteMany cleans up first).
  */
-export async function seedBobData(bob: { id: string }, today: Date): Promise<void> {
+export async function seedJeffDemoData(user: { id: string }, today: Date): Promise<void> {
   const daysAgo     = (n: number) => { const d = new Date(today); d.setDate(today.getDate() - n); return d; };
   const daysFromNow = (n: number) => { const d = new Date(today); d.setDate(today.getDate() + n); return d; };
   const maybeNull   = <T>(val: T): T | null => Math.random() < 0.3 ? null : val;
@@ -89,20 +89,20 @@ export async function seedBobData(bob: { id: string }, today: Date): Promise<voi
   ];
   for (const n of noteDefs) {
     await prisma.userExerciseNote.upsert({
-      where:  { userId_exerciseId: { userId: bob.id, exerciseId: n.exerciseId } },
+      where:  { userId_exerciseId: { userId: user.id, exerciseId: n.exerciseId } },
       update: {},
-      create: { userId: bob.id, ...n },
+      create: { userId: user.id, ...n },
     });
   }
 
   // ── Events ────────────────────────────────────────────────────────────────
-  await prisma.event.deleteMany({ where: { userId: bob.id } });
+  await prisma.event.deleteMany({ where: { userId: user.id } });
   await prisma.event.createMany({
     data: [
       // Active Bulk block (started 3 weeks ago, ends 5 weeks from now)
       // → shows "Active Block" card on the dashboard
       {
-        userId:       bob.id,
+        userId:       user.id,
         name:         'Bulk',
         startDate:    daysAgo(21),
         endDate:      daysFromNow(35),
@@ -111,7 +111,7 @@ export async function seedBobData(bob: { id: string }, today: Date): Promise<voi
       },
       // Upcoming Cut block (~8–11 weeks away) → visible on the calendar
       {
-        userId:       bob.id,
+        userId:       user.id,
         name:         'Cut',
         startDate:    daysFromNow(56),
         endDate:      daysFromNow(77),
@@ -120,7 +120,7 @@ export async function seedBobData(bob: { id: string }, today: Date): Promise<voi
       },
       // Single-day event tomorrow → shows in "Upcoming (7 days)" dashboard card
       {
-        userId:    bob.id,
+        userId:    user.id,
         name:      'Manchester 10k',
         startDate: daysFromNow(1),
         endDate:   daysFromNow(1),
@@ -128,7 +128,7 @@ export async function seedBobData(bob: { id: string }, today: Date): Promise<voi
       },
       // Holiday in ~4 weeks → visible on the calendar
       {
-        userId:      bob.id,
+        userId:      user.id,
         name:        'Holiday',
         description: 'Recovery week',
         startDate:   daysFromNow(28),
@@ -137,7 +137,7 @@ export async function seedBobData(bob: { id: string }, today: Date): Promise<voi
       },
       // Custom coloured event in the recent past → visible on the calendar
       {
-        userId:      bob.id,
+        userId:      user.id,
         name:        'Custom',
         startDate:   daysAgo(30),
         endDate:     daysAgo(10),
@@ -149,14 +149,14 @@ export async function seedBobData(bob: { id: string }, today: Date): Promise<voi
 
   // ── Plans and workouts ────────────────────────────────────────────────────
   // Cascade delete removes weeks → workouts → exercises → sets automatically.
-  await prisma.plan.deleteMany({ where: { userId: bob.id } });
+  await prisma.plan.deleteMany({ where: { userId: user.id } });
 
   for (let planIdx = 0; planIdx < PLAN_TEMPLATES.length; planIdx++) {
     const template = PLAN_TEMPLATES[planIdx];
 
     const plan = await prisma.plan.create({
       data: {
-        userId:      bob.id,
+        userId:      user.id,
         order:       planIdx + 1,
         name:        template.name,
         description: template.description,
@@ -262,14 +262,14 @@ export async function seedBobData(bob: { id: string }, today: Date): Promise<voi
   }
 
   // ── Day metrics ───────────────────────────────────────────────────────────
-  await prisma.dayMetric.deleteMany({ where: { userId: bob.id } });
+  await prisma.dayMetric.deleteMany({ where: { userId: user.id } });
 
   await prisma.dayMetric.createMany({
     data: Array.from({ length: 60 }, (_, i) => {
       const date = new Date(today);
       date.setDate(today.getDate() - i);
       return {
-        userId:    bob.id,
+        userId:    user.id,
         date,
         weight:    maybeNull(Number((84 - i * 0.03 + (Math.random() - 0.5)).toFixed(1))),
         steps:     maybeNull(Math.floor(84 - i * 0.03 + (Math.random() - 0.5) * 3000 + 7000)),

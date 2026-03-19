@@ -17,13 +17,13 @@ test.describe('Plans list page', () => {
   });
 
   test("shows the demo user's plans section", async ({ page }) => {
-    // Seed creates "Bob's Plans" section header
-    await expect(page.getByText(/Bob's Plans/i).first()).toBeVisible();
+    // Seed creates "TestUser's Plans" section header
+    await expect(page.getByText(/TestUser's Plans/i).first()).toBeVisible();
   });
 
   test('lists at least one plan for the demo user', async ({ page }) => {
     // Seed creates two plans per user; each is a list item button
-    await expect(page.getByRole('link', { name: 'Bob\'s Plan 1' })).toBeVisible();
+    await expect(page.getByRole('link', { name: "TestUser's Plan 1" })).toBeVisible();
   });
 
   test('navigates to a plan detail page when a plan is clicked', async ({ page }) => {
@@ -49,7 +49,7 @@ test.describe('Plan detail page', () => {
   });
 
   test("shows the demo user's name in the plan heading", async ({ page }) => {
-    await expect(page.getByText(/User: Bob/i).first()).toBeVisible();
+    await expect(page.getByText(/User: TestUser/i).first()).toBeVisible();
   });
 
   test('displays at least one week', async ({ page }) => {

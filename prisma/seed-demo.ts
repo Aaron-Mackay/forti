@@ -3,16 +3,16 @@
  *
  * What it does:
  *   1. Upserts the canonical exercise library (global, additive only)
- *   2. Upserts the Bob demo account (bob@example.com)
- *   3. Resets all of Bob's data with dates relative to today
+ *   2. Upserts the Jeff Demo account (jeff@example.com)
+ *   3. Resets all of Jeff's data with dates relative to today
  *
  * What it does NOT do:
  *   - Truncate any tables
- *   - Touch any user other than Bob
+ *   - Touch any user other than Jeff Demo
  */
 
 import prisma from '../src/lib/prisma';
-import { EXERCISE_DESCRIPTION, seedBobData } from './lib/bobSeedData';
+import { EXERCISE_DESCRIPTION, seedJeffDemoData } from './lib/jeffDemoSeedData';
 import {EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, SeedExercise} from "../src/types/dataTypes";
 import exercisesData from './exercises.json';
 import { computeE1rm } from '../src/lib/e1rm';
@@ -60,27 +60,27 @@ async function main() {
   }
   console.log(`  ✓ Exercises upserted`);
 
-  // Upsert Bob
-  const bob = await prisma.user.upsert({
-    where:  { email: 'bob@example.com' },
-    update: { name: 'Bob' },
-    create: { name: 'Bob', email: 'bob@example.com' },
+  // Upsert Jeff Demo
+  const jeff = await prisma.user.upsert({
+    where:  { email: 'jeff@example.com' },
+    update: { name: 'Jeff Demo' },
+    create: { name: 'Jeff Demo', email: 'jeff@example.com' },
   });
-  console.log(`  ✓ Bob upserted (id: ${bob.id})`);
+  console.log(`  ✓ Jeff Demo upserted (id: ${jeff.id})`);
 
-  // Reset all of Bob's data relative to today
-  await seedBobData(bob, new Date());
-  console.log('  ✓ Bob\'s data reset');
+  // Reset all of Jeff's data relative to today
+  await seedJeffDemoData(jeff, new Date());
+  console.log('  ✓ Jeff Demo\'s data reset');
 
-  // Backfill e1rm for all of Bob's sets
-  const bobSets = await prisma.exerciseSet.findMany({
-    where: { workoutExercise: { workout: { week: { plan: { userId: bob.id } } } } },
+  // Backfill e1rm for all of Jeff's sets
+  const jeffSets = await prisma.exerciseSet.findMany({
+    where: { workoutExercise: { workout: { week: { plan: { userId: jeff.id } } } } },
     select: { id: true, weight: true, reps: true },
   });
-  for (const set of bobSets) {
+  for (const set of jeffSets) {
     await prisma.exerciseSet.update({ where: { id: set.id }, data: { e1rm: computeE1rm(set.weight, set.reps) } });
   }
-  console.log(`  ✓ e1rm backfilled (${bobSets.length} sets)`);
+  console.log(`  ✓ e1rm backfilled (${jeffSets.length} sets)`);
 
   console.log('\n✅ Demo seed complete');
 }
