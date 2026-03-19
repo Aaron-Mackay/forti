@@ -40,8 +40,8 @@ test.describe('Supplements — gating', () => {
 // CRUD and UI tests — chromium only
 // ---------------------------------------------------------------------------
 test.describe('Supplements — CRUD', () => {
-  test.skip(({ browserName }) => browserName !== 'chromium',
-    'State-dependent tests run on chromium only; parallel browser projects share a DB user');
+  test.skip(({ isMobile }) => isMobile,
+    'State-dependent tests run on desktop Chromium only; mobile projects share a DB user and create race conditions');
 
   test.beforeEach(async ({ page }) => {
     await enableSupplements(page);
