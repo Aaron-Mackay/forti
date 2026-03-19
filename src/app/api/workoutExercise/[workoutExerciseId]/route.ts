@@ -3,25 +3,27 @@ import {NextRequest, NextResponse} from 'next/server';
 import getLoggedInUser from '@lib/getLoggedInUser';
 import {extractErrorMessage} from "@lib/apiError";
 
+async function getWorkoutExerciseWithOwner(workoutExerciseId: number) {
+  return prisma.workoutExercise.findUnique({
+    where: {id: workoutExerciseId},
+    include: {
+      workout: {
+        include: {
+          week: {
+            include: {plan: true},
+          },
+        },
+      },
+    },
+  });
+}
+
 export async function DELETE(_req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
   const params = await props.params;
 
   try {
     const workoutExerciseId = Number(params.workoutExerciseId);
-    const workoutExercise = await prisma.workoutExercise.findUnique({
-      where: {id: workoutExerciseId},
-      include: {
-        workout: {
-          include: {
-            week: {
-              include: {
-                plan: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    const workoutExercise = await getWorkoutExerciseWithOwner(workoutExerciseId);
 
     if (!workoutExercise) {
       return NextResponse.json({error: 'WorkoutExercise not found'}, {status: 404});
@@ -56,20 +58,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
 
   try {
     const workoutExerciseId = Number(params.workoutExerciseId);
-    const workoutExercise = await prisma.workoutExercise.findUnique({
-      where: {id: workoutExerciseId},
-      include: {
-        workout: {
-          include: {
-            week: {
-              include: {
-                plan: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    const workoutExercise = await getWorkoutExerciseWithOwner(workoutExerciseId);
 
     if (!workoutExercise) {
       return NextResponse.json({error: 'WorkoutExercise not found'}, {status: 404});
