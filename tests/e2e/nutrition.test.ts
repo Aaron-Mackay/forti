@@ -67,7 +67,7 @@ test.describe('Nutrition page', () => {
   test('clicking Set week targets opens the dialog', async ({ page }) => {
     await page.getByRole('button', { name: 'Set week targets' }).click();
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByText('Set Week Targets')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Set Week Targets' })).toBeVisible();
   });
 
   test('Set week targets dialog has macro input fields', async ({ page }) => {
@@ -104,6 +104,6 @@ test.describe('Nutrition page', () => {
 
   test('Nutrition link is present in the nav drawer', async ({ page }) => {
     await page.getByRole('button', { name: /menu/i }).click();
-    await expect(page.getByText('Nutrition')).toBeVisible({ timeout: 3_000 });
+    await expect(page.getByRole('link', { name: 'Nutrition' })).toBeVisible({ timeout: 3_000 });
   });
 });
