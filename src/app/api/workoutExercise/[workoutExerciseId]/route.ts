@@ -1,35 +1,22 @@
 import prisma from '@/lib/prisma';
 import {NextRequest, NextResponse} from 'next/server';
-import getLoggedInUser from '@lib/getLoggedInUser';
+import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from "@lib/apiError";
+import {getWorkoutExerciseWithOwner} from "@lib/queries";
+import {errorResponse, forbiddenResponse, notFoundResponse} from "@lib/apiResponses";
 
 export async function DELETE(_req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
   const params = await props.params;
+  const session = await requireSession();
 
   try {
     const workoutExerciseId = Number(params.workoutExerciseId);
-    const workoutExercise = await prisma.workoutExercise.findUnique({
-      where: {id: workoutExerciseId},
-      include: {
-        workout: {
-          include: {
-            week: {
-              include: {
-                plan: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    const workoutExercise = await getWorkoutExerciseWithOwner(workoutExerciseId);
 
-    if (!workoutExercise) {
-      return NextResponse.json({error: 'WorkoutExercise not found'}, {status: 404});
-    }
+    if (!workoutExercise) return notFoundResponse('WorkoutExercise');
 
-    const user = await getLoggedInUser();
-    if (workoutExercise.workout.week.plan.userId !== user.id) {
-      return NextResponse.json({error: 'Forbidden'}, {status: 403});
+    if (workoutExercise.workout.week.plan.userId !== session.user.id) {
+      return forbiddenResponse();
     }
 
     await prisma.workoutExercise.delete({where: {id: workoutExerciseId}});
@@ -37,47 +24,32 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ worko
     return new NextResponse(null, {status: 204});
   } catch (err: unknown) {
     console.error(err);
-    return NextResponse.json({error: extractErrorMessage(err)}, {status: 500});
+    return errorResponse(extractErrorMessage(err), 500);
   }
 }
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
   const params = await props.params;
+  const session = await requireSession();
   const body = await req.json();
   const {notes, cardioDuration, cardioDistance, cardioResistance, exerciseId} = body;
 
   if ('notes' in body && typeof notes !== 'string') {
-    return NextResponse.json({error: 'notes must be a string'}, {status: 400});
+    return errorResponse('notes must be a string', 400);
   }
 
   if ('exerciseId' in body && typeof exerciseId !== 'number') {
-    return NextResponse.json({error: 'exerciseId must be a number'}, {status: 400});
+    return errorResponse('exerciseId must be a number', 400);
   }
 
   try {
     const workoutExerciseId = Number(params.workoutExerciseId);
-    const workoutExercise = await prisma.workoutExercise.findUnique({
-      where: {id: workoutExerciseId},
-      include: {
-        workout: {
-          include: {
-            week: {
-              include: {
-                plan: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    const workoutExercise = await getWorkoutExerciseWithOwner(workoutExerciseId);
 
-    if (!workoutExercise) {
-      return NextResponse.json({error: 'WorkoutExercise not found'}, {status: 404});
-    }
+    if (!workoutExercise) return notFoundResponse('WorkoutExercise');
 
-    const user = await getLoggedInUser();
-    if (workoutExercise.workout.week.plan.userId !== user.id) {
-      return NextResponse.json({error: 'Forbidden'}, {status: 403});
+    if (workoutExercise.workout.week.plan.userId !== session.user.id) {
+      return forbiddenResponse();
     }
 
     const updateData: {
@@ -96,9 +68,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
 
     if ('exerciseId' in body) {
       const exercise = await prisma.exercise.findUnique({where: {id: exerciseId}});
-      if (!exercise) {
-        return NextResponse.json({error: 'Exercise not found'}, {status: 404});
-      }
+      if (!exercise) return notFoundResponse('Exercise');
       updateData.exerciseId = exerciseId;
       // Record the original exercise if not already substituted
       if (!workoutExercise.substitutedForId) {
@@ -114,6 +84,6 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
     return NextResponse.json(updated);
   } catch (err: unknown) {
     console.error(err);
-    return NextResponse.json({error: extractErrorMessage(err)}, {status: 500});
+    return errorResponse(extractErrorMessage(err), 500);
   }
 }

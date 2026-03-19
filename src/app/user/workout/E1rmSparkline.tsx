@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import {Box, Skeleton, Typography} from '@mui/material';
 import {format} from 'date-fns';
 import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
+import {PRIMARY_COLOUR, SUCCESS_COLOUR} from '@lib/theme';
 
 const Chart = dynamic(
   () => import('react-apexcharts').catch(() => ({default: () => null})),
@@ -54,7 +55,7 @@ export default function E1rmSparkline({
 
   // Discrete marker override: colour only the live "Now" point green
   const discreteMarkers = todayE1RM !== null
-    ? [{seriesIndex: 0, dataPointIndex: seriesData.length - 1, fillColor: '#2e7d32', strokeColor: '#2e7d32', size: 5}]
+    ? [{seriesIndex: 0, dataPointIndex: seriesData.length - 1, fillColor: SUCCESS_COLOUR, strokeColor: SUCCESS_COLOUR, size: 5}]
     : [];
 
   const series = [{name: 'Best e1RM', data: seriesData}];
@@ -97,7 +98,7 @@ export default function E1rmSparkline({
           tooltip: {
             x: {formatter: (_v, {dataPointIndex}) => categories[dataPointIndex] ?? ''},
           },
-            colors: ['#1976d2'],
+            colors: [PRIMARY_COLOUR],
             xaxis: {
               categories,
               labels: {show: false},

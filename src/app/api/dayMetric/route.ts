@@ -1,19 +1,8 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {updateUserDayMetric} from '@/lib/api';
-import {z} from 'zod';
 import confirmPermission from "@lib/confirmPermission";
-
-const DayMetricSchema = z.object({
-  userId: z.string(),
-  date: z.coerce.date(), // Accepts string or Date, coerces to Date
-  weight: z.number().optional().nullable(),
-  steps: z.number().int().optional().nullable(),
-  sleepMins: z.number().int().optional().nullable(),
-  calories: z.number().int().optional().nullable(),
-  protein: z.number().int().optional().nullable(),
-  carbs: z.number().int().optional().nullable(),
-  fat: z.number().int().optional().nullable(),
-});
+import {DayMetricSchema} from "@lib/apiSchemas";
+import {errorResponse, validationErrorResponse} from "@lib/apiResponses";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,11 +10,8 @@ export async function POST(req: NextRequest) {
     const parsed = DayMetricSchema.safeParse(json);
 
     if (!parsed.success) {
-      console.error(parsed.error)
-      return NextResponse.json(
-        {error: 'Invalid request', issues: parsed.error.flatten()},
-        {status: 400}
-      );
+      console.error(parsed.error);
+      return validationErrorResponse(parsed.error);
     }
 
     await confirmPermission(parsed.data.userId);
@@ -46,6 +32,6 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     if (err instanceof NextResponse) return err;
     console.error(err);
-    return NextResponse.json({error: 'Failed to update day metric'}, {status: 500});
+    return errorResponse('Failed to update day metric', 500);
   }
 }

@@ -2,6 +2,57 @@ import {PlanPrisma, SetPrisma, UserPrisma, WeekPrisma, WorkoutExercisePrisma, Wo
 import {Exercise} from "@prisma/client";
 import {CreateUuid, Dir} from "@lib/useWorkoutEditor";
 
+// ─── Private constants ───────────────────────────────────────────────────────
+
+const dummyExercise: Exercise = {
+  id: -1,
+  category: null,
+  name: "",
+  description: null,
+  equipment: [],
+  primaryMuscles: [],
+  secondaryMuscles: [],
+};
+
+// ─── Private helpers ─────────────────────────────────────────────────────────
+
+/** Re-assigns 1-based sequential `order` values to each item in an array. */
+function reindex<T extends {order: number}>(items: T[]): T[] {
+  return items.map((item, i) => ({...item, order: i + 1}));
+}
+
+function makeEmptySet(
+  id: number,
+  workoutExerciseId: number,
+  order: number,
+  isDropSet = false,
+  parentSetId: number | null = null,
+): SetPrisma {
+  return {id, workoutExerciseId, order, reps: null, weight: null, e1rm: null, isDropSet, parentSetId};
+}
+
+function makeEmptyWorkoutExercise(id: number, workoutId: number, order: number): WorkoutExercisePrisma {
+  return {
+    id,
+    exerciseId: dummyExercise.id,
+    repRange: "",
+    restTime: "",
+    order,
+    exercise: dummyExercise,
+    sets: [],
+    workoutId,
+    notes: "",
+    cardioDuration: null,
+    cardioDistance: null,
+    cardioResistance: null,
+    substitutedForId: null,
+    substitutedFor: null,
+    isAdded: false,
+  };
+}
+
+// ─── Immutable tree-traversal helpers ────────────────────────────────────────
+
 function updatePlan(user: UserPrisma, planId: number, updateFn: (plan: PlanPrisma) => PlanPrisma): UserPrisma {
   return {
     ...user,
@@ -66,6 +117,8 @@ function withSet(
   );
 }
 
+// ─── Exports ─────────────────────────────────────────────────────────────────
+
 export function updateExerciseInUser(
   user: UserPrisma,
   planId: number,
@@ -117,7 +170,7 @@ export function reorderWorkout(user: UserPrisma, planId: number, weekId: number,
       const newWorkouts = [...week.workouts];
       const [removed] = newWorkouts.splice(fromIndex, 1);
       newWorkouts.splice(toIndex, 0, removed);
-      return { ...week, workouts: newWorkouts.map((w, i) => ({ ...w, order: i + 1 })) };
+      return { ...week, workouts: reindex(newWorkouts) };
     })
   );
 }
@@ -127,7 +180,7 @@ export function reorderExercise(user: UserPrisma, planId: number, weekId: number
     const newExercises = [...workout.exercises];
     const [removed] = newExercises.splice(fromIndex, 1);
     newExercises.splice(toIndex, 0, removed);
-    return { ...workout, exercises: newExercises.map((ex, i) => ({ ...ex, order: i + 1 })) };
+    return { ...workout, exercises: reindex(newExercises) };
   });
 }
 
@@ -140,10 +193,7 @@ function moveWorkoutInWeek(week: WeekPrisma, index: number, dir: Dir): WeekPrism
   }
   const [removed] = newWorkouts.splice(index, 1);
   newWorkouts.splice(targetIndex, 0, removed);
-  return {
-    ...week,
-    workouts: newWorkouts.map((w, i) => ({...w, order: i + 1})),
-  };
+  return {...week, workouts: reindex(newWorkouts)};
 }
 
 function moveExerciseInWorkout(workout: WorkoutPrisma, index: number, dir: number): WorkoutPrisma {
@@ -154,10 +204,7 @@ function moveExerciseInWorkout(workout: WorkoutPrisma, index: number, dir: numbe
   }
   const [removed] = newExercises.splice(index, 1);
   newExercises.splice(targetIndex, 0, removed);
-  return {
-    ...workout,
-    exercises: newExercises.map((ex, i) => ({...ex, order: i + 1})),
-  };
+  return {...workout, exercises: reindex(newExercises)};
 }
 
 export function moveExercise(user: UserPrisma, planId: number, weekId: number, workoutId: number, index: number, dir: number): UserPrisma {
@@ -229,7 +276,7 @@ function duplicateExerciseData(exercise: WorkoutExercisePrisma, createUuid: Crea
 export function removeExercise(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number): UserPrisma {
   return withWorkout(user, planId, weekId, workoutId, workout => ({
     ...workout,
-    exercises: workout.exercises.filter(ex => ex.id !== exerciseId).map((ex, idx) => ({...ex, order: idx + 1})),
+    exercises: reindex(workout.exercises.filter(ex => ex.id !== exerciseId)),
   }));
 }
 
@@ -238,16 +285,7 @@ export function addSet(user: UserPrisma, planId: number, weekId: number, workout
     ...exercise,
     sets: [
       ...exercise.sets,
-      {
-        id: createUuid(),
-        workoutExerciseId: exerciseId,
-        order: exercise.sets.length + 1,
-        reps: null,
-        weight: null,
-        e1rm: null,
-        isDropSet: false,
-        parentSetId: null,
-      },
+      makeEmptySet(createUuid(), exerciseId, exercise.sets.length + 1),
     ],
   }));
 }
@@ -267,16 +305,7 @@ export function addDropSet(
       ...exercise,
       sets: [
         ...exercise.sets,
-        {
-          id: createUuid(),
-          workoutExerciseId: exerciseId,
-          order: maxOrder + 1,
-          reps: null,
-          weight: null,
-          e1rm: null,
-          isDropSet: true,
-          parentSetId,
-        },
+        makeEmptySet(createUuid(), exerciseId, maxOrder + 1, true, parentSetId),
       ],
     };
   });
@@ -306,22 +335,13 @@ export function setDropsPerSet(
       newSets.push(...currentDrops.slice(0, dropCount));
       // Add new drops if needed
       for (let i = currentDrops.length; i < dropCount; i++) {
-        newSets.push({
-          id: createUuid(),
-          workoutExerciseId: exerciseId,
-          order: 0,
-          reps: null,
-          weight: null,
-          e1rm: null,
-          isDropSet: true,
-          parentSetId: regularSet.id,
-        });
+        newSets.push(makeEmptySet(createUuid(), exerciseId, 0, true, regularSet.id));
       }
     }
 
     return {
       ...exercise,
-      sets: newSets.map((s, idx) => ({ ...s, order: idx + 1 })),
+      sets: reindex(newSets),
     };
   });
 }
@@ -360,7 +380,7 @@ export function updateSetCount(user: UserPrisma, planId: number, weekId: number,
       const sortedSets = [...exercise.sets].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       return {
         ...exercise,
-        sets: sortedSets.slice(0, setCount).map((set, idx) => ({...set, order: idx + 1})),
+        sets: reindex(sortedSets.slice(0, setCount)),
       };
     }
     if (setCount > exercise.sets.length) {
@@ -368,16 +388,9 @@ export function updateSetCount(user: UserPrisma, planId: number, weekId: number,
         ...exercise,
         sets: [
           ...exercise.sets,
-          ...Array.from({length: setCount - exercise.sets.length}).map((_, idx) => ({
-            id: createUuid(),
-            workoutExerciseId: exerciseId,
-            order: exercise.sets.length + idx + 1,
-            reps: null,
-            weight: null,
-            e1rm: null,
-            isDropSet: false,
-            parentSetId: null,
-          })),
+          ...Array.from({length: setCount - exercise.sets.length}).map((_, idx) =>
+            makeEmptySet(createUuid(), exerciseId, exercise.sets.length + idx + 1)
+          ),
         ],
       };
     }
@@ -416,9 +429,9 @@ export function removeLastSet(user: UserPrisma, planId: number, weekId: number, 
     const lastRegularId = regularSets[regularSets.length - 1].id;
     return {
       ...exercise,
-      sets: exercise.sets
-        .filter(s => s.id !== lastRegularId && s.parentSetId !== lastRegularId)
-        .map((set, idx) => ({...set, order: idx + 1})),
+      sets: reindex(
+        exercise.sets.filter(s => s.id !== lastRegularId && s.parentSetId !== lastRegularId)
+      ),
     };
   });
 }
@@ -512,33 +525,13 @@ export function addExercise(
   workoutId: number,
   createUuid: CreateUuid
 ): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout => ({
-        ...workout,
-        exercises: [
-          ...workout.exercises,
-          {
-            id: createUuid(),
-            exerciseId: dummyExercise.id,
-            repRange: "",
-            restTime: "",
-            order: workout.exercises.length + 1,
-            exercise: dummyExercise,
-            sets: [],
-            workoutId: workout.id,
-            notes: "",
-            cardioDuration: null,
-            cardioDistance: null,
-            cardioResistance: null,
-            substitutedForId: null,
-            substitutedFor: null,
-            isAdded: false,
-          },
-        ],
-      }))
-    )
-  );
+  return withWorkout(user, planId, weekId, workoutId, workout => ({
+    ...workout,
+    exercises: [
+      ...workout.exercises,
+      makeEmptyWorkoutExercise(createUuid(), workout.id, workout.exercises.length + 1),
+    ],
+  }));
 }
 
 export function addExerciseWithSet(
@@ -548,47 +541,19 @@ export function addExerciseWithSet(
   workoutId: number,
   createUuid: CreateUuid
 ): UserPrisma {
-  return updatePlan(user, planId, plan =>
-    updateWeek(plan, weekId, week =>
-      updateWorkout(week, workoutId, workout => {
-        const newExerciseId = createUuid();
-        return {
-          ...workout,
-          exercises: [
-            ...workout.exercises,
-            {
-              id: newExerciseId,
-              exerciseId: dummyExercise.id,
-              repRange: "",
-              restTime: "",
-              order: workout.exercises.length + 1,
-              exercise: dummyExercise,
-              sets: [
-                {
-                  id: createUuid(),
-                  workoutExerciseId: newExerciseId,
-                  order: 1,
-                  reps: null,
-                  weight: null,
-                  e1rm: null,
-                  isDropSet: false,
-                  parentSetId: null,
-                }
-              ],
-              workoutId: workout.id,
-              notes: "",
-              cardioDuration: null,
-              cardioDistance: null,
-              cardioResistance: null,
-              substitutedForId: null,
-              substitutedFor: null,
-              isAdded: false,
-            },
-          ],
-        };
-      })
-    )
-  );
+  return withWorkout(user, planId, weekId, workoutId, workout => {
+    const newExerciseId = createUuid();
+    return {
+      ...workout,
+      exercises: [
+        ...workout.exercises,
+        {
+          ...makeEmptyWorkoutExercise(newExerciseId, workout.id, workout.exercises.length + 1),
+          sets: [makeEmptySet(createUuid(), newExerciseId, 1)],
+        },
+      ],
+    };
+  });
 }
 
 export function addWeek(
@@ -617,9 +582,7 @@ export function removeWeek(
 ): UserPrisma {
   return updatePlan(user, planId, plan => ({
     ...plan,
-    weeks: plan.weeks
-      .filter(week => week.id !== weekId)
-      .map((week, idx) => ({...week, order: idx + 1})),
+    weeks: reindex(plan.weeks.filter(week => week.id !== weekId)),
   }));
 }
 
@@ -656,8 +619,8 @@ export function addWorkoutWithExerciseWithSet(
 ): UserPrisma {
   return updatePlan(user, planId, plan =>
     updateWeek(plan, weekId, week => {
-      const newWorkoutId = createUuid()
-      const newExerciseId = createUuid()
+      const newWorkoutId = createUuid();
+      const newExerciseId = createUuid();
       return {
         ...week,
         workouts: [
@@ -669,39 +632,15 @@ export function addWorkoutWithExerciseWithSet(
             notes: "",
             exercises: [
               {
-                id: newExerciseId,
-                exerciseId: dummyExercise.id,
-                repRange: "",
-                restTime: "",
-                order: 1,
-                exercise: dummyExercise,
-                sets: [
-                  {
-                    id: createUuid(),
-                    workoutExerciseId: newExerciseId,
-                    order: 1,
-                    reps: null,
-                    weight: null,
-                    e1rm: null,
-                    isDropSet: false,
-                    parentSetId: null,
-                  }
-                ],
-                workoutId: newWorkoutId,
-                notes: "",
-                cardioDuration: null,
-                cardioDistance: null,
-                cardioResistance: null,
-                substitutedForId: null,
-                substitutedFor: null,
-                isAdded: false,
+                ...makeEmptyWorkoutExercise(newExerciseId, newWorkoutId, 1),
+                sets: [makeEmptySet(createUuid(), newExerciseId, 1)],
               },
             ],
             weekId,
             dateCompleted: null,
           },
         ],
-      }
+      };
     })
   );
 }
@@ -715,19 +654,7 @@ export function removeWorkout(
   return updatePlan(user, planId, plan =>
     updateWeek(plan, weekId, week => ({
       ...week,
-      workouts: week.workouts
-        .filter(workout => workout.id !== workoutId)
-        .map((workout, idx) => ({...workout, order: idx + 1})),
+      workouts: reindex(week.workouts.filter(workout => workout.id !== workoutId)),
     }))
   );
 }
-
-const dummyExercise: Exercise = {
-  id: -1,
-  category: null,
-  name: "",
-  description: null,
-  equipment: [],
-  primaryMuscles: [],
-  secondaryMuscles: [],
-};

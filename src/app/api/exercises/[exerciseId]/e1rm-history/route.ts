@@ -1,12 +1,14 @@
 import prisma from '@/lib/prisma';
 import {NextRequest, NextResponse} from 'next/server';
-import getLoggedInUser from '@lib/getLoggedInUser';
+import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from '@lib/apiError';
+import {buildPreviousWorkoutFilter, resolveCurrentWorkoutCompletedAt} from '@lib/exerciseQueries';
 
 export type E1rmHistoryPoint = {date: string; bestE1rm: number};
 
 export async function GET(req: NextRequest, props: {params: Promise<{exerciseId: string}>}) {
   const params = await props.params;
+  const session = await requireSession();
   const exerciseId = Number(params.exerciseId);
   const currentWorkoutId = Number(req.nextUrl.searchParams.get('currentWorkoutId')) || undefined;
 
@@ -15,27 +17,13 @@ export async function GET(req: NextRequest, props: {params: Promise<{exerciseId:
   }
 
   try {
-    const user = await getLoggedInUser();
-
-    let currentWorkoutCompletedAt: Date | null = null;
-    if (currentWorkoutId !== undefined) {
-      const currentWorkout = await prisma.workout.findUnique({
-        where: {id: currentWorkoutId},
-        select: {dateCompleted: true},
-      });
-      currentWorkoutCompletedAt = currentWorkout?.dateCompleted ?? null;
-    }
+    const user = session.user;
+    const completedAt = await resolveCurrentWorkoutCompletedAt(currentWorkoutId);
 
     const workoutExercises = await prisma.workoutExercise.findMany({
       where: {
         exerciseId,
-        workout: {
-          dateCompleted: {
-            not: null,
-            ...(currentWorkoutCompletedAt !== null ? {lt: currentWorkoutCompletedAt} : {}),
-          },
-          week: {plan: {userId: user.id}},
-        },
+        workout: buildPreviousWorkoutFilter(user.id, currentWorkoutId, completedAt, false),
       },
       select: {
         workout: {select: {dateCompleted: true}},

@@ -1,10 +1,11 @@
 import prisma from '@/lib/prisma';
 import {NextRequest, NextResponse} from 'next/server';
-import getLoggedInUser from '@lib/getLoggedInUser';
+import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from "@lib/apiError";
 
 export async function PUT(req: NextRequest, props: { params: Promise<{ exerciseId: string }> }) {
   const params = await props.params;
+  const session = await requireSession();
   const {note} = await req.json();
 
   if (typeof note !== 'string') {
@@ -13,7 +14,7 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ exerciseI
 
   try {
     const exerciseId = Number(params.exerciseId);
-    const user = await getLoggedInUser();
+    const user = session.user;
 
     const updated = await prisma.userExerciseNote.upsert({
       where: {
