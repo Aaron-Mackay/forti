@@ -41,7 +41,7 @@ export default function ExercisePickerDialog({
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const {exercises, loading} = useExerciseList(open);
+  const {exercises, loading, addExercise} = useExerciseList(open);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>(defaultCategory ?? 'resistance');
   const [createOpen, setCreateOpen] = useState(false);
@@ -136,7 +136,7 @@ export default function ExercisePickerDialog({
         onClose={() => setCreateOpen(false)}
         initialName={search}
         onExerciseAdded={(newExercise) => {
-          setExercises(prev => [...prev, newExercise]);
+          addExercise(newExercise);
           setCreateOpen(false);
           onSelect(newExercise);
         }}

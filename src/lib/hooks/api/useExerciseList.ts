@@ -7,12 +7,16 @@ import {Exercise} from '@prisma/client';
 type ExerciseListState = {
   exercises: Exercise[];
   loading: boolean;
+  addExercise: (exercise: Exercise) => void;
 };
 
 /**
  * Lazily loads the full exercise list when `enabled` becomes true.
  * The result is retained in state so subsequent toggles of `enabled`
  * do not trigger a second fetch.
+ *
+ * `addExercise` appends a newly created exercise to the local list
+ * without a refetch.
  */
 export function useExerciseList(enabled: boolean): ExerciseListState {
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -27,5 +31,8 @@ export function useExerciseList(enabled: boolean): ExerciseListState {
       .finally(() => setLoading(false));
   }, [enabled, exercises.length]);
 
-  return {exercises, loading};
+  const addExercise = (exercise: Exercise) =>
+    setExercises(prev => [...prev, exercise]);
+
+  return {exercises, loading, addExercise};
 }
