@@ -65,6 +65,11 @@ test.describe('Supplements — CRUD', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/user');
     await enableSupplements(page);
+    // Clean up any supplements left over from a previous failed test
+    const existing = await (await page.request.get('/api/supplements')).json() as { id: number }[];
+    for (const s of existing) {
+      await page.request.delete(`/api/supplements/${s.id}`);
+    }
     await page.goto('/user/supplements');
     await expect(page.getByRole('banner')).toContainText('Supplements');
   });
@@ -103,12 +108,12 @@ test.describe('Supplements — CRUD', () => {
     await expect(page.getByText('Magnesium')).toBeVisible();
     await expect(page.getByText('400mg · Daily')).toBeVisible();
 
-    // Clean up
+    // Clean up — accept the native confirm dialog before clicking delete
     const deleteResponse = page.waitForResponse(
       r => r.url().includes('/api/supplements/') && r.request().method() === 'DELETE',
     );
+    page.once('dialog', dialog => dialog.accept());
     await page.getByRole('button', { name: 'Delete supplement' }).first().click();
-    await page.getByRole('button', { name: 'OK' }).click().catch(() => {/* confirm dialog handled natively */});
     await deleteResponse;
   });
 
