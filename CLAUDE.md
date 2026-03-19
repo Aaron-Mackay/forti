@@ -105,8 +105,13 @@ forti/
 │   │   ├── api/             # Backend route handlers
 │   │   ├── user/            # Authenticated user pages
 │   │   │   ├── calendar/    # Calendar view + day metrics
+│   │   │   ├── check-in/    # Weekly check-in form + history
+│   │   │   ├── coach/
+│   │   │   │   └── check-ins/  # Coach review of client check-ins
 │   │   │   ├── plan/        # Training plan management
+│   │   │   ├── settings/    # User settings (dashboard, check-in day, etc.)
 │   │   │   └── workout/     # Active workout interface
+│   │   ├── coach/[code]/    # Public coach invite acceptance page
 │   │   ├── exercises/       # Exercise library
 │   │   ├── library/         # Library management
 │   │   ├── login/           # Login page
@@ -114,8 +119,13 @@ forti/
 │   ├── components/          # Shared UI components (AppBar, Loading, etc.)
 │   ├── context/             # React context (WorkoutEditorContext)
 │   ├── lib/                 # Core utilities, hooks, and providers
+│   │   ├── hooks/
+│   │   │   ├── api/         # Data-fetching hooks (useApiGet, useExerciseList, usePlanCount)
+│   │   │   ├── useApiMutation.ts
+│   │   │   └── useOfflineCache.ts
+│   │   └── providers/       # React providers (Auth, Settings, DateLocalization)
 │   ├── types/               # Shared TypeScript types
-│   ├── utils/               # Standalone utilities (offline sync, CSV import)
+│   ├── utils/               # Standalone utilities (offline sync, CSV import, AI plan parser)
 │   ├── testUtils/           # Test helpers
 │   └── proxy.ts             # Auth guard for all routes
 ├── prisma/
@@ -141,21 +151,36 @@ All routes live under `src/app/api/` and follow Next.js App Router conventions:
 | Route | Purpose |
 |---|---|
 | `api/auth/[...nextauth]` | NextAuth handler (Google + Demo login) |
+| `api/calendar-data` | Calendar sync data |
+| `api/check-in` | GET/POST weekly check-in |
+| `api/check-in/current` | GET current week's check-in + day metrics |
+| `api/coach` | GET/PUT coach info |
+| `api/coach/activate` | POST to generate a coach invite code |
+| `api/coach/clients/[clientId]` | GET client data (coach access) |
+| `api/coach/check-ins` | GET client check-ins list (coach) |
+| `api/coach/check-ins/[id]/notes` | PATCH coach notes on a check-in |
+| `api/coach/request` | GET/POST coach link requests |
+| `api/coach/request/[requestId]` | PATCH accept/reject a coach request |
+| `api/coach/unlink` | POST to remove a client |
+| `api/cron/check-in-reminders` | Cron job — sends weekly reminder emails (secured by `CRON_SECRET`) |
 | `api/dayMetric` | CRUD for daily health metrics |
 | `api/event`, `api/event/[id]` | Calendar event management |
-| `api/plan` | Training plan CRUD |
-| `api/plans/count` | Count user's plans |
-| `api/saveUserWorkoutData` | Bulk save workout session data |
-| `api/sets/[setId]` | Update individual exercise sets |
-| `api/users` | User management |
-| `api/report-bug` | Bug report submission (uses mailersend) |
-| `api/workout/[workoutId]` | Workout CRUD |
-| `api/workoutExercise/[workoutExerciseId]` | Workout exercise management |
+| `api/exerciseNote/[exerciseId]` | Exercise notes CRUD |
 | `api/exercises/[exerciseId]/previous-sets` | Fetch previous sets for an exercise |
 | `api/exercises/[exerciseId]/previous-cardio` | Fetch previous cardio data for an exercise |
 | `api/exercises/[exerciseId]/e1rm-history` | E1RM history for progress sparkline |
-| `api/exerciseNote/[exerciseId]` | Exercise notes CRUD |
-| `api/user/settings` | Save user settings (dashboard/workout toggles) |
+| `api/plan` | Training plan CRUD |
+| `api/plan/ai-import` | POST — AI-generated plan import via Claude API |
+| `api/plans/count` | Count user's plans |
+| `api/push/subscribe` | POST to register a web push subscription |
+| `api/report-bug` | Bug report submission (uses MailerSend) |
+| `api/saveUserWorkoutData` | Bulk save workout session data |
+| `api/sets/[setId]` | Update individual exercise sets |
+| `api/user-data` | GET full user data dump |
+| `api/user/settings` | PATCH user settings (dashboard/workout/check-in toggles) |
+| `api/users` | User management |
+| `api/workout/[workoutId]` | Workout CRUD |
+| `api/workoutExercise/[workoutExerciseId]` | Workout exercise management |
 
 All API routes that require authentication must call `requireSession()` from `src/lib/requireSession.ts`.
 
@@ -180,14 +205,19 @@ The database uses PostgreSQL via Prisma. Key relationships:
 
 ```
 User
- ├── Plan[]           (ordered by `order` field)
- │    └── Week[]      (ordered by `order` field)
- │         └── Workout[]    (ordered by `order` field)
+ ├── Plan[]              (ordered by `order` field)
+ │    └── Week[]         (ordered by `order` field)
+ │         └── Workout[]        (ordered by `order` field)
  │              └── WorkoutExercise[]  (ordered by `order` field)
  │                   └── ExerciseSet[]  (ordered by `order` field)
- ├── Event[]          (calendar events: BlockEvents and CustomEvents)
- ├── DayMetric[]      (one per user per date)
- └── UserExerciseNote[]  (one per user per exercise)
+ ├── Event[]             (calendar events: BlockEvents and CustomEvents)
+ ├── DayMetric[]         (one per user per date)
+ ├── UserExerciseNote[]  (one per user per exercise)
+ ├── WeeklyCheckIn[]     (one per user per ISO week start; @@unique([userId, weekStartDate]))
+ │    — subjective ratings (1–5): energyLevel, moodRating, stressLevel, sleepQuality,
+ │      recoveryRating, adherenceRating; workout counts; weekReview text; coach feedback
+ ├── PushSubscription[]  (web push endpoints; @@index([userId]))
+ └── CoachRequest[]      (pending/rejected requests; clientId is unique)
 
 Exercise  (global, not user-scoped; unique by name+category)
  └── WorkoutExercise[]
@@ -215,6 +245,7 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 | `src/lib/prisma.ts` | Prisma client singleton |
 | `src/lib/api.ts` | Fetch wrapper + API utility functions |
 | `src/lib/fetchWrapper.ts` | HTTP client wrapper used in lib/api.ts |
+| `src/lib/clientApi.ts` | Client-side typed API wrappers (`saveUserWorkoutData`, `savePlan`) |
 | `src/lib/dateUtils.ts` | Date manipulation helpers |
 | `src/lib/dayMetrics.ts` | Day metric business logic |
 | `src/lib/events.ts` | Calendar event helpers |
@@ -222,9 +253,29 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 | `src/lib/confirmPermission.ts` | Authorization checks for resource access |
 | `src/lib/requireSession.ts` | Server-side session guard for API routes |
 | `src/lib/getLoggedInUser.ts` | Retrieve full User record from session |
+| `src/lib/queries.ts` | Ownership-chain DB helpers: `getWorkoutWithOwner`, `getWorkoutExerciseWithOwner`, `getSetWithOwner` |
+| `src/lib/exerciseQueries.ts` | Shared Prisma helpers for the three exercise-history routes |
+| `src/lib/apiResponses.ts` | Standardised error response factories (`errorResponse`, `notFoundResponse`, etc.) |
+| `src/lib/apiSchemas.ts` | Zod schemas for day metric and event payloads |
+| `src/lib/planSchemas.ts` | Zod schemas for workout plan import/export |
+| `src/lib/apiError.ts` | `extractErrorMessage`, `isPrismaNotFound` helpers |
+| `src/lib/e1rm.ts` | Epley formula: `computeE1rm(weight, reps)` |
+| `src/lib/workoutProgress.ts` | `getWorkoutStatus`, `getWeekStatus`, `getPlanStatus` helpers |
+| `src/lib/checkInUtils.ts` | `getWeekStart`, `getCheckInDate`, `toDateOnly` — check-in date utilities |
+| `src/lib/notifications.ts` | Email (MailerSend) + web push helpers for check-in reminders |
 | `src/lib/useWorkoutEditor.ts` | Custom hook managing workout editor state |
+| `src/lib/hooks/api/useApiGet.ts` | Generic GET hook — `{data, loading, error}`; pass `null` URL to defer |
+| `src/lib/hooks/api/useExerciseList.ts` | Lazy-loads exercise list; exposes `{exercises, loading, addExercise}` |
+| `src/lib/hooks/api/usePlanCount.ts` | Thin wrapper around `useApiGet` for plan count |
+| `src/lib/hooks/useApiMutation.ts` | Generic mutation hook — `{mutate, loading, error, data, reset}` |
+| `src/lib/hooks/useOfflineCache.ts` | Hydrates/primes IndexedDB cache for offline-capable pages |
+| `src/lib/usePushSubscription.ts` | Manages browser push permission + subscription registration |
 | `src/lib/providers/AuthProvider.tsx` | React context wrapping SessionProvider |
-| `src/context/WorkoutEditorContext.tsx` | Workout editor state (used across workout pages) |
+| `src/lib/providers/SettingsProvider.tsx` | Manages user settings state; exposes `useSettings()` hook |
+| `src/context/WorkoutEditorContext.tsx` | Workout editor state: `state`, `dispatch`, `debouncedDispatch`, `allExercises`, `addExercise` |
+| `src/types/dataTypes.ts` | Prisma type helpers (`UserPrisma`, `PlanPrisma`, etc.) + exercise constants |
+| `src/types/checkInTypes.ts` | Check-in interfaces, `computeMetricSummary`, `formatSleepMins` |
+| `src/utils/aiPlanParser.ts` | AI plan response schema + `AiParseError` for `api/plan/ai-import` |
 
 ---
 
@@ -262,11 +313,18 @@ src/utils/clientDb.test.ts
 src/utils/offlineSync.test.ts
 src/utils/sheetUpload.test.ts
 src/utils/userPlanMutators.test.ts
+src/utils/aiPlanParser.test.ts
 src/app/api/workout/[workoutId]/route.test.ts
 src/app/api/exercises/[exerciseId]/previous-sets/route.test.ts
+src/app/api/plan/ai-import/route.test.ts
 src/app/user/workout/Stopwatch.test.tsx
+src/app/user/workout/StopwatchContext.test.tsx
+src/app/user/workout/CardioSlide.test.tsx
 src/app/user/workout/ExercisesListView.test.tsx
 src/app/user/workout/ExerciseDetailView.test.tsx
+src/app/user/plan/create/AiFormScreen.test.tsx
+src/app/login/LoginButtons.test.tsx
+src/types/settingsTypes.test.ts
 tests/ToggleableEditableField.test.tsx
 ```
 
@@ -276,7 +334,7 @@ tests/ToggleableEditableField.test.tsx
 - **Location:** `tests/e2e/`
 - **Browsers:** Chromium, Firefox, WebKit
 - **Run command:** `npm run test:e2e` (boots dev server on port 3000 first)
-- Tests: `AppBar.test.ts`, `WorkoutClient.test.ts`, `dashboard.test.ts`, `calendar.test.ts`, `plans.test.ts`, `login.test.ts`
+- Tests: `AppBar.test.ts`, `WorkoutClient.test.ts`, `dashboard.test.ts`, `calendar.test.ts`, `plans.test.ts`, `login.test.ts`, `coachLink.test.ts`, `exercises.test.ts`, `settings.test.ts`
 
 **IMPORTANT — UI changes require E2E tests:** When adding or modifying UI components or pages, E2E tests covering the new or changed behaviour must be added or updated in the same commit. Place tests in `tests/e2e/<page>.test.ts`, mirroring the page being changed. Always import `test` and `expect` from `./fixtures` (not directly from `@playwright/test`) so that unhandled page errors automatically fail the test:
 
@@ -318,11 +376,25 @@ ESLint config (`.eslintrc.js`):
 Required variables (create a `.env.local` file — never commit it):
 
 ```env
-DATABASE_URL=           # PostgreSQL connection string (Neon or local)
-GOOGLE_CLIENT_ID=       # Google OAuth client ID
-GOOGLE_CLIENT_SECRET=   # Google OAuth client secret
-NEXTAUTH_SECRET=        # Random secret for JWT signing
-NEXTAUTH_URL=           # Full URL of the app (e.g. http://localhost:3000)
+# Core
+DATABASE_URL=                    # PostgreSQL connection string (Neon or local)
+GOOGLE_CLIENT_ID=                # Google OAuth client ID
+GOOGLE_CLIENT_SECRET=            # Google OAuth client secret
+NEXTAUTH_SECRET=                 # Random secret for JWT signing
+NEXTAUTH_URL=                    # Full URL of the app (e.g. http://localhost:3000)
+
+# Email (MailerSend) — used for bug reports and check-in reminders
+MAILERSEND_API_KEY=
+MAILERSEND_FROM=                 # Sender address
+
+# Web Push (VAPID) — used for check-in reminder push notifications
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=                   # mailto: URI e.g. mailto:noreply@example.com
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=    # Client-side public key (exposed to browser)
+
+# Cron jobs (Vercel)
+CRON_SECRET=                     # Secures /api/cron/* endpoints
 ```
 
 For local development with a local PostgreSQL instance:
@@ -360,8 +432,15 @@ Type declarations for this pattern are in `svgr.d.ts`.
 - **Ordering:** Entities with an `order` field must maintain gapless sequential ordering within their parent. APIs and mutations must handle reordering carefully.
 - **Cascade deletes:** Most child entities delete on cascade (e.g., deleting a Plan deletes all its Weeks, Workouts, Exercises, and Sets).
 - **Exercise deduplication:** `Exercise` records are global and unique by `name + category`. `WorkoutExercise` is the join model linking an exercise instance to a workout.
-- **Coach-client:** A `User` can have a `coachId` pointing to another user. Coaches can view client plans.
+- **Inline exercise creation:** The exercise picker (`ExercisePickerDialog`) and plan editor show a `+ Create "…"` button when a search term has no matches. On create, `useExerciseList.addExercise()` and `WorkoutEditorContext.addExercise()` optimistically append the new exercise locally without a refetch.
+- **API hooks pattern:** Hooks in `src/lib/hooks/api/` use `fetchJson` and return `{data, loading, error}`. When a hook owns cached list state that callers may need to mutate, it must also expose a mutation callback (e.g. `addExercise`) rather than keeping the setter private — this prevents callers from needing to bypass the hook with their own `useState`.
+- **Ownership verification:** API routes that operate on nested resources (sets, exercises, workouts) use `getSetWithOwner` / `getWorkoutExerciseWithOwner` / `getWorkoutWithOwner` from `src/lib/queries.ts` to confirm the resource belongs to the authenticated user in a single query.
+- **Standardised API errors:** Use the factories in `src/lib/apiResponses.ts` (`errorResponse`, `notFoundResponse`, `forbiddenResponse`, `validationErrorResponse`) rather than inline `NextResponse.json` error construction.
+- **Settings:** User settings (dashboard toggles, check-in day, etc.) are stored as a JSON column on `User`. Access via `useSettings()` from `SettingsProvider`; persist via `PATCH /api/user/settings`.
+- **Coach-client:** A `User` can have a `coachId` pointing to another user. Invitation flow: coach generates a code (`/api/coach/activate`), client visits `/coach/[code]`, `CoachRequest` is created, coach accepts. Coaches can view client plans and check-ins.
+- **Weekly check-in:** Users submit a weekly `WeeklyCheckIn` (subjective ratings + review). Coaches receive an email alert and can add notes. A Vercel cron job (`0 7 * * *`) sends reminder emails via MailerSend. Push notifications are also supported via the VAPID/web-push stack.
 - **Mobile-first UI:** Uses `dvh` (dynamic viewport height) units for mobile compatibility. Calendar and some pages use bottom drawers on mobile.
+- **Vercel cron jobs:** Configured in `vercel.json`. Secured by `CRON_SECRET` header check in each cron route handler.
 - **Vercel Analytics:** `@vercel/analytics` and `@vercel/speed-insights` are integrated in the app layout.
 
 ---
