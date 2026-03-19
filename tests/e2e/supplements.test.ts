@@ -14,23 +14,36 @@ test.describe.configure({ mode: 'serial' });
 // Helper: ensure supplements setting is on/off
 // ---------------------------------------------------------------------------
 async function enableSupplements(page: import('@playwright/test').Page) {
-  await page.request.patch('/api/user/settings', {
+  const res = await page.request.patch('/api/user/settings', {
     data: { settings: { showSupplements: true } },
   });
+  if (!res.ok()) throw new Error(`enableSupplements failed: ${res.status()}`);
 }
 
 async function disableSupplements(page: import('@playwright/test').Page) {
-  await page.request.patch('/api/user/settings', {
+  const res = await page.request.patch('/api/user/settings', {
     data: { settings: { showSupplements: false } },
   });
+  if (!res.ok()) throw new Error(`disableSupplements failed: ${res.status()}`);
 }
 
 // ---------------------------------------------------------------------------
-// Gating tests — not state-sensitive, run on all browsers
+// Gating tests — chromium only to avoid racing with CRUD beforeEach across
+// browser projects (CRUD enables supplements; concurrent gating tests would
+// then see 200 instead of 404).
 // ---------------------------------------------------------------------------
 test.describe('Supplements — gating', () => {
-  test('page returns 404 when showSupplements is off', async ({ page }) => {
+  test.skip(({ browserName }) => browserName !== 'chromium',
+    'Gating test runs on chromium only; other projects race with CRUD beforeEach');
+
+  test.beforeEach(async ({ page }) => {
+    // Navigate to the app first so the session cookie is sent as same-origin
+    // before we make the settings PATCH request.
+    await page.goto('/user');
     await disableSupplements(page);
+  });
+
+  test('page returns 404 when showSupplements is off', async ({ page }) => {
     const response = await page.goto('/user/supplements');
     expect(response?.status()).toBe(404);
   });
@@ -44,6 +57,7 @@ test.describe('Supplements — CRUD', () => {
     'State-dependent tests run on desktop Chromium only; mobile projects share a DB user and create race conditions');
 
   test.beforeEach(async ({ page }) => {
+    await page.goto('/user');
     await enableSupplements(page);
     await page.goto('/user/supplements');
     await expect(page.getByRole('banner')).toContainText('Supplements');
