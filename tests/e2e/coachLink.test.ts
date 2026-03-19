@@ -2,7 +2,7 @@
  * Coach registration link page tests (/coach/[code]).
  *
  * Tests the invitation page that coaches share with clients.
- * All tests run as the demo user (Bob).
+ * All tests run as the E2E test user (TestUser).
  */
 import { test, expect } from './fixtures';
 
@@ -25,7 +25,7 @@ test.describe('Coach link page', () => {
   });
 
   test("visiting own coach code shows 'this is your invite code' message", async ({ page }) => {
-    // Activate Bob's coach mode to generate a code
+    // Activate TestUser's coach mode to generate a code
     await page.request.post('/api/coach/activate', { data: { active: true } });
     const res = await page.request.get('/api/coach');
     const data = await res.json() as { coachCode: string };

@@ -12,14 +12,13 @@ export const authOptions: AuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
 
-    // Demo login
+    // Demo login — public "Try Demo" button, logs in as Jeff Demo
     CredentialsProvider({
       id: "demo",
       name: "Demo",
       credentials: {},
       async authorize() {
-        // Look up or create a fixed demo user in your DB
-        const demoEmail = "bob@example.com";
+        const demoEmail = "jeff@example.com";
 
         let user = await prisma.user.findUnique({where: {email: demoEmail}});
 
@@ -27,9 +26,31 @@ export const authOptions: AuthOptions = {
           console.error('Demo user not found')
           user = await prisma.user.create({
             data: {
-              name: "Demo User",
+              name: "Jeff Demo",
               email: demoEmail,
-              // you could add default plan/weeks/etc here
+            },
+          });
+        }
+        return user;
+      },
+    }),
+
+    // TestUser login — used exclusively by E2E tests via direct API call
+    CredentialsProvider({
+      id: "testuser",
+      name: "TestUser",
+      credentials: {},
+      async authorize() {
+        const testEmail = "testuser@example.com";
+
+        let user = await prisma.user.findUnique({where: {email: testEmail}});
+
+        if (!user) {
+          console.error('TestUser not found')
+          user = await prisma.user.create({
+            data: {
+              name: "TestUser",
+              email: testEmail,
             },
           });
         }
