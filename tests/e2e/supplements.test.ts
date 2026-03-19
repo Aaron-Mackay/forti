@@ -80,7 +80,7 @@ test.describe('Supplements — CRUD', () => {
   });
 
   test('renders Active and no history section when empty', async ({ page }) => {
-    await expect(page.getByText('Active', { exact: false })).toBeVisible();
+    await expect(page.getByText('Active', { exact: true })).toBeVisible();
     await expect(page.getByText('No active supplements.')).toBeVisible();
   });
 
