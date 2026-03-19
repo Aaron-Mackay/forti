@@ -13,6 +13,7 @@ import {Exercise} from '@prisma/client';
 import {format} from 'date-fns';
 import MuscleHighlight from '@/components/MuscleHighlight';
 import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
+import {PRIMARY_COLOUR} from '@lib/theme';
 
 const Chart = dynamic(
   () => import('react-apexcharts').catch(() => ({default: () => null})),
@@ -64,7 +65,7 @@ function E1rmChart({exercise}: {exercise: Exercise}) {
           labels: {rotate: -30, style: {fontSize: '11px'}},
           tickAmount: Math.min(history.length, 6),
         },
-        colors: ['#1976d2'],
+        colors: [PRIMARY_COLOUR],
       }}
     />
   );

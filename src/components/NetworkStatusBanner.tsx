@@ -46,8 +46,8 @@ export default function NetworkStatusBanner() {
 
   return (
     !isOnline &&
-    <Box style={{
-      backgroundColor: 'indianred',
+    <Box sx={{
+      bgcolor: 'error.dark',
       color: 'white',
       textAlign: 'center',
     }}>

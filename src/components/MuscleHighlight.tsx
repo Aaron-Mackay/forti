@@ -4,6 +4,7 @@ import {useInsertionEffect} from 'react';
 import {Box} from '@mui/material';
 import FrontBody from './front.svg';
 import BackBody from './back.svg';
+import {MUSCLE_PRIMARY_COLOUR, MUSCLE_SECONDARY_COLOUR} from '@lib/theme';
 
 export default function MuscleHighlight({
   primaryMuscles,
@@ -18,8 +19,8 @@ export default function MuscleHighlight({
 }) {
   const id = `anatomy-${exerciseId}`;
   const css = [
-    ...primaryMuscles.map(k => `#${id} [data-muscle="${k}"] { fill: #e8453c !important; }`),
-    ...secondaryMuscles.map(k => `#${id} [data-muscle="${k}"] { fill: #f5a623 !important; }`),
+    ...primaryMuscles.map(k => `#${id} [data-muscle="${k}"] { fill: ${MUSCLE_PRIMARY_COLOUR} !important; }`),
+    ...secondaryMuscles.map(k => `#${id} [data-muscle="${k}"] { fill: ${MUSCLE_SECONDARY_COLOUR} !important; }`),
   ].join('\n');
 
   // useInsertionEffect is a no-op on the server, so no <style> appears in the
