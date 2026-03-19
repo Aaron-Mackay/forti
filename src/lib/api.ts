@@ -218,6 +218,13 @@ export async function getAllLinkedPlans(userId: string) {
   }
 }
 
+export async function getCoachClients(coachId: string): Promise<{ id: string; name: string | null }[]> {
+  return prisma.user.findMany({
+    where: { coachId },
+    select: { id: true, name: true },
+  });
+}
+
 export async function getUserFromPlan(planId: string) {
   const plan = await prisma.plan.findUnique({
     where: { id: Number(planId) },
