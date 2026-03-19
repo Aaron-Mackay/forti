@@ -239,6 +239,8 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 
 ## Key Library Files
 
+> **Keep this table current.** When adding a new shared helper to `src/lib/`, add a row here in the same commit.
+
 | File | Purpose |
 |---|---|
 | `src/lib/auth.ts` | NextAuth config, export `authOptions` |
@@ -433,7 +435,8 @@ Type declarations for this pattern are in `svgr.d.ts`.
 - **Cascade deletes:** Most child entities delete on cascade (e.g., deleting a Plan deletes all its Weeks, Workouts, Exercises, and Sets).
 - **Exercise deduplication:** `Exercise` records are global and unique by `name + category`. `WorkoutExercise` is the join model linking an exercise instance to a workout.
 - **Inline exercise creation:** The exercise picker (`ExercisePickerDialog`) and plan editor show a `+ Create "…"` button when a search term has no matches. On create, `useExerciseList.addExercise()` and `WorkoutEditorContext.addExercise()` optimistically append the new exercise locally without a refetch.
-- **API hooks pattern:** Hooks in `src/lib/hooks/api/` use `fetchJson` and return `{data, loading, error}`. When a hook owns cached list state that callers may need to mutate, it must also expose a mutation callback (e.g. `addExercise`) rather than keeping the setter private — this prevents callers from needing to bypass the hook with their own `useState`.
+- **API hooks pattern:** Hooks in `src/lib/hooks/api/` use `fetchJson` and return `{data, loading, error}`. When a hook owns cached list state that callers may need to mutate, it must also expose a mutation callback (e.g. `addExercise`) rather than keeping the setter private — this prevents callers from needing to bypass the hook with their own `useState`. **This is non-negotiable: callers must never need their own `useState` to work around a hook that already owns the list.**
+- **DRY for DB queries:** When 2+ API routes share the same Prisma query shape (ownership lookup, include structure, result mapping), extract it to a named helper in `src/lib/` immediately — do not copy-paste Prisma queries across routes. Add the new file to the Key Library Files table in the same commit.
 - **Ownership verification:** API routes that operate on nested resources (sets, exercises, workouts) use `getSetWithOwner` / `getWorkoutExerciseWithOwner` / `getWorkoutWithOwner` from `src/lib/queries.ts` to confirm the resource belongs to the authenticated user in a single query.
 - **Standardised API errors:** Use the factories in `src/lib/apiResponses.ts` (`errorResponse`, `notFoundResponse`, `forbiddenResponse`, `validationErrorResponse`) rather than inline `NextResponse.json` error construction.
 - **Settings:** User settings (dashboard toggles, check-in day, etc.) are stored as a JSON column on `User`. Access via `useSettings()` from `SettingsProvider`; persist via `PATCH /api/user/settings`.
