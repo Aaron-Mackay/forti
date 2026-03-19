@@ -4,6 +4,7 @@ import {useEffect, useRef, useState} from 'react';
 import {useSearchParams} from 'next/navigation';
 import {queueOrSendRequest, syncQueuedRequests} from '@/utils/offlineSync';
 import {getUserDataCache, saveUserDataCache} from '@/utils/clientDb';
+import {useOfflineCache} from '@lib/hooks/useOfflineCache';
 import {UserPrisma, WorkoutExercisePrisma, WorkoutPrisma} from '@/types/dataTypes';
 
 import WeeksListView from './WeeksListView';
@@ -106,17 +107,7 @@ export default function WorkoutClient({userData}: { userData: UserPrisma }) {
   // On mount: if offline, restore the most recent cached state (may include
   // optimistic changes the user made offline before a hard-refresh).
   // If online, save the fresh server data to cache.
-  useEffect(() => {
-    const userId = userDataState.id;
-    if (!navigator.onLine) {
-      getUserDataCache(userId).then(entry => {
-        if (entry) setUserData(entry.data);
-      }).catch(console.error);
-    } else {
-      saveUserDataCache(userId, userDataState).catch(console.error);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useOfflineCache(userDataState.id, userDataState, setUserData, getUserDataCache, saveUserDataCache);
 
   // Debounced cache write: persist userDataState on every change so offline
   // refreshes can restore the latest local state (including queued mutations).

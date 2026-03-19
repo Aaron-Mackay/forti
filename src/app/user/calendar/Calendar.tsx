@@ -15,6 +15,7 @@ import {getEventsOnDate, parsedEvents} from "@/app/user/calendar/utils";
 import {EventType} from "@prisma/client";
 import {CalendarRightDrawer} from "@/app/user/calendar/CalendarRightDrawer";
 import {getDayMetricsCache, getEventsCache, saveDayMetricsCache, saveEventsCache} from "@/utils/clientDb";
+import {useOfflineCache} from '@lib/hooks/useOfflineCache';
 
 export type BottomDrawerView = 'list' | 'details' | 'event-form' | 'daymetric-form';
 
@@ -44,18 +45,8 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
     useState<{ start: Date | null, endExcl: Date | null }>({start: null, endExcl: null})
 
   // On mount: if offline, restore cached state; if online, prime the cache.
-  useEffect(() => {
-    if (!navigator.onLine) {
-      Promise.all([getEventsCache(userId), getDayMetricsCache(userId)]).then(([evEntry, dmEntry]) => {
-        if (evEntry) setEventsInState(evEntry.data);
-        if (dmEntry) setDayMetricsState(dmEntry.data);
-      }).catch(console.error);
-    } else {
-      saveEventsCache(userId, eventsInState).catch(console.error);
-      saveDayMetricsCache(userId, dayMetricsState).catch(console.error);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useOfflineCache(userId, eventsInState, setEventsInState, getEventsCache, saveEventsCache);
+  useOfflineCache(userId, dayMetricsState, setDayMetricsState, getDayMetricsCache, saveDayMetricsCache);
 
   // On reconnect: re-fetch calendar data; show banner if events changed.
   useEffect(() => {
