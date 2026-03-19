@@ -134,6 +134,14 @@ model DayMetric {
   fat       Int?
   date      DateTime @db.Date
 
+  // Per-day targets
+  caloriesTarget  Int?
+  proteinTarget   Int?
+  carbsTarget     Int?
+  fatTarget       Int?
+  stepsTarget     Int?
+  sleepMinsTarget Int?
+
   @@unique([userId, date])
 }
 
