@@ -33,6 +33,7 @@ playwright-cli state-save playwright/.auth/user.json
 |-----|------|
 | `http://localhost:3000/user` | Dashboard |
 | `http://localhost:3000/user/nutrition` | Nutrition tracking & targets |
+| `http://localhost:3000/user/supplements` | Supplements tracker (requires showSupplements setting) |
 | `http://localhost:3000/user/calendar` | Calendar & day metrics |
 | `http://localhost:3000/user/plan` | Training plan editor |
 | `http://localhost:3000/user/settings` | User settings (dashboard card visibility toggles) |

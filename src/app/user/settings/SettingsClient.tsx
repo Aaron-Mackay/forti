@@ -32,6 +32,10 @@ const WORKOUT_LABELS: {key: BooleanSettingKey; label: string}[] = [
   {key: 'showStopwatch', label: 'Stopwatch'}
 ];
 
+const FEATURE_LABELS: {key: BooleanSettingKey; label: string}[] = [
+  {key: 'showSupplements', label: 'Supplements'},
+];
+
 export default function SettingsClient() {
   const { settings, loading, error, clearError, updateSetting } = useSettings();
 
@@ -80,6 +84,38 @@ export default function SettingsClient() {
       <Typography variant="overline" color="text.secondary">Workout</Typography>
       <Box>
         {WORKOUT_LABELS.map(({key, label}, i) => (
+          <React.Fragment key={key}>
+            {i > 0 && <Divider/>}
+            {loading
+              ? (
+                <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1}}>
+                  <Typography variant="body1">{label}</Typography>
+                  <Skeleton variant="rounded" width={52} height={32}/>
+                </Box>
+              )
+              : (
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings[key]}
+                      onChange={() => handleToggle(key)}
+                    />
+                  }
+                  label={label}
+                  labelPlacement="start"
+                  sx={{width: '100%', mx: 0, justifyContent: 'space-between'}}
+                />
+              )
+            }
+          </React.Fragment>
+        ))}
+      </Box>
+
+      <Divider sx={{my: 3}}/>
+
+      <Typography variant="overline" color="text.secondary">Features</Typography>
+      <Box sx={{mb: 2}}>
+        {FEATURE_LABELS.map(({key, label}, i) => (
           <React.Fragment key={key}>
             {i > 0 && <Divider/>}
             {loading

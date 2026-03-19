@@ -16,18 +16,18 @@ test.describe('Nutrition page', () => {
   });
 
   test('shows the weekly summary section', async ({ page }) => {
-    await expect(page.getByText('This week — average', { exact: false })).toBeVisible();
+    await expect(page.getByText('This week — average', { exact: false }).first()).toBeVisible();
   });
 
   test('shows all four macros in the weekly summary', async ({ page }) => {
-    await expect(page.getByText('Calories')).toBeVisible();
-    await expect(page.getByText('Protein')).toBeVisible();
-    await expect(page.getByText('Carbs')).toBeVisible();
-    await expect(page.getByText('Fat')).toBeVisible();
+    await expect(page.getByText('Calories', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Protein', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Carbs', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Fat', { exact: true }).first()).toBeVisible();
   });
 
   test('shows the Daily log section', async ({ page }) => {
-    await expect(page.getByText('Daily log', { exact: false })).toBeVisible();
+    await expect(page.getByText('Daily log', { exact: false }).first()).toBeVisible();
   });
 
   test('shows 7 day cards in the daily log', async ({ page }) => {
