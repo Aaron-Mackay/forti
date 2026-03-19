@@ -451,6 +451,16 @@ Type declarations for this pattern are in `svgr.d.ts`.
 
 ---
 
+## Skills
+
+Skills (slash commands like `/simplify`, `/harden`, `/polish`, etc.) are **prompt-driven** — they do not run automatically. You must explicitly invoke them, either by name (`/simplify`) or in plain English ("run simplify on the changed files").
+
+Claude may **suggest** a relevant skill after completing a task (e.g. "worth running `/simplify` on the changed files") but will not execute it without being asked.
+
+To configure a skill to run automatically on a hook event, use the `update-config` skill.
+
+---
+
 ## Working Style
 
 Before starting implementation on ambiguous tasks, ask 1–2 targeted clarifying questions rather than making assumptions. Good triggers for asking:
