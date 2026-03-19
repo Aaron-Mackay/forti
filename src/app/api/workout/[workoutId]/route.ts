@@ -1,11 +1,12 @@
 import prisma from '@/lib/prisma';
 import {NextRequest, NextResponse} from 'next/server';
-import getLoggedInUser from '@lib/getLoggedInUser';
+import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from "@lib/apiError";
 import {getWorkoutWithOwner} from "@lib/queries";
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ workoutId: string }> }) {
   const params = await props.params;
+  const session = await requireSession();
   const body = await req.json();
   const { notes, dateCompleted } = body;
 
@@ -32,8 +33,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
       return NextResponse.json({error: 'Workout not found'}, {status: 404});
     }
 
-    const user = await getLoggedInUser();
-    if (workout.week.plan.userId !== user.id) {
+    if (workout.week.plan.userId !== session.user.id) {
       return NextResponse.json({error: 'Forbidden'}, {status: 403});
     }
 

@@ -1,9 +1,10 @@
 import {NextResponse} from 'next/server';
 import prisma from '@/lib/prisma';
-import getLoggedInUser from "@lib/getLoggedInUser";
+import {requireSession} from "@lib/requireSession";
 
 export async function GET() {
-  const userId = (await getLoggedInUser()).id
+  const session = await requireSession();
+  const userId = session.user.id;
 
   const [userPlansCount, coachedPlansCount] = await Promise.all([
     prisma.plan.count({ where: { userId } }),

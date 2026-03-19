@@ -11,16 +11,16 @@ vi.mock('@/lib/prisma', () => ({
   },
 }));
 
-vi.mock('@lib/getLoggedInUser', () => ({
-  default: vi.fn(),
+vi.mock('@lib/requireSession', () => ({
+  requireSession: vi.fn(),
 }));
 
 import prisma from '@/lib/prisma';
-import getLoggedInUser from '@lib/getLoggedInUser';
+import {requireSession} from '@lib/requireSession';
 
 const mockFindUnique = prisma.workout.findUnique as ReturnType<typeof vi.fn>;
 const mockUpdate = prisma.workout.update as ReturnType<typeof vi.fn>;
-const mockGetLoggedInUser = getLoggedInUser as ReturnType<typeof vi.fn>;
+const mockRequireSession = requireSession as ReturnType<typeof vi.fn>;
 
 function makeRequest(body: unknown, workoutId = '42'): [NextRequest, { params: Promise<{ workoutId: string }> }] {
   const req = new NextRequest(`http://localhost/api/workout/${workoutId}`, {
@@ -41,7 +41,7 @@ const mockWorkout = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockGetLoggedInUser.mockResolvedValue({id: 'user-1'});
+  mockRequireSession.mockResolvedValue({user: {id: 'user-1'}});
   mockFindUnique.mockResolvedValue(mockWorkout);
   mockUpdate.mockResolvedValue({id: 42, notes: '', dateCompleted: null});
 });
@@ -82,7 +82,7 @@ describe('PATCH /api/workout/[workoutId]', () => {
     });
 
     it('returns 403 when workout belongs to a different user', async () => {
-      mockGetLoggedInUser.mockResolvedValue({id: 'other-user'});
+      mockRequireSession.mockResolvedValue({user: {id: 'other-user'}});
       const [req, props] = makeRequest({notes: 'hi'});
       const res = await PATCH(req, props);
       expect(res.status).toBe(403);

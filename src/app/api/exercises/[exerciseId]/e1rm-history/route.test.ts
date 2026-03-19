@@ -13,16 +13,16 @@ vi.mock('@/lib/prisma', () => ({
   },
 }));
 
-vi.mock('@lib/getLoggedInUser', () => ({
-  default: vi.fn(),
+vi.mock('@lib/requireSession', () => ({
+  requireSession: vi.fn(),
 }));
 
 import prisma from '@/lib/prisma';
-import getLoggedInUser from '@lib/getLoggedInUser';
+import {requireSession} from '@lib/requireSession';
 
 const mockFindUnique = prisma.workout.findUnique as ReturnType<typeof vi.fn>;
 const mockFindMany = prisma.workoutExercise.findMany as ReturnType<typeof vi.fn>;
-const mockGetLoggedInUser = getLoggedInUser as ReturnType<typeof vi.fn>;
+const mockRequireSession = requireSession as ReturnType<typeof vi.fn>;
 
 function makeRequest(exerciseId: string, currentWorkoutId?: number): [NextRequest, {params: Promise<{exerciseId: string}>}] {
   const url = new URL(`http://localhost/api/exercises/${exerciseId}/e1rm-history`);
@@ -32,7 +32,7 @@ function makeRequest(exerciseId: string, currentWorkoutId?: number): [NextReques
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockGetLoggedInUser.mockResolvedValue({id: 'user-1'});
+  mockRequireSession.mockResolvedValue({user: {id: 'user-1'}});
   mockFindUnique.mockResolvedValue({dateCompleted: null});
 });
 

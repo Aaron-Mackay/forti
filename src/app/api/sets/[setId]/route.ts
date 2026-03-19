@@ -1,20 +1,20 @@
 import prisma from '@/lib/prisma';
 import {NextRequest, NextResponse} from 'next/server';
-import getLoggedInUser from "@lib/getLoggedInUser";
+import {requireSession} from "@lib/requireSession";
 import {extractErrorMessage} from "@lib/apiError";
 import {computeE1rm} from "@lib/e1rm";
 import {getSetWithOwner} from "@lib/queries";
 
 export async function DELETE(_req: NextRequest, props: { params: Promise<{ setId: string }> }) {
   const params = await props.params;
+  const session = await requireSession();
   try {
     const setId = Number(params.setId);
     const set = await getSetWithOwner(setId);
 
     if (!set) return NextResponse.json({error: 'Set not found'}, {status: 404});
 
-    const user = await getLoggedInUser();
-    if (set.workoutExercise.workout.week.plan.userId !== user.id) {
+    if (set.workoutExercise.workout.week.plan.userId !== session.user.id) {
       return NextResponse.json({error: 'Forbidden'}, {status: 403});
     }
 
@@ -28,6 +28,7 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ setId
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ setId: string }> }) {
   const params = await props.params;
+  const session = await requireSession();
   const {reps, weight} = await req.json();
   const data: { [p: string]: number | null } = {};
 
@@ -45,9 +46,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ setId: 
     if (!set) {
       return NextResponse.json({error: 'Set not found'}, {status: 404});
     }
-    const user = await getLoggedInUser();
-    const ownerId = set.workoutExercise.workout.week.plan.userId;
-    if (ownerId !== user.id) {
+    if (set.workoutExercise.workout.week.plan.userId !== session.user.id) {
       return NextResponse.json({error: 'Forbidden'}, {status: 403});
     }
 

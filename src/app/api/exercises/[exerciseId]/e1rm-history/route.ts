@@ -1,12 +1,13 @@
 import prisma from '@/lib/prisma';
 import {NextRequest, NextResponse} from 'next/server';
-import getLoggedInUser from '@lib/getLoggedInUser';
+import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from '@lib/apiError';
 
 export type E1rmHistoryPoint = {date: string; bestE1rm: number};
 
 export async function GET(req: NextRequest, props: {params: Promise<{exerciseId: string}>}) {
   const params = await props.params;
+  const session = await requireSession();
   const exerciseId = Number(params.exerciseId);
   const currentWorkoutId = Number(req.nextUrl.searchParams.get('currentWorkoutId')) || undefined;
 
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest, props: {params: Promise<{exerciseId:
   }
 
   try {
-    const user = await getLoggedInUser();
+    const user = session.user;
 
     let currentWorkoutCompletedAt: Date | null = null;
     if (currentWorkoutId !== undefined) {

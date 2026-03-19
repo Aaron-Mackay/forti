@@ -1,9 +1,10 @@
 import prisma from '@/lib/prisma';
 import {NextRequest, NextResponse} from 'next/server';
-import getLoggedInUser from '@lib/getLoggedInUser';
+import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from "@lib/apiError";
 
 export async function POST(req: NextRequest) {
+  const session = await requireSession();
   const body = await req.json();
   const {workoutId, exerciseId, order, repRange, restTime, setCount} = body;
 
@@ -25,8 +26,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({error: 'Workout not found'}, {status: 404});
     }
 
-    const user = await getLoggedInUser();
-    if (workout.week.plan.userId !== user.id) {
+    if (workout.week.plan.userId !== session.user.id) {
       return NextResponse.json({error: 'Forbidden'}, {status: 403});
     }
 

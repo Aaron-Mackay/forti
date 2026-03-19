@@ -1,11 +1,12 @@
 import prisma from '@/lib/prisma';
 import {NextRequest, NextResponse} from 'next/server';
-import getLoggedInUser from '@lib/getLoggedInUser';
+import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from "@lib/apiError";
 import {getWorkoutExerciseWithOwner} from "@lib/queries";
 
 export async function DELETE(_req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
   const params = await props.params;
+  const session = await requireSession();
 
   try {
     const workoutExerciseId = Number(params.workoutExerciseId);
@@ -15,8 +16,7 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ worko
       return NextResponse.json({error: 'WorkoutExercise not found'}, {status: 404});
     }
 
-    const user = await getLoggedInUser();
-    if (workoutExercise.workout.week.plan.userId !== user.id) {
+    if (workoutExercise.workout.week.plan.userId !== session.user.id) {
       return NextResponse.json({error: 'Forbidden'}, {status: 403});
     }
 
@@ -31,6 +31,7 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ worko
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
   const params = await props.params;
+  const session = await requireSession();
   const body = await req.json();
   const {notes, cardioDuration, cardioDistance, cardioResistance, exerciseId} = body;
 
@@ -50,8 +51,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
       return NextResponse.json({error: 'WorkoutExercise not found'}, {status: 404});
     }
 
-    const user = await getLoggedInUser();
-    if (workoutExercise.workout.week.plan.userId !== user.id) {
+    if (workoutExercise.workout.week.plan.userId !== session.user.id) {
       return NextResponse.json({error: 'Forbidden'}, {status: 403});
     }
 
