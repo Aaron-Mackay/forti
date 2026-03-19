@@ -43,9 +43,15 @@ test.describe('Supplements — gating', () => {
     await disableSupplements(page);
   });
 
-  test('page returns 404 when showSupplements is off', async ({ page }) => {
-    const response = await page.goto('/user/supplements');
-    expect(response?.status()).toBe(404);
+  test('page is inaccessible when showSupplements is off', async ({ page }) => {
+    await page.goto('/user/supplements');
+    // loading.tsx wraps all /user/* pages in a Suspense boundary, so Next.js begins
+    // streaming the response with HTTP 200 before the server component can call
+    // notFound(). Asserting on response.status() always yields 200 in this setup.
+    // Instead: wait for the loading spinner to resolve, then verify supplements
+    // content is absent (the 404 page has no "Add Supplement" button).
+    await expect(page.locator('[aria-label="Loading..."]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Add Supplement' })).toHaveCount(0);
   });
 });
 
