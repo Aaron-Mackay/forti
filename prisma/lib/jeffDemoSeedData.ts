@@ -10,6 +10,7 @@
 
 import prisma from '../../src/lib/prisma';
 import { BlockSubtype, EventType } from '@prisma/client';
+import { getWeekStart, toDateOnly } from '../../src/lib/checkInUtils';
 
 // ─── Exercise definitions ──────────────────────────────────────────────────
 
@@ -72,7 +73,7 @@ const EXERCISE_BASES: Record<string, { weight: number; reps: number }> = {
  * Safe to call after a full TRUNCATE (deleteMany is a no-op) or against
  * an existing DB (deleteMany cleans up first).
  */
-export async function seedJeffDemoData(user: { id: string }, today: Date): Promise<void> {
+export async function seedJeffDemoData(user: { id: string }, today: Date, coachId?: string): Promise<void> {
   const daysAgo     = (n: number) => { const d = new Date(today); d.setDate(today.getDate() - n); return d; };
   const daysFromNow = (n: number) => { const d = new Date(today); d.setDate(today.getDate() + n); return d; };
   const maybeNull   = <T>(val: T): T | null => Math.random() < 0.3 ? null : val;
@@ -281,4 +282,108 @@ export async function seedJeffDemoData(user: { id: string }, today: Date): Promi
       };
     }),
   });
+
+  // ── Weekly check-ins ──────────────────────────────────────────────────────
+  // 6 completed check-ins over the last 6 weeks. Weeks 1–3 are unreviewed
+  // (so the coach sees unread items); weeks 4–6 have coach notes from Todd.
+  await prisma.weeklyCheckIn.deleteMany({ where: { userId: user.id } });
+
+  const checkInDefs = [
+    {
+      weeksAgo:        1,
+      energyLevel:     4, moodRating: 4, stressLevel: 2,
+      sleepQuality:    4, recoveryRating: 4, adherenceRating: 5,
+      completedWorkouts: 4, plannedWorkouts: 4,
+      weekReview:      'Best week in a while — hit all four sessions and nutrition was on point.',
+      coachMessage:    'Should I add a fifth session or keep it at four for now?',
+      goalsNextWeek:   'Add 2.5 kg to squat and keep calories at surplus.',
+      coachNotes:      null, coachReviewedAt: null,
+    },
+    {
+      weeksAgo:        2,
+      energyLevel:     3, moodRating: 3, stressLevel: 4,
+      sleepQuality:    3, recoveryRating: 3, adherenceRating: 4,
+      completedWorkouts: 3, plannedWorkouts: 4,
+      weekReview:      'Stressful week at work — missed one session but hit everything else.',
+      coachMessage:    null,
+      goalsNextWeek:   'Get back to four sessions and sort out sleep.',
+      coachNotes:      null, coachReviewedAt: null,
+    },
+    {
+      weeksAgo:        3,
+      energyLevel:     5, moodRating: 5, stressLevel: 2,
+      sleepQuality:    4, recoveryRating: 5, adherenceRating: 5,
+      completedWorkouts: 4, plannedWorkouts: 4,
+      weekReview:      'Felt incredible this week — new deadlift PB at 140 kg.',
+      coachMessage:    'Happy with how the deadlift is progressing. Any cues for lockout?',
+      goalsNextWeek:   'Maintain the momentum and dial in bench technique.',
+      coachNotes:      null, coachReviewedAt: null,
+    },
+    {
+      weeksAgo:        4,
+      energyLevel:     3, moodRating: 4, stressLevel: 3,
+      sleepQuality:    3, recoveryRating: 3, adherenceRating: 4,
+      completedWorkouts: 3, plannedWorkouts: 4,
+      weekReview:      'Solid week overall. Squat felt heavy but pushed through.',
+      coachMessage:    null,
+      goalsNextWeek:   'Focus on sleep and stay consistent with the programme.',
+      coachNotes:      'Good effort this week. Three sessions is still good progress — don\'t stress the missed one. Focus on sleep consistency; it\'ll make a big difference to recovery.',
+      coachReviewedAt: daysAgo(25),
+    },
+    {
+      weeksAgo:        5,
+      energyLevel:     4, moodRating: 4, stressLevel: 2,
+      sleepQuality:    5, recoveryRating: 4, adherenceRating: 5,
+      completedWorkouts: 4, plannedWorkouts: 4,
+      weekReview:      'Great week. Sleep was much better and energy levels showed it.',
+      coachMessage:    'Bench is moving well — should I switch to a closer grip?',
+      goalsNextWeek:   'Keep the sleep routine and push for a squat PB.',
+      coachNotes:      'Really strong week. On the bench grip question — stick with your current grip for another two weeks, then we\'ll experiment. Your form looks solid on video.',
+      coachReviewedAt: daysAgo(32),
+    },
+    {
+      weeksAgo:        6,
+      energyLevel:     2, moodRating: 3, stressLevel: 4,
+      sleepQuality:    2, recoveryRating: 2, adherenceRating: 3,
+      completedWorkouts: 2, plannedWorkouts: 4,
+      weekReview:      'Rough week — came down with a cold mid-week and had to cut sessions short.',
+      coachMessage:    'Felt awful this week, hope the numbers don\'t take too big a hit.',
+      goalsNextWeek:   'Get healthy and ease back in with lighter weights.',
+      coachNotes:      'Don\'t worry about the numbers at all — you did the right thing resting. Ease back in next week with 70–75% of your normal weights and focus on movement quality. Recovery is training too.',
+      coachReviewedAt: daysAgo(39),
+    },
+  ];
+
+  await prisma.weeklyCheckIn.createMany({
+    data: checkInDefs.map(def => {
+      const refDate = new Date(today);
+      refDate.setDate(today.getDate() - def.weeksAgo * 7);
+      const weekStart = toDateOnly(getWeekStart(refDate));
+      const completedAt = new Date(weekStart);
+      completedAt.setDate(completedAt.getDate() + 2); // submitted Wednesday of that week
+      return {
+        userId:           user.id,
+        weekStartDate:    weekStart,
+        completedAt,
+        energyLevel:      def.energyLevel,
+        moodRating:       def.moodRating,
+        stressLevel:      def.stressLevel,
+        sleepQuality:     def.sleepQuality,
+        recoveryRating:   def.recoveryRating,
+        adherenceRating:  def.adherenceRating,
+        completedWorkouts: def.completedWorkouts,
+        plannedWorkouts:  def.plannedWorkouts,
+        weekReview:       def.weekReview,
+        coachMessage:     def.coachMessage ?? null,
+        goalsNextWeek:    def.goalsNextWeek,
+        coachNotes:       def.coachNotes ?? null,
+        coachReviewedAt:  def.coachReviewedAt ?? null,
+      };
+    }),
+  });
+
+  // ── Coach link ────────────────────────────────────────────────────────────
+  if (coachId) {
+    await prisma.user.update({ where: { id: user.id }, data: { coachId } });
+  }
 }

@@ -60,6 +60,14 @@ async function main() {
   }
   console.log(`  ✓ Exercises upserted`);
 
+  // Upsert Todd (Jeff's coach — minimal account, just needs to exist for the FK)
+  const todd = await prisma.user.upsert({
+    where:  { email: 'todd@example.com' },
+    update: { name: 'Todd' },
+    create: { name: 'Todd', email: 'todd@example.com' },
+  });
+  console.log(`  ✓ Todd (coach) upserted (id: ${todd.id})`);
+
   // Upsert Jeff Demo
   const jeff = await prisma.user.upsert({
     where:  { email: 'jeff@example.com' },
@@ -69,7 +77,7 @@ async function main() {
   console.log(`  ✓ Jeff Demo upserted (id: ${jeff.id})`);
 
   // Reset all of Jeff's data relative to today
-  await seedJeffDemoData(jeff, new Date());
+  await seedJeffDemoData(jeff, new Date(), todd.id);
   console.log('  ✓ Jeff Demo\'s data reset');
 
   // Backfill e1rm for all of Jeff's sets

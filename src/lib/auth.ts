@@ -35,6 +35,29 @@ export const authOptions: AuthOptions = {
       },
     }),
 
+    // Demo Coach login — public "Try Demo (Coach)" button, logs in as Todd
+    CredentialsProvider({
+      id: "demo-coach",
+      name: "Demo Coach",
+      credentials: {},
+      async authorize() {
+        const coachEmail = "todd@example.com";
+
+        let user = await prisma.user.findUnique({where: {email: coachEmail}});
+
+        if (!user) {
+          console.error('Demo coach user not found')
+          user = await prisma.user.create({
+            data: {
+              name: "Todd",
+              email: coachEmail,
+            },
+          });
+        }
+        return user;
+      },
+    }),
+
     // TestUser login — used exclusively by E2E tests via direct API call
     CredentialsProvider({
       id: "testuser",

@@ -8,11 +8,11 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 
 function LoginButtonsInner() {
-  const [loading, setLoading] = useState<"google" | "demo" | null>(null);
+  const [loading, setLoading] = useState<"google" | "demo" | "demo-coach" | null>(null);
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/user";
 
-  const handleSignIn = async (provider: "google" | "demo") => {
+  const handleSignIn = async (provider: "google" | "demo" | "demo-coach") => {
     setLoading(provider);
     await signIn(provider, { callbackUrl });
   };
@@ -49,6 +49,22 @@ function LoginButtonsInner() {
         onClick={() => handleSignIn("demo")}
       >
         Try Demo
+      </Button>
+
+      <Button
+        fullWidth
+        variant="outlined"
+        startIcon={loading === "demo-coach" ? <CircularProgress size={18} color="inherit" /> : <PersonIcon />}
+        disabled={loading !== null}
+        sx={{
+          py: 1.2,
+          textTransform: "none",
+          fontSize: "1rem",
+          borderRadius: 2,
+        }}
+        onClick={() => handleSignIn("demo-coach")}
+      >
+        Try Demo (Coach)
       </Button>
     </Box>
   );
