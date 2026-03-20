@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
+import { notifyClientRequestAccepted } from '@lib/notifications';
 
 export async function PATCH(
   req: NextRequest,
@@ -36,6 +37,8 @@ export async function PATCH(
   }
 
   if (body.action === 'accept') {
+    const coachName = (await prisma.user.findUnique({ where: { id: userId }, select: { name: true } }))?.name ?? 'Your coach';
+
     await prisma.$transaction([
       prisma.coachRequest.delete({ where: { id } }),
       prisma.user.update({
@@ -43,6 +46,10 @@ export async function PATCH(
         data: { coachId: coachRequest.coachId },
       }),
     ]);
+
+    await notifyClientRequestAccepted(coachRequest.clientId, coachName)
+      .catch(err => console.error('Failed to send client notification:', err));
+
     return NextResponse.json({ success: true, action: 'accepted' });
   } else {
     await prisma.coachRequest.update({

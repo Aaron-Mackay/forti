@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
+import { notifyClientCoachFeedback } from '@lib/notifications';
 
 /** PATCH /api/coach/check-ins/[id]/notes — coach saves notes on a client's check-in */
 export async function PATCH(
@@ -44,6 +45,10 @@ export async function PATCH(
     where: { id: checkInId },
     data: { coachNotes: body.coachNotes, coachReviewedAt: new Date() },
   });
+
+  const coachName = (await prisma.user.findUnique({ where: { id: coachId }, select: { name: true } }))?.name ?? 'Your coach';
+  await notifyClientCoachFeedback(checkIn.userId, coachName)
+    .catch(err => console.error('Failed to send client notification:', err));
 
   return NextResponse.json({ checkIn: updated });
 }

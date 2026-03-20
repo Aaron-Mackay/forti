@@ -2,6 +2,7 @@
 
 import {
   AppBar,
+  Badge,
   Box,
   Collapse,
   Divider,
@@ -38,9 +39,11 @@ import ChecklistIcon from '@mui/icons-material/Checklist';
 import GroupIcon from '@mui/icons-material/Group';
 import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
 import MedicationIcon from '@mui/icons-material/Medication';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import {signOut} from "next-auth/react";
 import {useSettings} from '@lib/providers/SettingsProvider';
 import {usePlanCount} from '@lib/hooks/api/usePlanCount';
+import {useNotifications} from '@lib/hooks/api/useNotifications';
 
 export const APPBAR_HEIGHT = 56;
 export const HEIGHT_EXC_APPBAR = `calc(100dvh - ${APPBAR_HEIGHT}px)`
@@ -60,6 +63,7 @@ export default function CustomAppBar(
   const { settings } = useSettings();
   const [planNestedOpen, setPlanNestedOpen] = useState(() => pathname.includes('/plan'))
   const planCount = usePlanCount();
+  const { unreadCount } = useNotifications();
 
   const handleClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     event.stopPropagation()
@@ -125,7 +129,9 @@ export default function CustomAppBar(
             </IconButton>
             :
             <IconButton edge="start" color="inherit" aria-label="menu" onClick={() => setDrawerOpen(true)} sx={{mr: 2}}>
-              <MenuIcon/>
+              <Badge badgeContent={unreadCount} color="error" max={99}>
+                <MenuIcon/>
+              </Badge>
             </IconButton>}
           <Typography variant="h6" noWrap component="div" sx={{flexGrow: 1}}>
             {title}
@@ -149,7 +155,12 @@ export default function CustomAppBar(
         {/* Header / Logo */}
         <Stack direction="row" alignItems="center" spacing={1} sx={{p: 1.5}}>
           <FortiIcon style={{width: 50, height: 50}}/>
-          <Typography variant="h5">Forti</Typography>
+          <Typography variant="h5" sx={{flexGrow: 1}}>Forti</Typography>
+          <IconButton component={Link} href="/user/notifications" color="inherit" size="small" aria-label="notifications">
+            <Badge badgeContent={unreadCount} color="error" max={99}>
+              <NotificationsIcon/>
+            </Badge>
+          </IconButton>
         </Stack>
         <Divider/>
 

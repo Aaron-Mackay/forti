@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
+import { notifyCoachRequestReceived } from '@lib/notifications';
 
 export async function POST(req: NextRequest) {
   const session = await requireSession();
@@ -44,6 +45,10 @@ export async function POST(req: NextRequest) {
       coach: { select: { id: true, name: true } },
     },
   });
+
+  const clientName = (await prisma.user.findUnique({ where: { id: userId }, select: { name: true } }))?.name ?? 'Someone';
+  await notifyCoachRequestReceived(coach.id, clientName)
+    .catch(err => console.error('Failed to send coach notification:', err));
 
   return NextResponse.json({ request }, { status: 201 });
 }

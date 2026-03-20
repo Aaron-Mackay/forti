@@ -162,6 +162,9 @@ All routes live under `src/app/api/` and follow Next.js App Router conventions:
 | `api/coach/request` | GET/POST coach link requests |
 | `api/coach/request/[requestId]` | PATCH accept/reject a coach request |
 | `api/coach/unlink` | POST to remove a client |
+| `api/notifications` | GET all notifications + unread count for logged-in user |
+| `api/notifications/[id]/read` | PATCH mark a single notification read |
+| `api/notifications/read-all` | PATCH mark all notifications read |
 | `api/cron/check-in-reminders` | Cron job — sends weekly reminder emails (secured by `CRON_SECRET`) |
 | `api/dayMetric` | CRUD for daily health metrics |
 | `api/event`, `api/event/[id]` | Calendar event management |
@@ -269,6 +272,7 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 | `src/lib/hooks/api/useApiGet.ts` | Generic GET hook — `{data, loading, error}`; pass `null` URL to defer |
 | `src/lib/hooks/api/useExerciseList.ts` | Lazy-loads exercise list; exposes `{exercises, loading, addExercise}` |
 | `src/lib/hooks/api/usePlanCount.ts` | Thin wrapper around `useApiGet` for plan count |
+| `src/lib/hooks/api/useNotifications.ts` | Fetches notifications + unread count; exposes `{notifications, unreadCount, loading, markRead, markAllRead}` with 60s polling |
 | `src/lib/hooks/useApiMutation.ts` | Generic mutation hook — `{mutate, loading, error, data, reset}` |
 | `src/lib/hooks/useOfflineCache.ts` | Hydrates/primes IndexedDB cache for offline-capable pages |
 | `src/lib/usePushSubscription.ts` | Manages browser push permission + subscription registration |
