@@ -11,36 +11,19 @@ export default function NetworkStatusBanner() {
   useEffect(() => {
     const updateStatus = async () => {
       setIsOnline(navigator.onLine);
-      if (!navigator.onLine) {
-        // Set queued request count when offline
-        const count = await getQueuedRequests(); // This should return the current number of queued requests
-        setQueuedRequestsCount(count);
-      } else {
-        setQueuedRequestsCount(0);
-      }
+      const count = navigator.onLine ? 0 : await getQueuedRequests();
+      setQueuedRequestsCount(count);
     };
 
-    updateStatus().then(() => console.log(queuedRequestsCount));
+    updateStatus();
     window.addEventListener('online', updateStatus);
     window.addEventListener('offline', updateStatus);
+    window.addEventListener('queue-updated', updateStatus);
 
     return () => {
       window.removeEventListener('online', updateStatus);
       window.removeEventListener('offline', updateStatus);
-    };
-  }, [queuedRequestsCount]);
-
-  useEffect(() => {
-    const updateCount = async () => {
-      const count = await getQueuedRequests();
-      setQueuedRequestsCount(count);
-    };
-
-    updateCount(); // run on mount
-
-    window.addEventListener('queue-updated', updateCount);
-    return () => {
-      window.removeEventListener('queue-updated', updateCount);
+      window.removeEventListener('queue-updated', updateStatus);
     };
   }, []);
 
@@ -52,10 +35,9 @@ export default function NetworkStatusBanner() {
       textAlign: 'center',
     }}>
       <Typography variant={"caption"}>
-        {(queuedRequestsCount > 0
+        {queuedRequestsCount > 0
           ? `You are offline — ${queuedRequestsCount} request(s) queued for sync.`
-          : 'You are offline – requests will be queued')
-        }
+          : 'You are offline – requests will be queued'}
       </Typography>
     </Box>
   );
