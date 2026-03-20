@@ -17,35 +17,47 @@ describe('LoginButtons', () => {
     mockSignIn.mockReturnValue(new Promise(() => {}));
   });
 
-  it('renders both buttons', () => {
+  it('renders all buttons', () => {
     render(<LoginButtons />);
     expect(screen.getByRole('button', { name: /continue with google/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /try demo/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^try demo$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /try demo \(coach\)/i })).toBeInTheDocument();
   });
 
-  it('both buttons are enabled initially', () => {
+  it('all buttons are enabled initially', () => {
     render(<LoginButtons />);
     expect(screen.getByRole('button', { name: /continue with google/i })).not.toBeDisabled();
-    expect(screen.getByRole('button', { name: /try demo/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /^try demo$/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /try demo \(coach\)/i })).not.toBeDisabled();
   });
 
-  it('disables both buttons after clicking Try Demo', () => {
+  it('disables all buttons after clicking Try Demo', () => {
     render(<LoginButtons />);
-    fireEvent.click(screen.getByRole('button', { name: /try demo/i }));
-    expect(screen.getByRole('button', { name: /try demo/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /^try demo$/i }));
+    expect(screen.getByRole('button', { name: /^try demo$/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /continue with google/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /try demo \(coach\)/i })).toBeDisabled();
   });
 
-  it('disables both buttons after clicking Continue with Google', () => {
+  it('disables all buttons after clicking Continue with Google', () => {
     render(<LoginButtons />);
     fireEvent.click(screen.getByRole('button', { name: /continue with google/i }));
     expect(screen.getByRole('button', { name: /continue with google/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /try demo/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^try demo$/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /try demo \(coach\)/i })).toBeDisabled();
+  });
+
+  it('disables all buttons after clicking Try Demo (Coach)', () => {
+    render(<LoginButtons />);
+    fireEvent.click(screen.getByRole('button', { name: /try demo \(coach\)/i }));
+    expect(screen.getByRole('button', { name: /try demo \(coach\)/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /continue with google/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^try demo$/i })).toBeDisabled();
   });
 
   it('calls signIn with "demo" when clicking Try Demo', () => {
     render(<LoginButtons />);
-    fireEvent.click(screen.getByRole('button', { name: /try demo/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^try demo$/i }));
     expect(mockSignIn).toHaveBeenCalledWith('demo', { callbackUrl: '/user' });
   });
 
@@ -53,5 +65,11 @@ describe('LoginButtons', () => {
     render(<LoginButtons />);
     fireEvent.click(screen.getByRole('button', { name: /continue with google/i }));
     expect(mockSignIn).toHaveBeenCalledWith('google', { callbackUrl: '/user' });
+  });
+
+  it('calls signIn with "demo-coach" when clicking Try Demo (Coach)', () => {
+    render(<LoginButtons />);
+    fireEvent.click(screen.getByRole('button', { name: /try demo \(coach\)/i }));
+    expect(mockSignIn).toHaveBeenCalledWith('demo-coach', { callbackUrl: '/user' });
   });
 });
