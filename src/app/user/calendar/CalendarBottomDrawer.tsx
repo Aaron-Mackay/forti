@@ -9,6 +9,7 @@ import {EventsList} from "@/app/user/calendar/EventsList";
 import {DayMetricInput} from "@/app/user/calendar/DayMetricInput";
 import {TRANSITION_MS, useAnimatedDrawerHeight} from "./useAnimatedDrawerHeight";
 import {EventDetails} from "@/app/user/calendar/EventDetails";
+import {CustomMetricDef} from "@/types/settingsTypes";
 
 type CalendarDrawerProps = {
   open: boolean,
@@ -24,7 +25,8 @@ type CalendarDrawerProps = {
   userId: string,
   setEventsInState: (value: (prevEvents: EventPrisma[]) => EventPrisma[]) => void,
   prefilledDateRange: { start: Date | null; endExcl: Date | null },
-  setPrefilledDateRange: (value: { start: Date | null; endExcl: Date | null }) => void
+  setPrefilledDateRange: (value: { start: Date | null; endExcl: Date | null }) => void,
+  customMetricDefs?: CustomMetricDef[],
 };
 
 const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
@@ -41,7 +43,8 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
                                                                userId,
                                                                setEventsInState,
                                                                prefilledDateRange,
-                                                               setPrefilledDateRange
+                                                               setPrefilledDateRange,
+                                                               customMetricDefs = [],
                                                              }) => {
   const [selectedMetric, setSelectedMetric] = useState<MetricKey | null>(null);
   const [inputValue, setInputValue] = useState<string | number | null>('');
@@ -96,6 +99,7 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
                 dateDayMetrics={dateDayMetrics}
                 setSelectedMetric={setSelectedMetric}
                 setInputValue={setInputValue}
+                customMetricDefs={customMetricDefs}
               />
               <Typography variant="h6">{selectedDate?.toDateString()}</Typography>
             </Box>
@@ -131,6 +135,7 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
           selectedDate={selectedDate}
           userId={userId}
           dateDayMetrics={dateDayMetrics}
+          customMetricDefs={customMetricDefs}
         />
       </Box>
     </Box>

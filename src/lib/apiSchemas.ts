@@ -17,6 +17,10 @@ export const DayMetricSchema = z.object({
   fatTarget: z.number().int().optional().nullable(),
   stepsTarget: z.number().int().optional().nullable(),
   sleepMinsTarget: z.number().int().optional().nullable(),
+  customMetrics: z.record(z.string(), z.object({
+    value: z.number().nullable(),
+    target: z.number().nullable(),
+  })).optional().nullable(),
 });
 
 export const EventSchema = z.object({

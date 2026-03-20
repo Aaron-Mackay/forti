@@ -178,6 +178,7 @@ export default function DashboardCards({userData, dayMetrics, events, today, use
                 dateDayMetrics={todayMetricState}
                 setSelectedMetric={setSelectedMetric}
                 setInputValue={setInputValue}
+                customMetricDefs={settings.customMetrics}
               />
             </CardContent>
           </Card>
@@ -292,6 +293,7 @@ export default function DashboardCards({userData, dayMetrics, events, today, use
         date={today}
         userId={userId}
         setDayMetricsStateCb={setDayMetricsStateCb}
+        customMetricDefs={settings.customMetrics}
       />
     </>
   );

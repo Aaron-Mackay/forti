@@ -51,7 +51,56 @@ describe('parseDashboardSettings', () => {
       coachModeActive: false,
       showSupplements: false,
       checkInDay: 0,
+      customMetrics: [],
     };
     expect(parseDashboardSettings(allFalse)).toEqual(allFalse);
+  });
+
+  describe('customMetrics parsing', () => {
+    it('returns empty array when customMetrics is absent', () => {
+      expect(parseDashboardSettings({}).customMetrics).toEqual([]);
+    });
+
+    it('parses valid custom metric definitions', () => {
+      const defs = [
+        { id: 'abc-1', name: 'Thigh' },
+        { id: 'abc-2', name: 'Waist' },
+      ];
+      expect(parseDashboardSettings({ customMetrics: defs }).customMetrics).toEqual(defs);
+    });
+
+    it('strips entries with missing id or name', () => {
+      const raw = [
+        { id: 'abc-1', name: 'Valid' },
+        { name: 'No id' },
+        { id: 'abc-2' },
+        null,
+        42,
+      ];
+      expect(parseDashboardSettings({ customMetrics: raw }).customMetrics).toEqual([
+        { id: 'abc-1', name: 'Valid' },
+      ]);
+    });
+
+    it('deduplicates by id', () => {
+      const raw = [
+        { id: 'dup', name: 'First' },
+        { id: 'dup', name: 'Second' },
+      ];
+      expect(parseDashboardSettings({ customMetrics: raw }).customMetrics).toEqual([
+        { id: 'dup', name: 'First' },
+      ]);
+    });
+
+    it('caps at 5 entries', () => {
+      const raw = Array.from({ length: 7 }, (_, i) => ({ id: `id-${i}`, name: `Metric ${i}` }));
+      expect(parseDashboardSettings({ customMetrics: raw }).customMetrics).toHaveLength(5);
+    });
+
+    it('returns empty array when customMetrics is not an array', () => {
+      expect(parseDashboardSettings({ customMetrics: 'bad' }).customMetrics).toEqual([]);
+      expect(parseDashboardSettings({ customMetrics: {} }).customMetrics).toEqual([]);
+      expect(parseDashboardSettings({ customMetrics: null }).customMetrics).toEqual([]);
+    });
   });
 });

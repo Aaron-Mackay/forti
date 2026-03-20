@@ -1,23 +1,96 @@
 'use client';
 
-import React from 'react';
+import React, {useState} from 'react';
 import {
   Alert,
   Box,
+  Button,
   Divider,
   FormControlLabel,
+  IconButton,
   Skeleton,
   Switch,
+  TextField,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
-import { Settings } from '@/types/settingsTypes';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import { Settings, CustomMetricDef } from '@/types/settingsTypes';
 import { CHECK_IN_DAY_NAMES } from '@/types/checkInTypes';
 import { useSettings } from '@lib/providers/SettingsProvider';
 import CoachingSettings from './CoachingSettings';
 
 type BooleanSettingKey = { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings];
+
+function CustomMetricsSection() {
+  const { settings, updateCustomMetrics } = useSettings();
+  const [defs, setDefs] = useState<CustomMetricDef[]>(settings.customMetrics);
+
+  // Keep local state in sync when settings load asynchronously
+  React.useEffect(() => {
+    setDefs(settings.customMetrics);
+  }, [settings.customMetrics]);
+
+  const saveDefs = (next: CustomMetricDef[]) => {
+    setDefs(next);
+    updateCustomMetrics(next);
+  };
+
+  const handleNameBlur = (id: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    saveDefs(defs.map(d => d.id === id ? { ...d, name: trimmed } : d));
+  };
+
+  const handleDelete = (id: string) => {
+    saveDefs(defs.filter(d => d.id !== id));
+  };
+
+  const handleAdd = () => {
+    if (defs.length >= 5) return;
+    const newDef: CustomMetricDef = {
+      id: crypto.randomUUID(),
+      name: `Metric ${defs.length + 1}`,
+    };
+    saveDefs([...defs, newDef]);
+  };
+
+  return (
+    <Box>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        Track up to 5 personal measurements alongside your daily metrics
+      </Typography>
+      {defs.map(def => (
+        <Box key={def.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          <TextField
+            defaultValue={def.name}
+            size="small"
+            sx={{ flex: 1 }}
+            onBlur={e => handleNameBlur(def.id, e.target.value)}
+          />
+          <IconButton
+            size="small"
+            onClick={() => handleDelete(def.id)}
+            aria-label={`Delete ${def.name}`}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      ))}
+      <Button
+        startIcon={<AddIcon />}
+        size="small"
+        onClick={handleAdd}
+        disabled={defs.length >= 5}
+        sx={{ mt: 0.5 }}
+      >
+        Add metric
+      </Button>
+    </Box>
+  );
+}
 
 const CARD_LABELS: {key: BooleanSettingKey; label: string}[] = [
   {key: 'showNextWorkout',    label: 'Next Workout'},
@@ -141,6 +214,13 @@ export default function SettingsClient() {
             }
           </React.Fragment>
         ))}
+      </Box>
+
+      <Divider sx={{my: 3}}/>
+
+      <Typography variant="overline" color="text.secondary">Custom Metrics</Typography>
+      <Box sx={{mb: 2}}>
+        <CustomMetricsSection />
       </Box>
 
       <Divider sx={{my: 3}}/>

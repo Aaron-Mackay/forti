@@ -19,6 +19,7 @@ import {CalendarRightDrawer} from "@/app/user/calendar/CalendarRightDrawer";
 import {getDayMetricsCache, getEventsCache, saveDayMetricsCache, saveEventsCache} from "@/utils/clientDb";
 import {useOfflineCache} from '@lib/hooks/useOfflineCache';
 import WeekListView from "@/app/user/calendar/WeekListView";
+import {useSettings} from '@lib/providers/SettingsProvider';
 
 type CalendarViewMode = 'calendar' | 'weeks';
 
@@ -35,6 +36,7 @@ type Props = {
 
 export default function Calendar({events, dayMetrics, userId}: Props) {
   const calendarRef = useRef<FullCalendar | null>(null);
+  const { settings } = useSettings();
 
   const [viewMode, setViewMode] = useState<CalendarViewMode>('calendar');
   const [eventsInState, setEventsInState] = useState<EventPrisma[]>(events);
@@ -283,6 +285,7 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
         userId={userId}
         prefilledDateRange={prefilledDateRange}
         setPrefilledDateRange={setPrefilledDateRange}
+        customMetricDefs={settings.customMetrics}
       />
       <CalendarRightDrawer
         rightDrawerOpen={rightDrawerOpen}
