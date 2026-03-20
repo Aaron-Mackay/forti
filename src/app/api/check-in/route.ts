@@ -3,7 +3,7 @@ import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import { getWeekStart, toDateOnly } from '@lib/checkInUtils';
-import { sendCheckInCoachAlert } from '@lib/notifications';
+import { notifyCoachCheckInSubmitted } from '@lib/notifications';
 
 /** GET /api/check-in — fetch current user's check-in history (newest first) */
 export async function GET(req: NextRequest) {
@@ -93,12 +93,12 @@ export async function POST(req: NextRequest) {
 
   if (user?.coach) {
     const settings = parseDashboardSettings(user.settings);
-    await sendCheckInCoachAlert({
-      coach: user.coach,
-      clientName: user.name,
-      weekStartDate: weekStart,
-      checkInDay: settings.checkInDay,
-    }).catch(err => console.error('Failed to send coach notification:', err));
+    await notifyCoachCheckInSubmitted(
+      user.coach.id,
+      user.name,
+      weekStart,
+      settings.checkInDay,
+    ).catch(err => console.error('Failed to send coach notification:', err));
   }
 
   return NextResponse.json({ checkIn }, { status: 201 });
