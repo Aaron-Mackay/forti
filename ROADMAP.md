@@ -1,0 +1,99 @@
+# Forti — App Audit & Prioritized Roadmap
+
+> Generated: 2026-03-20. Based on full codebase audit (15 feature areas) + competitive research (19 apps across 4 categories).
+
+---
+
+## Executive Summary
+
+Forti's architecture is clean and well-enforced, and its unique combination — AI-generated periodized programs + coach-client relationship + structured training blocks + weekly subjective check-ins + web-first delivery — has **no direct competitor**. The closest apps (TrueCoach, Juggernaut AI, Hevy) each match one or two of these pillars but none combine all five. The biggest product gap is analytics: users have no way to see their strength progress over time, which is table-stakes for any fitness app. One page (`/library`) contains unrelated travel video content and must be removed immediately.
+
+---
+
+## Strengths to Preserve
+
+1. **Architecture discipline** — thin API routes, Zod validation, `requireSession` + ownership-chain guards, pre-commit check (test + lint + build). Do not let this erode.
+2. **AI plan import** — rate-limited, size-capped, structured-output Claude integration. A genuine differentiator at this price point.
+3. **Coach-client system** — invitation flow, check-in review, cross-account data access, email alerts. Production-ready.
+4. **Training blocks + calendar** — structured Bulk/Cut/Deload events with a FullCalendar view. Rare in this category.
+5. **Weekly check-in + longitudinal subjective data** — unique in the market; rich dataset grows in value over time.
+
+---
+
+## P0 — Immediate (fix before any demo or marketing)
+
+| # | Issue | Files | Acceptance Criteria |
+|---|-------|-------|---------------------|
+| 1 | **Remove Vietnam travel video library** — `/library` route shows 12 hardcoded YouTube travel videos with no relation to fitness | `src/app/library/page.tsx` | Route removed or replaced with a legitimate placeholder; not reachable by unauthenticated users |
+
+---
+
+## P1 — High Priority (core product gaps)
+
+| # | Issue | Files | Acceptance Criteria |
+|---|-------|-------|---------------------|
+| 2 | **Progress & Analytics page** — no PR tracking, no strength charts, no volume analytics | New `src/app/user/progress/`; reuse `E1rmSparkline`, `DashboardChart`; query `ExerciseSet` grouped by exercise + week | Page shows per-exercise PR history, E1RM trend chart, body weight trend, weekly volume chart |
+| 3 | **Fix `sheetUpload.ts`** — `@ts-nocheck`, naive CSV parser (no escaped quote handling), `id: "N/A"` dummy IDs, TODOs with missing user ID validation | `src/utils/sheetUpload.ts` | `@ts-nocheck` removed, Zod validation added, parser handles malformed input gracefully, real UUIDs used |
+| 4 | **Fix offline support bugs** — stale event listener in `NetworkStatusBanner`, double `console.error` in `offlineSync`, no jitter in backoff, cache errors silently suppressed | `src/utils/offlineSync.ts`, `src/components/NetworkStatusBanner.tsx`, `src/lib/hooks/useOfflineCache.ts` | No duplicate listener registration; single error log path; jitter added to backoff; error state exposed to caller |
+| 5 | **Fix `SettingsProvider` race condition** — rapid setting changes can arrive out-of-order and revert the UI | `src/lib/providers/SettingsProvider.tsx` | Rapid toggle changes do not produce visible UI reverts; request deduplication or abort-on-new in place |
+| 6 | **Add check-in E2E tests** — no test coverage for check-in submission or coach review | New `tests/e2e/check-in.test.ts`, `tests/e2e/coach-review.test.ts` | E2E tests cover: submit check-in, view history, coach adds note, coach-reviewed timestamp shown |
+| 7 | **Mobile plan drag-reorder** — drag-and-drop disabled on mobile with a TODO | `src/app/user/plan/MobilePlanView.tsx` | Weeks and workouts can be reordered by touch on mobile (≤ 430 px) |
+| 8 | **Replace `alert()` in PlanTable** — native browser `alert()` breaks UX consistency | `src/app/user/plan/PlanTable.tsx:29` | Confirmation uses MUI `Dialog`; no native `alert()` calls remain in the codebase |
+
+---
+
+## P2 — Medium Priority (polish & feature completeness)
+
+| # | Issue | Files | Acceptance Criteria |
+|---|-------|-------|---------------------|
+| 9 | **Progress photos in check-in** — no photo upload; coaches rely on photos as primary progress signal | `src/app/user/check-in/CheckInForm.tsx`, new `src/app/api/check-in/photo/route.ts` | Athletes can upload one photo per check-in; coach can view alongside subjective ratings |
+| 10 | **Body measurements in check-in** — no waist, arms, chest, hips fields | `prisma/schema.prisma`, `src/app/user/check-in/CheckInForm.tsx`, check-in API | Measurement fields added to `WeeklyCheckIn` schema; form and history view updated |
+| 11 | **Add missing schema indexes** — `Plan`, `Week`, `Workout`, `DayMetric` lack indexes on parent-lookup columns | `prisma/schema.prisma` | `@@index` annotations added for all foreign-key lookup patterns; `npm run rebuild-prisma` passes |
+| 12 | **Coach analytics dashboard** — coaches see text notes; no charts or PR history | `src/app/user/coach/check-ins/` | Coach check-in view shows client E1RM trend, body weight trend, and volume chart (reuse Progress page components) |
+| 13 | **Rich exercise content in UI** — `description`, `equipment`, `primaryMuscles`, `secondaryMuscles` exist in the `Exercise` model but are not shown in the workout or exercise library views | `src/app/exercises/`, `src/app/user/workout/ExerciseDetailView.tsx` | Exercise detail and library show description, muscle groups, and equipment |
+| 14 | **Nutrition targets by training block** — per-day flat targets don't adjust for Cut vs Bulk phases | `src/app/user/nutrition/`, `prisma/schema.prisma` | Users can set macro targets per block type; targets auto-switch when a block event is active |
+
+---
+
+## P3 — Low Priority (future / nice to have)
+
+| # | Issue | Why |
+|---|-------|-----|
+| 15 | **Food database integration** — manual number entry only; no food search or barcode scan | Competitive gap vs MyFitnessPal-style apps; significant engineering effort |
+| 16 | **Calendar export (iCal / Google Calendar sync)** | Users want training blocks visible in their main calendar |
+| 17 | **Recurring calendar events** | Common request: weekly weigh-in, daily walk reminder |
+| 18 | **Multiple coaches per athlete** | Team S&C environments need a strength coach + conditioning coach concurrently |
+| 19 | **Social / sharing layer** — no plan sharing, leaderboards, or public profiles | Long-term organic growth mechanic; not a near-term priority |
+
+---
+
+## Competitive Position Summary
+
+Forti's unique combination has no direct competitor:
+
+| Pillar | Forti | Closest competitor |
+|--------|-------|--------------------|
+| AI plan generation | ✅ | Fitbod, Alpha Progression (no coach layer) |
+| Coach-client relationship | ✅ | TrueCoach (no AI, no blocks) |
+| Structured training blocks | ✅ | Juggernaut AI (no coach, powerlifting only) |
+| Weekly subjective check-in | ✅ | None |
+| Web-first (no app install) | ✅ | Hevy, TrueCoach |
+
+**Biggest competitive risk:** Hevy's unlimited free tier for self-coached users. Forti must win on depth: blocks, AI, check-ins, and — once built — analytics.
+
+---
+
+## Recommended 3–6 Month Roadmap
+
+| Month | Theme | Key deliverables |
+|-------|-------|-----------------|
+| 1 | Fix the floor | Remove `/library` page; fix offline bugs + settings race condition + `alert()`; rewrite `sheetUpload.ts`; add body measurement fields to check-in |
+| 2 | Fill the critical gap | Build Progress & Analytics page (`/user/progress`); add rest timer to workout; add plate calculator |
+| 3 | Coach value prop | Progress photos in check-in; coach analytics dashboard; check-in E2E tests; mobile plan drag-reorder |
+| 4–6 | Differentiate | AI plan chat/revision (conversational refinement); workout templates; improved onboarding; coach analytics v2 (volume + block timeline) |
+
+**Deferred indefinitely:** food database, wearable integration, social layer, multiple coaches per athlete.
+
+---
+
+*Full audit notes (feature inventory, quality scorecard, competitive matrix, feature recommendations) are in `AUDIT_NOTES.md`.*
