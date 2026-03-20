@@ -257,6 +257,7 @@ export default function NutritionClient({
           fatTarget: editValues.fatTarget !== '' ? toIntOrNull(editValues.fatTarget) : (existing?.fatTarget ?? null),
           stepsTarget: editValues.stepsTarget !== '' ? toIntOrNull(editValues.stepsTarget) : (existing?.stepsTarget ?? null),
           sleepMinsTarget: editValues.sleepMinsTarget !== '' ? toIntOrNull(editValues.sleepMinsTarget) : (existing?.sleepMinsTarget ?? null),
+          customMetrics: existing?.customMetrics ?? null,
         };
         const updated = await updateDayMetricClient(merged);
         setDayMetrics(prev => {
@@ -300,6 +301,7 @@ export default function NutritionClient({
             fatTarget: weekTargetValues.fat !== '' ? toIntOrNull(weekTargetValues.fat) : (existing?.fatTarget ?? null),
             stepsTarget: weekTargetValues.steps !== '' ? toIntOrNull(weekTargetValues.steps) : (existing?.stepsTarget ?? null),
             sleepMinsTarget: weekTargetValues.sleep !== '' ? toIntOrNull(weekTargetValues.sleep) : (existing?.sleepMinsTarget ?? null),
+            customMetrics: existing?.customMetrics ?? null,
           };
           return updateDayMetricClient(merged).then(updated => ({ dateStr, updated }));
         })

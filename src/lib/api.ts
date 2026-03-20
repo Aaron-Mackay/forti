@@ -1,4 +1,4 @@
-import {Exercise} from '@prisma/client';
+import {Exercise, Prisma} from '@prisma/client';
 import prisma from '@/lib/prisma';
 import {DayMetricPrisma, EventPrisma, PlanPrisma, UserPrisma} from "@/types/dataTypes";
 
@@ -71,7 +71,10 @@ export async function getUserDayMetrics(userId: string) {
   })
 }
 
-export async function updateUserDayMetric(dayMetric: Omit<DayMetricPrisma, 'id'>) {
+export async function updateUserDayMetric(dayMetric: Omit<DayMetricPrisma, 'id' | 'customMetrics'> & { customMetrics: Prisma.InputJsonValue | null }) {
+  const {customMetrics, ...rest} = dayMetric;
+  // Prisma nullable JSON fields need Prisma.JsonNull (not null) to explicitly clear them
+  const customMetricsValue = customMetrics === null ? Prisma.JsonNull : customMetrics;
   return await prisma.dayMetric.upsert({
     where: {
       userId_date: {
@@ -79,8 +82,8 @@ export async function updateUserDayMetric(dayMetric: Omit<DayMetricPrisma, 'id'>
         date: dayMetric.date,
       }
     },
-    update: dayMetric,
-    create: dayMetric
+    update: {...rest, customMetrics: customMetricsValue},
+    create: {...rest, customMetrics: customMetricsValue},
   });
 }
 

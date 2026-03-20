@@ -4,6 +4,7 @@ import {Box, Drawer} from "@mui/material";
 import {DayMetricInput} from "@/app/user/calendar/DayMetricInput";
 import {MetricKey} from "@/app/user/calendar/DayMetricBar";
 import {DayMetricPrisma} from "@/types/dataTypes";
+import {CustomMetricDef} from "@/types/settingsTypes";
 
 type Props = {
   open: boolean;
@@ -16,6 +17,7 @@ type Props = {
   date: Date;
   userId: string;
   setDayMetricsStateCb: (date: Date, metrics: DayMetricPrisma | null) => void;
+  customMetricDefs?: CustomMetricDef[];
 };
 
 export default function DayMetricDrawer({
@@ -29,6 +31,7 @@ export default function DayMetricDrawer({
   date,
   userId,
   setDayMetricsStateCb,
+  customMetricDefs = [],
 }: Props) {
   return (
     <Drawer
@@ -56,6 +59,7 @@ export default function DayMetricDrawer({
           userId={userId}
           setDayMetricsStateCb={setDayMetricsStateCb}
           hideBack
+          customMetricDefs={customMetricDefs}
         />
       </Box>
     </Drawer>

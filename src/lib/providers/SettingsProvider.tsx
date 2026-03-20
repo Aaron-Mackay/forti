@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
-import { Settings, DEFAULT_SETTINGS, parseDashboardSettings } from '@/types/settingsTypes';
+import { Settings, DEFAULT_SETTINGS, parseDashboardSettings, CustomMetricDef } from '@/types/settingsTypes';
 
 interface SettingsContextValue {
   settings: Settings;
@@ -9,6 +9,7 @@ interface SettingsContextValue {
   error: string | null;
   clearError: () => void;
   updateSetting: (key: keyof Settings, value: boolean | number) => Promise<void>;
+  updateCustomMetrics: (defs: CustomMetricDef[]) => Promise<void>;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -61,10 +62,33 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
   }, []); // Empty deps — reads latest settings via settingsRef to avoid stale closures
 
+  const updateCustomMetrics = useCallback(async (defs: CustomMetricDef[]) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const prev = settingsRef.current;
+    setSettings(s => ({ ...s, customMetrics: defs }));
+    setError(null);
+    try {
+      const res = await fetch('/api/user/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: { customMetrics: defs } }),
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error();
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      setSettings(prev);
+      setError('Failed to save setting. Please try again.');
+    }
+  }, []);
+
   const clearError = useCallback(() => setError(null), []);
 
   return (
-    <SettingsContext.Provider value={{ settings, loading, error, clearError, updateSetting }}>
+    <SettingsContext.Provider value={{ settings, loading, error, clearError, updateSetting, updateCustomMetrics }}>
       {children}
     </SettingsContext.Provider>
   );

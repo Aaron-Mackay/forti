@@ -3,6 +3,7 @@ import {updateUserDayMetric} from '@/lib/api';
 import confirmPermission from "@lib/confirmPermission";
 import {DayMetricSchema} from "@lib/apiSchemas";
 import {errorResponse, validationErrorResponse} from "@lib/apiResponses";
+import {Prisma} from "@prisma/client";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,6 +17,7 @@ export async function POST(req: NextRequest) {
 
     await confirmPermission(parsed.data.userId);
 
+    const {customMetrics, ...rest} = parsed.data;
     const completeDayMetric = {
       weight: null,
       steps: null,
@@ -30,7 +32,8 @@ export async function POST(req: NextRequest) {
       fatTarget: null,
       stepsTarget: null,
       sleepMinsTarget: null,
-      ...parsed.data
+      ...rest,
+      customMetrics: (customMetrics ?? null) as Prisma.InputJsonValue | null,
     };
 
     const updated = await updateUserDayMetric(completeDayMetric);

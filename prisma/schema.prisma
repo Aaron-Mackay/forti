@@ -143,6 +143,9 @@ model DayMetric {
   stepsTarget     Int?
   sleepMinsTarget Int?
 
+  // Custom user-defined metrics: { "<uuid>": { value: Float, target: Float } }
+  customMetrics   Json?
+
   @@unique([userId, date])
 }
 

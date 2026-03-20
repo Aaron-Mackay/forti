@@ -5,7 +5,7 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {Box, Button, ButtonGroup, Skeleton} from "@mui/material";
 import {addDays, subDays, subMonths} from "date-fns";
 import {DayMetricPrisma, EventPrisma} from "@/types/dataTypes";
-import {MetricKey} from "@/app/user/calendar/DayMetricBar";
+import {BuiltInMetricKey} from "@/app/user/calendar/DayMetricBar";
 import {getDefinedBlockColor} from "@/app/user/calendar/utils";
 import {DataPoint, Series} from "@/app/user/(dashboard)/utils";
 import {GestureHandlers, useGesture} from "@use-gesture/react";
@@ -29,11 +29,11 @@ type Selection = {
 }
 
 export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMetricPrisma[], blocks: EventPrisma[] }) {
-  const [selectedMetrics, setSelectedMetrics] = useState<MetricKey[]>(['weight']);
-  const metricLabelify = (metricKey: MetricKey): string => metricKey[0].toUpperCase() + metricKey.slice(1);
+  const [selectedMetrics, setSelectedMetrics] = useState<BuiltInMetricKey[]>(['weight']);
+  const metricLabelify = (metricKey: BuiltInMetricKey): string => metricKey[0].toUpperCase() + metricKey.slice(1);
 
   const getData = useCallback(
-    (metric: MetricKey): DataPoint[] =>
+    (metric: BuiltInMetricKey): DataPoint[] =>
       dayMetrics
         .filter(dm => dm[metric] !== null)
         .map(dm => [new Date(dm.date).getTime(), dm[metric]]),
@@ -88,7 +88,7 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
     }))
   ), [blocks]);
 
-  const formatLabel = (val: number, metricKey: MetricKey): string => {
+  const formatLabel = (val: number, metricKey: BuiltInMetricKey): string => {
     switch (metricKey) {
       case 'weight':
         return val.toPrecision(3);  // 3 significant figures
@@ -266,15 +266,15 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
   );
 
   const toggleSelectedMetric = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const clickedMetricKey = e.currentTarget.value as MetricKey
+    const clickedBuiltInMetricKey = e.currentTarget.value as BuiltInMetricKey
     setSelectedMetrics(prevState => {
-      if (prevState.includes(clickedMetricKey)) {
-        return prevState.filter(mk => mk != clickedMetricKey)
+      if (prevState.includes(clickedBuiltInMetricKey)) {
+        return prevState.filter(mk => mk != clickedBuiltInMetricKey)
       }
-      if (prevState.length > 1 && !prevState.includes(clickedMetricKey)) {
+      if (prevState.length > 1 && !prevState.includes(clickedBuiltInMetricKey)) {
         return prevState
       }
-      return [...prevState, clickedMetricKey]
+      return [...prevState, clickedBuiltInMetricKey]
     })
   }
 
