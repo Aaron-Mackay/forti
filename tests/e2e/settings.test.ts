@@ -96,8 +96,7 @@ test.describe('Settings page — state', () => {
   test('shows 9 toggles; dashboard/workout switches are on, Supplements and Coach Mode are off by default', async ({ page }) => {
     const switches = page.getByRole('switch');
     await expect(switches.first()).toBeVisible();
-    const count = await switches.count();
-    expect(count).toBe(9);
+    await expect(switches).toHaveCount(9);
     // First 7 are dashboard card + stopwatch toggles (all on by default)
     for (let i = 0; i < 7; i++) {
       await expect(switches.nth(i)).toBeChecked();

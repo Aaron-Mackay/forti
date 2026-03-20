@@ -5,8 +5,27 @@
  * directly from `@playwright/test`.  The extended `page` fixture attaches a
  * `pageerror` listener so that any unhandled JavaScript exception thrown in
  * the browser automatically fails the surrounding test.
+ *
+ * ── STRICT MODE ─────────────────────────────────────────────────────────────
+ * Playwright locators operate in strict mode: if a locator matches MORE THAN
+ * ONE element the call throws immediately — even inside `expect()`.
+ *
+ * Rules to follow when writing locators:
+ *   1. Prefer semantic locators: getByRole(), getByLabel(), getByTestId().
+ *      These are naturally more specific than CSS / text selectors.
+ *   2. If a locator CAN match multiple elements, narrow it IMMEDIATELY:
+ *        page.getByRole('listitem').first()       // ✅ explicit first
+ *        page.getByText('Week').nth(2)            // ✅ explicit index
+ *        page.locator('.card', { hasText: /W\d+/ }).first()  // ✅ filtered
+ *   3. Never leave an unnarrowed locator that could match > 1 element:
+ *        page.getByRole('listitem')               // ❌ may match many
+ *        page.getByText('Week')                   // ❌ likely matches many
+ *   4. The eslint-plugin-playwright rules in eslint.config.mjs enforce
+ *      additional quality constraints, but strict mode violations are runtime
+ *      errors — no static rule catches all of them.  Audit every locator.
+ * ────────────────────────────────────────────────────────────────────────────
  */
-import { test as base, expect } from '@playwright/test';
+import { test as base } from '@playwright/test';
 
 export const test = base.extend({
   page: async ({ page }, use) => {

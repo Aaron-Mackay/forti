@@ -47,8 +47,7 @@ test.describe('Nutrition page', () => {
     const weekLabel = page.locator('text=/Week \\d+/').first();
     const initial = await weekLabel.textContent();
     await page.getByRole('button', { name: 'Next week' }).click();
-    const after = await weekLabel.textContent();
-    expect(after).not.toBe(initial);
+    await expect(weekLabel).not.toHaveText(initial ?? '');
   });
 
   test('navigating back to previous week restores original label', async ({ page }) => {
@@ -56,8 +55,7 @@ test.describe('Nutrition page', () => {
     const initial = await weekLabel.textContent();
     await page.getByRole('button', { name: 'Next week' }).click();
     await page.getByRole('button', { name: 'Previous week' }).click();
-    const restored = await weekLabel.textContent();
-    expect(restored).toBe(initial);
+    await expect(weekLabel).toHaveText(initial ?? '');
   });
 
   test('shows the Set week targets button', async ({ page }) => {
@@ -87,7 +85,7 @@ test.describe('Nutrition page', () => {
   test('each day card has an edit button', async ({ page }) => {
     const editButtons = page.getByRole('button', { name: 'Edit' });
     await expect(editButtons.first()).toBeVisible({ timeout: 5_000 });
-    expect(await editButtons.count()).toBe(7);
+    await expect(editButtons).toHaveCount(7);
   });
 
   test('clicking edit on a day card opens the inline editor', async ({ page }) => {
