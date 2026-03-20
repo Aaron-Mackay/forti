@@ -72,32 +72,32 @@ async function main() {
     null, null,               // Plan 2, Week 3 — current / incomplete
   ];
 
-  // ── Seed Aaron ────────────────────────────────────────────────────────────
-  const aaron = await prisma.user.create({
-    data: { name: 'Aaron', email: 'aaron@example.com' },
+  // ── Seed Todd (Jeff's coach) ──────────────────────────────────────────────
+  const todd = await prisma.user.create({
+    data: { name: 'Todd', email: 'todd@example.com' },
   });
 
   await prisma.userExerciseNote.createMany({
     data: [
-      { userId: aaron.id, exerciseId: findEx('Bench Press').id, note: 'Warm up properly to protect elbow' },
-      { userId: aaron.id, exerciseId: findEx('Squat').id, note: 'Squat properly' },
-      { userId: aaron.id, exerciseId: findEx('Overhead Press').id, note: 'Wrench and twist' },
-      { userId: aaron.id, exerciseId: findEx('Barbell Row').id, note: "Don't fall over" },
+      { userId: todd.id, exerciseId: findEx('Bench Press').id, note: 'Warm up properly to protect elbow' },
+      { userId: todd.id, exerciseId: findEx('Squat').id, note: 'Squat properly' },
+      { userId: todd.id, exerciseId: findEx('Overhead Press').id, note: 'Wrench and twist' },
+      { userId: todd.id, exerciseId: findEx('Barbell Row').id, note: "Don't fall over" },
     ],
   });
 
   await prisma.event.createMany({
     data: [
       {
-        userId: aaron.id,
+        userId: todd.id,
         name: 'Training Week 1',
-        description: "Start of Aaron's program'",
+        description: "Start of Todd's program",
         startDate: new Date('2025-06-01'),
         endDate: new Date('2025-06-07'),
         eventType: EventType.CustomEvent
       },
       {
-        userId: aaron.id,
+        userId: todd.id,
         name: 'Holiday',
         description: 'Recovery week',
         startDate: new Date('2025-08-15'),
@@ -105,7 +105,7 @@ async function main() {
         eventType: EventType.CustomEvent
       },
       {
-        userId: aaron.id,
+        userId: todd.id,
         name: 'Bulk',
         startDate: new Date('2025-08-01'),
         endDate: new Date('2025-08-31'),
@@ -113,7 +113,7 @@ async function main() {
         blockSubtype: BlockSubtype.Bulk
       },
       {
-        userId: aaron.id,
+        userId: todd.id,
         name: 'Cut',
         startDate: new Date('2025-09-01'),
         endDate: new Date('2025-09-21'),
@@ -121,7 +121,7 @@ async function main() {
         blockSubtype: BlockSubtype.Cut
       },
       {
-        userId: aaron.id,
+        userId: todd.id,
         name: 'Custom',
         startDate: new Date('2025-07-01'),
         endDate: new Date('2025-07-21'),
@@ -136,10 +136,10 @@ async function main() {
   for (let planIdx = 0; planIdx < planCount; planIdx++) {
     const plan = await prisma.plan.create({
       data: {
-        userId: aaron.id,
+        userId: todd.id,
         order: planIdx + 1,
-        name: `Aaron's Plan ${planIdx + 1}`,
-        description: `Training block ${planIdx + 1} for Aaron`,
+        name: `Todd's Plan ${planIdx + 1}`,
+        description: `Training block ${planIdx + 1} for Todd`,
       },
     });
 
@@ -201,7 +201,7 @@ async function main() {
     }
   }
 
-  // Seed DayMetrics for Aaron for the last 60 days
+  // Seed DayMetrics for Todd for the last 60 days
   const today = new Date();
   const dayMetricsData = [];
   for (let i = 0; i < 60; i++) {
@@ -209,7 +209,7 @@ async function main() {
     date.setDate(today.getDate() - i);
     const maybeNull = (val: any) => Math.random() < 0.3 ? null : val;
     dayMetricsData.push({
-      userId: aaron.id,
+      userId: todd.id,
       date,
       weight: maybeNull(Number((Math.random() * 2 + 82).toFixed(1))),
       steps: maybeNull(Math.floor(Math.random() * (10000 - 2000 + 1)) + 2000),
@@ -222,7 +222,7 @@ async function main() {
   }
   await prisma.dayMetric.createMany({ data: dayMetricsData });
 
-  // ── Seed WeeklyCheckIns for Aaron ─────────────────────────────────────────
+  // ── Seed WeeklyCheckIns for Todd ──────────────────────────────────────────
   // Create 6 completed check-ins over the last 6 weeks
   const checkInData = [];
   for (let w = 1; w <= 6; w++) {
@@ -233,7 +233,7 @@ async function main() {
     completedAt.setDate(completedAt.getDate() + 1); // completed on Tuesday of that week
 
     checkInData.push({
-      userId: aaron.id,
+      userId: todd.id,
       weekStartDate: weekStart,
       completedAt,
       energyLevel: Math.ceil(Math.random() * 5),
@@ -265,7 +265,7 @@ async function main() {
   const jeff = await prisma.user.create({
     data: { name: 'Jeff Demo', email: 'jeff@example.com' },
   });
-  await seedJeffDemoData(jeff, new Date());
+  await seedJeffDemoData(jeff, new Date(), todd.id);
 
   // Backfill e1rm for all seeded sets
   const allSets = await prisma.exerciseSet.findMany({ select: { id: true, weight: true, reps: true } });

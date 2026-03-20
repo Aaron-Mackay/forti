@@ -35,7 +35,7 @@ npm run check            # Run tests + lint + build (what pre-commit runs)
 npm run db:reset         # Force-reset DB, regenerate Prisma client, seed data
 npm run rebuild-prisma   # Push schema changes and regenerate Prisma client
 npm run seed             # Seed database (2 demo users + full data)
-npm run seed:demo        # Seed demo data only (Bob's account)
+npm run seed:demo        # Seed demo data only (Jeff Demo's account)
 
 # Local DB access
 npm run local-db         # psql -h localhost -U postgres -d postgres
@@ -192,7 +192,7 @@ All API routes that require authentication must call `requireSession()` from `sr
 
 **Auth config** (`src/lib/auth.ts`):
 - **Google OAuth** — requires `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` env vars
-- **Demo login** — looks up `bob@example.com` in the DB (seeded by `npm run seed`)
+- **Demo login** — looks up `jeff@example.com` in the DB (seeded by `npm run seed`)
 - **Session strategy:** JWT. The user's DB `id` is embedded in the token and exposed via `session.user.id`.
 
 **Server-side session check:** Use `requireSession()` in API routes. Use `getLoggedInUser()` to retrieve the full `User` from DB.
@@ -424,9 +424,12 @@ npm run local-db   # Connect via psql
 
 Running `npm run seed` (or `npm run db:reset` for a full reset) creates:
 
-- **2 demo users:** Aaron (`aaron@example.com`) and Bob (`bob@example.com`)
-- **Bob** is the demo login user (accessed without a password via the Demo button)
-- Each user gets: 2 training plans, 2–3 weeks per plan, 2 workouts per week, exercises with sets, 4 calendar events, and 60 days of daily metrics
+- **3 seeded users:** Jeff Demo (`jeff@example.com`), Todd (`todd@example.com`), and TestUser (`testuser@example.com`)
+- **Jeff Demo** is the demo login user (accessed without a password via the Demo button)
+- **Todd** is Jeff's coach — the coach-client relationship is seeded so the coach feature is visible in the demo
+- Jeff gets: 2 training plans, 2–3 weeks per plan, 2 workouts per week, exercises with sets, 5 calendar events, 60 days of daily metrics, and 6 weeks of completed check-ins (3 reviewed by Todd with coach notes, 3 unreviewed)
+- Todd gets: 2 training plans, events, day metrics, and 6 check-ins of his own
+- TestUser is a fixed-date account used exclusively by E2E tests
 
 ---
 
