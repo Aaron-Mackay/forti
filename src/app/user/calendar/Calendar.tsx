@@ -170,11 +170,11 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
           onChange={(_e, val) => { if (val) setViewMode(val); }}
           size="small"
         >
-          <ToggleButton value="calendar" aria-label="calendar view">
+          <ToggleButton value="calendar">
             <CalendarMonthIcon fontSize="small" sx={{mr: 0.5}}/>
             Calendar
           </ToggleButton>
-          <ToggleButton value="weeks" aria-label="week list view">
+          <ToggleButton value="weeks">
             <ViewListIcon fontSize="small" sx={{mr: 0.5}}/>
             Weeks
           </ToggleButton>
