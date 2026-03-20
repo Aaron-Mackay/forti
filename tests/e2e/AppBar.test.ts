@@ -80,7 +80,7 @@ test.describe('AppBar — Plan detail back button', () => {
 
     // Plan detail page uses showBack=true, so AppBar renders a back arrow
     // (Back arrow has aria-label "back")
-    const backBtn = page.getByRole('button', { name: /back/i });
+    const _backBtn = page.getByRole('button', { name: /back/i });
     // Could be a back button or the menu button depending on implementation
     // The plan page does NOT pass showBack, so it shows hamburger — verify drawer opens
     await page.getByRole('button', { name: /menu|back/i }).first().click();

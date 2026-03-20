@@ -5,8 +5,10 @@
  * directly from `@playwright/test`.  The extended `page` fixture attaches a
  * `pageerror` listener so that any unhandled JavaScript exception thrown in
  * the browser automatically fails the surrounding test.
+ *
+ * See CLAUDE.md → "E2E Tests" for locator and strict mode guidelines.
  */
-import { test as base, expect } from '@playwright/test';
+import { test as base } from '@playwright/test';
 
 export const test = base.extend({
   page: async ({ page }, use) => {

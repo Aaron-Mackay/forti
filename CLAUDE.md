@@ -346,7 +346,21 @@ import { test, expect } from './fixtures';
 
 **New pages/routes:** When adding a new page route, also update the route table in `.claude/skills/playwright-cli/SKILL.md` and `.claude/agents/frontend-tester.md` so the frontend-tester agent knows about it.
 
-**Playwright strict mode:** Playwright locators operate in strict mode by default — if a locator matches more than one element, the assertion throws a strict mode violation. When a locator might match multiple elements (e.g. the same component rendered in a Swiper/carousel with multiple slides), always narrow it: use `.first()`, `.last()`, `.nth(n)`, or a more specific selector. Never leave a locator that could ambiguously resolve to multiple elements.
+**Playwright strict mode:** Playwright locators are strict — if a locator matches more than one element the call throws at runtime, even inside `expect()`. This is the most common source of broken E2E tests.
+
+Rules:
+- Prefer semantic locators (`getByRole`, `getByLabel`, `getByText` with a unique string) — they are naturally more specific.
+- Any locator that **could** match multiple elements must be narrowed immediately at the call site:
+  ```ts
+  page.getByRole('listitem').first()          // ✅ narrowed
+  page.getByText(/W\d+ ·/).first()            // ✅ narrowed
+  page.getByRole('dialog').first()            // ✅ narrowed (MUI may render extras)
+  page.locator('.fc-day-future').first()      // ✅ narrowed — multiple day cells
+  page.getByRole('listitem')                  // ❌ matches every list item
+  page.getByText('Week')                      // ❌ likely matches many
+  ```
+- When narrowing with `.first()`, add a brief inline comment explaining why (e.g. `// multiple day cells`).
+- `eslint-plugin-playwright` is configured in `eslint.config.mjs` and runs via `npm run lint` (which covers `src/` and `tests/`). It catches quality issues but **cannot detect strict mode violations statically** — they are runtime errors. Audit every locator you write.
 
 ---
 

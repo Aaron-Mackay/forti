@@ -2,7 +2,17 @@
  * Calendar page tests (/user/calendar).
  *
  * Covers: page load, FullCalendar rendering, date selection, event/block FABs,
- * creating a new custom event, and the bottom drawer interactions.
+ * creating a new custom event, bottom drawer interactions, and the week list
+ * view (toggle, month headers, current-week highlight, navigation back to
+ * calendar).
+ *
+ * Strict-mode notes (see fixtures.ts for the full guide):
+ *   - `.fc-day-future` matches every future day cell — always narrow with
+ *     .first().
+ *   - Week list text patterns (W\d+) match every week row — always narrow with
+ *     .first().
+ *   - MuiDrawer dialog: only one right-drawer opens at a time, but use
+ *     .first() defensively since MUI may render additional dialog nodes.
  */
 import {expect, test} from './fixtures';
 
@@ -16,7 +26,6 @@ test.describe('Calendar page', () => {
   });
 
   test('displays the FullCalendar grid', async ({page}) => {
-    // FullCalendar renders a table-like grid with day cells
     await expect(page.locator('.fc-multimonth')).toBeVisible({timeout: 10_000});
   });
 
@@ -40,36 +49,88 @@ test.describe('Calendar page', () => {
 
   test('clicking the add FAB opens the event creation form', async ({page}) => {
     await page.getByRole('button', {name: 'add'}).click();
-    // The bottom drawer should open and show the event form
-    await page.screenshot({path: 'test.png'});
     await expect(page.getByText(/^Event$/i)).toBeVisible({timeout: 5_000});
   });
 
   test('clicking a day cell opens the bottom drawer with day details', async ({page}) => {
-    // Click on any visible day cell
-    const dayCell = page.locator('.fc-day-future').first();
-    await dayCell.click();
-    // The bottom drawer opens with a date heading or events list
+    // .fc-day-future matches every future day — narrow with .first()
+    await page.locator('.fc-day-future').first().click();
     await expect(page.locator('.MuiDrawer-paperAnchorBottom')).toBeVisible({timeout: 5_000});
   });
 
   test('clicking the Blocks FAB opens the blocks list', async ({page}) => {
     await page.getByRole('button', {name: 'Blocks'}).click();
-    // Blocks right-drawer should appear
-    await expect(page.getByRole('dialog')).toBeVisible({timeout: 5_000});
+    // Use .first() — MUI Drawer may render multiple nodes with role="dialog"
+    await expect(page.getByRole('dialog').first()).toBeVisible({timeout: 5_000});
   });
 
   test('clicking the Events FAB opens the events list', async ({page}) => {
     await page.getByRole('button', {name: 'Events'}).click();
-    await expect(page.getByRole('dialog')).toBeVisible({timeout: 5_000});
+    await expect(page.getByRole('dialog').first()).toBeVisible({timeout: 5_000});
   });
 
   test('Today button navigates the calendar to the current month', async ({page}) => {
-    // Go forward, then back to today
     await page.locator('.fc-next-button').click();
     await page.getByRole('button', {name: 'Today'}).click();
-    // The current year should be visible in the calendar header title
     const currentYear = new Date().getFullYear().toString();
     await expect(page.locator('.fc-toolbar-title')).toContainText(currentYear);
+  });
+});
+
+test.describe('Calendar — view toggle', () => {
+  test.beforeEach(async ({page}) => {
+    await page.goto('/user/calendar');
+  });
+
+  test('shows Calendar and Weeks toggle buttons', async ({page}) => {
+    await expect(page.getByRole('button', {name: 'Calendar'})).toBeVisible();
+    await expect(page.getByRole('button', {name: 'Weeks'})).toBeVisible();
+  });
+
+  test('Calendar toggle is selected by default', async ({page}) => {
+    await expect(page.getByRole('button', {name: 'Calendar'})).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', {name: 'Weeks'})).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('clicking Weeks hides the FullCalendar grid', async ({page}) => {
+    await page.getByRole('button', {name: 'Weeks'}).click();
+    await expect(page.locator('.fc-multimonth')).not.toBeVisible();
+  });
+
+  test('clicking Weeks shows a scrollable week list', async ({page}) => {
+    await page.getByRole('button', {name: 'Weeks'}).click();
+    // Each week card starts with "W{n} ·" — narrow to first to avoid strict mode
+    await expect(page.getByText(/W\d+ ·/).first()).toBeVisible({timeout: 5_000});
+  });
+
+  test('week list highlights the current week', async ({page}) => {
+    await page.getByRole('button', {name: 'Weeks'}).click();
+    await expect(page.getByText('This week')).toBeVisible({timeout: 5_000});
+  });
+
+  test('week list shows a month header for the current year', async ({page}) => {
+    await page.getByRole('button', {name: 'Weeks'}).click();
+    const currentYear = new Date().getFullYear().toString();
+    // Month headers are "MONTH YYYY" e.g. "MARCH 2026" — require letters before the
+    // year so we don't match the hidden FullCalendar toolbar title which is just "2026"
+    await expect(page.getByText(new RegExp(`[A-Z]+ ${currentYear}`)).first()).toBeVisible({timeout: 5_000});
+  });
+
+  test('clicking a week card switches back to calendar view', async ({page}) => {
+    await page.getByRole('button', {name: 'Weeks'}).click();
+    // Click the first week card row (narrow with .first())
+    await page.getByText(/W\d+ ·/).first().click();
+    // FullCalendar should be visible again
+    await expect(page.locator('.fc-multimonth')).toBeVisible({timeout: 5_000});
+    // Calendar toggle should now be active
+    await expect(page.getByRole('button', {name: 'Calendar'})).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('switching back from Weeks re-activates the calendar toggle', async ({page}) => {
+    await page.getByRole('button', {name: 'Weeks'}).click();
+    await expect(page.getByRole('button', {name: 'Weeks'})).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', {name: 'Calendar'}).click();
+    await expect(page.getByRole('button', {name: 'Calendar'})).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.fc-multimonth')).toBeVisible();
   });
 });
