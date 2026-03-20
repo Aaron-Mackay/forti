@@ -6,16 +6,23 @@ import multiMonthPlugin from "@fullcalendar/multimonth";
 import interactionPlugin, {DateClickArg} from "@fullcalendar/interaction";
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import './calendar.css'
-import {Alert, Box, Collapse, Fab} from "@mui/material";
+import {Alert, Box, Collapse, Fab, ToggleButton, ToggleButtonGroup} from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import ViewListIcon from '@mui/icons-material/ViewList';
 import CalendarBottomDrawer from "./CalendarBottomDrawer";
-import CustomAppBar, {HEIGHT_EXC_APPBAR} from "@/components/CustomAppBar";
+import CustomAppBar, {APPBAR_HEIGHT} from "@/components/CustomAppBar";
 import {format, isAfter, isBefore, isSameDay} from 'date-fns';
 import {getEventsOnDate, parsedEvents} from "@/app/user/calendar/utils";
 import {EventType} from "@prisma/client";
 import {CalendarRightDrawer} from "@/app/user/calendar/CalendarRightDrawer";
 import {getDayMetricsCache, getEventsCache, saveDayMetricsCache, saveEventsCache} from "@/utils/clientDb";
 import {useOfflineCache} from '@lib/hooks/useOfflineCache';
+import WeekListView from "@/app/user/calendar/WeekListView";
+
+type CalendarViewMode = 'calendar' | 'weeks';
+
+const TOGGLE_HEIGHT = 44;
 
 export type BottomDrawerView = 'list' | 'details' | 'event-form' | 'daymetric-form';
 
@@ -29,6 +36,7 @@ type Props = {
 export default function Calendar({events, dayMetrics, userId}: Props) {
   const calendarRef = useRef<FullCalendar | null>(null);
 
+  const [viewMode, setViewMode] = useState<CalendarViewMode>('calendar');
   const [eventsInState, setEventsInState] = useState<EventPrisma[]>(events);
 
   const [bottomDrawerOpen, setBottomDrawerOpen] = useState(false);
@@ -124,6 +132,16 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
     }, 0);
   };
 
+  const handleWeekClick = (weekStart: Date) => {
+    setViewMode('calendar');
+    // Double rAF lets the display change take effect before scrolling
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        scrollToDate(weekStart);
+      });
+    });
+  };
+
   return (
     <>
       <CustomAppBar title={"Calendar"}/>
@@ -136,36 +154,75 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
           Your calendar was updated while you were offline — showing the latest version.
         </Alert>
       </Collapse>
-      <FullCalendar
-        ref={calendarRef}
-        plugins={[multiMonthPlugin, interactionPlugin]}
-        initialView="multiMonthYear"
-        firstDay={1}
-        multiMonthMaxColumns={1}
-        height={HEIGHT_EXC_APPBAR}
-        selectable={true}
-        selectLongPressDelay={400}
-        dateClick={(dateInfo) => handleDateSelect(dateInfo)}
-        select={({start, end}) => handleDateRangeSelect(start, end)}
-        dayCellDidMount={(info) => {
-          const el = document.createElement("div");
-          el.className = "custom-dot";
-          el.innerText = "•";
-          info.el.querySelector('.fc-daygrid-day-top')?.appendChild(el);
-        }}
-        events={parsedEvents(eventsInState)}
-        headerToolbar={{
-          left: 'title',
-          center: '',
-          right: 'myTodayButton prev,next'
-        }}
-        customButtons={{
-          myTodayButton: {
-            text: 'Today',
-            click: handleTodayButtonClick
-          }
-        }}
-      />
+      {/* View toggle */}
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: TOGGLE_HEIGHT,
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        bgcolor: 'background.paper',
+      }}>
+        <ToggleButtonGroup
+          value={viewMode}
+          exclusive
+          onChange={(_e, val) => { if (val) setViewMode(val); }}
+          size="small"
+        >
+          <ToggleButton value="calendar" aria-label="calendar view">
+            <CalendarMonthIcon fontSize="small" sx={{mr: 0.5}}/>
+            Calendar
+          </ToggleButton>
+          <ToggleButton value="weeks" aria-label="week list view">
+            <ViewListIcon fontSize="small" sx={{mr: 0.5}}/>
+            Weeks
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
+
+      {/* Calendar view (kept mounted to preserve state) */}
+      <Box sx={{display: viewMode === 'calendar' ? 'block' : 'none'}}>
+        <FullCalendar
+          ref={calendarRef}
+          plugins={[multiMonthPlugin, interactionPlugin]}
+          initialView="multiMonthYear"
+          firstDay={1}
+          multiMonthMaxColumns={1}
+          height={`calc(100dvh - ${APPBAR_HEIGHT}px - ${TOGGLE_HEIGHT}px)`}
+          selectable={true}
+          selectLongPressDelay={400}
+          dateClick={(dateInfo) => handleDateSelect(dateInfo)}
+          select={({start, end}) => handleDateRangeSelect(start, end)}
+          dayCellDidMount={(info) => {
+            const el = document.createElement("div");
+            el.className = "custom-dot";
+            el.innerText = "•";
+            info.el.querySelector('.fc-daygrid-day-top')?.appendChild(el);
+          }}
+          events={parsedEvents(eventsInState)}
+          headerToolbar={{
+            left: 'title',
+            center: '',
+            right: 'myTodayButton prev,next'
+          }}
+          customButtons={{
+            myTodayButton: {
+              text: 'Today',
+              click: handleTodayButtonClick
+            }
+          }}
+        />
+      </Box>
+
+      {/* Week list view (kept mounted to preserve scroll position) */}
+      <Box sx={{display: viewMode === 'weeks' ? 'block' : 'none'}}>
+        <WeekListView
+          events={eventsInState}
+          onWeekClick={handleWeekClick}
+          height={`calc(100dvh - ${APPBAR_HEIGHT}px - ${TOGGLE_HEIGHT}px)`}
+        />
+      </Box>
       <Box sx={{
         position: 'absolute',
         bottom: 25,
