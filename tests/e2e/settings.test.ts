@@ -24,6 +24,8 @@ const ALL_ON = {
   showActiveBlock: true,
   showUpcomingEvents: true,
   showMetricsChart: true,
+  showStopwatch: true,
+  showSupplements: false,
 };
 
 // ---------------------------------------------------------------------------

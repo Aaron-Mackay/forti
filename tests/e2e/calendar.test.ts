@@ -111,8 +111,9 @@ test.describe('Calendar — view toggle', () => {
   test('week list shows a month header for the current year', async ({page}) => {
     await page.getByRole('button', {name: 'Weeks'}).click();
     const currentYear = new Date().getFullYear().toString();
-    // Month headers are "MONTH YYYY" — multiple exist, narrow with .first()
-    await expect(page.getByText(new RegExp(currentYear)).first()).toBeVisible({timeout: 5_000});
+    // Month headers are "MONTH YYYY" e.g. "MARCH 2026" — require letters before the
+    // year so we don't match the hidden FullCalendar toolbar title which is just "2026"
+    await expect(page.getByText(new RegExp(`[A-Z]+ ${currentYear}`)).first()).toBeVisible({timeout: 5_000});
   });
 
   test('clicking a week card switches back to calendar view', async ({page}) => {
