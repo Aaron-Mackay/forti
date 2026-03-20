@@ -9,7 +9,7 @@ import Week from "./Week";
 import EditModeToggle from "./EditModeToggle";
 import ScreenSizeWarningBanner from "@/components/ScreenSizeWarningBanner";
 import CustomAppBar from "@/components/CustomAppBar";
-import {Box, useMediaQuery, useTheme} from "@mui/material";
+import {Alert, Box, Snackbar, useMediaQuery, useTheme} from "@mui/material";
 import MobilePlanView from "./MobilePlanView";
 
 export const PlanTable: React.FC<{
@@ -18,6 +18,7 @@ export const PlanTable: React.FC<{
   planId?: string;
 }> = ({lockedInEditMode = false, categories, planId}) => {
   const [isInEditMode, setIsInEditMode] = useState(lockedInEditMode);
+  const [snackbar, setSnackbar] = useState<{open: boolean; message: string; severity: 'success' | 'error'}>({open: false, message: '', severity: 'success'});
   const {state: userDataState, dispatch} = useWorkoutEditorContext();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -25,10 +26,10 @@ export const PlanTable: React.FC<{
   const handleSave = () => {
     saveUserWorkoutData(userDataState)
       .then(() => {
-        setIsInEditMode(false)
-        alert('Saved successfully')
+        setIsInEditMode(false);
+        setSnackbar({open: true, message: 'Saved successfully', severity: 'success'});
       })
-      .catch(() => alert('Failed to save'))
+      .catch(() => setSnackbar({open: true, message: 'Failed to save', severity: 'error'}));
   };
 
   const plan = planId ?
@@ -86,6 +87,17 @@ export const PlanTable: React.FC<{
           </>
         )}
       </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(s => ({...s, open: false}))}
+        anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}
+      >
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar(s => ({...s, open: false}))}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 };
