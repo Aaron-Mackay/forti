@@ -18,7 +18,7 @@ export async function retryFetch(req: OfflineRequest, retries = MAX_RETRIES): Pr
       });
       return;
     } catch {
-      await new Promise((res) => setTimeout(res, 2 ** i * 500)); // exponential backoff
+      await new Promise((res) => setTimeout(res, 2 ** i * 500 + Math.random() * 200)); // exponential backoff with jitter
     }
   }
   throw new Error('Max retries reached');
@@ -57,7 +57,6 @@ export async function queueOrSendRequest(url: string, method: string, body: Reco
         // @ts-expect-error sync is not yet in the serviceworker definition
         await (reg).sync.register('sync-queued-requests');
       } catch (err) {
-        console.error(err)
         console.warn('Background sync registration failed:', err);
       }
     }
@@ -75,7 +74,6 @@ export async function syncQueuedRequests(): Promise<void> {
     try {
       await retryFetch(req);
     } catch (err) {
-      console.error(err)
       console.error('Failed to send queued request:', req, err);
     }
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { Settings, DEFAULT_SETTINGS, parseDashboardSettings } from '@/types/settingsTypes';
 
 interface SettingsContextValue {
@@ -18,6 +18,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const abortRef = useRef<AbortController | null>(null);
+  const settingsRef = useRef(settings);
+
+  // Keep settingsRef current so updateSetting always reads the latest value
+  useEffect(() => { settingsRef.current = settings; }, [settings]);
+
   useEffect(() => {
     fetch('/api/user/settings')
       .then(res => res.ok ? res.json() : Promise.reject(res))
@@ -32,7 +38,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateSetting = useCallback(async (key: keyof Settings, value: boolean | number) => {
-    const prev = settings;
+    // Cancel any in-flight PATCH so the latest change always wins
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const prev = settingsRef.current;
     setSettings(s => ({ ...s, [key]: value }));
     setError(null);
     try {
@@ -40,13 +51,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ settings: { [key]: value } }),
+        signal: controller.signal,
       });
       if (!res.ok) throw new Error();
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       setSettings(prev);
       setError('Failed to save setting. Please try again.');
     }
-  }, [settings]);
+  }, []); // Empty deps — reads latest settings via settingsRef to avoid stale closures
 
   const clearError = useCallback(() => setError(null), []);
 

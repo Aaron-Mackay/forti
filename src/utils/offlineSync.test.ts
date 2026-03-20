@@ -124,17 +124,14 @@ describe('offlineSync', () => {
       };
 
       const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       await queueOrSendRequest(url, method, body);
 
       expect(mockAddRequest).toHaveBeenCalled();
       expect(syncRegister).toHaveBeenCalled();
       expect(consoleWarn).toHaveBeenCalled();
-      expect(consoleError).toHaveBeenCalled();
 
       consoleWarn.mockRestore();
-      consoleError.mockRestore();
     });
 
     it('sends request immediately when online', async () => {
