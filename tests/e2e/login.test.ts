@@ -33,7 +33,13 @@ test.describe('Login page', () => {
 
   test('shows "Try Demo" button', async ({ page }) => {
     await expect(
-      page.getByRole('button', { name: /Try Demo/i })
+      page.getByRole('button', { name: 'Try Demo', exact: true })
+    ).toBeVisible();
+  });
+
+  test('shows "Try Demo (Coach)" button', async ({ page }) => {
+    await expect(
+      page.getByRole('button', { name: 'Try Demo (Coach)', exact: true })
     ).toBeVisible();
   });
 
@@ -46,7 +52,7 @@ test.describe('Login page', () => {
   });
 
   test('redirects to dashboard after demo login', async ({ page }) => {
-    await page.getByRole('button', { name: /Try Demo/i }).click();
+    await page.getByRole('button', { name: 'Try Demo', exact: true }).click();
     await page.waitForURL('/user', { timeout: 15_000 });
     await expect(page).toHaveURL('/user');
   });
