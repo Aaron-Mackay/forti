@@ -190,7 +190,7 @@ test.describe('Check-in page — history', () => {
   });
 
   test('renders history accordion cards for past check-ins', async ({ page }) => {
-    // CheckInHistoryCard renders the week start date; look for the week label
-    await expect(page.getByText(/9 March 2026/i)).toBeVisible();
+    // CheckInHistoryCard renders the week start date using month:'short' → "9 Mar 2026"
+    await expect(page.getByText(/9 Mar 2026/i)).toBeVisible();
   });
 });
