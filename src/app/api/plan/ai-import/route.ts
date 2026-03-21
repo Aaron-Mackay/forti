@@ -119,11 +119,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const message = await client.messages.create({
       model: 'claude-opus-4-6',
-      max_tokens: 4096,
+      max_tokens: 16384,
       tools: [AI_PLAN_TOOL],
       tool_choice: { type: 'any' },
       messages: [{ role: 'user', content: userContent }],
     });
+
+    if (message.stop_reason === 'max_tokens') {
+      return NextResponse.json(
+        { error: 'The spreadsheet was too large to process in one go — try uploading fewer weeks at a time' },
+        { status: 422 },
+      );
+    }
 
     const toolUseBlock = message.content.find((block) => block.type === 'tool_use');
     if (!toolUseBlock || toolUseBlock.type !== 'tool_use') {
