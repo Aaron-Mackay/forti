@@ -74,7 +74,11 @@ async function main() {
 
   // ── Seed Todd (Jeff's coach) ──────────────────────────────────────────────
   const todd = await prisma.user.create({
-    data: { name: 'Todd', email: 'todd@example.com' },
+    data: {
+      name: 'Todd',
+      email: 'todd@example.com',
+      settings: { onboardingSeenWelcome: true, onboardingDismissed: true },
+    },
   });
 
   await prisma.userExerciseNote.createMany({
@@ -255,7 +259,11 @@ async function main() {
   // A fixed past date is used so E2E tests running against real-today (~2026)
   // see no active blocks and no upcoming events.
   const testuser = await prisma.user.create({
-    data: { name: 'TestUser', email: 'testuser@example.com' },
+    data: {
+      name: 'TestUser',
+      email: 'testuser@example.com',
+      settings: { onboardingSeenWelcome: true, onboardingDismissed: true },
+    },
   });
   await seedTestUserData(testuser, new Date('2024-06-01'));
 
@@ -263,7 +271,11 @@ async function main() {
   // Today's date is used so the dashboard shows live data: active block,
   // upcoming events, etc.
   const jeff = await prisma.user.create({
-    data: { name: 'Jeff Demo', email: 'jeff@example.com' },
+    data: {
+      name: 'Jeff Demo',
+      email: 'jeff@example.com',
+      settings: { onboardingSeenWelcome: true, onboardingDismissed: true },
+    },
   });
   await seedJeffDemoData(jeff, new Date(), todd.id);
 
