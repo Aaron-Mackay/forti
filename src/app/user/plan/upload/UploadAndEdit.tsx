@@ -176,7 +176,7 @@ export const UploadAndEdit = () => {
           </List>
           <LinearProgress sx={{ mt: 2 }} />
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-            This may take up to 30 seconds
+            This may take a few minutes
           </Typography>
         </DialogContent>
       </Dialog>

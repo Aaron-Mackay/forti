@@ -119,7 +119,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const message = await client.messages.create({
       model: 'claude-opus-4-6',
-      max_tokens: 16384,
+      max_tokens: 32768,
       tools: [AI_PLAN_TOOL],
       tool_choice: { type: 'any' },
       messages: [{ role: 'user', content: userContent }],
