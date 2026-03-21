@@ -6,6 +6,7 @@ import {authOptions} from "@lib/auth";
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
+    const type = formData.get("type")?.toString() || "Bug Report";
     const description = formData.get("description")?.toString() || "No description provided";
     const screenshot = formData.get("screenshot") as File | null;
 
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
     const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
 
     const emailBody = `
-========== BUG REPORT ==========
+========== ${type.toUpperCase()} ==========
 Date: ${date}
 Time: ${time}
 
@@ -62,9 +63,9 @@ ${screenshot ? screenshot.name : "No screenshot attached"}
 `;
 
     const emailParams = new EmailParams()
-      .setFrom(new Sender(process.env.MAILERSEND_FROM!, "Bug Reporter"))
+      .setFrom(new Sender(process.env.MAILERSEND_FROM!, "Feedback"))
       .setTo([new Recipient(process.env.MAILERSEND_TO!, "Developer")])
-      .setSubject("New Bug Report")
+      .setSubject(`New ${type}`)
       .setText(emailBody)
       .setAttachments(attachments);
 
@@ -72,7 +73,7 @@ ${screenshot ? screenshot.name : "No screenshot attached"}
 
     return NextResponse.json({success: true});
   } catch (err) {
-    console.error("Error sending bug report:", err);
-    return NextResponse.json({error: "Failed to send bug report"}, {status: 500});
+    console.error("Error sending feedback:", err);
+    return NextResponse.json({error: "Failed to send feedback"}, {status: 500});
   }
 }
