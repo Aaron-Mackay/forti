@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import { z } from 'zod';
 import prisma from '@lib/prisma';
-import { ExerciseCategory, Prisma } from '@prisma/client';
+import { ExerciseCategory } from '@prisma/client';
 import { EXERCISE_EQUIPMENT, EXERCISE_MUSCLES } from '@/types/dataTypes';
 
 const CreateExerciseSchema = z.object({
@@ -18,8 +18,12 @@ export type CreateExerciseRequest = z.infer<typeof CreateExerciseSchema>;
 
 export async function GET(_req: NextRequest) {
   try {
-    await requireSession();
-    const exercises = await prisma.exercise.findMany({ orderBy: { name: 'asc' } });
+    const session = await requireSession();
+    const userId = session.user.id;
+    const exercises = await prisma.exercise.findMany({
+      where: { OR: [{ createdByUserId: null }, { createdByUserId: userId }] },
+      orderBy: { name: 'asc' },
+    });
     return NextResponse.json(exercises);
   } catch (err: unknown) {
     if (err instanceof NextResponse) return err;
@@ -30,7 +34,8 @@ export async function GET(_req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    await requireSession();
+    const session = await requireSession();
+    const userId = session.user.id;
 
     const json = await req.json();
     const parsed = CreateExerciseSchema.safeParse(json);
@@ -43,19 +48,15 @@ export async function POST(req: NextRequest) {
     }
 
     const { name, category, description, equipment, primaryMuscles, secondaryMuscles } = parsed.data;
+    const resolvedCategory = (category ?? null) as ExerciseCategory | null;
 
-    // Build the where clause for unique lookup
-    // Type assertion is needed because Prisma's type system doesn't handle nullable fields in unique constraints well
-    const whereClause: Prisma.ExerciseWhereUniqueInput = {
-      name_category: {
+    // Conflict check: user would see this exercise already (global or their own)
+    const existing = await prisma.exercise.findFirst({
+      where: {
         name,
-        category: (category ?? null) as string | null,
-      } as Prisma.ExerciseName_categoryCompoundUniqueInput,
-    };
-
-    // Check if exercise already exists (unique by name + category)
-    const existing = await prisma.exercise.findUnique({
-      where: whereClause,
+        category: resolvedCategory,
+        OR: [{ createdByUserId: null }, { createdByUserId: userId }],
+      },
     });
 
     if (existing) {
@@ -68,12 +69,12 @@ export async function POST(req: NextRequest) {
     const exercise = await prisma.exercise.create({
       data: {
         name,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        category: (category ?? null) as any as ExerciseCategory | null,
+        category: resolvedCategory,
         description: description ?? null,
         equipment,
         primaryMuscles,
         secondaryMuscles,
+        createdByUserId: userId,
       },
     });
 

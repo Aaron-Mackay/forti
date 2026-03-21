@@ -172,6 +172,8 @@ All routes live under `src/app/api/` and follow Next.js App Router conventions:
 | `api/exercises/[exerciseId]/previous-sets` | Fetch previous sets for an exercise |
 | `api/exercises/[exerciseId]/previous-cardio` | Fetch previous cardio data for an exercise |
 | `api/exercises/[exerciseId]/e1rm-history` | E1RM history for progress sparkline |
+| `api/exercises` | GET (scoped to user + global) / POST exercise creation |
+| `api/exercises/enrich` | POST — Haiku AI call to enrich new exercise names with category + muscle data |
 | `api/plan` | Training plan CRUD |
 | `api/plan/ai-import` | POST — AI-generated plan import via Claude API |
 | `api/plans/count` | Count user's plans |
@@ -259,7 +261,7 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 | `src/lib/requireSession.ts` | Server-side session guard for API routes |
 | `src/lib/getLoggedInUser.ts` | Retrieve full User record from session |
 | `src/lib/queries.ts` | Ownership-chain DB helpers: `getWorkoutWithOwner`, `getWorkoutExerciseWithOwner`, `getSetWithOwner` |
-| `src/lib/exerciseQueries.ts` | Shared Prisma helpers for the three exercise-history routes |
+| `src/lib/exerciseQueries.ts` | Shared Prisma helpers: exercise-history routes + `findOrCreateExercise` (user-private exercise lookup/create) |
 | `src/lib/apiResponses.ts` | Standardised error response factories (`errorResponse`, `notFoundResponse`, etc.) |
 | `src/lib/apiSchemas.ts` | Zod schemas for day metric and event payloads |
 | `src/lib/planSchemas.ts` | Zod schemas for workout plan import/export |

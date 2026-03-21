@@ -56,6 +56,7 @@ export function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPris
                   equipment: [],
                   primaryMuscles: [],
                   secondaryMuscles: [],
+                  createdByUserId: null,
                 },
                 sets: ex.sets.map((set): SetPrisma => ({
                   id: nextId(),

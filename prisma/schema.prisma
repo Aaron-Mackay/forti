@@ -42,6 +42,7 @@ model User {
   pushSubscriptions PushSubscription[]
   supplements       Supplement[]
   notifications     Notification[]
+  createdExercises  Exercise[]         @relation("UserCreatedExercises")
 }
 
 enum CoachRequestStatus {
@@ -202,8 +203,11 @@ model Exercise {
   workoutLinks       WorkoutExercise[]
   substitutedByLinks WorkoutExercise[] @relation("SubstitutedExercises")
   UserExerciseNote   UserExerciseNote[]
+  createdByUserId  String?
+  createdByUser    User?              @relation("UserCreatedExercises", fields: [createdByUserId], references: [id], onDelete: SetNull)
 
-  @@unique([name, category], name: "name_category")
+  @@unique([name, category, createdByUserId], name: "name_category_user")
+  @@index([createdByUserId])
 }
 
 model WorkoutExercise {

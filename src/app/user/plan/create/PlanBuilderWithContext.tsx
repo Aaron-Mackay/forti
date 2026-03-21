@@ -36,6 +36,7 @@ export default function PlanBuilderWithContext({userData, allExercises}: {
       equipment: [],
       primaryMuscles: [],
       secondaryMuscles: [],
+      createdByUserId: null,
     },
     exerciseId: PLACEHOLDER_ID,
     repRange: "",

@@ -12,6 +12,7 @@ const dummyExercise: Exercise = {
   equipment: [],
   primaryMuscles: [],
   secondaryMuscles: [],
+  createdByUserId: null,
 };
 
 // ─── Private helpers ─────────────────────────────────────────────────────────
@@ -141,6 +142,7 @@ export function updateExerciseInUser(
     equipment: [],
     primaryMuscles: [],
     secondaryMuscles: [],
+    createdByUserId: null,
   };
 
   return withExercise(user, planId, weekId, workoutId, workoutExerciseId, exercise => ({
