@@ -248,6 +248,20 @@ export default function SettingsClient() {
       )}
 
       <Divider sx={{my: 3}}/>
+
+      <Typography variant="overline" color="text.secondary">Onboarding</Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        Re-show the Getting Started guide on your dashboard.
+      </Typography>
+      <Button
+        variant="outlined"
+        size="small"
+        onClick={() => updateSetting('onboardingDismissed', false)}
+      >
+        Show Getting Started guide
+      </Button>
+
+      <Divider sx={{my: 3}}/>
       <CoachingSettings />
     </Box>
   );
