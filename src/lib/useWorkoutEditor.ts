@@ -16,6 +16,7 @@ export type WorkoutEditorAction =
   | { type: 'ADD_WORKOUT_WITH_EXERCISE_WITH_SET'; planId: number, weekId: number }
   | { type: 'REMOVE_WORKOUT'; planId: number, weekId: number; workoutId: number; }
   | { type: 'MOVE_WORKOUT'; planId: number, weekId: number; dir: Dir, index: number }
+  | { type: 'REORDER_WEEK'; planId: number; fromIndex: number; toIndex: number }
   | { type: 'REORDER_WORKOUT'; planId: number, weekId: number; fromIndex: number; toIndex: number }
   | { type: 'ADD_EXERCISE'; planId: number, weekId: number; workoutId: number; }
   | { type: 'ADD_EXERCISE_WITH_SET'; planId: number, weekId: number; workoutId: number; }
@@ -219,6 +220,11 @@ export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, 
       const week = getNestedOrWarn({planId, weekId});
       if (!week) return userDataState;
       return userPlanMutators.moveWorkout(userDataState, planId, weekId, index, dir)
+    }
+
+    case 'REORDER_WEEK': {
+      const { planId, fromIndex, toIndex } = action;
+      return userPlanMutators.reorderWeek(userDataState, planId, fromIndex, toIndex);
     }
 
     case 'REORDER_WORKOUT': {

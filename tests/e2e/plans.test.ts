@@ -55,10 +55,10 @@ test.describe('Plan detail page', () => {
   test('displays at least one week', async ({ page }) => {
     // Seed creates 2-3 weeks per plan.
     // Desktop: Week component renders an <h2> heading per week ("Week N")
-    // Mobile: MobilePlanView renders Tab buttons with "Wk N" labels
+    // Mobile: MobilePlanView renders Chip buttons with "Wk N" labels
     const weekHeading = page.getByRole('heading', { name: /Week \d+/i });
-    const weekTab = page.getByRole('tab', { name: /Wk \d+/i });
-    await expect(weekHeading.or(weekTab).first()).toBeVisible();
+    const weekChip = page.getByRole('button', { name: /Wk \d+/i });
+    await expect(weekHeading.or(weekChip).first()).toBeVisible();
   });
 
   test('displays workouts inside a week', async ({ page }) => {
