@@ -15,6 +15,7 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import { useState } from 'react';
 import { useSettings } from '@lib/providers/SettingsProvider';
 
 const FEATURES = [
@@ -26,11 +27,15 @@ const FEATURES = [
 
 export default function WelcomeModal() {
   const { settings, loading, updateSetting } = useSettings();
+  const [dismissed, setDismissed] = useState(false);
 
-  // Gate on !loading to avoid flashing for existing users during settings fetch
-  const open = !loading && !settings.onboardingSeenWelcome;
+  // Gate on !loading to avoid flashing for existing users during settings fetch.
+  // Local `dismissed` flag prevents the modal reopening if the server PATCH
+  // hasn't completed before the next settings read.
+  const open = !loading && !settings.onboardingSeenWelcome && !dismissed;
 
   const handleClose = () => {
+    setDismissed(true);
     updateSetting('onboardingSeenWelcome', true);
   };
 
