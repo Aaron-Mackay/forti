@@ -9,6 +9,8 @@ import {
   List,
   ListItem,
   ListItemText,
+  Menu,
+  MenuItem,
   Paper,
   Skeleton,
   Table,
@@ -21,6 +23,7 @@ import {
 } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import InfoIcon from '@mui/icons-material/Info';
+import CheckIcon from '@mui/icons-material/Check';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
@@ -31,6 +34,7 @@ import WeightInput from './WeightInput';
 import PlateCalculatorSheet from './PlateCalculatorSheet';
 import {computeE1rm} from '@/lib/e1rm';
 import {kgToDisplay, formatWeight} from '@/lib/units';
+import type {ExerciseUnitOverride} from '@/types/settingsTypes';
 import {SetPrisma, WorkoutExercisePrisma} from '@/types/dataTypes';
 import {UserExerciseNote} from '@prisma/client';
 import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
@@ -67,14 +71,16 @@ export default function ExerciseSlide({
   history: E1rmHistoryPoint[] | null;
   onSubstitute?: () => void;
 }) {
-  const { settings } = useSettings();
-  const unit = settings.weightUnit;
+  const { settings, setExerciseUnitOverride } = useSettings();
+  const override = settings.exerciseUnitOverrides[String(ex.exerciseId)] ?? null;
+  const effectiveUnit = override ?? settings.weightUnit;
 
   const [formCue, setFormCue] = useState(userExerciseNote?.note ?? '');
   const [formCueOpen, setFormCueOpen] = useState(false);
   const [warmupOpen, setWarmupOpen] = useState(false);
   const [plateCalcOpen, setPlateCalcOpen] = useState(false);
   const [plateCalcSetIdx, setPlateCalcSetIdx] = useState<number | null>(null);
+  const [unitMenuAnchor, setUnitMenuAnchor] = useState<HTMLElement | null>(null);
   const [hasScrollBelow, setHasScrollBelow] = useState(true);
   const [hasScrollAbove, setHasScrollAbove] = useState(false);
 
@@ -222,8 +228,8 @@ export default function ExerciseSlide({
         />
       </Collapse>
 
-      {/* Warmup suggestions */}
-      <Box sx={{width: '100%', mb: 1}}>
+      {/* Warmup suggestions — hidden for 'no unit' machines */}
+      <Box sx={{width: '100%', mb: 1, display: effectiveUnit === 'none' ? 'none' : undefined}}>
         <Button
           size="small"
           variant="outlined"
@@ -240,7 +246,7 @@ export default function ExerciseSlide({
                 {warmupSets.map(({weightKg, reps, pct}) => (
                   <TableRow key={pct}>
                     <TableCell sx={{color: 'text.secondary', width: 40}}>{pct}%</TableCell>
-                    <TableCell sx={{fontWeight: 500}}>{formatWeight(weightKg, unit)}</TableCell>
+                    <TableCell sx={{fontWeight: 500}}>{formatWeight(weightKg, effectiveUnit === 'none' ? 'kg' : effectiveUnit)}</TableCell>
                     <TableCell sx={{color: 'text.secondary'}}>× {reps} {reps === 1 ? 'rep' : 'reps'}</TableCell>
                   </TableRow>
                 ))}
@@ -281,18 +287,19 @@ export default function ExerciseSlide({
                             variant="caption"
                             color="text.disabled"
                             sx={{mt: 0.25, visibility: prev ? 'visible' : 'hidden', width: 70}}
-                            aria-label={prev ? `Previous: ${formatWeight(prev.weight, unit)} × ${prev.reps ?? '—'}` : undefined}
+                            aria-label={prev ? `Previous: ${formatWeight(prev.weight, effectiveUnit === 'none' ? 'kg' : effectiveUnit)} × ${prev.reps ?? '—'}` : undefined}
                           >
-                            Prev: {prev ? kgToDisplay(prev.weight, unit) ?? '—' : '—'} × {prev?.reps ?? '—'}
+                            Prev: {prev ? kgToDisplay(prev.weight, effectiveUnit === 'none' ? 'kg' : effectiveUnit) ?? '—' : '—'} × {prev?.reps ?? '—'}
                           </Typography>
                         )}
                       </Box>
                       <WeightInput
                         valueKg={group.parent.weight}
-                        unit={unit}
+                        unit={effectiveUnit}
                         onChange={(kgStr) => handleSetUpdate(parentSetIdx, 'weight', kgStr)}
+                        onLongPress={(el) => setUnitMenuAnchor(el)}
                       />
-                      {isBarbell && (
+                      {isBarbell && effectiveUnit !== 'none' && (
                         <IconButton
                           size="small"
                           aria-label="Open plate calculator"
@@ -320,12 +327,12 @@ export default function ExerciseSlide({
                       />
                       <Box>
                         <TextField
-                          label={`Est. 1RM (${unit})`}
+                          label={`Est. 1RM (${effectiveUnit === 'none' ? 'kg' : effectiveUnit})`}
                           size="small"
                           disabled
                           slotProps={{inputLabel: {shrink: true}}}
                           sx={{minWidth: 85, '& input': {textAlign: 'center'}}}
-                          value={liveE1rm ? (kgToDisplay(liveE1rm, unit) ?? liveE1rm).toFixed(1) : "-"}
+                          value={liveE1rm ? (kgToDisplay(liveE1rm, effectiveUnit === 'none' ? 'kg' : effectiveUnit) ?? liveE1rm).toFixed(1) : "-"}
                         />
                         {liveE1rm !== null && liveE1rm === todayBestE1rm && liveE1rm > (historicalBest || 0) && (
                           <EmojiEventsIcon
@@ -359,8 +366,9 @@ export default function ExerciseSlide({
                           </Box>
                           <WeightInput
                             valueKg={drop.weight}
-                            unit={unit}
+                            unit={effectiveUnit}
                             onChange={(kgStr) => handleSetUpdate(dropSetIdx, 'weight', kgStr)}
+                            onLongPress={(el) => setUnitMenuAnchor(el)}
                           />
                           <TextField
                             label="Reps"
@@ -412,11 +420,42 @@ export default function ExerciseSlide({
         )}
       </Box>
 
+      {/* Unit override context menu — opened by long-pressing a weight field */}
+      <Menu
+        anchorEl={unitMenuAnchor}
+        open={Boolean(unitMenuAnchor)}
+        onClose={() => setUnitMenuAnchor(null)}
+      >
+        {(
+          [
+            { value: null,  label: `Default (${settings.weightUnit})` },
+            { value: 'kg'  as ExerciseUnitOverride, label: 'Force kg' },
+            { value: 'lbs' as ExerciseUnitOverride, label: 'Force lbs' },
+            { value: 'none' as ExerciseUnitOverride, label: 'No unit (machine)' },
+          ] as { value: ExerciseUnitOverride | null; label: string }[]
+        ).map(({ value, label }) => (
+          <MenuItem
+            key={String(value)}
+            onClick={() => {
+              setExerciseUnitOverride(ex.exerciseId, value);
+              setUnitMenuAnchor(null);
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 180 }}>
+              <Box sx={{ width: 20 }}>
+                {override === value && <CheckIcon fontSize="small" color="primary" />}
+              </Box>
+              {label}
+            </Box>
+          </MenuItem>
+        ))}
+      </Menu>
+
       {/* Plate calculator bottom sheet */}
       {plateCalcOpen && (
         <PlateCalculatorSheet
           initialKg={plateCalcSetIdx !== null ? (ex.sets[plateCalcSetIdx]?.weight ?? null) : null}
-          unit={unit}
+          unit={effectiveUnit === 'none' ? 'kg' : effectiveUnit}
           onClose={() => setPlateCalcOpen(false)}
           onUseWeight={(kg) => {
             if (plateCalcSetIdx !== null) handleSetUpdate(plateCalcSetIdx, 'weight', kg.toString());

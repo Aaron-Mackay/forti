@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
-import { Settings, DEFAULT_SETTINGS, parseDashboardSettings, CustomMetricDef } from '@/types/settingsTypes';
+import { Settings, DEFAULT_SETTINGS, parseDashboardSettings, CustomMetricDef, ExerciseUnitOverride } from '@/types/settingsTypes';
 
 interface SettingsContextValue {
   settings: Settings;
@@ -10,6 +10,7 @@ interface SettingsContextValue {
   clearError: () => void;
   updateSetting: (key: keyof Settings, value: boolean | number | string) => Promise<void>;
   updateCustomMetrics: (defs: CustomMetricDef[]) => Promise<void>;
+  setExerciseUnitOverride: (exerciseId: number, override: ExerciseUnitOverride | null) => Promise<void>;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -85,10 +86,39 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const setExerciseUnitOverride = useCallback(async (exerciseId: number, override: ExerciseUnitOverride | null) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const prev = settingsRef.current;
+    const next = { ...prev.exerciseUnitOverrides };
+    if (override === null) {
+      delete next[String(exerciseId)];
+    } else {
+      next[String(exerciseId)] = override;
+    }
+    setSettings(s => ({ ...s, exerciseUnitOverrides: next }));
+    setError(null);
+    try {
+      const res = await fetch('/api/user/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: { exerciseUnitOverrides: next } }),
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error();
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      setSettings(prev);
+      setError('Failed to save setting. Please try again.');
+    }
+  }, []);
+
   const clearError = useCallback(() => setError(null), []);
 
   return (
-    <SettingsContext.Provider value={{ settings, loading, error, clearError, updateSetting, updateCustomMetrics }}>
+    <SettingsContext.Provider value={{ settings, loading, error, clearError, updateSetting, updateCustomMetrics, setExerciseUnitOverride }}>
       {children}
     </SettingsContext.Provider>
   );

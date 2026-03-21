@@ -55,6 +55,7 @@ describe('parseDashboardSettings', () => {
       onboardingDismissed: false,
       onboardingSeenWelcome: false,
       weightUnit: 'kg' as const,
+      exerciseUnitOverrides: {},
     };
     expect(parseDashboardSettings(allFalse)).toEqual(allFalse);
   });
@@ -82,6 +83,28 @@ describe('parseDashboardSettings', () => {
     const result = parseDashboardSettings({});
     expect(result.onboardingDismissed).toBe(false);
     expect(result.onboardingSeenWelcome).toBe(false);
+  });
+
+  describe('exerciseUnitOverrides parsing', () => {
+    it('defaults to empty object when absent', () => {
+      expect(parseDashboardSettings({}).exerciseUnitOverrides).toEqual({});
+    });
+
+    it('parses valid overrides', () => {
+      const raw = { exerciseUnitOverrides: { '1': 'none', '2': 'lbs', '3': 'kg' } };
+      expect(parseDashboardSettings(raw).exerciseUnitOverrides).toEqual({ '1': 'none', '2': 'lbs', '3': 'kg' });
+    });
+
+    it('strips invalid values', () => {
+      const raw = { exerciseUnitOverrides: { '1': 'none', '2': 'stones', '3': 42, '4': null } };
+      expect(parseDashboardSettings(raw).exerciseUnitOverrides).toEqual({ '1': 'none' });
+    });
+
+    it('returns empty object for non-object input', () => {
+      expect(parseDashboardSettings({ exerciseUnitOverrides: 'bad' }).exerciseUnitOverrides).toEqual({});
+      expect(parseDashboardSettings({ exerciseUnitOverrides: [] }).exerciseUnitOverrides).toEqual({});
+      expect(parseDashboardSettings({ exerciseUnitOverrides: null }).exerciseUnitOverrides).toEqual({});
+    });
   });
 
   describe('customMetrics parsing', () => {

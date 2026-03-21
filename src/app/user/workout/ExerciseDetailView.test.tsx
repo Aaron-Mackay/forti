@@ -5,7 +5,10 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 vi.mock('next-auth/react', () => ({useSession: () => ({data: null, status: 'unauthenticated'})}));
 vi.mock('next/navigation', () => ({usePathname: () => '/user/workout', useRouter: () => ({push: vi.fn()})}));
 vi.mock('@lib/providers/SettingsProvider', () => ({
-  useSettings: () => ({settings: {showStopwatch: true}, loading: false, error: null, clearError: vi.fn(), updateSetting: vi.fn()}),
+  useSettings: () => ({
+    settings: {showStopwatch: true, weightUnit: 'kg', exerciseUnitOverrides: {}},
+    loading: false, error: null, clearError: vi.fn(), updateSetting: vi.fn(), setExerciseUnitOverride: vi.fn(),
+  }),
 }));
 
 import ExerciseDetailView from './ExerciseDetailView';
