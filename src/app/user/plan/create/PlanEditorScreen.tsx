@@ -53,6 +53,21 @@ import type { EnrichedExercise } from '@/app/api/exercises/enrich/route'
 import { ActionDispatch } from 'react'
 import { WorkoutEditorAction } from '@lib/useWorkoutEditor'
 import { AddExerciseForm } from '@/app/exercises/AddExerciseForm'
+import { createFilterOptions } from '@mui/material/Autocomplete'
+import type { FilterOptionsState } from '@mui/material'
+
+// ── Autocomplete helpers ───────────────────────────────────────────────────────
+
+const CREATE_PREFIX = '__create__:'
+const _baseFilter = createFilterOptions<string>()
+const exerciseFilterOptions = (options: string[], params: FilterOptionsState<string>) => {
+  const filtered = _baseFilter(options, params)
+  const { inputValue } = params
+  if (inputValue.trim().length > 0 && !options.some(o => o.toLowerCase() === inputValue.toLowerCase())) {
+    filtered.push(`${CREATE_PREFIX}${inputValue}`)
+  }
+  return filtered
+}
 
 // ── Sortable exercise row ──────────────────────────────────────────────────────
 
@@ -89,7 +104,6 @@ const SortableExerciseRow = ({
     : 0;
 
   const inputValue = ex.exercise.name
-  const showCreateButton = inputValue.trim().length > 0 && !allExercises.some(e => e.name === inputValue)
 
   return (
     <Box ref={setNodeRef} style={style} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -97,13 +111,32 @@ const SortableExerciseRow = ({
         <IconButton size="small" sx={{ cursor: 'grab', touchAction: 'none', color: 'text.disabled' }} {...attributes} {...listeners}>
           <DragHandleIcon fontSize="small" />
         </IconButton>
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ flex: 1 }}>
           <Autocomplete
             freeSolo
             size="small"
             options={allExercises.map((e) => e.name)}
             inputValue={inputValue}
+            filterOptions={exerciseFilterOptions}
+            getOptionLabel={(option) =>
+              option.startsWith(CREATE_PREFIX) ? option.slice(CREATE_PREFIX.length) : option
+            }
+            renderOption={({ key, ...optionProps }, option) =>
+              option.startsWith(CREATE_PREFIX) ? (
+                <li key={key} {...optionProps}>
+                  <em>+ Create &quot;{option.slice(CREATE_PREFIX.length)}&quot;</em>
+                </li>
+              ) : (
+                <li key={key} {...optionProps}>{option}</li>
+              )
+            }
+            onChange={(_, newValue) => {
+              if (typeof newValue === 'string' && newValue.startsWith(CREATE_PREFIX)) {
+                setCreateOpen(true)
+              }
+            }}
             onInputChange={(_, newValue) => {
+              if (newValue.startsWith(CREATE_PREFIX)) return
               dispatch({
                 type: 'UPDATE_EXERCISE',
                 planId,
@@ -120,15 +153,6 @@ const SortableExerciseRow = ({
               <TextField {...params} label="Exercise" autoComplete="off" />
             )}
           />
-          {showCreateButton && (
-            <Button
-              size="small"
-              sx={{ mt: 0.5, alignSelf: 'flex-start', fontSize: '0.7rem', py: 0, minHeight: 0 }}
-              onClick={() => setCreateOpen(true)}
-            >
-              {`+ Create "${inputValue}"`}
-            </Button>
-          )}
         </Box>
         {exerciseCount > 1 && (
           <IconButton
