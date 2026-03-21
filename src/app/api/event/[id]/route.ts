@@ -14,6 +14,8 @@ const EventPatchSchema = z.object({
   customColor: z.string().optional().nullable(),
   eventType: z.enum(EventType).optional(),
   blockSubtype: z.enum(BlockSubtype).optional().nullable(),
+  recurrenceFrequency: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']).optional().nullable(),
+  recurrenceEnd: z.coerce.date().optional().nullable(),
 }).strict();
 
 export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {

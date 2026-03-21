@@ -108,16 +108,18 @@ enum BlockSubtype {
 }
 
 model Event {
-  id           Int           @id @default(autoincrement())
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId       String
-  name         String
-  description  String?
-  startDate    DateTime      @db.Date // only the date part matters
-  endDate      DateTime      @db.Date // inclusive
-  customColor  String?
-  eventType    EventType
-  blockSubtype BlockSubtype?
+  id                  Int           @id @default(autoincrement())
+  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String
+  name                String
+  description         String?
+  startDate           DateTime      @db.Date // only the date part matters
+  endDate             DateTime      @db.Date // inclusive
+  customColor         String?
+  eventType           EventType
+  blockSubtype        BlockSubtype?
+  recurrenceFrequency String?       // "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"; null = not recurring
+  recurrenceEnd       DateTime?     @db.Date // inclusive end date of recurrence; null = forever
 
   @@index([userId])
   @@index([startDate, endDate])

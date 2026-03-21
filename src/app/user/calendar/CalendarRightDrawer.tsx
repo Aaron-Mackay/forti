@@ -1,8 +1,9 @@
 import {EventPrisma} from "@/types/dataTypes";
-import {Box, Divider, Drawer, Stack, Typography} from "@mui/material";
+import {Box, Button, Divider, Drawer, Stack, Typography} from "@mui/material";
 import {EventType} from "@prisma/client";
 import {EventListItem} from "@/app/user/calendar/EventListItem";
 import React from "react";
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import {BottomDrawerView} from "@/app/user/calendar/Calendar";
 
 const sortByStartDateAsc = (a: EventPrisma, b: EventPrisma) => {
@@ -37,31 +38,44 @@ export const CalendarRightDrawer = ({
     open={rightDrawerOpen}
     onClose={() => setRightDrawerOpen(false)}
   >
-    <Box sx={{width: 'auto', p: 1}} role="presentation" onClick={() => setRightDrawerOpen(false)}>
-      <Typography variant={"h5"}>{rightDrawerView === EventType.CustomEvent ? "Events" : "Blocks"}</Typography>
-      <Divider sx={{my: 1}}/>
-      <Stack spacing={1}>
-        {eventsInState
-          .filter(event => {
-            return (event.eventType === rightDrawerView)
-              && (event.startDate.getFullYear() === year || event.endDate.getFullYear() === year)
-          })
-          .sort(sortByStartDateAsc)
-          .map(event => {
-            return (
-              <EventListItem
-                key={event.id}
-                onClick={() => {
-                  scrollToDate(event.startDate)
-                  setSelectedEvent(event)
-                  setBottomDrawerView('details')
-                  setBottomDrawerOpen(true)
-                  setRightDrawerOpen(false)
-                }}
-                event={event}
-              />)
-          })}
-      </Stack>
+    <Box sx={{width: 'auto', p: 1, display: 'flex', flexDirection: 'column', height: '100%'}}>
+      <Box onClick={() => setRightDrawerOpen(false)}>
+        <Typography variant={"h5"}>{rightDrawerView === EventType.CustomEvent ? "Events" : "Blocks"}</Typography>
+        <Divider sx={{my: 1}}/>
+        <Stack spacing={1}>
+          {eventsInState
+            .filter(event => {
+              return (event.eventType === rightDrawerView)
+                && (event.startDate.getFullYear() === year || event.endDate.getFullYear() === year)
+            })
+            .sort(sortByStartDateAsc)
+            .map(event => {
+              return (
+                <EventListItem
+                  key={event.id}
+                  onClick={() => {
+                    scrollToDate(event.startDate)
+                    setSelectedEvent(event)
+                    setBottomDrawerView('details')
+                    setBottomDrawerOpen(true)
+                    setRightDrawerOpen(false)
+                  }}
+                  event={event}
+                />)
+            })}
+        </Stack>
+      </Box>
+      <Box sx={{mt: 'auto', pt: 2}}>
+        <Divider sx={{mb: 1}}/>
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<FileDownloadOutlinedIcon/>}
+          onClick={() => { window.location.href = '/api/event/export'; }}
+        >
+          Export calendar
+        </Button>
+      </Box>
     </Box>
   </Drawer>)
 }

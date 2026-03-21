@@ -23,6 +23,9 @@ export const DayMetricSchema = z.object({
   })).optional().nullable(),
 });
 
+export const RecurrenceFrequency = ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as const;
+export type RecurrenceFrequency = typeof RecurrenceFrequency[number];
+
 export const EventSchema = z.object({
   userId: z.string(),
   startDate: z.coerce.date(),
@@ -32,4 +35,6 @@ export const EventSchema = z.object({
   description: z.string().optional().nullable(),
   customColor: z.string().optional().nullable(),
   blockSubtype: z.enum(BlockSubtype).optional().nullable(),
+  recurrenceFrequency: z.enum(RecurrenceFrequency).optional().nullable(),
+  recurrenceEnd: z.coerce.date().optional().nullable(),
 });

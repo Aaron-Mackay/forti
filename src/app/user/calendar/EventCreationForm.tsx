@@ -1,10 +1,24 @@
 import React, {FormEvent, useState} from "react";
 import {BlockSubtype, EventType} from "@prisma/client";
-import {Box, Button, Collapse, Divider, TextField, ToggleButton, ToggleButtonGroup, Typography} from "@mui/material";
+import {
+  Box,
+  Button,
+  Collapse,
+  Divider,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography
+} from "@mui/material";
 import {DatePicker} from '@mui/x-date-pickers';
 import {getISOWeek, subDays} from 'date-fns';
 import {EventPrisma} from "@/types/dataTypes";
 import {createEvent} from "@lib/events";
+import {RecurrenceFrequency} from "@lib/apiSchemas";
 
 const TIMEOUT = 300
 
@@ -21,6 +35,8 @@ export const EventCreationForm = (props: {
   const [startDate, setStartDate] = useState<Date | null>(props.prefilledDateRange.start)
   const [endDate, setEndDate]
     = useState<Date | null>(props.prefilledDateRange.endExcl && subDays(props.prefilledDateRange.endExcl, 1))
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState<RecurrenceFrequency | null>(null)
+  const [recurrenceEnd, setRecurrenceEnd] = useState<Date | null>(null)
 
   const handleEventTypeChange = (
     _event: React.MouseEvent<HTMLElement>,
@@ -30,23 +46,19 @@ export const EventCreationForm = (props: {
     setCustomBlockName("")
     setCustomEventName("")
     setBlockSubtype(null)
-    // resetDates()
   }
+
   const isFormFilled = () => {
-    // CustomEvent: requires a custom event name and a start date
     if (eventType === EventType.CustomEvent) {
       return Boolean(customEventName && startDate);
     }
-    // BlockEvent: requires a block subtype and a start date
     if (eventType === EventType.BlockEvent && blockSubtype) {
-      // Custom block subtype only: requires a custom block name and a start date
       if (blockSubtype === BlockSubtype.Custom) {
         return Boolean(customBlockName && startDate);
       }
       return Boolean(startDate);
     }
     return false;
-
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -71,7 +83,9 @@ export const EventCreationForm = (props: {
       name: customEventName || customBlockName || blockSubtype!,
       blockSubtype,
       customColor: null,
-      description: null
+      description: null,
+      recurrenceFrequency: recurrenceFrequency ?? null,
+      recurrenceEnd: recurrenceEnd ?? null,
     }
 
     createEvent(newEvent)
@@ -85,6 +99,10 @@ export const EventCreationForm = (props: {
         alert(JSON.parse(e.message).error)
       })
   }
+
+  const showDateSection = !!(startDate || endDate) ||
+    (eventType === EventType.CustomEvent || blockSubtype !== null) &&
+    !(blockSubtype === BlockSubtype.Custom && !customBlockName);
 
   return <Box
     component="form"
@@ -100,7 +118,6 @@ export const EventCreationForm = (props: {
       </ToggleButton>
     </ToggleButtonGroup>
     {
-      // eventType &&
       <>
         {/* Custom Event Field */}
         <Collapse in={eventType === EventType.CustomEvent} timeout={TIMEOUT} unmountOnExit>
@@ -148,7 +165,7 @@ export const EventCreationForm = (props: {
                 gridColumn: '2 / span 2',
                 transformOrigin: 'right',
                 '& .MuiCollapse-wrapperInner': {
-                  width: '100%', // override MUI's default
+                  width: '100%',
                 },
               }}
               orientation={"horizontal"}
@@ -173,13 +190,10 @@ export const EventCreationForm = (props: {
           </Box>
         </Collapse>
 
-        <Collapse
-          in={!!(startDate || endDate) || (eventType === EventType.CustomEvent || blockSubtype !== null) && !(blockSubtype === BlockSubtype.Custom && !customBlockName)}
-          timeout={TIMEOUT} unmountOnExit>
+        <Collapse in={showDateSection} timeout={TIMEOUT} unmountOnExit>
           <Divider sx={{my: 1}}/>
           <Typography variant={'subtitle2'} fontSize="0.75rem">Date Range</Typography>
           <Box display="flex" gap={2} alignItems="center" width="100%" mb={2} mt={1}>
-            {/* todo use memoized function to check if dates have blocks already?*/}
             <DatePicker
               label={"Start" + (startDate ? ` - Week ${getISOWeek(startDate)}` : "")}
               value={startDate}
@@ -193,6 +207,32 @@ export const EventCreationForm = (props: {
               sx={{minWidth: 0, flexGrow: 1}}
             />
           </Box>
+          <Divider sx={{my: 1}}/>
+          <Typography variant={'subtitle2'} fontSize="0.75rem">Repeat</Typography>
+          <FormControl fullWidth sx={{mt: 1}}>
+            <InputLabel id="recurrence-label">Frequency</InputLabel>
+            <Select
+              labelId="recurrence-label"
+              label="Frequency"
+              value={recurrenceFrequency ?? ''}
+              onChange={(e) => setRecurrenceFrequency((e.target.value as RecurrenceFrequency) || null)}
+            >
+              <MenuItem value="">None</MenuItem>
+              <MenuItem value="DAILY">Daily</MenuItem>
+              <MenuItem value="WEEKLY">Weekly</MenuItem>
+              <MenuItem value="MONTHLY">Monthly</MenuItem>
+              <MenuItem value="YEARLY">Yearly</MenuItem>
+            </Select>
+          </FormControl>
+          <Collapse in={!!recurrenceFrequency} timeout={TIMEOUT} unmountOnExit>
+            <DatePicker
+              label="Ends on (optional)"
+              value={recurrenceEnd}
+              onChange={(date) => setRecurrenceEnd(date)}
+              sx={{width: '100%', mt: 1}}
+              slotProps={{field: {clearable: true}}}
+            />
+          </Collapse>
         </Collapse>
 
         <Collapse in={isFormFilled()} timeout={TIMEOUT} unmountOnExit>

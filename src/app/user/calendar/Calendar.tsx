@@ -4,6 +4,7 @@ import {DayMetricPrisma, EventPrisma} from "@/types/dataTypes";
 import FullCalendar from "@fullcalendar/react";
 import multiMonthPlugin from "@fullcalendar/multimonth";
 import interactionPlugin, {DateClickArg} from "@fullcalendar/interaction";
+import rrulePlugin from "@fullcalendar/rrule";
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import './calendar.css'
 import {Alert, Box, Collapse, Fab, ToggleButton, ToggleButtonGroup} from "@mui/material";
@@ -187,7 +188,7 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
       <Box sx={{display: viewMode === 'calendar' ? 'block' : 'none'}}>
         <FullCalendar
           ref={calendarRef}
-          plugins={[multiMonthPlugin, interactionPlugin]}
+          plugins={[multiMonthPlugin, interactionPlugin, rrulePlugin]}
           initialView="multiMonthYear"
           firstDay={1}
           multiMonthMaxColumns={1}
