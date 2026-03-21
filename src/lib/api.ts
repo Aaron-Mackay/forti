@@ -127,6 +127,10 @@ export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
             exercise.exercise.name,
             exercise.exercise.category ?? null,
             planData.userId,
+            {
+              primaryMuscles: exercise.exercise.primaryMuscles ?? [],
+              secondaryMuscles: exercise.exercise.secondaryMuscles ?? [],
+            },
           );
 
           const uploadedWorkoutExercise = await tx.workoutExercise.create({

@@ -6,8 +6,17 @@ import {
   Autocomplete,
   Box,
   Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   IconButton,
+  LinearProgress,
+  List,
+  ListItem,
+  ListItemText,
   Paper,
   Snackbar,
   TextField,
@@ -40,6 +49,7 @@ import { WorkoutPrisma, WorkoutExercisePrisma } from '@/types/dataTypes'
 import { savePlan } from '@lib/clientApi'
 import { useRouter } from 'next/navigation'
 import { Exercise } from '@prisma/client'
+import type { EnrichedExercise } from '@/app/api/exercises/enrich/route'
 import { ActionDispatch } from 'react'
 import { WorkoutEditorAction } from '@lib/useWorkoutEditor'
 import { AddExerciseForm } from '@/app/exercises/AddExerciseForm'
@@ -393,6 +403,8 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount }: PlanEditorScreenPr
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [enrichPhase, setEnrichPhase] = useState<'enriching' | 'review' | null>(null)
+  const [enrichedExercises, setEnrichedExercises] = useState<EnrichedExercise[]>([])
 
   const workouts = statePlan.weeks[0].workouts
 
@@ -401,11 +413,11 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount }: PlanEditorScreenPr
   )
   const canSave = !!statePlan.name.trim() && allExercisesNamed
 
-  const handleSave = async () => {
+  const doSave = async (planToSave: typeof statePlan) => {
     setSaving(true)
     setSaveError(null)
     try {
-      const response = await savePlan(statePlan)
+      const response = await savePlan(planToSave)
       if (response.success) {
         router.push(`/user/plan/${response.planId}`)
       } else {
@@ -416,6 +428,74 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount }: PlanEditorScreenPr
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleSave = async () => {
+    // Detect exercises not yet in the database (negative placeholder IDs)
+    const seen = new Set<string>()
+    const newExercises: { name: string }[] = []
+    for (const wo of statePlan.weeks[0].workouts) {
+      for (const ex of wo.exercises) {
+        if ((!ex.exercise.id || ex.exercise.id <= 0) && !seen.has(ex.exercise.name)) {
+          seen.add(ex.exercise.name)
+          newExercises.push({ name: ex.exercise.name })
+        }
+      }
+    }
+
+    if (newExercises.length === 0) {
+      return doSave(statePlan)
+    }
+
+    setEnrichPhase('enriching')
+    try {
+      const res = await fetch('/api/exercises/enrich', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ exercises: newExercises }),
+      })
+      if (!res.ok) {
+        // Non-blocking: fall back to saving without enrichment
+        setEnrichPhase(null)
+        return doSave(statePlan)
+      }
+      const data = await res.json()
+      setEnrichedExercises(data.exercises ?? [])
+      setEnrichPhase('review')
+    } catch {
+      // Non-blocking: fall back to saving without enrichment
+      setEnrichPhase(null)
+      doSave(statePlan)
+    }
+  }
+
+  const handleConfirmEnrich = () => {
+    // Merge enriched data into plan exercises before saving
+    const enrichMap = new Map(enrichedExercises.map((e) => [e.name, e]))
+    const enrichedPlan = {
+      ...statePlan,
+      weeks: statePlan.weeks.map((week) => ({
+        ...week,
+        workouts: week.workouts.map((wo) => ({
+          ...wo,
+          exercises: wo.exercises.map((ex) => {
+            const enrichment = enrichMap.get(ex.exercise.name)
+            if (!enrichment) return ex
+            return {
+              ...ex,
+              exercise: {
+                ...ex.exercise,
+                category: enrichment.category as Exercise['category'],
+                primaryMuscles: enrichment.primaryMuscles,
+                secondaryMuscles: enrichment.secondaryMuscles,
+              },
+            }
+          }),
+        })),
+      })),
+    }
+    setEnrichPhase(null)
+    doSave(enrichedPlan)
   }
 
   const sensors = useSensors(
@@ -540,6 +620,62 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount }: PlanEditorScreenPr
           {saveError}
         </Alert>
       </Snackbar>
+
+      {/* Exercise enrichment modal */}
+      <Dialog
+        open={enrichPhase !== null}
+        maxWidth="xs"
+        fullWidth
+        disableEscapeKeyDown={enrichPhase === 'enriching'}
+        onClose={enrichPhase === 'review' ? () => setEnrichPhase(null) : undefined}
+      >
+        <DialogTitle>
+          {enrichPhase === 'enriching' ? 'Enriching new exercises' : 'Review new exercises'}
+        </DialogTitle>
+        <DialogContent>
+          {enrichPhase === 'enriching' && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1 }}>
+              <CircularProgress size={20} />
+              <Typography variant="body2" color="text.secondary">
+                Analysing {enrichedExercises.length > 0 ? enrichedExercises.length : '…'} exercises…
+              </Typography>
+            </Box>
+          )}
+          {enrichPhase === 'review' && (
+            <List disablePadding>
+              {enrichedExercises.map((ex, i) => (
+                <React.Fragment key={ex.name}>
+                  {i > 0 && <Divider component="li" />}
+                  <ListItem disablePadding sx={{ py: 1 }}>
+                    <ListItemText
+                      primary={ex.name}
+                      secondary={[
+                        `${ex.category.charAt(0).toUpperCase() + ex.category.slice(1)}`,
+                        ex.primaryMuscles.length > 0 ? ex.primaryMuscles.join(', ') : null,
+                        ex.secondaryMuscles.length > 0
+                          ? `+ ${ex.secondaryMuscles.join(', ')}`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    />
+                  </ListItem>
+                </React.Fragment>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+        {enrichPhase === 'enriching' && (
+          <LinearProgress sx={{ mx: 2, mb: 2, borderRadius: 1 }} />
+        )}
+        {enrichPhase === 'review' && (
+          <DialogActions>
+            <Button onClick={handleConfirmEnrich} variant="contained" fullWidth disabled={saving}>
+              {saving ? 'Saving…' : 'Confirm & Save Plan'}
+            </Button>
+          </DialogActions>
+        )}
+      </Dialog>
     </>
   )
 }
