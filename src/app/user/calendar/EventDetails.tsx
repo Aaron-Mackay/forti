@@ -1,25 +1,43 @@
 import {
   Box,
+  Chip,
+  Collapse,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
   Divider,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
   TextField,
   Typography
 } from "@mui/material";
-import {addDays, sub, subDays} from "date-fns";
+import {addDays, subDays} from "date-fns";
 import React, {useState} from "react";
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditCalendarIcon from '@mui/icons-material/EditCalendar';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import Button from "@mui/material/Button";
 import SaveIcon from '@mui/icons-material/Save';
+import RepeatIcon from '@mui/icons-material/Repeat';
 import {dateAndWeek} from "@/app/user/calendar/utils";
 import {DatePicker} from "@mui/x-date-pickers";
 import {EventPrisma} from "@/types/dataTypes";
 import {deleteEvent, updateEvent} from "@lib/events";
+import {RecurrenceFrequency} from "@lib/apiSchemas";
+
+const RECURRENCE_LABELS: Record<RecurrenceFrequency, string> = {
+  DAILY: 'daily',
+  WEEKLY: 'weekly',
+  MONTHLY: 'monthly',
+  YEARLY: 'yearly',
+};
+
+const TIMEOUT = 300;
 
 export const EventDetails = (
   {
@@ -32,13 +50,15 @@ export const EventDetails = (
     setEventsInState: (value: (prevEvents: EventPrisma[]) => EventPrisma[]) => void
   },
 ) => {
-  // todo link to workout block?
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const [title, setTitle] = useState<string>(event.name ?? '')
   const [startDate, setStartDate] = useState<Date>(event.startDate!)
   const [endDate, setEndDate] = useState<Date>(subDays(event.endDate!, 1))
+  const [recurrenceFrequency, setRecurrenceFrequency] =
+    useState<RecurrenceFrequency | null>((event.recurrenceFrequency as RecurrenceFrequency) ?? null)
+  const [recurrenceEnd, setRecurrenceEnd] = useState<Date | null>(event.recurrenceEnd ?? null)
 
   const handleDelete = async () => {
     setShowDeleteConfirm(false)
@@ -66,6 +86,8 @@ export const EventDetails = (
       name: title,
       startDate: addDays(startDate, 1),
       endDate: addDays(endDate, 1),
+      recurrenceFrequency: recurrenceFrequency ?? null,
+      recurrenceEnd: recurrenceEnd ?? null,
     })
       .then((updated) => {
         setEventsInState((prev) =>
@@ -80,19 +102,34 @@ export const EventDetails = (
       })
   }
 
+  const handleExport = () => {
+    window.location.href = `/api/event/${event.id}/export`;
+  }
+
   return (<>
     {mode === 'view' &&
       <Box>
         <Typography variant="h5" gutterBottom sx={{paddingBottom: 1}}>{title}</Typography>
         <Typography variant="subtitle2" sx={{textAlign: 'center', py: 1}}>
-        <span style={{textAlign: 'center'}}>
-                  {dateAndWeek(startDate)} - {dateAndWeek(sub(endDate, {days: 1}))}
-                </span>
+          <span style={{textAlign: 'center'}}>
+            {dateAndWeek(startDate)} - {dateAndWeek(subDays(endDate, 1))}
+          </span>
         </Typography>
+        {event.recurrenceFrequency && (
+          <Box sx={{display: 'flex', justifyContent: 'center', pb: 1}}>
+            <Chip
+              icon={<RepeatIcon fontSize="small"/>}
+              label={`Repeats ${RECURRENCE_LABELS[event.recurrenceFrequency as RecurrenceFrequency]}${event.recurrenceEnd ? ` · until ${new Date(event.recurrenceEnd).toLocaleDateString()}` : ''}`}
+              size="small"
+              variant="outlined"
+            />
+          </Box>
+        )}
         <Divider sx={{my: 1}}/>
         <Box sx={{p: 1, display: 'flex', justifyContent: 'space-evenly'}}>
           <RoundIconButton onClick={() => setMode('edit')} icon={<EditCalendarIcon/>}/>
           <RoundIconButton onClick={() => setShowDeleteConfirm(true)} icon={<DeleteIcon/>}/>
+          <RoundIconButton onClick={handleExport} icon={<FileDownloadOutlinedIcon/>}/>
         </Box>
       </Box>
     }
@@ -117,7 +154,33 @@ export const EventDetails = (
           {<CustomDatePicker date={startDate} onChange={(date) => setStartDate(date)}/>}
           &nbsp;-&nbsp;
           {<CustomDatePicker date={endDate} onChange={(date) => setEndDate(date)}/>}
-                </span>
+        </span>
+        <Box sx={{mt: 2}}>
+          <FormControl fullWidth size="small">
+            <InputLabel id="edit-recurrence-label">Repeat</InputLabel>
+            <Select
+              labelId="edit-recurrence-label"
+              label="Repeat"
+              value={recurrenceFrequency ?? ''}
+              onChange={(e) => setRecurrenceFrequency((e.target.value as RecurrenceFrequency) || null)}
+            >
+              <MenuItem value="">None</MenuItem>
+              <MenuItem value="DAILY">Daily</MenuItem>
+              <MenuItem value="WEEKLY">Weekly</MenuItem>
+              <MenuItem value="MONTHLY">Monthly</MenuItem>
+              <MenuItem value="YEARLY">Yearly</MenuItem>
+            </Select>
+          </FormControl>
+          <Collapse in={!!recurrenceFrequency} timeout={TIMEOUT} unmountOnExit>
+            <DatePicker
+              label="Ends on (optional)"
+              value={recurrenceEnd}
+              onChange={(date) => setRecurrenceEnd(date)}
+              sx={{width: '100%', mt: 1}}
+              slotProps={{field: {clearable: true}}}
+            />
+          </Collapse>
+        </Box>
         <Divider sx={{my: 1}}/>
         <Box sx={{p: 1, display: 'flex', justifyContent: 'space-evenly'}}>
           <RoundIconButton onClick={handleSave} icon={<SaveIcon/>}/>
@@ -125,12 +188,13 @@ export const EventDetails = (
       </Box>
     }
 
-
     <Dialog open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)}>
       <DialogTitle>Delete Event?</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          Are you sure you want to delete this event? This action cannot be undone.
+          {event.recurrenceFrequency
+            ? 'Are you sure you want to delete this recurring event? All occurrences will be removed.'
+            : 'Are you sure you want to delete this event? This action cannot be undone.'}
         </DialogContentText>
       </DialogContent>
       <DialogActions>
@@ -170,7 +234,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({date, onChange}) => 
         InputProps: {
           sx: {
             maxWidth: '40dvw',
-            fontSize: '0.875rem',         // subtitle2 font size
+            fontSize: '0.875rem',
             fontWeight: 500,
             lineHeight: 1.57,
             letterSpacing: '0.00714em',

@@ -20,6 +20,8 @@ export async function POST(req: NextRequest) {
       description: null,
       customColor: null,
       blockSubtype: null,
+      recurrenceFrequency: null,
+      recurrenceEnd: null,
       ...parsed.data
     };
 

@@ -1,4 +1,4 @@
-import {addDays, getISOWeek} from "date-fns";
+import {addDays, differenceInDays, format, getISOWeek} from "date-fns";
 import {BlockSubtype, EventType} from "@prisma/client";
 import {EventPrisma} from "@/types/dataTypes";
 import {DateClickArg} from "@fullcalendar/interaction";
@@ -38,29 +38,58 @@ export const getEventColor = (event: EventPrisma): string | undefined => {
   return undefined;
 };
 
-type FullCalendarIngestableEvent = {
+type FullCalendarBaseProps = {
+  id: string,
   allDay: boolean,
   title: string,
+  color?: string,
+  display: string,
+  extendedProps: { eventType: EventType, blockSubtype: BlockSubtype | null },
+}
+
+type FullCalendarRegularEvent = FullCalendarBaseProps & {
   start: Date,
   end: Date,
-  id: string,
-  color?: string,
-  display: string
 }
+
+type FullCalendarRruleEvent = FullCalendarBaseProps & {
+  rrule: string,       // "DTSTART:YYYYMMDD\nRRULE:FREQ=WEEKLY;UNTIL=YYYYMMDD"
+  duration: { days: number },
+}
+
+type FullCalendarIngestableEvent = FullCalendarRegularEvent | FullCalendarRruleEvent;
+
+const formatIcalDate = (date: Date): string => format(date, 'yyyyMMdd');
 
 export const parsedEvents = (events: EventPrisma[]): FullCalendarIngestableEvent[] => {
   return events.map(event => {
-    return {
+    const base: FullCalendarBaseProps = {
       allDay: true,
       title: event.name,
-      start: event.startDate,
-      end: addDays(event.endDate, 1), // add day as end is natively exclusive
       id: event.id.toString(),
       color: getEventColor(event),
       display: event.eventType === EventType.CustomEvent ? 'auto' : 'background',
-      extendedProps: {eventType: event.eventType, blockSubtype: event.blockSubtype}
+      extendedProps: {eventType: event.eventType, blockSubtype: event.blockSubtype},
+    };
+
+    if (event.recurrenceFrequency) {
+      let rrule = `DTSTART:${formatIcalDate(event.startDate)}\nRRULE:FREQ=${event.recurrenceFrequency}`;
+      if (event.recurrenceEnd) {
+        rrule += `;UNTIL=${formatIcalDate(event.recurrenceEnd)}`;
+      }
+      return {
+        ...base,
+        rrule,
+        duration: { days: differenceInDays(event.endDate, event.startDate) + 1 },
+      };
     }
-  })
+
+    return {
+      ...base,
+      start: event.startDate,
+      end: addDays(event.endDate, 1), // FullCalendar uses exclusive end
+    };
+  });
 }
 
 export const getEventsOnDate = (dateInfo: DateClickArg, eventsInState: EventPrisma[]): EventPrisma[] => {
