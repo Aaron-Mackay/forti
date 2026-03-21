@@ -289,11 +289,11 @@ describe('POST /api/plan/ai-import', () => {
   });
 
   describe('body size cap', () => {
-    it('returns 413 when Content-Length header exceeds 100 KB', async () => {
+    it('returns 413 when Content-Length header exceeds 200 KB', async () => {
       const req = new NextRequest('http://localhost/api/plan/ai-import', {
         method: 'POST',
         body: JSON.stringify({ input: 'hi' }),
-        headers: { 'Content-Type': 'application/json', 'Content-Length': '200000' },
+        headers: { 'Content-Type': 'application/json', 'Content-Length': '300000' },
       });
       const res = await POST(req);
       expect(res.status).toBe(413);
@@ -308,6 +308,31 @@ describe('POST /api/plan/ai-import', () => {
         body: bigBody,
         headers: { 'Content-Type': 'application/json' },
       });
+      const res = await POST(req);
+      expect(res.status).toBe(413);
+    });
+  });
+
+  describe('spreadsheet type', () => {
+    it('accepts input up to 150 KB when type is spreadsheet', async () => {
+      const bigInput = 'a'.repeat(100_000); // 100 KB — over default 50 KB limit, under 150 KB spreadsheet limit
+      const req = makeRequest({ input: bigInput, type: 'spreadsheet' });
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+    });
+
+    it('returns 413 when spreadsheet input exceeds 150 KB', async () => {
+      const bigInput = 'a'.repeat(151_000);
+      const req = makeRequest({ input: bigInput, type: 'spreadsheet' });
+      const res = await POST(req);
+      expect(res.status).toBe(413);
+      const body = await res.json();
+      expect(body.error).toMatch(/too large/i);
+    });
+
+    it('returns 413 for non-spreadsheet input exceeding 50 KB', async () => {
+      const bigInput = 'a'.repeat(51_000);
+      const req = makeRequest({ input: bigInput });
       const res = await POST(req);
       expect(res.status).toBe(413);
     });

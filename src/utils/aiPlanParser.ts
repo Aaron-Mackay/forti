@@ -81,7 +81,8 @@ export class AiParseError extends Error {
 export const AI_PLAN_TOOL = {
   name: 'create_workout_plan',
   description:
-    'Create a structured workout plan from the user\'s input text. ' +
+    'Create a structured workout plan from the user\'s input. ' +
+    'Input may be a text description or a CSV/TSV spreadsheet export. ' +
     'Infer sensible defaults for any missing fields.',
   input_schema: {
     type: 'object' as const,
