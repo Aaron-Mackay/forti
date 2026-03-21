@@ -4,7 +4,6 @@ import {useEffect, useState} from 'react';
 import {useExerciseList} from '@lib/hooks/api/useExerciseList';
 import {
   Box,
-  Button,
   CircularProgress,
   Dialog,
   DialogContent,
@@ -110,23 +109,19 @@ export default function ExercisePickerDialog({
                 <ListItemText primary={ex.name} />
               </ListItemButton>
             ))}
-            {filtered.length === 0 && !loading && (
-              search.trim().length > 0 ? (
-                <Box sx={{px: 2, py: 2}}>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => setCreateOpen(true)}
-                  >
-                    {`+ Create "${search}"`}
-                  </Button>
-                </Box>
-              ) : (
+            {filtered.length === 0 && !loading && search.trim().length === 0 && (
+              <ListItemText
+                primary="No exercises found"
+                sx={{px: 2, py: 2, color: 'text.secondary'}}
+              />
+            )}
+            {!loading && search.trim().length > 0 && !exercises.some(e => e.name.toLowerCase() === search.toLowerCase()) && (
+              <ListItemButton onClick={() => setCreateOpen(true)} divider>
                 <ListItemText
-                  primary="No exercises found"
-                  sx={{px: 2, py: 2, color: 'text.secondary'}}
+                  primary={<em>+ Create &quot;{search}&quot;</em>}
+                  sx={{color: 'primary.main'}}
                 />
-              )
+              </ListItemButton>
             )}
           </List>
         )}

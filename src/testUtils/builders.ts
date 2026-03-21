@@ -176,6 +176,7 @@ export class ExerciseBuilder {
         equipment: [],
         primaryMuscles: [],
         secondaryMuscles: [],
+        createdByUserId: null,
       },
       sets: [],
       cardioDuration: null,

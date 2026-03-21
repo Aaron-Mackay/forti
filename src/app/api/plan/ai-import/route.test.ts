@@ -27,21 +27,22 @@ vi.mock('@anthropic-ai/sdk', async () => {
       this.status = status;
     }
   }
-  const create = vi.fn();
+  const finalMessage = vi.fn();
+  const stream = vi.fn().mockReturnValue({ finalMessage });
   return {
     default: Object.assign(
-      vi.fn().mockImplementation(() => ({ messages: { create } })),
+      vi.fn().mockImplementation(() => ({ messages: { stream } })),
       { APIError: MockAPIError },
     ),
-    __create: create, // expose for test control
+    __finalMessage: finalMessage, // expose for test control
   };
 });
 
 import { requireSession } from '@lib/requireSession';
-import { __create as mockCreate } from '@anthropic-ai/sdk';
+import { __finalMessage as mockFinalMessage } from '@anthropic-ai/sdk';
 
 const mockRequireSession = requireSession as ReturnType<typeof vi.fn>;
-const mockMessagesCreate = mockCreate as ReturnType<typeof vi.fn>;
+const mockMessagesStream = mockFinalMessage as ReturnType<typeof vi.fn>;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -85,7 +86,7 @@ const validPlanInput = {
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireSession.mockResolvedValue({ user: { id: 'user-1' } });
-  mockMessagesCreate.mockResolvedValue(makeToolUseResponse(validPlanInput));
+  mockMessagesStream.mockResolvedValue(makeToolUseResponse(validPlanInput));
   mockAiUsageLog.count.mockResolvedValue(0);
   mockAiUsageLog.create.mockResolvedValue({});
 });
@@ -169,7 +170,7 @@ describe('POST /api/plan/ai-import', () => {
 
   describe('Claude API error handling', () => {
     it('returns 422 when Claude does not return a tool_use block', async () => {
-      mockMessagesCreate.mockResolvedValue({
+      mockMessagesStream.mockResolvedValue({
         content: [{ type: 'text', text: 'I cannot parse that.' }],
         stop_reason: 'end_turn',
       });
@@ -182,7 +183,7 @@ describe('POST /api/plan/ai-import', () => {
     });
 
     it('returns 422 when Claude returns invalid plan structure', async () => {
-      mockMessagesCreate.mockResolvedValue(
+      mockMessagesStream.mockResolvedValue(
         makeToolUseResponse({ name: '', weeks: [] }), // invalid: empty name + no weeks
       );
 
@@ -194,7 +195,7 @@ describe('POST /api/plan/ai-import', () => {
     });
 
     it('includes parseIssues in the response when Zod validation fails', async () => {
-      mockMessagesCreate.mockResolvedValue(
+      mockMessagesStream.mockResolvedValue(
         makeToolUseResponse({ name: '', weeks: [] }),
       );
 
@@ -207,7 +208,7 @@ describe('POST /api/plan/ai-import', () => {
     });
 
     it('formats a flat path issue as "fieldName: message"', async () => {
-      mockMessagesCreate.mockResolvedValue(
+      mockMessagesStream.mockResolvedValue(
         makeToolUseResponse({ name: '', weeks: [{ workouts: [] }] }), // name is empty string
       );
 
@@ -221,7 +222,7 @@ describe('POST /api/plan/ai-import', () => {
     });
 
     it('formats a nested path issue with bracket notation for indices', async () => {
-      mockMessagesCreate.mockResolvedValue(
+      mockMessagesStream.mockResolvedValue(
         makeToolUseResponse({
           name: 'Plan',
           weeks: [{ workouts: [{ name: 'Day 1', exercises: [{ name: '', sets: [] }] }] }],
@@ -241,7 +242,7 @@ describe('POST /api/plan/ai-import', () => {
 
     it('caps parseIssues at 5 entries even when more issues exist', async () => {
       // Provide a completely null input — Zod will generate many issues
-      mockMessagesCreate.mockResolvedValue(makeToolUseResponse(null));
+      mockMessagesStream.mockResolvedValue(makeToolUseResponse(null));
 
       const req = makeRequest({ input: 'some text' });
       const res = await POST(req);
@@ -252,7 +253,7 @@ describe('POST /api/plan/ai-import', () => {
 
     it('returns 503 when Anthropic returns 429 rate-limit error', async () => {
       const { default: Anthropic } = await import('@anthropic-ai/sdk');
-      mockMessagesCreate.mockRejectedValue(new Anthropic.APIError(429, 'rate limited'));
+      mockMessagesStream.mockRejectedValue(new Anthropic.APIError(429, 'rate limited'));
 
       const req = makeRequest({ input: 'some workout' });
       const res = await POST(req);
@@ -263,7 +264,7 @@ describe('POST /api/plan/ai-import', () => {
 
     it('returns 503 when Anthropic returns 529 overload error', async () => {
       const { default: Anthropic } = await import('@anthropic-ai/sdk');
-      mockMessagesCreate.mockRejectedValue(new Anthropic.APIError(529, 'overloaded'));
+      mockMessagesStream.mockRejectedValue(new Anthropic.APIError(529, 'overloaded'));
 
       const req = makeRequest({ input: 'some workout' });
       const res = await POST(req);
@@ -272,7 +273,7 @@ describe('POST /api/plan/ai-import', () => {
 
     it('returns 502 for other Anthropic API errors', async () => {
       const { default: Anthropic } = await import('@anthropic-ai/sdk');
-      mockMessagesCreate.mockRejectedValue(new Anthropic.APIError(400, 'bad request to api'));
+      mockMessagesStream.mockRejectedValue(new Anthropic.APIError(400, 'bad request to api'));
 
       const req = makeRequest({ input: 'some workout' });
       const res = await POST(req);
@@ -280,7 +281,7 @@ describe('POST /api/plan/ai-import', () => {
     });
 
     it('returns 500 for unexpected non-API errors', async () => {
-      mockMessagesCreate.mockRejectedValue(new Error('network timeout'));
+      mockMessagesStream.mockRejectedValue(new Error('network timeout'));
 
       const req = makeRequest({ input: 'some workout' });
       const res = await POST(req);
@@ -289,11 +290,11 @@ describe('POST /api/plan/ai-import', () => {
   });
 
   describe('body size cap', () => {
-    it('returns 413 when Content-Length header exceeds 100 KB', async () => {
+    it('returns 413 when Content-Length header exceeds 200 KB', async () => {
       const req = new NextRequest('http://localhost/api/plan/ai-import', {
         method: 'POST',
         body: JSON.stringify({ input: 'hi' }),
-        headers: { 'Content-Type': 'application/json', 'Content-Length': '200000' },
+        headers: { 'Content-Type': 'application/json', 'Content-Length': '300000' },
       });
       const res = await POST(req);
       expect(res.status).toBe(413);
@@ -308,6 +309,31 @@ describe('POST /api/plan/ai-import', () => {
         body: bigBody,
         headers: { 'Content-Type': 'application/json' },
       });
+      const res = await POST(req);
+      expect(res.status).toBe(413);
+    });
+  });
+
+  describe('spreadsheet type', () => {
+    it('accepts input up to 150 KB when type is spreadsheet', async () => {
+      const bigInput = 'a'.repeat(100_000); // 100 KB — over default 50 KB limit, under 150 KB spreadsheet limit
+      const req = makeRequest({ input: bigInput, type: 'spreadsheet' });
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+    });
+
+    it('returns 413 when spreadsheet input exceeds 150 KB', async () => {
+      const bigInput = 'a'.repeat(151_000);
+      const req = makeRequest({ input: bigInput, type: 'spreadsheet' });
+      const res = await POST(req);
+      expect(res.status).toBe(413);
+      const body = await res.json();
+      expect(body.error).toMatch(/too large/i);
+    });
+
+    it('returns 413 for non-spreadsheet input exceeding 50 KB', async () => {
+      const bigInput = 'a'.repeat(51_000);
+      const req = makeRequest({ input: bigInput });
       const res = await POST(req);
       expect(res.status).toBe(413);
     });

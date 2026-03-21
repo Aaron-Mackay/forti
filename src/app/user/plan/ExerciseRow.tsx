@@ -15,12 +15,25 @@ import {Dir} from "@lib/useWorkoutEditor";
 import {AddExerciseForm} from '@/app/exercises/AddExerciseForm';
 
 const filter = createFilterOptions<string>();
+// Used for the category field: adds the typed value as a plain option
 const filterOptions = (options: string[], params: FilterOptionsState<string>) => {
   const filtered = filter(options, params);
   const {inputValue} = params;
   const isExisting = options.some((option) => inputValue === option);
   if (inputValue.length > 2 && !isExisting) {
     filtered.push(inputValue);
+  }
+  return filtered;
+};
+
+const CREATE_PREFIX = '__create__:';
+const exerciseFilter = createFilterOptions<string>();
+// Used for the exercise name field: adds a sentinel create option
+const exerciseFilterOptions = (options: string[], params: FilterOptionsState<string>) => {
+  const filtered = exerciseFilter(options, params);
+  const {inputValue} = params;
+  if (inputValue.length > 0 && !options.some(o => o.toLowerCase() === inputValue.toLowerCase())) {
+    filtered.push(`${CREATE_PREFIX}${inputValue}`);
   }
   return filtered;
 };
@@ -52,7 +65,6 @@ const ExerciseRow = ({
   const category = exerciseLink.exercise?.category || "";
   const exerciseName = exerciseLink.exercise?.name || "";
   const [createOpen, setCreateOpen] = useState(false);
-  const showCreateButton = isInEditMode && exerciseName.trim().length > 0 && !allExercises.some(e => e.name === exerciseName);
 
   const regularSets = exerciseLink.sets
     .filter(s => !s.isDropSet)
@@ -89,36 +101,43 @@ const ExerciseRow = ({
 
       <TableCell align={"center"}>
         {isInEditMode && category ? (
-          <>
-            <CompactAutocomplete
-              freeSolo
-              options={allExercises.filter((ex) => ex.category === category).map((ex) => ex.name)}
-              value={exerciseName}
-              onInputChange={(_event, newInputValue) => {
-                debouncedDispatch({
-                  type: 'UPDATE_EXERCISE',
-                  planId,
-                  weekId,
-                  workoutId,
-                  workoutExerciseId: exerciseLink.id,
-                  exerciseName: newInputValue,
-                  exercises: allExercises,
-                  category,
-                });
-              }}
-              renderInput={(params) => <TextField variant="standard" {...params}/>}
-              filterOptions={filterOptions}
-            />
-            {showCreateButton && (
-              <Button
-                size="small"
-                sx={{mt: 0.5, fontSize: '0.65rem', py: 0, minHeight: 0}}
-                onClick={() => setCreateOpen(true)}
-              >
-                {`+ Create "${exerciseName}"`}
-              </Button>
-            )}
-          </>
+          <CompactAutocomplete
+            freeSolo
+            options={allExercises.filter((ex) => ex.category === category).map((ex) => ex.name)}
+            value={exerciseName}
+            filterOptions={exerciseFilterOptions}
+            getOptionLabel={(option) =>
+              option.startsWith(CREATE_PREFIX) ? option.slice(CREATE_PREFIX.length) : option
+            }
+            renderOption={({ key, ...optionProps }, option) =>
+              option.startsWith(CREATE_PREFIX) ? (
+                <li key={key} {...optionProps}>
+                  <em>+ Create &quot;{option.slice(CREATE_PREFIX.length)}&quot;</em>
+                </li>
+              ) : (
+                <li key={key} {...optionProps}>{option}</li>
+              )
+            }
+            onChange={(_, newValue) => {
+              if (typeof newValue === 'string' && newValue.startsWith(CREATE_PREFIX)) {
+                setCreateOpen(true);
+              }
+            }}
+            onInputChange={(_event, newInputValue) => {
+              if (newInputValue.startsWith(CREATE_PREFIX)) return;
+              debouncedDispatch({
+                type: 'UPDATE_EXERCISE',
+                planId,
+                weekId,
+                workoutId,
+                workoutExerciseId: exerciseLink.id,
+                exerciseName: newInputValue,
+                exercises: allExercises,
+                category,
+              });
+            }}
+            renderInput={(params) => <TextField variant="standard" {...params}/>}
+          />
         ) : (
           exerciseName
         )}

@@ -1,5 +1,6 @@
 import {Exercise, Prisma} from '@prisma/client';
 import prisma from '@/lib/prisma';
+import {findOrCreateExercise} from '@lib/exerciseQueries';
 import {DayMetricPrisma, EventPrisma, PlanPrisma, UserPrisma} from "@/types/dataTypes";
 
 export async function getUsers() {
@@ -121,19 +122,16 @@ export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
           data: {...omit(workout, ["exercises", "id"]), weekId: uploadedWeek.id}
         });
         for (const exercise of workout.exercises) {
-          const exerciseRecord = await tx.exercise.upsert({
-            where: {
-              name_category: {
-                name: exercise.exercise.name,
-                category: exercise.exercise.category!,
-              },
+          const exerciseRecord = await findOrCreateExercise(
+            tx,
+            exercise.exercise.name,
+            exercise.exercise.category ?? null,
+            planData.userId,
+            {
+              primaryMuscles: exercise.exercise.primaryMuscles ?? [],
+              secondaryMuscles: exercise.exercise.secondaryMuscles ?? [],
             },
-            update: {},
-            create: {
-              name: exercise.exercise.name,
-              category: exercise.exercise.category!,
-            },
-          });
+          );
 
           const uploadedWorkoutExercise = await tx.workoutExercise.create({
             data: {

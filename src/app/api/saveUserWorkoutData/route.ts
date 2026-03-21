@@ -6,6 +6,7 @@ import {extractErrorMessage} from "@lib/apiError";
 import {PlanInputSchema} from "@lib/planSchemas";
 import {ExerciseCategory} from "@prisma/client";
 import {computeE1rm} from "@lib/e1rm";
+import {findOrCreateExercise} from "@lib/exerciseQueries";
 
 const SaveUserDataSchema = z.object({
   id: z.string(),
@@ -93,21 +94,12 @@ export async function POST(req: Request) {
               },
             });
             for (const exercise of workout.exercises) {
-              const exerciseRecord = await tx.exercise.upsert({
-                where: {
-                  name_category: {
-                    name: exercise.exercise.name,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    category: exercise.exercise.category as any as ExerciseCategory,
-                  },
-                },
-                update: {},
-                create: {
-                  name: exercise.exercise.name,
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  category: exercise.exercise.category as any as ExerciseCategory,
-                },
-              });
+              const exerciseRecord = await findOrCreateExercise(
+                tx,
+                exercise.exercise.name,
+                exercise.exercise.category as ExerciseCategory | null ?? null,
+                userId,
+              );
               const createdExercise = await tx.workoutExercise.create({
                 data: {
                   workoutId: createdWorkout.id,

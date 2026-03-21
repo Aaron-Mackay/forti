@@ -14,6 +14,8 @@ export const ExerciseInputSchema = z.object({
     id: z.number().optional().nullable(),
     name: z.string(),
     category: z.string(),
+    primaryMuscles: z.array(z.string()).optional().default([]),
+    secondaryMuscles: z.array(z.string()).optional().default([]),
   }),
   order: z.number().int(),
   repRange: z.string().nullable().optional(),

@@ -4,8 +4,11 @@ import { requireSession } from '@lib/requireSession';
 import { AI_PLAN_TOOL, AiParseError, parseAiPlanResponse } from '@/utils/aiPlanParser';
 import prisma from '@lib/prisma';
 
-const MAX_BODY_BYTES = 100_000; // 100 KB — hard cap before JSON parsing
-const MAX_INPUT_BYTES = 50_000; // 50 KB — cap on the input string itself
+export const maxDuration = 300; // 5 minutes — large spreadsheet imports can take a while
+
+const MAX_BODY_BYTES = 200_000; // 200 KB — hard cap before JSON parsing (raised to cover spreadsheet imports)
+const MAX_INPUT_BYTES_DEFAULT = 50_000; // 50 KB — cap for text descriptions
+const MAX_INPUT_BYTES_SPREADSHEET = 150_000; // 150 KB — cap for CSV/spreadsheet imports
 
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
@@ -65,7 +68,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Request body too large (max 100 KB)' }, { status: 413 });
   }
 
-  let body: { input?: unknown };
+  let body: { input?: unknown; type?: unknown };
   try {
     body = JSON.parse(rawBody);
   } catch {
@@ -77,8 +80,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Missing or empty "input" field' }, { status: 400 });
   }
 
-  if (Buffer.byteLength(input, 'utf8') > MAX_INPUT_BYTES) {
-    return NextResponse.json({ error: 'Input too large (max 50 KB)' }, { status: 413 });
+  const isSpreadsheet = body?.type === 'spreadsheet';
+  const maxInputBytes = isSpreadsheet ? MAX_INPUT_BYTES_SPREADSHEET : MAX_INPUT_BYTES_DEFAULT;
+  const limitKb = maxInputBytes / 1000;
+  if (Buffer.byteLength(input, 'utf8') > maxInputBytes) {
+    return NextResponse.json({ error: `Input too large (max ${limitKb} KB)` }, { status: 413 });
   }
 
   // --- Per-user rate limiting (10 requests / hour) ---
@@ -100,21 +106,34 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const client = new Anthropic();
 
   try {
-    const message = await client.messages.create({
-      model: 'claude-opus-4-6',
-      max_tokens: 4096,
+    const userContent = isSpreadsheet
+      ? 'You are parsing a CSV/TSV export of a coaching training spreadsheet. ' +
+        'Identify WEEK rows (containing "WEEK \\d+") for week boundaries. ' +
+        'Identify SESSION rows for workout names. ' +
+        'Sessions may appear side by side — each 14-column group is one session. ' +
+        'Ignore TRAINING NOTES rows, Volume column, and quality rating checkboxes. ' +
+        'Use numeric weights/reps where available; omit non-numeric values (e.g. BFR, x). ' +
+        'Call create_workout_plan with the structured plan.\n\n' +
+        input
+      : 'Parse the following workout plan and call the create_workout_plan tool with the ' +
+        'structured data. Infer sensible defaults for any missing fields.\n\n' +
+        input;
+
+    const stream = client.messages.stream({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 32768,
       tools: [AI_PLAN_TOOL],
       tool_choice: { type: 'any' },
-      messages: [
-        {
-          role: 'user',
-          content:
-            'Parse the following workout plan and call the create_workout_plan tool with the ' +
-            'structured data. Infer sensible defaults for any missing fields.\n\n' +
-            input,
-        },
-      ],
+      messages: [{ role: 'user', content: userContent }],
     });
+    const message = await stream.finalMessage();
+
+    if (message.stop_reason === 'max_tokens') {
+      return NextResponse.json(
+        { error: 'The spreadsheet was too large to process in one go — try uploading fewer weeks at a time' },
+        { status: 422 },
+      );
+    }
 
     const toolUseBlock = message.content.find((block) => block.type === 'tool_use');
     if (!toolUseBlock || toolUseBlock.type !== 'tool_use') {
