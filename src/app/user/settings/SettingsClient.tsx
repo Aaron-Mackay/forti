@@ -249,6 +249,27 @@ export default function SettingsClient() {
 
       <Divider sx={{my: 3}}/>
 
+      <Typography variant="overline" color="text.secondary">Units</Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        Weight unit for exercises and body metrics
+      </Typography>
+      {loading ? (
+        <Skeleton variant="rounded" height={40} sx={{ mb: 2 }} />
+      ) : (
+        <ToggleButtonGroup
+          value={settings.weightUnit}
+          exclusive
+          onChange={(_e, val) => { if (val !== null) updateSetting('weightUnit', val as 'kg' | 'lbs'); }}
+          size="small"
+          sx={{ mb: 2 }}
+        >
+          <ToggleButton value="kg">kg</ToggleButton>
+          <ToggleButton value="lbs">lbs</ToggleButton>
+        </ToggleButtonGroup>
+      )}
+
+      <Divider sx={{my: 3}}/>
+
       <Typography variant="overline" color="text.secondary">Onboarding</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
         Re-show the Getting Started guide on your dashboard.

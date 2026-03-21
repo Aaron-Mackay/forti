@@ -1,3 +1,5 @@
+'use client';
+
 import React, {useRef, useState} from "react";
 import {Box, Drawer, Typography} from "@mui/material";
 
@@ -10,6 +12,7 @@ import {DayMetricInput} from "@/app/user/calendar/DayMetricInput";
 import {TRANSITION_MS, useAnimatedDrawerHeight} from "./useAnimatedDrawerHeight";
 import {EventDetails} from "@/app/user/calendar/EventDetails";
 import {CustomMetricDef} from "@/types/settingsTypes";
+import {useSettings} from "@lib/providers/SettingsProvider";
 
 type CalendarDrawerProps = {
   open: boolean,
@@ -46,6 +49,9 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
                                                                setPrefilledDateRange,
                                                                customMetricDefs = [],
                                                              }) => {
+  const { settings } = useSettings();
+  const weightUnit = settings.weightUnit;
+
   const [selectedMetric, setSelectedMetric] = useState<MetricKey | null>(null);
   const [inputValue, setInputValue] = useState<string | number | null>('');
   const mainPanelRef = useRef<HTMLDivElement>(null);
@@ -100,6 +106,7 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
                 setSelectedMetric={setSelectedMetric}
                 setInputValue={setInputValue}
                 customMetricDefs={customMetricDefs}
+                weightUnit={weightUnit}
               />
               <Typography variant="h6">{selectedDate?.toDateString()}</Typography>
             </Box>
@@ -136,6 +143,7 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
           userId={userId}
           dateDayMetrics={dateDayMetrics}
           customMetricDefs={customMetricDefs}
+          weightUnit={weightUnit}
         />
       </Box>
     </Box>

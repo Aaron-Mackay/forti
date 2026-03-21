@@ -1,3 +1,9 @@
+import type { WeightUnit } from '@/lib/units';
+export type { WeightUnit };
+
+/** Per-exercise unit override stored in settings. */
+export type ExerciseUnitOverride = 'kg' | 'lbs' | 'none';
+
 export interface CustomMetricDef {
   id: string;   // UUID, stable — never changes even if name is renamed
   name: string; // user-defined label
@@ -20,6 +26,10 @@ export interface Settings {
   // Onboarding state
   onboardingDismissed: boolean;
   onboardingSeenWelcome: boolean;
+  // Unit preference — all weights stored in kg, converted on display
+  weightUnit: WeightUnit;
+  // Per-exercise overrides: key = exerciseId as string, value = unit or 'none'
+  exerciseUnitOverrides: Record<string, ExerciseUnitOverride>;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -36,6 +46,8 @@ export const DEFAULT_SETTINGS: Settings = {
   customMetrics: [],
   onboardingDismissed: false,
   onboardingSeenWelcome: false,
+  weightUnit: 'kg',
+  exerciseUnitOverrides: {},
 };
 
 function parseCustomMetrics(raw: unknown): CustomMetricDef[] {
@@ -58,6 +70,19 @@ function parseCustomMetrics(raw: unknown): CustomMetricDef[] {
   return result.slice(0, 5);
 }
 
+const VALID_OVERRIDES = new Set<string>(['kg', 'lbs', 'none']);
+
+function parseExerciseUnitOverrides(raw: unknown): Record<string, ExerciseUnitOverride> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const result: Record<string, ExerciseUnitOverride> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof v === 'string' && VALID_OVERRIDES.has(v)) {
+      result[k] = v as ExerciseUnitOverride;
+    }
+  }
+  return result;
+}
+
 export function parseDashboardSettings(raw: unknown): Settings {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     return { ...DEFAULT_SETTINGS };
@@ -77,5 +102,7 @@ export function parseDashboardSettings(raw: unknown): Settings {
     customMetrics:           parseCustomMetrics(s.customMetrics),
     onboardingDismissed:     typeof s.onboardingDismissed     === 'boolean' ? s.onboardingDismissed     : false,
     onboardingSeenWelcome:   typeof s.onboardingSeenWelcome   === 'boolean' ? s.onboardingSeenWelcome   : false,
+    weightUnit:              s.weightUnit === 'lbs' ? 'lbs' : 'kg',
+    exerciseUnitOverrides:   parseExerciseUnitOverrides(s.exerciseUnitOverrides),
   };
 }
