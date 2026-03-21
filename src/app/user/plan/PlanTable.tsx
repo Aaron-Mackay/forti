@@ -57,7 +57,7 @@ export const PlanTable: React.FC<{
         <h1>User: {userDataState.name}</h1>
 
         {isMobile ? (
-          <MobilePlanView plan={plan} />
+          <MobilePlanView plan={plan} planId={plan.id} isInEditMode={isInEditMode} />
         ) : (
           <>
             {plan.weeks.map((week, i) => (

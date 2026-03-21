@@ -148,6 +148,7 @@ model DayMetric {
   customMetrics   Json?
 
   @@unique([userId, date])
+  @@index([userId])
 }
 
 model Plan {
@@ -160,6 +161,7 @@ model Plan {
   weeks       Week[]
 
   @@unique([userId, order])
+  @@index([userId])
 }
 
 model Week {
@@ -170,6 +172,7 @@ model Week {
   workouts Workout[]
 
   @@unique([planId, order])
+  @@index([planId])
 }
 
 model Workout {
@@ -183,6 +186,7 @@ model Workout {
   dateCompleted DateTime?
 
   @@unique([weekId, order])
+  @@index([weekId])
 }
 
 model Exercise {

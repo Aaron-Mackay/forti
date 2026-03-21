@@ -164,6 +164,15 @@ export function moveWorkout(user: UserPrisma, planId: number, weekId: number, in
   );
 }
 
+export function reorderWeek(user: UserPrisma, planId: number, fromIndex: number, toIndex: number): UserPrisma {
+  return updatePlan(user, planId, plan => {
+    const newWeeks = [...plan.weeks];
+    const [removed] = newWeeks.splice(fromIndex, 1);
+    newWeeks.splice(toIndex, 0, removed);
+    return { ...plan, weeks: reindex(newWeeks) };
+  });
+}
+
 export function reorderWorkout(user: UserPrisma, planId: number, weekId: number, fromIndex: number, toIndex: number): UserPrisma {
   return updatePlan(user, planId, plan =>
     updateWeek(plan, weekId, week => {
