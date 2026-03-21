@@ -66,7 +66,7 @@ jobs:
             --from-schema-datasource prisma/schema.prisma \
             --to-schema-datamodel prisma/schema.prisma \
             --script > "$MIGRATION_DIR/migration.sql"
-          if [ -s "$MIGRATION_DIR/migration.sql" ]; then
+          if grep -qvE "^(--|[[:space:]]*$)" "$MIGRATION_DIR/migration.sql"; then
             echo "Schema changes detected — applying migration."
             npx prisma migrate deploy
           else
