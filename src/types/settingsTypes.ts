@@ -1,3 +1,6 @@
+import type { WeightUnit } from '@/lib/units';
+export type { WeightUnit };
+
 export interface CustomMetricDef {
   id: string;   // UUID, stable — never changes even if name is renamed
   name: string; // user-defined label
@@ -20,6 +23,8 @@ export interface Settings {
   // Onboarding state
   onboardingDismissed: boolean;
   onboardingSeenWelcome: boolean;
+  // Unit preference — all weights stored in kg, converted on display
+  weightUnit: WeightUnit;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -36,6 +41,7 @@ export const DEFAULT_SETTINGS: Settings = {
   customMetrics: [],
   onboardingDismissed: false,
   onboardingSeenWelcome: false,
+  weightUnit: 'kg',
 };
 
 function parseCustomMetrics(raw: unknown): CustomMetricDef[] {
@@ -77,5 +83,6 @@ export function parseDashboardSettings(raw: unknown): Settings {
     customMetrics:           parseCustomMetrics(s.customMetrics),
     onboardingDismissed:     typeof s.onboardingDismissed     === 'boolean' ? s.onboardingDismissed     : false,
     onboardingSeenWelcome:   typeof s.onboardingSeenWelcome   === 'boolean' ? s.onboardingSeenWelcome   : false,
+    weightUnit:              s.weightUnit === 'lbs' ? 'lbs' : 'kg',
   };
 }

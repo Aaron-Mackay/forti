@@ -54,8 +54,22 @@ describe('parseDashboardSettings', () => {
       customMetrics: [],
       onboardingDismissed: false,
       onboardingSeenWelcome: false,
+      weightUnit: 'kg' as const,
     };
     expect(parseDashboardSettings(allFalse)).toEqual(allFalse);
+  });
+
+  it('defaults weightUnit to kg when absent', () => {
+    expect(parseDashboardSettings({}).weightUnit).toBe('kg');
+  });
+
+  it('parses weightUnit lbs', () => {
+    expect(parseDashboardSettings({ weightUnit: 'lbs' }).weightUnit).toBe('lbs');
+  });
+
+  it('defaults weightUnit to kg for invalid values', () => {
+    expect(parseDashboardSettings({ weightUnit: 'stones' }).weightUnit).toBe('kg');
+    expect(parseDashboardSettings({ weightUnit: 42 }).weightUnit).toBe('kg');
   });
 
   it('parses onboardingDismissed and onboardingSeenWelcome', () => {

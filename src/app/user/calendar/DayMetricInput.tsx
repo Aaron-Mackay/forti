@@ -6,7 +6,7 @@ import {hhMmToMin, minToHhMm} from "@/app/user/calendar/utils";
 import Button from "@mui/material/Button";
 import {DayMetricPrisma} from "@/types/dataTypes";
 import {updateDayMetricClient} from "@lib/dayMetrics";
-import {CustomMetricDef} from "@/types/settingsTypes";
+import {CustomMetricDef, WeightUnit} from "@/types/settingsTypes";
 
 const BUILTIN_KEYS = new Set<MetricKey>(['weight', 'calories', 'steps', 'sleepMins']);
 
@@ -21,6 +21,7 @@ export const DayMetricInput: React.FC<{
   setDayMetricsStateCb: (date: Date, metrics: DayMetricPrisma | null) => void;
   hideBack?: boolean;
   customMetricDefs?: CustomMetricDef[];
+  weightUnit?: WeightUnit;
 }> = ({
         setSelectedMetric,
         selectedMetric,
@@ -32,6 +33,7 @@ export const DayMetricInput: React.FC<{
         setDayMetricsStateCb,
         hideBack = false,
         customMetricDefs = [],
+        weightUnit = 'kg',
       }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [targetValue, setTargetValue] = useState<string>('');
@@ -93,7 +95,9 @@ export const DayMetricInput: React.FC<{
       });
   };
 
-  const displayLabel = customDef?.name ?? selectedMetric ?? '';
+  const displayLabel = selectedMetric === 'weight'
+    ? `weight (${weightUnit})`
+    : (customDef?.name ?? selectedMetric ?? '');
 
   return (<>
     {!hideBack && (

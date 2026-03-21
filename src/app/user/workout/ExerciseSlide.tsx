@@ -24,12 +24,17 @@ import InfoIcon from '@mui/icons-material/Info';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import CalculateOutlinedIcon from '@mui/icons-material/CalculateOutlined';
 import MuscleHighlight from '@/components/MuscleHighlight';
 import E1rmSparkline from './E1rmSparkline';
+import WeightInput from './WeightInput';
+import PlateCalculatorSheet from './PlateCalculatorSheet';
 import {computeE1rm} from '@/lib/e1rm';
+import {kgToDisplay, formatWeight} from '@/lib/units';
 import {SetPrisma, WorkoutExercisePrisma} from '@/types/dataTypes';
 import {UserExerciseNote} from '@prisma/client';
 import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
+import {useSettings} from '@lib/providers/SettingsProvider';
 
 export type PreviousSet = { weight: number | null; reps: number | null; order: number };
 
@@ -62,11 +67,18 @@ export default function ExerciseSlide({
   history: E1rmHistoryPoint[] | null;
   onSubstitute?: () => void;
 }) {
+  const { settings } = useSettings();
+  const unit = settings.weightUnit;
+
   const [formCue, setFormCue] = useState(userExerciseNote?.note ?? '');
   const [formCueOpen, setFormCueOpen] = useState(false);
   const [warmupOpen, setWarmupOpen] = useState(false);
+  const [plateCalcOpen, setPlateCalcOpen] = useState(false);
+  const [plateCalcSetIdx, setPlateCalcSetIdx] = useState<number | null>(null);
   const [hasScrollBelow, setHasScrollBelow] = useState(true);
   const [hasScrollAbove, setHasScrollAbove] = useState(false);
+
+  const isBarbell = ex.exercise.equipment?.includes('barbell') ?? false;
 
   // Derive working weight: first entered set weight, else first previous set weight
   const workingWeight =
@@ -83,7 +95,7 @@ export default function ExerciseSlide({
 
   const warmupSets = workingWeight
     ? WARMUP_STEPS.map(({pct, reps}) => ({
-        weight: Math.round((workingWeight * pct) / 2.5) * 2.5,
+        weightKg: Math.round((workingWeight * pct) / 2.5) * 2.5,
         reps,
         pct: Math.round(pct * 100),
       }))
@@ -225,10 +237,10 @@ export default function ExerciseSlide({
           {warmupSets ? (
             <Table size="small" sx={{'& td, & th': {py: 0.25, px: 0.75}}}>
               <TableBody>
-                {warmupSets.map(({weight, reps, pct}) => (
+                {warmupSets.map(({weightKg, reps, pct}) => (
                   <TableRow key={pct}>
                     <TableCell sx={{color: 'text.secondary', width: 40}}>{pct}%</TableCell>
-                    <TableCell sx={{fontWeight: 500}}>{weight} kg</TableCell>
+                    <TableCell sx={{fontWeight: 500}}>{formatWeight(weightKg, unit)}</TableCell>
                     <TableCell sx={{color: 'text.secondary'}}>× {reps} {reps === 1 ? 'rep' : 'reps'}</TableCell>
                   </TableRow>
                 ))}
@@ -269,24 +281,30 @@ export default function ExerciseSlide({
                             variant="caption"
                             color="text.disabled"
                             sx={{mt: 0.25, visibility: prev ? 'visible' : 'hidden', width: 70}}
-                            aria-label={prev ? `Previous: ${prev.weight ?? '—'} × ${prev.reps ?? '—'}` : undefined}
+                            aria-label={prev ? `Previous: ${formatWeight(prev.weight, unit)} × ${prev.reps ?? '—'}` : undefined}
                           >
-                            Prev: {prev?.weight ?? '—'} × {prev?.reps ?? '—'}
+                            Prev: {prev ? kgToDisplay(prev.weight, unit) ?? '—' : '—'} × {prev?.reps ?? '—'}
                           </Typography>
                         )}
                       </Box>
-                      <TextField
-                        label="Weight"
-                        size="small"
-                        autoComplete="off"
-                        value={group.parent.weight?.toString() ?? ''}
-                        onChange={(e) => {
-                          if (!/^\d*\.?\d*$/.test(e.target.value)) return;
-                          handleSetUpdate(parentSetIdx, 'weight', e.target.value);
-                        }}
-                        sx={{minWidth: 80, '& input': {textAlign: 'center'}}}
-                        inputProps={{inputMode: 'decimal'}}
+                      <WeightInput
+                        valueKg={group.parent.weight}
+                        unit={unit}
+                        onChange={(kgStr) => handleSetUpdate(parentSetIdx, 'weight', kgStr)}
                       />
+                      {isBarbell && (
+                        <IconButton
+                          size="small"
+                          aria-label="Open plate calculator"
+                          onClick={() => {
+                            setPlateCalcSetIdx(parentSetIdx);
+                            setPlateCalcOpen(true);
+                          }}
+                          sx={{ alignSelf: 'center' }}
+                        >
+                          <CalculateOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      )}
                       <TextField
                         label="Reps"
                         type="text"
@@ -302,12 +320,12 @@ export default function ExerciseSlide({
                       />
                       <Box>
                         <TextField
-                          label="Est. 1RM"
+                          label={`Est. 1RM (${unit})`}
                           size="small"
                           disabled
                           slotProps={{inputLabel: {shrink: true}}}
-                          sx={{minWidth: 75, '& input': {textAlign: 'center'}}}
-                          value={liveE1rm ? liveE1rm.toFixed(1) : "-"}
+                          sx={{minWidth: 85, '& input': {textAlign: 'center'}}}
+                          value={liveE1rm ? (kgToDisplay(liveE1rm, unit) ?? liveE1rm).toFixed(1) : "-"}
                         />
                         {liveE1rm !== null && liveE1rm === todayBestE1rm && liveE1rm > (historicalBest || 0) && (
                           <EmojiEventsIcon
@@ -339,17 +357,10 @@ export default function ExerciseSlide({
                               ↓ Drop {dropIdx + 1}
                             </Typography>
                           </Box>
-                          <TextField
-                            label="Weight"
-                            size="small"
-                            autoComplete="off"
-                            value={drop.weight?.toString() ?? ''}
-                            onChange={(e) => {
-                              if (!/^\d*\.?\d*$/.test(e.target.value)) return;
-                              handleSetUpdate(dropSetIdx, 'weight', e.target.value);
-                            }}
-                            sx={{minWidth: 80, '& input': {textAlign: 'center'}}}
-                            inputProps={{inputMode: 'decimal'}}
+                          <WeightInput
+                            valueKg={drop.weight}
+                            unit={unit}
+                            onChange={(kgStr) => handleSetUpdate(dropSetIdx, 'weight', kgStr)}
                           />
                           <TextField
                             label="Reps"
@@ -400,6 +411,18 @@ export default function ExerciseSlide({
           />
         )}
       </Box>
+
+      {/* Plate calculator bottom sheet */}
+      {plateCalcOpen && (
+        <PlateCalculatorSheet
+          initialKg={plateCalcSetIdx !== null ? (ex.sets[plateCalcSetIdx]?.weight ?? null) : null}
+          unit={unit}
+          onClose={() => setPlateCalcOpen(false)}
+          onUseWeight={(kg) => {
+            if (plateCalcSetIdx !== null) handleSetUpdate(plateCalcSetIdx, 'weight', kg.toString());
+          }}
+        />
+      )}
     </Paper>
   );
 }

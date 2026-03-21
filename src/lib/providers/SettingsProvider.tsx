@@ -8,7 +8,7 @@ interface SettingsContextValue {
   loading: boolean;
   error: string | null;
   clearError: () => void;
-  updateSetting: (key: keyof Settings, value: boolean | number) => Promise<void>;
+  updateSetting: (key: keyof Settings, value: boolean | number | string) => Promise<void>;
   updateCustomMetrics: (defs: CustomMetricDef[]) => Promise<void>;
 }
 
@@ -38,7 +38,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       });
   }, []);
 
-  const updateSetting = useCallback(async (key: keyof Settings, value: boolean | number) => {
+  const updateSetting = useCallback(async (key: keyof Settings, value: boolean | number | string) => {
     // Cancel any in-flight PATCH so the latest change always wins
     abortRef.current?.abort();
     const controller = new AbortController();
