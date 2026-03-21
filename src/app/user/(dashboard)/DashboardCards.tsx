@@ -23,6 +23,8 @@ import {convertDateToDateString} from "@lib/dateUtils";
 import {getDefinedBlockColor} from "@/app/user/calendar/utils";
 import {DayMetricsBar, MetricKey} from "@/app/user/calendar/DayMetricBar";
 import DayMetricDrawer from "@/app/user/(dashboard)/DayMetricDrawer";
+import WelcomeModal from "@/app/user/(dashboard)/WelcomeModal";
+import GettingStartedCard from "@/app/user/(dashboard)/GettingStartedCard";
 
 function findNextWorkout(userData: UserPrisma | null) {
   if (!userData) return null;
@@ -126,6 +128,8 @@ export default function DashboardCards({userData, dayMetrics, events, today, use
 
   return (
     <>
+      <WelcomeModal />
+      <GettingStartedCard userData={userData} dayMetrics={dayMetrics} today={today} />
       <Grid container spacing={2} sx={{mb: 2}}>
 
         {/* Next Workout */}

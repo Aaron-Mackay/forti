@@ -52,8 +52,22 @@ describe('parseDashboardSettings', () => {
       showSupplements: false,
       checkInDay: 0,
       customMetrics: [],
+      onboardingDismissed: false,
+      onboardingSeenWelcome: false,
     };
     expect(parseDashboardSettings(allFalse)).toEqual(allFalse);
+  });
+
+  it('parses onboardingDismissed and onboardingSeenWelcome', () => {
+    const result = parseDashboardSettings({ onboardingDismissed: true, onboardingSeenWelcome: true });
+    expect(result.onboardingDismissed).toBe(true);
+    expect(result.onboardingSeenWelcome).toBe(true);
+  });
+
+  it('defaults onboarding flags to false when absent', () => {
+    const result = parseDashboardSettings({});
+    expect(result.onboardingDismissed).toBe(false);
+    expect(result.onboardingSeenWelcome).toBe(false);
   });
 
   describe('customMetrics parsing', () => {

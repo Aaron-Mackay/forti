@@ -17,6 +17,9 @@ export interface Settings {
   checkInDay: number;
   // Up to 5 user-defined metric slots
   customMetrics: CustomMetricDef[];
+  // Onboarding state
+  onboardingDismissed: boolean;
+  onboardingSeenWelcome: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -31,6 +34,8 @@ export const DEFAULT_SETTINGS: Settings = {
   showSupplements: false,
   checkInDay: 0,
   customMetrics: [],
+  onboardingDismissed: false,
+  onboardingSeenWelcome: false,
 };
 
 function parseCustomMetrics(raw: unknown): CustomMetricDef[] {
@@ -68,7 +73,9 @@ export function parseDashboardSettings(raw: unknown): Settings {
     showStopwatch:      typeof s.showStopwatch      === 'boolean' ? s.showStopwatch      : true,
     coachModeActive:    typeof s.coachModeActive    === 'boolean' ? s.coachModeActive    : false,
     showSupplements:    typeof s.showSupplements    === 'boolean' ? s.showSupplements    : false,
-    checkInDay:         typeof s.checkInDay === 'number' ? s.checkInDay : 0,
-    customMetrics:      parseCustomMetrics(s.customMetrics),
+    checkInDay:              typeof s.checkInDay              === 'number'  ? s.checkInDay              : 0,
+    customMetrics:           parseCustomMetrics(s.customMetrics),
+    onboardingDismissed:     typeof s.onboardingDismissed     === 'boolean' ? s.onboardingDismissed     : false,
+    onboardingSeenWelcome:   typeof s.onboardingSeenWelcome   === 'boolean' ? s.onboardingSeenWelcome   : false,
   };
 }
