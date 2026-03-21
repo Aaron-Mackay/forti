@@ -63,7 +63,7 @@ export const EntryScreen = ({ onSelectTemplates, onSelectAi, onSelectScratch }: 
                 Import from spreadsheet
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Upload a CSV file exported from your coaching spreadsheet
+                Upload a CSV or paste a training spreadsheet — AI reads it and builds a ready-to-edit plan
               </Typography>
             </Box>
           </CardContent>

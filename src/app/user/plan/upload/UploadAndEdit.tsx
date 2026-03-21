@@ -91,6 +91,9 @@ export const UploadAndEdit = () => {
     <>
       <CustomAppBar title="Import from Spreadsheet" showBack />
       <Box sx={{ height: HEIGHT_EXC_APPBAR, overflowY: 'auto', p: 2, maxWidth: 600, mx: 'auto' }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Upload a CSV or paste your training spreadsheet below. AI will read the exercises, sets, and weights and create a ready-to-edit plan.
+        </Typography>
         <Button
           variant="outlined"
           startIcon={<UploadFileIcon />}
