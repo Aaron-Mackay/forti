@@ -4,6 +4,8 @@ import { requireSession } from '@lib/requireSession';
 import { AI_PLAN_TOOL, AiParseError, parseAiPlanResponse } from '@/utils/aiPlanParser';
 import prisma from '@lib/prisma';
 
+export const maxDuration = 300; // 5 minutes — large spreadsheet imports can take a while
+
 const MAX_BODY_BYTES = 200_000; // 200 KB — hard cap before JSON parsing (raised to cover spreadsheet imports)
 const MAX_INPUT_BYTES_DEFAULT = 50_000; // 50 KB — cap for text descriptions
 const MAX_INPUT_BYTES_SPREADSHEET = 150_000; // 150 KB — cap for CSV/spreadsheet imports
@@ -117,13 +119,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         'structured data. Infer sensible defaults for any missing fields.\n\n' +
         input;
 
-    const message = await client.messages.create({
+    const stream = client.messages.stream({
       model: 'claude-sonnet-4-6',
       max_tokens: 32768,
       tools: [AI_PLAN_TOOL],
       tool_choice: { type: 'any' },
       messages: [{ role: 'user', content: userContent }],
     });
+    const message = await stream.finalMessage();
 
     if (message.stop_reason === 'max_tokens') {
       return NextResponse.json(

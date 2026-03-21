@@ -27,21 +27,22 @@ vi.mock('@anthropic-ai/sdk', async () => {
       this.status = status;
     }
   }
-  const create = vi.fn();
+  const finalMessage = vi.fn();
+  const stream = vi.fn().mockReturnValue({ finalMessage });
   return {
     default: Object.assign(
-      vi.fn().mockImplementation(() => ({ messages: { create } })),
+      vi.fn().mockImplementation(() => ({ messages: { stream } })),
       { APIError: MockAPIError },
     ),
-    __create: create, // expose for test control
+    __finalMessage: finalMessage, // expose for test control
   };
 });
 
 import { requireSession } from '@lib/requireSession';
-import { __create as mockCreate } from '@anthropic-ai/sdk';
+import { __finalMessage as mockFinalMessage } from '@anthropic-ai/sdk';
 
 const mockRequireSession = requireSession as ReturnType<typeof vi.fn>;
-const mockMessagesCreate = mockCreate as ReturnType<typeof vi.fn>;
+const mockMessagesStream = mockFinalMessage as ReturnType<typeof vi.fn>;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -85,7 +86,7 @@ const validPlanInput = {
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireSession.mockResolvedValue({ user: { id: 'user-1' } });
-  mockMessagesCreate.mockResolvedValue(makeToolUseResponse(validPlanInput));
+  mockMessagesStream.mockResolvedValue(makeToolUseResponse(validPlanInput));
   mockAiUsageLog.count.mockResolvedValue(0);
   mockAiUsageLog.create.mockResolvedValue({});
 });
@@ -169,7 +170,7 @@ describe('POST /api/plan/ai-import', () => {
 
   describe('Claude API error handling', () => {
     it('returns 422 when Claude does not return a tool_use block', async () => {
-      mockMessagesCreate.mockResolvedValue({
+      mockMessagesStream.mockResolvedValue({
         content: [{ type: 'text', text: 'I cannot parse that.' }],
         stop_reason: 'end_turn',
       });
@@ -182,7 +183,7 @@ describe('POST /api/plan/ai-import', () => {
     });
 
     it('returns 422 when Claude returns invalid plan structure', async () => {
-      mockMessagesCreate.mockResolvedValue(
+      mockMessagesStream.mockResolvedValue(
         makeToolUseResponse({ name: '', weeks: [] }), // invalid: empty name + no weeks
       );
 
@@ -194,7 +195,7 @@ describe('POST /api/plan/ai-import', () => {
     });
 
     it('includes parseIssues in the response when Zod validation fails', async () => {
-      mockMessagesCreate.mockResolvedValue(
+      mockMessagesStream.mockResolvedValue(
         makeToolUseResponse({ name: '', weeks: [] }),
       );
 
@@ -207,7 +208,7 @@ describe('POST /api/plan/ai-import', () => {
     });
 
     it('formats a flat path issue as "fieldName: message"', async () => {
-      mockMessagesCreate.mockResolvedValue(
+      mockMessagesStream.mockResolvedValue(
         makeToolUseResponse({ name: '', weeks: [{ workouts: [] }] }), // name is empty string
       );
 
@@ -221,7 +222,7 @@ describe('POST /api/plan/ai-import', () => {
     });
 
     it('formats a nested path issue with bracket notation for indices', async () => {
-      mockMessagesCreate.mockResolvedValue(
+      mockMessagesStream.mockResolvedValue(
         makeToolUseResponse({
           name: 'Plan',
           weeks: [{ workouts: [{ name: 'Day 1', exercises: [{ name: '', sets: [] }] }] }],
@@ -241,7 +242,7 @@ describe('POST /api/plan/ai-import', () => {
 
     it('caps parseIssues at 5 entries even when more issues exist', async () => {
       // Provide a completely null input — Zod will generate many issues
-      mockMessagesCreate.mockResolvedValue(makeToolUseResponse(null));
+      mockMessagesStream.mockResolvedValue(makeToolUseResponse(null));
 
       const req = makeRequest({ input: 'some text' });
       const res = await POST(req);
@@ -252,7 +253,7 @@ describe('POST /api/plan/ai-import', () => {
 
     it('returns 503 when Anthropic returns 429 rate-limit error', async () => {
       const { default: Anthropic } = await import('@anthropic-ai/sdk');
-      mockMessagesCreate.mockRejectedValue(new Anthropic.APIError(429, 'rate limited'));
+      mockMessagesStream.mockRejectedValue(new Anthropic.APIError(429, 'rate limited'));
 
       const req = makeRequest({ input: 'some workout' });
       const res = await POST(req);
@@ -263,7 +264,7 @@ describe('POST /api/plan/ai-import', () => {
 
     it('returns 503 when Anthropic returns 529 overload error', async () => {
       const { default: Anthropic } = await import('@anthropic-ai/sdk');
-      mockMessagesCreate.mockRejectedValue(new Anthropic.APIError(529, 'overloaded'));
+      mockMessagesStream.mockRejectedValue(new Anthropic.APIError(529, 'overloaded'));
 
       const req = makeRequest({ input: 'some workout' });
       const res = await POST(req);
@@ -272,7 +273,7 @@ describe('POST /api/plan/ai-import', () => {
 
     it('returns 502 for other Anthropic API errors', async () => {
       const { default: Anthropic } = await import('@anthropic-ai/sdk');
-      mockMessagesCreate.mockRejectedValue(new Anthropic.APIError(400, 'bad request to api'));
+      mockMessagesStream.mockRejectedValue(new Anthropic.APIError(400, 'bad request to api'));
 
       const req = makeRequest({ input: 'some workout' });
       const res = await POST(req);
@@ -280,7 +281,7 @@ describe('POST /api/plan/ai-import', () => {
     });
 
     it('returns 500 for unexpected non-API errors', async () => {
-      mockMessagesCreate.mockRejectedValue(new Error('network timeout'));
+      mockMessagesStream.mockRejectedValue(new Error('network timeout'));
 
       const req = makeRequest({ input: 'some workout' });
       const res = await POST(req);
