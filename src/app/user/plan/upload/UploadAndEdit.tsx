@@ -72,7 +72,7 @@ export const UploadAndEdit = () => {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".csv"
+          accept=".csv,text/csv,text/plain"
           style={{ display: 'none' }}
           onChange={handleFileChange}
         />
