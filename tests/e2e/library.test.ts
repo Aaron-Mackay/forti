@@ -186,7 +186,7 @@ test.describe('Library page', () => {
     await page.goto('/library');
     await page.getByRole('button', { name: /bulk upload links/i }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByText('Bulk Upload Links')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Bulk Upload Links' })).toBeVisible();
   });
 
   test('pasting CSV shows a preview with valid and invalid rows', async ({ page }) => {
