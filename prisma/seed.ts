@@ -1,5 +1,5 @@
 import prisma from '../src/lib/prisma';
-import { BlockSubtype, EventType } from "@prisma/client";
+import { BlockSubtype, EventType, LibraryAssetType } from "@prisma/client";
 import { seedTestUserData } from './lib/testUserSeedData';
 import { seedJeffDemoData } from './lib/jeffDemoSeedData';
 import { getWeekStart, toDateOnly } from '../src/lib/checkInUtils';
@@ -278,6 +278,63 @@ async function main() {
     },
   });
   await seedJeffDemoData(jeff, new Date(), todd.id);
+
+  // ── Library assets ─────────────────────────────────────────────────────────
+  await prisma.libraryAsset.createMany({
+    data: [
+      // Todd's coach assets — shared with all his clients (including Jeff)
+      {
+        userId: todd.id,
+        title: 'Squat Form Guide',
+        description: 'Essential cues for a safe and strong squat. Watch before each squat session.',
+        type: LibraryAssetType.LINK,
+        url: 'https://www.youtube.com/watch?v=ultWZbUMPL8',
+        isCoachAsset: true,
+      },
+      {
+        userId: todd.id,
+        title: 'Training Programme Overview',
+        description: 'Your current block structure, phase goals, and weekly expectations.',
+        type: LibraryAssetType.DOCUMENT,
+        url: null,
+        isCoachAsset: true,
+      },
+      {
+        userId: todd.id,
+        title: 'Movement Standards',
+        description: 'Reference images for key lifts — what good form looks like at each stage.',
+        type: LibraryAssetType.IMAGE,
+        url: null,
+        isCoachAsset: true,
+      },
+      // Todd's private asset
+      {
+        userId: todd.id,
+        title: 'Coaching Resources',
+        description: 'Articles and research I reference regularly when writing programmes.',
+        type: LibraryAssetType.LINK,
+        url: 'https://www.strongerbyscience.com',
+        isCoachAsset: false,
+      },
+      // Jeff's private assets
+      {
+        userId: jeff.id,
+        title: 'My PR Tracker',
+        description: 'Personal records spreadsheet — updated after each training session.',
+        type: LibraryAssetType.LINK,
+        url: 'https://docs.google.com/spreadsheets',
+        isCoachAsset: false,
+      },
+      {
+        userId: jeff.id,
+        title: 'PR Attempt — Deadlift',
+        description: 'Form check from my last max attempt. Need to work on lockout.',
+        type: LibraryAssetType.VIDEO,
+        url: null,
+        isCoachAsset: false,
+      },
+    ],
+  });
 
   // Backfill e1rm for all seeded sets
   const allSets = await prisma.exerciseSet.findMany({ select: { id: true, weight: true, reps: true } });

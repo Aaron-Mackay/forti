@@ -43,6 +43,7 @@ model User {
   supplements       Supplement[]
   notifications     Notification[]
   createdExercises  Exercise[]         @relation("UserCreatedExercises")
+  libraryAssets     LibraryAsset[]
 }
 
 enum CoachRequestStatus {
@@ -327,6 +328,28 @@ model Supplement {
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+enum LibraryAssetType {
+  LINK
+  DOCUMENT
+  IMAGE
+  VIDEO
+}
+
+model LibraryAsset {
+  id           String           @id @default(cuid())
+  title        String
+  description  String?
+  type         LibraryAssetType
+  url          String?
+  isCoachAsset Boolean          @default(false)
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   @@index([userId])
 }
