@@ -14,6 +14,21 @@ const createSchema = z.object({
   isCoachAsset: z.boolean().optional().default(false),
 });
 
+export async function GET(_req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession();
+  } catch (e) {
+    return e as NextResponse;
+  }
+  const userId = session.user.id;
+  const assets = await prisma.libraryAsset.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+  });
+  return NextResponse.json(assets);
+}
+
 export async function POST(req: NextRequest) {
   let session;
   try {

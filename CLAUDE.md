@@ -368,6 +368,10 @@ Rules:
 - When narrowing with `.first()`, add a brief inline comment explaining why (e.g. `// multiple day cells`).
 - `eslint-plugin-playwright` is configured in `eslint.config.mjs` and runs via `npm run lint` (which covers `src/` and `tests/`). It catches quality issues but **cannot detect strict mode violations statically** — they are runtime errors. Audit every locator you write.
 
+**Do NOT rely on Jeff/Todd seed data in E2E tests.** All E2E tests authenticate as TestUser (`testuser@example.com`), not as Jeff Demo. Jeff's seeded records (library assets, coach relationship with Todd, check-ins, etc.) are invisible to TestUser. Tests that assert on user-specific data will fail silently or flake. Always create and clean up test data via the API in `beforeEach`/`afterEach` — see `supplements.test.ts` for the canonical pattern. Global seed data that exists for *all* users (e.g. the exercises list from `exercises.json`) is safe to use without setup.
+
+**State-dependent tests must be serial and chromium-only.** Any test describe block whose tests mutate DB state (POST, PATCH, DELETE) should use `test.describe.configure({ mode: 'serial' })` and `test.skip(({ isMobile }) => isMobile, '...')` to avoid parallel conflicts across browser projects that share a single TestUser DB row.
+
 ---
 
 ## Linting Rules
