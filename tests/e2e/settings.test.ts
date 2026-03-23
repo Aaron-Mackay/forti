@@ -40,6 +40,13 @@ test.describe('Settings page — UI', () => {
     await expect(page.getByRole('banner')).toContainText('Settings');
   });
 
+  test('shows the Export Data section with three download links', async ({ page }) => {
+    await expect(page.getByText('Export Data')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Download Training Plans' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Download Daily Metrics' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Download Check-in History' })).toBeVisible();
+  });
+
   test('settings link appears in the sidebar between Feedback and Log Out', async ({ page }) => {
     await page.getByRole('button', { name: /menu/i }).click();
     const drawer = page.getByRole('presentation');
@@ -204,5 +211,65 @@ test.describe('Settings page — coaching section', () => {
     await expect(linkInput).toBeVisible();
     const value = await linkInput.inputValue();
     expect(value).toMatch(/\/coach\/\d{6}$/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Export API tests — chromium only; verify endpoints return valid CSV
+// ---------------------------------------------------------------------------
+test.describe('Settings page — export API', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium',
+    'API tests run on chromium only to avoid parallel DB conflicts');
+
+  test('GET /api/export/training-data returns CSV with correct headers', async ({ page }) => {
+    const res = await page.request.get('/api/export/training-data');
+    expect(res.ok()).toBe(true);
+    expect(res.headers()['content-type']).toContain('text/csv');
+    expect(res.headers()['content-disposition']).toContain('forti-training-plans.csv');
+    const text = await res.text();
+    // Strip BOM and check header row
+    const firstLine = text.replace(/^\uFEFF/, '').split('\r\n')[0];
+    expect(firstLine).toBe(
+      'plan_name,plan_description,week_number,workout_name,workout_notes,' +
+      'workout_date_completed,exercise_name,exercise_category,rep_range,' +
+      'rest_time,exercise_notes,set_number,reps,weight_kg,e1rm,is_drop_set'
+    );
+    // Seeded data has plans — there should be data rows
+    const lines = text.replace(/^\uFEFF/, '').split('\r\n').filter(l => l.length > 0);
+    expect(lines.length).toBeGreaterThan(1);
+  });
+
+  test('GET /api/export/metrics returns CSV with correct headers', async ({ page }) => {
+    const res = await page.request.get('/api/export/metrics');
+    expect(res.ok()).toBe(true);
+    expect(res.headers()['content-type']).toContain('text/csv');
+    expect(res.headers()['content-disposition']).toContain('forti-daily-metrics.csv');
+    const text = await res.text();
+    const firstLine = text.replace(/^\uFEFF/, '').split('\r\n')[0];
+    expect(firstLine).toContain('date');
+    expect(firstLine).toContain('weight_kg');
+    expect(firstLine).toContain('steps');
+    expect(firstLine).toContain('sleep_mins');
+    // Seeded data has 60 days of metrics — there should be data rows
+    const lines = text.replace(/^\uFEFF/, '').split('\r\n').filter(l => l.length > 0);
+    expect(lines.length).toBeGreaterThan(1);
+  });
+
+  test('GET /api/export/check-ins returns CSV with correct headers', async ({ page }) => {
+    const res = await page.request.get('/api/export/check-ins');
+    expect(res.ok()).toBe(true);
+    expect(res.headers()['content-type']).toContain('text/csv');
+    expect(res.headers()['content-disposition']).toContain('forti-check-ins.csv');
+    const text = await res.text();
+    const firstLine = text.replace(/^\uFEFF/, '').split('\r\n')[0];
+    expect(firstLine).toBe(
+      'week_start_date,completed_at,energy_level,mood_rating,stress_level,' +
+      'sleep_quality,recovery_rating,adherence_rating,completed_workouts,' +
+      'planned_workouts,week_review,coach_message,goals_next_week,' +
+      'coach_notes,coach_reviewed_at'
+    );
+    // Seeded data has 6 check-ins — there should be data rows
+    const lines = text.replace(/^\uFEFF/, '').split('\r\n').filter(l => l.length > 0);
+    expect(lines.length).toBeGreaterThan(1);
   });
 });

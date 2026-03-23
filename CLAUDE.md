@@ -182,6 +182,9 @@ All routes live under `src/app/api/` and follow Next.js App Router conventions:
 | `api/saveUserWorkoutData` | Bulk save workout session data |
 | `api/sets/[setId]` | Update individual exercise sets |
 | `api/user-data` | GET full user data dump |
+| `api/export/training-data` | GET training plans as CSV |
+| `api/export/metrics` | GET daily metrics as CSV |
+| `api/export/check-ins` | GET weekly check-in history as CSV |
 | `api/user/settings` | PATCH user settings (dashboard/workout/check-in toggles) |
 | `api/users` | User management |
 | `api/workout/[workoutId]` | Workout CRUD |
@@ -284,6 +287,7 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 | `src/types/dataTypes.ts` | Prisma type helpers (`UserPrisma`, `PlanPrisma`, etc.) + exercise constants |
 | `src/types/checkInTypes.ts` | Check-in interfaces, `computeMetricSummary`, `formatSleepMins` |
 | `src/utils/aiPlanParser.ts` | AI plan response schema + `AiParseError` for `api/plan/ai-import` |
+| `src/utils/csvExport.ts` | `escapeCsvCell`, `buildCsv` — UTF-8 BOM CSV builder used by export API routes |
 
 ---
 

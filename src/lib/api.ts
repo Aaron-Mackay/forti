@@ -72,6 +72,13 @@ export async function getUserDayMetrics(userId: string) {
   })
 }
 
+export async function getUserCheckIns(userId: string) {
+  return prisma.weeklyCheckIn.findMany({
+    where: {userId},
+    orderBy: {weekStartDate: 'asc'},
+  });
+}
+
 export async function updateUserDayMetric(dayMetric: Omit<DayMetricPrisma, 'id' | 'customMetrics'> & { customMetrics: Prisma.InputJsonValue | null }) {
   const {customMetrics, ...rest} = dayMetric;
   // Prisma nullable JSON fields need Prisma.JsonNull (not null) to explicitly clear them
