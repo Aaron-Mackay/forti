@@ -20,9 +20,11 @@ import {
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { LibraryAsset, LibraryAssetType } from '@prisma/client';
 import { useState } from 'react';
 import LibraryAssetCard from './LibraryAssetCard';
+import ImportLinksDialog from './ImportLinksDialog';
 import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
 
 interface Props {
@@ -72,6 +74,7 @@ function SectionHeader({ title }: { title: string }) {
 export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coachName, isCoach, userId }: Props) {
   const [ownAssets, setOwnAssets] = useState<LibraryAsset[]>(initialOwn);
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<AddForm>({
     type: 'LINK',
@@ -203,14 +206,29 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
         )}
       </Box>
 
-      <Button
-        variant="contained"
-        startIcon={<AddIcon />}
-        onClick={() => setAddOpen(true)}
-        sx={{ mt: 1 }}
-      >
-        Add to Library
-      </Button>
+      <Stack direction="row" spacing={1} mt={1} flexWrap="wrap" useFlexGap>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setAddOpen(true)}
+        >
+          Add to Library
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<UploadFileIcon />}
+          onClick={() => setImportOpen(true)}
+        >
+          Bulk Upload Links
+        </Button>
+      </Stack>
+
+      <ImportLinksDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={(created) => setOwnAssets((prev) => [...created, ...prev])}
+        isCoach={isCoach}
+      />
 
       {/* Add dialog */}
       <Dialog open={addOpen} onClose={handleClose} fullWidth maxWidth="xs">

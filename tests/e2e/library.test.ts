@@ -179,4 +179,80 @@ test.describe('Library page', () => {
     await card.getByRole('button', { name: /delete/i }).click();
     await expect(page.getByText('Delete Me')).not.toBeVisible();
   });
+
+  // ── Bulk Upload Links ────────────────────────────────────────────────────
+
+  test('Bulk Upload Links button opens the import dialog', async ({ page }) => {
+    await page.goto('/library');
+    await page.getByRole('button', { name: /bulk upload links/i }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByText('Bulk Upload Links')).toBeVisible();
+  });
+
+  test('pasting CSV shows a preview with valid and invalid rows', async ({ page }) => {
+    await page.goto('/library');
+    await page.getByRole('button', { name: /bulk upload links/i }).click();
+
+    const csv = [
+      'name,url',
+      'Squat Guide,https://youtube.com/squat',
+      'Bad Row,not-a-url',
+    ].join('\n');
+    await page.getByLabel('Paste CSV or TSV text').fill(csv);
+
+    // Preview section appears
+    await expect(page.getByText('Preview')).toBeVisible();
+    // One valid, one invalid
+    await expect(page.getByText('1 valid · 1 will be skipped')).toBeVisible();
+  });
+
+  test('can import links from pasted CSV', async ({ page }) => {
+    await page.goto('/library');
+    await page.getByRole('button', { name: /bulk upload links/i }).click();
+
+    const csv = [
+      'name,url',
+      'Bulk Link A,https://example.com/a',
+      'Bulk Link B,https://example.com/b',
+    ].join('\n');
+    await page.getByLabel('Paste CSV or TSV text').fill(csv);
+    await expect(page.getByText('2 valid')).toBeVisible();
+
+    // Capture both POST responses for afterEach cleanup
+    const responses: string[] = [];
+    page.on('response', async (r) => {
+      if (r.url().includes('/api/library') && r.request().method() === 'POST' && r.ok()) {
+        const body = (await r.json()) as { id: string };
+        responses.push(body.id);
+      }
+    });
+
+    await page.getByRole('button', { name: /import 2 links/i }).click();
+
+    // Dialog closes and both assets appear
+    await expect(page.getByRole('dialog')).not.toBeVisible();
+    await expect(page.getByText('Bulk Link A')).toBeVisible();
+    await expect(page.getByText('Bulk Link B')).toBeVisible();
+
+    // Register for cleanup (responses may arrive slightly after dialog closes)
+    await page.waitForTimeout(300);
+    createdIds.push(...responses);
+  });
+
+  test('Import button is disabled when no valid rows exist', async ({ page }) => {
+    await page.goto('/library');
+    await page.getByRole('button', { name: /bulk upload links/i }).click();
+
+    // Paste only invalid rows
+    await page.getByLabel('Paste CSV or TSV text').fill('name,url\nBad,not-a-url');
+    await expect(page.getByRole('button', { name: /import 0/i })).toBeDisabled();
+  });
+
+  test('can cancel the import dialog without changes', async ({ page }) => {
+    await page.goto('/library');
+    await page.getByRole('button', { name: /bulk upload links/i }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await expect(page.getByRole('dialog')).not.toBeVisible();
+  });
 });
