@@ -203,7 +203,7 @@ export default function CustomAppBar(
         {/* Fixed bottom logout */}
         <Box>
           <List>
-            <ListLink icon={<FeedbackIcon/>} text="Feedback" href="/feedback"/>
+            <ListLink icon={<FeedbackIcon/>} text="Feedback" href="/user/feedback"/>
             <ListLink icon={<SettingsIcon/>} text="Settings" href="/user/settings"/>
             <ListItem disablePadding>
               <ListItemButton onClick={() => signOut({callbackUrl: '/login'})}>
