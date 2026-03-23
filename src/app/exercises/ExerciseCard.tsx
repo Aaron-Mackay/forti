@@ -2,13 +2,23 @@
 
 import {Exercise} from '@prisma/client';
 import {Box, Card, CardContent, Chip, Typography} from '@mui/material';
+import SchoolIcon from '@mui/icons-material/School';
 import MuscleHighlight from '@/components/MuscleHighlight';
 
 function toTitleCase(str: string) {
   return str.split(/[-\s]+/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
-export default function ExerciseCard({exercise}: {exercise: Exercise}) {
+export default function ExerciseCard({
+  exercise,
+  coachDescription,
+}: {
+  exercise: Exercise;
+  coachDescription?: string;
+}) {
+  const displayDescription = coachDescription ?? exercise.description;
+  const isCoachOverride = Boolean(coachDescription);
+
   return (
     <Card variant="outlined" sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
       <CardContent sx={{flex: 1, display: 'flex', flexDirection: 'column', gap: 1}}>
@@ -55,20 +65,32 @@ export default function ExerciseCard({exercise}: {exercise: Exercise}) {
           </Box>
         )}
 
-        {/* Description */}
-        {exercise.description && (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}
-          >
-            {exercise.description}
-          </Typography>
+        {/* Description — coach override takes precedence over default */}
+        {displayDescription && (
+          <Box>
+            {isCoachOverride && (
+              <Chip
+                icon={<SchoolIcon sx={{fontSize: '0.8rem !important'}}/>}
+                label="Coach"
+                size="small"
+                color="secondary"
+                variant="outlined"
+                sx={{fontSize: '0.65rem', height: 20, mb: 0.5}}
+              />
+            )}
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {displayDescription}
+            </Typography>
+          </Box>
         )}
       </CardContent>
     </Card>

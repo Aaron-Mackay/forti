@@ -105,6 +105,40 @@ test.describe('Exercises browse page', () => {
   });
 });
 
+test.describe('Coach exercise description override', () => {
+  test.describe.configure({mode: 'serial'});
+  test.skip(({browserName}) => browserName !== 'chromium',
+    'State-dependent tests run on chromium only');
+
+  test('drawer does not show coach sections for a user with no coach relationship', async ({page}) => {
+    await page.route('**/api/exercises/*/e1rm-history**', route =>
+      route.fulfill({status: 200, contentType: 'application/json', body: '[]'}),
+    );
+
+    await page.goto('/exercises');
+    await page.locator('.MuiCard-root').first().click();
+    await expect(page.getByText('Est. 1RM Progress')).toBeVisible();
+
+    // Neither coach section should be visible for a user with no coach relationship
+    await expect(page.getByText('Description for clients')).not.toBeVisible();
+    await expect(page.getByText('From your coach')).not.toBeVisible();
+  });
+
+  test('PUT /api/coach/exercise-description returns 403 when caller is not a coach', async ({page}) => {
+    await page.goto('/exercises');
+    const res = await page.request.put('/api/coach/exercise-description/1', {
+      data: {description: 'Test override'},
+    });
+    expect(res.status()).toBe(403);
+  });
+
+  test('DELETE /api/coach/exercise-description returns 403 when caller is not a coach', async ({page}) => {
+    await page.goto('/exercises');
+    const res = await page.request.delete('/api/coach/exercise-description/1');
+    expect(res.status()).toBe(403);
+  });
+});
+
 test.describe('Add Exercise dialog', () => {
   test.beforeEach(async ({page}) => {
     await page.goto('/exercises');
