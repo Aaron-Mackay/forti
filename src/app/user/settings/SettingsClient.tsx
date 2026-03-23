@@ -3,8 +3,10 @@
 import React, {useState} from 'react';
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
+  Chip,
   Divider,
   FormControlLabel,
   IconButton,
@@ -17,12 +19,73 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
-import { Settings, CustomMetricDef } from '@/types/settingsTypes';
+import { Settings, CustomMetricDef, TrackedE1rmExercise } from '@/types/settingsTypes';
 import { CHECK_IN_DAY_NAMES } from '@/types/checkInTypes';
 import { useSettings } from '@lib/providers/SettingsProvider';
+import { useExerciseList } from '@lib/hooks/api/useExerciseList';
+import { Exercise } from '@prisma/client';
 import CoachingSettings from './CoachingSettings';
 
 type BooleanSettingKey = { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings];
+
+function E1rmTrackingSection() {
+  const { settings, updateTrackedE1rmExercises } = useSettings();
+  const { exercises, loading } = useExerciseList(true);
+  const [inputValue, setInputValue] = useState('');
+
+  const tracked: TrackedE1rmExercise[] = settings.trackedE1rmExercises;
+  const trackedIds = new Set(tracked.map(e => e.id));
+  const available = exercises.filter((e: Exercise) => !trackedIds.has(e.id));
+
+  const handleSelect = (_: React.SyntheticEvent, exercise: Exercise | null) => {
+    if (!exercise || tracked.length >= 5) return;
+    updateTrackedE1rmExercises([...tracked, { id: exercise.id, name: exercise.name }]);
+    setInputValue('');
+  };
+
+  const handleRemove = (id: number) => {
+    updateTrackedE1rmExercises(tracked.filter(e => e.id !== id));
+  };
+
+  return (
+    <Box>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        Select up to 5 exercises to track e1RM progress on your dashboard
+      </Typography>
+      <Autocomplete
+        options={available}
+        getOptionLabel={(option: Exercise) => option.name}
+        loading={loading}
+        disabled={tracked.length >= 5}
+        onChange={handleSelect}
+        value={null}
+        inputValue={inputValue}
+        onInputChange={(_e, val, reason) => {
+          if (reason !== 'reset') setInputValue(val);
+        }}
+        renderInput={params => (
+          <TextField {...params} placeholder="Search exercises…" size="small" />
+        )}
+        sx={{ mb: 1.5 }}
+      />
+      {tracked.length > 0 && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 0.5 }}>
+          {tracked.map(e => (
+            <Chip
+              key={e.id}
+              label={e.name}
+              onDelete={() => handleRemove(e.id)}
+              size="small"
+            />
+          ))}
+        </Box>
+      )}
+      <Typography variant="caption" color="text.secondary">
+        {tracked.length}/5 selected
+      </Typography>
+    </Box>
+  );
+}
 
 function CustomMetricsSection() {
   const { settings, updateCustomMetrics } = useSettings();
@@ -99,6 +162,7 @@ const CARD_LABELS: {key: BooleanSettingKey; label: string}[] = [
   {key: 'showActiveBlock',    label: 'Active Block'},
   {key: 'showUpcomingEvents', label: 'Upcoming Events'},
   {key: 'showMetricsChart',   label: 'Metrics Chart'},
+  {key: 'showE1rmProgress',   label: 'E1RM Progress'},
 ];
 
 const WORKOUT_LABELS: {key: BooleanSettingKey; label: string}[] = [
@@ -221,6 +285,13 @@ export default function SettingsClient() {
       <Typography variant="overline" color="text.secondary">Custom Metrics</Typography>
       <Box sx={{mb: 2}}>
         <CustomMetricsSection />
+      </Box>
+
+      <Divider sx={{my: 3}}/>
+
+      <Typography variant="overline" color="text.secondary">E1RM Progress Tracking</Typography>
+      <Box sx={{mb: 2}}>
+        <E1rmTrackingSection />
       </Box>
 
       <Divider sx={{my: 3}}/>

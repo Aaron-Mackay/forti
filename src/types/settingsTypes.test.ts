@@ -56,6 +56,8 @@ describe('parseDashboardSettings', () => {
       onboardingSeenWelcome: false,
       weightUnit: 'kg' as const,
       exerciseUnitOverrides: {},
+      trackedE1rmExercises: [],
+      showE1rmProgress: false,
     };
     expect(parseDashboardSettings(allFalse)).toEqual(allFalse);
   });
@@ -104,6 +106,71 @@ describe('parseDashboardSettings', () => {
       expect(parseDashboardSettings({ exerciseUnitOverrides: 'bad' }).exerciseUnitOverrides).toEqual({});
       expect(parseDashboardSettings({ exerciseUnitOverrides: [] }).exerciseUnitOverrides).toEqual({});
       expect(parseDashboardSettings({ exerciseUnitOverrides: null }).exerciseUnitOverrides).toEqual({});
+    });
+  });
+
+  describe('trackedE1rmExercises parsing', () => {
+    it('defaults to empty array when absent', () => {
+      expect(parseDashboardSettings({}).trackedE1rmExercises).toEqual([]);
+    });
+
+    it('parses valid tracked exercises', () => {
+      const exercises = [
+        { id: 1, name: 'Squat' },
+        { id: 2, name: 'Bench Press' },
+      ];
+      expect(parseDashboardSettings({ trackedE1rmExercises: exercises }).trackedE1rmExercises).toEqual(exercises);
+    });
+
+    it('strips entries with missing or invalid id/name', () => {
+      const raw = [
+        { id: 1, name: 'Valid' },
+        { name: 'No id' },
+        { id: 2 },
+        { id: 0, name: 'Zero id' },
+        { id: -1, name: 'Negative id' },
+        null,
+        42,
+      ];
+      expect(parseDashboardSettings({ trackedE1rmExercises: raw }).trackedE1rmExercises).toEqual([
+        { id: 1, name: 'Valid' },
+      ]);
+    });
+
+    it('deduplicates by id', () => {
+      const raw = [
+        { id: 1, name: 'First' },
+        { id: 1, name: 'Duplicate' },
+      ];
+      expect(parseDashboardSettings({ trackedE1rmExercises: raw }).trackedE1rmExercises).toEqual([
+        { id: 1, name: 'First' },
+      ]);
+    });
+
+    it('caps at 5 entries', () => {
+      const raw = Array.from({ length: 7 }, (_, i) => ({ id: i + 1, name: `Exercise ${i + 1}` }));
+      expect(parseDashboardSettings({ trackedE1rmExercises: raw }).trackedE1rmExercises).toHaveLength(5);
+    });
+
+    it('returns empty array for non-array input', () => {
+      expect(parseDashboardSettings({ trackedE1rmExercises: 'bad' }).trackedE1rmExercises).toEqual([]);
+      expect(parseDashboardSettings({ trackedE1rmExercises: {} }).trackedE1rmExercises).toEqual([]);
+      expect(parseDashboardSettings({ trackedE1rmExercises: null }).trackedE1rmExercises).toEqual([]);
+    });
+  });
+
+  describe('showE1rmProgress parsing', () => {
+    it('defaults to true when absent', () => {
+      expect(parseDashboardSettings({}).showE1rmProgress).toBe(true);
+    });
+
+    it('parses false correctly', () => {
+      expect(parseDashboardSettings({ showE1rmProgress: false }).showE1rmProgress).toBe(false);
+    });
+
+    it('defaults to true for non-boolean values', () => {
+      expect(parseDashboardSettings({ showE1rmProgress: 'yes' }).showE1rmProgress).toBe(true);
+      expect(parseDashboardSettings({ showE1rmProgress: 1 }).showE1rmProgress).toBe(true);
     });
   });
 

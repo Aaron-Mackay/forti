@@ -6,6 +6,7 @@
  * summary cards added by DashboardCards.
  */
 import { test, expect } from './fixtures';
+import { Exercise } from '@prisma/client';
 
 test.describe('Dashboard', () => {
   test.beforeEach(async ({ page }) => {
@@ -89,5 +90,59 @@ test.describe('Dashboard', () => {
       // Seed uses a fixed date of 2024-06-01 so all events are well past CI's real today (~2026)
       await expect(page.getByText('Upcoming (7 days)')).not.toBeVisible();
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// E1RM Progress card — chromium only; mutates DB settings
+// ---------------------------------------------------------------------------
+test.describe('Dashboard — E1RM Progress card', () => {
+  test.describe.configure({ mode: 'serial' });
+  test.skip(({ browserName }) => browserName !== 'chromium',
+    'State-dependent tests run on chromium only; parallel browser projects share a DB user');
+
+  let trackedExercise: { id: number; name: string };
+
+  test.beforeEach(async ({ page }) => {
+    // Fetch a real exercise from the global list to use as tracked exercise
+    const res = await page.request.get('/api/exercises');
+    const exercises = await res.json() as Exercise[];
+    trackedExercise = { id: exercises[0].id, name: exercises[0].name };
+    await page.request.patch('/api/user/settings', {
+      data: { settings: { trackedE1rmExercises: [trackedExercise], showE1rmProgress: true } },
+    });
+  });
+
+  test.afterEach(async ({ page }) => {
+    await page.request.patch('/api/user/settings', {
+      data: { settings: { trackedE1rmExercises: [], showE1rmProgress: true } },
+    });
+  });
+
+  test('shows the E1RM Progress card when exercises are tracked', async ({ page }) => {
+    await page.goto('/user');
+    await expect(page.getByRole('heading', { name: 'E1RM Progress' })).toBeVisible();
+    await expect(page.getByText(trackedExercise.name).first()).toBeVisible();
+  });
+
+  test('E1RM Progress card has a link to settings', async ({ page }) => {
+    await page.goto('/user');
+    await expect(page.getByRole('link', { name: 'Edit tracked exercises in settings' })).toBeVisible();
+  });
+
+  test('E1RM Progress card is hidden when showE1rmProgress is off', async ({ page }) => {
+    await page.request.patch('/api/user/settings', {
+      data: { settings: { showE1rmProgress: false } },
+    });
+    await page.goto('/user');
+    await expect(page.getByRole('heading', { name: 'E1RM Progress' })).not.toBeVisible();
+  });
+
+  test('E1RM Progress card is absent when no exercises are tracked', async ({ page }) => {
+    await page.request.patch('/api/user/settings', {
+      data: { settings: { trackedE1rmExercises: [] } },
+    });
+    await page.goto('/user');
+    await expect(page.getByRole('heading', { name: 'E1RM Progress' })).not.toBeVisible();
   });
 });

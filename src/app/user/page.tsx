@@ -4,6 +4,7 @@ import CustomAppBar, {HEIGHT_EXC_APPBAR} from "@/components/CustomAppBar";
 import {Paper, Typography} from "@mui/material";
 import DashboardChart from "@/app/user/(dashboard)/DashboardChart";
 import DashboardCards from "@/app/user/(dashboard)/DashboardCards";
+import E1rmProgressCard from "@/app/user/(dashboard)/E1rmProgressCard";
 import {getUserData, getUserDayMetrics, getUserEvents} from "@lib/api";
 import {EventType} from "@prisma/client";
 import prisma from "@lib/prisma";
@@ -38,6 +39,9 @@ export default async function UserPage() {
         {settings.showMetricsChart
           && userDayMetrics.length > 0
           && <DashboardChart dayMetrics={userDayMetrics} blocks={userBlocks}/>}
+        {settings.showE1rmProgress
+          && settings.trackedE1rmExercises.length > 0
+          && <E1rmProgressCard exercises={settings.trackedE1rmExercises} weightUnit={settings.weightUnit}/>}
       </Paper>
     </>
   );
