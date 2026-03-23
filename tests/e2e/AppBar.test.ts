@@ -34,9 +34,10 @@ test.describe('AppBar navigation drawer', () => {
     await expect(planning).toBeVisible();
   });
 
-  test('drawer shows Feedback link', async ({ page }) => {
+  test('drawer Feedback link is visible and navigates to /user/feedback', async ({ page }) => {
     await page.getByRole('button', { name: /menu/i }).click();
-    await expect(page.getByRole('link', { name: /Feedback/i })).toBeVisible();
+    await page.getByRole('link', { name: /Feedback/i }).click();
+    await expect(page).toHaveURL('/user/feedback');
   });
 
   test('drawer shows Log Out button', async ({ page }) => {
