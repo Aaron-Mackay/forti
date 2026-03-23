@@ -283,6 +283,42 @@ export default function SettingsClient() {
       </Button>
 
       <Divider sx={{my: 3}}/>
+
+      <Typography variant="overline" color="text.secondary">Export Data</Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Download your data as CSV files, compatible with Excel and Google Sheets.
+      </Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 1 }}>
+        <Button
+          component="a"
+          variant="outlined"
+          size="small"
+          href="/api/export/training-data"
+          download
+        >
+          Download Training Plans
+        </Button>
+        <Button
+          component="a"
+          variant="outlined"
+          size="small"
+          href="/api/export/metrics"
+          download
+        >
+          Download Daily Metrics
+        </Button>
+        <Button
+          component="a"
+          variant="outlined"
+          size="small"
+          href="/api/export/check-ins"
+          download
+        >
+          Download Check-in History
+        </Button>
+      </Box>
+
+      <Divider sx={{my: 3}}/>
       <CoachingSettings />
     </Box>
   );
