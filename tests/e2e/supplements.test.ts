@@ -119,7 +119,7 @@ test.describe('Supplements — CRUD', () => {
 
   test('can edit a supplement', async ({ page }) => {
     // Create first
-    await page.request.post('/api/supplements', {
+    const createRes = await page.request.post('/api/supplements', {
       data: {
         name: 'Creatine',
         dosage: '5g',
@@ -127,7 +127,8 @@ test.describe('Supplements — CRUD', () => {
         startDate: '2026-01-01',
       },
     });
-    await page.reload();
+    if (!createRes.ok()) throw new Error(`Create supplement failed: ${createRes.status()}`);
+    await page.goto('/user/supplements');
     await expect(page.getByText('Creatine')).toBeVisible();
 
     await page.getByRole('button', { name: 'Edit supplement' }).first().click();

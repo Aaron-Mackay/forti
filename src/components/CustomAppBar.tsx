@@ -35,6 +35,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import AddIcon from "@mui/icons-material/Add";
 import SpecificPlan from '@mui/icons-material/InsertInvitation';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
+import BookmarksIcon from '@mui/icons-material/Bookmarks';
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import GroupIcon from '@mui/icons-material/Group';
 import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
@@ -176,6 +177,7 @@ export default function CustomAppBar(
               <ListLink icon={<MedicationIcon/>} text="Supplements" href="/user/supplements"/>
             )}
             <ListLink icon={<LibraryBooksIcon/>} text="Exercises" href="/exercises"/>
+            <ListLink icon={<BookmarksIcon/>} text="Library" href="/library"/>
             {settings.coachModeActive && (
               <ListLink icon={<GroupIcon/>} text="Client Check-ins" href="/user/coach/check-ins"/>
             )}
