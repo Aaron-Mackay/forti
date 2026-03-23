@@ -1,6 +1,6 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import {Exercise} from '@prisma/client';
 import {Autocomplete, Box, Button, TextField, Typography} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -17,8 +17,12 @@ function toTitleCase(str: string) {
 
 export default function ExercisesClient({
   initialExercises,
+  coachDescriptions: initialCoachDescriptions,
+  isCoach,
 }: {
   initialExercises: Exercise[];
+  coachDescriptions: Record<number, string>;
+  isCoach: boolean;
 }) {
   const router = useRouter();
   const [searchText, setSearchText] = useState('');
@@ -26,6 +30,7 @@ export default function ExercisesClient({
   const [selectedEquipment, setSelectedEquipment] = useState<ExerciseEquipment[]>([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [coachDescriptions, setCoachDescriptions] = useState<Record<number, string>>(initialCoachDescriptions);
 
   const filtered = useMemo(() => {
     return initialExercises.filter(ex => {
@@ -40,6 +45,17 @@ export default function ExercisesClient({
     setAddDialogOpen(false);
     router.refresh();
   };
+
+  const handleCoachDescriptionSave = useCallback((exerciseId: number, description: string | null) => {
+    setCoachDescriptions(prev => {
+      if (description === null) {
+        const next = {...prev};
+        delete next[exerciseId];
+        return next;
+      }
+      return {...prev, [exerciseId]: description};
+    });
+  }, []);
 
   return (
     <>
@@ -107,7 +123,10 @@ export default function ExercisesClient({
               onClick={() => setSelectedExercise(exercise)}
               sx={{cursor: 'pointer'}}
             >
-              <ExerciseCard exercise={exercise}/>
+              <ExerciseCard
+                exercise={exercise}
+                coachDescription={coachDescriptions[exercise.id]}
+              />
             </Box>
           ))}
         </Box>
@@ -125,6 +144,9 @@ export default function ExercisesClient({
       <ExerciseDetailDrawer
         exercise={selectedExercise}
         onClose={() => setSelectedExercise(null)}
+        coachDescription={selectedExercise ? coachDescriptions[selectedExercise.id] : undefined}
+        isCoach={isCoach}
+        onCoachDescriptionSave={handleCoachDescriptionSave}
       />
       </Box>
     </>
