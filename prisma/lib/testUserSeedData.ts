@@ -10,6 +10,7 @@
 
 import prisma from '../../src/lib/prisma';
 import { BlockSubtype, EventType } from '@prisma/client';
+import { getWeekStart, toDateOnly } from '../../src/lib/checkInUtils';
 
 // ─── Exercise definitions ──────────────────────────────────────────────────
 
@@ -260,6 +261,30 @@ export async function seedTestUserData(user: { id: string }, today: Date): Promi
       }
     }
   }
+
+  // ── Weekly check-ins ─────────────────────────────────────────────────────
+  await prisma.weeklyCheckIn.deleteMany({ where: { userId: user.id } });
+
+  // Seed 3 completed check-ins for the 3 past weeks so the export test has data
+  const checkInRows = [1, 2, 3].map(weeksAgo => {
+    const date = daysAgo(weeksAgo * 7);
+    const weekStart = toDateOnly(getWeekStart(date));
+    return {
+      userId: user.id,
+      weekStartDate: weekStart,
+      completedAt:   new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000), // Sunday
+      energyLevel:   3,
+      moodRating:    4,
+      stressLevel:   2,
+      sleepQuality:  3,
+      recoveryRating: 4,
+      adherenceRating: 5,
+      completedWorkouts: 2,
+      plannedWorkouts:   2,
+      weekReview:    `Week ${weeksAgo} review — feeling good`,
+    };
+  });
+  await prisma.weeklyCheckIn.createMany({ data: checkInRows });
 
   // ── Day metrics ───────────────────────────────────────────────────────────
   await prisma.dayMetric.deleteMany({ where: { userId: user.id } });
