@@ -9,6 +9,12 @@ export interface CustomMetricDef {
   name: string; // user-defined label
 }
 
+/** An exercise selected for e1rm progress tracking on the dashboard. */
+export interface TrackedE1rmExercise {
+  id: number;
+  name: string;
+}
+
 export interface Settings {
   showNextWorkout: boolean;
   showTodaysMetrics: boolean;
@@ -30,6 +36,9 @@ export interface Settings {
   weightUnit: WeightUnit;
   // Per-exercise overrides: key = exerciseId as string, value = unit or 'none'
   exerciseUnitOverrides: Record<string, ExerciseUnitOverride>;
+  // Up to 5 exercises whose e1rm progress is shown on the dashboard
+  trackedE1rmExercises: TrackedE1rmExercise[];
+  showE1rmProgress: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -48,6 +57,8 @@ export const DEFAULT_SETTINGS: Settings = {
   onboardingSeenWelcome: false,
   weightUnit: 'kg',
   exerciseUnitOverrides: {},
+  trackedE1rmExercises: [],
+  showE1rmProgress: true,
 };
 
 function parseCustomMetrics(raw: unknown): CustomMetricDef[] {
@@ -61,6 +72,27 @@ function parseCustomMetrics(raw: unknown): CustomMetricDef[] {
       typeof item.id === 'string' &&
       item.id.length > 0 &&
       typeof item.name === 'string' &&
+      !seen.has(item.id)
+    ) {
+      seen.add(item.id);
+      result.push({ id: item.id, name: item.name });
+    }
+  }
+  return result.slice(0, 5);
+}
+
+function parseTrackedE1rmExercises(raw: unknown): TrackedE1rmExercise[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<number>();
+  const result: TrackedE1rmExercise[] = [];
+  for (const item of raw) {
+    if (
+      item &&
+      typeof item === 'object' &&
+      typeof item.id === 'number' &&
+      item.id > 0 &&
+      typeof item.name === 'string' &&
+      item.name.length > 0 &&
       !seen.has(item.id)
     ) {
       seen.add(item.id);
@@ -104,5 +136,7 @@ export function parseDashboardSettings(raw: unknown): Settings {
     onboardingSeenWelcome:   typeof s.onboardingSeenWelcome   === 'boolean' ? s.onboardingSeenWelcome   : false,
     weightUnit:              s.weightUnit === 'lbs' ? 'lbs' : 'kg',
     exerciseUnitOverrides:   parseExerciseUnitOverrides(s.exerciseUnitOverrides),
+    trackedE1rmExercises:    parseTrackedE1rmExercises(s.trackedE1rmExercises),
+    showE1rmProgress:        typeof s.showE1rmProgress === 'boolean' ? s.showE1rmProgress : true,
   };
 }

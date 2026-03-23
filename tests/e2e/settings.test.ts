@@ -24,8 +24,10 @@ const ALL_ON = {
   showActiveBlock: true,
   showUpcomingEvents: true,
   showMetricsChart: true,
+  showE1rmProgress: true,
   showStopwatch: true,
   showSupplements: false,
+  trackedE1rmExercises: [],
 };
 
 // ---------------------------------------------------------------------------
@@ -70,6 +72,7 @@ test.describe('Settings page — UI', () => {
       'Active Block',
       'Upcoming Events',
       'Metrics Chart',
+      'E1RM Progress',
       'Stopwatch',
       'Supplements',
       'Your Coach',
@@ -78,6 +81,11 @@ test.describe('Settings page — UI', () => {
     for (const label of labels) {
       await expect(page.getByText(label).first()).toBeVisible();
     }
+  });
+
+  test('shows the E1RM Progress Tracking section with a search field', async ({ page }) => {
+    await expect(page.getByText('E1RM Progress Tracking')).toBeVisible();
+    await expect(page.getByPlaceholder('Search exercises…')).toBeVisible();
   });
 
   test('coaching section shows the code input when user has no coach', async ({ page }) => {
@@ -102,18 +110,18 @@ test.describe('Settings page — state', () => {
     await page.request.patch('/api/user/settings', { data: { settings: ALL_ON } });
   });
 
-  test('shows 9 toggles; dashboard/workout switches are on, Supplements and Coach Mode are off by default', async ({ page }) => {
+  test('shows 10 toggles; dashboard/workout switches are on, Supplements and Coach Mode are off by default', async ({ page }) => {
     const switches = page.getByRole('switch');
     await expect(switches.first()).toBeVisible();
-    await expect(switches).toHaveCount(9);
-    // First 7 are dashboard card + stopwatch toggles (all on by default)
-    for (let i = 0; i < 7; i++) {
+    await expect(switches).toHaveCount(10);
+    // First 8 are dashboard card toggles + stopwatch (all on by default)
+    for (let i = 0; i < 8; i++) {
       await expect(switches.nth(i)).toBeChecked();
     }
-    // Supplements toggle (8th) is off by default
-    await expect(switches.nth(7)).not.toBeChecked();
-    // Coach Mode toggle (9th) is off by default
+    // Supplements toggle (9th) is off by default
     await expect(switches.nth(8)).not.toBeChecked();
+    // Coach Mode toggle (10th) is off by default
+    await expect(switches.nth(9)).not.toBeChecked();
   });
 
   test('toggle sends PATCH that saves the updated value', async ({ page }) => {
