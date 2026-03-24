@@ -8,6 +8,8 @@ import { z } from 'zod';
 const AiSetSchema = z.object({
   weight: z.number().nullable().optional(),
   reps: z.number().int().nullable().optional(),
+  rpe: z.number().nullable().optional(),
+  rir: z.number().int().nullable().optional(),
 });
 
 const AiExerciseSchema = z.object({
@@ -56,7 +58,7 @@ export type ParsedPlan = {
         repRange: string | null | undefined;
         restTime: string | null | undefined;
         notes: string | null | undefined;
-        sets: Array<{ order: number; weight: number | null | undefined; reps: number | null | undefined }>;
+        sets: Array<{ order: number; weight: number | null | undefined; reps: number | null | undefined; rpe: number | null | undefined; rir: number | null | undefined }>;
       }>;
     }>;
   }>;
@@ -139,6 +141,8 @@ export const AI_PLAN_TOOL = {
                                 description: 'Weight in kg as a number, e.g. 60. Omit if unknown.',
                               },
                               reps: { type: 'integer', description: 'Number of reps. Omit if unknown.' },
+                              rpe: { type: 'number', description: 'RPE (Rate of Perceived Exertion) for this set, e.g. 8 or 8.5. Omit if not specified.' },
+                              rir: { type: 'integer', description: 'RIR (Reps In Reserve) for this set, e.g. 2. Omit if not specified.' },
                             },
                           },
                         },
@@ -198,6 +202,8 @@ export function parseAiPlanResponse(rawInput: unknown): ParsedPlan {
             order: si + 1,
             weight: set.weight ?? null,
             reps: set.reps ?? null,
+            rpe: set.rpe ?? null,
+            rir: set.rir ?? null,
           })),
         })),
       })),

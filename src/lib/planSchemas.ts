@@ -4,6 +4,8 @@ export const SetInputSchema = z.object({
   id: z.number().optional(),
   weight: z.number().nullable().optional(),
   reps: z.number().int().nullable().optional(),
+  rpe: z.number().nullable().optional(),
+  rir: z.number().int().nullable().optional(),
   order: z.number().int(),
   isDropSet: z.boolean().optional().default(false),
   parentSetId: z.number().nullable().optional(),
