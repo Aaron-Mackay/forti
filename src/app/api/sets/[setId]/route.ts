@@ -30,11 +30,15 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ setId
 export async function PATCH(req: NextRequest, props: { params: Promise<{ setId: string }> }) {
   const params = await props.params;
   const session = await requireSession();
-  const {reps, weight} = await req.json();
+  const {reps, weight, rpe, rir} = await req.json();
   const data: { [p: string]: number | null } = {};
 
   if (typeof reps === 'number') data.reps = reps;
   if (typeof weight === 'number') data.weight = weight;
+  if (typeof rpe === 'number') data.rpe = rpe;
+  if (rpe === null) data.rpe = null;
+  if (typeof rir === 'number') data.rir = rir;
+  if (rir === null) data.rir = null;
 
   if (!Object.keys(data).length) {
     return NextResponse.json({error: 'No valid fields provided'}, {status: 400});

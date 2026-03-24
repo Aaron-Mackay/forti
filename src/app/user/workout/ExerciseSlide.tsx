@@ -4,11 +4,11 @@ import {useState} from 'react';
 import {
   Box,
   Button,
+  Chip,
   Collapse,
   IconButton,
   List,
   ListItem,
-  ListItemText,
   Menu,
   MenuItem,
   Paper,
@@ -42,6 +42,51 @@ import {useSettings} from '@lib/providers/SettingsProvider';
 
 export type PreviousSet = { weight: number | null; reps: number | null; order: number };
 
+const RPE_VALUES = [6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
+const RIR_VALUES = [0, 1, 2, 3, 4];
+
+function EffortChipRow({
+  metric,
+  value,
+  onSelect,
+}: {
+  metric: 'rpe' | 'rir';
+  value: number | null;
+  onSelect: (v: number | null) => void;
+}) {
+  const values = metric === 'rpe' ? RPE_VALUES : RIR_VALUES;
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.75,
+        overflowX: 'auto',
+        py: 0.5,
+        pl: 0.5,
+        // hide scrollbar but keep scroll functionality
+        scrollbarWidth: 'none',
+        '&::-webkit-scrollbar': { display: 'none' },
+      }}
+    >
+      <Typography variant="caption" color="text.secondary" sx={{ flex: 'none', fontWeight: 600, minWidth: 28 }}>
+        {metric.toUpperCase()}
+      </Typography>
+      {values.map(v => (
+        <Chip
+          key={v}
+          label={v}
+          size="small"
+          variant={value === v ? 'filled' : 'outlined'}
+          color={value === v ? 'primary' : 'default'}
+          onClick={() => onSelect(value === v ? null : v)}
+          sx={{ flex: 'none', minWidth: 40 }}
+        />
+      ))}
+    </Box>
+  );
+}
+
 type SetGroup = { parent: SetPrisma; drops: SetPrisma[] };
 
 function groupSets(sets: SetPrisma[]): SetGroup[] {
@@ -59,6 +104,7 @@ export default function ExerciseSlide({
   userExerciseNote,
   onFormCueBlur,
   handleSetUpdate,
+  handleEffortUpdate,
   previousSets,
   history,
   onSubstitute,
@@ -67,6 +113,7 @@ export default function ExerciseSlide({
   userExerciseNote: UserExerciseNote | undefined;
   onFormCueBlur: (exerciseId: number, note: string) => void;
   handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
+  handleEffortUpdate: (setId: number, field: 'rpe' | 'rir', value: number | null) => void;
   previousSets: PreviousSet[] | undefined;
   history: E1rmHistoryPoint[] | null;
   onSubstitute?: () => void;
@@ -278,8 +325,16 @@ export default function ExerciseSlide({
                   {/* Parent (regular) set row */}
                   <ListItem disablePadding sx={{alignItems: 'flex-start', mb: 0.5, flexDirection: 'column'}}>
                     <Box sx={{display: 'flex', alignItems: 'flex-end', width: '100%', gap: 1}}>
-                      <Box>
-                        <ListItemText primary={`Set ${groupIdx + 1}`} sx={{minWidth: 60, flex: 'none', mr: 2}}/>
+                      <Box sx={{flex: 'none', mr: 1}}>
+                        <Box
+                          sx={{
+                            width: 28, height: 28, borderRadius: '50%',
+                            bgcolor: 'action.selected',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}
+                        >
+                          <Typography variant="caption" fontWeight={600}>{groupIdx + 1}</Typography>
+                        </Box>
                         {previousSets === undefined ? (
                           <Skeleton variant="text" width={70} height={21} sx={{mt: 0.25}}/>
                         ) : (
@@ -348,6 +403,15 @@ export default function ExerciseSlide({
                       </Box>
                     </Box>
                   </ListItem>
+
+                  {/* Effort chip row — shown when effortMetric is enabled */}
+                  {settings.effortMetric !== 'none' && (
+                    <EffortChipRow
+                      metric={settings.effortMetric}
+                      value={settings.effortMetric === 'rpe' ? (group.parent.rpe ?? null) : (group.parent.rir ?? null)}
+                      onSelect={(v) => handleEffortUpdate(group.parent.id, settings.effortMetric as 'rpe' | 'rir', v)}
+                    />
+                  )}
 
                   {/* Drop set rows */}
                   {group.drops.map((drop, dropIdx) => {

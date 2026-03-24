@@ -246,6 +246,25 @@ export default function SettingsClient() {
             }
           </React.Fragment>
         ))}
+        <Divider sx={{my: 1}}/>
+        <Typography variant="body2" color="text.secondary" sx={{mt: 1.5, mb: 0.5}}>
+          Effort metric per set
+        </Typography>
+        {loading ? (
+          <Skeleton variant="rounded" height={40} sx={{mb: 1}}/>
+        ) : (
+          <ToggleButtonGroup
+            value={settings.effortMetric}
+            exclusive
+            onChange={(_e, val) => { if (val !== null) updateSetting('effortMetric', val as 'none' | 'rpe' | 'rir'); }}
+            size="small"
+            sx={{mb: 1}}
+          >
+            <ToggleButton value="none">None</ToggleButton>
+            <ToggleButton value="rpe">RPE</ToggleButton>
+            <ToggleButton value="rir">RIR</ToggleButton>
+          </ToggleButtonGroup>
+        )}
       </Box>
 
       <Divider sx={{my: 3}}/>

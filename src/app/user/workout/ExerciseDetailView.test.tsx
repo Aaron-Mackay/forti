@@ -6,7 +6,7 @@ vi.mock('next-auth/react', () => ({useSession: () => ({data: null, status: 'unau
 vi.mock('next/navigation', () => ({usePathname: () => '/user/workout', useRouter: () => ({push: vi.fn()})}));
 vi.mock('@lib/providers/SettingsProvider', () => ({
   useSettings: () => ({
-    settings: {showStopwatch: true, weightUnit: 'kg', exerciseUnitOverrides: {}},
+    settings: {showStopwatch: true, weightUnit: 'kg', exerciseUnitOverrides: {}, effortMetric: 'none'},
     loading: false, error: null, clearError: vi.fn(), updateSetting: vi.fn(), setExerciseUnitOverride: vi.fn(),
   }),
 }));
@@ -51,8 +51,8 @@ function buildWorkout(): WorkoutPrisma {
         notes: '',
         exercise: {id: 100, name: 'Bench Press', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
         sets: [
-          {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100, e1rm: null, isDropSet: false, parentSetId: null},
-          {id: 2, workoutExerciseId: 10, order: 2, reps: 6, weight: 90, e1rm: null, isDropSet: false, parentSetId: null},
+          {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100, e1rm: null, rpe: null, rir: null, isDropSet: false, parentSetId: null},
+          {id: 2, workoutExerciseId: 10, order: 2, reps: 6, weight: 90, e1rm: null, rpe: null, rir: null, isDropSet: false, parentSetId: null},
         ],
         cardioDuration: null,
         cardioDistance: null,
@@ -70,6 +70,7 @@ const defaultProps = {
   onBack: vi.fn(),
   onSlideChange: vi.fn(),
   handleSetUpdate: vi.fn(),
+  handleEffortUpdate: vi.fn(),
   onFormCueBlur: vi.fn(),
   onCardioUpdate: vi.fn(),
   onSubstituteExercise: vi.fn(),

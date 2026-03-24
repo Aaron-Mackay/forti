@@ -59,6 +59,7 @@ describe('parseDashboardSettings', () => {
       trackedE1rmExercises: [],
       showE1rmProgress: false,
       registrationComplete: false,
+      effortMetric: 'none' as const,
     };
     expect(parseDashboardSettings(allFalse)).toEqual(allFalse);
   });
@@ -178,6 +179,23 @@ describe('parseDashboardSettings', () => {
     it('defaults to true for non-boolean values in an object', () => {
       expect(parseDashboardSettings({ registrationComplete: 1 }).registrationComplete).toBe(true);
       expect(parseDashboardSettings({ registrationComplete: 'yes' }).registrationComplete).toBe(true);
+    });
+  });
+
+  describe('effortMetric parsing', () => {
+    it('defaults to none when absent', () => {
+      expect(parseDashboardSettings({}).effortMetric).toBe('none');
+    });
+
+    it('parses rpe and rir correctly', () => {
+      expect(parseDashboardSettings({ effortMetric: 'rpe' }).effortMetric).toBe('rpe');
+      expect(parseDashboardSettings({ effortMetric: 'rir' }).effortMetric).toBe('rir');
+    });
+
+    it('defaults to none for invalid values', () => {
+      expect(parseDashboardSettings({ effortMetric: 'both' }).effortMetric).toBe('none');
+      expect(parseDashboardSettings({ effortMetric: 42 }).effortMetric).toBe('none');
+      expect(parseDashboardSettings({ effortMetric: null }).effortMetric).toBe('none');
     });
   });
 

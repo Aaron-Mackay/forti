@@ -10,6 +10,7 @@ import {
   removeExercise,
   substituteExercise,
   updateCardioData,
+  updateSetEffort,
   updateUserExerciseNote,
   updateUserSets,
   updateWorkoutDateCompleted,
@@ -309,6 +310,21 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
       .catch(() => setSnackbar({open: true, message: 'Failed to add exercise', severity: 'info'}));
   };
 
+  const handleEffortUpdate = (setId: number, field: 'rpe' | 'rir', value: number | null) => {
+    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId && selectedExerciseId)) return;
+
+    const prevUserData = userDataState;
+    setUserData(prev =>
+      updateSetEffort(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, selectedExerciseId, setId, field, value)
+    );
+
+    queueOrSendRequest(`/api/sets/${setId}`, 'PATCH', {[field]: value})
+      .catch(() => {
+        setUserData(prevUserData);
+        setSnackbar({open: true, message: 'Failed to update set', severity: 'info'});
+      });
+  };
+
   const handleRemoveExercise = (workoutExerciseId: number) => {
     if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
     const prevUserData = userDataState;
@@ -340,6 +356,7 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
     // Handlers
     goBack,
     handleSetUpdate,
+    handleEffortUpdate,
     handleWorkoutNoteBlur,
     handleCompleteWorkout,
     handleCardioUpdate,

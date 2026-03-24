@@ -29,7 +29,7 @@ function makeEmptySet(
   isDropSet = false,
   parentSetId: number | null = null,
 ): SetPrisma {
-  return {id, workoutExerciseId, order, reps: null, weight: null, e1rm: null, isDropSet, parentSetId};
+  return {id, workoutExerciseId, order, reps: null, weight: null, e1rm: null, rpe: null, rir: null, isDropSet, parentSetId};
 }
 
 function makeEmptyWorkoutExercise(id: number, workoutId: number, order: number): WorkoutExercisePrisma {
@@ -415,6 +415,10 @@ export function updateSetWeight(user: UserPrisma, planId: number, weekId: number
 
 export function updateSetReps(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, setId: number, reps: number): UserPrisma {
   return withSet(user, planId, weekId, workoutId, exerciseId, setId, set => ({...set, reps}));
+}
+
+export function updateSetEffort(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, setId: number, field: 'rpe' | 'rir', value: number | null): UserPrisma {
+  return withSet(user, planId, weekId, workoutId, exerciseId, setId, set => ({...set, [field]: value}));
 }
 
 export function updateRepRange(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, repRange: string): UserPrisma {

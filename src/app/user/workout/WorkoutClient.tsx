@@ -35,6 +35,7 @@ export default function WorkoutClient({userData}: {userData: UserPrisma}) {
     pendingExercise, setPendingExercise,
     goBack,
     handleSetUpdate,
+    handleEffortUpdate,
     handleWorkoutNoteBlur,
     handleCompleteWorkout,
     handleCardioUpdate,
@@ -63,6 +64,7 @@ export default function WorkoutClient({userData}: {userData: UserPrisma}) {
           }
         }}
         handleSetUpdate={handleSetUpdate}
+        handleEffortUpdate={handleEffortUpdate}
         onFormCueBlur={handleFormCueBlur}
         onCardioUpdate={handleCardioUpdate}
         onSubstituteExercise={handleSubstituteExercise}

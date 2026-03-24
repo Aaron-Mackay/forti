@@ -19,6 +19,8 @@ export default function PlanBuilderWithContext({userData, allExercises}: {
     weight: null,
     order: 1,
     e1rm: null,
+    rpe: null,
+    rir: null,
     isDropSet: false,
     parentSetId: null,
   }

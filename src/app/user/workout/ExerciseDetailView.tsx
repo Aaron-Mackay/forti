@@ -29,6 +29,7 @@ export default function ExerciseDetailView({
   onBack,
   onSlideChange,
   handleSetUpdate,
+  handleEffortUpdate,
   onFormCueBlur,
   onCardioUpdate,
   onSubstituteExercise,
@@ -42,6 +43,7 @@ export default function ExerciseDetailView({
   onBack: () => void;
   onSlideChange: (swiper: SwiperType) => void;
   handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
+  handleEffortUpdate: (setId: number, field: 'rpe' | 'rir', value: number | null) => void;
   onFormCueBlur: (exerciseId: number, note: string) => void;
   onCardioUpdate: (workoutExerciseId: number, field: 'cardioDuration' | 'cardioDistance' | 'cardioResistance', value: number | null) => void;
   onSubstituteExercise: (workoutExerciseId: number) => void;
@@ -170,6 +172,7 @@ export default function ExerciseDetailView({
                   userExerciseNote={userExerciseNotes.find(n => n.exerciseId === ex.exerciseId)}
                   onFormCueBlur={onFormCueBlur}
                   handleSetUpdate={handleSetUpdate}
+                  handleEffortUpdate={handleEffortUpdate}
                   previousSets={previousSetsMap.get(ex.exerciseId)}
                   history={e1rmHistoryMap.get(ex.exerciseId) ?? null}
                   onSubstitute={() => onSubstituteExercise(ex.id)}
