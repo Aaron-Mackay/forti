@@ -80,6 +80,31 @@ export class AiParseError extends Error {
   }
 }
 
+// ── Clarifying questions tool ─────────────────────────────────────────────────
+// Used in the first pass when input is ambiguous. Claude calls this instead of
+// create_workout_plan and returns 1–5 short questions for the user to answer.
+
+export const AI_CLARIFY_TOOL = {
+  name: 'ask_clarifying_questions',
+  description:
+    'Use this tool ONLY when the input is genuinely ambiguous and you cannot make ' +
+    'reasonable assumptions. Ask 1–5 concise questions to resolve the ambiguity. ' +
+    'If you can infer sensible defaults, call create_workout_plan directly instead.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      questions: {
+        type: 'array',
+        description: 'List of 1–5 short questions to ask the user',
+        items: { type: 'string' },
+        minItems: 1,
+        maxItems: 5,
+      },
+    },
+    required: ['questions'],
+  },
+};
+
 // ── The tool definition passed to the Anthropic API ──────────────────────────
 // Exported so the route handler can reference the same definition without
 // duplication.

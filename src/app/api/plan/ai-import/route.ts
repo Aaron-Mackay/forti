@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { requireSession } from '@lib/requireSession';
-import { AI_PLAN_TOOL, AiParseError, parseAiPlanResponse } from '@/utils/aiPlanParser';
+import { AI_CLARIFY_TOOL, AI_PLAN_TOOL, AiParseError, parseAiPlanResponse } from '@/utils/aiPlanParser';
 import prisma from '@lib/prisma';
 
 export const maxDuration = 300; // 5 minutes — large spreadsheet imports can take a while
@@ -15,6 +15,7 @@ const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 export type AiImportResponse =
   | { plan: ReturnType<typeof parseAiPlanResponse> }
+  | { questions: string[] }
   | { error: string; parseIssues?: string[] };
 
 async function readBodyWithLimit(req: NextRequest): Promise<string | null> {
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Request body too large (max 100 KB)' }, { status: 413 });
   }
 
-  let body: { input?: unknown; type?: unknown };
+  let body: { input?: unknown; type?: unknown; answers?: unknown };
   try {
     body = JSON.parse(rawBody);
   } catch {
@@ -79,6 +80,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (typeof input !== 'string' || !input.trim()) {
     return NextResponse.json({ error: 'Missing or empty "input" field' }, { status: 400 });
   }
+
+  // Optional Q&A pairs from a previous clarification round
+  const answers = Array.isArray(body?.answers)
+    ? (body.answers as unknown[]).filter((a): a is string => typeof a === 'string')
+    : [];
 
   const isSpreadsheet = body?.type === 'spreadsheet';
   const maxInputBytes = isSpreadsheet ? MAX_INPUT_BYTES_SPREADSHEET : MAX_INPUT_BYTES_DEFAULT;
@@ -106,24 +112,42 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const client = new Anthropic();
 
   try {
-    const userContent = isSpreadsheet
+    const hasAnswers = answers.length > 0;
+
+    const baseInstruction = isSpreadsheet
       ? 'You are parsing a CSV/TSV export of a coaching training spreadsheet. ' +
         'Identify WEEK rows (containing "WEEK \\d+") for week boundaries. ' +
         'Identify SESSION rows for workout names. ' +
         'Sessions may appear side by side — each 14-column group is one session. ' +
         'Ignore TRAINING NOTES rows, Volume column, and quality rating checkboxes. ' +
         'Use numeric weights/reps where available; omit non-numeric values (e.g. BFR, x). ' +
-        'Call create_workout_plan with the structured plan.\n\n' +
+        'Capture RPE or RIR annotations per set or exercise where present (e.g. "@RPE 8", "2RIR").'
+      : 'Parse the following workout plan. Infer sensible defaults for any missing fields.';
+
+    // When answers are provided, append them and force plan creation directly.
+    // When no answers yet, offer both tools so Claude can ask if genuinely unclear.
+    const tools = hasAnswers ? [AI_PLAN_TOOL] : [AI_PLAN_TOOL, AI_CLARIFY_TOOL];
+    const toolChoice = hasAnswers
+      ? ({ type: 'tool', name: AI_PLAN_TOOL.name } as const)
+      : ({ type: 'any' } as const);
+
+    const userContent = hasAnswers
+      ? baseInstruction +
+        '\n\nAdditional context provided by the user:\n' +
+        answers.map((a, i) => `${i + 1}. ${a}`).join('\n') +
+        '\n\nNow call create_workout_plan with the structured plan.\n\n' +
         input
-      : 'Parse the following workout plan and call the create_workout_plan tool with the ' +
-        'structured data. Infer sensible defaults for any missing fields.\n\n' +
+      : baseInstruction +
+        '\n\nIf the input is clear enough, call create_workout_plan directly. ' +
+        'Only call ask_clarifying_questions if there is genuine ambiguity that ' +
+        'prevents you from building a complete plan.\n\n' +
         input;
 
     const stream = client.messages.stream({
       model: 'claude-sonnet-4-6',
       max_tokens: 32768,
-      tools: [AI_PLAN_TOOL],
-      tool_choice: { type: 'any' },
+      tools,
+      tool_choice: toolChoice,
       messages: [{ role: 'user', content: userContent }],
     });
     const message = await stream.finalMessage();
@@ -141,6 +165,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         { error: 'AI did not return a structured plan' },
         { status: 422 },
       );
+    }
+
+    // Claude chose to ask clarifying questions
+    if (toolUseBlock.name === AI_CLARIFY_TOOL.name) {
+      const raw = toolUseBlock.input as { questions?: unknown };
+      const questions = Array.isArray(raw.questions)
+        ? raw.questions.filter((q): q is string => typeof q === 'string')
+        : [];
+      if (questions.length === 0) {
+        return NextResponse.json({ error: 'AI did not return a structured plan' }, { status: 422 });
+      }
+      return NextResponse.json({ questions } satisfies AiImportResponse);
     }
 
     const plan = parseAiPlanResponse(toolUseBlock.input);
