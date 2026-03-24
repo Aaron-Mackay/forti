@@ -75,7 +75,7 @@ export default function CustomAppBar(
   if (showBack && typeof onBack === 'undefined') {
     onBack = () => {
       const segments = pathname.split('/').filter(Boolean);
-      if (segments.length > 2) {
+      if (segments.length > 1) {
         const newPath = '/' + segments.slice(0, -1).join('/');
         router.push(newPath || '/');
       }

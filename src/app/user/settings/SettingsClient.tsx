@@ -4,9 +4,11 @@ import React, {useState} from 'react';
 import {
   Alert,
   Autocomplete,
+  Avatar,
   Box,
   Button,
   Chip,
+  CircularProgress,
   Divider,
   FormControlLabel,
   IconButton,
@@ -15,6 +17,7 @@ import {
   TextField,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -173,8 +176,45 @@ const FEATURE_LABELS: {key: BooleanSettingKey; label: string}[] = [
   {key: 'showSupplements', label: 'Supplements'},
 ];
 
-export default function SettingsClient() {
+export default function SettingsClient({ initialName, initialImage }: { initialName: string; initialImage: string | null }) {
   const { settings, loading, error, clearError, updateSetting } = useSettings();
+
+  // Profile state
+  const [name, setName] = useState(initialName);
+  const [savedName, setSavedName] = useState(initialName);
+  const [nameLoading, setNameLoading] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  const nameDirty = name.trim() !== savedName && name.trim() !== '';
+
+  const handleSaveName = async () => {
+    setNameLoading(true);
+    setNameError(null);
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setNameError((data as { error?: string }).error ?? 'Failed to save name');
+      } else {
+        setSavedName(name.trim());
+      }
+    } catch {
+      setNameError('Failed to save name');
+    } finally {
+      setNameLoading(false);
+    }
+  };
+
+  const initials = savedName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0].toUpperCase())
+    .join('');
 
   const handleToggle = (key: BooleanSettingKey) => {
     updateSetting(key, !settings[key]);
@@ -187,6 +227,50 @@ export default function SettingsClient() {
           {error}
         </Alert>
       )}
+
+      {/* Profile */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+        <Avatar
+          src={initialImage ?? undefined}
+          sx={{ width: 72, height: 72, mb: 1.5, fontSize: '1.5rem' }}
+        >
+          {!initialImage && initials}
+        </Avatar>
+        <Tooltip title="Coming soon" placement="bottom">
+          <span>
+            <Button variant="outlined" size="small" disabled sx={{ mb: 2 }}>
+              Change photo
+            </Button>
+          </span>
+        </Tooltip>
+        <TextField
+          label="Name"
+          value={name}
+          onChange={e => { setName(e.target.value); setNameError(null); }}
+          fullWidth
+          inputProps={{ maxLength: 100 }}
+          size="small"
+        />
+        {nameError && (
+          <Alert severity="error" sx={{ mt: 1, width: '100%' }} onClose={() => setNameError(null)}>
+            {nameError}
+          </Alert>
+        )}
+        {nameDirty && (
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleSaveName}
+            disabled={nameLoading}
+            startIcon={nameLoading ? <CircularProgress size={14} color="inherit" /> : null}
+            sx={{ mt: 1, alignSelf: 'flex-end' }}
+          >
+            {nameLoading ? 'Saving…' : 'Save'}
+          </Button>
+        )}
+      </Box>
+
+      <Divider sx={{ mb: 3 }} />
 
       <Typography variant="overline" color="text.secondary">Dashboard Cards</Typography>
       <Box sx={{mb: 2}}>
