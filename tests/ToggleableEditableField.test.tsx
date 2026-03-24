@@ -62,4 +62,20 @@ describe('ToggleableEditableField', () => {
     const input = screen.getByRole('spinbutton');
     expect(input).toHaveAttribute('type', 'number');
   });
+
+  it('disables the input and shows a tooltip when disabled is true', () => {
+    render(
+      <ToggleableEditableField
+        value="5"
+        isInEditMode
+        onChange={mockOnChange}
+        disabled
+        disabledTitle="Clear RIR first"
+      />
+    );
+    const input = screen.getByRole('textbox');
+    expect(input).toBeDisabled();
+    expect(input).toHaveAttribute('title', 'Clear RIR first');
+  });
+
 });

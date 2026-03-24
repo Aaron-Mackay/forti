@@ -223,6 +223,8 @@ model WorkoutExercise {
   restTime         String?
   repRange         String?
   notes            String?
+  targetRpe        Float?        // prescribed RPE target for this exercise
+  targetRir        Int?          // prescribed RIR target for this exercise
   sets             ExerciseSet[]
   cardioDuration   Float?        // minutes
   cardioDistance   Float?        // km

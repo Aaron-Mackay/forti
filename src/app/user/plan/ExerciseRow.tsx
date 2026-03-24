@@ -198,6 +198,48 @@ const ExerciseRow = ({
         />
       </TableCell>
 
+      <TableCell align={"center"}>
+        <ToggleableEditableField
+          inputProps={{style: {textAlign: 'center'}, inputMode: 'numeric'}}
+          isInEditMode={isInEditMode}
+          value={exerciseLink.targetRpe?.toString() ?? ''}
+          disabled={exerciseLink.targetRir != null}
+          disabledTitle="Clear RIR first"
+          onChange={(val) =>
+            dispatch({
+              type: 'UPDATE_TARGET_EFFORT',
+              planId,
+              weekId,
+              workoutId,
+              workoutExerciseId: exerciseLink.id,
+              field: 'targetRpe',
+              value: val === '' ? null : Number(val),
+            })
+          }
+        />
+      </TableCell>
+
+      <TableCell align={"center"}>
+        <ToggleableEditableField
+          inputProps={{style: {textAlign: 'center'}, inputMode: 'numeric'}}
+          isInEditMode={isInEditMode}
+          value={exerciseLink.targetRir?.toString() ?? ''}
+          disabled={exerciseLink.targetRpe != null}
+          disabledTitle="Clear RPE first"
+          onChange={(val) =>
+            dispatch({
+              type: 'UPDATE_TARGET_EFFORT',
+              planId,
+              weekId,
+              workoutId,
+              workoutExerciseId: exerciseLink.id,
+              field: 'targetRir',
+              value: val === '' ? null : Number(val),
+            })
+          }
+        />
+      </TableCell>
+
       {regularSets.map((set) => {
         const drops = exerciseLink.sets
           .filter(s => s.isDropSet && s.parentSetId === set.id)

@@ -166,6 +166,8 @@ export class ExerciseBuilder {
       exerciseId: -1,
       repRange: "",
       restTime: "",
+      targetRpe: null,
+      targetRir: null,
       order,
       notes: "",
       exercise: {

@@ -15,7 +15,7 @@ import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext'
 import { useNewPlan } from './useNewPlan'
 import { PLACEHOLDER_ID } from './PlanBuilderWithContext'
 import { parsedPlanToPlanPrisma } from './planConverter'
-import type { ParsedPlan } from '@/utils/aiPlanParser'
+import type { AiImportResponse } from '@/app/api/plan/ai-import/route'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -44,6 +44,10 @@ export const AiFormScreen = ({ onSuccess }: AiFormScreenProps) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Clarifying questions state
+  const [questions, setQuestions] = useState<string[] | null>(null)
+  const [answers, setAnswers] = useState<string[]>([])
+
   const { dispatch } = useWorkoutEditorContext()
   const { statePlan } = useNewPlan()
 
@@ -58,9 +62,17 @@ export const AiFormScreen = ({ onSuccess }: AiFormScreenProps) => {
   const canGenerate =
     mode === 'guided' ? !!days && !!goal && !!level : freeformText.trim().length > 0
 
-  const handleGenerate = async () => {
-    if (!canGenerate) return
+  const buildInputText = () =>
+    mode === 'guided'
+      ? [
+          `Create a ${days} days per week ${goal} training plan for a ${level} lifter.`,
+          extra.trim() ? `Additional notes: ${extra.trim()}` : '',
+        ]
+          .filter(Boolean)
+          .join(' ')
+      : freeformText.trim()
 
+  const submitToApi = async (inputText: string, answersToSend: string[]) => {
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
@@ -68,40 +80,55 @@ export const AiFormScreen = ({ onSuccess }: AiFormScreenProps) => {
     setLoading(true)
     setError(null)
 
-    const inputText =
-      mode === 'guided'
-        ? [
-            `Create a ${days} days per week ${goal} training plan for a ${level} lifter.`,
-            extra.trim() ? `Additional notes: ${extra.trim()}` : '',
-          ]
-            .filter(Boolean)
-            .join(' ')
-        : freeformText.trim()
-
     try {
+      const body: Record<string, unknown> = { input: inputText }
+      if (answersToSend.length > 0) body.answers = answersToSend
+
       const res = await fetch('/api/plan/ai-import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input: inputText }),
+        body: JSON.stringify(body),
         signal: controller.signal,
       })
 
-      const data: { plan?: ParsedPlan; error?: string } = await res.json()
+      const data: AiImportResponse = await res.json()
 
-      if (!res.ok || !data.plan) {
-        setError(data.error ?? 'Something went wrong. Please try again.')
+      if (!res.ok) {
+        setError(('error' in data ? data.error : null) ?? 'Something went wrong. Please try again.')
         return
       }
 
-      const planPrisma = parsedPlanToPlanPrisma(data.plan, statePlan)
-      dispatch({ type: 'REPLACE_PLAN', planId: PLACEHOLDER_ID, plan: planPrisma })
-      onSuccess(planPrisma.weeks.length.toString())
+      if ('questions' in data) {
+        setQuestions(data.questions)
+        setAnswers(data.questions.map(() => ''))
+        return
+      }
+
+      if ('plan' in data) {
+        const planPrisma = parsedPlanToPlanPrisma(data.plan, statePlan)
+        dispatch({ type: 'REPLACE_PLAN', planId: PLACEHOLDER_ID, plan: planPrisma })
+        onSuccess(planPrisma.weeks.length.toString())
+        return
+      }
+
+      setError('Something went wrong. Please try again.')
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
       setError('Network error — please check your connection and try again.')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleGenerate = () => {
+    if (!canGenerate) return
+    setQuestions(null)
+    setAnswers([])
+    submitToApi(buildInputText(), [])
+  }
+
+  const handleAnswerSubmit = () => {
+    submitToApi(buildInputText(), answers)
   }
 
   if (loading) {
@@ -122,6 +149,59 @@ export const AiFormScreen = ({ onSuccess }: AiFormScreenProps) => {
         <Typography variant="body2" color="text.secondary">
           Selecting exercises and structuring your week
         </Typography>
+      </Box>
+    )
+  }
+
+  // ── Clarifying questions ──────────────────────────────────────────────────────
+
+  if (questions) {
+    return (
+      <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Box>
+          <Typography variant="h6" fontWeight={600}>
+            A few quick questions
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Answer these so we can build your plan accurately.
+          </Typography>
+        </Box>
+
+        {questions.map((q, i) => (
+          <Box key={i}>
+            <Typography variant="body2" fontWeight={500} gutterBottom>
+              {i + 1}. {q}
+            </Typography>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Your answer"
+              value={answers[i] ?? ''}
+              onChange={(e) => setAnswers(prev => { const next = [...prev]; next[i] = e.target.value; return next; })}
+              inputProps={{ 'aria-label': `Answer to question ${i + 1}` }}
+            />
+          </Box>
+        ))}
+
+        {error && <Alert severity="error">{error}</Alert>}
+
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            onClick={() => { setQuestions(null); setAnswers([]); }}
+          >
+            Back
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AutoAwesomeIcon />}
+            onClick={handleAnswerSubmit}
+            disabled={answers.some(a => !a.trim())}
+            sx={{ flex: 1 }}
+          >
+            Build my plan
+          </Button>
+        </Box>
       </Box>
     )
   }

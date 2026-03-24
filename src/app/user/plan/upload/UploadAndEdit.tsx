@@ -75,6 +75,12 @@ export const UploadAndEdit = () => {
         if (data.parseIssues?.length) setParseIssues(data.parseIssues)
         return
       }
+      if (!('plan' in data)) {
+        // Clarifying questions are not supported in the spreadsheet upload flow
+        setPhase(0)
+        setError('Could not parse the spreadsheet — please try again.')
+        return
+      }
       setPhase(3)
       sessionStorage.setItem('pendingUploadPlan', JSON.stringify(data.plan))
       await new Promise((resolve) => setTimeout(resolve, 500))

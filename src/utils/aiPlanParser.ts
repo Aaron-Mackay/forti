@@ -8,6 +8,8 @@ import { z } from 'zod';
 const AiSetSchema = z.object({
   weight: z.number().nullable().optional(),
   reps: z.number().int().nullable().optional(),
+  rpe: z.number().nullable().optional(),
+  rir: z.number().int().nullable().optional(),
 });
 
 const AiExerciseSchema = z.object({
@@ -16,6 +18,8 @@ const AiExerciseSchema = z.object({
   repRange: z.string().nullable().optional(),
   restTime: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  targetRpe: z.number().nullable().optional(),
+  targetRir: z.number().int().nullable().optional(),
   sets: z.array(AiSetSchema).default([]),
 });
 
@@ -56,7 +60,9 @@ export type ParsedPlan = {
         repRange: string | null | undefined;
         restTime: string | null | undefined;
         notes: string | null | undefined;
-        sets: Array<{ order: number; weight: number | null | undefined; reps: number | null | undefined }>;
+        targetRpe: number | null | undefined;
+        targetRir: number | null | undefined;
+        sets: Array<{ order: number; weight: number | null | undefined; reps: number | null | undefined; rpe: number | null | undefined; rir: number | null | undefined }>;
       }>;
     }>;
   }>;
@@ -73,6 +79,31 @@ export class AiParseError extends Error {
     this.name = 'AiParseError';
   }
 }
+
+// ── Clarifying questions tool ─────────────────────────────────────────────────
+// Used in the first pass when input is ambiguous. Claude calls this instead of
+// create_workout_plan and returns 1–5 short questions for the user to answer.
+
+export const AI_CLARIFY_TOOL = {
+  name: 'ask_clarifying_questions',
+  description:
+    'Use this tool ONLY when the input is genuinely ambiguous and you cannot make ' +
+    'reasonable assumptions. Ask 1–5 concise questions to resolve the ambiguity. ' +
+    'If you can infer sensible defaults, call create_workout_plan directly instead.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      questions: {
+        type: 'array',
+        description: 'List of 1–5 short questions to ask the user',
+        items: { type: 'string' },
+        minItems: 1,
+        maxItems: 5,
+      },
+    },
+    required: ['questions'],
+  },
+};
 
 // ── The tool definition passed to the Anthropic API ──────────────────────────
 // Exported so the route handler can reference the same definition without
@@ -129,6 +160,8 @@ export const AI_PLAN_TOOL = {
                           description: 'Rest period in seconds as a string, e.g. "90" or "90-120"',
                         },
                         notes: { type: 'string', description: 'Optional per-exercise notes' },
+                        targetRpe: { type: 'number', description: 'Prescribed RPE target for this exercise (e.g. 8 or 8.5). Omit if not specified.' },
+                        targetRir: { type: 'integer', description: 'Prescribed RIR target for this exercise (e.g. 2). Omit if not specified.' },
                         sets: {
                           type: 'array',
                           items: {
@@ -139,6 +172,8 @@ export const AI_PLAN_TOOL = {
                                 description: 'Weight in kg as a number, e.g. 60. Omit if unknown.',
                               },
                               reps: { type: 'integer', description: 'Number of reps. Omit if unknown.' },
+                              rpe: { type: 'number', description: 'RPE (Rate of Perceived Exertion) for this set, e.g. 8 or 8.5. Omit if not specified.' },
+                              rir: { type: 'integer', description: 'RIR (Reps In Reserve) for this set, e.g. 2. Omit if not specified.' },
                             },
                           },
                         },
@@ -194,10 +229,14 @@ export function parseAiPlanResponse(rawInput: unknown): ParsedPlan {
           repRange: ex.repRange ?? null,
           restTime: ex.restTime ?? null,
           notes: ex.notes ?? null,
+          targetRpe: ex.targetRpe ?? null,
+          targetRir: ex.targetRir ?? null,
           sets: ex.sets.map((set, si) => ({
             order: si + 1,
             weight: set.weight ?? null,
             reps: set.reps ?? null,
+            rpe: set.rpe ?? null,
+            rir: set.rir ?? null,
           })),
         })),
       })),

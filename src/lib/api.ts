@@ -146,6 +146,8 @@ export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
               order: exercise.order,
               restTime: exercise.restTime,
               repRange: exercise.repRange,
+              targetRpe: exercise.targetRpe ?? null,
+              targetRir: exercise.targetRir ?? null,
               exerciseId: exerciseRecord.id,
             },
           });

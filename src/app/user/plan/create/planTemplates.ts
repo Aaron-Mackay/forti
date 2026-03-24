@@ -30,7 +30,7 @@ type ExerciseEntry = ParsedPlan['weeks'][0]['workouts'][0]['exercises'][0]
 type WorkoutEntry = ParsedPlan['weeks'][0]['workouts'][0]
 
 function makeSets(count: number, reps = 8): ExerciseEntry['sets'] {
-  return Array.from({ length: count }, (_, i) => ({ order: i + 1, weight: null, reps }))
+  return Array.from({ length: count }, (_, i) => ({ order: i + 1, weight: null, reps, rpe: null, rir: null }))
 }
 
 function ex(
@@ -47,6 +47,8 @@ function ex(
     repRange,
     restTime,
     notes: null,
+    targetRpe: null,
+    targetRir: null,
     sets: makeSets(setCount, firstRep),
   }
 }

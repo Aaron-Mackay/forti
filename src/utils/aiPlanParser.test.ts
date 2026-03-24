@@ -176,7 +176,7 @@ describe('parseAiPlanResponse — extra fields stripped', () => {
     expect(() => parseAiPlanResponse(input)).not.toThrow();
   });
 
-  it('ignores unrecognised fields on exercises', () => {
+  it('ignores unrecognised fields on exercises (e.g. tempo)', () => {
     const input = {
       name: 'Plan',
       weeks: [
@@ -185,7 +185,7 @@ describe('parseAiPlanResponse — extra fields stripped', () => {
             {
               name: 'Day 1',
               exercises: [
-                { name: 'Press', sets: [], tempo: '3-1-2', rir: 2 },
+                { name: 'Press', sets: [{ weight: 60, reps: 5, tempo: '3-1-2' }] },
               ],
             },
           ],
@@ -193,6 +193,37 @@ describe('parseAiPlanResponse — extra fields stripped', () => {
       ],
     };
     expect(() => parseAiPlanResponse(input)).not.toThrow();
+    const set = parseAiPlanResponse(input).weeks[0].workouts[0].exercises[0].sets[0];
+    expect(set).not.toHaveProperty('tempo');
+  });
+
+  it('preserves rpe and rir on sets when provided', () => {
+    const input = {
+      name: 'Strength Block',
+      weeks: [
+        {
+          workouts: [
+            {
+              name: 'Day 1',
+              exercises: [
+                {
+                  name: 'Squat',
+                  sets: [
+                    { weight: 100, reps: 5, rpe: 8 },
+                    { weight: 100, reps: 5, rir: 2 },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const sets = parseAiPlanResponse(input).weeks[0].workouts[0].exercises[0].sets;
+    expect(sets[0]).toMatchObject({ weight: 100, reps: 5, rpe: 8 });
+    expect(sets[0].rir).toBeNull();
+    expect(sets[1]).toMatchObject({ weight: 100, reps: 5, rir: 2 });
+    expect(sets[1].rpe).toBeNull();
   });
 });
 
