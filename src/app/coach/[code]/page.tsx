@@ -1,11 +1,24 @@
 import getLoggedInUser from '@lib/getLoggedInUser';
 import prisma from '@lib/prisma';
 import CoachLinkConfirmation from './CoachLinkConfirmation';
+import { parseDashboardSettings } from '@/types/settingsTypes';
+import { redirect } from 'next/navigation';
 
 export default async function CoachLinkPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const user = await getLoggedInUser();
   const userId = user.id;
+
+  // New users haven't completed registration — send them through onboarding first,
+  // with the coach code prefilled so it's applied at the end of the wizard.
+  const userRecord = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { settings: true },
+  });
+  const settings = parseDashboardSettings(userRecord?.settings);
+  if (!settings.registrationComplete) {
+    redirect(`/user/onboarding?coachCode=${encodeURIComponent(code)}`);
+  }
 
   const coach = await prisma.user.findUnique({
     where: { coachCode: code },

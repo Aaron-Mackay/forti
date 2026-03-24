@@ -9,6 +9,7 @@ import {getUserData, getUserDayMetrics, getUserEvents} from "@lib/api";
 import {EventType} from "@prisma/client";
 import prisma from "@lib/prisma";
 import {parseDashboardSettings} from "@/types/settingsTypes";
+import {redirect} from "next/navigation";
 
 export default async function UserPage() {
   const user = await getLoggedInUser()
@@ -20,6 +21,10 @@ export default async function UserPage() {
   ])
   const userBlocks = allEvents.filter(ev => ev.eventType === EventType.BlockEvent)
   const settings = parseDashboardSettings(userRecord?.settings)
+
+  if (!settings.registrationComplete) {
+    redirect('/user/onboarding');
+  }
 
   return (
     <>

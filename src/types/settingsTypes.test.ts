@@ -9,8 +9,8 @@ describe('parseDashboardSettings', () => {
     expect(parseDashboardSettings(undefined)).toEqual(DEFAULT_SETTINGS);
   });
 
-  it('returns all defaults for empty object', () => {
-    expect(parseDashboardSettings({})).toEqual(DEFAULT_SETTINGS);
+  it('returns all defaults for empty object, except registrationComplete which defaults to true for existing users', () => {
+    expect(parseDashboardSettings({})).toEqual({ ...DEFAULT_SETTINGS, registrationComplete: true });
   });
 
   it('returns all defaults for non-object types', () => {
@@ -58,6 +58,7 @@ describe('parseDashboardSettings', () => {
       exerciseUnitOverrides: {},
       trackedE1rmExercises: [],
       showE1rmProgress: false,
+      registrationComplete: false,
     };
     expect(parseDashboardSettings(allFalse)).toEqual(allFalse);
   });
@@ -156,6 +157,27 @@ describe('parseDashboardSettings', () => {
       expect(parseDashboardSettings({ trackedE1rmExercises: 'bad' }).trackedE1rmExercises).toEqual([]);
       expect(parseDashboardSettings({ trackedE1rmExercises: {} }).trackedE1rmExercises).toEqual([]);
       expect(parseDashboardSettings({ trackedE1rmExercises: null }).trackedE1rmExercises).toEqual([]);
+    });
+  });
+
+  describe('registrationComplete parsing', () => {
+    it('defaults to false for null (brand-new account)', () => {
+      expect(parseDashboardSettings(null).registrationComplete).toBe(false);
+    });
+
+    it('defaults to true when absent from a non-null settings object (existing user)', () => {
+      expect(parseDashboardSettings({}).registrationComplete).toBe(true);
+      expect(parseDashboardSettings({ showNextWorkout: false }).registrationComplete).toBe(true);
+    });
+
+    it('parses explicit true and false correctly', () => {
+      expect(parseDashboardSettings({ registrationComplete: true }).registrationComplete).toBe(true);
+      expect(parseDashboardSettings({ registrationComplete: false }).registrationComplete).toBe(false);
+    });
+
+    it('defaults to true for non-boolean values in an object', () => {
+      expect(parseDashboardSettings({ registrationComplete: 1 }).registrationComplete).toBe(true);
+      expect(parseDashboardSettings({ registrationComplete: 'yes' }).registrationComplete).toBe(true);
     });
   });
 
