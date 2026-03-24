@@ -203,6 +203,8 @@ const ExerciseRow = ({
           inputProps={{style: {textAlign: 'center'}, inputMode: 'numeric'}}
           isInEditMode={isInEditMode}
           value={exerciseLink.targetRpe?.toString() ?? ''}
+          disabled={exerciseLink.targetRir != null}
+          disabledTitle="Clear RIR first"
           onChange={(val) =>
             dispatch({
               type: 'UPDATE_TARGET_EFFORT',
@@ -222,6 +224,8 @@ const ExerciseRow = ({
           inputProps={{style: {textAlign: 'center'}, inputMode: 'numeric'}}
           isInEditMode={isInEditMode}
           value={exerciseLink.targetRir?.toString() ?? ''}
+          disabled={exerciseLink.targetRpe != null}
+          disabledTitle="Clear RPE first"
           onChange={(val) =>
             dispatch({
               type: 'UPDATE_TARGET_EFFORT',
