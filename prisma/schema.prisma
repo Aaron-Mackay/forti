@@ -243,6 +243,9 @@ model ExerciseSet {
   weight            Float?
   // Estimated 1-rep max (Epley formula: weight * (1 + reps/30)). Computed on write.
   e1rm              Float?
+  // Perceived effort — only one should be set per set depending on user preference
+  rpe               Float?
+  rir               Int?
   isDropSet         Boolean         @default(false)
   parentSetId       Int?
   parentSet         ExerciseSet?    @relation("DropSetParent", fields: [parentSetId], references: [id], onDelete: SetNull)

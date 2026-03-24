@@ -41,6 +41,8 @@ export interface Settings {
   showE1rmProgress: boolean;
   // Set to false for brand-new accounts; true once onboarding wizard is completed
   registrationComplete: boolean;
+  // Per-set effort metric shown in the workout view. 'none' = disabled (default).
+  effortMetric: 'none' | 'rpe' | 'rir';
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -62,6 +64,7 @@ export const DEFAULT_SETTINGS: Settings = {
   trackedE1rmExercises: [],
   showE1rmProgress: true,
   registrationComplete: false,
+  effortMetric: 'none',
 };
 
 function parseCustomMetrics(raw: unknown): CustomMetricDef[] {
@@ -143,5 +146,6 @@ export function parseDashboardSettings(raw: unknown): Settings {
     showE1rmProgress:        typeof s.showE1rmProgress === 'boolean' ? s.showE1rmProgress : true,
     // Absent means existing user (pre-onboarding feature) — treat as complete
     registrationComplete:    typeof s.registrationComplete === 'boolean' ? s.registrationComplete : true,
+    effortMetric:            (s.effortMetric === 'rpe' || s.effortMetric === 'rir') ? s.effortMetric : 'none',
   };
 }
