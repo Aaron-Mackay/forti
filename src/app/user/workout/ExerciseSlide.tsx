@@ -326,14 +326,29 @@ export default function ExerciseSlide({
                   <ListItem disablePadding sx={{alignItems: 'flex-start', mb: 0.5, flexDirection: 'column'}}>
                     <Box sx={{display: 'flex', alignItems: 'flex-end', width: '100%', gap: 1}}>
                       <Box sx={{flex: 'none', mr: 1}}>
-                        <Box
-                          sx={{
-                            width: 28, height: 28, borderRadius: '50%',
-                            bgcolor: 'action.selected',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}
-                        >
-                          <Typography variant="caption" fontWeight={600}>{groupIdx + 1}</Typography>
+                        <Box sx={{display: 'flex', alignItems: 'center'}}>
+                          <Box
+                            sx={{
+                              width: 28, height: 28, borderRadius: '50%',
+                              bgcolor: 'action.selected',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}
+                          >
+                            <Typography variant="caption" fontWeight={600}>{groupIdx + 1}</Typography>
+                          </Box>
+                          {isBarbell && effectiveUnit !== 'none' && (
+                            <IconButton
+                              size="small"
+                              aria-label="Open plate calculator"
+                              onClick={() => {
+                                setPlateCalcSetIdx(parentSetIdx);
+                                setPlateCalcOpen(true);
+                              }}
+                              sx={{ p: 0.25 }}
+                            >
+                              <CalculateOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          )}
                         </Box>
                         {previousSets === undefined ? (
                           <Skeleton variant="text" width={70} height={21} sx={{mt: 0.25}}/>
@@ -354,19 +369,6 @@ export default function ExerciseSlide({
                         onChange={(kgStr) => handleSetUpdate(parentSetIdx, 'weight', kgStr)}
                         onLongPress={(el) => setUnitMenuAnchor(el)}
                       />
-                      {isBarbell && effectiveUnit !== 'none' && (
-                        <IconButton
-                          size="small"
-                          aria-label="Open plate calculator"
-                          onClick={() => {
-                            setPlateCalcSetIdx(parentSetIdx);
-                            setPlateCalcOpen(true);
-                          }}
-                          sx={{ alignSelf: 'center' }}
-                        >
-                          <CalculateOutlinedIcon fontSize="small" />
-                        </IconButton>
-                      )}
                       <TextField
                         label="Reps"
                         type="text"
@@ -420,7 +422,7 @@ export default function ExerciseSlide({
                       <ListItem
                         key={drop.id}
                         disablePadding
-                        sx={{alignItems: 'flex-end', mb: 0.5, pl: 4}}
+                        sx={{alignItems: 'flex-end', mb: 0.5, mt: 1.5, pl: 4}}
                       >
                         <Box sx={{display: 'flex', alignItems: 'flex-end', width: '100%', gap: 1}}>
                           <Box sx={{minWidth: 60, flex: 'none', mr: 2}}>
