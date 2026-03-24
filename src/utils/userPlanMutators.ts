@@ -424,7 +424,12 @@ export function updateSetEffort(user: UserPrisma, planId: number, weekId: number
 }
 
 export function updateTargetEffort(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, field: 'targetRpe' | 'targetRir', value: number | null): UserPrisma {
-  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({...exercise, [field]: value}));
+  const opposite = field === 'targetRpe' ? 'targetRir' : 'targetRpe';
+  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({
+    ...exercise,
+    [field]: value,
+    [opposite]: value !== null ? null : exercise[opposite],
+  }));
 }
 
 export function updateRepRange(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, repRange: string): UserPrisma {

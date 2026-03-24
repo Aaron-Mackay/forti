@@ -67,8 +67,14 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
     if ('cardioDuration' in body) updateData.cardioDuration = cardioDuration ?? null;
     if ('cardioDistance' in body) updateData.cardioDistance = cardioDistance ?? null;
     if ('cardioResistance' in body) updateData.cardioResistance = cardioResistance ?? null;
-    if ('targetRpe' in body) updateData.targetRpe = typeof targetRpe === 'number' ? targetRpe : null;
-    if ('targetRir' in body) updateData.targetRir = typeof targetRir === 'number' ? targetRir : null;
+    if ('targetRpe' in body) {
+      updateData.targetRpe = typeof targetRpe === 'number' ? targetRpe : null;
+      if (updateData.targetRpe !== null) updateData.targetRir = null; // mutually exclusive
+    }
+    if ('targetRir' in body) {
+      updateData.targetRir = typeof targetRir === 'number' ? targetRir : null;
+      if (updateData.targetRir !== null) updateData.targetRpe = null; // mutually exclusive
+    }
 
     if ('exerciseId' in body) {
       const exercise = await prisma.exercise.findUnique({where: {id: exerciseId}});
