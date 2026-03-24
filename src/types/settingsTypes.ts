@@ -39,6 +39,8 @@ export interface Settings {
   // Up to 5 exercises whose e1rm progress is shown on the dashboard
   trackedE1rmExercises: TrackedE1rmExercise[];
   showE1rmProgress: boolean;
+  // Set to false for brand-new accounts; true once onboarding wizard is completed
+  registrationComplete: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -59,6 +61,7 @@ export const DEFAULT_SETTINGS: Settings = {
   exerciseUnitOverrides: {},
   trackedE1rmExercises: [],
   showE1rmProgress: true,
+  registrationComplete: false,
 };
 
 function parseCustomMetrics(raw: unknown): CustomMetricDef[] {
@@ -138,5 +141,7 @@ export function parseDashboardSettings(raw: unknown): Settings {
     exerciseUnitOverrides:   parseExerciseUnitOverrides(s.exerciseUnitOverrides),
     trackedE1rmExercises:    parseTrackedE1rmExercises(s.trackedE1rmExercises),
     showE1rmProgress:        typeof s.showE1rmProgress === 'boolean' ? s.showE1rmProgress : true,
+    // Absent means existing user (pre-onboarding feature) — treat as complete
+    registrationComplete:    typeof s.registrationComplete === 'boolean' ? s.registrationComplete : true,
   };
 }
