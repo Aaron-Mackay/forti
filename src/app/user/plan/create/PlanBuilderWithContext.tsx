@@ -43,6 +43,8 @@ export default function PlanBuilderWithContext({userData, allExercises}: {
     exerciseId: PLACEHOLDER_ID,
     repRange: "",
     restTime: "",
+    targetRpe: null,
+    targetRir: null,
     sets: [placeholderSet],
     cardioDuration: null,
     cardioDistance: null,

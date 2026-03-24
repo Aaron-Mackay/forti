@@ -38,6 +38,8 @@ function makeEmptyWorkoutExercise(id: number, workoutId: number, order: number):
     exerciseId: dummyExercise.id,
     repRange: "",
     restTime: "",
+    targetRpe: null,
+    targetRir: null,
     order,
     exercise: dummyExercise,
     sets: [],
@@ -419,6 +421,10 @@ export function updateSetReps(user: UserPrisma, planId: number, weekId: number, 
 
 export function updateSetEffort(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, setId: number, field: 'rpe' | 'rir', value: number | null): UserPrisma {
   return withSet(user, planId, weekId, workoutId, exerciseId, setId, set => ({...set, [field]: value}));
+}
+
+export function updateTargetEffort(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, field: 'targetRpe' | 'targetRir', value: number | null): UserPrisma {
+  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({...exercise, [field]: value}));
 }
 
 export function updateRepRange(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, repRange: string): UserPrisma {

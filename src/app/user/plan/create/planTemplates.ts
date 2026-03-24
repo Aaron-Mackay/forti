@@ -47,6 +47,8 @@ function ex(
     repRange,
     restTime,
     notes: null,
+    targetRpe: null,
+    targetRir: null,
     sets: makeSets(setCount, firstRep),
   }
 }

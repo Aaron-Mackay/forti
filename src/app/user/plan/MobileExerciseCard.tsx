@@ -12,7 +12,7 @@ interface MobileExerciseCardProps {
 const MobileExerciseCard = ({ exerciseLink, index }: MobileExerciseCardProps) => {
   const exerciseName = exerciseLink.exercise?.name || '';
   const category = exerciseLink.exercise?.category || '';
-  const { repRange, restTime, sets } = exerciseLink;
+  const { repRange, restTime, targetRpe, targetRir, sets } = exerciseLink;
   const regularSets = sets.filter(s => !s.isDropSet).sort((a, b) => a.order - b.order);
 
   return (
@@ -44,6 +44,16 @@ const MobileExerciseCard = ({ exerciseLink, index }: MobileExerciseCardProps) =>
           {restTime && (
             <Typography variant="caption" color="text.secondary">
               · {restTime} rest
+            </Typography>
+          )}
+          {targetRpe != null && (
+            <Typography variant="caption" color="text.secondary">
+              · RPE {targetRpe}
+            </Typography>
+          )}
+          {targetRir != null && (
+            <Typography variant="caption" color="text.secondary">
+              · {targetRir} RIR
             </Typography>
           )}
         </Box>

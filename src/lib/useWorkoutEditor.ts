@@ -63,6 +63,14 @@ export type WorkoutEditorAction =
   workoutExerciseId: number;
   restTime: string;
 } | {
+  type: 'UPDATE_TARGET_EFFORT';
+  planId: number,
+  weekId: number,
+  workoutId: number,
+  workoutExerciseId: number;
+  field: 'targetRpe' | 'targetRir';
+  value: number | null;
+} | {
   type: 'UPDATE_SET_COUNT';
   planId: number,
   weekId: number,
@@ -313,6 +321,13 @@ export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, 
       const set = getNestedOrWarn({planId, weekId, workoutId, exerciseId, setId});
       if (!set) return userDataState;
       return userPlanMutators.updateSetReps(userDataState, planId, weekId, workoutId, exerciseId, setId, reps);
+    }
+
+    case 'UPDATE_TARGET_EFFORT': {
+      const { planId, weekId, workoutId, workoutExerciseId, field, value } = action;
+      const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId: workoutExerciseId});
+      if (!exercise) return userDataState;
+      return userPlanMutators.updateTargetEffort(userDataState, planId, weekId, workoutId, workoutExerciseId, field, value);
     }
 
     case 'UPDATE_REP_RANGE': {

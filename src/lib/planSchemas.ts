@@ -23,6 +23,8 @@ export const ExerciseInputSchema = z.object({
   repRange: z.string().nullable().optional(),
   restTime: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  targetRpe: z.number().nullable().optional(),
+  targetRir: z.number().int().nullable().optional(),
   sets: z.array(SetInputSchema),
 });
 

@@ -229,6 +229,16 @@ export default function ExerciseSlide({
           <Typography variant="subtitle1" gutterBottom>
             Reps: {ex.repRange}
           </Typography>
+          {ex.targetRpe != null && (
+            <Typography variant="subtitle1" gutterBottom>
+              Target: RPE {ex.targetRpe}
+            </Typography>
+          )}
+          {ex.targetRir != null && (
+            <Typography variant="subtitle1" gutterBottom>
+              Target: {ex.targetRir} RIR
+            </Typography>
+          )}
           <Box
             sx={{display: 'flex', alignItems: 'center', cursor: 'pointer'}}
             onClick={() => setFormCueOpen(o => !o)}

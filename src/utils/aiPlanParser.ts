@@ -18,6 +18,8 @@ const AiExerciseSchema = z.object({
   repRange: z.string().nullable().optional(),
   restTime: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  targetRpe: z.number().nullable().optional(),
+  targetRir: z.number().int().nullable().optional(),
   sets: z.array(AiSetSchema).default([]),
 });
 
@@ -58,6 +60,8 @@ export type ParsedPlan = {
         repRange: string | null | undefined;
         restTime: string | null | undefined;
         notes: string | null | undefined;
+        targetRpe: number | null | undefined;
+        targetRir: number | null | undefined;
         sets: Array<{ order: number; weight: number | null | undefined; reps: number | null | undefined; rpe: number | null | undefined; rir: number | null | undefined }>;
       }>;
     }>;
@@ -131,6 +135,8 @@ export const AI_PLAN_TOOL = {
                           description: 'Rest period in seconds as a string, e.g. "90" or "90-120"',
                         },
                         notes: { type: 'string', description: 'Optional per-exercise notes' },
+                        targetRpe: { type: 'number', description: 'Prescribed RPE target for this exercise (e.g. 8 or 8.5). Omit if not specified.' },
+                        targetRir: { type: 'integer', description: 'Prescribed RIR target for this exercise (e.g. 2). Omit if not specified.' },
                         sets: {
                           type: 'array',
                           items: {
@@ -198,6 +204,8 @@ export function parseAiPlanResponse(rawInput: unknown): ParsedPlan {
           repRange: ex.repRange ?? null,
           restTime: ex.restTime ?? null,
           notes: ex.notes ?? null,
+          targetRpe: ex.targetRpe ?? null,
+          targetRir: ex.targetRir ?? null,
           sets: ex.sets.map((set, si) => ({
             order: si + 1,
             weight: set.weight ?? null,

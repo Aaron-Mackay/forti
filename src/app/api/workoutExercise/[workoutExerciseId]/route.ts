@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
   const params = await props.params;
   const session = await requireSession();
   const body = await req.json();
-  const {notes, cardioDuration, cardioDistance, cardioResistance, exerciseId} = body;
+  const {notes, cardioDuration, cardioDistance, cardioResistance, exerciseId, targetRpe, targetRir} = body;
 
   if ('notes' in body && typeof notes !== 'string') {
     return errorResponse('notes must be a string', 400);
@@ -57,6 +57,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
       cardioDuration?: number | null;
       cardioDistance?: number | null;
       cardioResistance?: number | null;
+      targetRpe?: number | null;
+      targetRir?: number | null;
       exerciseId?: number;
       substitutedForId?: number;
     } = {};
@@ -65,6 +67,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
     if ('cardioDuration' in body) updateData.cardioDuration = cardioDuration ?? null;
     if ('cardioDistance' in body) updateData.cardioDistance = cardioDistance ?? null;
     if ('cardioResistance' in body) updateData.cardioResistance = cardioResistance ?? null;
+    if ('targetRpe' in body) updateData.targetRpe = typeof targetRpe === 'number' ? targetRpe : null;
+    if ('targetRir' in body) updateData.targetRir = typeof targetRir === 'number' ? targetRir : null;
 
     if ('exerciseId' in body) {
       const exercise = await prisma.exercise.findUnique({where: {id: exerciseId}});
