@@ -43,7 +43,7 @@ test.describe('Settings page — UI', () => {
   });
 
   test('shows the Export Data section with three download links', async ({ page }) => {
-    await expect(page.getByText('Export Data')).toBeVisible();
+    await expect(page.getByText('Export Data').first()).toBeVisible(); // SSR hydration can briefly yield 2 copies
     await expect(page.getByRole('link', { name: 'Download Training Plans' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Download Daily Metrics' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Download Check-in History' })).toBeVisible();
@@ -153,11 +153,15 @@ test.describe('Settings page — state', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Coaching section tests — chromium only
+// Coaching section tests — desktop chromium only
 // ---------------------------------------------------------------------------
 test.describe('Settings page — coaching section', () => {
-  test.skip(({ browserName }) => browserName !== 'chromium',
-    'State-dependent tests run on chromium only; parallel browser projects share a DB user');
+  // Skip all non-chromium browsers AND Mobile Chrome (Pixel 5 emulation):
+  // both share the same TestUser DB row as desktop Chrome, so running them
+  // in parallel causes PATCH races. Mobile Chrome has browserName === 'chromium',
+  // so the browserName check alone is not sufficient.
+  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile,
+    'State-dependent tests run on desktop chromium only; parallel browser projects share a DB user');
 
   test.beforeEach(async ({ page }) => {
     // Reset: turn off coach mode, clear any lingering request, unlink any coach
@@ -165,7 +169,7 @@ test.describe('Settings page — coaching section', () => {
     await page.request.delete('/api/coach/request');
     await page.request.delete('/api/coach/unlink');
     await page.goto('/user/settings');
-    await expect(page.getByText('Your Coach')).toBeVisible();
+    await expect(page.getByText('Your Coach').first()).toBeVisible(); // SSR hydration can briefly yield 2 copies
   });
 
   test.afterEach(async ({ page }) => {

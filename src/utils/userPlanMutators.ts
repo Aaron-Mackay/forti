@@ -396,19 +396,23 @@ export function removeSetById(
 
 export function updateSetCount(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, setCount: number, createUuid: CreateUuid): UserPrisma {
   return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => {
-    if (setCount < exercise.sets.length) {
-      const sortedSets = [...exercise.sets].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const regularSets = exercise.sets.filter(s => !s.isDropSet).sort((a, b) => a.order - b.order);
+    const dropSets = exercise.sets.filter(s => s.isDropSet);
+    if (setCount < regularSets.length) {
+      const trimmedRegular = regularSets.slice(0, setCount);
+      const keptRegularIds = new Set(trimmedRegular.map(s => s.id));
+      const keptDrops = dropSets.filter(s => s.parentSetId == null || keptRegularIds.has(s.parentSetId));
       return {
         ...exercise,
-        sets: reindex(sortedSets.slice(0, setCount)),
+        sets: reindex([...trimmedRegular, ...keptDrops]),
       };
     }
-    if (setCount > exercise.sets.length) {
+    if (setCount > regularSets.length) {
       return {
         ...exercise,
         sets: [
           ...exercise.sets,
-          ...Array.from({length: setCount - exercise.sets.length}).map((_, idx) =>
+          ...Array.from({length: setCount - regularSets.length}).map((_, idx) =>
             makeEmptySet(createUuid(), exerciseId, exercise.sets.length + idx + 1)
           ),
         ],
