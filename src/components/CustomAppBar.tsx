@@ -41,6 +41,7 @@ import GroupIcon from '@mui/icons-material/Group';
 import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
 import MedicationIcon from '@mui/icons-material/Medication';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import SchoolIcon from '@mui/icons-material/School';
 import {signOut} from "next-auth/react";
 import {useSettings} from '@lib/providers/SettingsProvider';
 import {usePlanCount} from '@lib/hooks/api/usePlanCount';
@@ -178,8 +179,12 @@ export default function CustomAppBar(
             )}
             <ListLink icon={<LibraryBooksIcon/>} text="Exercises" href="/exercises"/>
             <ListLink icon={<BookmarksIcon/>} text="Library" href="/library"/>
+            <ListLink icon={<SchoolIcon/>} text="Learning Plans" href="/user/learning-plans"/>
             {settings.coachModeActive && (
               <ListLink icon={<GroupIcon/>} text="Client Check-ins" href="/user/coach/check-ins"/>
+            )}
+            {settings.coachModeActive && (
+              <ListLink icon={<SchoolIcon/>} text="Coach Learning Plans" href="/user/coach/learning-plans"/>
             )}
             {planCount
               ? <>

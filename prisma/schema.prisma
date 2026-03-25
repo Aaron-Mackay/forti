@@ -45,6 +45,8 @@ model User {
   createdExercises            Exercise[]                   @relation("UserCreatedExercises")
   libraryAssets               LibraryAsset[]
   coachExerciseDescriptions   CoachExerciseDescription[]   @relation("CoachExerciseDescriptions")
+  learningPlans               LearningPlan[]               @relation("CoachLearningPlans")
+  learningAssignments         LearningPlanAssignment[]     @relation("ClientAssignments")
 }
 
 enum CoachRequestStatus {
@@ -373,6 +375,8 @@ model LibraryAsset {
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 
+  learningPlanSteps LearningPlanStep[]
+
   @@index([userId])
 }
 
@@ -381,6 +385,7 @@ enum NotificationType {
   CoachFeedback
   CoachRequestReceived
   CoachRequestAccepted
+  LearningPlanStepDelivered
 }
 
 model Notification {
@@ -396,4 +401,49 @@ model Notification {
 
   @@index([userId])
   @@index([userId, readAt])
+}
+
+model LearningPlan {
+  id          Int                      @id @default(autoincrement())
+  coachId     String
+  coach       User                     @relation("CoachLearningPlans", fields: [coachId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  steps       LearningPlanStep[]
+  assignments LearningPlanAssignment[]
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+
+  @@index([coachId])
+}
+
+model LearningPlanStep {
+  id        Int           @id @default(autoincrement())
+  planId    Int
+  plan      LearningPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  order     Int
+  dayOffset Int           // days after assignment startDate to deliver
+  title     String
+  body      String        @db.Text
+  assetId   String?
+  asset     LibraryAsset? @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
+  @@unique([planId, order])
+  @@index([planId])
+}
+
+model LearningPlanAssignment {
+  id           Int          @id @default(autoincrement())
+  planId       Int
+  plan         LearningPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  clientId     String
+  client       User         @relation("ClientAssignments", fields: [clientId], references: [id], onDelete: Cascade)
+  startDate    DateTime     @db.Date
+  // { "[stepId]": { notifiedAt: string | null, completedAt: string | null } }
+  stepProgress Json?
+  createdAt    DateTime     @default(now())
+
+  @@unique([planId, clientId])
+  @@index([clientId])
+  @@index([planId])
 }
