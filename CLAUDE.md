@@ -99,47 +99,13 @@ split them into separate commits. Each intermediate commit must still pass
 ## Directory Structure
 
 ```
-forti/
-├── src/
-│   ├── app/                 # Next.js App Router pages + API routes
-│   │   ├── api/             # Backend route handlers
-│   │   ├── user/            # Authenticated user pages
-│   │   │   ├── calendar/    # Calendar view + day metrics
-│   │   │   ├── check-in/    # Weekly check-in form + history
-│   │   │   ├── coach/
-│   │   │   │   └── check-ins/  # Coach review of client check-ins
-│   │   │   ├── plan/        # Training plan management
-│   │   │   ├── settings/    # User settings (dashboard, check-in day, etc.)
-│   │   │   └── workout/     # Active workout interface
-│   │   ├── coach/[code]/    # Public coach invite acceptance page
-│   │   ├── exercises/       # Exercise library
-│   │   ├── library/         # Library management
-│   │   ├── login/           # Login page
-│   │   └── report-bug/      # Bug report form
-│   ├── components/          # Shared UI components (AppBar, Loading, etc.)
-│   ├── context/             # React context (WorkoutEditorContext)
-│   ├── lib/                 # Core utilities, hooks, and providers
-│   │   ├── hooks/
-│   │   │   ├── api/         # Data-fetching hooks (useApiGet, useExerciseList, usePlanCount)
-│   │   │   ├── useApiMutation.ts
-│   │   │   └── useOfflineCache.ts
-│   │   └── providers/       # React providers (Auth, Settings, DateLocalization)
-│   ├── types/               # Shared TypeScript types
-│   ├── utils/               # Standalone utilities (offline sync, CSV import, AI plan parser)
-│   ├── testUtils/           # Test helpers
-│   └── proxy.ts             # Auth guard for all routes
-├── prisma/
-│   ├── schema.prisma        # Database schema
-│   └── seed.ts              # Seed script (2 demo users + full data)
-├── tests/
-│   ├── e2e/                 # Playwright E2E tests
-│   └── ToggleableEditableField.test.tsx
-├── public/                  # Static assets (icons, manifest, SVGs)
-├── .husky/pre-commit        # Git hook: runs npm run check
-├── next.config.js           # Next.js config (SVGR webpack rule)
-├── vitest.config.mts        # Vitest config
-├── playwright.config.ts     # Playwright config
-└── .eslintrc.js             # ESLint config
+src/app/          # Next.js App Router — pages (user/, coach/[code]/, login/, exercises/) + api/
+src/components/   # Shared UI components
+src/lib/          # Hooks, providers, utilities (see Key Library Files table)
+src/types/        # Shared TypeScript interfaces
+src/utils/        # Standalone utilities (offline sync, CSV, AI plan parser)
+prisma/           # schema.prisma + seed.ts
+tests/e2e/        # Playwright E2E tests
 ```
 
 ---
@@ -313,32 +279,7 @@ Tests for these use `fake-indexeddb` to mock IndexedDB in the jsdom environment.
 - **Path aliases:** resolved via `vite-tsconfig-paths` (same as `tsconfig.json`)
 - **Coverage threshold:** 80% on statements, branches, functions, and lines
 
-Test files are co-located with source files or in `tests/`:
-```
-src/lib/api.test.ts
-src/lib/dateUtils.test.ts
-src/lib/dayMetrics.test.ts
-src/lib/events.test.ts
-src/lib/fetchWrapper.test.ts
-src/lib/useWorkoutEditor.test.ts
-src/utils/clientDb.test.ts
-src/utils/offlineSync.test.ts
-src/utils/sheetUpload.test.ts
-src/utils/userPlanMutators.test.ts
-src/utils/aiPlanParser.test.ts
-src/app/api/workout/[workoutId]/route.test.ts
-src/app/api/exercises/[exerciseId]/previous-sets/route.test.ts
-src/app/api/plan/ai-import/route.test.ts
-src/app/user/workout/Stopwatch.test.tsx
-src/app/user/workout/StopwatchContext.test.tsx
-src/app/user/workout/CardioSlide.test.tsx
-src/app/user/workout/ExercisesListView.test.tsx
-src/app/user/workout/ExerciseDetailView.test.tsx
-src/app/user/plan/create/AiFormScreen.test.tsx
-src/app/login/LoginButtons.test.tsx
-src/types/settingsTypes.test.ts
-tests/ToggleableEditableField.test.tsx
-```
+Test files are co-located with source files or in `tests/`. Use `glob **/*.test.ts` or `**/*.test.tsx` to find them.
 
 ### E2E Tests (Playwright)
 
@@ -374,7 +315,15 @@ Rules:
 
 **Do NOT rely on Jeff/Todd seed data in E2E tests.** All E2E tests authenticate as TestUser (`testuser@example.com`), not as Jeff Demo. Jeff's seeded records (library assets, coach relationship with Todd, check-ins, etc.) are invisible to TestUser. Tests that assert on user-specific data will fail silently or flake. Always create and clean up test data via the API in `beforeEach`/`afterEach` — see `supplements.test.ts` for the canonical pattern. Global seed data that exists for *all* users (e.g. the exercises list from `exercises.json`) is safe to use without setup.
 
-**State-dependent tests must be serial and chromium-only.** Any test describe block whose tests mutate DB state (POST, PATCH, DELETE) should use `test.describe.configure({ mode: 'serial' })` and `test.skip(({ isMobile }) => isMobile, '...')` to avoid parallel conflicts across browser projects that share a single TestUser DB row.
+**State-dependent tests must be serial and chromium-only.** Any test describe block whose tests mutate DB state (POST, PATCH, DELETE) should use `test.describe.configure({ mode: 'serial' })` and skip every project except desktop Chromium to avoid parallel conflicts across browser projects that share a single TestUser DB row:
+
+```ts
+test.describe.configure({ mode: 'serial' });
+// inside each test:
+test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+```
+
+Note: Mobile Chrome has `browserName === 'chromium'` AND `isMobile === true`, so both conditions are required.
 
 ---
 
@@ -436,14 +385,11 @@ npm run local-db   # Connect via psql
 
 ## Seed Data
 
-Running `npm run seed` (or `npm run db:reset` for a full reset) creates:
+Running `npm run seed` (or `npm run db:reset` for a full reset) creates three users:
 
-- **3 seeded users:** Jeff Demo (`jeff@example.com`), Todd (`todd@example.com`), and TestUser (`testuser@example.com`)
-- **Jeff Demo** is the demo login user (accessed without a password via the Demo button)
-- **Todd** is Jeff's coach — the coach-client relationship is seeded so the coach feature is visible in the demo
-- Jeff gets: 2 training plans, 2–3 weeks per plan, 2 workouts per week, exercises with sets, 5 calendar events, 60 days of daily metrics, and 6 weeks of completed check-ins (3 reviewed by Todd with coach notes, 3 unreviewed)
-- Todd gets: 2 training plans, events, day metrics, and 6 check-ins of his own
-- TestUser is a fixed-date account used exclusively by E2E tests
+- **Jeff Demo** (`jeff@example.com`) — demo login user; has plans, metrics, check-ins, and Todd as coach
+- **Todd** (`todd@example.com`) — Jeff's coach; has his own plans and check-ins
+- **TestUser** (`testuser@example.com`) — used exclusively by E2E tests; no pre-seeded user-specific data
 
 ---
 
@@ -476,6 +422,8 @@ Type declarations for this pattern are in `svgr.d.ts`.
 - **Mobile-first UI:** Uses `dvh` (dynamic viewport height) units for mobile compatibility. Calendar and some pages use bottom drawers on mobile.
 - **Vercel cron jobs:** Configured in `vercel.json`. Secured by `CRON_SECRET` header check in each cron route handler.
 - **Vercel Analytics:** `@vercel/analytics` and `@vercel/speed-insights` are integrated in the app layout.
+- **Table column contract:** `Workout.tsx` uses `table-layout: fixed` with an explicit `<colgroup>`. Whenever you add or remove a `<TableCell>` from the row component (`ExerciseRow`), you must update the `<colgroup>`, `baseColumns` counter, and all header `<TableRow>`s in the same commit. Mismatches collapse cell widths silently and can make interactive elements unclickable.
+- **Unit-test sets arrays with drop sets:** Any function that processes a `WorkoutExercise.sets` array must have test cases covering a mix of regular and drop sets (`isDropSet: true`). Real user data and seed data routinely contain drop sets; testing only clean fixtures will miss set-counting bugs.
 
 ---
 
