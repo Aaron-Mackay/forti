@@ -66,6 +66,9 @@ playwright-cli close
 | `http://localhost:3000/user/workout/<id>` | Active workout page |
 | `http://localhost:3000/exercises` | Exercise library |
 | `http://localhost:3000/library` | User & coach library (links, documents, images, videos) |
+| `http://localhost:3000/user/learning-plans` | Client's assigned learning plans (tick off steps) |
+| `http://localhost:3000/user/coach/learning-plans` | Coach learning plan list (create/manage plans) |
+| `http://localhost:3000/user/coach/learning-plans/<id>` | Coach learning plan editor (steps, assignments, progress) |
 | `http://localhost:3000/login` | Login page (public) |
 
 ## Common Verification Tasks

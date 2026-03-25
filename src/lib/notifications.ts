@@ -92,7 +92,7 @@ async function deliverNotification({
   emailText,
 }: {
   userId: string;
-  type: 'CheckInSubmitted' | 'CoachFeedback' | 'CoachRequestReceived' | 'CoachRequestAccepted';
+  type: 'CheckInSubmitted' | 'CoachFeedback' | 'CoachRequestReceived' | 'CoachRequestAccepted' | 'LearningPlanStepDelivered';
   title: string;
   body: string;
   url: string;
@@ -191,6 +191,23 @@ export async function notifyClientRequestAccepted(
     url: '/user/settings',
     emailSubject: 'Your coach request was accepted',
     emailText: `Hi,\n\n${coachName} has accepted your coach connection request. They can now view your check-ins and training plans.\n\nLog in to Forti to get started.\n\n— The Forti Team`,
+  });
+}
+
+/** Notify a client that a new learning plan step is available */
+export async function notifyClientLearningPlanStep(
+  clientId: string,
+  stepTitle: string,
+  stepBody: string,
+): Promise<void> {
+  await deliverNotification({
+    userId: clientId,
+    type: 'LearningPlanStepDelivered',
+    title: stepTitle,
+    body: stepBody.length > 120 ? stepBody.slice(0, 117) + '…' : stepBody,
+    url: '/user/learning-plans',
+    emailSubject: stepTitle,
+    emailText: `Hi,\n\n${stepBody}\n\nLog in to Forti to read your latest coaching step.\n\n— The Forti Team`,
   });
 }
 
