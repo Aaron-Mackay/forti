@@ -35,7 +35,7 @@ interface Props {
 }
 
 export default function GettingStartedCard({ userData, dayMetrics, today }: Props) {
-  const { settings, updateSetting } = useSettings();
+  const { settings, loading, updateSetting } = useSettings();
 
   // Only fetch check-in data while the card is visible
   const { data: checkInData } = useApiGet<CheckInResponse>(
@@ -79,7 +79,7 @@ export default function GettingStartedCard({ userData, dayMetrics, today }: Prop
     return () => clearTimeout(t);
   }, [allDone, updateSetting]);
 
-  if (settings.onboardingDismissed) return null;
+  if (loading || settings.onboardingDismissed) return null;
 
   return (
     <Card variant="outlined" sx={{ mb: 2 }}>
