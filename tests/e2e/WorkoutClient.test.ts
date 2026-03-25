@@ -562,7 +562,16 @@ test.describe('Workout page', () => {
   });
 
   test.describe('effort chips (RPE / RIR)', () => {
+    test.describe.configure({ mode: 'serial' });
+    // Settings mutations are shared across browser projects — skip on mobile to
+    // avoid parallel conflicts with Chromium/Firefox/WebKit desktop runs.
+    test.skip(({ isMobile }) => isMobile, 'Settings mutation tests skipped on mobile');
+
     async function navigateToSquat(page: import('@playwright/test').Page) {
+      // Reload the page so the React settings context picks up any PATCH made
+      // via page.request before this call. Without a reload the context retains
+      // the value that was loaded at the start of the test.
+      await page.goto('/user/workout');
       await page.getByRole('button', { name: /Plan/i }).first().click();
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();

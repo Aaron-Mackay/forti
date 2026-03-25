@@ -78,6 +78,7 @@ export function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPris
                 substitutedForId: null,
                 substitutedFor: null,
                 isAdded: false,
+                isBfr: false,
               }
             }),
           }

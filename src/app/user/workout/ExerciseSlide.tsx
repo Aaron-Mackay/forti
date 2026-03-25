@@ -223,6 +223,11 @@ export default function ExerciseSlide({
               Added during workout
             </Typography>
           )}
+          {ex.isBfr && (
+            <Typography variant="caption" color="warning.main" sx={{display: 'block', mb: 0.5}}>
+              BFR protocol
+            </Typography>
+          )}
           <Typography variant="subtitle1" gutterBottom>
             Rest: {ex.restTime}
           </Typography>

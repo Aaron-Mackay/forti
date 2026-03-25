@@ -108,6 +108,7 @@ export async function POST(req: Request) {
                   repRange: exercise.repRange,
                   restTime: exercise.restTime,
                   notes: exercise.notes,
+                  isBfr: exercise.isBfr ?? false,
                 },
               });
               const idMap = new Map<number, number>();

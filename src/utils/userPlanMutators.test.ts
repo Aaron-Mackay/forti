@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
+  BFR_REP_RANGE,
+  BFR_REST_TIME,
+  BFR_SET_COUNT,
   addExercise,
   addExerciseToWorkout,
   addExerciseWithSet,
@@ -26,6 +29,7 @@ import {
   updateSetWeight,
   updateWorkoutDateCompleted,
   updateWorkoutName,
+  toggleBfr,
 } from './userPlanMutators';
 import { Dir } from '@lib/useWorkoutEditor';
 import {
@@ -737,5 +741,69 @@ describe('addExerciseToWorkout', () => {
     addExerciseToWorkout(user, 1, 101, 201, newEx);
 
     expect(user.plans[0].weeks[0].workouts[0].exercises).toHaveLength(1);
+  });
+});
+
+// ─── toggleBfr ───────────────────────────────────────────────────────────────
+
+describe('toggleBfr', () => {
+  it('sets isBfr, repRange, restTime and exactly BFR_SET_COUNT sets when enabled', () => {
+    const user = buildBaseUser();
+    const result = toggleBfr(user, 1, 101, 201, 301, true, mockUuid);
+    const ex = result.plans[0].weeks[0].workouts[0].exercises[0];
+    expect(ex.isBfr).toBe(true);
+    expect(ex.repRange).toBe(BFR_REP_RANGE);
+    expect(ex.restTime).toBe(BFR_REST_TIME);
+    expect(ex.sets.filter(s => !s.isDropSet)).toHaveLength(BFR_SET_COUNT);
+  });
+
+  it('trims sets to BFR_SET_COUNT when exercise has more sets', () => {
+    const exercise = new ExerciseBuilder(301, 1)
+      .addSet(new SetBuilder(401, 1).build())
+      .addSet(new SetBuilder(402, 2).build())
+      .addSet(new SetBuilder(403, 3).build())
+      .addSet(new SetBuilder(404, 4).build())
+      .addSet(new SetBuilder(405, 5).build())
+      .addSet(new SetBuilder(406, 6).build())
+      .build();
+    const workout = new WorkoutBuilder(201, 1).addExercise(exercise).build();
+    const week = new WeekBuilder(101, 1).addWorkout(workout).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const user = new UserBuilder(1).addPlan(plan).build();
+    const result = toggleBfr(user, 1, 101, 201, 301, true, mockUuid);
+    const ex = result.plans[0].weeks[0].workouts[0].exercises[0];
+    expect(ex.sets.filter(s => !s.isDropSet)).toHaveLength(BFR_SET_COUNT);
+  });
+
+  it('extends sets to BFR_SET_COUNT when exercise has fewer sets', () => {
+    const exercise = new ExerciseBuilder(301, 1)
+      .addSet(new SetBuilder(401, 1).build())
+      .addSet(new SetBuilder(402, 2).build())
+      .build();
+    const workout = new WorkoutBuilder(201, 1).addExercise(exercise).build();
+    const week = new WeekBuilder(101, 1).addWorkout(workout).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const user = new UserBuilder(1).addPlan(plan).build();
+    const result = toggleBfr(user, 1, 101, 201, 301, true, mockUuid);
+    const ex = result.plans[0].weeks[0].workouts[0].exercises[0];
+    expect(ex.sets.filter(s => !s.isDropSet)).toHaveLength(BFR_SET_COUNT);
+  });
+
+  it('only clears isBfr when toggled off, leaving repRange and restTime unchanged', () => {
+    const user = buildBaseUser();
+    // First enable BFR to set the preset values
+    const withBfr = toggleBfr(user, 1, 101, 201, 301, true, mockUuid);
+    // Then disable
+    const result = toggleBfr(withBfr, 1, 101, 201, 301, false, mockUuid);
+    const ex = result.plans[0].weeks[0].workouts[0].exercises[0];
+    expect(ex.isBfr).toBe(false);
+    expect(ex.repRange).toBe(BFR_REP_RANGE);
+    expect(ex.restTime).toBe(BFR_REST_TIME);
+  });
+
+  it('does not mutate the original user object', () => {
+    const user = buildBaseUser();
+    toggleBfr(user, 1, 101, 201, 301, true, mockUuid);
+    expect(user.plans[0].weeks[0].workouts[0].exercises[0].isBfr).toBe(false);
   });
 });

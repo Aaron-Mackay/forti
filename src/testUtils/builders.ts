@@ -187,6 +187,7 @@ export class ExerciseBuilder {
       substitutedForId: null,
       substitutedFor: null,
       isAdded: false,
+      isBfr: false,
     };
   }
   addSet(set: SetPrisma) {

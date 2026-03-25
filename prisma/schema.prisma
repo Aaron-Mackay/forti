@@ -232,6 +232,7 @@ model WorkoutExercise {
   substitutedForId Int?          // original Exercise.id before substitution
   substitutedFor   Exercise?     @relation("SubstitutedExercises", fields: [substitutedForId], references: [id])
   isAdded          Boolean       @default(false) // true if added during workout (not in original plan)
+  isBfr            Boolean       @default(false) // true if this is a BFR (Blood Flow Restriction) exercise
 
   @@unique([workoutId, order])
 }
