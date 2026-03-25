@@ -445,6 +445,45 @@ describe('updateSetCount', () => {
     const result = updateSetCount(user, 1, 101, 201, 301, 1, mockUuid);
     expect(result).toEqual(before);
   });
+
+  it('counts only regular sets when exercise also has drop sets', () => {
+    // 3 regular sets + 1 drop set — total length is 4, but regular count is 3.
+    // updateSetCount(4) should add 1 regular set (4 > 3), not be a no-op (4 == 4).
+    const dropSet = { ...new SetBuilder(404, 4).build(), isDropSet: true, parentSetId: 403 };
+    const exercise = new ExerciseBuilder(301, 1)
+      .addSet(new SetBuilder(401, 1).build())
+      .addSet(new SetBuilder(402, 2).build())
+      .addSet(new SetBuilder(403, 3).build())
+      .addSet(dropSet)
+      .build();
+    const workout = new WorkoutBuilder(201, 1).addExercise(exercise).build();
+    const week = new WeekBuilder(101, 1).addWorkout(workout).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const user = new UserBuilder(1).addPlan(plan).build();
+    const result = updateSetCount(user, 1, 101, 201, 301, 4, mockUuid);
+    const sets = result.plans[0].weeks[0].workouts[0].exercises[0].sets;
+    expect(sets.filter(s => !s.isDropSet)).toHaveLength(4);
+    expect(sets.filter(s => s.isDropSet)).toHaveLength(1); // drop set preserved
+  });
+
+  it('trims only regular sets when reducing, preserving drop sets whose parent is kept', () => {
+    const dropSet = { ...new SetBuilder(404, 4).build(), isDropSet: true, parentSetId: 401 };
+    const exercise = new ExerciseBuilder(301, 1)
+      .addSet(new SetBuilder(401, 1).build())
+      .addSet(new SetBuilder(402, 2).build())
+      .addSet(new SetBuilder(403, 3).build())
+      .addSet(dropSet)
+      .build();
+    const workout = new WorkoutBuilder(201, 1).addExercise(exercise).build();
+    const week = new WeekBuilder(101, 1).addWorkout(workout).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const user = new UserBuilder(1).addPlan(plan).build();
+    // Trim to 1 regular set; set 401 is kept so its drop set should survive
+    const result = updateSetCount(user, 1, 101, 201, 301, 1, mockUuid);
+    const sets = result.plans[0].weeks[0].workouts[0].exercises[0].sets;
+    expect(sets.filter(s => !s.isDropSet)).toHaveLength(1);
+    expect(sets.filter(s => s.isDropSet)).toHaveLength(1);
+  });
 });
 
 // ─── updateSetWeight ─────────────────────────────────────────────────────────
