@@ -2,6 +2,12 @@ import {PlanPrisma, SetPrisma, UserPrisma, WeekPrisma, WorkoutExercisePrisma, Wo
 import {Exercise} from "@prisma/client";
 import {CreateUuid, Dir} from "@lib/useWorkoutEditor";
 
+// ─── BFR preset constants ────────────────────────────────────────────────────
+
+export const BFR_SET_COUNT = 4;
+export const BFR_REP_RANGE = '30-15-15-15';
+export const BFR_REST_TIME = '30s';
+
 // ─── Private constants ───────────────────────────────────────────────────────
 
 const dummyExercise: Exercise = {
@@ -684,4 +690,28 @@ export function removeWorkout(
       workouts: reindex(week.workouts.filter(workout => workout.id !== workoutId)),
     }))
   );
+}
+
+export function toggleBfr(
+  user: UserPrisma,
+  planId: number,
+  weekId: number,
+  workoutId: number,
+  exerciseId: number,
+  enabled: boolean,
+  createUuid: CreateUuid,
+): UserPrisma {
+  if (!enabled) {
+    return withExercise(user, planId, weekId, workoutId, exerciseId, ex => ({
+      ...ex,
+      isBfr: false,
+    }));
+  }
+  const withPreset = withExercise(user, planId, weekId, workoutId, exerciseId, ex => ({
+    ...ex,
+    isBfr: true,
+    repRange: BFR_REP_RANGE,
+    restTime: BFR_REST_TIME,
+  }));
+  return updateSetCount(withPreset, planId, weekId, workoutId, exerciseId, BFR_SET_COUNT, createUuid);
 }

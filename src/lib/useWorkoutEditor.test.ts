@@ -938,3 +938,37 @@ describe("updateUserSets", () => {
     expect(newState.plans[0].weeks[0].workouts[0].exercises[1].cardioDuration).toBeNull();
   });
 });
+// ─── TOGGLE_BFR ──────────────────────────────────────────────────────────────
+
+describe('TOGGLE_BFR', () => {
+  it('sets isBfr, repRange, restTime and 4 sets when enabled', () => {
+    const exercise = new ExerciseBuilder(3).build();
+    const workout = new WorkoutBuilder(2).addExercise(exercise).build();
+    const week = new WeekBuilder(1).addWorkout(workout).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const state = new UserBuilder(1).addPlan(plan).build();
+    const action: WorkoutEditorAction = { type: 'TOGGLE_BFR', planId: 1, weekId: 1, workoutId: 2, workoutExerciseId: 3, enabled: true };
+    const newState = reducer(state, action, mockUuid);
+    const ex = newState.plans[0].weeks[0].workouts[0].exercises[0];
+    expect(ex.isBfr).toBe(true);
+    expect(ex.repRange).toBe('30-15-15-15');
+    expect(ex.restTime).toBe('30s');
+    expect(ex.sets.filter(s => !s.isDropSet)).toHaveLength(4);
+  });
+
+  it('clears isBfr when disabled without changing preset values', () => {
+    const exercise = new ExerciseBuilder(3).build();
+    const workout = new WorkoutBuilder(2).addExercise(exercise).build();
+    const week = new WeekBuilder(1).addWorkout(workout).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const state = new UserBuilder(1).addPlan(plan).build();
+    const enableAction: WorkoutEditorAction = { type: 'TOGGLE_BFR', planId: 1, weekId: 1, workoutId: 2, workoutExerciseId: 3, enabled: true };
+    const withBfr = reducer(state, enableAction, mockUuid);
+    const disableAction: WorkoutEditorAction = { type: 'TOGGLE_BFR', planId: 1, weekId: 1, workoutId: 2, workoutExerciseId: 3, enabled: false };
+    const newState = reducer(withBfr, disableAction, mockUuid);
+    const ex = newState.plans[0].weeks[0].workouts[0].exercises[0];
+    expect(ex.isBfr).toBe(false);
+    expect(ex.repRange).toBe('30-15-15-15');
+    expect(ex.restTime).toBe('30s');
+  });
+});

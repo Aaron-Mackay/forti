@@ -98,6 +98,14 @@ export type WorkoutEditorAction =
 }
   | { type: 'REPLACE_PLAN'; planId: number; plan: PlanPrisma }
   | {
+  type: 'TOGGLE_BFR';
+  planId: number;
+  weekId: number;
+  workoutId: number;
+  workoutExerciseId: number;
+  enabled: boolean;
+}
+  | {
   type: 'UPDATE_CARDIO_DATA';
   planId: number;
   weekId: number;
@@ -378,6 +386,13 @@ export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, 
       const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId});
       if (!exercise) return userDataState;
       return userPlanMutators.updateCardioData(userDataState, planId, weekId, workoutId, exerciseId, field, value);
+    }
+
+    case 'TOGGLE_BFR': {
+      const { planId, weekId, workoutId, workoutExerciseId, enabled } = action;
+      const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId: workoutExerciseId});
+      if (!exercise) return userDataState;
+      return userPlanMutators.toggleBfr(userDataState, planId, weekId, workoutId, workoutExerciseId, enabled, createUuid);
     }
 
     default:
