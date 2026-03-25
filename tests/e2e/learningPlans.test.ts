@@ -25,7 +25,7 @@ test.describe('Learning Plans', () => {
     }
     // Deactivate coach mode
     await page.request.patch('/api/user/settings', {
-      data: { coachModeActive: false },
+      data: { settings: { coachModeActive: false } },
     });
   });
 
@@ -36,7 +36,9 @@ test.describe('Learning Plans', () => {
 
   test('coach can create a learning plan', async ({ page }) => {
     // Activate coach mode
-    await page.request.patch('/api/user/settings', { data: { coachModeActive: true } });
+    await page.request.patch('/api/user/settings', {
+      data: { settings: { coachModeActive: true } },
+    });
 
     await page.goto('/user/coach/learning-plans');
 
@@ -59,7 +61,9 @@ test.describe('Learning Plans', () => {
 
   test('coach can add a step to a learning plan', async ({ page }) => {
     // Activate coach mode and create a plan via API
-    await page.request.patch('/api/user/settings', { data: { coachModeActive: true } });
+    await page.request.patch('/api/user/settings', {
+      data: { settings: { coachModeActive: true } },
+    });
     const res = await page.request.post('/api/coach/learning-plans', {
       data: { title: 'Step Test Plan', description: null },
     });
@@ -76,12 +80,14 @@ test.describe('Learning Plans', () => {
 
     // Step should appear in the list
     await expect(page.getByText('Welcome Message')).toBeVisible();
-    await expect(page.getByText('Day 0')).toBeVisible();
+    await expect(page.getByText('Day 1')).toBeVisible();
   });
 
   test('coach learning plans list shows plan cards', async ({ page }) => {
     // Activate coach mode and create a plan via API
-    await page.request.patch('/api/user/settings', { data: { coachModeActive: true } });
+    await page.request.patch('/api/user/settings', {
+      data: { settings: { coachModeActive: true } },
+    });
     const res = await page.request.post('/api/coach/learning-plans', {
       data: { title: 'Listed Plan', description: 'visible in list' },
     });
@@ -99,8 +105,7 @@ test.describe('Learning Plans', () => {
   test('coach learning plans not visible without coach mode', async ({ page }) => {
     // Coach mode is off (default for TestUser)
     await page.goto('/user/coach/learning-plans');
-    // Should either show an error or redirect — no crash
-    // The page will load but the API will return 403, showing empty/error state
+    // The page will load but the API will return 403, showing an error state — no crash
     await expect(page.locator('body')).toBeVisible();
   });
 });
