@@ -149,6 +149,7 @@ export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
               targetRpe: exercise.targetRpe ?? null,
               targetRir: exercise.targetRir ?? null,
               exerciseId: exerciseRecord.id,
+              isBfr: exercise.isBfr ?? false,
             },
           });
           const idMap = new Map<number, number>();

@@ -32,10 +32,14 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
   const params = await props.params;
   const session = await requireSession();
   const body = await req.json();
-  const {notes, cardioDuration, cardioDistance, cardioResistance, exerciseId, targetRpe, targetRir} = body;
+  const {notes, cardioDuration, cardioDistance, cardioResistance, exerciseId, targetRpe, targetRir, isBfr} = body;
 
   if ('notes' in body && typeof notes !== 'string') {
     return errorResponse('notes must be a string', 400);
+  }
+
+  if ('isBfr' in body && typeof isBfr !== 'boolean') {
+    return errorResponse('isBfr must be a boolean', 400);
   }
 
   if ('exerciseId' in body && typeof exerciseId !== 'number') {
@@ -61,6 +65,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
       targetRir?: number | null;
       exerciseId?: number;
       substitutedForId?: number;
+      isBfr?: boolean;
     } = {};
 
     if ('notes' in body) updateData.notes = notes;
@@ -75,6 +80,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
       updateData.targetRir = typeof targetRir === 'number' ? targetRir : null;
       if (updateData.targetRir !== null) updateData.targetRpe = null; // mutually exclusive
     }
+
+    if ('isBfr' in body) updateData.isBfr = isBfr;
 
     if ('exerciseId' in body) {
       const exercise = await prisma.exercise.findUnique({where: {id: exerciseId}});
