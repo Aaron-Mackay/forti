@@ -36,7 +36,7 @@ const Workout = ({
   const {dispatch} = useWorkoutEditorContext();
   const [noteExpanded, setNoteExpanded] = useState(false);
 
-  const baseColumns = 5; // first 5 fixed cols
+  const baseColumns = 7; // first 7 fixed cols (order, category, exercise, repRange, rest, RPE, RIR)
   const maxRegularSetCount = Math.max(...workout.exercises.map(e => e.sets.filter(s => !s.isDropSet).length), 0);
   const setColumns = maxRegularSetCount * 2; // each set has 2 cols
   const editModeExtraColumn = isInEditMode ? 1 : 0;
@@ -105,6 +105,8 @@ const Workout = ({
           <col style={{width: '20em'}}/>
           <col style={{width: '6em'}}/>
           <col style={{width: '6em'}}/>
+          <col style={{width: '5em'}}/>
+          <col style={{width: '5em'}}/>
           {Array.from({length: setColumns}).map((_, i) => (
             <col key={i} style={{width: '4em'}}/>
           ))}
@@ -114,6 +116,8 @@ const Workout = ({
         </colgroup>
         <TableHead>
           <TableRow>
+            <TableCell></TableCell>
+            <TableCell></TableCell>
             <TableCell></TableCell>
             <TableCell></TableCell>
             <TableCell></TableCell>
