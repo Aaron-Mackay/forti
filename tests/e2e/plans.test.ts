@@ -380,14 +380,15 @@ test.describe('BFR preset toggle', () => {
   });
 
   test('clicking BFR chip creates 4 set columns', async ({ page }) => {
-    // Seed data: 3 sets per exercise → "Set 3" visible, "Set 4" not yet visible
-    await expect(page.getByRole('columnheader', { name: 'Set 1' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'Set 4' })).not.toBeVisible();
+    // Seed data: 3 sets per exercise → "Set 1" visible, "Set 4" not yet visible.
+    // Multiple workouts each render their own table header, so narrow with .first().
+    await expect(page.getByRole('columnheader', { name: 'Set 1' }).first()).toBeVisible(); // multiple tables on page
+    await expect(page.getByRole('columnheader', { name: 'Set 4' }).first()).not.toBeVisible();
 
     await page.getByRole('button', { name: 'BFR' }).first().click();
 
     // BFR preset bumps set count to 4 → "Set 4" column header appears
-    await expect(page.getByRole('columnheader', { name: 'Set 4' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Set 4' }).first()).toBeVisible();
   });
 
   test('BFR chip shows as active (warning color) after toggle', async ({ page }) => {
