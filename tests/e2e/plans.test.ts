@@ -358,10 +358,21 @@ test.describe('Plan editor (scratch)', () => {
 // ── BFR preset toggle ─────────────────────────────────────────────────────────
 
 test.describe('BFR preset toggle', () => {
+  test.describe.configure({ mode: 'serial' });
+  // BFR chip and column headers only exist in the desktop table editor
+  // (ExerciseRow inside Workout.tsx). MobilePlanView has no interactive BFR UI.
+  test.skip(({ isMobile }) => isMobile, 'BFR toggle only in desktop table editor');
+
   test.beforeEach(async ({ page }) => {
-    // Use the scratch plan editor — always starts in edit mode
-    await page.goto('/user/plan/create');
-    await page.getByTestId('entry-scratch').click();
+    // Navigate to an existing plan and enter edit mode so ExerciseRow renders
+    // with the interactive BFR chip. The scratch plan creator (PlanEditorScreen)
+    // uses a different layout that does not include the BFR chip or set columns.
+    await page.goto('/user/plan');
+    const firstPlanLink = page.getByRole('listitem').first().getByRole('link');
+    await firstPlanLink.click();
+    await page.waitForURL(/\/user\/plan\/\d+/);
+    await page.getByRole('button', { name: /Edit/i }).first().click();
+    await expect(page.getByRole('button', { name: /Save/i })).toBeVisible();
   });
 
   test('BFR chip is visible in edit mode', async ({ page }) => {
@@ -369,24 +380,24 @@ test.describe('BFR preset toggle', () => {
   });
 
   test('clicking BFR chip creates 4 set columns', async ({ page }) => {
-    // Before: 1 set → only "Set 1" column header
+    // Seed data: 3 sets per exercise → "Set 3" visible, "Set 4" not yet visible
     await expect(page.getByRole('columnheader', { name: 'Set 1' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Set 4' })).not.toBeVisible();
 
     await page.getByRole('button', { name: 'BFR' }).first().click();
 
-    // After: 4 sets → "Set 1" through "Set 4"
+    // BFR preset bumps set count to 4 → "Set 4" column header appears
     await expect(page.getByRole('columnheader', { name: 'Set 4' })).toBeVisible();
   });
 
   test('BFR chip shows as active (warning color) after toggle', async ({ page }) => {
     const bfrChip = page.getByRole('button', { name: 'BFR' }).first();
-    // Before: outlined/default style
+    // Before: outlined/default style (isBfr = false)
     await expect(bfrChip).not.toHaveClass(/MuiChip-colorWarning/);
 
     await bfrChip.click();
 
-    // After: filled warning color
+    // After: filled warning color (isBfr = true)
     await expect(bfrChip).toHaveClass(/MuiChip-colorWarning/);
   });
 
