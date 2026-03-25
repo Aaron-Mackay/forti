@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
 
     for (const step of assignment.plan.steps) {
       const deliverOn = new Date(startDate);
-      deliverOn.setUTCDate(deliverOn.getUTCDate() + step.dayOffset);
+      deliverOn.setUTCDate(deliverOn.getUTCDate() + step.dayOffset - 1);
 
       if (deliverOn.getTime() !== today.getTime()) continue;
 

@@ -11,14 +11,14 @@ export const LearningPlanUpdateSchema = z.object({
 });
 
 export const LearningPlanStepCreateSchema = z.object({
-  dayOffset: z.number().int().min(0),
+  dayOffset: z.number().int().min(1),
   title: z.string().min(1).max(200),
   body: z.string().min(1),
   assetId: z.string().optional().nullable(),
 });
 
 export const LearningPlanStepUpdateSchema = z.object({
-  dayOffset: z.number().int().min(0).optional(),
+  dayOffset: z.number().int().min(1).optional(),
   title: z.string().min(1).max(200).optional(),
   body: z.string().optional(),
   assetId: z.string().optional().nullable(),

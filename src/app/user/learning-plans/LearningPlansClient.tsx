@@ -100,7 +100,7 @@ function AssignmentCard({
             const completed = !!stepProg?.completedAt;
 
             const deliverOn = new Date(startDate);
-            deliverOn.setDate(deliverOn.getDate() + step.dayOffset);
+            deliverOn.setDate(deliverOn.getDate() + step.dayOffset - 1);
 
             return (
               <Box

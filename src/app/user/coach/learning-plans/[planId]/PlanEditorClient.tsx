@@ -102,14 +102,14 @@ function StepFormDialog({
   onClose: () => void;
   saving: boolean;
 }) {
-  const [dayOffset, setDayOffset] = useState(0);
+  const [dayOffset, setDayOffset] = useState(1);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [assetId, setAssetId] = useState('');
 
   useEffect(() => {
     if (open) {
-      setDayOffset(initial?.dayOffset ?? 0);
+      setDayOffset(initial?.dayOffset ?? 1);
       setTitle(initial?.title ?? '');
       setBody(initial?.body ?? '');
       setAssetId(initial?.assetId ?? '');
@@ -124,9 +124,9 @@ function StepFormDialog({
           label="Day offset"
           type="number"
           value={dayOffset}
-          onChange={e => setDayOffset(Math.max(0, parseInt(e.target.value) || 0))}
-          helperText="Days after the client's start date to deliver this step"
-          inputProps={{ min: 0 }}
+          onChange={e => setDayOffset(Math.max(1, parseInt(e.target.value) || 1))}
+          helperText="Day of the plan on which to deliver this step (Day 1 = start date)"
+          inputProps={{ min: 1 }}
           fullWidth
         />
         <TextField
@@ -214,7 +214,7 @@ function AssignmentAccordion({
             const notified = !!stepProgress?.notifiedAt;
             const completed = !!stepProgress?.completedAt;
             const deliverOn = new Date(startDate);
-            deliverOn.setDate(deliverOn.getDate() + step.dayOffset);
+            deliverOn.setDate(deliverOn.getDate() + step.dayOffset - 1);
 
             return (
               <Stack key={step.id} direction="row" alignItems="center" spacing={1}>
