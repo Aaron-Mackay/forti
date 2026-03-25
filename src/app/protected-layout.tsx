@@ -2,6 +2,7 @@ import {getServerSession} from "next-auth/next";
 import {redirect} from "next/navigation";
 import {authOptions} from "@/lib/auth";
 import { SettingsProvider } from "@lib/providers/SettingsProvider";
+import { AppBarProvider } from "@lib/providers/AppBarProvider";
 
 export default async function ProtectedLayout({children}: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -11,5 +12,11 @@ export default async function ProtectedLayout({children}: { children: React.Reac
     redirect("/api/auth/signin");
   }
 
-  return <SettingsProvider>{children}</SettingsProvider>;
+  return (
+    <SettingsProvider>
+      <AppBarProvider>
+        {children}
+      </AppBarProvider>
+    </SettingsProvider>
+  );
 }

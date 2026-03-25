@@ -30,7 +30,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckIcon from '@mui/icons-material/Check';
 import { addDays, format, getISOWeek, startOfWeek } from 'date-fns';
-import CustomAppBar, { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import { useAppBar } from '@lib/providers/AppBarProvider';
 import { DayMetricPrisma, EventPrisma } from '@/types/dataTypes';
 import { EventType } from '@prisma/client';
 import { getDefinedBlockColor } from '@/app/user/calendar/utils';
@@ -145,6 +146,7 @@ export default function NutritionClient({
   clients,
   coachModeActive,
 }: Props) {
+  useAppBar({ title: 'Nutrition' });
   const today = useMemo(() => new Date(), []);
 
   const [weekStart, setWeekStart] = useState<Date>(() =>
@@ -324,7 +326,6 @@ export default function NutritionClient({
 
   return (
     <>
-      <CustomAppBar title="Nutrition" />
       <Box sx={{ height: HEIGHT_EXC_APPBAR, overflowY: 'auto', px: 2, py: 2 }}>
 
         {/* Coach client selector */}

@@ -9,7 +9,8 @@ import {EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, ExerciseEquipment, ExerciseMuscle}
 import ExerciseCard from './ExerciseCard';
 import {AddExerciseForm} from './AddExerciseForm';
 import ExerciseDetailDrawer from './ExerciseDetailDrawer';
-import CustomAppBar, {HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar';
+import {HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar';
+import { useAppBar } from '@lib/providers/AppBarProvider';
 
 function toTitleCase(str: string) {
   return str.split(/[-\s]+/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -24,6 +25,7 @@ export default function ExercisesClient({
   coachDescriptions: Record<number, string>;
   isCoach: boolean;
 }) {
+  useAppBar({ title: 'Exercises' });
   const router = useRouter();
   const [searchText, setSearchText] = useState('');
   const [selectedMuscles, setSelectedMuscles] = useState<ExerciseMuscle[]>([]);
@@ -59,7 +61,6 @@ export default function ExercisesClient({
 
   return (
     <>
-      <CustomAppBar title="Exercises"/>
       <Box sx={{height: HEIGHT_EXC_APPBAR, overflowY: 'auto', p: {xs: 2, sm: 3}}}>
       {/* Filters */}
       <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3, alignItems: 'center'}}>

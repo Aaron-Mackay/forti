@@ -13,7 +13,7 @@ import {
   ListItemText,
   Typography,
 } from "@mui/material";
-import CustomAppBar from "@/components/CustomAppBar";
+import AppBarTitle from "@/components/AppBarTitle";
 import AddIcon from "@mui/icons-material/Add";
 
 const PlanPage = async () => {
@@ -35,7 +35,7 @@ const PlanPage = async () => {
 
   return (
     <>
-      <CustomAppBar title="Plans"/>
+      <AppBarTitle title="Plans" />
       <Card sx={{display: "flex", flexDirection: "column"}}>
         <CardHeader title={`${user.name}'s Plans`}/>
         {plans.userPlans.length === 0 ? (

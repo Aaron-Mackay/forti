@@ -2,7 +2,7 @@
 
 import { Box, Container, List, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
 import { UserPrisma } from '@/types/dataTypes';
-import CustomAppBar from "@/components/CustomAppBar";
+import { useAppBar } from '@lib/providers/AppBarProvider';
 import ProgressIcon from '@/lib/ProgressIcon';
 import { getPlanStatus } from '@/lib/workoutProgress';
 
@@ -13,9 +13,9 @@ export default function PlansListView({
   userData: UserPrisma;
   onSelectPlan: (planId: number) => void;
 }) {
+  useAppBar({ title: 'Training' });
   return (
     <Box sx={{ minHeight: '100dvh', color: 'text.primary' }}>
-      <CustomAppBar title={'Training'} />
       <Container maxWidth="sm" sx={{ py: 2 }}>
         <Typography variant="subtitle1" gutterBottom>
           Plans

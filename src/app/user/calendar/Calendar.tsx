@@ -12,7 +12,8 @@ import AddIcon from '@mui/icons-material/Add';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import CalendarBottomDrawer from "./CalendarBottomDrawer";
-import CustomAppBar, {APPBAR_HEIGHT} from "@/components/CustomAppBar";
+import {APPBAR_HEIGHT} from "@/components/CustomAppBar";
+import { useAppBar } from '@lib/providers/AppBarProvider';
 import {format, isAfter, isBefore, isSameDay} from 'date-fns';
 import {getEventsOnDate, parsedEvents} from "@/app/user/calendar/utils";
 import {EventType} from "@prisma/client";
@@ -36,6 +37,7 @@ type Props = {
 
 
 export default function Calendar({events, dayMetrics, userId}: Props) {
+  useAppBar({ title: 'Calendar' });
   const calendarRef = useRef<FullCalendar | null>(null);
   const { settings } = useSettings();
 
@@ -147,7 +149,6 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
 
   return (
     <>
-      <CustomAppBar title={"Calendar"}/>
       <Collapse in={calendarUpdatedBanner}>
         <Alert
           severity="info"

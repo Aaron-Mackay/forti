@@ -1,10 +1,10 @@
-import CustomAppBar from '@/components/CustomAppBar';
+import AppBarTitle from '@/components/AppBarTitle';
 import LearningPlansClient from './LearningPlansClient';
 
 export default function LearningPlansPage() {
   return (
     <>
-      <CustomAppBar title="Learning Plans" />
+      <AppBarTitle title="Learning Plans" />
       <LearningPlansClient />
     </>
   );

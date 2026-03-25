@@ -1,10 +1,10 @@
-import CustomAppBar from '@/components/CustomAppBar';
+import AppBarTitle from '@/components/AppBarTitle';
 import PlanEditorClient from './PlanEditorClient';
 
 export default function CoachPlanEditorPage() {
   return (
     <>
-      <CustomAppBar title="Edit Plan" showBack />
+      <AppBarTitle title="Edit Plan" showBack />
       <PlanEditorClient />
     </>
   );

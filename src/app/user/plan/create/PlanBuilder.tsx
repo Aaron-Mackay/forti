@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import CustomAppBar from '@/components/CustomAppBar'
+import { useAppBar } from '@lib/providers/AppBarProvider'
 import { EntryScreen } from './EntryScreen'
 import { AiFormScreen } from './AiFormScreen'
 import { PlanEditorScreen } from './PlanEditorScreen'
@@ -36,18 +36,19 @@ export const PlanBuilder = ({ blankPlan }: { blankPlan: PlanPrisma }) => {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const appBarProps: React.ComponentProps<typeof CustomAppBar> =
+  const appBarConfig =
     view === 'entry'
       ? { title: 'Create Plan' }
       : view === 'templates'
-        ? { title: 'Choose a Template', showBack: true, onBack: () => { resetPlan(); setView('entry') } }
+        ? { title: 'Choose a Template', showBack: true as const, onBack: () => { resetPlan(); setView('entry') } }
         : view === 'ai'
-          ? { title: 'Build with AI', showBack: true, onBack: () => setView('entry') }
-          : { title: 'New Plan', showBack: true, onBack: () => setView('entry') }
+          ? { title: 'Build with AI', showBack: true as const, onBack: () => setView('entry') }
+          : { title: 'New Plan', showBack: true as const, onBack: () => setView('entry') }
+
+  useAppBar(appBarConfig);
 
   return (
     <>
-      <CustomAppBar {...appBarProps} />
 
       {view === 'entry' && (
         <EntryScreen

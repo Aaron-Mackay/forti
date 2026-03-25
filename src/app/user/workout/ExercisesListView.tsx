@@ -25,7 +25,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {Chip} from '@mui/material';
 import {WorkoutPrisma} from '@/types/dataTypes';
 import './exercisesListView.css'
-import CustomAppBar from "@/components/CustomAppBar";
+import { useAppBar } from '@lib/providers/AppBarProvider';
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 
 export default function ExercisesListView({
@@ -45,6 +45,7 @@ export default function ExercisesListView({
   onAddExercise: () => void;
   onRemoveExercise?: (workoutExerciseId: number) => void;
 }) {
+  useAppBar({ title: workout.name, showBack: true, onBack });
   const [notesOpen, setNotesOpen] = useState(false);
   const [noteValue, setNoteValue] = useState(workout.notes ?? '');
 
@@ -63,7 +64,6 @@ export default function ExercisesListView({
       flexDirection: 'column',
       height: "100dvh"
     }}>
-      <CustomAppBar title={workout.name} onBack={onBack} showBack/>
       <Container
         maxWidth="sm"
         sx={{

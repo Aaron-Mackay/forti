@@ -10,6 +10,7 @@ vi.mock('@lib/providers/SettingsProvider', () => ({
     loading: false, error: null, clearError: vi.fn(), updateSetting: vi.fn(), setExerciseUnitOverride: vi.fn(),
   }),
 }));
+vi.mock('@lib/providers/AppBarProvider', () => ({ useAppBar: vi.fn() }));
 
 import ExerciseDetailView from './ExerciseDetailView';
 import {StopwatchProvider} from './StopwatchContext';

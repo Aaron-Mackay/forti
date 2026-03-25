@@ -1,9 +1,9 @@
-import CustomAppBar from '@/components/CustomAppBar';
+import AppBarTitle from '@/components/AppBarTitle';
 
 export default function CoachLearningPlansPage() {
   return (
     <>
-      <CustomAppBar title="Learning Plans" />
+      <AppBarTitle title="Learning Plans" />
       <CoachLearningPlansClient />
     </>
   );

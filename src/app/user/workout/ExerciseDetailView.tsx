@@ -15,7 +15,7 @@ import 'swiper/css/pagination';
 import './styles.css';
 import {WorkoutPrisma} from '@/types/dataTypes';
 import {UserExerciseNote} from '@prisma/client';
-import CustomAppBar from "@/components/CustomAppBar";
+import { useAppBar } from '@lib/providers/AppBarProvider';
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 import ExerciseSlide, {PreviousSet} from './ExerciseSlide';
 import CardioSlide, {PreviousCardio} from './CardioSlide';
@@ -50,6 +50,7 @@ export default function ExerciseDetailView({
   snackbar: { open: boolean; message: string; severity: 'success' | 'info' };
   handleSnackbarClose: () => void;
 }) {
+  useAppBar({ title: 'Exercises', showBack: true, onBack });
   const paginationRef = useRef<HTMLDivElement | null>(null);
   // Keyed by exerciseId (global Exercise table id)
   const [previousSetsMap, setPreviousSetsMap] = useState<Map<number, PreviousSet[]>>(new Map());
@@ -125,7 +126,6 @@ export default function ExerciseDetailView({
       flexDirection: 'column',
       height: "100dvh"
     }}>
-      <CustomAppBar title="Exercises" onBack={onBack} showBack/>
       <Container
         maxWidth="sm"
         sx={{

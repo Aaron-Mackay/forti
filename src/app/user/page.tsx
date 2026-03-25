@@ -1,6 +1,7 @@
 import React from "react";
 import getLoggedInUser from "@lib/getLoggedInUser";
-import CustomAppBar, {HEIGHT_EXC_APPBAR} from "@/components/CustomAppBar";
+import {HEIGHT_EXC_APPBAR} from "@/components/CustomAppBar";
+import AppBarTitle from "@/components/AppBarTitle";
 import {Paper, Typography} from "@mui/material";
 import DashboardChart from "@/app/user/(dashboard)/DashboardChart";
 import DashboardCards from "@/app/user/(dashboard)/DashboardCards";
@@ -28,7 +29,7 @@ export default async function UserPage() {
 
   return (
     <>
-      <CustomAppBar title={"Dashboard"}/>
+      <AppBarTitle title="Dashboard" />
       <Paper sx={{px: 2, minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto'}}>
         <Typography variant={'h4'} sx={{paddingTop: 2, paddingBottom: 2}}>
           {`Welcome ${user.name?.split(' ')[0]}`}

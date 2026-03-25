@@ -248,6 +248,7 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 | `src/lib/hooks/useOfflineCache.ts` | Hydrates/primes IndexedDB cache for offline-capable pages |
 | `src/lib/usePushSubscription.ts` | Manages browser push permission + subscription registration |
 | `src/lib/providers/AuthProvider.tsx` | React context wrapping SessionProvider |
+| `src/lib/providers/AppBarProvider.tsx` | Persistent AppBar context; exposes `useAppBar({ title, showBack?, onBack? })` for client components; use `<AppBarTitle>` (src/components/AppBarTitle.tsx) for server component pages |
 | `src/lib/providers/SettingsProvider.tsx` | Manages user settings state; exposes `useSettings()` hook |
 | `src/context/WorkoutEditorContext.tsx` | Workout editor state: `state`, `dispatch`, `debouncedDispatch`, `allExercises`, `addExercise` |
 | `src/types/dataTypes.ts` | Prisma type helpers (`UserPrisma`, `PlanPrisma`, etc.) + exercise constants |
