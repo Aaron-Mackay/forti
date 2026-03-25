@@ -97,6 +97,8 @@ export const DayMetricInput: React.FC<{
 
   const displayLabel = selectedMetric === 'weight'
     ? `weight (${weightUnit})`
+    : selectedMetric === 'sleepMins'
+    ? 'sleep'
     : (customDef?.name ?? selectedMetric ?? '');
 
   return (<>

@@ -43,7 +43,8 @@ export function computeMetricSummary(metrics: DayMetric[]): MetricSummary {
 
 export function formatSleepMins(mins: number | null): string {
   if (mins === null) return '—';
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
+  const whole = Math.round(mins);
+  const h = Math.floor(whole / 60);
+  const m = whole % 60;
   return `${h}h ${m.toString().padStart(2, '0')}m`;
 }

@@ -94,18 +94,18 @@ export default function MetricsSummaryTable({ currentWeek, weekPrior }: Props) {
         <TableHead>
           <TableRow>
             <TableCell sx={{ fontWeight: 600 }}>Metric</TableCell>
-            <TableCell align="right" sx={{ fontWeight: 600 }}>This week</TableCell>
             <TableCell align="right" sx={{ fontWeight: 600 }}>Prior week</TableCell>
-            <TableCell align="center" sx={{ fontWeight: 600, width: 40 }}></TableCell>
+            <TableCell align="right" sx={{ fontWeight: 600 }}>This week</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {rows.map(row => (
             <TableRow key={row.label}>
               <TableCell>{row.label}</TableCell>
-              <TableCell align="right">{row.current}</TableCell>
               <TableCell align="right" sx={{ color: 'text.secondary' }}>{row.prior}</TableCell>
-              <TableCell align="center"><DeltaIcon dir={row.dir} /></TableCell>
+              <TableCell align="right">
+                {row.current} <DeltaIcon dir={row.dir} />
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
