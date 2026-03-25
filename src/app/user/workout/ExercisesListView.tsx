@@ -67,7 +67,8 @@ export default function ExercisesListView({
       <Container
         maxWidth="sm"
         sx={{
-          py: 2,
+          pt: 2,
+          pb: 'max(16px, calc(16px + env(safe-area-inset-bottom)))',
           minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
