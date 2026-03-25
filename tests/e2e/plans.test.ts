@@ -354,3 +354,48 @@ test.describe('Plan editor (scratch)', () => {
     await expect(page.getByLabel(/workout name/i)).toHaveCount(initialCards + 1);
   });
 });
+
+// ── BFR preset toggle ─────────────────────────────────────────────────────────
+
+test.describe('BFR preset toggle', () => {
+  test.beforeEach(async ({ page }) => {
+    // Use the scratch plan editor — always starts in edit mode
+    await page.goto('/user/plan/create');
+    await page.getByTestId('entry-scratch').click();
+  });
+
+  test('BFR chip is visible in edit mode', async ({ page }) => {
+    await expect(page.getByRole('button', { name: 'BFR' }).first()).toBeVisible();
+  });
+
+  test('clicking BFR chip creates 4 set columns', async ({ page }) => {
+    // Before: 1 set → only "Set 1" column header
+    await expect(page.getByRole('columnheader', { name: 'Set 1' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Set 4' })).not.toBeVisible();
+
+    await page.getByRole('button', { name: 'BFR' }).first().click();
+
+    // After: 4 sets → "Set 1" through "Set 4"
+    await expect(page.getByRole('columnheader', { name: 'Set 4' })).toBeVisible();
+  });
+
+  test('BFR chip shows as active (warning color) after toggle', async ({ page }) => {
+    const bfrChip = page.getByRole('button', { name: 'BFR' }).first();
+    // Before: outlined/default style
+    await expect(bfrChip).not.toHaveClass(/MuiChip-colorWarning/);
+
+    await bfrChip.click();
+
+    // After: filled warning color
+    await expect(bfrChip).toHaveClass(/MuiChip-colorWarning/);
+  });
+
+  test('clicking BFR again deactivates it', async ({ page }) => {
+    const bfrChip = page.getByRole('button', { name: 'BFR' }).first();
+    await bfrChip.click();
+    await expect(bfrChip).toHaveClass(/MuiChip-colorWarning/);
+
+    await bfrChip.click();
+    await expect(bfrChip).not.toHaveClass(/MuiChip-colorWarning/);
+  });
+});

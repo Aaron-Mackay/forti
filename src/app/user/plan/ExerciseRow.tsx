@@ -1,7 +1,7 @@
 'use client';
 
 import React, {useState} from 'react';
-import {Box, Button, IconButton, TableCell, TableRow, TextField, Typography} from '@mui/material';
+import {Box, Button, Chip, IconButton, TableCell, TableRow, TextField, Typography} from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
 import CloseIcon from '@mui/icons-material/Close';
 import {createFilterOptions} from '@mui/material/Autocomplete';
@@ -178,6 +178,9 @@ const ExerciseRow = ({
             })
           }
         />
+        {!isInEditMode && exerciseLink.isBfr && (
+          <Chip label="BFR" size="small" color="warning" sx={{mt: 0.5, height: 18, fontSize: '0.7rem'}} />
+        )}
       </TableCell>
 
       <TableCell align={"center"}>
@@ -387,6 +390,23 @@ const ExerciseRow = ({
 
       {isInEditMode && (
         <TableCell>
+          <Chip
+            label="BFR"
+            size="small"
+            color={exerciseLink.isBfr ? 'warning' : 'default'}
+            variant={exerciseLink.isBfr ? 'filled' : 'outlined'}
+            onClick={() =>
+              dispatch({
+                type: 'TOGGLE_BFR',
+                planId,
+                weekId,
+                workoutId,
+                workoutExerciseId: exerciseLink.id,
+                enabled: !exerciseLink.isBfr,
+              })
+            }
+            sx={{mr: 0.5}}
+          />
           <Button
             onClick={() =>
               dispatch({
