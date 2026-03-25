@@ -51,6 +51,7 @@ function makeEmptyWorkoutExercise(id: number, workoutId: number, order: number):
     substitutedForId: null,
     substitutedFor: null,
     isAdded: false,
+    isBfr: false,
   };
 }
 
