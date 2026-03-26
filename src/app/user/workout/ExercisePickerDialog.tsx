@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
+  IconButton,
   List,
   ListItemButton,
   ListItemText,
@@ -18,6 +19,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import {Exercise} from '@prisma/client';
 import {AddExerciseForm} from '@/app/exercises/AddExerciseForm';
 
@@ -122,7 +124,12 @@ export default function ExercisePickerDialog({
       sx={{ zIndex: 1450 }}
       PaperProps={{sx: {display: 'flex', flexDirection: 'column', maxHeight: fullScreen ? '100dvh' : '80vh'}}}
     >
-      <DialogTitle sx={{pb: 1}}>{title}</DialogTitle>
+      <DialogTitle sx={{pb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+        {title}
+        <IconButton onClick={onClose} size="small" edge="end" aria-label="Close">
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
       <Box sx={{px: 3, pb: 1}}>
         <TextField
           autoFocus
