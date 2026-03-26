@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Box, Chip, Typography } from '@mui/material';
 import { PlanPrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
@@ -36,6 +36,26 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
 
   const maxWorkoutCount = Math.max(0, ...plan.weeks.map(w => w.workouts.length));
   const [selectedWorkoutOrder, setSelectedWorkoutOrder] = useState(1);
+
+  // Find the id of the latest week that has any weight/reps entered
+  const scrollTargetWeekId = (() => {
+    let lastId: number | null = null;
+    for (const week of sortedWeeks) {
+      const hasData = week.workouts.some(wo =>
+        wo.exercises.some(ex =>
+          ex.sets.some(s => s.weight != null || (s.reps != null && s.reps > 0))
+        )
+      );
+      if (hasData) lastId = week.id;
+    }
+    return lastId ?? sortedWeeks[sortedWeeks.length - 1]?.id ?? null;
+  })();
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollRef.current?.querySelector('[data-scroll-target="true"]');
+    if (el) el.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' });
+  }, []); // on mount only
 
   if (maxWorkoutCount === 0) {
     return (
@@ -112,7 +132,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
       </Box>
 
       {/* Scrollable table */}
-      <Box sx={{ overflowX: 'auto' }}>
+      <Box ref={scrollRef} sx={{ overflowX: 'auto' }}>
         <table style={{ borderCollapse: 'collapse', width: '100%' }}>
           <thead>
             <tr>
@@ -133,6 +153,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
               {sortedWeeks.map(week => (
                 <th
                   key={week.id}
+                  data-scroll-target={week.id === scrollTargetWeekId ? 'true' : undefined}
                   style={{
                     padding: '4px 12px',
                     fontSize: '0.72rem',

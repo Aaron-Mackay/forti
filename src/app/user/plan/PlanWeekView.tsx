@@ -6,7 +6,7 @@ import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import { PlanPrisma, WorkoutExercisePrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
-import { getWeekStatus, getWorkoutStatus } from '@/lib/workoutProgress';
+import { getWorkoutStatus } from '@/lib/workoutProgress';
 import ExerciseProgressCard from './ExerciseProgressCard';
 
 /** Strips trailing parenthetical from workout names, e.g. "Workout 1 (Plan 1 - Week 2)" → "Workout 1" */
@@ -34,10 +34,18 @@ const PlanWeekView = ({ plan, planId }: PlanWeekViewProps) => {
   const { dispatch } = useWorkoutEditorContext();
   const sortedWeeks = [...plan.weeks].sort((a, b) => a.order - b.order);
 
-  // Default to the first non-completed week, or the last week
+  // Default to the latest week that has any weight/reps entered, or the last week
   const defaultWeekIdx = (() => {
-    const idx = sortedWeeks.findIndex(w => getWeekStatus(w) !== 'completed');
-    return idx >= 0 ? idx : Math.max(0, sortedWeeks.length - 1);
+    let last = -1;
+    sortedWeeks.forEach((w, i) => {
+      const hasData = w.workouts.some(wo =>
+        wo.exercises.some(ex =>
+          ex.sets.some(s => s.weight != null || (s.reps != null && s.reps > 0))
+        )
+      );
+      if (hasData) last = i;
+    });
+    return last >= 0 ? last : Math.max(0, sortedWeeks.length - 1);
   })();
 
   const [weekIdx, setWeekIdx] = useState(defaultWeekIdx);
