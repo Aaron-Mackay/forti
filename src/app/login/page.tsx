@@ -1,4 +1,4 @@
-import {Box, Card, CardContent, CardMedia, Typography} from "@mui/material";
+import {Box, Card, CardContent, CardMedia, Chip, Typography} from "@mui/material";
 import Image from "next/image";
 import LoginButtons from "./LoginButtons";
 
@@ -34,6 +34,9 @@ export default function LoginPage() {
           <Typography variant="h4" fontWeight={700} mt={3}>
             Welcome to Forti
           </Typography>
+          <Box sx={{display: "flex", justifyContent: "center", mt: 1}}>
+            <Chip label="Beta" size="small" variant="outlined" sx={{color: "primary.contrastText", borderColor: "rgba(255,255,255,0.6)", fontSize: "0.7rem"}}/>
+          </Box>
           <Typography variant="body1" mt={2}>
             Your training, organised and tracked with ease.
           </Typography>
@@ -57,7 +60,10 @@ export default function LoginPage() {
             title="Logo"
           />
           <CardContent sx={{textAlign: "center"}}>
-            <Typography variant="h2" sx={{display: { md: "none" }}}>Forti</Typography>
+            <Box sx={{display: {xs: "flex", md: "none"}, justifyContent: "center", alignItems: "center", gap: 1}}>
+              <Typography variant="h2">Forti</Typography>
+              <Chip label="Beta" size="small" color="primary" variant="outlined" sx={{fontSize: "0.7rem"}}/>
+            </Box>
             <Typography variant="h5" fontWeight={600} gutterBottom>
               Sign in
             </Typography>
