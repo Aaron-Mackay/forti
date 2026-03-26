@@ -20,6 +20,7 @@ export type WorkoutEditorAction =
   | { type: 'REORDER_WORKOUT'; planId: number, weekId: number; fromIndex: number; toIndex: number }
   | { type: 'ADD_EXERCISE'; planId: number, weekId: number; workoutId: number; }
   | { type: 'ADD_EXERCISE_WITH_SET'; planId: number, weekId: number; workoutId: number; }
+  | { type: 'ADD_EXERCISE_WITH_SET_FOR_EXERCISE'; planId: number, weekId: number; workoutId: number; exercise: Exercise }
   | { type: 'REMOVE_EXERCISE'; planId: number, weekId: number; workoutId: number; exerciseId: number }
   | { type: 'MOVE_EXERCISE'; planId: number, weekId: number; workoutId: number; dir: Dir, index: number }
   | { type: 'REORDER_EXERCISE'; planId: number, weekId: number; workoutId: number; fromIndex: number; toIndex: number }
@@ -229,6 +230,13 @@ export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, 
       const workout = getNestedOrWarn({planId, weekId, workoutId});
       if (!workout) return userDataState;
       return userPlanMutators.addExerciseWithSet(userDataState, planId, weekId, workoutId, createUuid)
+    }
+
+    case 'ADD_EXERCISE_WITH_SET_FOR_EXERCISE': {
+      const { planId, weekId, workoutId, exercise } = action;
+      const workout = getNestedOrWarn({planId, weekId, workoutId});
+      if (!workout) return userDataState;
+      return userPlanMutators.addExerciseWithSetForExercise(userDataState, planId, weekId, workoutId, exercise, createUuid)
     }
 
     case 'MOVE_WORKOUT': {

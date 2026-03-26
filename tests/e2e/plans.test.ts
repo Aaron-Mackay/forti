@@ -44,40 +44,45 @@ test.describe('Plan detail page', () => {
     await page.waitForURL(/\/user\/plan\/\d+/);
   });
 
-  test('renders the Plan app bar title', async ({ page }) => {
-    await expect(page.getByRole('banner')).toContainText('Plan');
+  test('renders the plan name in the app bar', async ({ page }) => {
+    await expect(page.getByRole('banner')).toContainText(/Plan/i);
   });
 
-  test("shows the demo user's name in the plan heading", async ({ page }) => {
-    await expect(page.getByText(/User: TestUser/i).first()).toBeVisible();
-  });
-
-  test('displays at least one week', async ({ page }) => {
-    // Seed creates 2-3 weeks per plan.
-    // Desktop: Week component renders an <h2> heading per week ("Week N")
-    // Mobile: MobilePlanView renders Chip buttons with "Wk N" labels
-    const weekHeading = page.getByRole('heading', { name: /Week \d+/i });
-    const weekChip = page.getByRole('button', { name: /Wk \d+/i });
-    await expect(weekHeading.or(weekChip).first()).toBeVisible();
-  });
-
-  test('displays workouts inside a week', async ({ page }) => {
-    await expect(page.getByText(/Workout/i).first()).toBeVisible();
-  });
-
-  test('shows the Edit toggle button in view mode', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /Edit/i })).toBeVisible();
-  });
-
-  test('clicking Edit enables edit mode and reveals Save button', async ({ page }) => {
-    await page.getByRole('button', { name: /Edit/i }).click();
+  test('shows a Save button', async ({ page }) => {
     await expect(page.getByRole('button', { name: /Save/i })).toBeVisible();
   });
 
-  // todo skipping until plan edit mode works on mobile
-  test.skip('edit mode reveals Add Week button', async ({ page }) => {
-    await page.getByRole('button', { name: /Edit/i }).click();
-    await expect(page.getByRole('button', { name: /Add Week/i })).toBeVisible();
+  test('shows workout selector chips', async ({ page }) => {
+    // Desktop: PlanMultiWeekTable renders one chip per workout slot
+    await expect(page.getByRole('button', { name: /Workout/i }).first()).toBeVisible();
+  });
+
+  test('shows week column headers (Wk N)', async ({ page }) => {
+    // Desktop: PlanMultiWeekTable renders week column headers
+    await expect(page.getByText(/Wk \d+/i).first()).toBeVisible();
+  });
+
+  test('shows editable weight inputs for exercises', async ({ page }) => {
+    await expect(page.locator('input[placeholder="kg"]').first()).toBeVisible();
+  });
+
+  test('shows editable reps inputs for exercises', async ({ page }) => {
+    await expect(page.locator('input[placeholder="reps"]').first()).toBeVisible();
+  });
+
+  test('editing a weight input updates the displayed value', async ({ page }) => {
+    const weightInput = page.locator('input[placeholder="kg"]').first();
+    await weightInput.fill('99');
+    await expect(weightInput).toHaveValue('99');
+  });
+
+  test('clicking a different workout chip switches the active selection', async ({ page }) => {
+    const chips = page.getByRole('button', { name: /Workout/i });
+    const count = await chips.count();
+    if (count < 2) return; // only one workout slot — skip
+    const second = chips.nth(1);
+    await second.click();
+    await expect(second).toHaveClass(/MuiChip-filled/);
   });
 });
 
@@ -356,58 +361,6 @@ test.describe('Plan editor (scratch)', () => {
 });
 
 // ── BFR preset toggle ─────────────────────────────────────────────────────────
-
-test.describe('BFR preset toggle', () => {
-  test.describe.configure({ mode: 'serial' });
-  // BFR chip and column headers only exist in the desktop table editor
-  // (ExerciseRow inside Workout.tsx). MobilePlanView has no interactive BFR UI.
-  test.skip(({ isMobile }) => isMobile, 'BFR toggle only in desktop table editor');
-
-  test.beforeEach(async ({ page }) => {
-    // Navigate to an existing plan and enter edit mode so ExerciseRow renders
-    // with the interactive BFR chip. The scratch plan creator (PlanEditorScreen)
-    // uses a different layout that does not include the BFR chip or set columns.
-    await page.goto('/user/plan');
-    const firstPlanLink = page.getByRole('listitem').first().getByRole('link');
-    await firstPlanLink.click();
-    await page.waitForURL(/\/user\/plan\/\d+/);
-    await page.getByRole('button', { name: /Edit/i }).first().click();
-    await expect(page.getByRole('button', { name: /Save/i })).toBeVisible();
-  });
-
-  test('BFR chip is visible in edit mode', async ({ page }) => {
-    await expect(page.getByRole('button', { name: 'BFR' }).first()).toBeVisible();
-  });
-
-  test('clicking BFR chip creates 4 set columns', async ({ page }) => {
-    // Seed data: 3 sets per exercise → "Set 1" visible, "Set 4" not yet visible.
-    // Multiple workouts each render their own table header, so narrow with .first().
-    await expect(page.getByRole('columnheader', { name: 'Set 1' }).first()).toBeVisible(); // multiple tables on page
-    await expect(page.getByRole('columnheader', { name: 'Set 4' }).first()).not.toBeVisible();
-
-    await page.getByRole('button', { name: 'BFR' }).first().click();
-
-    // BFR preset bumps set count to 4 → "Set 4" column header appears
-    await expect(page.getByRole('columnheader', { name: 'Set 4' }).first()).toBeVisible();
-  });
-
-  test('BFR chip shows as active (warning color) after toggle', async ({ page }) => {
-    const bfrChip = page.getByRole('button', { name: 'BFR' }).first();
-    // Before: outlined/default style (isBfr = false)
-    await expect(bfrChip).not.toHaveClass(/MuiChip-colorWarning/);
-
-    await bfrChip.click();
-
-    // After: filled warning color (isBfr = true)
-    await expect(bfrChip).toHaveClass(/MuiChip-colorWarning/);
-  });
-
-  test('clicking BFR again deactivates it', async ({ page }) => {
-    const bfrChip = page.getByRole('button', { name: 'BFR' }).first();
-    await bfrChip.click();
-    await expect(bfrChip).toHaveClass(/MuiChip-colorWarning/);
-
-    await bfrChip.click();
-    await expect(bfrChip).not.toHaveClass(/MuiChip-colorWarning/);
-  });
-});
+// TODO: BFR toggle was previously in ExerciseRow (Week.tsx desktop table).
+// The new PlanMultiWeekTable does not yet expose per-exercise BFR controls.
+// These tests will be re-added once BFR is supported in the new plan view.

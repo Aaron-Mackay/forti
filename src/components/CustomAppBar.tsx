@@ -65,7 +65,7 @@ export default function CustomAppBar(
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const pathname = usePathname();
-  const { settings } = useSettings();
+  const { settings, loading: settingsLoading } = useSettings();
   const [planNestedOpen, setPlanNestedOpen] = useState(() => pathname.includes('/plan'))
   const planCount = usePlanCount();
   const { unreadCount } = useNotifications();
@@ -178,19 +178,19 @@ export default function CustomAppBar(
             <ListLink icon={<WorkoutIcon/>} text="Training" href="/user/workout"/>
             <ListLink icon={<ChecklistIcon/>} text="Check-in" href="/user/check-in"/>
             <ListLink icon={<RestaurantRoundedIcon/>} text="Nutrition" href="/user/nutrition"/>
-            {settings.showSupplements && (
+            {!settingsLoading && settings.showSupplements && (
               <ListLink icon={<MedicationIcon/>} text="Supplements" href="/user/supplements"/>
             )}
             <ListLink icon={<LibraryBooksIcon/>} text="Exercises" href="/exercises"/>
             <ListLink icon={<BookmarksIcon/>} text="Library" href="/library"/>
             <ListLink icon={<SchoolIcon/>} text="Learning Plans" href="/user/learning-plans"/>
-            {settings.coachModeActive && (
+            {!settingsLoading && settings.coachModeActive && (
               <ListLink icon={<GroupIcon/>} text="Client Check-ins" href="/user/coach/check-ins"/>
             )}
-            {settings.coachModeActive && (
+            {!settingsLoading && settings.coachModeActive && (
               <ListLink icon={<SchoolIcon/>} text="Coach Learning Plans" href="/user/coach/learning-plans"/>
             )}
-            {planCount
+            {planCount == null ? null : planCount > 0
               ? <>
                 <ListItemButton onClick={handleClick}>
                   <ListItemIcon><ListAltIcon/></ListItemIcon>
