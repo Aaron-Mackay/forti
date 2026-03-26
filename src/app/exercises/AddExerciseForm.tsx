@@ -140,6 +140,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, initialName}: A
               value={equipment}
               onChange={(_e, val: ExerciseEquipment[]) => setEquipment(val)}
               onBlur={() => setTouchedEquipment(true)}
+              slotProps={{ popper: { style: { zIndex: 1520 } } }}
               renderInput={params => (
                 <TextField
                   {...params}
@@ -158,6 +159,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, initialName}: A
               value={primaryMuscles}
               onChange={(_e, val: ExerciseMuscle[]) => setPrimaryMuscles(val)}
               onBlur={() => setTouchedPrimaryMuscles(true)}
+              slotProps={{ popper: { style: { zIndex: 1520 } } }}
               renderInput={params => (
                 <TextField
                   {...params}
@@ -175,6 +177,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, initialName}: A
               options={[...EXERCISE_MUSCLES]}
               value={secondaryMuscles}
               onChange={(_e, val: ExerciseMuscle[]) => setSecondaryMuscles(val)}
+              slotProps={{ popper: { style: { zIndex: 1520 } } }}
               renderInput={params => (
                 <TextField
                   {...params}
