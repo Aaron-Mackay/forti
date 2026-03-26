@@ -54,10 +54,13 @@ export default function CustomAppBar(
     title,
     onBack,
     showBack = false,
+    noSpacer = false,
   }: {
     title: string;
     onBack?: () => void;
     showBack?: boolean;
+    /** When true, omits the spacer <Toolbar> that pushes content below the fixed bar. */
+    noSpacer?: boolean;
   }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -119,7 +122,7 @@ export default function CustomAppBar(
 
   return (
     <>
-      <AppBar position="fixed" color="primary" sx={{height: APPBAR_HEIGHT}} enableColorOnDark>
+      <AppBar position="fixed" color="primary" sx={{height: APPBAR_HEIGHT, zIndex: 1400}} enableColorOnDark>
         <Toolbar
           sx={{
             minHeight: '56px !important', // forces 56px at all widths
@@ -140,11 +143,12 @@ export default function CustomAppBar(
           </Typography>
         </Toolbar>
       </AppBar>
-      <Toolbar sx={{minHeight: APPBAR_HEIGHT}}/>
+      {!noSpacer && <Toolbar sx={{minHeight: APPBAR_HEIGHT}}/>}
       <Drawer
         open={drawerOpen}
         variant="temporary"
         onClose={() => setDrawerOpen(false)}
+        sx={{ zIndex: 1500 }}
         PaperProps={{
           sx: {
             height: '100dvh',

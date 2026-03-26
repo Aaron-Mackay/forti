@@ -120,18 +120,18 @@ export default function WeekMuscleSummary({ week }: { week: WeekPrisma }) {
         ))}
       </Box>
 
-      {/* Per-muscle done/planned list */}
-      <Box sx={{ mt: 1.5 }}>
+      {/* Per-muscle done/planned list — two columns */}
+      <Box sx={{ mt: 1.5, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.25 }}>
         {targeted.map(([muscle, { planned, done }]) => (
           <Box
             key={muscle}
-            sx={{ display: 'flex', justifyContent: 'space-between', py: 0.25 }}
+            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', px: 0.5, py: 0.25, borderRadius: 1 }}
           >
-            <Typography variant="body2">
+            <Typography variant="body2" noWrap sx={{ mr: 0.5, minWidth: 0 }}>
               {MUSCLE_NAMES[muscle] ?? muscle}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {Number.isInteger(done) ? done : done.toFixed(1)} / {Number.isInteger(planned) ? planned : planned.toFixed(1)} sets
+            <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+              {Number.isInteger(done) ? done : done.toFixed(1)}/{Number.isInteger(planned) ? planned : planned.toFixed(1)}
             </Typography>
           </Box>
         ))}

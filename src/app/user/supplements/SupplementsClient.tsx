@@ -25,8 +25,8 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import CustomAppBar from '@/components/CustomAppBar';
 import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import { useAppBar } from '@lib/providers/AppBarProvider';
 
 interface Supplement {
   id: number;
@@ -138,6 +138,7 @@ export default function SupplementsClient({
   coachModeActive: boolean;
   clients: Client[];
 }) {
+  useAppBar({ title: 'Supplements' });
   const [supplements, setSupplements] = useState<Supplement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -269,7 +270,6 @@ export default function SupplementsClient({
 
   return (
     <>
-      <CustomAppBar title="Supplements" />
       <Box sx={{ pt: 2, pb: 6, px: 2, maxWidth: 600, height: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
         {coachModeActive && clients.length > 0 && (
           <FormControl fullWidth size="small" sx={{ mb: 2 }}>

@@ -2,7 +2,7 @@
 
 import {Box, Container, List, ListItem, ListItemButton, ListItemText, Typography} from '@mui/material';
 import {PlanPrisma} from '@/types/dataTypes';
-import CustomAppBar from "@/components/CustomAppBar";
+import { useAppBar } from '@lib/providers/AppBarProvider';
 import ProgressIcon from '@/lib/ProgressIcon';
 import { getWeekStatus } from '@/lib/workoutProgress';
 
@@ -15,9 +15,9 @@ export default function WeeksListView({
   plan: PlanPrisma,
   onBack: () => void;
 }) {
+  useAppBar({ title: 'Weeks', showBack: true, onBack });
   return (
     <Box sx={{minHeight: '100dvh', bgcolor: 'background.default', color: 'text.primary'}}>
-      <CustomAppBar title={'Weeks'} onBack={onBack} showBack/>
       <Container maxWidth="sm" sx={{py: 2}}>
         <Typography variant="subtitle1" gutterBottom>
           Weeks

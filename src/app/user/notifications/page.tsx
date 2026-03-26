@@ -12,7 +12,8 @@ import {
   ListItemText,
   Typography,
 } from '@mui/material';
-import CustomAppBar, { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import { useAppBar } from '@lib/providers/AppBarProvider';
 import { useNotifications } from '@lib/hooks/api/useNotifications';
 import { useRouter } from 'next/navigation';
 import type { Notification } from '@prisma/client';
@@ -45,6 +46,7 @@ function relativeTime(date: Date | string): string {
 }
 
 export default function NotificationsPage() {
+  useAppBar({ title: 'Notifications', showBack: true });
   const { notifications, unreadCount, loading, markRead, markAllRead } = useNotifications();
   const router = useRouter();
 
@@ -55,7 +57,6 @@ export default function NotificationsPage() {
 
   return (
     <>
-      <CustomAppBar title="Notifications" showBack />
       <Box sx={{ height: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
         {unreadCount > 0 && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 2, pt: 1.5 }}>

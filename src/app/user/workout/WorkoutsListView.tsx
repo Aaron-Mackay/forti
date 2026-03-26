@@ -2,7 +2,7 @@
 
 import { Box, Container, List, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
 import { WeekPrisma } from '@/types/dataTypes';
-import CustomAppBar from "@/components/CustomAppBar";
+import { useAppBar } from '@lib/providers/AppBarProvider';
 import ProgressIcon from '@/lib/ProgressIcon';
 import { getWorkoutStatus } from '@/lib/workoutProgress';
 import WeekMuscleSummary from './WeekMuscleSummary';
@@ -16,9 +16,9 @@ export default function WorkoutsListView({
   onBack: () => void;
   onSelectWorkout: (workoutId: number) => void;
 }) {
+  useAppBar({ title: `Week ${week.order}`, showBack: true, onBack });
   return (
     <Box sx={{ minHeight: '100dvh', bgcolor: 'background.default', color: 'text.primary' }}>
-      <CustomAppBar title={`Week ${week.order}`} onBack={onBack} showBack />
       <Container maxWidth="sm" sx={{ py: 2 }}>
         <WeekMuscleSummary week={week} />
         <Typography variant="subtitle1" gutterBottom>

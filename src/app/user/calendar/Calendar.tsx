@@ -12,7 +12,8 @@ import AddIcon from '@mui/icons-material/Add';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import CalendarBottomDrawer from "./CalendarBottomDrawer";
-import CustomAppBar, {APPBAR_HEIGHT} from "@/components/CustomAppBar";
+import {APPBAR_HEIGHT} from "@/components/CustomAppBar";
+import { useAppBar } from '@lib/providers/AppBarProvider';
 import {format, isAfter, isBefore, isSameDay} from 'date-fns';
 import {getEventsOnDate, parsedEvents} from "@/app/user/calendar/utils";
 import {EventType} from "@prisma/client";
@@ -36,6 +37,7 @@ type Props = {
 
 
 export default function Calendar({events, dayMetrics, userId}: Props) {
+  useAppBar({ title: 'Calendar' });
   const calendarRef = useRef<FullCalendar | null>(null);
   const { settings } = useSettings();
 
@@ -147,7 +149,6 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
 
   return (
     <>
-      <CustomAppBar title={"Calendar"}/>
       <Collapse in={calendarUpdatedBanner}>
         <Alert
           severity="info"
@@ -173,13 +174,11 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
           onChange={(_e, val) => { if (val) setViewMode(val); }}
           size="small"
         >
-          <ToggleButton value="calendar">
-            <CalendarMonthIcon fontSize="small" sx={{mr: 0.5}}/>
-            Calendar
+          <ToggleButton value="calendar" aria-label="Calendar view">
+            <CalendarMonthIcon fontSize="small"/>
           </ToggleButton>
-          <ToggleButton value="weeks">
-            <ViewListIcon fontSize="small" sx={{mr: 0.5}}/>
-            Weeks
+          <ToggleButton value="weeks" aria-label="Weeks view">
+            <ViewListIcon fontSize="small"/>
           </ToggleButton>
         </ToggleButtonGroup>
       </Box>
@@ -224,6 +223,7 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
           events={eventsInState}
           onWeekClick={handleWeekClick}
           height={`calc(100dvh - ${APPBAR_HEIGHT}px - ${TOGGLE_HEIGHT}px)`}
+          active={viewMode === 'weeks'}
         />
       </Box>
       <Box sx={{

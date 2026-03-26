@@ -3,7 +3,7 @@ import { authOptions } from '@lib/auth';
 import { redirect } from 'next/navigation';
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
-import CustomAppBar from '@/components/CustomAppBar';
+import AppBarTitle from '@/components/AppBarTitle';
 import LibraryClient from './LibraryClient';
 
 export default async function LibraryPage() {
@@ -39,7 +39,7 @@ export default async function LibraryPage() {
 
   return (
     <>
-      <CustomAppBar title="Library" />
+      <AppBarTitle title="Library" />
       <LibraryClient
         ownAssets={ownAssets}
         coachAssets={coachAssets}

@@ -20,7 +20,8 @@ import Typography from '@mui/material/Typography'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
-import CustomAppBar, { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar'
+import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar'
+import { useAppBar } from '@lib/providers/AppBarProvider'
 import type { AiImportResponse } from '@/app/api/plan/ai-import/route'
 
 const STEPS = ['Uploading spreadsheet', 'Analysing with AI', 'Building plan']
@@ -91,11 +92,11 @@ export const UploadAndEdit = () => {
     }
   }
 
+  useAppBar({ title: 'Import from Spreadsheet', showBack: true });
   const loading = phase > 0
 
   return (
     <>
-      <CustomAppBar title="Import from Spreadsheet" showBack />
       <Box sx={{ height: HEIGHT_EXC_APPBAR, overflowY: 'auto', p: 2, maxWidth: 600, mx: 'auto' }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Upload a CSV or paste your training spreadsheet below. AI will read the exercises, sets, and weights and create a ready-to-edit plan.

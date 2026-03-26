@@ -20,7 +20,7 @@ export default function RatingField({ label, value, onChange }: Props) {
         exclusive
         onChange={(_e, v) => { if (v !== null) onChange(v as number); }}
         size="small"
-        sx={{ flexWrap: 'wrap', gap: 0.5 }}
+        sx={{ flexWrap: 'wrap', gap: 0.5, display: 'flex', width: '100%' }}
       >
         {[1, 2, 3, 4, 5].map(n => (
           <ToggleButton

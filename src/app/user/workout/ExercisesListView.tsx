@@ -25,7 +25,8 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {Chip} from '@mui/material';
 import {WorkoutPrisma} from '@/types/dataTypes';
 import './exercisesListView.css'
-import CustomAppBar from "@/components/CustomAppBar";
+import { useAppBar } from '@lib/providers/AppBarProvider';
+import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 
 export default function ExercisesListView({
@@ -45,6 +46,7 @@ export default function ExercisesListView({
   onAddExercise: () => void;
   onRemoveExercise?: (workoutExerciseId: number) => void;
 }) {
+  useAppBar({ title: workout.name, showBack: true, onBack });
   const [notesOpen, setNotesOpen] = useState(false);
   const [noteValue, setNoteValue] = useState(workout.notes ?? '');
 
@@ -56,18 +58,17 @@ export default function ExercisesListView({
 
   return (
     <Box sx={{
-      minHeight: '100dvh',
+      height: HEIGHT_EXC_APPBAR,
       bgcolor: 'background.default',
       color: 'text.primary',
       display: 'flex',
       flexDirection: 'column',
-      height: "100dvh"
     }}>
-      <CustomAppBar title={workout.name} onBack={onBack} showBack/>
       <Container
         maxWidth="sm"
         sx={{
-          py: 2,
+          pt: 2,
+          pb: 'max(16px, calc(16px + env(safe-area-inset-bottom)))',
           minHeight: 0,
           display: 'flex',
           flexDirection: 'column',

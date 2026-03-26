@@ -12,12 +12,13 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import CustomAppBar from "@/components/CustomAppBar";
+import { useAppBar } from '@lib/providers/AppBarProvider';
 
 const FEEDBACK_TYPES = ["Bug Report", "Feature Request", "Improvement Suggestion"] as const;
 type FeedbackType = (typeof FEEDBACK_TYPES)[number];
 
 export default function FeedbackPage() {
+  useAppBar({ title: 'Feedback' });
   const [type, setType] = useState<FeedbackType>("Bug Report");
   const [description, setDescription] = useState("");
   const [screenshot, setScreenshot] = useState<File | null>(null);
@@ -62,7 +63,6 @@ export default function FeedbackPage() {
 
   return (
     <>
-      <CustomAppBar title={"Feedback"}/>
       <Box
         component="form"
         onSubmit={handleSubmit}

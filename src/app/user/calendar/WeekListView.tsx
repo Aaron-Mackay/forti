@@ -19,6 +19,7 @@ type Props = {
   events: EventPrisma[];
   onWeekClick: (weekStart: Date) => void;
   height: string;
+  active: boolean;
 };
 
 type WeekGroup = {
@@ -69,7 +70,7 @@ function getCustomEventsForWeek(events: EventPrisma[], weekStart: Date, weekEnd:
   });
 }
 
-export default function WeekListView({ events, onWeekClick, height }: Props) {
+export default function WeekListView({ events, onWeekClick, height, active }: Props) {
   const today = startOfDay(new Date());
   const currentWeekStart = startOfISOWeek(today);
 
@@ -80,14 +81,27 @@ export default function WeekListView({ events, onWeekClick, height }: Props) {
   const weeks = getWeeksInRange(rangeStart, rangeEnd);
   const groups = groupWeeksByMonth(weeks);
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const currentWeekRef = useRef<HTMLDivElement>(null);
+  const scrolledRef = useRef(false);
 
+  // Scroll to current week the first time the view becomes visible.
+  // Use manual scrollTop instead of scrollIntoView — scrollIntoView also
+  // scrolls ancestor elements (including the page), which pushes the
+  // toggle bar out of view.
   useEffect(() => {
-    currentWeekRef.current?.scrollIntoView({ block: 'center', behavior: 'instant' });
-  }, []);
+    if (!active || scrolledRef.current) return;
+    scrolledRef.current = true;
+    const container = containerRef.current;
+    const el = currentWeekRef.current;
+    if (!container || !el) return;
+    const containerTop = container.getBoundingClientRect().top;
+    const elTop = el.getBoundingClientRect().top;
+    container.scrollTop += elTop - containerTop - container.clientHeight / 2 + el.clientHeight / 2;
+  }, [active]);
 
   return (
-    <Box sx={{ overflowY: 'auto', height, pb: 10 }}>
+    <Box ref={containerRef} sx={{ overflowY: 'auto', height, pb: 10 }}>
       {groups.map(({ monthKey, monthLabel, weeks: monthWeeks }) => (
         <Box key={monthKey}>
           <Typography

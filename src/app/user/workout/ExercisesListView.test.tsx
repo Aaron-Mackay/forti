@@ -7,6 +7,7 @@ vi.mock('next/navigation', () => ({usePathname: () => '/user/workout', useRouter
 vi.mock('@lib/providers/SettingsProvider', () => ({
   useSettings: () => ({settings: {showStopwatch: true}, loading: false, error: null, clearError: vi.fn(), updateSetting: vi.fn()}),
 }));
+vi.mock('@lib/providers/AppBarProvider', () => ({ useAppBar: vi.fn() }));
 
 import ExercisesListView from './ExercisesListView';
 import {StopwatchProvider} from './StopwatchContext';

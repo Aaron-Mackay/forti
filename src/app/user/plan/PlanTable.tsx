@@ -8,7 +8,7 @@ import Button from "@mui/material/Button";
 import Week from "./Week";
 import EditModeToggle from "./EditModeToggle";
 import ScreenSizeWarningBanner from "@/components/ScreenSizeWarningBanner";
-import CustomAppBar from "@/components/CustomAppBar";
+import { useAppBar } from '@lib/providers/AppBarProvider';
 import {Alert, Box, Snackbar, useMediaQuery, useTheme} from "@mui/material";
 import MobilePlanView from "./MobilePlanView";
 
@@ -35,12 +35,12 @@ export const PlanTable: React.FC<{
   const plan = planId ?
     userDataState.plans.find(p => p.id === parseInt(planId))
     : userDataState.plans[0]
+  useAppBar({ title: 'Plan' });
   if (!plan) {
     redirect('/user/plan/create')
   }
   return (
     <>
-      <CustomAppBar title={"Plan"}/>
       <Box sx={{p: 1, overflow: 'auto'}}>
         {!lockedInEditMode && (
           <EditModeToggle
