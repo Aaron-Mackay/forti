@@ -1,0 +1,338 @@
+'use client';
+
+import React, { useState } from 'react';
+import { Box, Chip, Typography } from '@mui/material';
+import { PlanPrisma } from '@/types/dataTypes';
+import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
+import { getWeekStatus } from '@/lib/workoutProgress';
+
+const readOnlyCellSx: React.CSSProperties = {
+  fontSize: '0.8rem',
+  whiteSpace: 'nowrap',
+  color: 'var(--mui-palette-text-disabled, #bbb)',
+};
+
+const inputSx: React.CSSProperties = {
+  width: '3.2em',
+  textAlign: 'center',
+  border: '1px solid rgba(0,0,0,0.23)',
+  borderRadius: '4px',
+  padding: '2px 3px',
+  fontSize: '0.75rem',
+  fontFamily: 'inherit',
+  background: 'transparent',
+  color: 'inherit',
+  outline: 'none',
+  MozAppearance: 'textfield',
+};
+
+interface PlanMultiWeekTableProps {
+  plan: PlanPrisma;
+  planId: number;
+}
+
+const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
+  const { dispatch } = useWorkoutEditorContext();
+  const sortedWeeks = [...plan.weeks].sort((a, b) => a.order - b.order);
+
+  const maxWorkoutCount = Math.max(0, ...plan.weeks.map(w => w.workouts.length));
+  const [selectedWorkoutOrder, setSelectedWorkoutOrder] = useState(1);
+
+  if (maxWorkoutCount === 0) {
+    return (
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+        No workouts yet.
+      </Typography>
+    );
+  }
+
+  // Build slot labels from first week that has a workout at each position
+  const slotLabels: string[] = Array.from({ length: maxWorkoutCount }, (_, i) => {
+    for (const week of plan.weeks) {
+      const w = week.workouts.find(wk => wk.order === i + 1);
+      if (w?.name) return w.name;
+    }
+    return `Workout ${i + 1}`;
+  });
+
+  // For each week, find the workout at the selected order slot
+  const workoutsByWeek = sortedWeeks.map(week => ({
+    week,
+    workout: week.workouts.find(w => w.order === selectedWorkoutOrder) ?? null,
+  }));
+
+  // First non-completed week is "active" (current); past = completed
+  const activeWeekIdx = sortedWeeks.findIndex(w => getWeekStatus(w) !== 'completed');
+  const activeWeekOrder = activeWeekIdx >= 0
+    ? sortedWeeks[activeWeekIdx].order
+    : sortedWeeks[sortedWeeks.length - 1]?.order ?? 1;
+
+  // Collect all unique exercises across all weeks for this workout slot (by exercise.id)
+  // Order preserves first occurrence across weeks in order
+  const exerciseMap = new Map<
+    number,
+    { exerciseId: number; name: string; repRange: string | null; restTime: string | null; targetRpe: number | null; targetRir: number | null }
+  >();
+  for (const { workout } of workoutsByWeek) {
+    if (!workout) continue;
+    const sorted = [...workout.exercises].sort((a, b) => a.order - b.order);
+    for (const ex of sorted) {
+      const eid = ex.exercise?.id;
+      if (eid != null && !exerciseMap.has(eid)) {
+        exerciseMap.set(eid, {
+          exerciseId: eid,
+          name: ex.exercise?.name ?? '(unnamed)',
+          repRange: ex.repRange,
+          restTime: ex.restTime,
+          targetRpe: ex.targetRpe,
+          targetRir: ex.targetRir,
+        });
+      }
+    }
+  }
+  const exerciseList = Array.from(exerciseMap.values());
+
+  // Active workout (for + Exercise action)
+  const activeWorkout = workoutsByWeek.find(x => x.week.order === activeWeekOrder)?.workout ?? null;
+
+  return (
+    <Box>
+      {/* Workout chips */}
+      <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', pb: 1, mb: 2 }}>
+        {slotLabels.map((label, i) => (
+          <Chip
+            key={i}
+            label={label}
+            onClick={() => setSelectedWorkoutOrder(i + 1)}
+            variant={selectedWorkoutOrder === i + 1 ? 'filled' : 'outlined'}
+            color={selectedWorkoutOrder === i + 1 ? 'primary' : 'default'}
+            size="small"
+            sx={{ flexShrink: 0, cursor: 'pointer' }}
+          />
+        ))}
+      </Box>
+
+      {/* Scrollable table */}
+      <Box sx={{ overflowX: 'auto' }}>
+        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+          <thead>
+            <tr>
+              <th
+                style={{
+                  minWidth: '9rem',
+                  maxWidth: '14rem',
+                  textAlign: 'left',
+                  padding: '4px 12px 4px 0',
+                  fontSize: '0.72rem',
+                  color: 'var(--mui-palette-text-secondary, #666)',
+                  fontWeight: 600,
+                  verticalAlign: 'bottom',
+                }}
+              >
+                Exercise
+              </th>
+              {sortedWeeks.map(week => {
+                const isPast = week.order < activeWeekOrder;
+                return (
+                  <th
+                    key={week.id}
+                    style={{
+                      padding: '4px 12px',
+                      fontSize: '0.72rem',
+                      color: isPast
+                        ? 'var(--mui-palette-text-disabled, #bbb)'
+                        : 'var(--mui-palette-text-secondary, #666)',
+                      fontWeight: 600,
+                      textAlign: 'center',
+                      whiteSpace: 'nowrap',
+                      verticalAlign: 'bottom',
+                    }}
+                  >
+                    Wk {week.order}
+                    {week.order === activeWeekOrder && (
+                      <span style={{ fontSize: '0.65rem', marginLeft: '0.25em', opacity: 0.7 }}>(now)</span>
+                    )}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {exerciseList.map(({ exerciseId, name, repRange, restTime, targetRpe, targetRir }) => {
+              // Find this exercise's WorkoutExercise entry per week
+              const exByWeek = workoutsByWeek.map(({ week, workout }) => ({
+                week,
+                workout,
+                ex: workout?.exercises.find(e => e.exercise?.id === exerciseId) ?? null,
+              }));
+
+              const maxSets = Math.max(
+                0,
+                ...exByWeek.map(({ ex }) =>
+                  ex ? ex.sets.filter(s => !s.isDropSet).length : 0,
+                ),
+              );
+
+              if (maxSets === 0) return null;
+
+              const metaParts = [
+                repRange && `${repRange} reps`,
+                restTime,
+                targetRpe != null && `RPE ${targetRpe}`,
+                targetRir != null && `${targetRir} RIR`,
+              ].filter(Boolean);
+
+              return (
+                <tr key={exerciseId} style={{ borderTop: '1px solid var(--mui-palette-divider, #e0e0e0)' }}>
+                  {/* Exercise name + meta */}
+                  <td style={{ padding: '8px 12px 8px 0', verticalAlign: 'top' }}>
+                    <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.3 }}>
+                      {name}
+                    </Typography>
+                    {metaParts.length > 0 && (
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem' }}>
+                        {metaParts.join(' · ')}
+                      </Typography>
+                    )}
+                  </td>
+
+                  {/* One cell per week */}
+                  {exByWeek.map(({ week, workout, ex }) => {
+                    const isPast = week.order < activeWeekOrder;
+                    const regularSets = ex
+                      ? ex.sets.filter(s => !s.isDropSet).sort((a, b) => a.order - b.order)
+                      : [];
+
+                    return (
+                      <td key={week.id} style={{ padding: '8px 12px', verticalAlign: 'top', textAlign: 'center' }}>
+                        {regularSets.length === 0 && (
+                          <Typography variant="caption" color="text.disabled">
+                            —
+                          </Typography>
+                        )}
+
+                        {regularSets.map((set, si) => (
+                          <Box
+                            key={set.id}
+                            sx={{ display: 'flex', gap: 0.25, alignItems: 'center', justifyContent: 'center', mb: 0.25 }}
+                          >
+                            {isPast ? (
+                              <span style={readOnlyCellSx}>
+                                {set.weight != null && set.reps != null
+                                  ? `${set.weight}×${set.reps}`
+                                  : set.weight != null
+                                  ? `${set.weight}kg`
+                                  : set.reps != null
+                                  ? `×${set.reps}`
+                                  : '—'}
+                              </span>
+                            ) : (
+                              <>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', minWidth: '1em' }}>
+                                  S{si + 1}
+                                </Typography>
+                                <input
+                                  type="number"
+                                  value={set.weight ?? ''}
+                                  onChange={(e) => {
+                                    const v = e.target.value === '' ? null : parseFloat(e.target.value);
+                                    if (ex && workout) {
+                                      dispatch({
+                                        type: 'UPDATE_SET_WEIGHT',
+                                        planId,
+                                        weekId: week.id,
+                                        workoutId: workout.id,
+                                        exerciseId: ex.id,
+                                        setId: set.id,
+                                        weight: isNaN(v as number) ? null : v,
+                                      });
+                                    }
+                                  }}
+                                  placeholder="kg"
+                                  style={inputSx}
+                                />
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                                  ×
+                                </Typography>
+                                <input
+                                  type="number"
+                                  value={set.reps ?? ''}
+                                  onChange={(e) => {
+                                    const v = parseInt(e.target.value, 10);
+                                    if (!isNaN(v) && ex && workout) {
+                                      dispatch({
+                                        type: 'UPDATE_SET_REPS',
+                                        planId,
+                                        weekId: week.id,
+                                        workoutId: workout.id,
+                                        exerciseId: ex.id,
+                                        setId: set.id,
+                                        reps: v,
+                                      });
+                                    }
+                                  }}
+                                  placeholder="reps"
+                                  style={inputSx}
+                                />
+                              </>
+                            )}
+                          </Box>
+                        ))}
+
+                        {/* + Set only for active/future weeks */}
+                        {!isPast && ex && workout && (
+                          <Typography
+                            variant="caption"
+                            color="primary"
+                            sx={{ cursor: 'pointer', fontSize: '0.7rem', display: 'block', mt: 0.25 }}
+                            onClick={() =>
+                              dispatch({ type: 'ADD_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id })
+                            }
+                          >
+                            + Set
+                          </Typography>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+
+            {/* + Exercise row */}
+            <tr style={{ borderTop: '1px solid var(--mui-palette-divider, #e0e0e0)' }}>
+              <td colSpan={sortedWeeks.length + 1} style={{ padding: '8px 0' }}>
+                {activeWorkout ? (
+                  <Typography
+                    variant="body2"
+                    color="primary"
+                    sx={{ cursor: 'pointer' }}
+                    onClick={() => {
+                      const activeWeekEntry = workoutsByWeek.find(x => x.workout?.id === activeWorkout.id);
+                      if (activeWeekEntry) {
+                        dispatch({
+                          type: 'ADD_EXERCISE_WITH_SET',
+                          planId,
+                          weekId: activeWeekEntry.week.id,
+                          workoutId: activeWorkout.id,
+                        });
+                      }
+                    }}
+                  >
+                    + Exercise
+                  </Typography>
+                ) : (
+                  <Typography variant="body2" color="text.disabled">
+                    + Exercise
+                  </Typography>
+                )}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </Box>
+    </Box>
+  );
+};
+
+export default PlanMultiWeekTable;
