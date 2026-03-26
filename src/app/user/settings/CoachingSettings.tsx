@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { useSettings } from '@lib/providers/SettingsProvider';
 import {
   Alert,
   Box,
@@ -34,6 +35,7 @@ interface CoachInfo {
 }
 
 export default function CoachingSettings() {
+  const { updateSetting } = useSettings();
   const [info, setInfo] = useState<CoachInfo | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -129,6 +131,8 @@ export default function CoachingSettings() {
         const body = await res.json() as { error?: string };
         setActionError(body.error ?? 'Failed to update coach mode');
       } else {
+        // Update SettingsProvider so the sidebar reflects the change immediately
+        updateSetting('coachModeActive', active);
         await load();
       }
     } catch {

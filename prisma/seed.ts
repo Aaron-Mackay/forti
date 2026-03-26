@@ -77,7 +77,7 @@ async function main() {
     data: {
       name: 'Todd',
       email: 'todd@example.com',
-      settings: { onboardingSeenWelcome: true, onboardingDismissed: true },
+      settings: { onboardingSeenWelcome: true, onboardingDismissed: true, coachModeActive: true },
     },
   });
 
