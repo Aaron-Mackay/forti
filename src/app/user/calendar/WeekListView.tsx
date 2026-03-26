@@ -19,6 +19,7 @@ type Props = {
   events: EventPrisma[];
   onWeekClick: (weekStart: Date) => void;
   height: string;
+  active: boolean;
 };
 
 type WeekGroup = {
@@ -69,7 +70,7 @@ function getCustomEventsForWeek(events: EventPrisma[], weekStart: Date, weekEnd:
   });
 }
 
-export default function WeekListView({ events, onWeekClick, height }: Props) {
+export default function WeekListView({ events, onWeekClick, height, active }: Props) {
   const today = startOfDay(new Date());
   const currentWeekStart = startOfISOWeek(today);
 
@@ -81,10 +82,15 @@ export default function WeekListView({ events, onWeekClick, height }: Props) {
   const groups = groupWeeksByMonth(weeks);
 
   const currentWeekRef = useRef<HTMLDivElement>(null);
+  const scrolledRef = useRef(false);
 
+  // Scroll to current week the first time the view becomes visible.
+  // Can't do this on mount because the Box may have display:none at that point.
   useEffect(() => {
+    if (!active || scrolledRef.current) return;
+    scrolledRef.current = true;
     currentWeekRef.current?.scrollIntoView({ block: 'center', behavior: 'instant' });
-  }, []);
+  }, [active]);
 
   return (
     <Box sx={{ overflowY: 'auto', height, pb: 10 }}>

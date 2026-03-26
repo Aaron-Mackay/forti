@@ -174,13 +174,11 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
           onChange={(_e, val) => { if (val) setViewMode(val); }}
           size="small"
         >
-          <ToggleButton value="calendar">
-            <CalendarMonthIcon fontSize="small" sx={{mr: 0.5}}/>
-            Calendar
+          <ToggleButton value="calendar" aria-label="Calendar view">
+            <CalendarMonthIcon fontSize="small"/>
           </ToggleButton>
-          <ToggleButton value="weeks">
-            <ViewListIcon fontSize="small" sx={{mr: 0.5}}/>
-            Weeks
+          <ToggleButton value="weeks" aria-label="Weeks view">
+            <ViewListIcon fontSize="small"/>
           </ToggleButton>
         </ToggleButtonGroup>
       </Box>
@@ -225,6 +223,7 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
           events={eventsInState}
           onWeekClick={handleWeekClick}
           height={`calc(100dvh - ${APPBAR_HEIGHT}px - ${TOGGLE_HEIGHT}px)`}
+          active={viewMode === 'weeks'}
         />
       </Box>
       <Box sx={{
