@@ -98,7 +98,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, initialName}: A
   const canSubmit = name.trim().length > 0 && equipment.length > 0 && primaryMuscles.length > 0;
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth sx={{ zIndex: 1510 }}>
       <DialogTitle>Add New Exercise</DialogTitle>
       <DialogContent>
         {error && <Alert severity="error" sx={{mb: 2, mt: 1}}>{error}</Alert>}
@@ -140,6 +140,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, initialName}: A
               value={equipment}
               onChange={(_e, val: ExerciseEquipment[]) => setEquipment(val)}
               onBlur={() => setTouchedEquipment(true)}
+              slotProps={{ popper: { style: { zIndex: 1520 } } }}
               renderInput={params => (
                 <TextField
                   {...params}
@@ -158,6 +159,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, initialName}: A
               value={primaryMuscles}
               onChange={(_e, val: ExerciseMuscle[]) => setPrimaryMuscles(val)}
               onBlur={() => setTouchedPrimaryMuscles(true)}
+              slotProps={{ popper: { style: { zIndex: 1520 } } }}
               renderInput={params => (
                 <TextField
                   {...params}
@@ -175,6 +177,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, initialName}: A
               options={[...EXERCISE_MUSCLES]}
               value={secondaryMuscles}
               onChange={(_e, val: ExerciseMuscle[]) => setSecondaryMuscles(val)}
+              slotProps={{ popper: { style: { zIndex: 1520 } } }}
               renderInput={params => (
                 <TextField
                   {...params}
