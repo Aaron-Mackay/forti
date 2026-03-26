@@ -122,7 +122,7 @@ export default function CustomAppBar(
 
   return (
     <>
-      <AppBar position="fixed" color="primary" sx={{height: APPBAR_HEIGHT}} enableColorOnDark>
+      <AppBar position="fixed" color="primary" sx={{height: APPBAR_HEIGHT, zIndex: 1400}} enableColorOnDark>
         <Toolbar
           sx={{
             minHeight: '56px !important', // forces 56px at all widths

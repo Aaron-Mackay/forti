@@ -16,6 +16,7 @@ import './styles.css';
 import {WorkoutPrisma} from '@/types/dataTypes';
 import {UserExerciseNote} from '@prisma/client';
 import { useAppBar } from '@lib/providers/AppBarProvider';
+import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 import ExerciseSlide, {PreviousSet} from './ExerciseSlide';
 import CardioSlide, {PreviousCardio} from './CardioSlide';
@@ -119,12 +120,11 @@ export default function ExerciseDetailView({
 
   return (
     <Box sx={{
-      minHeight: '100dvh',
+      height: HEIGHT_EXC_APPBAR,
       bgcolor: 'background.default',
       color: 'text.primary',
       display: 'flex',
       flexDirection: 'column',
-      height: "100dvh"
     }}>
       <Container
         maxWidth="sm"

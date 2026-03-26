@@ -40,8 +40,8 @@ test.describe('Workout page', () => {
     await expect(page.getByText('Muscle Coverage')).toBeVisible();
     // Body SVG diagrams should be present — scope to the WeekMuscleSummary container
     await expect(page.locator('[id^="week-muscle-"] svg').first()).toBeVisible();
-    // At least one muscle row with done/planned pattern should appear
-    await expect(page.getByText(/\d+ \/ \d+ sets/).first()).toBeVisible();
+    // At least one muscle row with done/planned pattern should appear (e.g. "3/5")
+    await expect(page.getByText(/\d+(\.\d+)?\/\d+(\.\d+)?/).first()).toBeVisible();
   });
 
   test('selecting a workout reveals the stopwatch and exercise list', async ({ page }) => {

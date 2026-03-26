@@ -26,6 +26,7 @@ import {Chip} from '@mui/material';
 import {WorkoutPrisma} from '@/types/dataTypes';
 import './exercisesListView.css'
 import { useAppBar } from '@lib/providers/AppBarProvider';
+import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 
 export default function ExercisesListView({
@@ -57,12 +58,11 @@ export default function ExercisesListView({
 
   return (
     <Box sx={{
-      minHeight: '100dvh',
+      height: HEIGHT_EXC_APPBAR,
       bgcolor: 'background.default',
       color: 'text.primary',
       display: 'flex',
       flexDirection: 'column',
-      height: "100dvh"
     }}>
       <Container
         maxWidth="sm"
