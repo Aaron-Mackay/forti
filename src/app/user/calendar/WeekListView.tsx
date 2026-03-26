@@ -81,19 +81,27 @@ export default function WeekListView({ events, onWeekClick, height, active }: Pr
   const weeks = getWeeksInRange(rangeStart, rangeEnd);
   const groups = groupWeeksByMonth(weeks);
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const currentWeekRef = useRef<HTMLDivElement>(null);
   const scrolledRef = useRef(false);
 
   // Scroll to current week the first time the view becomes visible.
-  // Can't do this on mount because the Box may have display:none at that point.
+  // Use manual scrollTop instead of scrollIntoView — scrollIntoView also
+  // scrolls ancestor elements (including the page), which pushes the
+  // toggle bar out of view.
   useEffect(() => {
     if (!active || scrolledRef.current) return;
     scrolledRef.current = true;
-    currentWeekRef.current?.scrollIntoView({ block: 'center', behavior: 'instant' });
+    const container = containerRef.current;
+    const el = currentWeekRef.current;
+    if (!container || !el) return;
+    const containerTop = container.getBoundingClientRect().top;
+    const elTop = el.getBoundingClientRect().top;
+    container.scrollTop += elTop - containerTop - container.clientHeight / 2 + el.clientHeight / 2;
   }, [active]);
 
   return (
-    <Box sx={{ overflowY: 'auto', height, pb: 10 }}>
+    <Box ref={containerRef} sx={{ overflowY: 'auto', height, pb: 10 }}>
       {groups.map(({ monthKey, monthLabel, weeks: monthWeeks }) => (
         <Box key={monthKey}>
           <Typography
