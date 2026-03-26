@@ -593,6 +593,31 @@ export function addExerciseWithSet(
   });
 }
 
+export function addExerciseWithSetForExercise(
+  user: UserPrisma,
+  planId: number,
+  weekId: number,
+  workoutId: number,
+  exercise: Exercise,
+  createUuid: CreateUuid
+): UserPrisma {
+  return withWorkout(user, planId, weekId, workoutId, workout => {
+    const newExerciseId = createUuid();
+    return {
+      ...workout,
+      exercises: [
+        ...workout.exercises,
+        {
+          ...makeEmptyWorkoutExercise(newExerciseId, workout.id, workout.exercises.length + 1),
+          exerciseId: exercise.id,
+          exercise,
+          sets: [makeEmptySet(createUuid(), newExerciseId, 1)],
+        },
+      ],
+    };
+  });
+}
+
 export function addWeek(
   user: UserPrisma,
   planId: number,

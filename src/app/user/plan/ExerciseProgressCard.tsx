@@ -178,30 +178,34 @@ const ExerciseProgressCard = ({
         );
       })}
 
-      {/* + Set − */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1, mt: 0.75 }}>
-        <Typography
-          variant="caption"
-          color="primary"
-          sx={{ cursor: 'pointer', fontSize: '0.85rem', lineHeight: 1, userSelect: 'none' }}
-          onClick={() => dispatch({ type: 'ADD_SET', planId, weekId, workoutId, exerciseId: exerciseLink.id })}
-        >
-          +
-        </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
-          Set
-        </Typography>
-        <Typography
-          variant="caption"
-          color={regularSets.length > 0 ? 'primary' : 'text.disabled'}
-          sx={{ cursor: regularSets.length > 0 ? 'pointer' : 'default', fontSize: '0.85rem', lineHeight: 1, userSelect: 'none' }}
-          onClick={() => {
-            if (regularSets.length > 0)
-              dispatch({ type: 'REMOVE_SET', planId, weekId, workoutId, exerciseId: exerciseLink.id });
-          }}
-        >
-          −
-        </Typography>
+      {/* + Set − aligned under THIS WEEK column */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: '2em 1fr 1fr', gap: 0.5, mt: 0.75 }}>
+        <Box />
+        <Box />
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
+          <Typography
+            variant="caption"
+            color="primary"
+            sx={{ cursor: 'pointer', fontSize: '0.85rem', lineHeight: 1, userSelect: 'none' }}
+            onClick={() => dispatch({ type: 'ADD_SET', planId, weekId, workoutId, exerciseId: exerciseLink.id })}
+          >
+            +
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
+            Set
+          </Typography>
+          <Typography
+            variant="caption"
+            color={regularSets.length > 0 ? 'primary' : 'text.disabled'}
+            sx={{ cursor: regularSets.length > 0 ? 'pointer' : 'default', fontSize: '0.85rem', lineHeight: 1, userSelect: 'none' }}
+            onClick={() => {
+              if (regularSets.length > 0)
+                dispatch({ type: 'REMOVE_SET', planId, weekId, workoutId, exerciseId: exerciseLink.id });
+            }}
+          >
+            −
+          </Typography>
+        </Box>
       </Box>
 
       {/* Contextual menu */}

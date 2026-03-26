@@ -8,6 +8,7 @@ import { PlanPrisma, WorkoutExercisePrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { getWorkoutStatus } from '@/lib/workoutProgress';
 import ExerciseProgressCard from './ExerciseProgressCard';
+import ExercisePickerDialog from '@/app/user/workout/ExercisePickerDialog';
 
 /** Strips trailing parenthetical from workout names, e.g. "Workout 1 (Plan 1 - Week 2)" → "Workout 1" */
 function stripSuffix(name: string): string {
@@ -32,6 +33,8 @@ interface PlanWeekViewProps {
 
 const PlanWeekView = ({ plan, planId }: PlanWeekViewProps) => {
   const { dispatch } = useWorkoutEditorContext();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<{ weekId: number; workoutId: number } | null>(null);
   const sortedWeeks = [...plan.weeks].sort((a, b) => a.order - b.order);
 
   // Default to the latest week that has any weight/reps entered, or the last week
@@ -124,7 +127,7 @@ const PlanWeekView = ({ plan, planId }: PlanWeekViewProps) => {
         ))}
         <Chip
           label="+ Workout"
-          onClick={() => dispatch({ type: 'ADD_WORKOUT_WITH_EXERCISE_WITH_SET', planId, weekId: week.id })}
+          onClick={() => dispatch({ type: 'ADD_WORKOUT', planId, weekId: week.id })}
           variant="outlined"
           size="small"
           sx={{ flexShrink: 0, cursor: 'pointer', borderStyle: 'dashed' }}
@@ -165,14 +168,33 @@ const PlanWeekView = ({ plan, planId }: PlanWeekViewProps) => {
             variant="body2"
             color="primary"
             sx={{ cursor: 'pointer' }}
-            onClick={() =>
-              dispatch({ type: 'ADD_EXERCISE_WITH_SET', planId, weekId: week.id, workoutId: workout.id })
-            }
+            onClick={() => {
+              setPickerTarget({ weekId: week.id, workoutId: workout.id });
+              setPickerOpen(true);
+            }}
           >
             + Exercise
           </Typography>
         </Box>
       )}
+
+      <ExercisePickerDialog
+        open={pickerOpen}
+        title="Add Exercise"
+        onClose={() => setPickerOpen(false)}
+        onSelect={(exercise) => {
+          setPickerOpen(false);
+          if (pickerTarget) {
+            dispatch({
+              type: 'ADD_EXERCISE_WITH_SET_FOR_EXERCISE',
+              planId,
+              weekId: pickerTarget.weekId,
+              workoutId: pickerTarget.workoutId,
+              exercise,
+            });
+          }
+        }}
+      />
     </Box>
   );
 };

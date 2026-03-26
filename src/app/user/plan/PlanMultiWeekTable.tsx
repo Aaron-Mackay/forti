@@ -5,6 +5,7 @@ import { Box, Chip, Typography } from '@mui/material';
 import { PlanPrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { getWeekStatus } from '@/lib/workoutProgress';
+import ExercisePickerDialog from '@/app/user/workout/ExercisePickerDialog';
 
 /** Strips trailing parenthetical from workout names, e.g. "Workout 1 (Plan 1 - Week 2)" → "Workout 1" */
 function stripSuffix(name: string): string {
@@ -32,6 +33,7 @@ interface PlanMultiWeekTableProps {
 
 const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
   const { dispatch } = useWorkoutEditorContext();
+  const [pickerOpen, setPickerOpen] = useState(false);
   const sortedWeeks = [...plan.weeks].sort((a, b) => a.order - b.order);
 
   const maxWorkoutCount = Math.max(0, ...plan.weeks.map(w => w.workouts.length));
@@ -323,17 +325,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
                     variant="body2"
                     color="primary"
                     sx={{ cursor: 'pointer' }}
-                    onClick={() => {
-                      const activeWeekEntry = workoutsByWeek.find(x => x.workout?.id === activeWorkout.id);
-                      if (activeWeekEntry) {
-                        dispatch({
-                          type: 'ADD_EXERCISE_WITH_SET',
-                          planId,
-                          weekId: activeWeekEntry.week.id,
-                          workoutId: activeWorkout.id,
-                        });
-                      }
-                    }}
+                    onClick={() => setPickerOpen(true)}
                   >
                     + Exercise
                   </Typography>
@@ -347,6 +339,25 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
           </tbody>
         </table>
       </Box>
+
+      <ExercisePickerDialog
+        open={pickerOpen}
+        title="Add Exercise"
+        onClose={() => setPickerOpen(false)}
+        onSelect={(exercise) => {
+          setPickerOpen(false);
+          const activeWeekEntry = workoutsByWeek.find(x => x.workout?.id === activeWorkout?.id);
+          if (activeWeekEntry && activeWorkout) {
+            dispatch({
+              type: 'ADD_EXERCISE_WITH_SET_FOR_EXERCISE',
+              planId,
+              weekId: activeWeekEntry.week.id,
+              workoutId: activeWorkout.id,
+              exercise,
+            });
+          }
+        }}
+      />
     </Box>
   );
 };
