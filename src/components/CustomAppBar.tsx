@@ -148,6 +148,7 @@ export default function CustomAppBar(
         open={drawerOpen}
         variant="temporary"
         onClose={() => setDrawerOpen(false)}
+        sx={{ zIndex: 1500 }}
         PaperProps={{
           sx: {
             height: '100dvh',
