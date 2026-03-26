@@ -109,29 +109,27 @@ const PlanWeekView = ({ plan, planId }: PlanWeekViewProps) => {
         </Typography>
       </Box>
 
-      {/* Workout chips */}
-      {sortedWorkouts.length > 0 && (
-        <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', pb: 1, mb: 2 }}>
-          {sortedWorkouts.map((w, i) => (
-            <Chip
-              key={w.id}
-              label={w.name ? stripSuffix(w.name) : `Workout ${w.order}`}
-              onClick={() => setSelectedWorkoutIdx(i)}
-              variant={selectedWorkoutIdx === i ? 'filled' : 'outlined'}
-              color={selectedWorkoutIdx === i ? 'primary' : 'default'}
-              size="small"
-              sx={{ flexShrink: 0, cursor: 'pointer' }}
-            />
-          ))}
-        </Box>
-      )}
-
-      {/* No workouts state */}
-      {sortedWorkouts.length === 0 && (
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          No workouts in this week yet.
-        </Typography>
-      )}
+      {/* Workout chips + add workout */}
+      <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', pb: 1, mb: 2, alignItems: 'center' }}>
+        {sortedWorkouts.map((w, i) => (
+          <Chip
+            key={w.id}
+            label={w.name ? stripSuffix(w.name) : `Workout ${w.order}`}
+            onClick={() => setSelectedWorkoutIdx(i)}
+            variant={selectedWorkoutIdx === i ? 'filled' : 'outlined'}
+            color={selectedWorkoutIdx === i ? 'primary' : 'default'}
+            size="small"
+            sx={{ flexShrink: 0, cursor: 'pointer' }}
+          />
+        ))}
+        <Chip
+          label="+ Workout"
+          onClick={() => dispatch({ type: 'ADD_WORKOUT_WITH_EXERCISE_WITH_SET', planId, weekId: week.id })}
+          variant="outlined"
+          size="small"
+          sx={{ flexShrink: 0, cursor: 'pointer', borderStyle: 'dashed' }}
+        />
+      </Box>
 
       {/* Exercises */}
       {workout && sortedExercises.length === 0 && (
@@ -160,9 +158,9 @@ const PlanWeekView = ({ plan, planId }: PlanWeekViewProps) => {
           />
         ))}
 
-      {/* + Exercise */}
+      {/* + Exercise — centred */}
       {workout && (
-        <Box sx={{ mt: 1, mb: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, mb: 1 }}>
           <Typography
             variant="body2"
             color="primary"
@@ -175,20 +173,6 @@ const PlanWeekView = ({ plan, planId }: PlanWeekViewProps) => {
           </Typography>
         </Box>
       )}
-
-      {/* + Add Workout Day */}
-      <Box sx={{ mt: 2 }}>
-        <Typography
-          variant="body2"
-          color="primary"
-          sx={{ cursor: 'pointer' }}
-          onClick={() =>
-            dispatch({ type: 'ADD_WORKOUT_WITH_EXERCISE_WITH_SET', planId, weekId: week.id })
-          }
-        >
-          + Add Workout Day
-        </Typography>
-      </Box>
     </Box>
   );
 };
