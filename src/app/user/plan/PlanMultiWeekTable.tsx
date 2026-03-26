@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Box, Chip, Typography } from '@mui/material';
+import { Box, Chip, TextField, Typography } from '@mui/material';
 import { PlanPrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { getWeekStatus } from '@/lib/workoutProgress';
@@ -32,7 +32,7 @@ interface PlanMultiWeekTableProps {
 }
 
 const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
-  const { dispatch } = useWorkoutEditorContext();
+  const { dispatch, debouncedDispatch } = useWorkoutEditorContext();
   const [pickerOpen, setPickerOpen] = useState(false);
   const sortedWeeks = [...plan.weeks].sort((a, b) => a.order - b.order);
 
@@ -118,8 +118,8 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
 
   return (
     <Box>
-      {/* Workout chips */}
-      <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', pb: 1, mb: 2 }}>
+      {/* Workout chips + add */}
+      <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', pb: 1, mb: 1, alignItems: 'center' }}>
         {slotLabels.map((label, i) => (
           <Chip
             key={i}
@@ -131,7 +131,46 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
             sx={{ flexShrink: 0, cursor: 'pointer' }}
           />
         ))}
+        <Chip
+          label="+ Workout"
+          onClick={() => {
+            const newOrder = maxWorkoutCount + 1;
+            setSelectedWorkoutOrder(newOrder);
+            const activeWeek = sortedWeeks.find(w => w.order === activeWeekOrder);
+            if (activeWeek) {
+              dispatch({ type: 'ADD_WORKOUT', planId, weekId: activeWeek.id });
+            }
+          }}
+          variant="outlined"
+          size="small"
+          sx={{ flexShrink: 0, cursor: 'pointer', borderStyle: 'dashed' }}
+        />
       </Box>
+
+      {/* Editable workout name */}
+      {activeWorkout && (
+        <TextField
+          size="small"
+          label="Workout name"
+          value={activeWorkout.name ?? ''}
+          onChange={(e) => {
+            // Update name for this workout in all weeks that have a workout at this order slot
+            workoutsByWeek.forEach(({ week, workout: wo }) => {
+              if (wo) {
+                debouncedDispatch({
+                  type: 'UPDATE_WORKOUT_NAME',
+                  planId,
+                  weekId: week.id,
+                  workoutId: wo.id,
+                  name: e.target.value,
+                });
+              }
+            });
+          }}
+          sx={{ mb: 2, width: '100%', maxWidth: 320 }}
+          autoComplete="off"
+        />
+      )}
 
       {/* Scrollable table */}
       <Box ref={scrollRef} sx={{ overflowX: 'auto' }}>

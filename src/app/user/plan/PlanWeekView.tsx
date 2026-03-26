@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, Chip, IconButton, LinearProgress, Typography } from '@mui/material';
+import { Box, Chip, IconButton, LinearProgress, TextField, Typography } from '@mui/material';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import { PlanPrisma, WorkoutExercisePrisma } from '@/types/dataTypes';
@@ -32,7 +32,7 @@ interface PlanWeekViewProps {
 }
 
 const PlanWeekView = ({ plan, planId }: PlanWeekViewProps) => {
-  const { dispatch } = useWorkoutEditorContext();
+  const { dispatch, debouncedDispatch } = useWorkoutEditorContext();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<{ weekId: number; workoutId: number } | null>(null);
   const sortedWeeks = [...plan.weeks].sort((a, b) => a.order - b.order);
@@ -127,12 +127,35 @@ const PlanWeekView = ({ plan, planId }: PlanWeekViewProps) => {
         ))}
         <Chip
           label="+ Workout"
-          onClick={() => dispatch({ type: 'ADD_WORKOUT', planId, weekId: week.id })}
+          onClick={() => {
+            setSelectedWorkoutIdx(sortedWorkouts.length); // index of the workout about to be created
+            dispatch({ type: 'ADD_WORKOUT', planId, weekId: week.id });
+          }}
           variant="outlined"
           size="small"
           sx={{ flexShrink: 0, cursor: 'pointer', borderStyle: 'dashed' }}
         />
       </Box>
+
+      {/* Editable workout name */}
+      {workout && (
+        <TextField
+          size="small"
+          label="Workout name"
+          value={workout.name ?? ''}
+          onChange={(e) =>
+            debouncedDispatch({
+              type: 'UPDATE_WORKOUT_NAME',
+              planId,
+              weekId: week.id,
+              workoutId: workout.id,
+              name: e.target.value,
+            })
+          }
+          sx={{ mb: 2, width: '100%', maxWidth: 320 }}
+          autoComplete="off"
+        />
+      )}
 
       {/* Exercises */}
       {workout && sortedExercises.length === 0 && (

@@ -21,6 +21,59 @@ import {
 import {Exercise} from '@prisma/client';
 import {AddExerciseForm} from '@/app/exercises/AddExerciseForm';
 
+// Maps plain-English search terms to substrings found in muscle IDs.
+// Muscle IDs use kebab shorthand (e.g. sternal-pec, ant-delts, lower-back).
+const MUSCLE_ALIASES: Record<string, string[]> = {
+  // chest
+  chest:      ['pec'],
+  pecs:       ['pec'],
+  // shoulders
+  shoulder:   ['delt'],
+  shoulders:  ['delt'],
+  delts:      ['delt'],
+  // back
+  back:       ['lats', 'lower-back', 'trap'],
+  lats:       ['lats'],
+  // traps
+  traps:      ['trap'],
+  // legs (broad)
+  leg:        ['quads', 'ham', 'calves', 'glutes', 'adductors'],
+  legs:       ['quads', 'ham', 'calves', 'glutes', 'adductors'],
+  lower:      ['quads', 'ham', 'calves', 'glutes'],
+  // individual leg muscles
+  quad:       ['quads'],
+  quads:      ['quads'],
+  hamstring:  ['ham'],
+  hamstrings: ['ham'],
+  ham:        ['ham'],
+  glute:      ['glutes'],
+  glutes:     ['glutes'],
+  calf:       ['calves'],
+  calves:     ['calves'],
+  // arms (broad)
+  arm:        ['biceps', 'triceps', 'forearms'],
+  arms:       ['biceps', 'triceps', 'forearms'],
+  // individual arm muscles
+  bicep:      ['biceps'],
+  tricep:     ['triceps'],
+  // core
+  core:       ['abs', 'obliques'],
+  abs:        ['abs'],
+};
+
+function matchesMuscle(muscle: string, term: string): boolean {
+  if (muscle.includes(term)) return true;
+  return (MUSCLE_ALIASES[term] ?? []).some(alias => muscle.includes(alias));
+}
+
+function exerciseMatchesSearch(ex: Exercise, search: string): boolean {
+  const term = search.toLowerCase().trim();
+  if (!term) return true;
+  if (ex.name.toLowerCase().includes(term)) return true;
+  const muscles = [...(ex.primaryMuscles ?? []), ...(ex.secondaryMuscles ?? [])];
+  return muscles.some(m => matchesMuscle(m, term));
+}
+
 interface ExercisePickerDialogProps {
   open: boolean;
   title: string;
@@ -55,7 +108,7 @@ export default function ExercisePickerDialog({
 
   const filtered = exercises.filter(ex => {
     const matchesCategory = ex.category === category;
-    const matchesSearch = ex.name.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = exerciseMatchesSearch(ex, search);
     return matchesCategory && matchesSearch;
   });
 
