@@ -98,7 +98,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, initialName}: A
   const canSubmit = name.trim().length > 0 && equipment.length > 0 && primaryMuscles.length > 0;
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth sx={{ zIndex: 1510 }}>
       <DialogTitle>Add New Exercise</DialogTitle>
       <DialogContent>
         {error && <Alert severity="error" sx={{mb: 2, mt: 1}}>{error}</Alert>}
