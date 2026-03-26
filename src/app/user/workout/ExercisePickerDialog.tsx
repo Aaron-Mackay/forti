@@ -119,6 +119,7 @@ export default function ExercisePickerDialog({
       fullScreen={fullScreen}
       fullWidth
       maxWidth="sm"
+      sx={{ zIndex: 1450 }}
       PaperProps={{sx: {display: 'flex', flexDirection: 'column', maxHeight: fullScreen ? '100dvh' : '80vh'}}}
     >
       <DialogTitle sx={{pb: 1}}>{title}</DialogTitle>
