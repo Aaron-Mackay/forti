@@ -6,11 +6,10 @@ import { PlanPrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { getWeekStatus } from '@/lib/workoutProgress';
 
-const readOnlyCellSx: React.CSSProperties = {
-  fontSize: '0.8rem',
-  whiteSpace: 'nowrap',
-  color: 'var(--mui-palette-text-disabled, #bbb)',
-};
+/** Strips trailing parenthetical from workout names, e.g. "Workout 1 (Plan 1 - Week 2)" → "Workout 1" */
+function stripSuffix(name: string): string {
+  return name.replace(/\s*\([^)]*\)\s*$/, '').trim();
+}
 
 const inputSx: React.CSSProperties = {
   width: '3.2em',
@@ -50,7 +49,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
   const slotLabels: string[] = Array.from({ length: maxWorkoutCount }, (_, i) => {
     for (const week of plan.weeks) {
       const w = week.workouts.find(wk => wk.order === i + 1);
-      if (w?.name) return w.name;
+      if (w?.name) return stripSuffix(w.name);
     }
     return `Workout ${i + 1}`;
   });
@@ -131,30 +130,25 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
               >
                 Exercise
               </th>
-              {sortedWeeks.map(week => {
-                const isPast = week.order < activeWeekOrder;
-                return (
-                  <th
-                    key={week.id}
-                    style={{
-                      padding: '4px 12px',
-                      fontSize: '0.72rem',
-                      color: isPast
-                        ? 'var(--mui-palette-text-disabled, #bbb)'
-                        : 'var(--mui-palette-text-secondary, #666)',
-                      fontWeight: 600,
-                      textAlign: 'center',
-                      whiteSpace: 'nowrap',
-                      verticalAlign: 'bottom',
-                    }}
-                  >
-                    Wk {week.order}
-                    {week.order === activeWeekOrder && (
-                      <span style={{ fontSize: '0.65rem', marginLeft: '0.25em', opacity: 0.7 }}>(now)</span>
-                    )}
-                  </th>
-                );
-              })}
+              {sortedWeeks.map(week => (
+                <th
+                  key={week.id}
+                  style={{
+                    padding: '4px 12px',
+                    fontSize: '0.72rem',
+                    color: 'var(--mui-palette-text-secondary, #666)',
+                    fontWeight: 600,
+                    textAlign: 'center',
+                    whiteSpace: 'nowrap',
+                    verticalAlign: 'bottom',
+                  }}
+                >
+                  Wk {week.order}
+                  {week.order === activeWeekOrder && (
+                    <span style={{ fontSize: '0.65rem', marginLeft: '0.25em', opacity: 0.7 }}>(now)</span>
+                  )}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -198,7 +192,6 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
 
                   {/* One cell per week */}
                   {exByWeek.map(({ week, workout, ex }) => {
-                    const isPast = week.order < activeWeekOrder;
                     const regularSets = ex
                       ? ex.sets.filter(s => !s.isDropSet).sort((a, b) => a.order - b.order)
                       : [];
@@ -216,71 +209,57 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
                             key={set.id}
                             sx={{ display: 'flex', gap: 0.25, alignItems: 'center', justifyContent: 'center', mb: 0.25 }}
                           >
-                            {isPast ? (
-                              <span style={readOnlyCellSx}>
-                                {set.weight != null && set.reps != null
-                                  ? `${set.weight}×${set.reps}`
-                                  : set.weight != null
-                                  ? `${set.weight}kg`
-                                  : set.reps != null
-                                  ? `×${set.reps}`
-                                  : '—'}
-                              </span>
-                            ) : (
-                              <>
-                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', minWidth: '1em' }}>
-                                  S{si + 1}
-                                </Typography>
-                                <input
-                                  type="number"
-                                  value={set.weight ?? ''}
-                                  onChange={(e) => {
-                                    const v = e.target.value === '' ? null : parseFloat(e.target.value);
-                                    if (ex && workout) {
-                                      dispatch({
-                                        type: 'UPDATE_SET_WEIGHT',
-                                        planId,
-                                        weekId: week.id,
-                                        workoutId: workout.id,
-                                        exerciseId: ex.id,
-                                        setId: set.id,
-                                        weight: isNaN(v as number) ? null : v,
-                                      });
-                                    }
-                                  }}
-                                  placeholder="kg"
-                                  style={inputSx}
-                                />
-                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-                                  ×
-                                </Typography>
-                                <input
-                                  type="number"
-                                  value={set.reps ?? ''}
-                                  onChange={(e) => {
-                                    const v = parseInt(e.target.value, 10);
-                                    if (!isNaN(v) && ex && workout) {
-                                      dispatch({
-                                        type: 'UPDATE_SET_REPS',
-                                        planId,
-                                        weekId: week.id,
-                                        workoutId: workout.id,
-                                        exerciseId: ex.id,
-                                        setId: set.id,
-                                        reps: v,
-                                      });
-                                    }
-                                  }}
-                                  placeholder="reps"
-                                  style={inputSx}
-                                />
-                              </>
-                            )}
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', minWidth: '1em' }}>
+                              S{si + 1}
+                            </Typography>
+                            <input
+                              type="number"
+                              value={set.weight ?? ''}
+                              onChange={(e) => {
+                                const v = e.target.value === '' ? null : parseFloat(e.target.value);
+                                if (ex && workout) {
+                                  dispatch({
+                                    type: 'UPDATE_SET_WEIGHT',
+                                    planId,
+                                    weekId: week.id,
+                                    workoutId: workout.id,
+                                    exerciseId: ex.id,
+                                    setId: set.id,
+                                    weight: isNaN(v as number) ? null : v,
+                                  });
+                                }
+                              }}
+                              placeholder="kg"
+                              style={inputSx}
+                            />
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                              ×
+                            </Typography>
+                            <input
+                              type="number"
+                              value={set.reps ?? ''}
+                              onChange={(e) => {
+                                const v = parseInt(e.target.value, 10);
+                                if (!isNaN(v) && ex && workout) {
+                                  dispatch({
+                                    type: 'UPDATE_SET_REPS',
+                                    planId,
+                                    weekId: week.id,
+                                    workoutId: workout.id,
+                                    exerciseId: ex.id,
+                                    setId: set.id,
+                                    reps: v,
+                                  });
+                                }
+                              }}
+                              placeholder="reps"
+                              style={inputSx}
+                            />
                           </Box>
                         ))}
 
-                        {/* + Set only for active/future weeks */}
-                        {!isPast && ex && workout && (
+                        {/* + Set */}
+                        {ex && workout && (
                           <Typography
                             variant="caption"
                             color="primary"

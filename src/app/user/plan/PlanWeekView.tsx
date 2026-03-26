@@ -9,6 +9,11 @@ import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { getWeekStatus, getWorkoutStatus } from '@/lib/workoutProgress';
 import ExerciseProgressCard from './ExerciseProgressCard';
 
+/** Strips trailing parenthetical from workout names, e.g. "Workout 1 (Plan 1 - Week 2)" → "Workout 1" */
+function stripSuffix(name: string): string {
+  return name.replace(/\s*\([^)]*\)\s*$/, '').trim();
+}
+
 function getPrevExercise(
   plan: PlanPrisma,
   currentWeekOrder: number,
@@ -102,7 +107,7 @@ const PlanWeekView = ({ plan, planId }: PlanWeekViewProps) => {
           {sortedWorkouts.map((w, i) => (
             <Chip
               key={w.id}
-              label={w.name || `Workout ${w.order}`}
+              label={w.name ? stripSuffix(w.name) : `Workout ${w.order}`}
               onClick={() => setSelectedWorkoutIdx(i)}
               variant={selectedWorkoutIdx === i ? 'filled' : 'outlined'}
               color={selectedWorkoutIdx === i ? 'primary' : 'default'}
