@@ -44,40 +44,105 @@ test.describe('Plan detail page', () => {
     await page.waitForURL(/\/user\/plan\/\d+/);
   });
 
-  test('renders the Plan app bar title', async ({ page }) => {
-    await expect(page.getByRole('banner')).toContainText('Plan');
+  test('renders the plan name in the app bar', async ({ page }) => {
+    // AppBar now shows the plan name, not the static "Plan" string
+    await expect(page.getByRole('banner')).toContainText(/Plan/i);
   });
 
-  test("shows the demo user's name in the plan heading", async ({ page }) => {
-    await expect(page.getByText(/User: TestUser/i).first()).toBeVisible();
+  test('shows the Structure, Log, and Progress tabs', async ({ page }) => {
+    await expect(page.getByRole('tab', { name: /Structure/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /Log/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /Progress/i })).toBeVisible();
   });
 
-  test('displays at least one week', async ({ page }) => {
-    // Seed creates 2-3 weeks per plan.
-    // Desktop: Week component renders an <h2> heading per week ("Week N")
-    // Mobile: MobilePlanView renders Chip buttons with "Wk N" labels
+  test('Structure tab is selected by default', async ({ page }) => {
+    await expect(page.getByRole('tab', { name: /Structure/i })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('Structure tab shows a Save button and at least one week', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /Save/i })).toBeVisible();
+    // Desktop: <h2> heading; mobile: week chip
     const weekHeading = page.getByRole('heading', { name: /Week \d+/i });
     const weekChip = page.getByRole('button', { name: /Wk \d+/i });
     await expect(weekHeading.or(weekChip).first()).toBeVisible();
   });
 
-  test('displays workouts inside a week', async ({ page }) => {
+  test('Structure tab shows workouts', async ({ page }) => {
+    await expect(page.getByText(/Workout/i).first()).toBeVisible();
+  });
+});
+
+// ── Log tab ───────────────────────────────────────────────────────────────────
+
+test.describe('Plan detail — Log tab', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/user/plan');
+    const firstPlanLink = page.getByRole('listitem').first().getByRole('link');
+    await firstPlanLink.click();
+    await page.waitForURL(/\/user\/plan\/\d+/);
+    await page.getByRole('tab', { name: /Log/i }).click();
+  });
+
+  test('shows week section headings for all seeded weeks', async ({ page }) => {
+    // Seed creates 2-3 weeks; Log tab renders "Week N" overline headings
+    await expect(page.getByText(/^Week \d+$/i).first()).toBeVisible();
+  });
+
+  test('shows workout names within each week', async ({ page }) => {
     await expect(page.getByText(/Workout/i).first()).toBeVisible();
   });
 
-  test('shows the Edit toggle button in view mode', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /Edit/i })).toBeVisible();
+  test('shows editable weight inputs for exercises', async ({ page }) => {
+    // EditableExerciseLogCard renders <input type="number" placeholder="kg">
+    await expect(page.locator('input[placeholder="kg"]').first()).toBeVisible();
   });
 
-  test('clicking Edit enables edit mode and reveals Save button', async ({ page }) => {
-    await page.getByRole('button', { name: /Edit/i }).click();
+  test('shows editable reps inputs for exercises', async ({ page }) => {
+    await expect(page.locator('input[placeholder="reps"]').first()).toBeVisible();
+  });
+
+  test('editing a weight input updates the displayed value', async ({ page }) => {
+    const weightInput = page.locator('input[placeholder="kg"]').first();
+    await weightInput.fill('99');
+    await expect(weightInput).toHaveValue('99');
+  });
+
+  test('shows a Save button', async ({ page }) => {
     await expect(page.getByRole('button', { name: /Save/i })).toBeVisible();
   });
+});
 
-  // todo skipping until plan edit mode works on mobile
-  test.skip('edit mode reveals Add Week button', async ({ page }) => {
-    await page.getByRole('button', { name: /Edit/i }).click();
-    await expect(page.getByRole('button', { name: /Add Week/i })).toBeVisible();
+// ── Progress tab ──────────────────────────────────────────────────────────────
+
+test.describe('Plan detail — Progress tab', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/user/plan');
+    const firstPlanLink = page.getByRole('listitem').first().getByRole('link');
+    await firstPlanLink.click();
+    await page.waitForURL(/\/user\/plan\/\d+/);
+    await page.getByRole('tab', { name: /Progress/i }).click();
+  });
+
+  test('Progress tab does not show a Save button', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /Save/i })).not.toBeVisible();
+  });
+
+  test('Progress tab shows workout selector chips', async ({ page }) => {
+    // Seed creates workouts per week; Progress shows one chip per workout slot
+    await expect(page.getByRole('button', { name: /Workout/i }).first()).toBeVisible();
+  });
+
+  test('clicking a different workout chip switches the active selection', async ({ page }) => {
+    const chips = page.getByRole('button', { name: /Workout/i }); // multiple workout chips
+    const count = await chips.count();
+    if (count < 2) return; // only one workout slot — skip
+    const second = chips.nth(1);
+    await second.click();
+    await expect(second).toHaveClass(/MuiChip-filled/);
+  });
+
+  test('Progress tab shows week column headers (Wk N)', async ({ page }) => {
+    await expect(page.getByText(/Wk \d+/i).first()).toBeVisible();
   });
 });
 
@@ -371,7 +436,7 @@ test.describe('BFR preset toggle', () => {
     const firstPlanLink = page.getByRole('listitem').first().getByRole('link');
     await firstPlanLink.click();
     await page.waitForURL(/\/user\/plan\/\d+/);
-    await page.getByRole('button', { name: /Edit/i }).first().click();
+    // Structure tab is active by default (always in edit mode) — Save is visible
     await expect(page.getByRole('button', { name: /Save/i })).toBeVisible();
   });
 

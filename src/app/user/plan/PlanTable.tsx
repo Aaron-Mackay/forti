@@ -6,18 +6,21 @@ import {useWorkoutEditorContext} from "@/context/WorkoutEditorContext";
 import {saveUserWorkoutData} from "@lib/clientApi";
 import Button from "@mui/material/Button";
 import Week from "./Week";
-import EditModeToggle from "./EditModeToggle";
 import ScreenSizeWarningBanner from "@/components/ScreenSizeWarningBanner";
 import { useAppBar } from '@lib/providers/AppBarProvider';
-import {Alert, Box, Snackbar, useMediaQuery, useTheme} from "@mui/material";
+import {Alert, Box, Snackbar, Tab, Tabs, useMediaQuery, useTheme} from "@mui/material";
 import MobilePlanView from "./MobilePlanView";
+import LogView from "./LogView";
+import ProgressView from "./ProgressView";
+
+type PlanTab = 'structure' | 'log' | 'progress';
 
 export const PlanTable: React.FC<{
   lockedInEditMode: boolean;
   categories: string[];
   planId?: string;
 }> = ({lockedInEditMode = false, categories, planId}) => {
-  const [isInEditMode, setIsInEditMode] = useState(lockedInEditMode);
+  const [tab, setTab] = useState<PlanTab>(lockedInEditMode ? 'structure' : 'structure');
   const [snackbar, setSnackbar] = useState<{open: boolean; message: string; severity: 'success' | 'error'}>({open: false, message: '', severity: 'success'});
   const {state: userDataState, dispatch} = useWorkoutEditorContext();
   const theme = useTheme();
@@ -25,66 +28,70 @@ export const PlanTable: React.FC<{
 
   const handleSave = () => {
     saveUserWorkoutData(userDataState)
-      .then(() => {
-        setIsInEditMode(false);
-        setSnackbar({open: true, message: 'Saved successfully', severity: 'success'});
-      })
+      .then(() => setSnackbar({open: true, message: 'Saved successfully', severity: 'success'}))
       .catch(() => setSnackbar({open: true, message: 'Failed to save', severity: 'error'}));
   };
 
   const plan = planId ?
     userDataState.plans.find(p => p.id === parseInt(planId))
-    : userDataState.plans[0]
-  useAppBar({ title: 'Plan' });
+    : userDataState.plans[0];
+  useAppBar({ title: plan?.name ?? 'Plan' });
   if (!plan) {
-    redirect('/user/plan/create')
+    redirect('/user/plan/create');
   }
+
   return (
     <>
+      <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
+        <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="fullWidth">
+          <Tab label="Structure" value="structure" />
+          <Tab label="Log" value="log" />
+          <Tab label="Progress" value="progress" />
+        </Tabs>
+      </Box>
+
       <Box sx={{p: 1, overflow: 'auto'}}>
-        {!lockedInEditMode && (
-          <EditModeToggle
-            isInEditMode={isInEditMode}
-            setIsInEditMode={setIsInEditMode}
-          />
-        )}
-        {isInEditMode && (
-          <Button onClick={handleSave}>
+        {tab !== 'progress' && (
+          <Button onClick={handleSave} size="small" variant="outlined" sx={{mb: 1}}>
             Save
           </Button>
         )}
 
-        <h1>User: {userDataState.name}</h1>
-
-        {isMobile ? (
-          <MobilePlanView plan={plan} planId={plan.id} isInEditMode={isInEditMode} />
-        ) : (
-          <>
-            {plan.weeks.map((week, i) => (
-              <div key={i}>
-                <Week
-                  key={week.id}
-                  planId={plan.id}
-                  week={week}
-                  isInEditMode={isInEditMode}
-                  categories={categories}
-                />
-                {isInEditMode && i === plan.weeks.length - 1 && (
-                  <Button onClick={() => dispatch({type: 'DUPLICATE_WEEK', planId: Number(planId), weekId: week.id})}>
-                    Duplicate Week
-                  </Button>
-                )}
-              </div>
-            ))}
-
-            {isInEditMode && (
-              // todo fix this too
+        {tab === 'structure' && (
+          isMobile ? (
+            <MobilePlanView plan={plan} planId={plan.id} isInEditMode={true} />
+          ) : (
+            <>
+              {plan.weeks.map((week, i) => (
+                <div key={i}>
+                  <Week
+                    key={week.id}
+                    planId={plan.id}
+                    week={week}
+                    isInEditMode={true}
+                    categories={categories}
+                  />
+                  {i === plan.weeks.length - 1 && (
+                    <Button onClick={() => dispatch({type: 'DUPLICATE_WEEK', planId: Number(planId), weekId: week.id})}>
+                      Duplicate Week
+                    </Button>
+                  )}
+                </div>
+              ))}
               <Button onClick={() => dispatch({type: 'ADD_WEEK', planId: Number(planId)})}>
                 Add Week
               </Button>
-            )}
-            <ScreenSizeWarningBanner/>
-          </>
+              <ScreenSizeWarningBanner/>
+            </>
+          )
+        )}
+
+        {tab === 'log' && (
+          <LogView plan={plan} planId={plan.id} />
+        )}
+
+        {tab === 'progress' && (
+          <ProgressView plan={plan} />
         )}
       </Box>
 
