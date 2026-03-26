@@ -6,6 +6,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { WorkoutExercisePrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { Dir } from '@/lib/useWorkoutEditor';
+import { computeE1rm } from '@/lib/e1rm';
 
 interface ExerciseProgressCardProps {
   exerciseLink: WorkoutExercisePrisma;
@@ -83,13 +84,19 @@ const ExerciseProgressCard = ({
       </Box>
 
       {/* Column headers */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: '2em 1fr 1fr', gap: 0.5, mb: 0.5 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: '2em 1fr 3.5em 1fr 3.5em', gap: 0.5, mb: 0.5 }}>
         <Box />
         <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.65rem', fontWeight: 600, letterSpacing: 0.5 }}>
           LAST
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.65rem', fontWeight: 600, letterSpacing: 0.5 }}>
+          e1RM
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.65rem', fontWeight: 600, letterSpacing: 0.5 }}>
           THIS WEEK
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.65rem', fontWeight: 600, letterSpacing: 0.5 }}>
+          e1RM
         </Typography>
       </Box>
 
@@ -106,10 +113,13 @@ const ExerciseProgressCard = ({
             ? `×${prev.reps}`
             : '—';
 
+        const prevE1rm = computeE1rm(prev?.weight, prev?.reps);
+        const setE1rm = set ? computeE1rm(set.weight, set.reps) : null;
+
         return (
           <Box
             key={set?.id ?? `missing-${i}`}
-            sx={{ display: 'grid', gridTemplateColumns: '2em 1fr 1fr', gap: 0.5, mb: 0.5, alignItems: 'center' }}
+            sx={{ display: 'grid', gridTemplateColumns: '2em 1fr 3.5em 1fr 3.5em', gap: 0.5, mb: 0.5, alignItems: 'center' }}
           >
             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
               S{i + 1}
@@ -122,6 +132,11 @@ const ExerciseProgressCard = ({
               sx={{ textAlign: 'center', fontSize: '0.78rem' }}
             >
               {prevText}
+            </Typography>
+
+            {/* LAST e1RM */}
+            <Typography variant="caption" color="text.disabled" sx={{ textAlign: 'center', fontSize: '0.72rem' }}>
+              {prevE1rm != null ? Math.round(prevE1rm) : '—'}
             </Typography>
 
             {/* THIS WEEK */}
@@ -174,12 +189,18 @@ const ExerciseProgressCard = ({
                 —
               </Typography>
             )}
+
+            {/* THIS WEEK e1RM */}
+            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.72rem' }}>
+              {setE1rm != null ? Math.round(setE1rm) : '—'}
+            </Typography>
           </Box>
         );
       })}
 
       {/* + Set − aligned under THIS WEEK column */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: '2em 1fr 1fr', gap: 0.5, mt: 0.75 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: '2em 1fr 3.5em 1fr 3.5em', gap: 0.5, mt: 0.75 }}>
+        <Box />
         <Box />
         <Box />
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
