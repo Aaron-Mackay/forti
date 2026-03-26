@@ -38,7 +38,7 @@ const Workout = ({
 
   const baseColumns = 7; // first 7 fixed cols (order, category, exercise, repRange, rest, RPE, RIR)
   const maxRegularSetCount = Math.max(...workout.exercises.map(e => e.sets.filter(s => !s.isDropSet).length), 0);
-  const setColumns = maxRegularSetCount * 2; // each set has 2 cols
+  const setColumns = maxRegularSetCount * 3; // each set has 3 cols: weight, reps, e1RM
   const editModeExtraColumn = isInEditMode ? 1 : 0;
   const totalColumns = baseColumns + setColumns + editModeExtraColumn;
 
@@ -107,8 +107,12 @@ const Workout = ({
           <col style={{width: '6em'}}/>
           <col style={{width: '5em'}}/>
           <col style={{width: '5em'}}/>
-          {Array.from({length: setColumns}).map((_, i) => (
-            <col key={i} style={{width: '4em'}}/>
+          {Array.from({length: maxRegularSetCount}).map((_, i) => (
+            <React.Fragment key={i}>
+              <col style={{width: '4em'}}/>
+              <col style={{width: '4em'}}/>
+              <col style={{width: '4em'}}/>
+            </React.Fragment>
           ))}
           {isInEditMode &&
             <col style={{width: '30em'}}/>
@@ -125,7 +129,7 @@ const Workout = ({
             <TableCell></TableCell>
             {Array.from({length: maxRegularSetCount}).map((_, idx) => (
               <React.Fragment key={idx}>
-                <TableCell colSpan={2} align={"center"}>Set {idx + 1}</TableCell>
+                <TableCell colSpan={3} align={"center"}>Set {idx + 1}</TableCell>
               </React.Fragment>
             ))}
           </TableRow>
@@ -141,6 +145,7 @@ const Workout = ({
               <React.Fragment key={idx}>
                 <TableCell align={"center"}>Weight</TableCell>
                 <TableCell align={"center"}>Reps</TableCell>
+                <TableCell align={"center"}>e1RM</TableCell>
               </React.Fragment>
             ))}
           </TableRow>

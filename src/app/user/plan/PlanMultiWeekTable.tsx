@@ -6,6 +6,7 @@ import { PlanPrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { getWeekStatus } from '@/lib/workoutProgress';
 import ExercisePickerDialog from '@/app/user/workout/ExercisePickerDialog';
+import { computeE1rm } from '@/lib/e1rm';
 
 /** Strips trailing parenthetical from workout names, e.g. "Workout 1 (Plan 1 - Week 2)" → "Workout 1" */
 function stripSuffix(name: string): string {
@@ -266,7 +267,9 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
                           </Typography>
                         )}
 
-                        {regularSets.map((set, si) => (
+                        {regularSets.map((set, si) => {
+                          const e1rm = computeE1rm(set.weight, set.reps);
+                          return (
                           <Box
                             key={set.id}
                             sx={{ display: 'flex', gap: 0.25, alignItems: 'center', justifyContent: 'center', mb: 0.25 }}
@@ -317,8 +320,12 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
                               placeholder="reps"
                               style={inputSx}
                             />
+                            <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem', minWidth: '2.5em', textAlign: 'right' }}>
+                              {e1rm != null ? `~${Math.round(e1rm)}` : ''}
+                            </Typography>
                           </Box>
-                        ))}
+                          );
+                        })}
 
                         {/* + Set − */}
                         {ex && workout && (

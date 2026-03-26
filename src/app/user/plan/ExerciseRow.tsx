@@ -13,6 +13,7 @@ import {CompactAutocomplete} from "./CompactUI";
 import {WorkoutExercisePrisma} from "@/types/dataTypes";
 import {Dir} from "@lib/useWorkoutEditor";
 import {AddExerciseForm} from '@/app/exercises/AddExerciseForm';
+import {computeE1rm} from '@/lib/e1rm';
 
 const filter = createFilterOptions<string>();
 // Used for the category field: adds the typed value as a plain option
@@ -312,6 +313,7 @@ const ExerciseRow = ({
                 }
               />
               {drops.map((drop, dropIdx) => (
+
                 <Box
                   key={drop.id}
                   sx={{mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.25, pl: 0.75, borderLeft: '2px solid', borderColor: 'divider'}}
@@ -378,11 +380,19 @@ const ExerciseRow = ({
                 </Button>
               )}
             </TableCell>
+
+            {/* e1RM column */}
+            <TableCell align={"center"} sx={{verticalAlign: 'top', color: 'text.secondary', fontSize: '0.78rem'}}>
+              {(() => {
+                const e1rm = computeE1rm(set.weight, set.reps);
+                return e1rm != null ? Math.round(e1rm) : '—';
+              })()}
+            </TableCell>
           </React.Fragment>
         );
       })}
 
-      {Array.from({length: (maxSetCount - setCount)*2}).map((_, i) => {
+      {Array.from({length: (maxSetCount - setCount)*3}).map((_, i) => {
         return (
           <TableCell key={i}/>
         );
