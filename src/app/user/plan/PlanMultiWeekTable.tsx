@@ -279,18 +279,34 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
                           </Box>
                         ))}
 
-                        {/* + Set */}
+                        {/* + Set − */}
                         {ex && workout && (
-                          <Typography
-                            variant="caption"
-                            color="primary"
-                            sx={{ cursor: 'pointer', fontSize: '0.7rem', display: 'block', mt: 0.25 }}
-                            onClick={() =>
-                              dispatch({ type: 'ADD_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id })
-                            }
-                          >
-                            + Set
-                          </Typography>
+                          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 0.75, mt: 0.5 }}>
+                            <Typography
+                              variant="caption"
+                              color="primary"
+                              sx={{ cursor: 'pointer', fontSize: '0.85rem', lineHeight: 1, userSelect: 'none' }}
+                              onClick={() =>
+                                dispatch({ type: 'ADD_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id })
+                              }
+                            >
+                              +
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                              Set
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color={regularSets.length > 0 ? 'primary' : 'text.disabled'}
+                              sx={{ cursor: regularSets.length > 0 ? 'pointer' : 'default', fontSize: '0.85rem', lineHeight: 1, userSelect: 'none' }}
+                              onClick={() => {
+                                if (regularSets.length > 0)
+                                  dispatch({ type: 'REMOVE_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id });
+                              }}
+                            >
+                              −
+                            </Typography>
+                          </Box>
                         )}
                       </td>
                     );
