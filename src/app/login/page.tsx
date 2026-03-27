@@ -12,6 +12,22 @@ const betaPillSx = {
   border: "none",
 };
 
+const betaPillDesktopSx = {
+  bgcolor: "rgba(255,255,255,0.2)",
+  color: "#FFFFFF",
+  fontWeight: 700,
+  fontSize: "0.75rem",
+  letterSpacing: "0.1em",
+  textTransform: "uppercase",
+  border: "1px solid rgba(255,255,255,0.3)",
+  borderRadius: "99px",
+  px: "12px",
+  py: "4px",
+  mt: "10px",
+  mb: "20px",
+  display: "inline-block",
+};
+
 export default function LoginPage() {
   return (
     <Box
@@ -40,10 +56,10 @@ export default function LoginPage() {
             height={200}
             style={{margin: "0 auto", filter: "invert(1)"}}
           />
-          <Box sx={{display: "flex", justifyContent: "center", mt: 2}}>
-            <Chip label="Beta" size="small" sx={betaPillSx}/>
+          <Box sx={{display: "flex", justifyContent: "center"}}>
+            <Box component="span" sx={betaPillDesktopSx}>Beta</Box>
           </Box>
-          <Typography variant="h4" fontWeight={700} mt={2}>
+          <Typography variant="h4" fontWeight={700}>
             Welcome to Forti
           </Typography>
           <Typography variant="body1" mt={2}>
@@ -69,7 +85,7 @@ export default function LoginPage() {
             title="Logo"
           />
           <CardContent sx={{textAlign: "center"}}>
-            <Box sx={{display: {xs: "flex", md: "none"}, justifyContent: "center", mb: 0.5}}>
+            <Box sx={{display: {xs: "flex", md: "none"}, justifyContent: "center", mt: -1, mb: 0.5}}>
               <Chip label="Beta" size="small" sx={betaPillSx}/>
             </Box>
             <Typography variant="h2" sx={{display: {xs: "block", md: "none"}}}>Forti</Typography>
