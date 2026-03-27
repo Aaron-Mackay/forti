@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useRef} from "react";
 import {MetricKey, getCustomMetricsData} from "@/app/user/calendar/DayMetricBar";
 import {Box, IconButton, TextField, Typography} from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -36,7 +36,6 @@ export const DayMetricInput: React.FC<{
         weightUnit = 'kg',
       }) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [targetValue, setTargetValue] = useState<string>('');
 
   const isCustom = selectedMetric !== null && !BUILTIN_KEYS.has(selectedMetric);
   const customDef = isCustom ? customMetricDefs.find(d => d.id === selectedMetric) : undefined;
@@ -44,11 +43,6 @@ export const DayMetricInput: React.FC<{
   useEffect(() => {
     if (selectedMetric) {
       setTimeout(() => inputRef.current?.focus(), 300);
-      if (!BUILTIN_KEYS.has(selectedMetric)) {
-        const customData = getCustomMetricsData(dateDayMetrics?.customMetrics);
-        const existing = customData[selectedMetric];
-        setTargetValue(existing?.target != null ? String(existing.target) : '');
-      }
     }
   }, [selectedMetric]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -67,7 +61,7 @@ export const DayMetricInput: React.FC<{
         ...existingData,
         [selectedMetric]: {
           value: inputValue !== '' && inputValue !== null ? Number(inputValue) : null,
-          target: targetValue !== '' ? Number(targetValue) : (existingData[selectedMetric]?.target ?? null),
+          target: customDef?.target ?? null,
         },
       };
       updatedMetrics = {
@@ -123,23 +117,14 @@ export const DayMetricInput: React.FC<{
                      inputRef={inputRef}
           />
         ) : isCustom ? (
-          <Box sx={{display: 'flex', flexDirection: 'column', gap: 1, flex: 1}}>
-            <TextField
-              type='number'
-              label={`Value`}
-              value={inputValue ?? ""}
-              onChange={(e) => setInputValue(e.target.value)}
-              sx={{width: '100%'}}
-              inputRef={inputRef}
-            />
-            <TextField
-              type='number'
-              label={`Target (optional)`}
-              value={targetValue}
-              onChange={(e) => setTargetValue(e.target.value)}
-              sx={{width: '100%'}}
-            />
-          </Box>
+          <TextField
+            type="number"
+            label={`Enter ${customDef?.name ?? ''}`}
+            value={inputValue ?? ""}
+            onChange={(e) => setInputValue(e.target.value)}
+            sx={{mb: 2, width: '100%'}}
+            inputRef={inputRef}
+          />
         ) : (
           <TextField
             type={'number'}
@@ -155,7 +140,7 @@ export const DayMetricInput: React.FC<{
           variant="contained"
           onClick={handleSubmit}
           disabled={inputValue === null}
-          sx={{flex: isCustom ? 'none' : 1, height: isCustom ? '100%' : '56px', alignSelf: isCustom ? 'flex-end' : 'auto'}}
+          sx={{flex: 1, height: '56px'}}
         >
           Save
         </Button>
