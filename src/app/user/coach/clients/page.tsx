@@ -11,7 +11,6 @@ import {
   ListItemText,
   Typography,
 } from '@mui/material';
-import Link from 'next/link';
 import PersonIcon from '@mui/icons-material/Person';
 import GroupIcon from '@mui/icons-material/Group';
 
@@ -34,10 +33,7 @@ const CoachClientsPage = async () => {
         ) : (
           clients.map((client) => (
             <ListItem key={client.id} disablePadding>
-              <ListItemButton
-                component={Link}
-                href={`/user/coach/clients/${client.id}`}
-              >
+              <ListItemButton href={`/user/coach/clients/${client.id}`}>
                 <ListItemIcon>
                   <PersonIcon />
                 </ListItemIcon>

@@ -13,7 +13,6 @@ import {
   ListItemText,
   Typography,
 } from '@mui/material';
-import Link from 'next/link';
 import AddIcon from '@mui/icons-material/Add';
 
 interface Props {
@@ -47,7 +46,6 @@ export default async function ClientPlansPage({ params }: Props) {
           title={`${client.name ?? 'Client'}'s Plans`}
           action={
             <IconButton
-              component={Link}
               href={`/user/plan/create?forUserId=${clientId}`}
               aria-label="Add plan"
               size="small"
@@ -63,7 +61,6 @@ export default async function ClientPlansPage({ params }: Props) {
             </Typography>
             <Button
               variant="contained"
-              component={Link}
               href={`/user/plan/create?forUserId=${clientId}`}
             >
               Create first plan
@@ -72,7 +69,7 @@ export default async function ClientPlansPage({ params }: Props) {
         ) : (
           plans.map((plan) => (
             <ListItem key={plan.id} disablePadding>
-              <ListItemButton component={Link} href={`/user/plan/${plan.id}`}>
+              <ListItemButton href={`/user/plan/${plan.id}`}>
                 <ListItemText primary={plan.name} />
               </ListItemButton>
             </ListItem>
