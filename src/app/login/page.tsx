@@ -2,6 +2,15 @@ import {Box, Card, CardContent, CardMedia, Chip, Typography} from "@mui/material
 import Image from "next/image";
 import LoginButtons from "./LoginButtons";
 
+const betaPillSx = {
+  bgcolor: "rgba(45,127,249,0.15)",
+  color: "rgb(45,127,249)",
+  fontWeight: 600,
+  fontSize: "0.7rem",
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+  border: "none",
+};
 
 export default function LoginPage() {
   return (
@@ -24,17 +33,17 @@ export default function LoginPage() {
         }}
       >
         <Box textAlign="center">
-          <Box sx={{position: "relative", display: "inline-block"}}>
-            <Image
-              src="/forti-icon.svg"
-              alt="Logo"
-              width={200}
-              height={200}
-              style={{margin: "0 auto", filter: "invert(1)"}}
-            />
-            <Chip label="Beta" size="small" variant="outlined" sx={{position: "absolute", bottom: 0, right: 0, color: "primary.contrastText", borderColor: "rgba(255,255,255,0.6)", fontSize: "0.7rem"}}/>
+          <Image
+            src="/forti-icon.svg"
+            alt="Logo"
+            width={200}
+            height={200}
+            style={{margin: "0 auto", filter: "invert(1)"}}
+          />
+          <Box sx={{display: "flex", justifyContent: "center", mt: 2}}>
+            <Chip label="Beta" size="small" sx={betaPillSx}/>
           </Box>
-          <Typography variant="h4" fontWeight={700} mt={3}>
+          <Typography variant="h4" fontWeight={700} mt={2}>
             Welcome to Forti
           </Typography>
           <Typography variant="body1" mt={2}>
@@ -53,16 +62,16 @@ export default function LoginPage() {
         }}
       >
         <Card elevation={4} sx={{width: "100%", maxWidth: 400, borderRadius: 3, m:1}}>
-          <Box sx={{position: "relative", display: {xs: "block", md: "none"}}}>
-            <CardMedia
-              component={'img'}
-              sx={{ height: 250, objectFit: "contain" }}
-              image="/forti-icon.svg"
-              title="Logo"
-            />
-            <Chip label="Beta" size="small" color="primary" variant="outlined" sx={{position: "absolute", bottom: 8, right: 8, fontSize: "0.7rem"}}/>
-          </Box>
+          <CardMedia
+            component={'img'}
+            sx={{ height: 250, objectFit: "contain", display: { xs: "flex", md: "none" }}}
+            image="/forti-icon.svg"
+            title="Logo"
+          />
           <CardContent sx={{textAlign: "center"}}>
+            <Box sx={{display: {xs: "flex", md: "none"}, justifyContent: "center", mb: 0.5}}>
+              <Chip label="Beta" size="small" sx={betaPillSx}/>
+            </Box>
             <Typography variant="h2" sx={{display: {xs: "block", md: "none"}}}>Forti</Typography>
             <Typography variant="h5" fontWeight={600} gutterBottom>
               Sign in
