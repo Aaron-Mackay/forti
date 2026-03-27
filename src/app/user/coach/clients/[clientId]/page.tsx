@@ -11,7 +11,6 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import Link from 'next/link';
 import ClientQuickLinks from './ClientQuickLinks';
 
 interface Props {
@@ -58,7 +57,7 @@ const ClientOverviewPage = async ({ params }: Props) => {
         <Card>
           <CardHeader title="Plans" subheader={`${client._count.plans} plan${client._count.plans === 1 ? '' : 's'}`} />
           <CardContent>
-            <Button component={Link} href={`/user/coach/clients/${clientId}/plans`} size="small">
+            <Button href={`/user/coach/clients/${clientId}/plans`} size="small">
               View plans
             </Button>
           </CardContent>
@@ -84,7 +83,6 @@ const ClientOverviewPage = async ({ params }: Props) => {
                   </Typography>
                 )}
                 <Button
-                  component={Link}
                   href={`/user/coach/clients/${clientId}/check-ins`}
                   size="small"
                   sx={{ mt: 1 }}
