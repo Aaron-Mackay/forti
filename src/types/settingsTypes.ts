@@ -7,6 +7,7 @@ export type ExerciseUnitOverride = 'kg' | 'lbs' | 'none';
 export interface CustomMetricDef {
   id: string;   // UUID, stable — never changes even if name is renamed
   name: string; // user-defined label
+  target?: number | null; // global target shown in daily metric display
 }
 
 /** An exercise selected for e1rm progress tracking on the dashboard. */
@@ -27,7 +28,7 @@ export interface Settings {
   showSupplements: boolean;
   // 0 = Monday … 6 = Sunday
   checkInDay: number;
-  // Up to 5 user-defined metric slots
+  // Up to 4 user-defined metric slots
   customMetrics: CustomMetricDef[];
   // Onboarding state
   onboardingDismissed: boolean;
@@ -81,10 +82,10 @@ function parseCustomMetrics(raw: unknown): CustomMetricDef[] {
       !seen.has(item.id)
     ) {
       seen.add(item.id);
-      result.push({ id: item.id, name: item.name });
+      result.push({ id: item.id, name: item.name, target: typeof item.target === 'number' ? item.target : null });
     }
   }
-  return result.slice(0, 5);
+  return result.slice(0, 4);
 }
 
 function parseTrackedE1rmExercises(raw: unknown): TrackedE1rmExercise[] {

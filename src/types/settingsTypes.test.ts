@@ -221,10 +221,27 @@ describe('parseDashboardSettings', () => {
 
     it('parses valid custom metric definitions', () => {
       const defs = [
-        { id: 'abc-1', name: 'Thigh' },
-        { id: 'abc-2', name: 'Waist' },
+        { id: 'abc-1', name: 'Thigh', target: null },
+        { id: 'abc-2', name: 'Waist', target: null },
       ];
       expect(parseDashboardSettings({ customMetrics: defs }).customMetrics).toEqual(defs);
+    });
+
+    it('parses target when present', () => {
+      const raw = [{ id: 'abc-1', name: 'Waist', target: 85 }];
+      expect(parseDashboardSettings({ customMetrics: raw }).customMetrics).toEqual([
+        { id: 'abc-1', name: 'Waist', target: 85 },
+      ]);
+    });
+
+    it('defaults target to null when absent or invalid', () => {
+      const raw = [
+        { id: 'abc-1', name: 'Waist' },
+        { id: 'abc-2', name: 'Other', target: 'not-a-number' },
+      ];
+      const result = parseDashboardSettings({ customMetrics: raw }).customMetrics;
+      expect(result[0].target).toBeNull();
+      expect(result[1].target).toBeNull();
     });
 
     it('strips entries with missing id or name', () => {
@@ -236,7 +253,7 @@ describe('parseDashboardSettings', () => {
         42,
       ];
       expect(parseDashboardSettings({ customMetrics: raw }).customMetrics).toEqual([
-        { id: 'abc-1', name: 'Valid' },
+        { id: 'abc-1', name: 'Valid', target: null },
       ]);
     });
 
@@ -246,13 +263,13 @@ describe('parseDashboardSettings', () => {
         { id: 'dup', name: 'Second' },
       ];
       expect(parseDashboardSettings({ customMetrics: raw }).customMetrics).toEqual([
-        { id: 'dup', name: 'First' },
+        { id: 'dup', name: 'First', target: null },
       ]);
     });
 
-    it('caps at 5 entries', () => {
-      const raw = Array.from({ length: 7 }, (_, i) => ({ id: `id-${i}`, name: `Metric ${i}` }));
-      expect(parseDashboardSettings({ customMetrics: raw }).customMetrics).toHaveLength(5);
+    it('caps at 4 entries', () => {
+      const raw = Array.from({ length: 6 }, (_, i) => ({ id: `id-${i}`, name: `Metric ${i}` }));
+      expect(parseDashboardSettings({ customMetrics: raw }).customMetrics).toHaveLength(4);
     });
 
     it('returns empty array when customMetrics is not an array', () => {

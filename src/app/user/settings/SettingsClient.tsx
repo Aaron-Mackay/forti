@@ -110,12 +110,18 @@ function CustomMetricsSection() {
     saveDefs(defs.map(d => d.id === id ? { ...d, name: trimmed } : d));
   };
 
+  const handleTargetBlur = (id: string, value: string) => {
+    const num = parseFloat(value);
+    const target = isNaN(num) ? null : num;
+    saveDefs(defs.map(d => d.id === id ? { ...d, target } : d));
+  };
+
   const handleDelete = (id: string) => {
     saveDefs(defs.filter(d => d.id !== id));
   };
 
   const handleAdd = () => {
-    if (defs.length >= 5) return;
+    if (defs.length >= 4) return;
     const newDef: CustomMetricDef = {
       id: crypto.randomUUID(),
       name: `Metric ${defs.length + 1}`,
@@ -126,7 +132,7 @@ function CustomMetricsSection() {
   return (
     <Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-        Track up to 5 personal measurements alongside your daily metrics
+        Track up to 4 personal measurements alongside your daily metrics
       </Typography>
       {defs.map(def => (
         <Box key={def.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -135,6 +141,14 @@ function CustomMetricsSection() {
             size="small"
             sx={{ flex: 1 }}
             onBlur={e => handleNameBlur(def.id, e.target.value)}
+          />
+          <TextField
+            type="number"
+            size="small"
+            placeholder="Target"
+            defaultValue={def.target ?? ''}
+            sx={{ width: 90 }}
+            onBlur={e => handleTargetBlur(def.id, e.target.value)}
           />
           <IconButton
             size="small"
@@ -149,7 +163,7 @@ function CustomMetricsSection() {
         startIcon={<AddIcon />}
         size="small"
         onClick={handleAdd}
-        disabled={defs.length >= 5}
+        disabled={defs.length >= 4}
         sx={{ mt: 0.5 }}
       >
         Add metric
