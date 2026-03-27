@@ -161,10 +161,11 @@ export default function CustomAppBar(
       >
         {/* Header / Logo */}
         <Stack direction="row" alignItems="center" spacing={1} sx={{p: 1.5}}>
-          <FortiIcon style={{width: 50, height: 50}}/>
-          <Typography variant="h5">Forti</Typography>
-          <Chip label="Beta" size="small" color="primary" variant="outlined" sx={{fontSize: "0.65rem", height: 20}}/>
-          <Box sx={{flexGrow: 1}}/>
+          <Box sx={{position: "relative", display: "inline-flex"}}>
+            <FortiIcon style={{width: 50, height: 50}}/>
+            <Chip label="Beta" size="small" color="primary" variant="outlined" sx={{position: "absolute", bottom: 0, right: -4, fontSize: "0.55rem", height: 16, "& .MuiChip-label": {px: 0.5}}}/>
+          </Box>
+          <Typography variant="h5" sx={{flexGrow: 1}}>Forti</Typography>
           <IconButton component={Link} href="/user/notifications" color="inherit" size="small" aria-label="notifications">
             <Badge badgeContent={unreadCount} color="error" max={99}>
               <NotificationsIcon/>
