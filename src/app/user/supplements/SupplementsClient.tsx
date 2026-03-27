@@ -11,13 +11,8 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  FormControl,
   IconButton,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
-  SelectChangeEvent,
   Stack,
   TextField,
   Typography,
@@ -39,11 +34,6 @@ interface Supplement {
   endDate: string | null;
   createdAt: string;
   updatedAt: string;
-}
-
-interface Client {
-  id: string;
-  name: string;
 }
 
 interface SupplementFormData {
@@ -132,18 +122,17 @@ function SupplementCard({ supplement, readOnly, onEdit, onDelete }: SupplementCa
 }
 
 export default function SupplementsClient({
-  coachModeActive,
-  clients,
+  readOnly: readOnlyProp = false,
+  initialSupplements,
 }: {
-  coachModeActive: boolean;
-  clients: Client[];
+  readOnly?: boolean;
+  initialSupplements?: Supplement[];
 }) {
   useAppBar({ title: 'Supplements' });
-  const [supplements, setSupplements] = useState<Supplement[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [supplements, setSupplements] = useState<Supplement[]>(initialSupplements ?? []);
+  const [loading, setLoading] = useState(!initialSupplements);
   const [error, setError] = useState<string | null>(null);
-  const [selectedClientId, setSelectedClientId] = useState<string>('self');
-  const [readOnly, setReadOnly] = useState(false);
+  const readOnly = readOnlyProp;
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSupp, setEditingSupp] = useState<Supplement | null>(null);
@@ -151,14 +140,11 @@ export default function SupplementsClient({
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const fetchSupplements = useCallback(async (clientId: string) => {
+  const fetchSupplements = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const url = clientId === 'self'
-        ? '/api/supplements'
-        : `/api/coach/clients/${clientId}/supplements`;
-      const res = await fetch(url);
+      const res = await fetch('/api/supplements');
       if (!res.ok) throw new Error('Failed to load supplements');
       const data: Supplement[] = await res.json();
       setSupplements(data);
@@ -170,15 +156,10 @@ export default function SupplementsClient({
   }, []);
 
   useEffect(() => {
-    fetchSupplements('self');
-  }, [fetchSupplements]);
-
-  const handleClientChange = async (e: SelectChangeEvent<string>) => {
-    const clientId = e.target.value;
-    setSelectedClientId(clientId);
-    setReadOnly(clientId !== 'self');
-    await fetchSupplements(clientId);
-  };
+    if (!initialSupplements) {
+      fetchSupplements();
+    }
+  }, [fetchSupplements, initialSupplements]);
 
   const openAdd = () => {
     setEditingSupp(null);
@@ -271,22 +252,6 @@ export default function SupplementsClient({
   return (
     <>
       <Box sx={{ pt: 2, pb: 6, px: 2, maxWidth: 600, height: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
-        {coachModeActive && clients.length > 0 && (
-          <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-            <InputLabel>Viewing</InputLabel>
-            <Select
-              value={selectedClientId}
-              label="Viewing"
-              onChange={handleClientChange}
-            >
-              <MenuItem value="self">My supplements</MenuItem>
-              {clients.map(c => (
-                <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
-
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
             {error}

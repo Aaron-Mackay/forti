@@ -13,13 +13,8 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  FormControl,
   IconButton,
-  InputLabel,
   LinearProgress,
-  MenuItem,
-  Select,
-  SelectChangeEvent,
   Stack,
   TextField,
   Typography,
@@ -38,14 +33,11 @@ import { getDefinedBlockColor } from '@/app/user/calendar/utils';
 import { updateDayMetricClient } from '@lib/dayMetrics';
 import { convertDateToDateString } from '@lib/dateUtils';
 
-type Client = { id: string; name: string };
-
 interface Props {
   userId: string;
   initialDayMetrics: DayMetricPrisma[];
   initialEvents: EventPrisma[];
-  clients: Client[];
-  coachModeActive: boolean;
+  readOnly?: boolean;
 }
 
 type EditValues = {
@@ -143,8 +135,7 @@ export default function NutritionClient({
   userId,
   initialDayMetrics,
   initialEvents,
-  clients,
-  coachModeActive,
+  readOnly: readOnlyProp = false,
 }: Props) {
   useAppBar({ title: 'Nutrition' });
   const today = useMemo(() => new Date(), []);
@@ -153,11 +144,9 @@ export default function NutritionClient({
     startOfWeek(today, { weekStartsOn: 1 })
   );
   const [dayMetrics, setDayMetrics] = useState<DayMetricPrisma[]>(initialDayMetrics);
-  const [events, setEvents] = useState<EventPrisma[]>(initialEvents);
+  const [events] = useState<EventPrisma[]>(initialEvents);
 
-  const [selectedClientId, setSelectedClientId] = useState<string>('self');
-  const [readOnly, setReadOnly] = useState(false);
-  const [loadingClient, setLoadingClient] = useState(false);
+  const readOnly = readOnlyProp;
 
   const [editingDate, setEditingDate] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<EditValues>({
@@ -198,32 +187,6 @@ export default function NutritionClient({
       {} as Record<string, number | null>
     );
   }, [weekDays, metricsByDate]);
-
-  const handleClientChange = useCallback(
-    async (e: SelectChangeEvent<string>) => {
-      const clientId = e.target.value;
-      setSelectedClientId(clientId);
-      if (clientId === 'self') {
-        setDayMetrics(initialDayMetrics);
-        setEvents(initialEvents);
-        setReadOnly(false);
-        return;
-      }
-      setLoadingClient(true);
-      setReadOnly(true);
-      try {
-        const res = await fetch(`/api/coach/clients/${clientId}/nutrition`);
-        if (res.ok) {
-          const data = await res.json();
-          setDayMetrics(data.dayMetrics);
-          setEvents(data.events);
-        }
-      } finally {
-        setLoadingClient(false);
-      }
-    },
-    [initialDayMetrics, initialEvents]
-  );
 
   const openEditor = useCallback(
     (dateStr: string) => {
@@ -328,31 +291,8 @@ export default function NutritionClient({
     <>
       <Box sx={{ height: HEIGHT_EXC_APPBAR, overflowY: 'auto', px: 2, py: 2 }}>
 
-        {/* Coach client selector */}
-        {coachModeActive && clients.length > 0 && (
-          <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-            <InputLabel>Viewing</InputLabel>
-            <Select
-              value={selectedClientId}
-              label="Viewing"
-              onChange={handleClientChange}
-            >
-              <MenuItem value="self">My nutrition</MenuItem>
-              {clients.map(c => (
-                <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
 
-        {loadingClient && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress size={32} />
-          </Box>
-        )}
-
-        {!loadingClient && (
-          <>
+        <>
             {/* Active phase */}
             {activeBlock && (
               <Box sx={{ mb: 2 }}>
@@ -625,8 +565,7 @@ export default function NutritionClient({
                 );
               })}
             </Stack>
-          </>
-        )}
+        </>
       </Box>
 
       {/* Set week targets dialog */}

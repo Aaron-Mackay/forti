@@ -43,8 +43,12 @@ import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
 import MedicationIcon from '@mui/icons-material/Medication';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import SchoolIcon from '@mui/icons-material/School';
+import PersonIcon from '@mui/icons-material/Person';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import ChecklistIcon2 from '@mui/icons-material/AssignmentTurnedIn';
 import {signOut} from "next-auth/react";
 import {useSettings} from '@lib/providers/SettingsProvider';
+import {useCoachClients} from '@lib/providers/CoachClientsProvider';
 import {usePlanCount} from '@lib/hooks/api/usePlanCount';
 import {useNotifications} from '@lib/hooks/api/useNotifications';
 
@@ -67,9 +71,15 @@ export default function CustomAppBar(
 
   const pathname = usePathname();
   const { settings, loading: settingsLoading } = useSettings();
+  const { clients } = useCoachClients();
   const [planNestedOpen, setPlanNestedOpen] = useState(() => pathname.includes('/plan'))
   const planCount = usePlanCount();
   const { unreadCount } = useNotifications();
+
+  // Detect client focus mode from URL pattern
+  const clientMatch = pathname?.match(/^\/user\/coach\/clients\/([^/]+)/);
+  const activeClientId = clientMatch?.[1];
+  const activeClient = activeClientId ? clients.find(c => c.id === activeClientId) : undefined;
 
   const handleClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     event.stopPropagation()
@@ -106,11 +116,12 @@ export default function CustomAppBar(
   }, [drawerOpen]);
 
 
-  const ListLink = ({icon, text, href, disabled, nested}
-                    : { icon: ReactNode, text: string, href: string, disabled?: boolean, nested?: boolean }) => {
+  const ListLink = ({icon, text, href, disabled, nested, isActive}
+                    : { icon: ReactNode, text: string, href: string, disabled?: boolean, nested?: boolean, isActive?: boolean }) => {
+    const selected = isActive !== undefined ? isActive : pathname === href;
     return (
       <ListItem disablePadding>
-        <ListItemButton component={Link} href={href} disabled={disabled} selected={pathname === href}
+        <ListItemButton component={Link} href={href} disabled={disabled} selected={selected}
                         sx={{pl: nested ? 4 : 2}}>
           <ListItemIcon>
             {icon}
@@ -175,39 +186,90 @@ export default function CustomAppBar(
 
         {/* Scrollable content */}
         <Box sx={{flexGrow: 1, overflowY: 'auto'}}>
-          <List>
-            <ListLink icon={<HomeIcon/>} text="Home" href="/user"/>
-            <ListLink icon={<CalendarIcon/>} text="Calendar" href="/user/calendar"/>
-            <ListLink icon={<WorkoutIcon/>} text="Training" href="/user/workout"/>
-            <ListLink icon={<ChecklistIcon/>} text="Check-in" href="/user/check-in"/>
-            <ListLink icon={<RestaurantRoundedIcon/>} text="Nutrition" href="/user/nutrition"/>
-            {!settingsLoading && settings.showSupplements && (
-              <ListLink icon={<MedicationIcon/>} text="Supplements" href="/user/supplements"/>
-            )}
-            <ListLink icon={<LibraryBooksIcon/>} text="Exercises" href="/exercises"/>
-            <ListLink icon={<BookmarksIcon/>} text="Library" href="/library"/>
-            <ListLink icon={<SchoolIcon/>} text="Learning Plans" href="/user/learning-plans"/>
-            {!settingsLoading && settings.coachModeActive && (
-              <ListLink icon={<GroupIcon/>} text="Client Check-ins" href="/user/coach/check-ins"/>
-            )}
-            {!settingsLoading && settings.coachModeActive && (
-              <ListLink icon={<SchoolIcon/>} text="Coach Learning Plans" href="/user/coach/learning-plans"/>
-            )}
-            {planCount == null ? null : planCount > 0
-              ? <>
-                <ListItemButton onClick={handleClick}>
-                  <ListItemIcon><ListAltIcon/></ListItemIcon>
-                  <ListItemText primary="Planning"/>
-                  {planNestedOpen ? <ExpandLess/> : <ExpandMore/>}
+          {activeClient ? (
+            /* Client Focus Mode nav */
+            <List>
+              <ListItem disablePadding>
+                <ListItemButton component={Link} href="/user/coach/clients">
+                  <ListItemIcon><ArrowBackIcon/></ListItemIcon>
+                  <ListItemText primary="My nav"/>
                 </ListItemButton>
-                <Collapse in={planNestedOpen} timeout="auto" unmountOnExit>
-                  <ListLink nested icon={<AddIcon/>} text="Create Plan" href="/user/plan/create"/>
-                  <ListLink nested icon={<SpecificPlan/>} text="User Plans" href="/user/plan"/>
-                </Collapse>
-              </>
-              : <ListLink icon={<AddIcon/>} text="Create Plan" href="/user/plan/create"/>}
-
-          </List>
+              </ListItem>
+              <Divider sx={{my: 0.5}}/>
+              <ListItem sx={{py: 0.5}}>
+                <ListItemIcon><PersonIcon color="primary"/></ListItemIcon>
+                <ListItemText
+                  primary={activeClient.name ?? 'Client'}
+                  primaryTypographyProps={{fontWeight: 600, color: 'primary.main'}}
+                />
+              </ListItem>
+              <Divider sx={{my: 0.5}}/>
+              <ListLink
+                icon={<DashboardIcon/>}
+                text="Overview"
+                href={`/user/coach/clients/${activeClientId}`}
+                isActive={pathname === `/user/coach/clients/${activeClientId}`}
+              />
+              <ListLink
+                icon={<ChecklistIcon2/>}
+                text="Check-ins"
+                href={`/user/coach/clients/${activeClientId}/check-ins`}
+                isActive={pathname.startsWith(`/user/coach/clients/${activeClientId}/check-ins`)}
+              />
+              <ListLink
+                icon={<ListAltIcon/>}
+                text="Plans"
+                href={`/user/coach/clients/${activeClientId}/plans`}
+                isActive={pathname.startsWith(`/user/coach/clients/${activeClientId}/plans`)}
+              />
+              <ListLink
+                icon={<RestaurantRoundedIcon/>}
+                text="Nutrition"
+                href={`/user/coach/clients/${activeClientId}/nutrition`}
+                isActive={pathname.startsWith(`/user/coach/clients/${activeClientId}/nutrition`)}
+              />
+              <ListLink
+                icon={<MedicationIcon/>}
+                text="Supplements"
+                href={`/user/coach/clients/${activeClientId}/supplements`}
+                isActive={pathname.startsWith(`/user/coach/clients/${activeClientId}/supplements`)}
+              />
+            </List>
+          ) : (
+            /* Normal nav */
+            <List>
+              <ListLink icon={<HomeIcon/>} text="Home" href="/user"/>
+              <ListLink icon={<CalendarIcon/>} text="Calendar" href="/user/calendar"/>
+              <ListLink icon={<WorkoutIcon/>} text="Training" href="/user/workout"/>
+              <ListLink icon={<ChecklistIcon/>} text="Check-in" href="/user/check-in"/>
+              <ListLink icon={<RestaurantRoundedIcon/>} text="Nutrition" href="/user/nutrition"/>
+              {!settingsLoading && settings.showSupplements && (
+                <ListLink icon={<MedicationIcon/>} text="Supplements" href="/user/supplements"/>
+              )}
+              <ListLink icon={<LibraryBooksIcon/>} text="Exercises" href="/exercises"/>
+              <ListLink icon={<BookmarksIcon/>} text="Library" href="/library"/>
+              <ListLink icon={<SchoolIcon/>} text="Learning Plans" href="/user/learning-plans"/>
+              {!settingsLoading && settings.coachModeActive && (
+                <ListLink icon={<GroupIcon/>} text="Clients" href="/user/coach/clients"/>
+              )}
+              {!settingsLoading && settings.coachModeActive && (
+                <ListLink icon={<SchoolIcon/>} text="Coach Learning Plans" href="/user/coach/learning-plans"/>
+              )}
+              {planCount == null ? null : planCount > 0
+                ? <>
+                  <ListItemButton onClick={handleClick}>
+                    <ListItemIcon><ListAltIcon/></ListItemIcon>
+                    <ListItemText primary="Planning"/>
+                    {planNestedOpen ? <ExpandLess/> : <ExpandMore/>}
+                  </ListItemButton>
+                  <Collapse in={planNestedOpen} timeout="auto" unmountOnExit>
+                    <ListLink nested icon={<AddIcon/>} text="Create Plan" href="/user/plan/create"/>
+                    <ListLink nested icon={<SpecificPlan/>} text="User Plans" href="/user/plan"/>
+                  </Collapse>
+                </>
+                : <ListLink icon={<AddIcon/>} text="Create Plan" href="/user/plan/create"/>}
+            </List>
+          )}
         </Box>
 
         <Divider/>

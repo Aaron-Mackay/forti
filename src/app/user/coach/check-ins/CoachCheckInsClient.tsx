@@ -32,14 +32,14 @@ interface ApiResponse {
   clients: Client[];
 }
 
-export default function CoachCheckInsClient() {
-  const [tab, setTab] = useState<0 | 1>(0); // 0 = New, 1 = Browse
+export default function CoachCheckInsClient({ lockedClientId }: { lockedClientId?: string }) {
+  const [tab, setTab] = useState<0 | 1>(lockedClientId ? 1 : 0); // default Browse when locked to a client
   const [clients, setClients] = useState<Client[]>([]);
   const [newCheckIns, setNewCheckIns] = useState<CheckInWithUser[]>([]);
   const [browseCheckIns, setBrowseCheckIns] = useState<CheckInWithUser[]>([]);
   const [browseTotal, setBrowseTotal] = useState(0);
   const [browseOffset, setBrowseOffset] = useState(0);
-  const [filterClientId, setFilterClientId] = useState('');
+  const [filterClientId, setFilterClientId] = useState(lockedClientId ?? '');
   const [filterFrom, setFilterFrom] = useState('');
   const [filterTo, setFilterTo] = useState('');
   const [loading, setLoading] = useState(true);
@@ -47,12 +47,14 @@ export default function CoachCheckInsClient() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchNew = useCallback(async () => {
-    const res = await fetch('/api/coach/check-ins?unread=true&limit=20&offset=0');
+    const params = new URLSearchParams({ unread: 'true', limit: '20', offset: '0' });
+    if (lockedClientId) params.set('clientId', lockedClientId);
+    const res = await fetch(`/api/coach/check-ins?${params}`);
     if (!res.ok) throw new Error('Failed to load check-ins');
     const data = await res.json() as ApiResponse;
     setNewCheckIns(data.checkIns);
     setClients(data.clients);
-  }, []);
+  }, [lockedClientId]);
 
   useEffect(() => {
     setLoading(true);
@@ -61,6 +63,14 @@ export default function CoachCheckInsClient() {
       .catch(() => setError('Failed to load client check-ins.'))
       .finally(() => setLoading(false));
   }, [fetchNew]);
+
+  // Auto-run browse when locked to a specific client
+  useEffect(() => {
+    if (lockedClientId) {
+      runBrowse(0);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lockedClientId]);
 
   async function runBrowse(offset: number, append = false) {
     setBrowseLoading(true);
@@ -152,19 +162,21 @@ export default function CoachCheckInsClient() {
         <>
           {/* Filters */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
-            <FormControl size="small" fullWidth>
-              <InputLabel>Client</InputLabel>
-              <Select
-                value={filterClientId}
-                label="Client"
-                onChange={e => setFilterClientId(e.target.value)}
-              >
-                <MenuItem value="">All clients</MenuItem>
-                {clients.map(c => (
-                  <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            {!lockedClientId && (
+              <FormControl size="small" fullWidth>
+                <InputLabel>Client</InputLabel>
+                <Select
+                  value={filterClientId}
+                  label="Client"
+                  onChange={e => setFilterClientId(e.target.value)}
+                >
+                  <MenuItem value="">All clients</MenuItem>
+                  {clients.map(c => (
+                    <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
                 label="From"
