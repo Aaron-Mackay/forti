@@ -8,15 +8,11 @@ import {
   Card,
   CardContent,
   CardHeader,
-  Grid,
   Stack,
   Typography,
 } from '@mui/material';
 import Link from 'next/link';
-import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
-import ListAltIcon from '@mui/icons-material/ListAlt';
-import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
-import MedicationIcon from '@mui/icons-material/Medication';
+import ClientQuickLinks from './ClientQuickLinks';
 
 interface Props {
   params: Promise<{ clientId: string }>;
@@ -51,34 +47,11 @@ const ClientOverviewPage = async ({ params }: Props) => {
     },
   });
 
-  const quickLinks = [
-    { href: `/user/coach/clients/${clientId}/check-ins`, label: 'Check-ins', icon: <AssignmentTurnedInIcon /> },
-    { href: `/user/coach/clients/${clientId}/plans`, label: 'Plans', icon: <ListAltIcon /> },
-    { href: `/user/coach/clients/${clientId}/nutrition`, label: 'Nutrition', icon: <RestaurantRoundedIcon /> },
-    { href: `/user/coach/clients/${clientId}/supplements`, label: 'Supplements', icon: <MedicationIcon /> },
-  ];
-
   return (
     <>
       <AppBarTitle title={client.name ?? 'Client'} />
 
-      {/* Quick links */}
-      <Grid container spacing={1} sx={{ mb: 2 }}>
-        {quickLinks.map(({ href, label, icon }) => (
-          <Grid size={6} key={href}>
-            <Button
-              component={Link}
-              href={href}
-              variant="outlined"
-              fullWidth
-              startIcon={icon}
-              sx={{ justifyContent: 'flex-start', py: 1.5 }}
-            >
-              {label}
-            </Button>
-          </Grid>
-        ))}
-      </Grid>
+      <ClientQuickLinks clientId={clientId} />
 
       {/* Summary cards */}
       <Stack spacing={2}>

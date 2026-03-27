@@ -24,7 +24,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import MenuIcon from "@mui/icons-material/Menu";
 import FeedbackIcon from '@mui/icons-material/Feedback';
-import React, {ReactNode, useEffect, useState} from 'react';
+import {ReactNode, useEffect, useState} from 'react';
 import {usePathname, useRouter} from 'next/navigation';
 import CalendarIcon from '@mui/icons-material/CalendarMonth';
 import WorkoutIcon from '@mui/icons-material/FitnessCenterRounded';
@@ -33,9 +33,8 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import LogoutIcon from '@mui/icons-material/Logout';
 import SettingsIcon from '@mui/icons-material/Settings';
-import AddIcon from "@mui/icons-material/Add";
-import SpecificPlan from '@mui/icons-material/InsertInvitation';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import BookmarksIcon from '@mui/icons-material/Bookmarks';
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import GroupIcon from '@mui/icons-material/Group';
@@ -49,7 +48,6 @@ import ChecklistIcon2 from '@mui/icons-material/AssignmentTurnedIn';
 import {signOut} from "next-auth/react";
 import {useSettings} from '@lib/providers/SettingsProvider';
 import {useCoachClients} from '@lib/providers/CoachClientsProvider';
-import {usePlanCount} from '@lib/hooks/api/usePlanCount';
 import {useNotifications} from '@lib/hooks/api/useNotifications';
 
 export const APPBAR_HEIGHT = 56;
@@ -72,19 +70,17 @@ export default function CustomAppBar(
   const pathname = usePathname();
   const { settings, loading: settingsLoading } = useSettings();
   const { clients } = useCoachClients();
-  const [planNestedOpen, setPlanNestedOpen] = useState(() => pathname.includes('/plan'))
-  const planCount = usePlanCount();
   const { unreadCount } = useNotifications();
+
+  const educationPaths = ['/library', '/user/learning-plans', '/user/coach/learning-plans'];
+  const [educationOpen, setEducationOpen] = useState(
+    () => educationPaths.some(p => pathname?.startsWith(p))
+  );
 
   // Detect client focus mode from URL pattern
   const clientMatch = pathname?.match(/^\/user\/coach\/clients\/([^/]+)/);
   const activeClientId = clientMatch?.[1];
   const activeClient = activeClientId ? clients.find(c => c.id === activeClientId) : undefined;
-
-  const handleClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    event.stopPropagation()
-    setPlanNestedOpen(!planNestedOpen);
-  };
 
   const router = useRouter();
   if (showBack && typeof onBack === 'undefined') {
@@ -247,27 +243,22 @@ export default function CustomAppBar(
                 <ListLink icon={<MedicationIcon/>} text="Supplements" href="/user/supplements"/>
               )}
               <ListLink icon={<LibraryBooksIcon/>} text="Exercises" href="/exercises"/>
-              <ListLink icon={<BookmarksIcon/>} text="Library" href="/library"/>
-              <ListLink icon={<SchoolIcon/>} text="Learning Plans" href="/user/learning-plans"/>
+              <ListItemButton onClick={() => setEducationOpen(o => !o)}>
+                <ListItemIcon><MenuBookIcon/></ListItemIcon>
+                <ListItemText primary="Education"/>
+                {educationOpen ? <ExpandLess/> : <ExpandMore/>}
+              </ListItemButton>
+              <Collapse in={educationOpen} timeout="auto" unmountOnExit>
+                <ListLink nested icon={<BookmarksIcon/>} text="Library" href="/library"/>
+                <ListLink nested icon={<SchoolIcon/>} text="Learning Plans" href="/user/learning-plans"/>
+                {!settingsLoading && settings.coachModeActive && (
+                  <ListLink nested icon={<SchoolIcon/>} text="Coach Learning Plans" href="/user/coach/learning-plans"/>
+                )}
+              </Collapse>
               {!settingsLoading && settings.coachModeActive && (
                 <ListLink icon={<GroupIcon/>} text="Clients" href="/user/coach/clients"/>
               )}
-              {!settingsLoading && settings.coachModeActive && (
-                <ListLink icon={<SchoolIcon/>} text="Coach Learning Plans" href="/user/coach/learning-plans"/>
-              )}
-              {planCount == null ? null : planCount > 0
-                ? <>
-                  <ListItemButton onClick={handleClick}>
-                    <ListItemIcon><ListAltIcon/></ListItemIcon>
-                    <ListItemText primary="Planning"/>
-                    {planNestedOpen ? <ExpandLess/> : <ExpandMore/>}
-                  </ListItemButton>
-                  <Collapse in={planNestedOpen} timeout="auto" unmountOnExit>
-                    <ListLink nested icon={<AddIcon/>} text="Create Plan" href="/user/plan/create"/>
-                    <ListLink nested icon={<SpecificPlan/>} text="User Plans" href="/user/plan"/>
-                  </Collapse>
-                </>
-                : <ListLink icon={<AddIcon/>} text="Create Plan" href="/user/plan/create"/>}
+              <ListLink icon={<ListAltIcon/>} text="Plans" href="/user/plan"/>
             </List>
           )}
         </Box>
