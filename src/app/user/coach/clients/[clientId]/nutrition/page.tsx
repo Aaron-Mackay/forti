@@ -37,6 +37,7 @@ export default async function ClientNutritionPage({ params }: Props) {
       initialDayMetrics={dayMetrics}
       initialEvents={events}
       readOnly
+      canSetTargets
     />
   );
 }

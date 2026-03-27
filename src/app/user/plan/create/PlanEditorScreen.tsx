@@ -419,9 +419,10 @@ const SortableWorkoutCard = ({
 type PlanEditorScreenProps = {
   weekCount: string
   setWeekCount: (v: string) => void
+  clientId?: string
 }
 
-export const PlanEditorScreen = ({ weekCount, setWeekCount }: PlanEditorScreenProps) => {
+export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEditorScreenProps) => {
   const { statePlan, dispatch } = useNewPlan()
   const { allExercises, addExercise } = useWorkoutEditorContext()
   const router = useRouter()
@@ -443,7 +444,10 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount }: PlanEditorScreenPr
     try {
       const response = await savePlan(planToSave)
       if (response.success) {
-        router.push(`/user/plan/${response.planId}`)
+        router.push(clientId
+          ? `/user/coach/clients/${clientId}/plans`
+          : `/user/plan/${response.planId}`
+        )
       } else {
         setSaveError(response.error || 'Failed to save plan. Please try again.')
       }

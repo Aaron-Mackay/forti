@@ -27,7 +27,7 @@ export default async function ClientSupplementsPage({ params }: Props) {
 
   return (
     <SupplementsClient
-      readOnly
+      apiBase={`/api/coach/clients/${clientId}/supplements`}
       initialSupplements={supplements.map(s => ({
         ...s,
         startDate: s.startDate.toISOString(),

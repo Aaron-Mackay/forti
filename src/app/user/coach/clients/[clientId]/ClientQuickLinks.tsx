@@ -19,7 +19,7 @@ export default function ClientQuickLinks({ clientId }: Props) {
   ];
 
   return (
-    <Grid container spacing={1} sx={{ mb: 2 }}>
+    <Grid container spacing={2} sx={{ mb: 2 }}>
       {links.map(({ href, label, icon }) => (
         <Grid size={6} key={href}>
           <Button

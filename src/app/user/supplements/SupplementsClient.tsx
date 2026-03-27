@@ -122,17 +122,18 @@ function SupplementCard({ supplement, readOnly, onEdit, onDelete }: SupplementCa
 }
 
 export default function SupplementsClient({
-  readOnly: readOnlyProp = false,
+  readOnly = false,
   initialSupplements,
+  apiBase = '/api/supplements',
 }: {
   readOnly?: boolean;
   initialSupplements?: Supplement[];
+  apiBase?: string;
 }) {
   useAppBar({ title: 'Supplements' });
   const [supplements, setSupplements] = useState<Supplement[]>(initialSupplements ?? []);
   const [loading, setLoading] = useState(!initialSupplements);
   const [error, setError] = useState<string | null>(null);
-  const readOnly = readOnlyProp;
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSupp, setEditingSupp] = useState<Supplement | null>(null);
@@ -144,7 +145,7 @@ export default function SupplementsClient({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/supplements');
+      const res = await fetch(apiBase);
       if (!res.ok) throw new Error('Failed to load supplements');
       const data: Supplement[] = await res.json();
       setSupplements(data);
@@ -153,7 +154,7 @@ export default function SupplementsClient({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [apiBase]);
 
   useEffect(() => {
     if (!initialSupplements) {
@@ -205,7 +206,7 @@ export default function SupplementsClient({
       };
 
       if (editingSupp) {
-        const res = await fetch(`/api/supplements/${editingSupp.id}`, {
+        const res = await fetch(`${apiBase}/${editingSupp.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
@@ -214,7 +215,7 @@ export default function SupplementsClient({
         const updated: Supplement = await res.json();
         setSupplements(prev => prev.map(s => s.id === updated.id ? updated : s));
       } else {
-        const res = await fetch('/api/supplements', {
+        const res = await fetch(apiBase, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
@@ -235,7 +236,7 @@ export default function SupplementsClient({
     if (!confirm(`Delete "${supp.name}"?`)) return;
     setSupplements(prev => prev.filter(s => s.id !== supp.id));
     try {
-      const res = await fetch(`/api/supplements/${supp.id}`, { method: 'DELETE' });
+      const res = await fetch(`${apiBase}/${supp.id}`, { method: 'DELETE' });
       if (!res.ok) {
         setSupplements(prev => [supp, ...prev]);
         setError('Failed to delete supplement.');

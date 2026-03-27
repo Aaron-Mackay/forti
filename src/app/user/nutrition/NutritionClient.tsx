@@ -38,6 +38,7 @@ interface Props {
   initialDayMetrics: DayMetricPrisma[];
   initialEvents: EventPrisma[];
   readOnly?: boolean;
+  canSetTargets?: boolean;
 }
 
 type EditValues = {
@@ -136,6 +137,7 @@ export default function NutritionClient({
   initialDayMetrics,
   initialEvents,
   readOnly: readOnlyProp = false,
+  canSetTargets = false,
 }: Props) {
   useAppBar({ title: 'Nutrition' });
   const today = useMemo(() => new Date(), []);
@@ -369,7 +371,7 @@ export default function NutritionClient({
               </IconButton>
             </Stack>
 
-            {!readOnly && (
+            {(!readOnly || canSetTargets) && (
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
                 <Button
                   size="small"
