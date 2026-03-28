@@ -29,23 +29,24 @@ test.describe('Coach client navigation', () => {
     await expect(page.getByRole('link', { name: 'Clients' })).not.toBeVisible();
   });
 
-  test('coach sees Clients nav item instead of Client Check-ins', async ({ page }) => {
+  test('coach sees Coach Portal nav item when coach mode is active', async ({ page }) => {
     await page.request.post('/api/coach/activate', { data: { active: true } });
     await page.reload();
     await expect(page.getByRole('button', { name: /menu/i })).toBeVisible({ timeout: 15_000 });
     await page.getByRole('button', { name: /menu/i }).click();
 
-    await expect(page.getByRole('link', { name: 'Clients' })).toBeVisible();
-    // Old "Client Check-ins" item should no longer exist
-    await expect(page.getByRole('link', { name: 'Client Check-ins' })).not.toBeVisible();
+    // On the client domain, coach mode shows "Coach Portal", not a "Clients" link
+    // (Clients link is coach-domain-only)
+    await expect(page.getByRole('button', { name: 'Coach Portal' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Clients' })).not.toBeVisible();
   });
 
-  test('Clients nav item navigates to /user/coach/clients', async ({ page }) => {
+  test('Coach Portal nav item navigates to /user/coach/clients', async ({ page }) => {
     await page.request.post('/api/coach/activate', { data: { active: true } });
     await page.reload();
     await expect(page.getByRole('button', { name: /menu/i })).toBeVisible({ timeout: 15_000 });
     await page.getByRole('button', { name: /menu/i }).click();
-    await page.getByRole('link', { name: 'Clients' }).click();
+    await page.getByRole('button', { name: 'Coach Portal' }).click();
     await expect(page).toHaveURL('/user/coach/clients');
     await expect(page.getByRole('heading', { name: /clients/i })).toBeVisible();
   });

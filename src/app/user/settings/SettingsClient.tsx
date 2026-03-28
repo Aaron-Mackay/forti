@@ -425,10 +425,10 @@ export default function SettingsClient({ initialName, initialImage }: { initialN
           exclusive
           onChange={(_e, val) => { if (val !== null) updateSetting('checkInDay', val as number); }}
           size="small"
-          sx={{ flexWrap: 'wrap', gap: 0.5, mb: 2 }}
+          sx={{ width: '100%', gap: 0.5, mb: 2 }}
         >
           {CHECK_IN_DAY_NAMES.map((name, i) => (
-            <ToggleButton key={i} value={i} sx={{ flex: '1 1 auto', minWidth: 44 }}>
+            <ToggleButton key={i} value={i} sx={{ flex: 1 }}>
               {name.slice(0, 3)}
             </ToggleButton>
           ))}

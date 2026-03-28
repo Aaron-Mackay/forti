@@ -76,7 +76,7 @@ test.describe('Settings page — UI', () => {
       'Stopwatch',
       'Supplements',
       'Your Coach',
-      'Coach Mode',
+      'Enable coach features',
     ];
     for (const label of labels) {
       await expect(page.getByText(label).first()).toBeVisible();
@@ -110,7 +110,7 @@ test.describe('Settings page — state', () => {
     await page.request.patch('/api/user/settings', { data: { settings: ALL_ON } });
   });
 
-  test('shows 10 toggles; dashboard/workout switches are on, Supplements and Coach Mode are off by default', async ({ page }) => {
+  test('shows 10 toggles; dashboard/workout switches are on, Supplements and Enable coach features are off by default', async ({ page }) => {
     const switches = page.getByRole('switch');
     await expect(switches.first()).toBeVisible();
     await expect(switches).toHaveCount(10);
@@ -125,8 +125,8 @@ test.describe('Settings page — state', () => {
     await expect(page.getByRole('switch', { name: 'Stopwatch' })).toBeChecked();
     // Supplements toggle is off (showSupplements: false in ALL_ON)
     await expect(page.getByRole('switch', { name: 'Supplements' })).not.toBeChecked();
-    // Coach Mode toggle is off by default
-    await expect(page.getByRole('switch', { name: 'Coach Mode' })).not.toBeChecked();
+    // Enable coach features toggle is off by default
+    await expect(page.getByRole('switch', { name: 'Enable coach features' })).not.toBeChecked();
   });
 
   test('toggle sends PATCH that saves the updated value', async ({ page }) => {
@@ -197,8 +197,8 @@ test.describe('Settings page — coaching section', () => {
     await expect(page.getByText('No coach found with that code')).toBeVisible();
   });
 
-  test('activating Coach Mode reveals the invite code', async ({ page }) => {
-    const coachModeSwitch = page.getByRole('switch', { name: 'Coach Mode' });
+  test('activating Enable coach features reveals the invite code', async ({ page }) => {
+    const coachModeSwitch = page.getByRole('switch', { name: 'Enable coach features' });
     await expect(coachModeSwitch).not.toBeChecked();
     await coachModeSwitch.click();
     await expect(page.getByText('Share this code with your clients:')).toBeVisible();
@@ -207,18 +207,18 @@ test.describe('Settings page — coaching section', () => {
     await expect(codeInput).toHaveValue(/^\d{6}$/);
   });
 
-  test('deactivating Coach Mode hides the code section', async ({ page }) => {
+  test('deactivating Enable coach features hides the code section', async ({ page }) => {
     // Activate first
     await page.request.post('/api/coach/activate', { data: { active: true } });
     await page.reload();
     await expect(page.getByText('Share this code with your clients:')).toBeVisible();
     // Deactivate
-    const coachModeSwitch = page.getByRole('switch', { name: 'Coach Mode' });
+    const coachModeSwitch = page.getByRole('switch', { name: 'Enable coach features' });
     await coachModeSwitch.click();
     await expect(page.getByText('Share this code with your clients:')).not.toBeVisible();
   });
 
-  test('activating Coach Mode reveals the shareable link', async ({ page }) => {
+  test('activating Enable coach features reveals the shareable link', async ({ page }) => {
     await page.request.post('/api/coach/activate', { data: { active: true } });
     await page.reload();
     await expect(page.getByText('Or share this link:')).toBeVisible();
