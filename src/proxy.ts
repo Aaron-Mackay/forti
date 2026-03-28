@@ -3,6 +3,8 @@ import {NextResponse} from "next/server";
 
 export async function proxy(req: NextRequest) {
   const {pathname} = req.nextUrl;
+  const host = req.headers.get('host') ?? '';
+  const isCoachDomain = host.includes('coach.');
 
   // Allow public pages, assets, and login
   if (
@@ -26,7 +28,18 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.next(); // Let API/routes verify server-side
+  // On the coach subdomain, redirect the root to the clients list
+  if (isCoachDomain && pathname === '/') {
+    return NextResponse.redirect(new URL('/user/coach/clients', req.url));
+  }
+
+  // Forward the coach-domain hint to server components via a request header
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set('x-is-coach-domain', isCoachDomain ? '1' : '0');
+
+  return NextResponse.next({
+    request: { headers: requestHeaders },
+  });
 }
 
 // Protect all pages and API routes except login and assets

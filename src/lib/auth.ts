@@ -86,6 +86,24 @@ export const authOptions: AuthOptions = {
     strategy: "jwt", // easier for stateless APIs
   },
 
+  // When AUTH_COOKIE_DOMAIN is set (production), share the session cookie
+  // across all subdomains (e.g. forti-training.co.uk and coach.forti-training.co.uk).
+  // Not set in local development so localhost behaviour is unchanged.
+  ...(process.env.AUTH_COOKIE_DOMAIN ? {
+    cookies: {
+      sessionToken: {
+        name: '__Secure-next-auth.session-token',
+        options: {
+          httpOnly: true,
+          sameSite: 'lax' as const,
+          path: '/',
+          secure: true,
+          domain: process.env.AUTH_COOKIE_DOMAIN, // e.g. ".forti-training.co.uk"
+        },
+      },
+    },
+  } : {}),
+
   callbacks: {
     async jwt({token, user}) {
       if (user) {
