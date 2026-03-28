@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAppBar } from '@lib/providers/AppBarProvider'
+import { useRouter } from 'next/navigation'
 import { EntryScreen } from './EntryScreen'
 import { AiFormScreen } from './AiFormScreen'
 import { PlanEditorScreen } from './PlanEditorScreen'
@@ -14,12 +15,17 @@ import type { ParsedPlan } from '@/utils/aiPlanParser'
 
 type View = 'entry' | 'templates' | 'ai' | 'editor'
 
-export const PlanBuilder = ({ blankPlan }: { blankPlan: PlanPrisma }) => {
+export const PlanBuilder = ({ blankPlan, clientId }: { blankPlan: PlanPrisma, clientId?: string }) => {
   const [view, setView] = useState<View>('entry')
   const [weekCount, setWeekCount] = useState('6')
   const { dispatch } = useWorkoutEditorContext()
+  const router = useRouter()
 
   const resetPlan = () => dispatch({ type: 'REPLACE_PLAN', planId: PLACEHOLDER_ID, plan: blankPlan })
+
+  const handleBack = clientId
+    ? () => router.push(`/user/coach/clients/${clientId}/plans`)
+    : undefined
 
   // Hydrate from a spreadsheet import stored in sessionStorage by /user/plan/upload
   useEffect(() => {
@@ -38,7 +44,9 @@ export const PlanBuilder = ({ blankPlan }: { blankPlan: PlanPrisma }) => {
 
   const appBarConfig =
     view === 'entry'
-      ? { title: 'Create Plan' }
+      ? clientId
+        ? { title: 'Create Plan', showBack: true as const, onBack: handleBack }
+        : { title: 'Create Plan' }
       : view === 'templates'
         ? { title: 'Choose a Template', showBack: true as const, onBack: () => { resetPlan(); setView('entry') } }
         : view === 'ai'
@@ -77,7 +85,7 @@ export const PlanBuilder = ({ blankPlan }: { blankPlan: PlanPrisma }) => {
       )}
 
       {view === 'editor' && (
-        <PlanEditorScreen weekCount={weekCount} setWeekCount={setWeekCount} />
+        <PlanEditorScreen weekCount={weekCount} setWeekCount={setWeekCount} clientId={clientId} />
       )}
     </>
   )

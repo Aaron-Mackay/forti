@@ -28,7 +28,7 @@ const PlanCreatePage = async ({ searchParams }: { searchParams: Promise<{ forUse
   if (!userData) {
     return notFound()
   }
-  return <PlanBuilderWithContext userData={userData} allExercises={allExercises}/>
+  return <PlanBuilderWithContext userData={userData} allExercises={allExercises} clientId={forUserId}/>
 };
 
 export default PlanCreatePage;

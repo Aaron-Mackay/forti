@@ -27,11 +27,9 @@ test.describe('AppBar navigation drawer', () => {
     await expect(page.getByRole('link', { name: 'Training' })).toBeVisible();
   });
 
-  test('drawer shows Planning section (user has plans from seed)', async ({ page }) => {
+  test('drawer shows Plans link', async ({ page }) => {
     await page.getByRole('button', { name: /menu/i }).click();
-    // Either a "Planning" collapsible button or "Create Plan" link is visible
-    const planning = page.getByText('Planning').or(page.getByRole('link', { name: /Create Plan/i }));
-    await expect(planning).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Plans' })).toBeVisible();
   });
 
   test('drawer Feedback link is visible and navigates to /user/feedback', async ({ page }) => {

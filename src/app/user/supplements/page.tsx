@@ -12,10 +12,7 @@ export default async function SupplementsPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: {
-      settings: true,
-      clients: { select: { id: true, name: true } },
-    },
+    select: { settings: true },
   });
 
   if (!user) return notFound();
@@ -23,12 +20,5 @@ export default async function SupplementsPage() {
   const settings = parseDashboardSettings(user.settings);
   if (!settings.showSupplements) return notFound();
 
-  const clients = settings.coachModeActive ? (user.clients ?? []) : [];
-
-  return (
-    <SupplementsClient
-      coachModeActive={settings.coachModeActive}
-      clients={clients}
-    />
-  );
+  return <SupplementsClient />;
 }
