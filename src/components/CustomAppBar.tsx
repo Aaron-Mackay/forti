@@ -42,7 +42,6 @@ import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
 import MedicationIcon from '@mui/icons-material/Medication';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import SchoolIcon from '@mui/icons-material/School';
-import PersonIcon from '@mui/icons-material/Person';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ChecklistIcon2 from '@mui/icons-material/AssignmentTurnedIn';
 import {signOut} from "next-auth/react";
@@ -194,18 +193,13 @@ export default function CustomAppBar(
             /* Client Focus Mode nav */
             <List>
               <ListItem disablePadding>
-                <ListItemButton component={Link} href="/user/coach/clients">
+                <ListItemButton component={Link} href="/user/coach/clients" onClick={() => setDrawerOpen(false)}>
                   <ListItemIcon><ArrowBackIcon/></ListItemIcon>
-                  <ListItemText primary="My nav"/>
+                  <ListItemText
+                    primary={activeClient.name ?? 'Client'}
+                    primaryTypographyProps={{fontWeight: 600, color: 'primary.main'}}
+                  />
                 </ListItemButton>
-              </ListItem>
-              <Divider sx={{my: 0.5}}/>
-              <ListItem sx={{py: 0.5}}>
-                <ListItemIcon><PersonIcon color="primary"/></ListItemIcon>
-                <ListItemText
-                  primary={activeClient.name ?? 'Client'}
-                  primaryTypographyProps={{fontWeight: 600, color: 'primary.main'}}
-                />
               </ListItem>
               <Divider sx={{my: 0.5}}/>
               <ListLink

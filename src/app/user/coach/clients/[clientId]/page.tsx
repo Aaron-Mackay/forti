@@ -5,7 +5,10 @@ import AppBarTitle from '@/components/AppBarTitle';
 import { getUserData, getUserDayMetrics, getUserEvents } from '@lib/api';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import DashboardCards from '@/app/user/(dashboard)/DashboardCards';
+import E1rmProgressCard from '@/app/user/(dashboard)/E1rmProgressCard';
 import ClientQuickLinks from './ClientQuickLinks';
+import { Paper } from '@mui/material';
+import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
 
 interface Props {
   params: Promise<{ clientId: string }>;
@@ -30,22 +33,30 @@ const ClientOverviewPage = async ({ params }: Props) => {
     getUserEvents(clientId),
   ]);
 
-  // Use the client's settings but disable the day metrics entry card for coaches
   const clientSettings = parseDashboardSettings(clientRecord.settings);
-  const coachViewSettings = { ...clientSettings, showTodaysMetrics: false };
+  // Show day metrics card but hide next workout and the editable today metrics entry
+  const coachViewSettings = { ...clientSettings, showNextWorkout: false, showTodaysMetrics: true };
 
   return (
     <>
       <AppBarTitle title={clientRecord.name ?? 'Client'} />
-      <ClientQuickLinks clientId={clientId} />
-      <DashboardCards
-        userData={userData}
-        dayMetrics={dayMetrics}
-        events={events}
-        today={new Date()}
-        userId={clientId}
-        settings={coachViewSettings}
-      />
+      <Paper sx={{ px: 2, minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
+        <ClientQuickLinks clientId={clientId} />
+        <DashboardCards
+          userData={userData}
+          dayMetrics={dayMetrics}
+          events={events}
+          today={new Date()}
+          userId={clientId}
+          settings={coachViewSettings}
+        />
+        {clientSettings.showE1rmProgress && clientSettings.trackedE1rmExercises.length > 0 && (
+          <E1rmProgressCard
+            exercises={clientSettings.trackedE1rmExercises}
+            weightUnit={clientSettings.weightUnit}
+          />
+        )}
+      </Paper>
     </>
   );
 };
