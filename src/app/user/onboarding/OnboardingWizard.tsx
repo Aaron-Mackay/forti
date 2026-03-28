@@ -18,6 +18,7 @@ import {
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CHECK_IN_DAY_NAMES } from '@/types/checkInTypes';
+import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
 
 const TOTAL_STEPS = 3; // steps 0–2, then a done screen at step 3
 
@@ -238,10 +239,10 @@ function OnboardingWizardInner({ userId, initialName, initialImage }: Props) {
           exclusive
           onChange={(_, v) => { if (v !== null) setCheckInDay(v); }}
           size="small"
-          sx={{ flexWrap: 'wrap', gap: 0.5 }}
+          sx={{ width: '100%', gap: 0.5 }}
         >
           {CHECK_IN_DAY_NAMES.map((day, i) => (
-            <ToggleButton key={day} value={i} sx={{ minWidth: 44 }}>
+            <ToggleButton key={day} value={i} sx={{ flex: 1 }}>
               {day.slice(0, 3)}
             </ToggleButton>
           ))}
@@ -324,7 +325,7 @@ function OnboardingWizardInner({ userId, initialName, initialImage }: Props) {
   return (
     <Box
       sx={{
-        minHeight: '100dvh',
+        minHeight: HEIGHT_EXC_APPBAR,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
