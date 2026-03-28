@@ -40,7 +40,7 @@ const ClientOverviewPage = async ({ params }: Props) => {
   return (
     <>
       <AppBarTitle title={clientRecord.name ?? 'Client'} />
-      <Paper sx={{ px: 2, minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
+      <Paper sx={{ px: 2, pt: 2, minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
         <ClientQuickLinks clientId={clientId} />
         <DashboardCards
           userData={userData}

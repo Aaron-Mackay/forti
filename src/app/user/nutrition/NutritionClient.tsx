@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   Box,
   Button,
@@ -141,6 +141,10 @@ export default function NutritionClient({
 }: Props) {
   useAppBar({ title: 'Nutrition' });
   const today = useMemo(() => new Date(), []);
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (containerRef.current) containerRef.current.scrollTop = 0;
+  }, []);
 
   const [weekStart, setWeekStart] = useState<Date>(() =>
     startOfWeek(today, { weekStartsOn: 1 })
@@ -291,7 +295,7 @@ export default function NutritionClient({
 
   return (
     <>
-      <Box sx={{ height: HEIGHT_EXC_APPBAR, overflowY: 'auto', px: 2, py: 2 }}>
+      <Box ref={containerRef} sx={{ height: HEIGHT_EXC_APPBAR, overflowY: 'auto', px: 2, py: 2 }}>
 
 
         <>
