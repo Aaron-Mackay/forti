@@ -119,19 +119,19 @@ export default function CustomAppBar(
 
   function handleCoachPortalClick() {
     if (crossDomainUrl) {
-      window.location.href = crossDomainUrl;
+      window.location.href = crossDomainUrl + '/user/coach/clients';
     } else {
       document.cookie = '__dev_coach_mode=1; path=/; max-age=86400';
-      window.location.reload();
+      window.location.href = '/user/coach/clients';
     }
   }
 
   function handleBackToFortiClick() {
     if (crossDomainUrl) {
-      window.location.href = crossDomainUrl;
+      window.location.href = crossDomainUrl + '/user';
     } else {
       document.cookie = '__dev_coach_mode=; path=/; max-age=0';
-      window.location.reload();
+      window.location.href = '/user';
     }
   }
 
