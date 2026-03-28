@@ -85,7 +85,7 @@ test.describe('Settings page — UI', () => {
 
   test('shows the E1RM Progress Tracking section with a search field', async ({ page }) => {
     await expect(page.getByText('E1RM Progress Tracking').first()).toBeVisible();
-    await expect(page.getByPlaceholder('Search exercises…')).toBeVisible();
+    await expect(page.getByPlaceholder('Search exercises…').first()).toBeVisible(); // MUI Autocomplete renders 2 matching inputs
   });
 
   test('coaching section shows the code input when user has no coach', async ({ page }) => {

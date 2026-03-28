@@ -329,9 +329,10 @@ function OnboardingWizardInner({ userId, initialName, initialImage }: Props) {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         px: 3,
-        py: 4,
+        pt: 4,
+        pb: 4,
         bgcolor: 'background.default',
       }}
     >
