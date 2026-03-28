@@ -327,6 +327,9 @@ export default function CustomAppBar(
                 href="/user/coach/learning-plans"
                 isActive={pathname.startsWith('/user/coach/learning-plans')}
               />
+              <Divider sx={{my: 0.5}}/>
+              <ListLink icon={<LibraryBooksIcon/>} text="Exercises" href="/exercises"/>
+              <ListLink icon={<BookmarksIcon/>} text="Library" href="/library"/>
             </List>
           ) : (
             /* Client domain nav */
@@ -348,19 +351,10 @@ export default function CustomAppBar(
               <Collapse in={educationOpen} timeout="auto" unmountOnExit>
                 <ListLink nested icon={<BookmarksIcon/>} text="Library" href="/library"/>
                 <ListLink nested icon={<SchoolIcon/>} text="Learning Plans" href="/user/learning-plans"/>
-                {/* Coach Learning Plans only shown on localhost (dev); hidden on production in favour of the coach domain */}
-                {!settingsLoading && settings.coachModeActive && !crossDomainUrl && (
-                  <ListLink nested icon={<SchoolIcon/>} text="Coach Learning Plans" href="/user/coach/learning-plans"/>
-                )}
               </Collapse>
               <ListLink icon={<ListAltIcon/>} text="Plans" href="/user/plan"/>
-              {/* On localhost (dev): show coach links inline. On production: link to coach subdomain. */}
-              {!settingsLoading && settings.coachModeActive && (
-                crossDomainUrl ? (
-                  <ExternalListLink icon={<OpenInNewIcon/>} text="Coach Portal" href={crossDomainUrl}/>
-                ) : (
-                  <ListLink icon={<GroupIcon/>} text="Clients" href="/user/coach/clients"/>
-                )
+              {!settingsLoading && settings.coachModeActive && crossDomainUrl && (
+                <ExternalListLink icon={<OpenInNewIcon/>} text="Coach Portal" href={crossDomainUrl}/>
               )}
             </List>
           )}
