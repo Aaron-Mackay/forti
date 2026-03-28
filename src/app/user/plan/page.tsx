@@ -6,12 +6,14 @@ import {
   Button,
   Card,
   CardHeader,
+  IconButton,
   Link,
   ListItem,
   ListItemButton,
   ListItemText,
   Typography,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 import AppBarTitle from "@/components/AppBarTitle";
 
 const PlanPage = async () => {
@@ -22,7 +24,19 @@ const PlanPage = async () => {
     <>
       <AppBarTitle title="Plans" />
       <Card sx={{display: "flex", flexDirection: "column"}}>
-        <CardHeader title={`${user.name}'s Plans`}/>
+        <CardHeader
+          title={`${user.name}'s Plans`}
+          action={
+            <IconButton
+              component={Link}
+              href="/user/plan/create"
+              aria-label="Add plan"
+              size="small"
+            >
+              <AddIcon />
+            </IconButton>
+          }
+        />
         {plans.userPlans.length === 0 ? (
           <Box sx={{ px: 2, pb: 3, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>

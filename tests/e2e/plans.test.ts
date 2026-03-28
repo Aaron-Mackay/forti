@@ -33,6 +33,12 @@ test.describe('Plans list page', () => {
     // Should land on /user/plan/<id>
     await expect(page).toHaveURL(/\/user\/plan\/\d+/);
   });
+
+  test('shows an Add plan button that links to /user/plan/create', async ({ page }) => {
+    const addButton = page.getByRole('link', { name: /add plan/i });
+    await expect(addButton).toBeVisible();
+    await expect(addButton).toHaveAttribute('href', '/user/plan/create');
+  });
 });
 
 test.describe('Plan detail page', () => {
