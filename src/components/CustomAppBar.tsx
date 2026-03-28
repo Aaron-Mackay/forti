@@ -118,6 +118,7 @@ export default function CustomAppBar(
     return (
       <ListItem disablePadding>
         <ListItemButton component={Link} href={href} disabled={disabled} selected={selected}
+                        onClick={() => setDrawerOpen(false)}
                         sx={{pl: nested ? 4 : 2}}>
           <ListItemIcon>
             {icon}
@@ -146,9 +147,16 @@ export default function CustomAppBar(
                 <MenuIcon/>
               </Badge>
             </IconButton>}
-          <Typography variant="h6" noWrap component="div" sx={{flexGrow: 1}}>
-            {title}
-          </Typography>
+          <Box sx={{flexGrow: 1, overflow: 'hidden'}}>
+            <Typography variant="h6" noWrap>
+              {title}
+            </Typography>
+            {activeClient && (
+              <Typography variant="caption" noWrap display="block" sx={{opacity: 0.8, lineHeight: 1, mt: -0.25}}>
+                {activeClient.name}
+              </Typography>
+            )}
+          </Box>
         </Toolbar>
       </AppBar>
       {!noSpacer && <Toolbar sx={{minHeight: APPBAR_HEIGHT}}/>}
