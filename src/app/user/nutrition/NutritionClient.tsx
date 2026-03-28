@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useLayoutEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -25,7 +25,6 @@ import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckIcon from '@mui/icons-material/Check';
 import { addDays, format, getISOWeek, startOfWeek } from 'date-fns';
-import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import { DayMetricPrisma, EventPrisma } from '@/types/dataTypes';
 import { EventType } from '@prisma/client';
@@ -141,10 +140,6 @@ export default function NutritionClient({
 }: Props) {
   useAppBar({ title: 'Nutrition' });
   const today = useMemo(() => new Date(), []);
-  const containerRef = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    if (containerRef.current) containerRef.current.scrollTop = 0;
-  }, []);
 
   const [weekStart, setWeekStart] = useState<Date>(() =>
     startOfWeek(today, { weekStartsOn: 1 })
@@ -295,7 +290,7 @@ export default function NutritionClient({
 
   return (
     <>
-      <Box ref={containerRef} sx={{ height: HEIGHT_EXC_APPBAR, overflowY: 'auto', px: 2, py: 2 }}>
+      <Box sx={{ px: 2, py: 2, pb: 6 }}>
 
 
         <>
