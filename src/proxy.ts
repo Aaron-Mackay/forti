@@ -4,7 +4,10 @@ import {NextResponse} from "next/server";
 export async function proxy(req: NextRequest) {
   const {pathname} = req.nextUrl;
   const host = req.headers.get('host') ?? '';
-  const isCoachDomain = host.includes('coach.');
+  const isVercelApp = host.endsWith('.vercel.app');
+  const devCoachCookie = req.cookies.get('__dev_coach_mode')?.value;
+  const isCoachDomain = host.includes('coach.')
+    || (process.env.VERCEL_ENV === 'preview' && isVercelApp && devCoachCookie === '1');
 
   // Allow public pages, assets, and login
   if (
