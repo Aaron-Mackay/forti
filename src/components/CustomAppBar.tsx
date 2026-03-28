@@ -112,7 +112,7 @@ export default function CustomAppBar(
       // forti-training.co.uk → coach.forti-training.co.uk
       // preview.forti-training.co.uk → preview.coach.forti-training.co.uk
       const url = new URL(window.location.origin);
-      url.hostname = 'coach.' + url.hostname;
+      url.hostname = url.hostname.replace('forti-training.co.uk', 'coach.forti-training.co.uk');
       setCrossDomainUrl(url.origin);
     }
   }, [isCoachDomain]);
