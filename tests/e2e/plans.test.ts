@@ -72,7 +72,8 @@ test.describe('Plan detail page', () => {
 
   test('editing a weight input updates the displayed value', async ({ page }) => {
     const weightInput = page.locator('input[placeholder="kg"]').first();
-    await weightInput.fill('99');
+    await weightInput.click({ clickCount: 3 }); // select-all before typing (WebKit number input workaround)
+    await weightInput.pressSequentially('99');
     await expect(weightInput).toHaveValue('99');
   });
 
