@@ -99,10 +99,10 @@ export default function CustomAppBar(
   }
 
   // Compute the URL for the opposite domain after hydration.
-  // Only applies on real domains — localhost stays as-is for development.
+  // Only applies on the custom domain — localhost and *.vercel.app are left as-is.
   useEffect(() => {
     const host = window.location.hostname;
-    if (host === 'localhost' || host === '127.0.0.1') return;
+    if (!host.includes('forti-training.co.uk')) return;
 
     if (isCoachDomain) {
       // coach.forti-training.co.uk → forti-training.co.uk
