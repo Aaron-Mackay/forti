@@ -84,7 +84,7 @@ test.describe('Settings page — UI', () => {
   });
 
   test('shows the E1RM Progress Tracking section with a search field', async ({ page }) => {
-    await expect(page.getByText('E1RM Progress Tracking')).toBeVisible();
+    await expect(page.getByText('E1RM Progress Tracking').first()).toBeVisible();
     await expect(page.getByPlaceholder('Search exercises…')).toBeVisible();
   });
 
@@ -114,14 +114,19 @@ test.describe('Settings page — state', () => {
     const switches = page.getByRole('switch');
     await expect(switches.first()).toBeVisible();
     await expect(switches).toHaveCount(10);
-    // First 8 are dashboard card toggles + stopwatch (all on by default)
-    for (let i = 0; i < 8; i++) {
-      await expect(switches.nth(i)).toBeChecked();
-    }
-    // Supplements toggle (9th) is off by default
-    await expect(switches.nth(8)).not.toBeChecked();
-    // Coach Mode toggle (10th) is off by default
-    await expect(switches.nth(9)).not.toBeChecked();
+    // Dashboard card toggles and stopwatch are all on
+    await expect(page.getByRole('switch', { name: 'Next Workout' })).toBeChecked();
+    await expect(page.getByRole('switch', { name: "Today's Metrics" })).toBeChecked();
+    await expect(page.getByRole('switch', { name: 'Weekly Training' })).toBeChecked();
+    await expect(page.getByRole('switch', { name: 'Active Block' })).toBeChecked();
+    await expect(page.getByRole('switch', { name: 'Upcoming Events' })).toBeChecked();
+    await expect(page.getByRole('switch', { name: 'Metrics Chart' })).toBeChecked();
+    await expect(page.getByRole('switch', { name: 'E1RM Progress' })).toBeChecked();
+    await expect(page.getByRole('switch', { name: 'Stopwatch' })).toBeChecked();
+    // Supplements toggle is off (showSupplements: false in ALL_ON)
+    await expect(page.getByRole('switch', { name: 'Supplements' })).not.toBeChecked();
+    // Coach Mode toggle is off by default
+    await expect(page.getByRole('switch', { name: 'Coach Mode' })).not.toBeChecked();
   });
 
   test('toggle sends PATCH that saves the updated value', async ({ page }) => {
