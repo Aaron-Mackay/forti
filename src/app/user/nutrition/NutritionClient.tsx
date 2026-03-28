@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useLayoutEffect, useRef } from 'react';
 import {
   Box,
   Button,
@@ -142,7 +142,7 @@ export default function NutritionClient({
   useAppBar({ title: 'Nutrition' });
   const today = useMemo(() => new Date(), []);
   const containerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (containerRef.current) containerRef.current.scrollTop = 0;
   }, []);
 

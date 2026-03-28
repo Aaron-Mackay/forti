@@ -5,10 +5,12 @@ import AppBarTitle from '@/components/AppBarTitle';
 import { getUserData, getUserDayMetrics, getUserEvents } from '@lib/api';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import DashboardCards from '@/app/user/(dashboard)/DashboardCards';
+import DashboardChart from '@/app/user/(dashboard)/DashboardChart';
 import E1rmProgressCard from '@/app/user/(dashboard)/E1rmProgressCard';
 import ClientQuickLinks from './ClientQuickLinks';
 import { Paper } from '@mui/material';
 import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import { EventType } from '@prisma/client';
 
 interface Props {
   params: Promise<{ clientId: string }>;
@@ -39,7 +41,7 @@ const ClientOverviewPage = async ({ params }: Props) => {
 
   return (
     <>
-      <AppBarTitle title={clientRecord.name ?? 'Client'} />
+      <AppBarTitle title="Overview" />
       <Paper sx={{ px: 2, pt: 2, minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
         <ClientQuickLinks clientId={clientId} />
         <DashboardCards
@@ -50,7 +52,13 @@ const ClientOverviewPage = async ({ params }: Props) => {
           userId={clientId}
           settings={coachViewSettings}
         />
-        {clientSettings.showE1rmProgress && clientSettings.trackedE1rmExercises.length > 0 && (
+        {dayMetrics.length > 0 && (
+          <DashboardChart
+            dayMetrics={dayMetrics}
+            blocks={events.filter(e => e.eventType === EventType.BlockEvent)}
+          />
+        )}
+        {clientSettings.trackedE1rmExercises.length > 0 && (
           <E1rmProgressCard
             exercises={clientSettings.trackedE1rmExercises}
             weightUnit={clientSettings.weightUnit}

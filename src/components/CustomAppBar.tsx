@@ -265,21 +265,23 @@ export default function CustomAppBar(
           )}
         </Box>
 
-        <Divider/>
+        {!activeClient && <Divider/>}
 
-        {/* Fixed bottom logout */}
-        <Box>
-          <List>
-            <ListLink icon={<FeedbackIcon/>} text="Feedback" href="/user/feedback"/>
-            <ListLink icon={<SettingsIcon/>} text="Settings" href="/user/settings"/>
-            <ListItem disablePadding>
-              <ListItemButton onClick={() => signOut({callbackUrl: '/login'})}>
-                <ListItemIcon><LogoutIcon/></ListItemIcon>
-                <ListItemText primary="Log Out"/>
-              </ListItemButton>
-            </ListItem>
-          </List>
-        </Box>
+        {/* Fixed bottom — hidden in client focus mode */}
+        {!activeClient && (
+          <Box>
+            <List>
+              <ListLink icon={<FeedbackIcon/>} text="Feedback" href="/user/feedback"/>
+              <ListLink icon={<SettingsIcon/>} text="Settings" href="/user/settings"/>
+              <ListItem disablePadding>
+                <ListItemButton onClick={() => signOut({callbackUrl: '/login'})}>
+                  <ListItemIcon><LogoutIcon/></ListItemIcon>
+                  <ListItemText primary="Log Out"/>
+                </ListItemButton>
+              </ListItem>
+            </List>
+          </Box>
+        )}
       </Drawer>
     </>
   );
