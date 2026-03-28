@@ -15,7 +15,6 @@ import {
   ListItemIcon,
   ListItemText,
   Stack,
-  Switch,
   Toolbar,
   Typography
 } from '@mui/material';
@@ -72,9 +71,6 @@ export default function CustomAppBar(
   const [drawerOpen, setDrawerOpen] = useState(false);
   // URL of the opposite domain (null on localhost / until hydrated)
   const [crossDomainUrl, setCrossDomainUrl] = useState<string | null>(null);
-  // Dev-only: simulate coach domain on raw .vercel.app preview URLs
-  const [showDevToggle, setShowDevToggle] = useState(false);
-  const [devCoachMode, setDevCoachMode] = useState(false);
 
   const pathname = usePathname();
   const { settings, loading: settingsLoading } = useSettings();
@@ -121,22 +117,22 @@ export default function CustomAppBar(
     }
   }, [isCoachDomain]);
 
-  useEffect(() => {
-    const isVercelPreview = process.env.NEXT_PUBLIC_VERCEL_ENV === 'preview';
-    const isVercelApp = window.location.hostname.endsWith('.vercel.app');
-    if (isVercelPreview && isVercelApp) {
-      setShowDevToggle(true);
-      setDevCoachMode(document.cookie.includes('__dev_coach_mode=1'));
-    }
-  }, []);
-
-  function handleDevCoachToggle() {
-    if (devCoachMode) {
-      document.cookie = '__dev_coach_mode=; path=/; max-age=0';
+  function handleCoachPortalClick() {
+    if (crossDomainUrl) {
+      window.location.href = crossDomainUrl;
     } else {
       document.cookie = '__dev_coach_mode=1; path=/; max-age=86400';
+      window.location.reload();
     }
-    window.location.reload();
+  }
+
+  function handleBackToFortiClick() {
+    if (crossDomainUrl) {
+      window.location.href = crossDomainUrl;
+    } else {
+      document.cookie = '__dev_coach_mode=; path=/; max-age=0';
+      window.location.reload();
+    }
   }
 
   useEffect(() => {
@@ -172,29 +168,18 @@ export default function CustomAppBar(
     )
   }
 
-  // External link (full navigation, not Next.js client-side) used for cross-domain jumps
-  const ExternalListLink = ({ icon, text, href }: { icon: ReactNode; text: string; href: string }) => (
-    <ListItem disablePadding>
-      <ListItemButton component="a" href={href} onClick={() => setDrawerOpen(false)}>
-        <ListItemIcon>{icon}</ListItemIcon>
-        <ListItemText primary={text} />
-      </ListItemButton>
-    </ListItem>
-  );
-
   const bottomNav = (
     <Box>
       <List>
-        {showDevToggle && (
-          <ListItem>
-            <ListItemText primary="Simulate Coach Domain" primaryTypographyProps={{ variant: 'body2' }} />
-            <Switch checked={devCoachMode} onChange={handleDevCoachToggle} size="small" edge="end" />
-          </ListItem>
-        )}
         <ListLink icon={<FeedbackIcon/>} text="Feedback" href="/user/feedback"/>
         <ListLink icon={<SettingsIcon/>} text="Settings" href="/user/settings"/>
-        {isCoachDomain && crossDomainUrl && (
-          <ExternalListLink icon={<ArrowBackIcon/>} text="Back to Forti" href={crossDomainUrl}/>
+        {isCoachDomain && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={handleBackToFortiClick}>
+              <ListItemIcon><ArrowBackIcon/></ListItemIcon>
+              <ListItemText primary="Back to Forti"/>
+            </ListItemButton>
+          </ListItem>
         )}
         <ListItem disablePadding>
           <ListItemButton onClick={() => signOut({callbackUrl: '/login'})}>
@@ -353,8 +338,13 @@ export default function CustomAppBar(
                 <ListLink nested icon={<SchoolIcon/>} text="Learning Plans" href="/user/learning-plans"/>
               </Collapse>
               <ListLink icon={<ListAltIcon/>} text="Plans" href="/user/plan"/>
-              {!settingsLoading && settings.coachModeActive && crossDomainUrl && (
-                <ExternalListLink icon={<OpenInNewIcon/>} text="Coach Portal" href={crossDomainUrl}/>
+              {!settingsLoading && settings.coachModeActive && (
+                <ListItem disablePadding>
+                  <ListItemButton onClick={handleCoachPortalClick}>
+                    <ListItemIcon><OpenInNewIcon/></ListItemIcon>
+                    <ListItemText primary="Coach Portal"/>
+                  </ListItemButton>
+                </ListItem>
               )}
             </List>
           )}

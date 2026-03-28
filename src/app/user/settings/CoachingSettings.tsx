@@ -313,7 +313,7 @@ export default function CoachingSettings() {
 
       {!info ? (
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1 }}>
-          <Typography variant="body1">Coach Mode</Typography>
+          <Typography variant="body1">Enable coach features</Typography>
           <Skeleton variant="rounded" width={52} height={32} />
         </Box>
       ) : (
@@ -325,7 +325,7 @@ export default function CoachingSettings() {
               disabled={busy === 'coach-mode'}
             />
           }
-          label="Coach Mode"
+          label="Enable coach features"
           labelPlacement="start"
           sx={{ width: '100%', mx: 0, justifyContent: 'space-between' }}
         />
