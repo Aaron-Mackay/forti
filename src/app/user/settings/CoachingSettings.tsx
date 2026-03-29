@@ -43,6 +43,8 @@ export default function CoachingSettings() {
   const [copied, setCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [busy, setBusy] = useState<string | null>(null); // tracks which action is in-flight
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteSent, setInviteSent] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setFetchError(null);
@@ -157,6 +159,31 @@ export default function CoachingSettings() {
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
     });
+  }
+
+  async function handleSendInvite() {
+    const email = inviteEmail.trim();
+    setBusy('invite');
+    setActionError(null);
+    try {
+      const res = await fetch('/api/coach/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const body = await res.json() as { error?: string };
+        setActionError(body.error ?? 'Failed to send invite');
+      } else {
+        setInviteEmail('');
+        setInviteSent(email);
+        setTimeout(() => setInviteSent(null), 3000);
+      }
+    } catch {
+      setActionError('Failed to send invite');
+    } finally {
+      setBusy(null);
+    }
   }
 
   if (fetchError) {
@@ -382,6 +409,36 @@ export default function CoachingSettings() {
             }}
             sx={{ mb: 3, maxWidth: 360 }}
           />
+
+          {/* Invite by email */}
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Invite by email:
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, mb: 3, alignItems: 'flex-start' }}>
+            <TextField
+              label="Client's email"
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              size="small"
+              sx={{ flex: 1 }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSendInvite(); }}
+            />
+            <Button
+              variant="contained"
+              onClick={handleSendInvite}
+              disabled={busy === 'invite' || !inviteEmail.trim()}
+              startIcon={busy === 'invite' ? <CircularProgress size={14} color="inherit" /> : undefined}
+              sx={{ whiteSpace: 'nowrap', height: 40 }}
+            >
+              Send
+            </Button>
+          </Box>
+          {inviteSent && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Invite sent to {inviteSent}
+            </Alert>
+          )}
 
           {/* Pending requests */}
           <Typography variant="body2" color="text.secondary" gutterBottom>
