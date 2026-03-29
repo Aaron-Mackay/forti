@@ -211,6 +211,29 @@ export async function notifyClientLearningPlanStep(
   });
 }
 
+/** Send a coach invitation email to a prospective client (may not be a Forti user yet) */
+export async function sendCoachInviteEmail({
+  email,
+  coachName,
+  inviteLink,
+}: {
+  email: string;
+  coachName: string;
+  inviteLink: string;
+}): Promise<void> {
+  if (!process.env.MAILERSEND_API_KEY || !FROM_EMAIL) return;
+
+  const params = new EmailParams()
+    .setFrom(new Sender(FROM_EMAIL, FROM_NAME))
+    .setTo([new Recipient(email)])
+    .setSubject(`${coachName} invited you to train on Forti`)
+    .setText(
+      `Hi,\n\n${coachName} has invited you to connect with them as your coach on Forti.\n\nClick the link below to get started:\n${inviteLink}\n\n— The Forti Team`
+    );
+
+  await mailer().email.send(params);
+}
+
 /** Send a web push notification to a single subscribed device */
 export async function sendPushNotification(
   sub: Pick<DbPushSubscription, 'endpoint' | 'p256dh' | 'auth'>,
