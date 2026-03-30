@@ -5,6 +5,7 @@ import { Box, Divider, IconButton, Menu, MenuItem, Typography } from '@mui/mater
 import CloseIcon from '@mui/icons-material/Close';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { PlanPrisma } from '@/types/dataTypes';
+import { Dir } from '@lib/useWorkoutEditor';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { computeE1rm } from '@lib/e1rm';
 import ExercisePickerDialog from '@/app/user/workout/ExercisePickerDialog';
@@ -66,6 +67,8 @@ interface MenuState {
   weekId: number;
   workoutId: number;
   exerciseId: number;
+  exerciseIndex: number;
+  exerciseCount: number;
   isCardio: boolean;
 }
 
@@ -86,7 +89,7 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange }: PlanSheetViewProps)
   const scrollRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef(zoom);
-  const pinchRef = useRef<{ startDist: number; startZoom: number } | null>(null);
+  const pinchRef = useRef<{ startDist: number; startZoom: number; midX: number; midY: number; contentX: number; contentY: number } | null>(null);
 
   // Keep zoomRef current so touch handlers always see latest value
   useEffect(() => { zoomRef.current = zoom; }, [zoom]);
@@ -108,7 +111,17 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange }: PlanSheetViewProps)
 
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
-        pinchRef.current = { startDist: getTouchDist(e.touches), startZoom: zoomRef.current };
+        const container = scrollRef.current;
+        if (!container) return;
+        const rect = container.getBoundingClientRect();
+        const startDist = getTouchDist(e.touches);
+        // Midpoint of the two fingers relative to the container's top-left
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+        // Content coords (unzoomed) under the pinch point
+        const contentX = (midX + container.scrollLeft) / zoomRef.current;
+        const contentY = (midY + container.scrollTop) / zoomRef.current;
+        pinchRef.current = { startDist, startZoom: zoomRef.current, midX, midY, contentX, contentY };
       } else {
         pinchRef.current = null;
       }
@@ -122,6 +135,12 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange }: PlanSheetViewProps)
       const clamped = Math.max(0.25, Math.min(1, raw));
       zoomRef.current = clamped;
       if (innerRef.current) innerRef.current.style.zoom = String(clamped);
+      // Scroll so the pinch focal point stays fixed on screen
+      if (scrollRef.current) {
+        const { midX, midY, contentX, contentY } = pinchRef.current;
+        scrollRef.current.scrollLeft = contentX * clamped - midX;
+        scrollRef.current.scrollTop = contentY * clamped - midY;
+      }
     };
 
     const onTouchEnd = (e: TouchEvent) => {
@@ -199,14 +218,13 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange }: PlanSheetViewProps)
 
   return (
     <>
-      {/* Scroll container — fills remaining viewport height so swiping anywhere scrolls */}
+      {/* Scroll container — fixed height so it handles both axes; enables pinch focal point */}
       <Box
         ref={scrollRef}
         sx={{
-          overflowX: 'auto',
-          overflowY: 'visible',
+          overflow: 'auto',
           touchAction: 'pan-x pan-y',
-          minHeight: 'calc(100dvh - 200px)',
+          height: 'calc(100dvh - 200px)',
         }}
       >
         {/* Inner content — zoom applied here via DOM ref during pinch, via sx otherwise */}
@@ -355,11 +373,23 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange }: PlanSheetViewProps)
                                             {ex.exercise?.name ?? '(unnamed)'}
                                           </span>
                                         </td>
-                                        <td style={{ ...cellSx, textAlign: 'center', color: 'var(--mui-palette-text-secondary, #666)' }}>
-                                          {ex.repRange ?? '—'}
+                                        <td style={{ ...cellSx, textAlign: 'center' }}>
+                                          <input
+                                            type="text"
+                                            value={ex.repRange ?? ''}
+                                            onChange={(e) => dispatch({ type: 'UPDATE_REP_RANGE', planId, weekId: week.id, workoutId: workout.id, workoutExerciseId: ex.id, repRange: e.target.value })}
+                                            placeholder="—"
+                                            style={{ ...inputSx, width: '3.5em' }}
+                                          />
                                         </td>
-                                        <td style={{ ...cellSx, textAlign: 'center', color: 'var(--mui-palette-text-secondary, #666)' }}>
-                                          {ex.restTime ?? '—'}
+                                        <td style={{ ...cellSx, textAlign: 'center' }}>
+                                          <input
+                                            type="text"
+                                            value={ex.restTime ?? ''}
+                                            onChange={(e) => dispatch({ type: 'UPDATE_REST_TIME', planId, weekId: week.id, workoutId: workout.id, workoutExerciseId: ex.id, restTime: e.target.value })}
+                                            placeholder="—"
+                                            style={{ ...inputSx, width: '3.5em' }}
+                                          />
                                         </td>
                                         {Array.from({ length: maxSets }, (_, si) => {
                                           const set = topLevelSets[si];
@@ -408,7 +438,7 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange }: PlanSheetViewProps)
                                           <IconButton
                                             size="small"
                                             sx={{ p: 0.25, opacity: 0.4, '&:hover': { opacity: 1 } }}
-                                            onClick={(e) => setMenuState({ anchor: e.currentTarget, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, isCardio: false })}
+                                            onClick={(e) => setMenuState({ anchor: e.currentTarget, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, exerciseIndex: sortedExercises.findIndex(s => s.id === ex.id), exerciseCount: sortedExercises.length, isCardio: false })}
                                             aria-label="Exercise options"
                                           >
                                             <MoreVertIcon sx={{ fontSize: '0.9rem' }} />
@@ -510,7 +540,7 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange }: PlanSheetViewProps)
                                       <IconButton
                                         size="small"
                                         sx={{ p: 0.25, opacity: 0.4, '&:hover': { opacity: 1 } }}
-                                        onClick={(e) => setMenuState({ anchor: e.currentTarget, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, isCardio: true })}
+                                        onClick={(e) => setMenuState({ anchor: e.currentTarget, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, exerciseIndex: sortedExercises.findIndex(s => s.id === ex.id), exerciseCount: sortedExercises.length, isCardio: true })}
                                         aria-label="Exercise options"
                                       >
                                         <MoreVertIcon sx={{ fontSize: '0.9rem' }} />
@@ -619,6 +649,29 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange }: PlanSheetViewProps)
             Remove drop set
           </MenuItem>,
           <Divider key="div2" />,
+          <MenuItem
+            key="move-up"
+            dense
+            disabled={menuState?.exerciseIndex === 0}
+            onClick={() => {
+              if (menuState) dispatch({ type: 'MOVE_EXERCISE', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, dir: Dir.UP, index: menuState.exerciseIndex });
+              closeMenu();
+            }}
+          >
+            Move up
+          </MenuItem>,
+          <MenuItem
+            key="move-down"
+            dense
+            disabled={menuState?.exerciseIndex === (menuState?.exerciseCount ?? 1) - 1}
+            onClick={() => {
+              if (menuState) dispatch({ type: 'MOVE_EXERCISE', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, dir: Dir.DOWN, index: menuState.exerciseIndex });
+              closeMenu();
+            }}
+          >
+            Move down
+          </MenuItem>,
+          <Divider key="div3" />,
         ]}
         <MenuItem
           dense
