@@ -92,29 +92,23 @@ export const authOptions: AuthOptions = {
   },
 
   // Share the session cookie across subdomains only on production deployments.
-  // On Vercel preview deployments (VERCEL_ENV === 'preview') the app runs on *.vercel.app,
-  // which doesn't match .forti-training.co.uk, so the browser silently rejects a
-  // domain-locked cookie and login loops back to /login.
-  // VERCEL_ENV is set automatically by Vercel; it is undefined in local dev (where
-  // AUTH_COOKIE_DOMAIN is not set anyway).
-  ...(() => {
-    const cookieDomain = process.env.AUTH_COOKIE_DOMAIN;
-    const applyDomain = !!cookieDomain && process.env.VERCEL_ENV === 'production';
-    return applyDomain ? {
-      cookies: {
-        sessionToken: {
-          name: '__Secure-next-auth.session-token',
-          options: {
-            httpOnly: true,
-            sameSite: 'lax' as const,
-            path: '/',
-            secure: true,
-            domain: cookieDomain,
-          },
+  // VERCEL_ENV === 'production' guards against applying a .forti-training.co.uk
+  // domain-locked cookie on *.vercel.app preview URLs, where the browser would
+  // silently reject it and login would loop back to /login.
+  ...(process.env.AUTH_COOKIE_DOMAIN && process.env.VERCEL_ENV === 'production' ? {
+    cookies: {
+      sessionToken: {
+        name: '__Secure-next-auth.session-token',
+        options: {
+          httpOnly: true,
+          sameSite: 'lax' as const,
+          path: '/',
+          secure: true,
+          domain: process.env.AUTH_COOKIE_DOMAIN,
         },
       },
-    } : {};
-  })(),
+    },
+  } : {}),
 
   callbacks: {
     async redirect({ url, baseUrl }) {
