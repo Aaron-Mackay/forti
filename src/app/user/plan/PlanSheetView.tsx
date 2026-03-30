@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Box, Divider, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { PlanPrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
@@ -60,53 +61,105 @@ const addRowSx: React.CSSProperties = {
 
 const HIGHLIGHT = 'rgba(255,193,7,0.2)';
 
-function readZoom(): number {
-  if (typeof window === 'undefined') return 1;
-  const v = parseFloat(localStorage.getItem('sheetZoom') ?? '');
-  return isNaN(v) ? 1 : Math.max(0.5, Math.min(1, v));
-}
-
 interface MenuState {
   anchor: HTMLElement;
   weekId: number;
   workoutId: number;
   exerciseId: number;
+  isCardio: boolean;
 }
 
 interface PlanSheetViewProps {
   plan: PlanPrisma;
   planId: number;
+  zoom: number;
+  onZoomChange: (zoom: number) => void;
 }
 
-const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
+const PlanSheetView = ({ plan, planId, zoom, onZoomChange }: PlanSheetViewProps) => {
   const { dispatch } = useWorkoutEditorContext();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<{ weekId: number; workoutId: number } | null>(null);
   const [menuState, setMenuState] = useState<MenuState | null>(null);
-  const [zoom, setZoom] = useState(readZoom);
+
+  // Refs for pinch-to-zoom — manipulate DOM directly to avoid re-render on every touchmove
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const zoomRef = useRef(zoom);
+  const pinchRef = useRef<{ startDist: number; startZoom: number } | null>(null);
+
+  // Keep zoomRef current so touch handlers always see latest value
+  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
+
+  // Apply CSS zoom directly to inner element (bypasses React re-render during pinch)
+  useEffect(() => {
+    if (innerRef.current) innerRef.current.style.zoom = String(zoom);
+  }, [zoom]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const getTouchDist = (touches: TouchList) =>
+      Math.hypot(
+        touches[0].clientX - touches[1].clientX,
+        touches[0].clientY - touches[1].clientY,
+      );
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        pinchRef.current = { startDist: getTouchDist(e.touches), startZoom: zoomRef.current };
+      } else {
+        pinchRef.current = null;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 2 || !pinchRef.current) return;
+      e.preventDefault(); // block page zoom / scroll during pinch
+      const dist = getTouchDist(e.touches);
+      const raw = pinchRef.current.startZoom * (dist / pinchRef.current.startDist);
+      const clamped = Math.max(0.25, Math.min(1, raw));
+      zoomRef.current = clamped;
+      if (innerRef.current) innerRef.current.style.zoom = String(clamped);
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2 && pinchRef.current) {
+        // Commit final zoom to state + localStorage on finger lift
+        onZoomChange(zoomRef.current);
+        pinchRef.current = null;
+      }
+    };
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('touchend', onTouchEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [onZoomChange]);
 
   const sortedWeeks = [...plan.weeks].sort((a, b) => a.order - b.order);
   const maxWorkoutCount = Math.max(0, ...sortedWeeks.map(w => w.workouts.length));
 
-  const adjustZoom = (delta: number) => {
-    setZoom(prev => {
-      const next = Math.round(Math.max(0.5, Math.min(1, prev + delta)) * 10) / 10;
-      localStorage.setItem('sheetZoom', String(next));
-      return next;
-    });
-  };
-
-  // Live exercise lookup for menu (always reflects current state)
+  // Live exercise lookup for menu — always reflects current plan state
   const menuEx = menuState
     ? plan.weeks.find(w => w.id === menuState.weekId)
         ?.workouts.find(wo => wo.id === menuState.workoutId)
         ?.exercises.find(ex => ex.id === menuState.exerciseId)
     : null;
-
   const menuTopLevelSets = menuEx?.sets.filter(s => !s.isDropSet).sort((a, b) => a.order - b.order) ?? [];
   const menuDropSets = menuEx?.sets.filter(s => s.isDropSet).sort((a, b) => a.order - b.order) ?? [];
 
   const closeMenu = () => setMenuState(null);
+  const openPicker = (weekId: number, workoutId: number) => {
+    setPickerTarget({ weekId, workoutId });
+    setPickerOpen(true);
+  };
 
   if (maxWorkoutCount === 0) {
     return (
@@ -144,53 +197,30 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
     return max;
   });
 
-  const openPicker = (weekId: number, workoutId: number) => {
-    setPickerTarget({ weekId, workoutId });
-    setPickerOpen(true);
-  };
-
   return (
     <>
-      {/* Zoom controls */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 0.25, mb: 0.5 }}>
-        <Typography
-          variant="caption"
-          color="text.disabled"
-          sx={{ fontSize: '0.65rem', minWidth: '2.5em', textAlign: 'right', userSelect: 'none' }}
-        >
-          {Math.round(zoom * 100)}%
-        </Typography>
-        <IconButton size="small" onClick={() => adjustZoom(-0.1)} sx={{ p: 0.25 }} aria-label="Zoom out">
-          <Typography sx={{ fontSize: '0.85rem', lineHeight: 1, color: 'text.secondary', fontWeight: 400 }}>−</Typography>
-        </IconButton>
-        <IconButton size="small" onClick={() => adjustZoom(0.1)} disabled={zoom >= 1} sx={{ p: 0.25 }} aria-label="Zoom in">
-          <Typography sx={{ fontSize: '0.85rem', lineHeight: 1, color: zoom >= 1 ? 'text.disabled' : 'text.secondary', fontWeight: 400 }}>+</Typography>
-        </IconButton>
-      </Box>
-
+      {/* Scroll container — fills remaining viewport height so swiping anywhere scrolls */}
       <Box
+        ref={scrollRef}
         sx={{
           overflowX: 'auto',
           overflowY: 'visible',
           touchAction: 'pan-x pan-y',
+          minHeight: 'calc(100dvh - 200px)',
         }}
       >
-        {/* Zoom applied here; AppBar is outside this component and unaffected */}
-        <Box sx={{ width: 'max-content', zoom: zoom }}>
+        {/* Inner content — zoom applied here via DOM ref during pinch, via sx otherwise */}
+        <Box ref={innerRef} sx={{ width: 'max-content', zoom: zoom }}>
           {sortedWeeks.map((week) => {
             const sortedWorkouts = [...week.workouts].sort((a, b) => a.order - b.order);
 
             return (
               <Box key={week.id} sx={{ mb: 3 }}>
-                {/* Week label */}
-                <Typography
-                  variant="overline"
+                {/* Week label row with delete × */}
+                <Box
                   sx={{
-                    display: 'block',
-                    fontWeight: 700,
-                    fontSize: '0.7rem',
-                    letterSpacing: '0.08em',
-                    color: 'text.secondary',
+                    display: 'flex',
+                    alignItems: 'center',
                     pb: 0.5,
                     mb: 0.5,
                     borderBottom: '2px solid',
@@ -198,15 +228,35 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
                     width: '100%',
                   }}
                 >
-                  Week {week.order}
-                </Typography>
+                  <Typography
+                    variant="overline"
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: '0.7rem',
+                      letterSpacing: '0.08em',
+                      color: 'text.secondary',
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    Week {week.order}
+                  </Typography>
+                  <Box sx={{ flex: 1 }} />
+                  <IconButton
+                    size="small"
+                    sx={{ p: 0.25, opacity: 0.35, '&:hover': { opacity: 1 } }}
+                    onClick={() => dispatch({ type: 'REMOVE_WEEK', planId, weekId: week.id })}
+                    aria-label="Delete week"
+                  >
+                    <CloseIcon sx={{ fontSize: '0.85rem' }} />
+                  </IconButton>
+                </Box>
 
                 {/* Workout slot columns + add workout */}
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
                   {Array.from({ length: maxWorkoutCount }, (_, slotIdx) => {
                     const workout = sortedWorkouts.find(w => w.order === slotIdx + 1) ?? null;
                     const maxSets = slotMaxSets[slotIdx];
-                    // columns: Exercise + TGT + REST + (Weight+Reps)*maxSets + ~e1RM + ⋮ = 5 + maxSets*2
+                    // columns: Exercise + TGT + REST + (Weight+Reps)*maxSets + ~e1RM + ⋮
                     const totalCols = 5 + maxSets * 2;
 
                     if (!workout) {
@@ -221,19 +271,28 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
 
                     return (
                       <Box key={slotIdx} sx={{ flexShrink: 0 }}>
-                        {/* Workout name */}
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            display: 'block',
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            mb: 0.5,
-                            color: 'text.primary',
-                          }}
-                        >
-                          {stripSuffix(workout.name ?? `Workout ${slotIdx + 1}`)}
-                        </Typography>
+                        {/* Workout name with delete × */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontWeight: 700,
+                              fontSize: '0.72rem',
+                              color: 'text.primary',
+                              flex: 1,
+                            }}
+                          >
+                            {stripSuffix(workout.name ?? `Workout ${slotIdx + 1}`)}
+                          </Typography>
+                          <IconButton
+                            size="small"
+                            sx={{ p: 0.25, ml: 0.5, opacity: 0.35, '&:hover': { opacity: 1 } }}
+                            onClick={() => dispatch({ type: 'REMOVE_WORKOUT', planId, weekId: week.id, workoutId: workout.id })}
+                            aria-label="Delete workout"
+                          >
+                            <CloseIcon sx={{ fontSize: '0.8rem' }} />
+                          </IconButton>
+                        </Box>
 
                         {/* Resistance table */}
                         {(resistanceExercises.length > 0 || cardioExercises.length === 0) && (
@@ -271,17 +330,13 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
                                     .filter(s => s.isDropSet)
                                     .sort((a, b) => a.order - b.order);
 
-                                  // Group drop sets by parentSetId
                                   const dropsByParent = new Map<number, typeof dropSets>();
                                   for (const ds of dropSets) {
                                     if (ds.parentSetId == null) continue;
-                                    if (!dropsByParent.has(ds.parentSetId)) {
-                                      dropsByParent.set(ds.parentSetId, []);
-                                    }
+                                    if (!dropsByParent.has(ds.parentSetId)) dropsByParent.set(ds.parentSetId, []);
                                     dropsByParent.get(ds.parentSetId)!.push(ds);
                                   }
 
-                                  // Find best e1RM across all sets
                                   let bestE1rm: number | null = null;
                                   let bestSetId: number | null = null;
                                   for (const s of ex.sets) {
@@ -294,7 +349,6 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
 
                                   return (
                                     <React.Fragment key={ex.id}>
-                                      {/* Main exercise row */}
                                       <tr>
                                         <td style={{ ...cellSx, textAlign: 'left', maxWidth: '14rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                           <span style={{ fontWeight: 600, fontSize: '0.75rem' }}>
@@ -317,47 +371,28 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
                                               </React.Fragment>
                                             );
                                           }
-                                          const isHighlighted = set.id === bestSetId;
-                                          const highlightStyle = isHighlighted ? { background: HIGHLIGHT } : {};
+                                          const hl = set.id === bestSetId ? { background: HIGHLIGHT } : {};
                                           return (
                                             <React.Fragment key={si}>
-                                              <td style={{ ...cellSx, textAlign: 'center', ...highlightStyle }}>
+                                              <td style={{ ...cellSx, textAlign: 'center', ...hl }}>
                                                 <input
                                                   type="number"
                                                   value={set.weight ?? ''}
                                                   onChange={(e) => {
                                                     const v = e.target.value === '' ? null : parseFloat(e.target.value);
-                                                    dispatch({
-                                                      type: 'UPDATE_SET_WEIGHT',
-                                                      planId,
-                                                      weekId: week.id,
-                                                      workoutId: workout.id,
-                                                      exerciseId: ex.id,
-                                                      setId: set.id,
-                                                      weight: isNaN(v as number) ? null : v,
-                                                    });
+                                                    dispatch({ type: 'UPDATE_SET_WEIGHT', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, setId: set.id, weight: isNaN(v as number) ? null : v });
                                                   }}
                                                   placeholder="kg"
                                                   style={inputSx}
                                                 />
                                               </td>
-                                              <td style={{ ...cellSx, textAlign: 'center', ...highlightStyle }}>
+                                              <td style={{ ...cellSx, textAlign: 'center', ...hl }}>
                                                 <input
                                                   type="number"
                                                   value={set.reps ?? ''}
                                                   onChange={(e) => {
                                                     const v = parseInt(e.target.value, 10);
-                                                    if (!isNaN(v)) {
-                                                      dispatch({
-                                                        type: 'UPDATE_SET_REPS',
-                                                        planId,
-                                                        weekId: week.id,
-                                                        workoutId: workout.id,
-                                                        exerciseId: ex.id,
-                                                        setId: set.id,
-                                                        reps: v,
-                                                      });
-                                                    }
+                                                    if (!isNaN(v)) dispatch({ type: 'UPDATE_SET_REPS', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, setId: set.id, reps: v });
                                                   }}
                                                   placeholder="reps"
                                                   style={inputSx}
@@ -369,12 +404,11 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
                                         <td style={{ ...cellSx, textAlign: 'right', color: 'var(--mui-palette-text-disabled, #bbb)', fontSize: '0.68rem' }}>
                                           {bestE1rm != null ? `~${Math.round(bestE1rm)}` : '—'}
                                         </td>
-                                        {/* ⋮ menu trigger */}
                                         <td style={{ ...cellSx, textAlign: 'center', padding: '0 2px' }}>
                                           <IconButton
                                             size="small"
                                             sx={{ p: 0.25, opacity: 0.4, '&:hover': { opacity: 1 } }}
-                                            onClick={(e) => setMenuState({ anchor: e.currentTarget, weekId: week.id, workoutId: workout.id, exerciseId: ex.id })}
+                                            onClick={(e) => setMenuState({ anchor: e.currentTarget, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, isCardio: false })}
                                             aria-label="Exercise options"
                                           >
                                             <MoreVertIcon sx={{ fontSize: '0.9rem' }} />
@@ -386,8 +420,7 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
                                       {topLevelSets.map((parentSet, _si) => {
                                         const children = dropsByParent.get(parentSet.id) ?? [];
                                         return children.map((dropSet, di) => {
-                                          const isHighlighted = dropSet.id === bestSetId;
-                                          const highlightStyle = isHighlighted ? { background: HIGHLIGHT } : {};
+                                          const hl = dropSet.id === bestSetId ? { background: HIGHLIGHT } : {};
                                           return (
                                             <tr key={dropSet.id}>
                                               <td style={{ ...cellSx, textAlign: 'left', paddingLeft: '1.5rem', color: 'var(--mui-palette-text-secondary, #666)', fontSize: '0.7rem' }}>
@@ -406,47 +439,11 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
                                                 }
                                                 return (
                                                   <React.Fragment key={colIdx}>
-                                                    <td style={{ ...cellSx, textAlign: 'center', ...highlightStyle }}>
-                                                      <input
-                                                        type="number"
-                                                        value={dropSet.weight ?? ''}
-                                                        onChange={(e) => {
-                                                          const v = e.target.value === '' ? null : parseFloat(e.target.value);
-                                                          dispatch({
-                                                            type: 'UPDATE_SET_WEIGHT',
-                                                            planId,
-                                                            weekId: week.id,
-                                                            workoutId: workout.id,
-                                                            exerciseId: ex.id,
-                                                            setId: dropSet.id,
-                                                            weight: isNaN(v as number) ? null : v,
-                                                          });
-                                                        }}
-                                                        placeholder="kg"
-                                                        style={inputSx}
-                                                      />
+                                                    <td style={{ ...cellSx, textAlign: 'center', ...hl }}>
+                                                      <input type="number" value={dropSet.weight ?? ''} onChange={(e) => { const v = e.target.value === '' ? null : parseFloat(e.target.value); dispatch({ type: 'UPDATE_SET_WEIGHT', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, setId: dropSet.id, weight: isNaN(v as number) ? null : v }); }} placeholder="kg" style={inputSx} />
                                                     </td>
-                                                    <td style={{ ...cellSx, textAlign: 'center', ...highlightStyle }}>
-                                                      <input
-                                                        type="number"
-                                                        value={dropSet.reps ?? ''}
-                                                        onChange={(e) => {
-                                                          const v = parseInt(e.target.value, 10);
-                                                          if (!isNaN(v)) {
-                                                            dispatch({
-                                                              type: 'UPDATE_SET_REPS',
-                                                              planId,
-                                                              weekId: week.id,
-                                                              workoutId: workout.id,
-                                                              exerciseId: ex.id,
-                                                              setId: dropSet.id,
-                                                              reps: v,
-                                                            });
-                                                          }
-                                                        }}
-                                                        placeholder="reps"
-                                                        style={inputSx}
-                                                      />
+                                                    <td style={{ ...cellSx, textAlign: 'center', ...hl }}>
+                                                      <input type="number" value={dropSet.reps ?? ''} onChange={(e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) dispatch({ type: 'UPDATE_SET_REPS', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, setId: dropSet.id, reps: v }); }} placeholder="reps" style={inputSx} />
                                                     </td>
                                                   </React.Fragment>
                                                 );
@@ -482,21 +479,18 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
                             <table style={{ borderCollapse: 'collapse' }}>
                               <thead>
                                 <tr>
-                                  <th style={{ ...headerCellSx, textAlign: 'left', minWidth: '9rem', maxWidth: '14rem' }}>
-                                    Cardio
-                                  </th>
+                                  <th style={{ ...headerCellSx, textAlign: 'left', minWidth: '9rem', maxWidth: '14rem' }}>Cardio</th>
                                   <th style={{ ...headerCellSx, minWidth: '3.5rem' }}>Min</th>
                                   <th style={{ ...headerCellSx, minWidth: '3.5rem' }}>km</th>
                                   <th style={{ ...headerCellSx, minWidth: '4rem' }}>Resistance</th>
+                                  <th style={{ ...headerCellSx, width: '1.5rem' }} />
                                 </tr>
                               </thead>
                               <tbody>
                                 {cardioExercises.map((ex) => (
                                   <tr key={ex.id}>
                                     <td style={{ ...cellSx, textAlign: 'left', maxWidth: '14rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                      <span style={{ fontWeight: 600, fontSize: '0.75rem' }}>
-                                        {ex.exercise?.name ?? '(unnamed)'}
-                                      </span>
+                                      <span style={{ fontWeight: 600, fontSize: '0.75rem' }}>{ex.exercise?.name ?? '(unnamed)'}</span>
                                     </td>
                                     {(['cardioDuration', 'cardioDistance', 'cardioResistance'] as const).map((field) => (
                                       <td key={field} style={{ ...cellSx, textAlign: 'center' }}>
@@ -505,27 +499,28 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
                                           value={ex[field] ?? ''}
                                           onChange={(e) => {
                                             const v = e.target.value === '' ? null : parseFloat(e.target.value);
-                                            dispatch({
-                                              type: 'UPDATE_CARDIO_DATA',
-                                              planId,
-                                              weekId: week.id,
-                                              workoutId: workout.id,
-                                              exerciseId: ex.id,
-                                              field,
-                                              value: isNaN(v as number) ? null : v,
-                                            });
+                                            dispatch({ type: 'UPDATE_CARDIO_DATA', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, field, value: isNaN(v as number) ? null : v });
                                           }}
                                           placeholder="—"
                                           style={{ ...inputSx, width: '4em' }}
                                         />
                                       </td>
                                     ))}
+                                    <td style={{ ...cellSx, textAlign: 'center', padding: '0 2px' }}>
+                                      <IconButton
+                                        size="small"
+                                        sx={{ p: 0.25, opacity: 0.4, '&:hover': { opacity: 1 } }}
+                                        onClick={(e) => setMenuState({ anchor: e.currentTarget, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, isCardio: true })}
+                                        aria-label="Exercise options"
+                                      >
+                                        <MoreVertIcon sx={{ fontSize: '0.9rem' }} />
+                                      </IconButton>
+                                    </td>
                                   </tr>
                                 ))}
-                                {/* + Exercise row for cardio table */}
                                 <tr>
                                   <td
-                                    colSpan={4}
+                                    colSpan={5}
                                     style={{ ...addRowSx, borderTop: '1px dashed var(--mui-palette-divider, #e0e0e0)', borderBottom: 'none' }}
                                     onClick={() => openPicker(week.id, workout.id)}
                                   >
@@ -576,51 +571,64 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
         onClose={closeMenu}
         slotProps={{ paper: { sx: { minWidth: '10rem' } } }}
       >
+        {!menuState?.isCardio && [
+          <MenuItem
+            key="add-set"
+            dense
+            onClick={() => {
+              if (menuState) dispatch({ type: 'ADD_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId });
+              closeMenu();
+            }}
+          >
+            Add set
+          </MenuItem>,
+          <MenuItem
+            key="remove-set"
+            dense
+            disabled={menuTopLevelSets.length === 0}
+            onClick={() => {
+              if (menuState) dispatch({ type: 'REMOVE_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId });
+              closeMenu();
+            }}
+          >
+            Remove set
+          </MenuItem>,
+          <Divider key="div1" />,
+          <MenuItem
+            key="add-drop"
+            dense
+            disabled={menuTopLevelSets.length === 0}
+            onClick={() => {
+              const parentSetId = menuTopLevelSets[menuTopLevelSets.length - 1]?.id;
+              if (menuState && parentSetId != null) dispatch({ type: 'ADD_DROP_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId, parentSetId });
+              closeMenu();
+            }}
+          >
+            Add drop set
+          </MenuItem>,
+          <MenuItem
+            key="remove-drop"
+            dense
+            disabled={menuDropSets.length === 0}
+            onClick={() => {
+              const lastDrop = menuDropSets[menuDropSets.length - 1];
+              if (menuState && lastDrop) dispatch({ type: 'REMOVE_DROP_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId, setId: lastDrop.id });
+              closeMenu();
+            }}
+          >
+            Remove drop set
+          </MenuItem>,
+          <Divider key="div2" />,
+        ]}
         <MenuItem
           dense
+          sx={{ color: 'error.main' }}
           onClick={() => {
-            if (menuState) dispatch({ type: 'ADD_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId });
+            if (menuState) dispatch({ type: 'REMOVE_EXERCISE', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId });
             closeMenu();
           }}
         >
-          Add set
-        </MenuItem>
-        <MenuItem
-          dense
-          disabled={menuTopLevelSets.length === 0}
-          onClick={() => {
-            if (menuState) dispatch({ type: 'REMOVE_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId });
-            closeMenu();
-          }}
-        >
-          Remove set
-        </MenuItem>
-        <Divider />
-        <MenuItem
-          dense
-          disabled={menuTopLevelSets.length === 0}
-          onClick={() => {
-            const parentSetId = menuTopLevelSets[menuTopLevelSets.length - 1]?.id;
-            if (menuState && parentSetId != null) {
-              dispatch({ type: 'ADD_DROP_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId, parentSetId });
-            }
-            closeMenu();
-          }}
-        >
-          Add drop set
-        </MenuItem>
-        <MenuItem
-          dense
-          disabled={menuDropSets.length === 0}
-          onClick={() => {
-            const lastDropSet = menuDropSets[menuDropSets.length - 1];
-            if (menuState && lastDropSet) {
-              dispatch({ type: 'REMOVE_DROP_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId, setId: lastDropSet.id });
-            }
-            closeMenu();
-          }}
-        >
-          Remove drop set
+          Delete exercise
         </MenuItem>
       </Menu>
 
@@ -631,13 +639,7 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
         onSelect={(exercise) => {
           setPickerOpen(false);
           if (pickerTarget) {
-            dispatch({
-              type: 'ADD_EXERCISE_WITH_SET_FOR_EXERCISE',
-              planId,
-              weekId: pickerTarget.weekId,
-              workoutId: pickerTarget.workoutId,
-              exercise,
-            });
+            dispatch({ type: 'ADD_EXERCISE_WITH_SET_FOR_EXERCISE', planId, weekId: pickerTarget.weekId, workoutId: pickerTarget.workoutId, exercise });
           }
         }}
       />
