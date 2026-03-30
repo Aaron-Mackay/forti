@@ -4,7 +4,7 @@ import React, { useCallback, useState } from "react";
 import { redirect } from "next/navigation";
 import { useWorkoutEditorContext } from "@/context/WorkoutEditorContext";
 import { saveUserWorkoutData } from "@lib/clientApi";
-import { Alert, Box, Button, IconButton, Snackbar, ToggleButton, ToggleButtonGroup, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, IconButton, Snackbar, ToggleButton, ToggleButtonGroup, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import GridOnIcon from '@mui/icons-material/GridOn';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import { useAppBar } from '@lib/providers/AppBarProvider';
@@ -28,6 +28,7 @@ export const PlanTable: React.FC<{
     message: '',
     severity: 'success',
   });
+  const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'classic' | 'sheet'>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('planViewMode');
@@ -51,9 +52,11 @@ export const PlanTable: React.FC<{
   }
 
   const handleSave = () => {
+    setSaving(true);
     saveUserWorkoutData(userDataState)
       .then(() => setSnackbar({ open: true, message: 'Saved successfully', severity: 'success' }))
-      .catch(() => setSnackbar({ open: true, message: 'Failed to save', severity: 'error' }));
+      .catch(() => setSnackbar({ open: true, message: 'Failed to save', severity: 'error' }))
+      .finally(() => setSaving(false));
   };
 
   const handleViewModeChange = (_: React.MouseEvent<HTMLElement>, next: 'classic' | 'sheet' | null) => {
@@ -142,8 +145,14 @@ export const PlanTable: React.FC<{
           zIndex: 1000,
         }}
       >
-        <Button onClick={handleSave} variant="contained" sx={{ minWidth: 160 }}>
-          Save
+        <Button
+          onClick={handleSave}
+          variant="contained"
+          disabled={saving}
+          startIcon={saving ? <CircularProgress size={16} color="inherit" /> : undefined}
+          sx={{ minWidth: 160 }}
+        >
+          {saving ? 'Saving…' : 'Save'}
         </Button>
       </Box>
 
