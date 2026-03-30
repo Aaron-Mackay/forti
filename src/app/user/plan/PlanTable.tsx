@@ -4,10 +4,11 @@ import React, { useState } from "react";
 import { redirect } from "next/navigation";
 import { useWorkoutEditorContext } from "@/context/WorkoutEditorContext";
 import { saveUserWorkoutData } from "@lib/clientApi";
-import { Alert, Box, Button, Snackbar, useMediaQuery, useTheme } from "@mui/material";
+import { Alert, Box, Button, Snackbar, ToggleButton, ToggleButtonGroup, useMediaQuery, useTheme } from "@mui/material";
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import PlanWeekView from "./PlanWeekView";
 import PlanMultiWeekTable from "./PlanMultiWeekTable";
+import PlanSheetView from "./PlanSheetView";
 
 export const PlanTable: React.FC<{
   lockedInEditMode: boolean;
@@ -18,6 +19,13 @@ export const PlanTable: React.FC<{
     open: false,
     message: '',
     severity: 'success',
+  });
+  const [viewMode, setViewMode] = useState<'classic' | 'sheet'>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('planViewMode');
+      if (stored === 'classic' || stored === 'sheet') return stored;
+    }
+    return 'classic';
   });
   const { state: userDataState } = useWorkoutEditorContext();
   const theme = useTheme();
@@ -39,10 +47,35 @@ export const PlanTable: React.FC<{
       .catch(() => setSnackbar({ open: true, message: 'Failed to save', severity: 'error' }));
   };
 
+  const handleViewModeChange = (_: React.MouseEvent<HTMLElement>, next: 'classic' | 'sheet' | null) => {
+    if (!next) return;
+    setViewMode(next);
+    localStorage.setItem('planViewMode', next);
+  };
+
   return (
     <>
       <Box sx={{ p: 1.5, overflow: 'auto' }}>
-        {isMobile ? (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={handleViewModeChange}
+            size="small"
+            aria-label="plan view mode"
+          >
+            <ToggleButton value="classic" aria-label="classic view" sx={{ fontSize: '0.7rem', px: 1.5, py: 0.5 }}>
+              Classic
+            </ToggleButton>
+            <ToggleButton value="sheet" aria-label="sheet view" sx={{ fontSize: '0.7rem', px: 1.5, py: 0.5 }}>
+              Sheet
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
+        {viewMode === 'sheet' ? (
+          <PlanSheetView plan={plan} planId={plan.id} />
+        ) : isMobile ? (
           <PlanWeekView plan={plan} planId={plan.id} />
         ) : (
           <PlanMultiWeekTable plan={plan} planId={plan.id} />
