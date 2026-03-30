@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Divider, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { PlanPrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { computeE1rm } from '@lib/e1rm';
@@ -59,6 +60,19 @@ const addRowSx: React.CSSProperties = {
 
 const HIGHLIGHT = 'rgba(255,193,7,0.2)';
 
+function readZoom(): number {
+  if (typeof window === 'undefined') return 1;
+  const v = parseFloat(localStorage.getItem('sheetZoom') ?? '');
+  return isNaN(v) ? 1 : Math.max(0.5, Math.min(1, v));
+}
+
+interface MenuState {
+  anchor: HTMLElement;
+  weekId: number;
+  workoutId: number;
+  exerciseId: number;
+}
+
 interface PlanSheetViewProps {
   plan: PlanPrisma;
   planId: number;
@@ -68,9 +82,31 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
   const { dispatch } = useWorkoutEditorContext();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<{ weekId: number; workoutId: number } | null>(null);
+  const [menuState, setMenuState] = useState<MenuState | null>(null);
+  const [zoom, setZoom] = useState(readZoom);
 
   const sortedWeeks = [...plan.weeks].sort((a, b) => a.order - b.order);
   const maxWorkoutCount = Math.max(0, ...sortedWeeks.map(w => w.workouts.length));
+
+  const adjustZoom = (delta: number) => {
+    setZoom(prev => {
+      const next = Math.round(Math.max(0.5, Math.min(1, prev + delta)) * 10) / 10;
+      localStorage.setItem('sheetZoom', String(next));
+      return next;
+    });
+  };
+
+  // Live exercise lookup for menu (always reflects current state)
+  const menuEx = menuState
+    ? plan.weeks.find(w => w.id === menuState.weekId)
+        ?.workouts.find(wo => wo.id === menuState.workoutId)
+        ?.exercises.find(ex => ex.id === menuState.exerciseId)
+    : null;
+
+  const menuTopLevelSets = menuEx?.sets.filter(s => !s.isDropSet).sort((a, b) => a.order - b.order) ?? [];
+  const menuDropSets = menuEx?.sets.filter(s => s.isDropSet).sort((a, b) => a.order - b.order) ?? [];
+
+  const closeMenu = () => setMenuState(null);
 
   if (maxWorkoutCount === 0) {
     return (
@@ -115,6 +151,23 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
 
   return (
     <>
+      {/* Zoom controls */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 0.25, mb: 0.5 }}>
+        <Typography
+          variant="caption"
+          color="text.disabled"
+          sx={{ fontSize: '0.65rem', minWidth: '2.5em', textAlign: 'right', userSelect: 'none' }}
+        >
+          {Math.round(zoom * 100)}%
+        </Typography>
+        <IconButton size="small" onClick={() => adjustZoom(-0.1)} sx={{ p: 0.25 }} aria-label="Zoom out">
+          <Typography sx={{ fontSize: '0.85rem', lineHeight: 1, color: 'text.secondary', fontWeight: 400 }}>−</Typography>
+        </IconButton>
+        <IconButton size="small" onClick={() => adjustZoom(0.1)} disabled={zoom >= 1} sx={{ p: 0.25 }} aria-label="Zoom in">
+          <Typography sx={{ fontSize: '0.85rem', lineHeight: 1, color: zoom >= 1 ? 'text.disabled' : 'text.secondary', fontWeight: 400 }}>+</Typography>
+        </IconButton>
+      </Box>
+
       <Box
         sx={{
           overflowX: 'auto',
@@ -122,8 +175,8 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
           touchAction: 'pan-x pan-y',
         }}
       >
-        {/* min-width container so week label always spans full workout row */}
-        <Box sx={{ width: 'max-content', minWidth: '100%' }}>
+        {/* Zoom applied here; AppBar is outside this component and unaffected */}
+        <Box sx={{ width: 'max-content', zoom: zoom }}>
           {sortedWeeks.map((week) => {
             const sortedWorkouts = [...week.workouts].sort((a, b) => a.order - b.order);
 
@@ -153,6 +206,8 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
                   {Array.from({ length: maxWorkoutCount }, (_, slotIdx) => {
                     const workout = sortedWorkouts.find(w => w.order === slotIdx + 1) ?? null;
                     const maxSets = slotMaxSets[slotIdx];
+                    // columns: Exercise + TGT + REST + (Weight+Reps)*maxSets + ~e1RM + ⋮ = 5 + maxSets*2
+                    const totalCols = 5 + maxSets * 2;
 
                     if (!workout) {
                       return (
@@ -197,12 +252,13 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
                                   </React.Fragment>
                                 ))}
                                 <th style={{ ...headerCellSx, minWidth: '3.5rem' }}>~e1RM</th>
+                                <th style={{ ...headerCellSx, width: '1.5rem' }} />
                               </tr>
                             </thead>
                             <tbody>
                               {resistanceExercises.length === 0 ? (
                                 <tr>
-                                  <td colSpan={4 + maxSets * 2} style={{ ...cellSx, color: 'var(--mui-palette-text-disabled, #bbb)', fontStyle: 'italic' }}>
+                                  <td colSpan={totalCols} style={{ ...cellSx, color: 'var(--mui-palette-text-disabled, #bbb)', fontStyle: 'italic' }}>
                                     No exercises
                                   </td>
                                 </tr>
@@ -313,6 +369,17 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
                                         <td style={{ ...cellSx, textAlign: 'right', color: 'var(--mui-palette-text-disabled, #bbb)', fontSize: '0.68rem' }}>
                                           {bestE1rm != null ? `~${Math.round(bestE1rm)}` : '—'}
                                         </td>
+                                        {/* ⋮ menu trigger */}
+                                        <td style={{ ...cellSx, textAlign: 'center', padding: '0 2px' }}>
+                                          <IconButton
+                                            size="small"
+                                            sx={{ p: 0.25, opacity: 0.4, '&:hover': { opacity: 1 } }}
+                                            onClick={(e) => setMenuState({ anchor: e.currentTarget, weekId: week.id, workoutId: workout.id, exerciseId: ex.id })}
+                                            aria-label="Exercise options"
+                                          >
+                                            <MoreVertIcon sx={{ fontSize: '0.9rem' }} />
+                                          </IconButton>
+                                        </td>
                                       </tr>
 
                                       {/* Drop set rows */}
@@ -385,21 +452,11 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
                                                 );
                                               })}
                                               <td style={{ ...cellSx }} />
+                                              <td style={{ ...cellSx }} />
                                             </tr>
                                           );
                                         });
                                       })}
-
-                                      {/* + Set row */}
-                                      <tr>
-                                        <td
-                                          colSpan={4 + maxSets * 2}
-                                          style={addRowSx}
-                                          onClick={() => dispatch({ type: 'ADD_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id })}
-                                        >
-                                          + Set
-                                        </td>
-                                      </tr>
                                     </React.Fragment>
                                   );
                                 })
@@ -408,7 +465,7 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
                               {/* + Exercise row */}
                               <tr>
                                 <td
-                                  colSpan={4 + maxSets * 2}
+                                  colSpan={totalCols}
                                   style={{ ...addRowSx, borderTop: '1px dashed var(--mui-palette-divider, #e0e0e0)', borderBottom: 'none' }}
                                   onClick={() => openPicker(week.id, workout.id)}
                                 >
@@ -511,6 +568,61 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
           </Box>
         </Box>
       </Box>
+
+      {/* Exercise context menu */}
+      <Menu
+        anchorEl={menuState?.anchor ?? null}
+        open={Boolean(menuState)}
+        onClose={closeMenu}
+        slotProps={{ paper: { sx: { minWidth: '10rem' } } }}
+      >
+        <MenuItem
+          dense
+          onClick={() => {
+            if (menuState) dispatch({ type: 'ADD_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId });
+            closeMenu();
+          }}
+        >
+          Add set
+        </MenuItem>
+        <MenuItem
+          dense
+          disabled={menuTopLevelSets.length === 0}
+          onClick={() => {
+            if (menuState) dispatch({ type: 'REMOVE_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId });
+            closeMenu();
+          }}
+        >
+          Remove set
+        </MenuItem>
+        <Divider />
+        <MenuItem
+          dense
+          disabled={menuTopLevelSets.length === 0}
+          onClick={() => {
+            const parentSetId = menuTopLevelSets[menuTopLevelSets.length - 1]?.id;
+            if (menuState && parentSetId != null) {
+              dispatch({ type: 'ADD_DROP_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId, parentSetId });
+            }
+            closeMenu();
+          }}
+        >
+          Add drop set
+        </MenuItem>
+        <MenuItem
+          dense
+          disabled={menuDropSets.length === 0}
+          onClick={() => {
+            const lastDropSet = menuDropSets[menuDropSets.length - 1];
+            if (menuState && lastDropSet) {
+              dispatch({ type: 'REMOVE_DROP_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId, setId: lastDropSet.id });
+            }
+            closeMenu();
+          }}
+        >
+          Remove drop set
+        </MenuItem>
+      </Menu>
 
       <ExercisePickerDialog
         open={pickerOpen}
