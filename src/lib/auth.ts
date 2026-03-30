@@ -117,6 +117,30 @@ export const authOptions: AuthOptions = {
   })(),
 
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // On Vercel preview deployments, NEXTAUTH_URL is typically set to the main
+      // preview domain (e.g. preview.forti-training.co.uk). Feature-branch
+      // deployments run on their own *.vercel.app URL, so the default redirect
+      // (based on NEXTAUTH_URL) sends the user to the wrong host after login —
+      // their session cookie isn't valid there and the proxy bounces them to /login.
+      // Fix: resolve relative callbackUrls against the actual deployment URL.
+      const effectiveBase =
+        process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : baseUrl;
+
+      if (url.startsWith('/')) return `${effectiveBase}${url}`;
+      try {
+        const urlOrigin = new URL(url).origin;
+        const effectiveOrigin = new URL(effectiveBase).origin;
+        const baseOrigin = new URL(baseUrl).origin;
+        if (urlOrigin === effectiveOrigin || urlOrigin === baseOrigin) return url;
+      } catch {
+        // not a valid absolute URL — fall through to default
+      }
+      return effectiveBase;
+    },
+
     async jwt({token, user}) {
       if (user) {
         token.id = user.id;
