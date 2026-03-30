@@ -4,7 +4,9 @@ import React, { useState } from "react";
 import { redirect } from "next/navigation";
 import { useWorkoutEditorContext } from "@/context/WorkoutEditorContext";
 import { saveUserWorkoutData } from "@lib/clientApi";
-import { Alert, Box, Button, Snackbar, ToggleButton, ToggleButtonGroup, useMediaQuery, useTheme } from "@mui/material";
+import { Alert, Box, Button, Snackbar, ToggleButton, ToggleButtonGroup, Tooltip, useMediaQuery, useTheme } from "@mui/material";
+import GridOnIcon from '@mui/icons-material/GridOn';
+import ViewListIcon from '@mui/icons-material/ViewList';
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import PlanWeekView from "./PlanWeekView";
 import PlanMultiWeekTable from "./PlanMultiWeekTable";
@@ -64,12 +66,18 @@ export const PlanTable: React.FC<{
             size="small"
             aria-label="plan view mode"
           >
-            <ToggleButton value="classic" aria-label="classic view" sx={{ fontSize: '0.7rem', px: 1.5, py: 0.5 }}>
-              Classic
-            </ToggleButton>
-            <ToggleButton value="sheet" aria-label="sheet view" sx={{ fontSize: '0.7rem', px: 1.5, py: 0.5 }}>
-              Sheet
-            </ToggleButton>
+            <Tooltip title="Classic view">
+              <ToggleButton value="classic" aria-label="classic view" sx={{ px: 1, py: 0.5 }}>
+                <ViewListIcon fontSize="small" />
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' }, ml: 0.75, fontSize: '0.7rem' }}>Classic</Box>
+              </ToggleButton>
+            </Tooltip>
+            <Tooltip title="Sheet view">
+              <ToggleButton value="sheet" aria-label="sheet view" sx={{ px: 1, py: 0.5 }}>
+                <GridOnIcon fontSize="small" />
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' }, ml: 0.75, fontSize: '0.7rem' }}>Sheet</Box>
+              </ToggleButton>
+            </Tooltip>
           </ToggleButtonGroup>
         </Box>
 
