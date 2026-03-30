@@ -86,6 +86,11 @@ export const authOptions: AuthOptions = {
     strategy: "jwt", // easier for stateless APIs
   },
 
+  // Redirect unauthenticated users to the custom login page (not NextAuth's built-in page)
+  pages: {
+    signIn: '/login',
+  },
+
   // Share the session cookie across subdomains only when the deployment is actually on that
   // domain. Guarding by NEXTAUTH_URL prevents the cookie from being scoped to
   // .forti-training.co.uk on raw Vercel preview URLs (*.vercel.app), where the browser
