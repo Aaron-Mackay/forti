@@ -86,23 +86,28 @@ export const authOptions: AuthOptions = {
     strategy: "jwt", // easier for stateless APIs
   },
 
-  // When AUTH_COOKIE_DOMAIN is set (production), share the session cookie
-  // across all subdomains (e.g. forti-training.co.uk and coach.forti-training.co.uk).
-  // Not set in local development so localhost behaviour is unchanged.
-  ...(process.env.AUTH_COOKIE_DOMAIN ? {
-    cookies: {
-      sessionToken: {
-        name: '__Secure-next-auth.session-token',
-        options: {
-          httpOnly: true,
-          sameSite: 'lax' as const,
-          path: '/',
-          secure: true,
-          domain: process.env.AUTH_COOKIE_DOMAIN, // e.g. ".forti-training.co.uk"
+  // Share the session cookie across subdomains only when the deployment is actually on that
+  // domain. Guarding by NEXTAUTH_URL prevents the cookie from being scoped to
+  // .forti-training.co.uk on raw Vercel preview URLs (*.vercel.app), where the browser
+  // would reject such a cookie and silently break login.
+  ...(() => {
+    const cookieDomain = process.env.AUTH_COOKIE_DOMAIN;
+    const applyDomain = !!cookieDomain && (process.env.NEXTAUTH_URL ?? '').includes(cookieDomain.replace(/^\./, ''));
+    return applyDomain ? {
+      cookies: {
+        sessionToken: {
+          name: '__Secure-next-auth.session-token',
+          options: {
+            httpOnly: true,
+            sameSite: 'lax' as const,
+            path: '/',
+            secure: true,
+            domain: cookieDomain,
+          },
         },
       },
-    },
-  } : {}),
+    } : {};
+  })(),
 
   callbacks: {
     async jwt({token, user}) {
