@@ -91,13 +91,15 @@ export const authOptions: AuthOptions = {
     signIn: '/login',
   },
 
-  // Share the session cookie across subdomains only when the deployment is actually on that
-  // domain. Guarding by NEXTAUTH_URL prevents the cookie from being scoped to
-  // .forti-training.co.uk on raw Vercel preview URLs (*.vercel.app), where the browser
-  // would reject such a cookie and silently break login.
+  // Share the session cookie across subdomains only on production deployments.
+  // On Vercel preview deployments (VERCEL_ENV === 'preview') the app runs on *.vercel.app,
+  // which doesn't match .forti-training.co.uk, so the browser silently rejects a
+  // domain-locked cookie and login loops back to /login.
+  // VERCEL_ENV is set automatically by Vercel; it is undefined in local dev (where
+  // AUTH_COOKIE_DOMAIN is not set anyway).
   ...(() => {
     const cookieDomain = process.env.AUTH_COOKIE_DOMAIN;
-    const applyDomain = !!cookieDomain && (process.env.NEXTAUTH_URL ?? '').includes(cookieDomain.replace(/^\./, ''));
+    const applyDomain = !!cookieDomain && process.env.VERCEL_ENV === 'production';
     return applyDomain ? {
       cookies: {
         sessionToken: {
