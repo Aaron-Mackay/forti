@@ -146,12 +146,12 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
                             <th style={{ ...headerCellSx, textAlign: 'left', minWidth: '9rem', maxWidth: '14rem' }}>
                               Exercise
                             </th>
-                            <th style={{ ...headerCellSx, minWidth: '3rem' }}>S/R</th>
+                            <th style={{ ...headerCellSx, minWidth: '3rem' }}>TGT</th>
                             <th style={{ ...headerCellSx, minWidth: '3rem' }}>REST</th>
                             {Array.from({ length: maxSets }, (_, si) => (
                               <React.Fragment key={si}>
-                                <th style={{ ...headerCellSx }}>W{si + 1}</th>
-                                <th style={{ ...headerCellSx }}>R{si + 1}</th>
+                                <th style={{ ...headerCellSx }}>Weight</th>
+                                <th style={{ ...headerCellSx }}>Reps</th>
                               </React.Fragment>
                             ))}
                           </tr>
@@ -257,7 +257,7 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
                                   </tr>
 
                                   {/* Drop set rows */}
-                                  {topLevelSets.map((parentSet, si) => {
+                                  {topLevelSets.map((parentSet, _si) => {
                                     const children = dropsByParent.get(parentSet.id) ?? [];
                                     return children.map((dropSet, di) => (
                                       <tr key={dropSet.id}>
@@ -267,7 +267,7 @@ const PlanSheetView = ({ plan, planId }: PlanSheetViewProps) => {
                                         <td style={{ ...cellSx }} />
                                         <td style={{ ...cellSx }} />
                                         {Array.from({ length: maxSets }, (_, colIdx) => {
-                                          if (colIdx !== si) {
+                                          if (colIdx !== 0) {
                                             return (
                                               <React.Fragment key={colIdx}>
                                                 <td style={{ ...cellSx, textAlign: 'center', color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
