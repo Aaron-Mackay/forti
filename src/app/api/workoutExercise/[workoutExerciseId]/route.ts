@@ -83,7 +83,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
 
     if ('isBfr' in body) updateData.isBfr = isBfr;
 
-    if ('exerciseId' in body) {
+    if ('exerciseId' in body && exerciseId !== workoutExercise.exerciseId) {
       const exercise = await prisma.exercise.findUnique({where: {id: exerciseId}});
       if (!exercise) return notFoundResponse('Exercise');
       updateData.exerciseId = exerciseId;
