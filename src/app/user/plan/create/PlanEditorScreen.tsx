@@ -730,14 +730,19 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
         </Alert>
       </Snackbar>
 
-      {/* Exercise enrichment modal — sx elevates above AppBar (z-index 1400) */}
+      {/* Exercise enrichment modal — container offset keeps it below the AppBar */}
       <Dialog
         open={enrichPhase !== null}
         maxWidth="xs"
         fullWidth
         disableEscapeKeyDown={enrichPhase === 'enriching'}
         onClose={enrichPhase === 'review' ? () => setEnrichPhase(null) : undefined}
-        sx={{ zIndex: 1500 }}
+        sx={{
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+            pt: { xs: '56px', sm: '64px' },
+          },
+        }}
       >
         <DialogTitle>
           {enrichPhase === 'enriching' ? 'Enriching new exercises' : 'Review new exercises'}
