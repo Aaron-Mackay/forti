@@ -7,6 +7,7 @@ import { saveUserWorkoutData } from "@lib/clientApi";
 import { Alert, Box, Button, CircularProgress, IconButton, Snackbar, ToggleButton, ToggleButtonGroup, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import GridOnIcon from '@mui/icons-material/GridOn';
 import ViewListIcon from '@mui/icons-material/ViewList';
+import OpenWithIcon from '@mui/icons-material/OpenWith';
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import PlanWeekView from "./PlanWeekView";
 import PlanMultiWeekTable from "./PlanMultiWeekTable";
@@ -37,6 +38,7 @@ export const PlanTable: React.FC<{
     return 'classic';
   });
   const [zoom, setZoom] = useState(readZoom);
+  const [arrangeMode, setArrangeMode] = useState(false);
   const { state: userDataState } = useWorkoutEditorContext();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -83,6 +85,22 @@ export const PlanTable: React.FC<{
     <>
       <Box sx={{ p: 1.5, overflow: 'auto' }}>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, mb: 1.5 }}>
+          {/* Arrange mode toggle — only visible in sheet mode */}
+          {viewMode === 'sheet' && (
+            <Tooltip title={arrangeMode ? 'Exit arrange mode' : 'Arrange mode'}>
+              <ToggleButton
+                value="arrange"
+                selected={arrangeMode}
+                onChange={() => setArrangeMode(v => !v)}
+                size="small"
+                sx={{ px: 1, py: 0.5, border: '1px solid', borderColor: 'divider' }}
+                aria-label="toggle arrange mode"
+              >
+                <OpenWithIcon fontSize="small" />
+              </ToggleButton>
+            </Tooltip>
+          )}
+
           {/* Zoom controls — only visible in sheet mode */}
           {viewMode === 'sheet' && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
@@ -121,7 +139,7 @@ export const PlanTable: React.FC<{
         </Box>
 
         {viewMode === 'sheet' ? (
-          <PlanSheetView plan={plan} planId={plan.id} zoom={zoom} onZoomChange={handleZoomChange} />
+          <PlanSheetView plan={plan} planId={plan.id} zoom={zoom} onZoomChange={handleZoomChange} arrangeMode={arrangeMode} />
         ) : isMobile ? (
           <PlanWeekView plan={plan} planId={plan.id} />
         ) : (
