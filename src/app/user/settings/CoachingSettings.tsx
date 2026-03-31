@@ -154,7 +154,8 @@ export default function CoachingSettings() {
 
   function handleCopyLink() {
     if (!info?.coachCode) return;
-    const link = `${window.location.origin}/coach/${info.coachCode}`;
+    const appOrigin = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
+    const link = `${appOrigin}/coach/${info.coachCode}`;
     navigator.clipboard.writeText(link).then(() => {
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
@@ -390,7 +391,7 @@ export default function CoachingSettings() {
             Or share this link:
           </Typography>
           <TextField
-            value={info.coachCode ? `${typeof window !== 'undefined' ? window.location.origin : ''}/coach/${info.coachCode}` : ''}
+            value={info.coachCode ? `${process.env.NEXT_PUBLIC_APP_URL ?? (typeof window !== 'undefined' ? window.location.origin : '')}/coach/${info.coachCode}` : ''}
             fullWidth
             size="small"
             slotProps={{
