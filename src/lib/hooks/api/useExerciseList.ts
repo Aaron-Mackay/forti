@@ -10,29 +10,70 @@ type ExerciseListState = {
   addExercise: (exercise: Exercise) => void;
 };
 
+const EXERCISE_CACHE_TTL_MS = 5 * 60 * 1000;
+let exercisesCache: Exercise[] | null = null;
+let exercisesCacheTime = 0;
+let inFlightRequest: Promise<Exercise[]> | null = null;
+const listeners = new Set<(nextExercises: Exercise[]) => void>();
+
+function hasFreshCache() {
+  return exercisesCache !== null && (Date.now() - exercisesCacheTime) < EXERCISE_CACHE_TTL_MS;
+}
+
+function updateCache(nextExercises: Exercise[]) {
+  exercisesCache = nextExercises;
+  exercisesCacheTime = Date.now();
+  listeners.forEach(listener => listener(nextExercises));
+}
+
+function appendToCache(exercise: Exercise) {
+  const existing = exercisesCache ?? [];
+  if (existing.some(e => e.id === exercise.id)) return;
+  updateCache([...existing, exercise]);
+}
+
 /**
  * Lazily loads the full exercise list when `enabled` becomes true.
- * The result is retained in state so subsequent toggles of `enabled`
- * do not trigger a second fetch.
+ * The result is retained in a shared in-memory cache so separate
+ * components (e.g. multiple dialogs/settings) can reuse one fetch.
  *
  * `addExercise` appends a newly created exercise to the local list
- * without a refetch.
+ * and shared cache without a refetch.
  */
 export function useExerciseList(enabled: boolean): ExerciseListState {
-  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [exercises, setExercises] = useState<Exercise[]>(exercisesCache ?? []);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!enabled || exercises.length > 0) return;
+    listeners.add(setExercises);
+    return () => {
+      listeners.delete(setExercises);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!enabled) return;
+    if (hasFreshCache()) {
+      if (exercisesCache) setExercises(exercisesCache);
+      return;
+    }
+
     setLoading(true);
-    fetchJson<Exercise[]>('/api/exercises')
-      .then(data => setExercises(data))
+
+    const request = inFlightRequest ?? fetchJson<Exercise[]>('/api/exercises');
+    inFlightRequest = request;
+
+    request
+      .then((data) => updateCache(data))
       .catch(() => {/* non-fatal — dialog shows empty list */})
-      .finally(() => setLoading(false));
-  }, [enabled, exercises.length]);
+      .finally(() => {
+        setLoading(false);
+        if (inFlightRequest === request) inFlightRequest = null;
+      });
+  }, [enabled]);
 
   const addExercise = (exercise: Exercise) =>
-    setExercises(prev => [...prev, exercise]);
+    appendToCache(exercise);
 
   return {exercises, loading, addExercise};
 }
