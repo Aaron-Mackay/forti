@@ -5,6 +5,7 @@ import { Box, Divider, IconButton, Menu, MenuItem, Typography } from '@mui/mater
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
+import EditIcon from '@mui/icons-material/Edit';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import {
   DndContext,
@@ -155,21 +156,44 @@ const SortableExerciseTbody = ({
               <DragHandleIcon style={{ fontSize: '0.9rem' }} />
             </span>
           )}
-          <Box
-            component="span"
-            onClick={!arrangeMode ? () => openRenamePicker(weekId, workoutId, ex.id) : undefined}
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.75rem',
-              ...(arrangeMode ? {} : {
-                cursor: 'pointer',
-                '&:hover': { opacity: 0.6 },
-                transition: 'opacity 0.1s',
-              }),
-            }}
-          >
-            {ex.exercise?.name ?? '(unnamed)'}
-          </Box>
+          {!arrangeMode ? (
+            ex.exercise?.name ? (
+              <Box
+                component="span"
+                onClick={() => openRenamePicker(weekId, workoutId, ex.id)}
+                sx={{
+                  display: 'inline-flex', alignItems: 'center', gap: 0.25,
+                  cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem',
+                  borderBottom: '1px dashed', borderColor: 'divider',
+                  '&:hover .edit-icon': { opacity: 1 },
+                }}
+              >
+                {ex.exercise.name}
+                <EditIcon className="edit-icon" sx={{ fontSize: '0.65rem', opacity: 0.35, transition: 'opacity 0.15s', flexShrink: 0 }} />
+              </Box>
+            ) : (
+              <Box
+                component="span"
+                onClick={() => openRenamePicker(weekId, workoutId, ex.id)}
+                aria-label="Add exercise"
+                sx={{
+                  display: 'inline-flex', alignItems: 'center', gap: 0.25,
+                  cursor: 'pointer', fontSize: '0.7rem', color: 'text.disabled',
+                  border: '1px dashed', borderColor: 'divider', borderRadius: 0.5,
+                  px: 0.5, py: 0.25,
+                  '&:hover': { color: 'text.secondary', borderColor: 'text.secondary' },
+                  transition: 'color 0.15s, border-color 0.15s',
+                }}
+              >
+                <EditIcon sx={{ fontSize: '0.65rem' }} />
+                Add exercise
+              </Box>
+            )
+          ) : (
+            <Box component="span" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
+              {ex.exercise?.name ?? ''}
+            </Box>
+          )}
         </td>
         <td style={{ ...cellSx, textAlign: 'center' }}>
           <input
@@ -504,21 +528,44 @@ const SortableWorkoutSlot = ({
               {cardioExercises.map((ex) => (
                 <tr key={ex.id}>
                   <td style={{ ...cellSx, textAlign: 'left', maxWidth: '14rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    <Box
-                      component="span"
-                      onClick={!arrangeMode ? () => openRenamePicker(weekId, workout.id, ex.id) : undefined}
-                      sx={{
-                        fontWeight: 600,
-                        fontSize: '0.75rem',
-                        ...(arrangeMode ? {} : {
-                          cursor: 'pointer',
-                          '&:hover': { opacity: 0.6 },
-                          transition: 'opacity 0.1s',
-                        }),
-                      }}
-                    >
-                      {ex.exercise?.name ?? '(unnamed)'}
-                    </Box>
+                    {!arrangeMode ? (
+                      ex.exercise?.name ? (
+                        <Box
+                          component="span"
+                          onClick={() => openRenamePicker(weekId, workout.id, ex.id)}
+                          sx={{
+                            display: 'inline-flex', alignItems: 'center', gap: 0.25,
+                            cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem',
+                            borderBottom: '1px dashed', borderColor: 'divider',
+                            '&:hover .edit-icon': { opacity: 1 },
+                          }}
+                        >
+                          {ex.exercise.name}
+                          <EditIcon className="edit-icon" sx={{ fontSize: '0.65rem', opacity: 0.35, transition: 'opacity 0.15s', flexShrink: 0 }} />
+                        </Box>
+                      ) : (
+                        <Box
+                          component="span"
+                          onClick={() => openRenamePicker(weekId, workout.id, ex.id)}
+                          aria-label="Add exercise"
+                          sx={{
+                            display: 'inline-flex', alignItems: 'center', gap: 0.25,
+                            cursor: 'pointer', fontSize: '0.7rem', color: 'text.disabled',
+                            border: '1px dashed', borderColor: 'divider', borderRadius: 0.5,
+                            px: 0.5, py: 0.25,
+                            '&:hover': { color: 'text.secondary', borderColor: 'text.secondary' },
+                            transition: 'color 0.15s, border-color 0.15s',
+                          }}
+                        >
+                          <EditIcon sx={{ fontSize: '0.65rem' }} />
+                          Add exercise
+                        </Box>
+                      )
+                    ) : (
+                      <Box component="span" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
+                        {ex.exercise?.name ?? ''}
+                      </Box>
+                    )}
                   </td>
                   {(['cardioDuration', 'cardioDistance', 'cardioResistance'] as const).map((field) => (
                     <td key={field} style={{ ...cellSx, textAlign: 'center' }}>
