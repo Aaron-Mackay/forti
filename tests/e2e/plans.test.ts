@@ -16,9 +16,8 @@ test.describe('Plans list page', () => {
     await expect(page.getByRole('banner')).toContainText('Plans');
   });
 
-  test("shows the demo user's plans section", async ({ page }) => {
-    // Seed creates "TestUser's Plans" section header
-    await expect(page.getByText(/TestUser's Plans/i).first()).toBeVisible();
+  test('shows the plans section header', async ({ page }) => {
+    await expect(page.getByText(/^Plans$/i).first()).toBeVisible();
   });
 
   test('lists at least one plan for the demo user', async ({ page }) => {
@@ -371,3 +370,117 @@ test.describe('Plan editor (scratch)', () => {
 // TODO: BFR toggle was previously in ExerciseRow (Week.tsx desktop table).
 // The new PlanMultiWeekTable does not yet expose per-exercise BFR controls.
 // These tests will be re-added once BFR is supported in the new plan view.
+
+
+// ── Sheet view ────────────────────────────────────────────────────────────────
+
+test.describe('Sheet view', () => {
+  test.describe.configure({ mode: 'serial' });
+
+  test.beforeEach(async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await page.goto('/user/plan');
+    const firstPlanLink = page.getByRole('listitem').first().getByRole('link');
+    await firstPlanLink.click();
+    await page.waitForURL(/\/user\/plan\/\d+/);
+    await page.getByRole('button', { name: /sheet view/i }).click();
+  });
+
+  test('view toggle shows Classic and Sheet buttons', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await expect(page.getByRole('button', { name: /classic view/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /sheet view/i })).toBeVisible();
+  });
+
+  test('sheet view shows weight and reps inputs', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await expect(page.locator('input[placeholder="kg"]').first()).toBeVisible();
+    await expect(page.locator('input[placeholder="reps"]').first()).toBeVisible();
+  });
+
+  test('sheet view shows the ~e1RM column header', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await expect(page.getByText('~e1RM').first()).toBeVisible();
+  });
+
+  test('sheet view shows add-exercise ghost box', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await expect(page.locator('[aria-label="Add exercise"]').first()).toBeVisible();
+  });
+
+  test('sheet view shows add-workout ghost column', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await expect(page.locator('[aria-label="Add workout"]').first()).toBeVisible();
+  });
+
+  test('sheet view shows add-week ghost box', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await expect(page.locator('[aria-label="Add week"]')).toBeVisible();
+  });
+
+  test('arrange mode toggle is visible', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await expect(page.getByRole('button', { name: /arrange mode/i })).toBeVisible();
+  });
+
+  test('toggling arrange mode hides delete and add controls', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await expect(page.getByRole('button', { name: /delete week/i }).first()).toBeVisible();
+    await page.getByRole('button', { name: /arrange mode/i }).click();
+    await expect(page.getByRole('button', { name: /delete week/i })).not.toBeVisible();
+    await expect(page.locator('[aria-label="Add exercise"]')).not.toBeVisible();
+  });
+
+  test('exiting arrange mode restores delete and add controls', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await page.getByRole('button', { name: /arrange mode/i }).click();
+    await page.getByRole('button', { name: /exit arrange mode/i }).click();
+    await expect(page.getByRole('button', { name: /delete week/i }).first()).toBeVisible();
+    await expect(page.locator('[aria-label="Add exercise"]').first()).toBeVisible();
+  });
+
+  test('switching back to classic view hides arrange controls', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await page.getByRole('button', { name: /classic view/i }).click();
+    await expect(page.getByRole('button', { name: /arrange mode/i })).not.toBeVisible();
+  });
+});
+
+test.describe('Plan creation — sheet view', () => {
+  test.describe.configure({ mode: 'serial' });
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/user/plan/create');
+    await page.getByRole('button', { name: /start from scratch/i }).click();
+  });
+
+  test('view toggle appears in the plan editor', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await expect(page.getByRole('button', { name: /sheet view/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /classic view/i })).toBeVisible();
+  });
+
+  test('view toggle is visible on mobile', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || !isMobile, 'mobile chromium only');
+    await expect(page.getByRole('button', { name: /sheet view/i })).toBeVisible();
+  });
+
+  test('switching to sheet view renders the sheet', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await page.getByRole('button', { name: /sheet view/i }).click();
+    await expect(page.locator('[aria-label="Add exercise"]').first()).toBeVisible();
+  });
+
+  test('sheet view in editor does not show add-week ghost box', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await page.getByRole('button', { name: /sheet view/i }).click();
+    await expect(page.locator('[aria-label="Add week"]')).not.toBeVisible();
+  });
+
+  test('switching back to classic view restores the card editor', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await page.getByRole('button', { name: /sheet view/i }).click();
+    await page.getByRole('button', { name: /classic view/i }).click();
+    await expect(page.getByRole('button', { name: /add workout day/i })).toBeVisible();
+  });
+});

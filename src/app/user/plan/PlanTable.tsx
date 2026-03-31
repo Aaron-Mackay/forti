@@ -1,13 +1,23 @@
 'use client'
 
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { redirect } from "next/navigation";
 import { useWorkoutEditorContext } from "@/context/WorkoutEditorContext";
 import { saveUserWorkoutData } from "@lib/clientApi";
-import { Alert, Box, Button, Snackbar, useMediaQuery, useTheme } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, Snackbar, ToggleButton, ToggleButtonGroup, Tooltip, useMediaQuery, useTheme } from "@mui/material";
+import GridOnIcon from '@mui/icons-material/GridOn';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import OpenWithIcon from '@mui/icons-material/OpenWith';
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import PlanWeekView from "./PlanWeekView";
 import PlanMultiWeekTable from "./PlanMultiWeekTable";
+import PlanSheetView from "./PlanSheetView";
+
+function readZoom(): number {
+  if (typeof window === 'undefined') return 1;
+  const v = parseFloat(localStorage.getItem('sheetZoom') ?? '');
+  return isNaN(v) ? 1 : Math.max(0.25, Math.min(1, v));
+}
 
 export const PlanTable: React.FC<{
   lockedInEditMode: boolean;
@@ -19,6 +29,16 @@ export const PlanTable: React.FC<{
     message: '',
     severity: 'success',
   });
+  const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<'classic' | 'sheet'>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('planViewMode');
+      if (stored === 'classic' || stored === 'sheet') return stored;
+    }
+    return 'classic';
+  });
+  const [zoom, setZoom] = useState(readZoom);
+  const [arrangeMode, setArrangeMode] = useState(false);
   const { state: userDataState } = useWorkoutEditorContext();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -34,15 +54,70 @@ export const PlanTable: React.FC<{
   }
 
   const handleSave = () => {
+    setSaving(true);
     saveUserWorkoutData(userDataState)
       .then(() => setSnackbar({ open: true, message: 'Saved successfully', severity: 'success' }))
-      .catch(() => setSnackbar({ open: true, message: 'Failed to save', severity: 'error' }));
+      .catch(() => setSnackbar({ open: true, message: 'Failed to save', severity: 'error' }))
+      .finally(() => setSaving(false));
   };
+
+  const handleViewModeChange = (_: React.MouseEvent<HTMLElement>, next: 'classic' | 'sheet' | null) => {
+    if (!next) return;
+    setViewMode(next);
+    localStorage.setItem('planViewMode', next);
+  };
+
+  const handleZoomChange = useCallback((newZoom: number) => {
+    const rounded = Math.round(newZoom * 100) / 100;
+    setZoom(rounded);
+    localStorage.setItem('sheetZoom', String(rounded));
+  }, []);
 
   return (
     <>
       <Box sx={{ p: 1.5, overflow: 'auto' }}>
-        {isMobile ? (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, mb: 1.5 }}>
+          {/* Arrange mode toggle — only visible in sheet mode on non-mobile */}
+          {viewMode === 'sheet' && (
+            <Tooltip title={arrangeMode ? 'Exit arrange mode' : 'Arrange mode'}>
+              <ToggleButton
+                value="arrange"
+                selected={arrangeMode}
+                onChange={() => setArrangeMode(v => !v)}
+                size="small"
+                sx={{ px: 1, py: 0.5, border: '1px solid', borderColor: 'divider', display: { xs: 'none', sm: 'flex' } }}
+                aria-label={arrangeMode ? 'Exit arrange mode' : 'Arrange mode'}
+              >
+                <OpenWithIcon fontSize="small" />
+              </ToggleButton>
+            </Tooltip>
+          )}
+
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={handleViewModeChange}
+            size="small"
+            aria-label="plan view mode"
+          >
+            <Tooltip title="Classic view">
+              <ToggleButton value="classic" aria-label="classic view" sx={{ px: 1, py: 0.5 }}>
+                <ViewListIcon fontSize="small" />
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' }, ml: 0.75, fontSize: '0.7rem' }}>Classic</Box>
+              </ToggleButton>
+            </Tooltip>
+            <Tooltip title="Sheet view">
+              <ToggleButton value="sheet" aria-label="sheet view" sx={{ px: 1, py: 0.5 }}>
+                <GridOnIcon fontSize="small" />
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' }, ml: 0.75, fontSize: '0.7rem' }}>Sheet</Box>
+              </ToggleButton>
+            </Tooltip>
+          </ToggleButtonGroup>
+        </Box>
+
+        {viewMode === 'sheet' ? (
+          <PlanSheetView plan={plan} planId={plan.id} zoom={zoom} onZoomChange={handleZoomChange} arrangeMode={arrangeMode} />
+        ) : isMobile ? (
           <PlanWeekView plan={plan} planId={plan.id} />
         ) : (
           <PlanMultiWeekTable plan={plan} planId={plan.id} />
@@ -65,8 +140,14 @@ export const PlanTable: React.FC<{
           zIndex: 1000,
         }}
       >
-        <Button onClick={handleSave} variant="contained" sx={{ minWidth: 160 }}>
-          Save
+        <Button
+          onClick={handleSave}
+          variant="contained"
+          disabled={saving}
+          startIcon={saving ? <CircularProgress size={16} color="inherit" /> : undefined}
+          sx={{ minWidth: 160 }}
+        >
+          {saving ? 'Saving…' : 'Save'}
         </Button>
       </Box>
 

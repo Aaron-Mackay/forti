@@ -25,7 +25,7 @@ const PlanPage = async () => {
       <AppBarTitle title="Plans" />
       <Card sx={{display: "flex", flexDirection: "column"}}>
         <CardHeader
-          title={`${user.name}'s Plans`}
+          title="Plans"
           action={
             <IconButton
               component={Link}

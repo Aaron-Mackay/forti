@@ -86,10 +86,16 @@ export const authOptions: AuthOptions = {
     strategy: "jwt", // easier for stateless APIs
   },
 
-  // When AUTH_COOKIE_DOMAIN is set (production), share the session cookie
-  // across all subdomains (e.g. forti-training.co.uk and coach.forti-training.co.uk).
-  // Not set in local development so localhost behaviour is unchanged.
-  ...(process.env.AUTH_COOKIE_DOMAIN ? {
+  // Redirect unauthenticated users to the custom login page (not NextAuth's built-in page)
+  pages: {
+    signIn: '/login',
+  },
+
+  // Share the session cookie across subdomains only on production deployments.
+  // VERCEL_ENV === 'production' guards against applying a .forti-training.co.uk
+  // domain-locked cookie on *.vercel.app preview URLs, where the browser would
+  // silently reject it and login would loop back to /login.
+  ...(process.env.AUTH_COOKIE_DOMAIN && process.env.VERCEL_ENV === 'production' ? {
     cookies: {
       sessionToken: {
         name: '__Secure-next-auth.session-token',
@@ -98,13 +104,37 @@ export const authOptions: AuthOptions = {
           sameSite: 'lax' as const,
           path: '/',
           secure: true,
-          domain: process.env.AUTH_COOKIE_DOMAIN, // e.g. ".forti-training.co.uk"
+          domain: process.env.AUTH_COOKIE_DOMAIN,
         },
       },
     },
   } : {}),
 
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // On Vercel preview deployments, NEXTAUTH_URL is typically set to the main
+      // preview domain (e.g. preview.forti-training.co.uk). Feature-branch
+      // deployments run on their own *.vercel.app URL, so the default redirect
+      // (based on NEXTAUTH_URL) sends the user to the wrong host after login —
+      // their session cookie isn't valid there and the proxy bounces them to /login.
+      // Fix: resolve relative callbackUrls against the actual deployment URL.
+      const effectiveBase =
+        process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : baseUrl;
+
+      if (url.startsWith('/')) return `${effectiveBase}${url}`;
+      try {
+        const urlOrigin = new URL(url).origin;
+        const effectiveOrigin = new URL(effectiveBase).origin;
+        const baseOrigin = new URL(baseUrl).origin;
+        if (urlOrigin === effectiveOrigin || urlOrigin === baseOrigin) return url;
+      } catch {
+        // not a valid absolute URL — fall through to default
+      }
+      return effectiveBase;
+    },
+
     async jwt({token, user}) {
       if (user) {
         token.id = user.id;
