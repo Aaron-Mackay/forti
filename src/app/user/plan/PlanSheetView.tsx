@@ -441,6 +441,7 @@ const SortableWorkoutSlot = ({
                   <td colSpan={totalCols} style={{ padding: '4px 4px 0', borderBottom: 'none' }}>
                     <Box
                       onClick={() => openPicker(weekId, workout.id)}
+                      aria-label="Add exercise"
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
@@ -528,6 +529,7 @@ const SortableWorkoutSlot = ({
                   <td colSpan={5} style={{ padding: '4px 4px 0', borderBottom: 'none' }}>
                     <Box
                       onClick={() => openPicker(weekId, workout.id)}
+                      aria-label="Add exercise"
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
@@ -860,6 +862,7 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange, arrangeMode }: PlanSh
                 const lastWeek = sortedWeeks[sortedWeeks.length - 1];
                 if (lastWeek) dispatch({ type: 'DUPLICATE_WEEK', planId, weekId: lastWeek.id });
               }}
+              aria-label="Add week"
               sx={{
                 mt: 2,
                 display: 'flex',

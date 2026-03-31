@@ -94,7 +94,7 @@ export const PlanTable: React.FC<{
                 onChange={() => setArrangeMode(v => !v)}
                 size="small"
                 sx={{ px: 1, py: 0.5, border: '1px solid', borderColor: 'divider', display: { xs: 'none', sm: 'flex' } }}
-                aria-label="toggle arrange mode"
+                aria-label={arrangeMode ? 'Exit arrange mode' : 'Arrange mode'}
               >
                 <OpenWithIcon fontSize="small" />
               </ToggleButton>
