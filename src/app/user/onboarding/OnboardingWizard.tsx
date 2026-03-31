@@ -259,18 +259,21 @@ function OnboardingWizardInner({ userId, initialName, initialImage }: Props) {
       }
 
       // 2. Persist settings
-      await fetch('/api/user/settings', {
+      const settingsRes = await fetch('/api/user/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          weightUnit,
-          checkInDay,
-          coachModeActive,
-          registrationComplete: true,
-          onboardingSeenWelcome: true,
-          onboardingDismissed: true,
+          settings: {
+            weightUnit,
+            checkInDay,
+            coachModeActive,
+            registrationComplete: true,
+            onboardingSeenWelcome: true,
+            onboardingDismissed: true,
+          },
         }),
       });
+      if (!settingsRes.ok) throw new Error('Failed to save onboarding settings');
 
       // 3. Save initial body weight (today's day metric)
       const parsedWeight = parseFloat(initialWeight);
