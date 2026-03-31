@@ -648,7 +648,7 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
               zoom={zoom}
               onZoomChange={handleZoomChange}
               arrangeMode={arrangeMode}
-              hideAddWeek
+              creationMode
             />
           </Box>
         ) : (

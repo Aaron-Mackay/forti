@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Box, Divider, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
@@ -87,7 +87,7 @@ interface PlanSheetViewProps {
   zoom: number;
   onZoomChange: (zoom: number) => void;
   arrangeMode: boolean;
-  hideAddWeek?: boolean;
+  creationMode?: boolean;
 }
 
 // ── SortableExerciseTbody ──────────────────────────────────────────────────────
@@ -102,6 +102,7 @@ interface SortableExerciseTbodyProps {
   workoutId: number;
   dispatch: ActionDispatch<[WorkoutEditorAction]>;
   arrangeMode: boolean;
+  openRenamePicker: (weekId: number, workoutId: number, workoutExerciseId: number) => void;
   setMenuState: (state: MenuState | null) => void;
   bestE1rm: number | null;
 }
@@ -116,6 +117,7 @@ const SortableExerciseTbody = ({
   workoutId,
   dispatch,
   arrangeMode,
+  openRenamePicker,
   setMenuState,
   bestE1rm,
 }: SortableExerciseTbodyProps) => {
@@ -153,7 +155,21 @@ const SortableExerciseTbody = ({
               <DragHandleIcon style={{ fontSize: '0.9rem' }} />
             </span>
           )}
-          <span style={{ fontWeight: 600, fontSize: '0.75rem' }}>{ex.exercise?.name ?? '(unnamed)'}</span>
+          <Box
+            component="span"
+            onClick={!arrangeMode ? () => openRenamePicker(weekId, workoutId, ex.id) : undefined}
+            sx={{
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              ...(arrangeMode ? {} : {
+                cursor: 'pointer',
+                '&:hover': { opacity: 0.6 },
+                transition: 'opacity 0.1s',
+              }),
+            }}
+          >
+            {ex.exercise?.name ?? '(unnamed)'}
+          </Box>
         </td>
         <td style={{ ...cellSx, textAlign: 'center' }}>
           <input
@@ -308,6 +324,7 @@ interface SortableWorkoutSlotProps {
   dispatch: ActionDispatch<[WorkoutEditorAction]>;
   arrangeMode: boolean;
   openPicker: (weekId: number, workoutId: number) => void;
+  openRenamePicker: (weekId: number, workoutId: number, workoutExerciseId: number) => void;
   setMenuState: (state: MenuState | null) => void;
   slotIdx: number;
 }
@@ -320,6 +337,7 @@ const SortableWorkoutSlot = ({
   dispatch,
   arrangeMode,
   openPicker,
+  openRenamePicker,
   setMenuState,
   slotIdx,
 }: SortableWorkoutSlotProps) => {
@@ -429,6 +447,7 @@ const SortableWorkoutSlot = ({
                       workoutId={workout.id}
                       dispatch={dispatch}
                       arrangeMode={arrangeMode}
+                      openRenamePicker={openRenamePicker}
                       setMenuState={setMenuState}
                       bestE1rm={bestE1rm}
                     />
@@ -485,7 +504,21 @@ const SortableWorkoutSlot = ({
               {cardioExercises.map((ex) => (
                 <tr key={ex.id}>
                   <td style={{ ...cellSx, textAlign: 'left', maxWidth: '14rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    <span style={{ fontWeight: 600, fontSize: '0.75rem' }}>{ex.exercise?.name ?? '(unnamed)'}</span>
+                    <Box
+                      component="span"
+                      onClick={!arrangeMode ? () => openRenamePicker(weekId, workout.id, ex.id) : undefined}
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: '0.75rem',
+                        ...(arrangeMode ? {} : {
+                          cursor: 'pointer',
+                          '&:hover': { opacity: 0.6 },
+                          transition: 'opacity 0.1s',
+                        }),
+                      }}
+                    >
+                      {ex.exercise?.name ?? '(unnamed)'}
+                    </Box>
                   </td>
                   {(['cardioDuration', 'cardioDistance', 'cardioResistance'] as const).map((field) => (
                     <td key={field} style={{ ...cellSx, textAlign: 'center' }}>
@@ -568,7 +601,9 @@ interface WeekBlockProps {
   slotMaxSets: number[];
   dispatch: ActionDispatch<[WorkoutEditorAction]>;
   arrangeMode: boolean;
+  creationMode: boolean;
   openPicker: (weekId: number, workoutId: number) => void;
+  openRenamePicker: (weekId: number, workoutId: number, workoutExerciseId: number) => void;
   setMenuState: (state: MenuState | null) => void;
 }
 
@@ -579,7 +614,9 @@ const WeekBlock = ({
   slotMaxSets,
   dispatch,
   arrangeMode,
+  creationMode,
   openPicker,
+  openRenamePicker,
   setMenuState,
 }: WeekBlockProps) => {
   const sensors = useSensors(
@@ -601,42 +638,44 @@ const WeekBlock = ({
 
   return (
     <Box sx={{ mb: 3 }}>
-      {/* Week header */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          pb: 0.5,
-          mb: 0.5,
-          borderBottom: '2px solid',
-          borderColor: 'divider',
-          width: '100%',
-        }}
-      >
-        <Typography
-          variant="overline"
+      {/* Week header — hidden in creation mode */}
+      {!creationMode && (
+        <Box
           sx={{
-            fontWeight: 700,
-            fontSize: '0.7rem',
-            letterSpacing: '0.08em',
-            color: 'text.secondary',
-            lineHeight: 1.4,
+            display: 'flex',
+            alignItems: 'center',
+            pb: 0.5,
+            mb: 0.5,
+            borderBottom: '2px solid',
+            borderColor: 'divider',
+            width: '100%',
           }}
         >
-          Week {week.order}
-        </Typography>
-        <Box sx={{ flex: 1 }} />
-        {!arrangeMode && (
-          <IconButton
-            size="small"
-            sx={{ p: 0.25, opacity: 0.35, '&:hover': { opacity: 1 } }}
-            onClick={() => dispatch({ type: 'REMOVE_WEEK', planId, weekId: week.id })}
-            aria-label="Delete week"
+          <Typography
+            variant="overline"
+            sx={{
+              fontWeight: 700,
+              fontSize: '0.7rem',
+              letterSpacing: '0.08em',
+              color: 'text.secondary',
+              lineHeight: 1.4,
+            }}
           >
-            <CloseIcon sx={{ fontSize: '0.85rem' }} />
-          </IconButton>
-        )}
-      </Box>
+            Week {week.order}
+          </Typography>
+          <Box sx={{ flex: 1 }} />
+          {!arrangeMode && (
+            <IconButton
+              size="small"
+              sx={{ p: 0.25, opacity: 0.35, '&:hover': { opacity: 1 } }}
+              onClick={() => dispatch({ type: 'REMOVE_WEEK', planId, weekId: week.id })}
+              aria-label="Delete week"
+            >
+              <CloseIcon sx={{ fontSize: '0.85rem' }} />
+            </IconButton>
+          )}
+        </Box>
+      )}
 
       {/* Workout slots */}
       <DndContext sensors={activeSensors} collisionDetection={closestCenter} onDragEnd={handleWorkoutDragEnd}>
@@ -658,6 +697,7 @@ const WeekBlock = ({
                   dispatch={dispatch}
                   arrangeMode={arrangeMode}
                   openPicker={openPicker}
+                  openRenamePicker={openRenamePicker}
                   setMenuState={setMenuState}
                   slotIdx={slotIdx}
                 />
@@ -697,11 +737,16 @@ const WeekBlock = ({
 
 // ── PlanSheetView ─────────────────────────────────────────────────────────────
 
-const PlanSheetView = ({ plan, planId, zoom, onZoomChange, arrangeMode, hideAddWeek }: PlanSheetViewProps) => {
-  const { dispatch } = useWorkoutEditorContext();
+const PlanSheetView = ({ plan, planId, zoom, onZoomChange, arrangeMode, creationMode = false }: PlanSheetViewProps) => {
+  const { dispatch, allExercises } = useWorkoutEditorContext();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<{ weekId: number; workoutId: number } | null>(null);
+  const [renameTarget, setRenameTarget] = useState<{ weekId: number; workoutId: number; workoutExerciseId: number } | null>(null);
   const [menuState, setMenuState] = useState<MenuState | null>(null);
+
+  const openRenamePicker = useCallback((weekId: number, workoutId: number, workoutExerciseId: number) => {
+    setRenameTarget({ weekId, workoutId, workoutExerciseId });
+  }, []);
 
   // Refs for pinch-to-zoom — manipulate DOM directly to avoid re-render on every touchmove
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -851,13 +896,15 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange, arrangeMode, hideAddW
               slotMaxSets={slotMaxSets}
               dispatch={dispatch}
               arrangeMode={arrangeMode}
+              creationMode={creationMode}
               openPicker={openPicker}
+              openRenamePicker={openRenamePicker}
               setMenuState={setMenuState}
             />
           ))}
 
           {/* + Week */}
-          {!arrangeMode && !hideAddWeek && (
+          {!arrangeMode && !creationMode && (
             <Box
               onClick={() => {
                 const lastWeek = sortedWeeks[sortedWeeks.length - 1];
@@ -987,6 +1034,27 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange, arrangeMode, hideAddW
           if (pickerTarget) {
             dispatch({ type: 'ADD_EXERCISE_WITH_SET_FOR_EXERCISE', planId, weekId: pickerTarget.weekId, workoutId: pickerTarget.workoutId, exercise });
           }
+        }}
+      />
+
+      <ExercisePickerDialog
+        open={renameTarget !== null}
+        title="Change Exercise"
+        onClose={() => setRenameTarget(null)}
+        onSelect={(exercise) => {
+          if (renameTarget) {
+            dispatch({
+              type: 'UPDATE_EXERCISE',
+              planId,
+              weekId: renameTarget.weekId,
+              workoutId: renameTarget.workoutId,
+              workoutExerciseId: renameTarget.workoutExerciseId,
+              exerciseName: exercise.name,
+              exercises: allExercises,
+              category: exercise.category ?? 'resistance',
+            });
+          }
+          setRenameTarget(null);
         }}
       />
     </>
