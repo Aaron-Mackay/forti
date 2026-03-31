@@ -16,9 +16,8 @@ test.describe('Plans list page', () => {
     await expect(page.getByRole('banner')).toContainText('Plans');
   });
 
-  test("shows the demo user's plans section", async ({ page }) => {
-    // Seed creates "TestUser's Plans" section header
-    await expect(page.getByText(/TestUser's Plans/i).first()).toBeVisible();
+  test('shows the plans section header', async ({ page }) => {
+    await expect(page.getByText(/^Plans$/i).first()).toBeVisible();
   });
 
   test('lists at least one plan for the demo user', async ({ page }) => {
