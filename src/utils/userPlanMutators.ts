@@ -611,7 +611,11 @@ export function addExerciseWithSetForExercise(
           ...makeEmptyWorkoutExercise(newExerciseId, workout.id, workout.exercises.length + 1),
           exerciseId: exercise.id,
           exercise,
-          sets: [makeEmptySet(createUuid(), newExerciseId, 1)],
+          sets: [
+            makeEmptySet(createUuid(), newExerciseId, 1),
+            makeEmptySet(createUuid(), newExerciseId, 2),
+            makeEmptySet(createUuid(), newExerciseId, 3),
+          ],
         },
       ],
     };

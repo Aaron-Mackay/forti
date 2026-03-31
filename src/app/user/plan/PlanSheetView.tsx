@@ -448,15 +448,26 @@ const SortableWorkoutSlot = ({
             {!arrangeMode && (
               <tbody>
                 <tr>
-                  <td colSpan={totalCols} style={{ padding: '3px 6px', borderBottom: 'none', textAlign: 'center' }}>
-                    <Typography
-                      variant="caption"
-                      color="primary"
-                      sx={{ fontSize: '0.7rem', userSelect: 'none', cursor: 'pointer' }}
+                  <td colSpan={totalCols} style={{ padding: '4px 4px 0', borderBottom: 'none' }}>
+                    <Box
                       onClick={() => openPicker(weekId, workout.id)}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '1px dashed',
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                        cursor: 'pointer',
+                        color: 'primary.main',
+                        opacity: 0.35,
+                        py: 0.5,
+                        '&:hover': { opacity: 0.9 },
+                        transition: 'opacity 0.15s',
+                      }}
                     >
-                      + Exercise
-                    </Typography>
+                      <AddIcon sx={{ fontSize: '1rem' }} />
+                    </Box>
                   </td>
                 </tr>
               </tbody>
@@ -524,15 +535,26 @@ const SortableWorkoutSlot = ({
               ))}
               {!arrangeMode && (
                 <tr>
-                  <td colSpan={5} style={{ padding: '3px 6px', borderBottom: 'none', textAlign: 'center' }}>
-                    <Typography
-                      variant="caption"
-                      color="primary"
-                      sx={{ fontSize: '0.7rem', userSelect: 'none', cursor: 'pointer' }}
+                  <td colSpan={5} style={{ padding: '4px 4px 0', borderBottom: 'none' }}>
+                    <Box
                       onClick={() => openPicker(weekId, workout.id)}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '1px dashed',
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                        cursor: 'pointer',
+                        color: 'primary.main',
+                        opacity: 0.35,
+                        py: 0.5,
+                        '&:hover': { opacity: 0.9 },
+                        transition: 'opacity 0.15s',
+                      }}
                     >
-                      + Exercise
-                    </Typography>
+                      <AddIcon sx={{ fontSize: '1rem' }} />
+                    </Box>
                   </td>
                 </tr>
               )}
@@ -843,20 +865,30 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange, arrangeMode }: PlanSh
 
           {/* + Week */}
           {!arrangeMode && (
-            <>
-              <Divider sx={{ mt: 1, mb: 1, borderStyle: 'dashed' }} />
-              <Box
-                sx={{ cursor: 'pointer', display: 'inline-block' }}
-                onClick={() => {
-                  const lastWeek = sortedWeeks[sortedWeeks.length - 1];
-                  if (lastWeek) dispatch({ type: 'DUPLICATE_WEEK', planId, weekId: lastWeek.id });
-                }}
-              >
-                <Typography variant="caption" color="primary" sx={{ fontSize: '0.7rem', userSelect: 'none' }}>
-                  + Week
-                </Typography>
-              </Box>
-            </>
+            <Box
+              onClick={() => {
+                const lastWeek = sortedWeeks[sortedWeeks.length - 1];
+                if (lastWeek) dispatch({ type: 'DUPLICATE_WEEK', planId, weekId: lastWeek.id });
+              }}
+              sx={{
+                mt: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '2px dashed',
+                borderColor: 'divider',
+                borderRadius: 1,
+                cursor: 'pointer',
+                color: 'primary.main',
+                opacity: 0.35,
+                py: 1,
+                minWidth: '8rem',
+                '&:hover': { opacity: 0.9 },
+                transition: 'opacity 0.15s',
+              }}
+            >
+              <AddIcon sx={{ fontSize: '1rem' }} />
+            </Box>
           )}
         </Box>
       </Box>
