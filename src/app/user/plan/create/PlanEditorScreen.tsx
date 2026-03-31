@@ -451,14 +451,6 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
     localStorage.setItem('sheetZoom', String(rounded))
   }, [])
 
-  const adjustZoom = (delta: number) => {
-    setZoom(prev => {
-      const next = Math.round(Math.max(0.25, Math.min(1, prev + delta)) * 100) / 100
-      localStorage.setItem('sheetZoom', String(next))
-      return next
-    })
-  }
-
   const workouts = statePlan.weeks[0].workouts
 
   const allExercisesNamed = statePlan.weeks[0].workouts.every(wo =>
@@ -607,21 +599,6 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
             </Typography>
 
             <Box sx={{ flex: 1 }} />
-
-            {/* Zoom controls — sheet mode */}
-            {viewMode === 'sheet' && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                <IconButton size="small" onClick={() => adjustZoom(-0.1)} sx={{ p: 0.25 }} aria-label="Zoom out">
-                  <Typography sx={{ fontSize: '0.85rem', lineHeight: 1, color: 'text.secondary', userSelect: 'none' }}>−</Typography>
-                </IconButton>
-                <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem', minWidth: '2.5em', textAlign: 'center', userSelect: 'none' }}>
-                  {Math.round(zoom * 100)}%
-                </Typography>
-                <IconButton size="small" onClick={() => adjustZoom(0.1)} disabled={zoom >= 1} sx={{ p: 0.25 }} aria-label="Zoom in">
-                  <Typography sx={{ fontSize: '0.85rem', lineHeight: 1, color: zoom >= 1 ? 'text.disabled' : 'text.secondary', userSelect: 'none' }}>+</Typography>
-                </IconButton>
-              </Box>
-            )}
 
             {/* Arrange toggle — sheet mode, desktop only */}
             {viewMode === 'sheet' && (

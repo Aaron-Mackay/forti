@@ -392,13 +392,6 @@ test.describe('Sheet view', () => {
     await expect(page.getByRole('button', { name: /sheet view/i })).toBeVisible();
   });
 
-  test('sheet view shows zoom controls', async ({ page, browserName, isMobile }) => {
-    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
-    await expect(page.getByText('100%')).toBeVisible();
-    await expect(page.getByRole('button', { name: /zoom in/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /zoom out/i })).toBeVisible();
-  });
-
   test('sheet view shows weight and reps inputs', async ({ page, browserName, isMobile }) => {
     test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
     await expect(page.locator('input[placeholder="kg"]').first()).toBeVisible();
@@ -446,16 +439,9 @@ test.describe('Sheet view', () => {
     await expect(page.locator('[aria-label="Add exercise"]').first()).toBeVisible();
   });
 
-  test('zoom out decreases the zoom percentage', async ({ page, browserName, isMobile }) => {
-    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
-    await page.getByRole('button', { name: /zoom out/i }).click();
-    await expect(page.getByText('90%')).toBeVisible();
-  });
-
-  test('switching back to classic view hides zoom and arrange controls', async ({ page, browserName, isMobile }) => {
+  test('switching back to classic view hides arrange controls', async ({ page, browserName, isMobile }) => {
     test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
     await page.getByRole('button', { name: /classic view/i }).click();
-    await expect(page.getByRole('button', { name: /zoom out/i })).not.toBeVisible();
     await expect(page.getByRole('button', { name: /arrange mode/i })).not.toBeVisible();
   });
 });
