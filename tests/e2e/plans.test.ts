@@ -477,6 +477,12 @@ test.describe('Plan creation — sheet view', () => {
     await expect(page.locator('[aria-label="Add week"]')).not.toBeVisible();
   });
 
+  test('sheet view in editor does not show week header', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await page.getByRole('button', { name: /sheet view/i }).click();
+    await expect(page.getByText(/^Week \d+$/i)).not.toBeVisible();
+  });
+
   test('switching back to classic view restores the card editor', async ({ page, browserName, isMobile }) => {
     test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
     await page.getByRole('button', { name: /sheet view/i }).click();

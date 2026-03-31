@@ -479,13 +479,19 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
   }
 
   const handleSave = async () => {
-    // Detect exercises not yet in the database (negative placeholder IDs)
+    // Detect exercises not yet in the database — negative placeholder ID AND not already in the global list
+    const existingNames = new Set(allExercises.map((e) => e.name.toLowerCase()))
     const seen = new Set<string>()
     const newExercises: { name: string }[] = []
     for (const wo of statePlan.weeks[0].workouts) {
       for (const ex of wo.exercises) {
-        if ((!ex.exercise.id || ex.exercise.id <= 0) && !seen.has(ex.exercise.name)) {
-          seen.add(ex.exercise.name)
+        const nameLower = ex.exercise.name.toLowerCase()
+        if (
+          (!ex.exercise.id || ex.exercise.id <= 0) &&
+          !existingNames.has(nameLower) &&
+          !seen.has(nameLower)
+        ) {
+          seen.add(nameLower)
           newExercises.push({ name: ex.exercise.name })
         }
       }
@@ -648,7 +654,7 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
               zoom={zoom}
               onZoomChange={handleZoomChange}
               arrangeMode={arrangeMode}
-              hideAddWeek
+              creationMode
             />
           </Box>
         ) : (
@@ -724,13 +730,19 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
         </Alert>
       </Snackbar>
 
-      {/* Exercise enrichment modal */}
+      {/* Exercise enrichment modal — container offset keeps it below the AppBar */}
       <Dialog
         open={enrichPhase !== null}
         maxWidth="xs"
         fullWidth
         disableEscapeKeyDown={enrichPhase === 'enriching'}
         onClose={enrichPhase === 'review' ? () => setEnrichPhase(null) : undefined}
+        sx={{
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+            pt: { xs: '56px', sm: '64px' },
+          },
+        }}
       >
         <DialogTitle>
           {enrichPhase === 'enriching' ? 'Enriching new exercises' : 'Review new exercises'}
