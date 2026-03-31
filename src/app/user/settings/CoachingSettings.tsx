@@ -391,6 +391,7 @@ export default function CoachingSettings() {
           </Typography>
           <TextField
             value={info.coachCode ? `${typeof window !== 'undefined' ? window.location.origin : ''}/coach/${info.coachCode}` : ''}
+            fullWidth
             size="small"
             slotProps={{
               input: {
@@ -407,7 +408,7 @@ export default function CoachingSettings() {
                 ),
               },
             }}
-            sx={{ mb: 3, maxWidth: 360 }}
+            sx={{ mb: 3 }}
           />
 
           {/* Invite by email */}
