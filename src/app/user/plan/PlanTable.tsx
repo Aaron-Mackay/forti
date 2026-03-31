@@ -85,7 +85,7 @@ export const PlanTable: React.FC<{
     <>
       <Box sx={{ p: 1.5, overflow: 'auto' }}>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, mb: 1.5 }}>
-          {/* Arrange mode toggle — only visible in sheet mode */}
+          {/* Arrange mode toggle — only visible in sheet mode on non-mobile */}
           {viewMode === 'sheet' && (
             <Tooltip title={arrangeMode ? 'Exit arrange mode' : 'Arrange mode'}>
               <ToggleButton
@@ -93,7 +93,7 @@ export const PlanTable: React.FC<{
                 selected={arrangeMode}
                 onChange={() => setArrangeMode(v => !v)}
                 size="small"
-                sx={{ px: 1, py: 0.5, border: '1px solid', borderColor: 'divider' }}
+                sx={{ px: 1, py: 0.5, border: '1px solid', borderColor: 'divider', display: { xs: 'none', sm: 'flex' } }}
                 aria-label="toggle arrange mode"
               >
                 <OpenWithIcon fontSize="small" />

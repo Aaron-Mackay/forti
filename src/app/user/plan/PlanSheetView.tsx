@@ -2,9 +2,10 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, Divider, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import {
   DndContext,
   closestCenter,
@@ -66,17 +67,6 @@ const headerCellSx: React.CSSProperties = {
   backgroundColor: 'var(--mui-palette-background-paper, #fff)',
 };
 
-const addRowSx: React.CSSProperties = {
-  padding: '3px 6px',
-  fontSize: '0.7rem',
-  whiteSpace: 'nowrap',
-  verticalAlign: 'middle',
-  textAlign: 'center',
-  cursor: 'pointer',
-  color: 'var(--mui-palette-primary-main)',
-  userSelect: 'none',
-  borderBottom: '1px solid var(--mui-palette-divider, #e0e0e0)',
-};
 
 const HIGHLIGHT = 'rgba(255,193,7,0.2)';
 
@@ -458,12 +448,15 @@ const SortableWorkoutSlot = ({
             {!arrangeMode && (
               <tbody>
                 <tr>
-                  <td
-                    colSpan={totalCols}
-                    style={{ ...addRowSx, borderTop: '1px dashed var(--mui-palette-divider, #e0e0e0)', borderBottom: 'none' }}
-                    onClick={() => openPicker(weekId, workout.id)}
-                  >
-                    + Exercise
+                  <td colSpan={totalCols} style={{ padding: '3px 6px', borderBottom: 'none', textAlign: 'center' }}>
+                    <Typography
+                      variant="caption"
+                      color="primary"
+                      sx={{ fontSize: '0.7rem', userSelect: 'none', cursor: 'pointer' }}
+                      onClick={() => openPicker(weekId, workout.id)}
+                    >
+                      + Exercise
+                    </Typography>
                   </td>
                 </tr>
               </tbody>
@@ -531,12 +524,15 @@ const SortableWorkoutSlot = ({
               ))}
               {!arrangeMode && (
                 <tr>
-                  <td
-                    colSpan={5}
-                    style={{ ...addRowSx, borderTop: '1px dashed var(--mui-palette-divider, #e0e0e0)', borderBottom: 'none' }}
-                    onClick={() => openPicker(weekId, workout.id)}
-                  >
-                    + Exercise
+                  <td colSpan={5} style={{ padding: '3px 6px', borderBottom: 'none', textAlign: 'center' }}>
+                    <Typography
+                      variant="caption"
+                      color="primary"
+                      sx={{ fontSize: '0.7rem', userSelect: 'none', cursor: 'pointer' }}
+                      onClick={() => openPicker(weekId, workout.id)}
+                    >
+                      + Exercise
+                    </Typography>
                   </td>
                 </tr>
               )}
@@ -548,9 +544,9 @@ const SortableWorkoutSlot = ({
   );
 };
 
-// ── SortableWeekBlock ─────────────────────────────────────────────────────────
+// ── WeekBlock ─────────────────────────────────────────────────────────────────
 
-interface SortableWeekBlockProps {
+interface WeekBlockProps {
   week: WeekData;
   planId: number;
   maxWorkoutCount: number;
@@ -561,7 +557,7 @@ interface SortableWeekBlockProps {
   setMenuState: (state: MenuState | null) => void;
 }
 
-const SortableWeekBlock = ({
+const WeekBlock = ({
   week,
   planId,
   maxWorkoutCount,
@@ -570,11 +566,7 @@ const SortableWeekBlock = ({
   arrangeMode,
   openPicker,
   setMenuState,
-}: SortableWeekBlockProps) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: 'wk-' + week.id,
-  });
-
+}: WeekBlockProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
@@ -592,14 +584,8 @@ const SortableWeekBlock = ({
     dispatch({ type: 'REORDER_WORKOUT', planId, weekId: week.id, fromIndex: fromIdx, toIndex: toIdx });
   };
 
-  const weekStyle: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.6 : 1,
-  };
-
   return (
-    <Box ref={setNodeRef} style={weekStyle} sx={{ mb: 3 }}>
+    <Box sx={{ mb: 3 }}>
       {/* Week header */}
       <Box
         sx={{
@@ -612,16 +598,6 @@ const SortableWeekBlock = ({
           width: '100%',
         }}
       >
-        {arrangeMode && (
-          <Box
-            component="span"
-            {...attributes}
-            {...listeners}
-            sx={{ cursor: 'grab', mr: 0.5, color: 'text.disabled', display: 'inline-flex', alignItems: 'center' }}
-          >
-            <DragHandleIcon sx={{ fontSize: '0.9rem' }} />
-          </Box>
-        )}
         <Typography
           variant="overline"
           sx={{
@@ -672,15 +648,29 @@ const SortableWeekBlock = ({
                 />
               );
             })}
-            {/* + Workout */}
+            {/* + Workout — ghost dashed column */}
             {!arrangeMode && (
               <Box
-                sx={{ flexShrink: 0, display: 'flex', alignItems: 'flex-start', pl: 1, pt: '2px', cursor: 'pointer' }}
+                sx={{
+                  flexShrink: 0,
+                  alignSelf: 'stretch',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px dashed',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  minWidth: '2.5rem',
+                  cursor: 'pointer',
+                  color: 'primary.main',
+                  opacity: 0.35,
+                  '&:hover': { opacity: 0.9 },
+                  transition: 'opacity 0.15s',
+                }}
                 onClick={() => dispatch({ type: 'ADD_WORKOUT', planId, weekId: week.id })}
+                aria-label="Add workout"
               >
-                <Typography variant="caption" color="primary" sx={{ fontSize: '0.7rem', userSelect: 'none' }}>
-                  + Workout
-                </Typography>
+                <AddIcon sx={{ fontSize: '1rem' }} />
               </Box>
             )}
           </Box>
@@ -697,13 +687,6 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange, arrangeMode }: PlanSh
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<{ weekId: number; workoutId: number } | null>(null);
   const [menuState, setMenuState] = useState<MenuState | null>(null);
-
-  // DnD sensors for week-level drag
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
-  );
-  const activeSensors = arrangeMode ? sensors : [];
 
   // Refs for pinch-to-zoom — manipulate DOM directly to avoid re-render on every touchmove
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -831,15 +814,6 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange, arrangeMode }: PlanSh
     return max;
   });
 
-  const handleWeekDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const fromIdx = sortedWeeks.findIndex(w => 'wk-' + w.id === String(active.id));
-    const toIdx = sortedWeeks.findIndex(w => 'wk-' + w.id === String(over.id));
-    if (fromIdx < 0 || toIdx < 0) return;
-    dispatch({ type: 'REORDER_WEEK', planId, fromIndex: fromIdx, toIndex: toIdx });
-  };
-
   return (
     <>
       {/* Scroll container */}
@@ -853,37 +827,36 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange, arrangeMode }: PlanSh
       >
         {/* Inner content — zoom applied here via DOM ref during pinch, via sx otherwise */}
         <Box ref={innerRef} sx={{ width: 'max-content', zoom: zoom }}>
-          <DndContext sensors={activeSensors} collisionDetection={closestCenter} onDragEnd={handleWeekDragEnd}>
-            <SortableContext items={sortedWeeks.map(w => 'wk-' + w.id)} strategy={verticalListSortingStrategy}>
-              {sortedWeeks.map((week) => (
-                <SortableWeekBlock
-                  key={week.id}
-                  week={week}
-                  planId={planId}
-                  maxWorkoutCount={maxWorkoutCount}
-                  slotMaxSets={slotMaxSets}
-                  dispatch={dispatch}
-                  arrangeMode={arrangeMode}
-                  openPicker={openPicker}
-                  setMenuState={setMenuState}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
+          {sortedWeeks.map((week) => (
+            <WeekBlock
+              key={week.id}
+              week={week}
+              planId={planId}
+              maxWorkoutCount={maxWorkoutCount}
+              slotMaxSets={slotMaxSets}
+              dispatch={dispatch}
+              arrangeMode={arrangeMode}
+              openPicker={openPicker}
+              setMenuState={setMenuState}
+            />
+          ))}
 
           {/* + Week */}
           {!arrangeMode && (
-            <Box
-              sx={{ mt: 1, pb: 1, borderTop: '1px dashed', borderColor: 'divider', pt: 1, cursor: 'pointer', display: 'inline-block' }}
-              onClick={() => {
-                const lastWeek = sortedWeeks[sortedWeeks.length - 1];
-                if (lastWeek) dispatch({ type: 'DUPLICATE_WEEK', planId, weekId: lastWeek.id });
-              }}
-            >
-              <Typography variant="caption" color="primary" sx={{ fontSize: '0.7rem', userSelect: 'none' }}>
-                + Week
-              </Typography>
-            </Box>
+            <>
+              <Divider sx={{ mt: 1, mb: 1, borderStyle: 'dashed' }} />
+              <Box
+                sx={{ cursor: 'pointer', display: 'inline-block' }}
+                onClick={() => {
+                  const lastWeek = sortedWeeks[sortedWeeks.length - 1];
+                  if (lastWeek) dispatch({ type: 'DUPLICATE_WEEK', planId, weekId: lastWeek.id });
+                }}
+              >
+                <Typography variant="caption" color="primary" sx={{ fontSize: '0.7rem', userSelect: 'none' }}>
+                  + Week
+                </Typography>
+              </Box>
+            </>
           )}
         </Box>
       </Box>
