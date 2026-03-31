@@ -87,6 +87,7 @@ interface PlanSheetViewProps {
   zoom: number;
   onZoomChange: (zoom: number) => void;
   arrangeMode: boolean;
+  hideAddWeek?: boolean;
 }
 
 // ── SortableExerciseTbody ──────────────────────────────────────────────────────
@@ -696,7 +697,7 @@ const WeekBlock = ({
 
 // ── PlanSheetView ─────────────────────────────────────────────────────────────
 
-const PlanSheetView = ({ plan, planId, zoom, onZoomChange, arrangeMode }: PlanSheetViewProps) => {
+const PlanSheetView = ({ plan, planId, zoom, onZoomChange, arrangeMode, hideAddWeek }: PlanSheetViewProps) => {
   const { dispatch } = useWorkoutEditorContext();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<{ weekId: number; workoutId: number } | null>(null);
@@ -856,7 +857,7 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange, arrangeMode }: PlanSh
           ))}
 
           {/* + Week */}
-          {!arrangeMode && (
+          {!arrangeMode && !hideAddWeek && (
             <Box
               onClick={() => {
                 const lastWeek = sortedWeeks[sortedWeeks.length - 1];

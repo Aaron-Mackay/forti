@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import {
   Alert,
   Autocomplete,
@@ -20,6 +20,9 @@ import {
   Paper,
   Snackbar,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip,
   Typography,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
@@ -27,6 +30,9 @@ import AddIcon from '@mui/icons-material/Add'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
+import GridOnIcon from '@mui/icons-material/GridOn'
+import ViewListIcon from '@mui/icons-material/ViewList'
+import OpenWithIcon from '@mui/icons-material/OpenWith'
 import {
   DndContext,
   closestCenter,
@@ -55,6 +61,7 @@ import { WorkoutEditorAction } from '@lib/useWorkoutEditor'
 import { AddExerciseForm } from '@/app/exercises/AddExerciseForm'
 import { createFilterOptions } from '@mui/material/Autocomplete'
 import type { FilterOptionsState } from '@mui/material'
+import PlanSheetView from '../PlanSheetView'
 
 // ── Autocomplete helpers ───────────────────────────────────────────────────────
 
@@ -430,6 +437,27 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
   const [saveError, setSaveError] = useState<string | null>(null)
   const [enrichPhase, setEnrichPhase] = useState<'enriching' | 'review' | null>(null)
   const [enrichedExercises, setEnrichedExercises] = useState<EnrichedExercise[]>([])
+  const [viewMode, setViewMode] = useState<'classic' | 'sheet'>('classic')
+  const [arrangeMode, setArrangeMode] = useState(false)
+  const [zoom, setZoom] = useState(() => {
+    if (typeof window === 'undefined') return 1
+    const v = parseFloat(localStorage.getItem('sheetZoom') ?? '')
+    return isNaN(v) ? 1 : Math.max(0.25, Math.min(1, v))
+  })
+
+  const handleZoomChange = useCallback((newZoom: number) => {
+    const rounded = Math.round(newZoom * 100) / 100
+    setZoom(rounded)
+    localStorage.setItem('sheetZoom', String(rounded))
+  }, [])
+
+  const adjustZoom = (delta: number) => {
+    setZoom(prev => {
+      const next = Math.round(Math.max(0.25, Math.min(1, prev + delta)) * 100) / 100
+      localStorage.setItem('sheetZoom', String(next))
+      return next
+    })
+  }
 
   const workouts = statePlan.weeks[0].workouts
 
@@ -577,45 +605,115 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
             <Typography variant="body2" color="text.secondary">
               weeks
             </Typography>
+
+            <Box sx={{ flex: 1 }} />
+
+            {/* Zoom controls — sheet mode */}
+            {viewMode === 'sheet' && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                <IconButton size="small" onClick={() => adjustZoom(-0.1)} sx={{ p: 0.25 }} aria-label="Zoom out">
+                  <Typography sx={{ fontSize: '0.85rem', lineHeight: 1, color: 'text.secondary', userSelect: 'none' }}>−</Typography>
+                </IconButton>
+                <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem', minWidth: '2.5em', textAlign: 'center', userSelect: 'none' }}>
+                  {Math.round(zoom * 100)}%
+                </Typography>
+                <IconButton size="small" onClick={() => adjustZoom(0.1)} disabled={zoom >= 1} sx={{ p: 0.25 }} aria-label="Zoom in">
+                  <Typography sx={{ fontSize: '0.85rem', lineHeight: 1, color: zoom >= 1 ? 'text.disabled' : 'text.secondary', userSelect: 'none' }}>+</Typography>
+                </IconButton>
+              </Box>
+            )}
+
+            {/* Arrange toggle — sheet mode, desktop only */}
+            {viewMode === 'sheet' && (
+              <Tooltip title={arrangeMode ? 'Exit arrange mode' : 'Arrange mode'}>
+                <ToggleButton
+                  value="arrange"
+                  selected={arrangeMode}
+                  onChange={() => setArrangeMode(v => !v)}
+                  size="small"
+                  sx={{ px: 1, py: 0.5, border: '1px solid', borderColor: 'divider', display: { xs: 'none', sm: 'flex' } }}
+                  aria-label={arrangeMode ? 'Exit arrange mode' : 'Arrange mode'}
+                >
+                  <OpenWithIcon fontSize="small" />
+                </ToggleButton>
+              </Tooltip>
+            )}
+
+            {/* View toggle */}
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              onChange={(_, next) => { if (next) { setViewMode(next); if (next === 'classic') setArrangeMode(false) } }}
+              size="small"
+              aria-label="plan view mode"
+            >
+              <Tooltip title="Classic view">
+                <ToggleButton value="classic" aria-label="classic view" sx={{ px: 1, py: 0.5 }}>
+                  <ViewListIcon fontSize="small" />
+                  <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' }, ml: 0.75, fontSize: '0.7rem' }}>Classic</Box>
+                </ToggleButton>
+              </Tooltip>
+              <Tooltip title="Sheet view">
+                <ToggleButton value="sheet" aria-label="sheet view" sx={{ px: 1, py: 0.5 }}>
+                  <GridOnIcon fontSize="small" />
+                  <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' }, ml: 0.75, fontSize: '0.7rem' }}>Sheet</Box>
+                </ToggleButton>
+              </Tooltip>
+            </ToggleButtonGroup>
           </Box>
         </Box>
 
-        <Divider />
+        {viewMode === 'sheet' ? (
+          <Box sx={{ px: 2, pt: 1, overflow: 'auto' }}>
+            <PlanSheetView
+              plan={statePlan}
+              planId={statePlan.id}
+              zoom={zoom}
+              onZoomChange={handleZoomChange}
+              arrangeMode={arrangeMode}
+              hideAddWeek
+            />
+          </Box>
+        ) : (
+          <>
+            <Divider />
 
-        <Typography variant="overline" sx={{ px: 2, pt: 1, display: 'block', color: 'text.secondary' }}>
-          Week template
-        </Typography>
+            <Typography variant="overline" sx={{ px: 2, pt: 1, display: 'block', color: 'text.secondary' }}>
+              Week template
+            </Typography>
 
-        <Box sx={{ p: 2, pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleWorkoutDragEnd}>
-            <SortableContext items={workouts.map((wo) => wo.id)} strategy={verticalListSortingStrategy}>
-              {workouts.map((wo) => (
-                <SortableWorkoutCard
-                  key={wo.id}
-                  workout={wo}
-                  showDelete={workouts.length > 1}
-                  allExercises={allExercises}
-                  addExercise={addExercise}
-                  dispatch={dispatch}
-                  planId={statePlan.id}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
+            <Box sx={{ p: 2, pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleWorkoutDragEnd}>
+                <SortableContext items={workouts.map((wo) => wo.id)} strategy={verticalListSortingStrategy}>
+                  {workouts.map((wo) => (
+                    <SortableWorkoutCard
+                      key={wo.id}
+                      workout={wo}
+                      showDelete={workouts.length > 1}
+                      allExercises={allExercises}
+                      addExercise={addExercise}
+                      dispatch={dispatch}
+                      planId={statePlan.id}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
 
-          <Button
-            startIcon={<AddIcon />}
-            onClick={() =>
-              dispatch({
-                type: 'ADD_WORKOUT_WITH_EXERCISE_WITH_SET',
-                planId: PLACEHOLDER_ID,
-                weekId: PLACEHOLDER_ID,
-              })
-            }
-          >
-            Add workout day
-          </Button>
-        </Box>
+              <Button
+                startIcon={<AddIcon />}
+                onClick={() =>
+                  dispatch({
+                    type: 'ADD_WORKOUT_WITH_EXERCISE_WITH_SET',
+                    planId: PLACEHOLDER_ID,
+                    weekId: PLACEHOLDER_ID,
+                  })
+                }
+              >
+                Add workout day
+              </Button>
+            </Box>
+          </>
+        )}
       </Box>
 
       {/* Sticky save button */}

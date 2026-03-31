@@ -459,3 +459,42 @@ test.describe('Sheet view', () => {
     await expect(page.getByRole('button', { name: /arrange mode/i })).not.toBeVisible();
   });
 });
+
+test.describe('Plan creation — sheet view', () => {
+  test.describe.configure({ mode: 'serial' });
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/user/plan/create');
+    await page.getByRole('button', { name: /start from scratch/i }).click();
+  });
+
+  test('view toggle appears in the plan editor', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await expect(page.getByRole('button', { name: /sheet view/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /classic view/i })).toBeVisible();
+  });
+
+  test('view toggle is visible on mobile', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || !isMobile, 'mobile chromium only');
+    await expect(page.getByRole('button', { name: /sheet view/i })).toBeVisible();
+  });
+
+  test('switching to sheet view renders the sheet', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await page.getByRole('button', { name: /sheet view/i }).click();
+    await expect(page.locator('[aria-label="Add exercise"]').first()).toBeVisible();
+  });
+
+  test('sheet view in editor does not show add-week ghost box', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await page.getByRole('button', { name: /sheet view/i }).click();
+    await expect(page.locator('[aria-label="Add week"]')).not.toBeVisible();
+  });
+
+  test('switching back to classic view restores the card editor', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
+    await page.getByRole('button', { name: /sheet view/i }).click();
+    await page.getByRole('button', { name: /classic view/i }).click();
+    await expect(page.getByRole('button', { name: /add workout day/i })).toBeVisible();
+  });
+});
