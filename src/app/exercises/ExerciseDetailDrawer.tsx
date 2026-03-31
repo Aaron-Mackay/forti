@@ -6,8 +6,8 @@ import {
   Box,
   Button,
   Chip,
-  Drawer,
   Skeleton,
+  SwipeableDrawer,
   TextField,
   Typography,
 } from '@mui/material';
@@ -41,9 +41,19 @@ function E1rmChart({exercise}: {exercise: Exercise}) {
 
   if (history.length === 0) {
     return (
-      <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
-        No workout history yet.
-      </Typography>
+      <Box
+        sx={{
+          height: 180,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: 1,
+        }}
+      >
+        <Typography variant="body2" color="text.secondary">
+          No workout history yet.
+        </Typography>
+      </Box>
     );
   }
 
@@ -127,11 +137,14 @@ export default function ExerciseDetailDrawer({
   };
 
   return (
-    <Drawer
+    <SwipeableDrawer
       anchor="bottom"
       open={exercise !== null}
       onClose={onClose}
+      onOpen={() => {}}
       PaperProps={{sx: {borderRadius: '16px 16px 0 0', maxHeight: '85dvh', overflowY: 'auto', p: 2}}}
+      disableDiscovery={false}
+      swipeAreaWidth={24}
     >
       {exercise && (
         <Box>
@@ -248,6 +261,6 @@ export default function ExerciseDetailDrawer({
           <E1rmChart exercise={exercise}/>
         </Box>
       )}
-    </Drawer>
+    </SwipeableDrawer>
   );
 }
