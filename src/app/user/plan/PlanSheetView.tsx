@@ -68,7 +68,6 @@ const headerCellSx: React.CSSProperties = {
 };
 
 
-const HIGHLIGHT = 'rgba(255,193,7,0.2)';
 
 type WeekData = PlanPrisma['weeks'][number];
 
@@ -104,7 +103,6 @@ interface SortableExerciseTbodyProps {
   arrangeMode: boolean;
   setMenuState: (state: MenuState | null) => void;
   bestE1rm: number | null;
-  bestSetId: number | null;
 }
 
 const SortableExerciseTbody = ({
@@ -119,7 +117,6 @@ const SortableExerciseTbody = ({
   arrangeMode,
   setMenuState,
   bestE1rm,
-  bestSetId,
 }: SortableExerciseTbodyProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: 'ex-' + ex.id,
@@ -185,10 +182,9 @@ const SortableExerciseTbody = ({
               </React.Fragment>
             );
           }
-          const hl = set.id === bestSetId ? { background: HIGHLIGHT } : {};
           return (
             <React.Fragment key={si}>
-              <td style={{ ...cellSx, textAlign: 'center', ...hl }}>
+              <td style={{ ...cellSx, textAlign: 'center' }}>
                 <input
                   type="number"
                   value={set.weight ?? ''}
@@ -200,7 +196,7 @@ const SortableExerciseTbody = ({
                   style={inputSx}
                 />
               </td>
-              <td style={{ ...cellSx, textAlign: 'center', ...hl }}>
+              <td style={{ ...cellSx, textAlign: 'center' }}>
                 <input
                   type="number"
                   value={set.reps ?? ''}
@@ -246,7 +242,6 @@ const SortableExerciseTbody = ({
       {topLevelSets.map((parentSet) => {
         const children = dropsByParent.get(parentSet.id) ?? [];
         return children.map((dropSet, di) => {
-          const hl = dropSet.id === bestSetId ? { background: HIGHLIGHT } : {};
           return (
             <tr key={dropSet.id}>
               <td style={{ ...cellSx, textAlign: 'left', paddingLeft: '1.5rem', color: 'var(--mui-palette-text-secondary, #666)', fontSize: '0.7rem' }}>
@@ -265,7 +260,7 @@ const SortableExerciseTbody = ({
                 }
                 return (
                   <React.Fragment key={colIdx}>
-                    <td style={{ ...cellSx, textAlign: 'center', ...hl }}>
+                    <td style={{ ...cellSx, textAlign: 'center' }}>
                       <input
                         type="number"
                         value={dropSet.weight ?? ''}
@@ -277,7 +272,7 @@ const SortableExerciseTbody = ({
                         style={inputSx}
                       />
                     </td>
-                    <td style={{ ...cellSx, textAlign: 'center', ...hl }}>
+                    <td style={{ ...cellSx, textAlign: 'center' }}>
                       <input
                         type="number"
                         value={dropSet.reps ?? ''}
@@ -417,13 +412,9 @@ const SortableWorkoutSlot = ({
               ) : (
                 resistanceExercises.map((ex) => {
                   let bestE1rm: number | null = null;
-                  let bestSetId: number | null = null;
                   for (const s of ex.sets) {
                     const v = computeE1rm(s.weight, s.reps);
-                    if (v != null && (bestE1rm == null || v > bestE1rm)) {
-                      bestE1rm = v;
-                      bestSetId = s.id;
-                    }
+                    if (v != null && (bestE1rm == null || v > bestE1rm)) bestE1rm = v;
                   }
                   return (
                     <SortableExerciseTbody
@@ -439,7 +430,6 @@ const SortableWorkoutSlot = ({
                       arrangeMode={arrangeMode}
                       setMenuState={setMenuState}
                       bestE1rm={bestE1rm}
-                      bestSetId={bestSetId}
                     />
                   );
                 })
