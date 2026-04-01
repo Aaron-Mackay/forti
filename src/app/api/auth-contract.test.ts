@@ -14,8 +14,8 @@ vi.mock('@lib/requireSession', () => ({
   }),
   isAuthenticationError: (error: unknown) => error instanceof AuthenticationError,
   authenticationErrorResponse: async () => {
-    const {NextResponse} = await import('next/server');
-    return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+    const {unauthenticatedResponse} = await import('@lib/apiResponses');
+    return unauthenticatedResponse();
   },
 }));
 
@@ -47,7 +47,7 @@ describe('protected route 401 contract', () => {
 
     for (const res of responses) {
       expect(res.status).toBe(401);
-      await expect(res.json()).resolves.toEqual({error: 'Unauthorized'});
+      await expect(res.json()).resolves.toMatchObject({code: 'UNAUTHENTICATED'});
     }
   });
 });

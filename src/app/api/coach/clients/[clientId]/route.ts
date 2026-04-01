@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
+import { forbiddenResponse } from '@lib/apiResponses';
 
 export async function DELETE(
   _req: NextRequest,
@@ -20,7 +21,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Client not found' }, { status: 404 });
   }
   if (client.coachId !== userId) {
-    return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+    return forbiddenResponse();
   }
 
   await prisma.user.update({

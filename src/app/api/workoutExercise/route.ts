@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import {NextRequest, NextResponse} from 'next/server';
 import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from "@lib/apiError";
+import { forbiddenResponse } from '@lib/apiResponses';
 
 export async function POST(req: NextRequest) {
   const session = await requireSession();
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (workout.week.plan.userId !== session.user.id) {
-      return NextResponse.json({error: 'Forbidden'}, {status: 403});
+      return forbiddenResponse();
     }
 
     const exercise = await prisma.exercise.findUnique({where: {id: exerciseId}});

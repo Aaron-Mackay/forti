@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth";
-import { NextResponse } from "next/server";
+import { unauthenticatedResponse } from "@lib/apiResponses";
 
 export class AuthenticationError extends Error {
   constructor() {
@@ -14,7 +14,7 @@ export function isAuthenticationError(error: unknown): error is AuthenticationEr
 }
 
 export function authenticationErrorResponse() {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  return unauthenticatedResponse();
 }
 
 export async function requireSession() {

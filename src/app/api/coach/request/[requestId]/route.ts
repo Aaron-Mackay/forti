@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { notifyClientRequestAccepted } from '@lib/notifications';
+import { forbiddenResponse } from '@lib/apiResponses';
 
 export async function PATCH(
   req: NextRequest,
@@ -30,7 +31,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Request not found' }, { status: 404 });
   }
   if (coachRequest.coachId !== userId) {
-    return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+    return forbiddenResponse();
   }
   if (coachRequest.status !== 'Pending') {
     return NextResponse.json({ error: 'Request is no longer pending' }, { status: 400 });

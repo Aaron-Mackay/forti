@@ -21,6 +21,13 @@ const eslintConfig = [
       'react-hooks/refs': 'off',
       'react-hooks/set-state-in-effect': 'off',
       'react-hooks/static-components': 'off',
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.object.name='NextResponse'][callee.property.name='json'] Literal[value=/^(Unauthorized|Not authenticated|Not authorized|Forbidden)$/]",
+          message: 'Use shared auth helpers from @lib/apiResponses (unauthenticatedResponse/forbiddenResponse), not inline auth strings.',
+        },
+      ],
     },
   },
   // ── Test files: disable app-only rules that create false positives ──────────

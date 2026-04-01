@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
+import { unauthenticatedResponse } from '@lib/apiResponses';
 
 function secureEquals(a: string, b: string): boolean {
   const hashA = createHash('sha256').update(a).digest();
@@ -24,7 +25,7 @@ export function validateCronRequest(req: NextRequest): NextResponse | null {
   const expectedAuth = `Bearer ${expectedSecret}`;
 
   if (!secureEquals(authHeader, expectedAuth)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return unauthenticatedResponse();
   }
 
   const vercelCronHeader = req.headers.get('x-vercel-cron');
