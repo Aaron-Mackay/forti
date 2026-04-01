@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@lib/prisma';
 import { notifyClientLearningPlanStep } from '@lib/notifications';
 import { StepProgressSchema, type StepProgressMap } from '@lib/learningPlanSchemas';
+import { unauthenticatedResponse } from '@lib/apiResponses';
 
 /**
  * GET /api/cron/learning-plan-steps
@@ -12,7 +13,7 @@ import { StepProgressSchema, type StepProgressMap } from '@lib/learningPlanSchem
 export async function GET(req: NextRequest) {
   const cronSecret = req.headers.get('authorization');
   if (cronSecret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return unauthenticatedResponse();
   }
 
   const today = new Date();

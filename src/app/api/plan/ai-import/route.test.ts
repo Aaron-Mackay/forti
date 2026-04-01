@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { POST } from './route';
+import { unauthenticatedResponse } from '@lib/apiResponses';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -96,9 +97,8 @@ beforeEach(() => {
 describe('POST /api/plan/ai-import', () => {
   describe('authentication', () => {
     it('returns 401 when session is missing', async () => {
-      const { NextResponse } = await import('next/server');
       mockRequireSession.mockImplementation(() => {
-        throw NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        throw unauthenticatedResponse();
       });
 
       const req = makeRequest({ input: 'some workout' });

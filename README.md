@@ -80,6 +80,11 @@ npm run test:e2e      # E2E tests (Playwright)
 npm run lint          # ESLint
 ```
 
+
+### API contracts
+
+- Error envelope and canonical auth error codes: `docs/api-error-contract.md`
+
 ### Updating schema
 There is a github action to update the schema. First, update the `schema.prisma` file. 
 Then, run the `Migrate Database` Github action - it generates the migration file and commits it. 

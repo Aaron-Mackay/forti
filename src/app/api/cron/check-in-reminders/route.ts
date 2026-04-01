@@ -3,6 +3,7 @@ import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import { getWeekStart, toDateOnly } from '@lib/checkInUtils';
 import { sendCheckInReminder, sendPushNotification } from '@lib/notifications';
+import { unauthenticatedResponse } from '@lib/apiResponses';
 
 /**
  * GET /api/cron/check-in-reminders
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
   // Verify the request comes from the Vercel Cron scheduler
   const cronSecret = req.headers.get('authorization');
   if (cronSecret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return unauthenticatedResponse();
   }
 
   // Today as 0=Mon…6=Sun

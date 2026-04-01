@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import {isPrismaNotFound} from "@lib/apiError";
 import {z} from "zod";
 import {BlockSubtype, EventType} from "@prisma/client";
+import { forbiddenResponse } from '@lib/apiResponses';
 
 const EventPatchSchema = z.object({
   name: z.string().optional(),
@@ -52,7 +53,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
     if (event.userId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return forbiddenResponse();
     }
 
     const json = await req.json();
