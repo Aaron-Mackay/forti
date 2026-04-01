@@ -10,6 +10,12 @@ import {CustomMetricDef, WeightUnit} from "@/types/settingsTypes";
 
 const BUILTIN_KEYS = new Set<MetricKey>(['weight', 'calories', 'steps', 'sleepMins']);
 
+export const parseMetricInputValue = (value: string | number | null): number | null => {
+  if (value === '' || value === null) return null;
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 export const DayMetricInput: React.FC<{
   setSelectedMetric: (metric: MetricKey | null) => void;
   selectedMetric: MetricKey | null;
@@ -44,7 +50,7 @@ export const DayMetricInput: React.FC<{
     if (selectedMetric) {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
-  }, [selectedMetric]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedMetric]);
 
   const handleSubmit = () => {
     if (!selectedDate || !selectedMetric) {
@@ -60,7 +66,7 @@ export const DayMetricInput: React.FC<{
       const updatedData = {
         ...existingData,
         [selectedMetric]: {
-          value: inputValue !== '' && inputValue !== null ? Number(inputValue) : null,
+          value: parseMetricInputValue(inputValue),
           target: customDef?.target ?? null,
         },
       };
@@ -75,7 +81,7 @@ export const DayMetricInput: React.FC<{
         ...(dateDayMetrics as DayMetricPrisma),
         date: selectedDate,
         userId: userId,
-        [selectedMetric]: selectedMetric === 'sleepMins' ? inputValue : Number(inputValue),
+        [selectedMetric]: parseMetricInputValue(inputValue),
       };
     }
 
@@ -139,7 +145,7 @@ export const DayMetricInput: React.FC<{
         <Button
           variant="contained"
           onClick={handleSubmit}
-          disabled={inputValue === null}
+          disabled={inputValue === null || inputValue === ''}
           sx={{flex: 1, height: '56px'}}
         >
           Save
