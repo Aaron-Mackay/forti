@@ -25,7 +25,7 @@ export default async function ClientCheckInsPage({ params }: Props) {
 
   return (
     <>
-      <AppBarTitle title="Check-ins" />
+      <AppBarTitle title="Check-ins" showBack backHref={`/user/coach/clients/${clientId}`} />
       <Paper sx={{ px: 2, minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
         <CoachCheckInsClient lockedClientId={clientId} />
       </Paper>

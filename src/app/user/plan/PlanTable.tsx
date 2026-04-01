@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useCallback, useState } from "react";
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { useWorkoutEditorContext } from "@/context/WorkoutEditorContext";
 import { saveUserWorkoutData } from "@lib/clientApi";
 import { Alert, Box, Button, CircularProgress, Snackbar, ToggleButton, ToggleButtonGroup, Tooltip, useMediaQuery, useTheme } from "@mui/material";
@@ -23,7 +23,8 @@ export const PlanTable: React.FC<{
   lockedInEditMode: boolean;
   categories: string[];
   planId?: string;
-}> = ({ lockedInEditMode: _lockedInEditMode, categories: _categories, planId }) => {
+  backHref?: string;
+}> = ({ lockedInEditMode: _lockedInEditMode, categories: _categories, planId, backHref }) => {
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -40,6 +41,7 @@ export const PlanTable: React.FC<{
   const [zoom, setZoom] = useState(readZoom);
   const [arrangeMode, setArrangeMode] = useState(false);
   const { state: userDataState } = useWorkoutEditorContext();
+  const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -47,7 +49,11 @@ export const PlanTable: React.FC<{
     ? userDataState.plans.find(p => p.id === parseInt(planId))
     : userDataState.plans[0];
 
-  useAppBar({ title: plan?.name ?? 'Plan' });
+  useAppBar({
+    title: plan?.name ?? 'Plan',
+    showBack: !!backHref,
+    onBack: backHref ? () => router.push(backHref) : undefined,
+  });
 
   if (!plan) {
     redirect('/user/plan/create');
