@@ -1,8 +1,9 @@
 import {requireSession} from '@lib/requireSession';
 import {getUserDayMetrics, getUserEvents} from '@lib/api';
 import {NextResponse} from 'next/server';
+import {withRouteAuth} from '@lib/routeAuth';
 
-export async function GET() {
+export const GET = withRouteAuth(async function GET() {
   try {
     const session = await requireSession();
     const [events, dayMetrics] = await Promise.all([
@@ -11,7 +12,6 @@ export async function GET() {
     ]);
     return NextResponse.json({events, dayMetrics});
   } catch (error) {
-    if (error instanceof NextResponse) return error;
     throw error;
   }
-}
+});

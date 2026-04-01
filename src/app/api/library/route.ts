@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireSession } from '@lib/requireSession';
+import { authenticationErrorResponse, requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { errorResponse, validationErrorResponse } from '@lib/apiResponses';
 import { parseDashboardSettings } from '@/types/settingsTypes';
@@ -18,8 +18,8 @@ export async function GET(_req: NextRequest) {
   let session;
   try {
     session = await requireSession();
-  } catch (e) {
-    return e as NextResponse;
+  } catch (_e) {
+    return authenticationErrorResponse();
   }
   const userId = session.user.id;
   const assets = await prisma.libraryAsset.findMany({
@@ -33,8 +33,8 @@ export async function POST(req: NextRequest) {
   let session;
   try {
     session = await requireSession();
-  } catch (e) {
-    return e as NextResponse;
+  } catch (_e) {
+    return authenticationErrorResponse();
   }
 
   const userId = session.user.id;

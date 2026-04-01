@@ -1,14 +1,14 @@
 import prisma from '@/lib/prisma';
 import {NextResponse} from 'next/server';
-import {requireSession} from '@lib/requireSession';
+import {authenticationErrorResponse, requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from '@lib/apiError';
 
 export async function POST(req: Request) {
   let session: Awaited<ReturnType<typeof requireSession>>;
   try {
     session = await requireSession();
-  } catch (res) {
-    return res as NextResponse;
+  } catch (_res) {
+    return authenticationErrorResponse();
   }
 
   const {workoutExerciseId, weight, isDropSet, parentSetId} = await req.json();

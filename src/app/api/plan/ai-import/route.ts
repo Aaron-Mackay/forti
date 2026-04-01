@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { requireSession } from '@lib/requireSession';
+import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import { AI_CLARIFY_TOOL, AI_PLAN_TOOL, AiParseError, parseAiPlanResponse } from '@/utils/aiPlanParser';
 import prisma from '@lib/prisma';
 
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     session = await requireSession();
   } catch (err) {
-    if (err instanceof NextResponse) return err;
+    if (isAuthenticationError(err)) return authenticationErrorResponse();
     throw err;
   }
 

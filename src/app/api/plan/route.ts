@@ -3,6 +3,7 @@ import {saveUserPlan} from "@lib/api";
 import {PlanPrisma} from "@/types/dataTypes";
 import confirmPermission from "@lib/confirmPermission";
 import {PlanPostSchema} from "@lib/planSchemas";
+import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSession";
 
 export type PlanUploadResponse = {
   success: boolean;
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, planId: uploadedPlanId } as PlanUploadResponse, { status: 200 });
   } catch (error) {
-    if (error instanceof NextResponse) return error;
+    if (isAuthenticationError(error)) return authenticationErrorResponse();
     console.error(error);
     return NextResponse.json({ success: false, error: 'Failed to create plan' } as PlanUploadResponse, { status: 500 })
   }

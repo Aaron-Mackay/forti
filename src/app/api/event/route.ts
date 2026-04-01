@@ -3,6 +3,7 @@ import {NextRequest, NextResponse} from "next/server";
 import confirmPermission from "@lib/confirmPermission";
 import {EventSchema} from "@lib/apiSchemas";
 import {errorResponse, validationErrorResponse} from "@lib/apiResponses";
+import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSession";
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
     const uploadedEvent = await saveUserEvent(completeEvent);
     return NextResponse.json(uploadedEvent);
   } catch (error) {
-    if (error instanceof NextResponse) return error;
+    if (isAuthenticationError(error)) return authenticationErrorResponse();
     console.error(error);
     return errorResponse('Failed to create event', 500);
   }

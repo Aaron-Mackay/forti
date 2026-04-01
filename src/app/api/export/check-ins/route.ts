@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireSession } from '@lib/requireSession';
+import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import { getUserCheckIns } from '@lib/api';
 import { buildCsv } from '@/utils/csvExport';
 import { errorResponse } from '@lib/apiResponses';
@@ -42,7 +42,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    if (error instanceof NextResponse) return error;
+    if (isAuthenticationError(error)) return authenticationErrorResponse();
     console.error(error);
     return errorResponse('Failed to export check-ins', 500);
   }

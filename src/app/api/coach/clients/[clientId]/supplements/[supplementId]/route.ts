@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireSession } from '@lib/requireSession';
+import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import { notFoundResponse, forbiddenResponse, errorResponse, validationErrorResponse } from '@lib/apiResponses';
@@ -52,7 +52,7 @@ export async function PATCH(
     const updated = await prisma.supplement.update({ where: { id }, data: parsed.data });
     return NextResponse.json(updated);
   } catch (err: unknown) {
-    if (err instanceof NextResponse) return err;
+    if (isAuthenticationError(err)) return authenticationErrorResponse();
     return errorResponse('Failed to update supplement', 500);
   }
 }
@@ -72,7 +72,7 @@ export async function DELETE(
     await prisma.supplement.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
-    if (err instanceof NextResponse) return err;
+    if (isAuthenticationError(err)) return authenticationErrorResponse();
     return errorResponse('Failed to delete supplement', 500);
   }
 }

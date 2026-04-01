@@ -13,6 +13,8 @@ vi.mock('@/lib/prisma', () => ({
 
 vi.mock('@lib/requireSession', () => ({
   requireSession: vi.fn(),
+  isAuthenticationError: (error: unknown) => error instanceof Error && error.name === 'AuthenticationError',
+  authenticationErrorResponse: () => Response.json({ error: 'Unauthorized' }, { status: 401 }),
 }));
 
 import prisma from '@/lib/prisma';

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireSession } from '@lib/requireSession';
+import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import { z } from 'zod';
 import prisma from '@lib/prisma';
 import { ExerciseCategory } from '@prisma/client';
@@ -26,7 +26,7 @@ export async function GET(_req: NextRequest) {
     });
     return NextResponse.json(exercises);
   } catch (err: unknown) {
-    if (err instanceof NextResponse) return err;
+    if (isAuthenticationError(err)) return authenticationErrorResponse();
     console.error(err);
     return NextResponse.json({ error: 'Failed to fetch exercises' }, { status: 500 });
   }
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(exercise, { status: 201 });
   } catch (err: unknown) {
-    if (err instanceof NextResponse) return err;
+    if (isAuthenticationError(err)) return authenticationErrorResponse();
     console.error(err);
     return NextResponse.json(
       { error: 'Failed to create exercise' },
