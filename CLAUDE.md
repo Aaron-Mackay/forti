@@ -221,12 +221,14 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 | `src/lib/prisma.ts` | Prisma client singleton |
 | `src/lib/api.ts` | Fetch wrapper + API utility functions |
 | `src/lib/fetchWrapper.ts` | HTTP client wrapper used in lib/api.ts |
+| `src/lib/firstWeekEvents.ts` | Client-side one-time first-week analytics event tracking (`trackFirstWeekEvent`) |
 | `src/lib/clientApi.ts` | Client-side typed API wrappers (`saveUserWorkoutData`, `savePlan`) |
 | `src/lib/dateUtils.ts` | Date manipulation helpers |
 | `src/lib/dayMetrics.ts` | Day metric business logic |
 | `src/lib/events.ts` | Calendar event helpers |
 | `src/lib/theme.ts` | MUI theme configuration |
 | `src/lib/confirmPermission.ts` | Authorization checks for resource access |
+| `src/lib/coachNutrition.ts` | Shared coach-client nutrition access/query helper (`getCoachClientNutritionData`) |
 | `src/lib/requireSession.ts` | Server-side session guard for API routes |
 | `src/lib/getLoggedInUser.ts` | Retrieve full User record from session |
 | `src/lib/queries.ts` | Ownership-chain DB helpers: `getWorkoutWithOwner`, `getWorkoutExerciseWithOwner`, `getSetWithOwner` |

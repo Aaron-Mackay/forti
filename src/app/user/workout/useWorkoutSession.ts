@@ -18,6 +18,7 @@ import {
 } from '@/utils/userPlanMutators';
 import {Exercise} from '@prisma/client';
 import {AddExerciseConfig} from './AddExerciseConfigDialog';
+import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
 
 export type SnackbarState = {
   open: boolean;
@@ -211,11 +212,16 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
     queueOrSendRequest(`/api/workout/${selectedWorkoutId}`, 'PATCH', {
       dateCompleted: dateCompleted ? dateCompleted.toISOString() : null,
     })
-      .then(() => setSnackbar({
-        open: true,
-        message: completed ? 'Workout completed!' : 'Workout marked incomplete',
-        severity: 'success',
-      }))
+      .then(() => {
+        if (completed) {
+          trackFirstWeekEvent('first_workout_completed', { source: 'workout' });
+        }
+        setSnackbar({
+          open: true,
+          message: completed ? 'Workout completed!' : 'Workout marked incomplete',
+          severity: 'success',
+        });
+      })
       .catch(() => {
         setUserData(prevUserData);
         setSnackbar({open: true, message: 'Failed to update workout', severity: 'info'});
