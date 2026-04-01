@@ -13,15 +13,20 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const limit = Math.min(parseInt(searchParams.get('limit') ?? '20'), 100);
   const offset = parseInt(searchParams.get('offset') ?? '0');
+  const excludeCurrent = searchParams.get('excludeCurrent') === 'true';
+  const currentWeekStart = toDateOnly(getWeekStart(new Date()));
+  const where = excludeCurrent
+    ? { userId, NOT: { weekStartDate: currentWeekStart } }
+    : { userId };
 
   const [checkIns, total] = await Promise.all([
     prisma.weeklyCheckIn.findMany({
-      where: { userId },
+      where,
       orderBy: { weekStartDate: 'desc' },
       take: limit,
       skip: offset,
     }),
-    prisma.weeklyCheckIn.count({ where: { userId } }),
+    prisma.weeklyCheckIn.count({ where }),
   ]);
 
   return NextResponse.json({ checkIns, total });

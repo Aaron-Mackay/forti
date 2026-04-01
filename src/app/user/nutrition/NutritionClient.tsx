@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -16,6 +17,7 @@ import {
   IconButton,
   LinearProgress,
   Stack,
+  Snackbar,
   TextField,
   Typography,
 } from '@mui/material';
@@ -31,13 +33,14 @@ import { EventType } from '@prisma/client';
 import { getDefinedBlockColor } from '@/app/user/calendar/utils';
 import { updateDayMetricClient } from '@lib/dayMetrics';
 import { convertDateToDateString } from '@lib/dateUtils';
+import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
 
 interface Props {
   userId: string;
   initialDayMetrics: DayMetricPrisma[];
   initialEvents: EventPrisma[];
-  readOnly?: boolean;
-  canSetTargets?: boolean;
+  canEditActuals?: boolean;
+  canEditTargets?: boolean;
 }
 
 type EditValues = {
@@ -62,7 +65,7 @@ type WeekTargetValues = {
   carbs: string;
   fat: string;
   steps: string;
-  sleep: string;
+  sleepMins: string;
 };
 
 function getActiveBlock(events: EventPrisma[], today: Date) {
@@ -98,6 +101,28 @@ function toFloatOrNull(s: string): number | null {
   return isNaN(n) ? null : n;
 }
 
+function getNumericFieldError(value: string, max?: number): string | null {
+  if (value.trim() === '') return null;
+  const n = Number(value);
+  if (Number.isNaN(n)) return 'Enter a valid number';
+  if (n < 0) return 'Must be 0 or greater';
+  if (max !== undefined && n > max) return `Must be ${max} or less`;
+  return null;
+}
+
+function hasAnyMacroActuals(metric: Pick<DayMetricPrisma, 'calories' | 'protein' | 'carbs' | 'fat'>): boolean {
+  return metric.calories !== null || metric.protein !== null || metric.carbs !== null || metric.fat !== null;
+}
+
+function hasAnyMacroTargets(metric: Pick<DayMetricPrisma, 'caloriesTarget' | 'proteinTarget' | 'carbsTarget' | 'fatTarget'>): boolean {
+  return (
+    metric.caloriesTarget !== null ||
+    metric.proteinTarget !== null ||
+    metric.carbsTarget !== null ||
+    metric.fatTarget !== null
+  );
+}
+
 function metricToEditValues(m: DayMetricPrisma | undefined): EditValues {
   const str = (v: number | null | undefined) => (v !== null && v !== undefined ? String(v) : '');
   return {
@@ -117,11 +142,11 @@ function metricToEditValues(m: DayMetricPrisma | undefined): EditValues {
   };
 }
 
-const MACROS: { key: 'calories' | 'protein' | 'carbs' | 'fat'; label: string; unit: string; color: string }[] = [
-  { key: 'calories', label: 'Calories', unit: 'kcal', color: '#ff7043' },
-  { key: 'protein', label: 'Protein', unit: 'g', color: '#42a5f5' },
-  { key: 'carbs', label: 'Carbs', unit: 'g', color: '#66bb6a' },
-  { key: 'fat', label: 'Fat', unit: 'g', color: '#ffa726' },
+const MACROS: { key: 'calories' | 'protein' | 'carbs' | 'fat'; label: string; unit: string; colorToken: string }[] = [
+  { key: 'calories', label: 'Calories', unit: 'kcal', colorToken: 'error.main' },
+  { key: 'protein', label: 'Protein', unit: 'g', colorToken: 'info.main' },
+  { key: 'carbs', label: 'Carbs', unit: 'g', colorToken: 'success.main' },
+  { key: 'fat', label: 'Fat', unit: 'g', colorToken: 'warning.main' },
 ];
 
 const TARGET_KEY: Record<string, keyof DayMetricPrisma> = {
@@ -130,13 +155,14 @@ const TARGET_KEY: Record<string, keyof DayMetricPrisma> = {
   carbs: 'carbsTarget',
   fat: 'fatTarget',
 };
+const TOUCH_TARGET_SX = { width: 44, height: 44 };
 
 export default function NutritionClient({
   userId,
   initialDayMetrics,
   initialEvents,
-  readOnly: readOnlyProp = false,
-  canSetTargets = false,
+  canEditActuals = true,
+  canEditTargets = true,
 }: Props) {
   useAppBar({ title: 'Nutrition' });
   const today = useMemo(() => new Date(), []);
@@ -147,8 +173,6 @@ export default function NutritionClient({
   const [dayMetrics, setDayMetrics] = useState<DayMetricPrisma[]>(initialDayMetrics);
   const [events] = useState<EventPrisma[]>(initialEvents);
 
-  const readOnly = readOnlyProp;
-
   const [editingDate, setEditingDate] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<EditValues>({
     calories: '', protein: '', carbs: '', fat: '',
@@ -156,15 +180,17 @@ export default function NutritionClient({
     steps: '', sleepMins: '', stepsTarget: '', sleepMinsTarget: '', weight: '',
   });
   const [savingDay, setSavingDay] = useState(false);
+  const [daySaveNotice, setDaySaveNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const [targetsDialogOpen, setTargetsDialogOpen] = useState(false);
   const [weekTargetValues, setWeekTargetValues] = useState<WeekTargetValues>({
-    calories: '', protein: '', carbs: '', fat: '', steps: '', sleep: '',
+    calories: '', protein: '', carbs: '', fat: '', steps: '', sleepMins: '',
   });
   const [savingTargets, setSavingTargets] = useState(false);
 
   const activeBlock = useMemo(() => getActiveBlock(events, today), [events, today]);
   const weekDays = useMemo(() => getWeekDays(weekStart), [weekStart]);
+  const todayStr = useMemo(() => convertDateToDateString(today), [today]);
 
   const metricsByDate = useMemo(() => {
     const map = new Map<string, DayMetricPrisma>();
@@ -235,7 +261,16 @@ export default function NutritionClient({
           }
           return [...prev, updated];
         });
+        if (hasAnyMacroActuals(updated)) {
+          trackFirstWeekEvent('first_metric_logged', { source: 'nutrition_day_save' });
+        }
+        if (hasAnyMacroTargets(updated)) {
+          trackFirstWeekEvent('first_nutrition_target_set', { source: 'nutrition_day_save' });
+        }
         setEditingDate(null);
+        setDaySaveNotice({ type: 'success', message: `Saved ${format(new Date(dateStr), 'EEE d MMM')}` });
+      } catch {
+        setDaySaveNotice({ type: 'error', message: 'Failed to save nutrition entry. Please try again.' });
       } finally {
         setSavingDay(false);
       }
@@ -246,7 +281,7 @@ export default function NutritionClient({
   const saveWeekTargets = useCallback(async () => {
     setSavingTargets(true);
     try {
-      await Promise.all(
+      const results = await Promise.allSettled(
         weekDays.map(day => {
           const dateStr = convertDateToDateString(day);
           const existing = metricsByDate.get(dateStr);
@@ -266,27 +301,49 @@ export default function NutritionClient({
             carbsTarget: weekTargetValues.carbs !== '' ? toIntOrNull(weekTargetValues.carbs) : (existing?.carbsTarget ?? null),
             fatTarget: weekTargetValues.fat !== '' ? toIntOrNull(weekTargetValues.fat) : (existing?.fatTarget ?? null),
             stepsTarget: weekTargetValues.steps !== '' ? toIntOrNull(weekTargetValues.steps) : (existing?.stepsTarget ?? null),
-            sleepMinsTarget: weekTargetValues.sleep !== '' ? toIntOrNull(weekTargetValues.sleep) : (existing?.sleepMinsTarget ?? null),
+            sleepMinsTarget: weekTargetValues.sleepMins !== '' ? toIntOrNull(weekTargetValues.sleepMins) : (existing?.sleepMinsTarget ?? null),
             customMetrics: existing?.customMetrics ?? null,
           };
           return updateDayMetricClient(merged).then(updated => ({ dateStr, updated }));
         })
-      ).then(results => {
+      );
+
+      const successes = results
+        .filter((r): r is PromiseFulfilledResult<{ dateStr: string; updated: DayMetricPrisma }> => r.status === 'fulfilled')
+        .map(r => r.value);
+      const failures = results.filter(r => r.status === 'rejected').length;
+
+      if (successes.length > 0) {
         setDayMetrics(prev => {
           const map = new Map(prev.map(m => [convertDateToDateString(new Date(m.date)), m]));
-          for (const { dateStr, updated } of results) {
+          for (const { dateStr, updated } of successes) {
             map.set(dateStr, updated);
           }
           return Array.from(map.values());
         });
-      });
+      }
+
+      if (failures > 0) {
+        setDaySaveNotice({
+          type: 'error',
+          message: `Week targets updated for ${successes.length}/7 days. ${failures} failed.`,
+        });
+        return;
+      }
+
       setTargetsDialogOpen(false);
+      if (successes.some(({ updated }) => hasAnyMacroTargets(updated))) {
+        trackFirstWeekEvent('first_nutrition_target_set', { source: 'nutrition_week_targets' });
+      }
+      setDaySaveNotice({ type: 'success', message: 'Week targets saved for all 7 days.' });
+    } catch {
+      setDaySaveNotice({ type: 'error', message: 'Failed to save week targets. Please try again.' });
     } finally {
       setSavingTargets(false);
     }
   }, [userId, weekDays, metricsByDate, weekTargetValues]);
 
-  const weekLabel = `${format(weekStart, 'MMM')}  Week ${getISOWeek(weekStart)}`;
+  const weekLabel = `${format(weekStart, 'MMM yyyy')} · Week ${getISOWeek(weekStart)}`;
 
   return (
     <>
@@ -318,7 +375,7 @@ export default function NutritionClient({
                   This week — average
                 </Typography>
                 <Stack spacing={1.5} sx={{ mt: 1 }}>
-                  {MACROS.map(({ key, label, unit, color }) => {
+                  {MACROS.map(({ key, label, unit, colorToken }) => {
                     const actual = weeklyAvg[key];
                     const target = weeklyAvg[TARGET_KEY[key]];
                     const pct = actual !== null && target ? Math.min(100, Math.round((actual / target) * 100)) : null;
@@ -340,7 +397,7 @@ export default function NutritionClient({
                               height: 6,
                               borderRadius: 3,
                               backgroundColor: 'action.hover',
-                              '& .MuiLinearProgress-bar': { backgroundColor: color },
+                              '& .MuiLinearProgress-bar': { backgroundColor: colorToken },
                             }}
                           />
                         )}
@@ -357,6 +414,7 @@ export default function NutritionClient({
                 size="small"
                 onClick={() => setWeekStart(d => addDays(d, -7))}
                 aria-label="Previous week"
+                sx={TOUCH_TARGET_SX}
               >
                 <ChevronLeftIcon />
               </IconButton>
@@ -365,12 +423,19 @@ export default function NutritionClient({
                 size="small"
                 onClick={() => setWeekStart(d => addDays(d, 7))}
                 aria-label="Next week"
+                sx={TOUCH_TARGET_SX}
               >
                 <ChevronRightIcon />
               </IconButton>
             </Stack>
 
-            {(!readOnly || canSetTargets) && (
+            {!canEditActuals && canEditTargets && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                Coach view: daily logs are read-only, but weekly targets can be updated.
+              </Typography>
+            )}
+
+            {canEditTargets && (
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
                 <Button
                   size="small"
@@ -389,6 +454,7 @@ export default function NutritionClient({
                 const dateStr = convertDateToDateString(day);
                 const metric = metricsByDate.get(dateStr);
                 const isEditing = editingDate === dateStr;
+                const isToday = dateStr === todayStr;
                 const hasActuals = metric && (
                   metric.calories !== null || metric.protein !== null ||
                   metric.carbs !== null || metric.fat !== null
@@ -399,21 +465,25 @@ export default function NutritionClient({
                 );
 
                 return (
-                  <Card key={dateStr} variant="outlined">
+                  <Card
+                    key={dateStr}
+                    variant="outlined"
+                    sx={isToday ? { borderColor: 'primary.main', backgroundColor: 'action.selected' } : undefined}
+                  >
                     <CardContent sx={{ pb: isEditing ? undefined : '12px !important', pt: 1.5, px: 2 }}>
                       {/* Header row */}
                       <Stack direction="row" alignItems="center" justifyContent="space-between">
                         <Typography variant="subtitle2" fontWeight={600}>
                           {format(day, 'EEE d MMM')}
                         </Typography>
-                        {!readOnly && !isEditing && (
-                          <IconButton size="small" onClick={() => openEditor(dateStr)} aria-label="Edit">
+                        {canEditActuals && !isEditing && (
+                          <IconButton size="small" onClick={() => openEditor(dateStr)} aria-label="Edit" sx={TOUCH_TARGET_SX}>
                             <EditIcon fontSize="small" />
                           </IconButton>
                         )}
                         {isEditing && (
                           <Stack direction="row" spacing={0.5}>
-                            <IconButton size="small" onClick={closeEditor} aria-label="Cancel">
+                            <IconButton size="small" onClick={closeEditor} aria-label="Cancel" sx={TOUCH_TARGET_SX}>
                               <CloseIcon fontSize="small" />
                             </IconButton>
                             <IconButton
@@ -422,6 +492,7 @@ export default function NutritionClient({
                               onClick={() => saveDay(dateStr)}
                               disabled={savingDay}
                               aria-label="Save"
+                              sx={TOUCH_TARGET_SX}
                             >
                               {savingDay ? <CircularProgress size={16} /> : <CheckIcon fontSize="small" />}
                             </IconButton>
@@ -473,6 +544,9 @@ export default function NutritionClient({
                           </Typography>
                           <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}>
                             {MACROS.map(({ key, label, unit }) => (
+                              (() => {
+                                const errorText = getNumericFieldError(editValues[key], key === 'calories' ? 10000 : 1000);
+                                return (
                               <TextField
                                 key={key}
                                 label={`${label} (${unit})`}
@@ -482,7 +556,11 @@ export default function NutritionClient({
                                 onChange={e => setEditValues(v => ({ ...v, [key]: e.target.value }))}
                                 sx={{ width: 130 }}
                                 inputProps={{ min: 0 }}
+                                error={!!errorText}
+                                helperText={errorText}
                               />
+                                );
+                              })()
                             ))}
                           </Stack>
 
@@ -493,6 +571,7 @@ export default function NutritionClient({
                           <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}>
                             {MACROS.map(({ key, label, unit }) => {
                               const tKey = `${key}Target` as keyof EditValues;
+                              const errorText = getNumericFieldError(editValues[tKey], key === 'calories' ? 10000 : 1000);
                               return (
                                 <TextField
                                   key={tKey}
@@ -503,6 +582,8 @@ export default function NutritionClient({
                                   onChange={e => setEditValues(v => ({ ...v, [tKey]: e.target.value }))}
                                   sx={{ width: 130 }}
                                   inputProps={{ min: 0 }}
+                                  error={!!errorText}
+                                  helperText={errorText}
                                 />
                               );
                             })}
@@ -521,6 +602,8 @@ export default function NutritionClient({
                               onChange={e => setEditValues(v => ({ ...v, weight: e.target.value }))}
                               sx={{ width: 130 }}
                               inputProps={{ min: 0, step: 0.1 }}
+                              error={!!getNumericFieldError(editValues.weight, 500)}
+                              helperText={getNumericFieldError(editValues.weight, 500)}
                             />
                             <TextField
                               label="Steps"
@@ -530,6 +613,8 @@ export default function NutritionClient({
                               onChange={e => setEditValues(v => ({ ...v, steps: e.target.value }))}
                               sx={{ width: 130 }}
                               inputProps={{ min: 0 }}
+                              error={!!getNumericFieldError(editValues.steps, 100000)}
+                              helperText={getNumericFieldError(editValues.steps, 100000)}
                             />
                             <TextField
                               label="Steps target"
@@ -539,6 +624,8 @@ export default function NutritionClient({
                               onChange={e => setEditValues(v => ({ ...v, stepsTarget: e.target.value }))}
                               sx={{ width: 130 }}
                               inputProps={{ min: 0 }}
+                              error={!!getNumericFieldError(editValues.stepsTarget, 100000)}
+                              helperText={getNumericFieldError(editValues.stepsTarget, 100000)}
                             />
                             <TextField
                               label="Sleep (mins)"
@@ -548,6 +635,8 @@ export default function NutritionClient({
                               onChange={e => setEditValues(v => ({ ...v, sleepMins: e.target.value }))}
                               sx={{ width: 130 }}
                               inputProps={{ min: 0 }}
+                              error={!!getNumericFieldError(editValues.sleepMins, 1440)}
+                              helperText={getNumericFieldError(editValues.sleepMins, 1440)}
                             />
                             <TextField
                               label="Sleep target (mins)"
@@ -557,6 +646,8 @@ export default function NutritionClient({
                               onChange={e => setEditValues(v => ({ ...v, sleepMinsTarget: e.target.value }))}
                               sx={{ width: 130 }}
                               inputProps={{ min: 0 }}
+                              error={!!getNumericFieldError(editValues.sleepMinsTarget, 1440)}
+                              helperText={getNumericFieldError(editValues.sleepMinsTarget, 1440)}
                             />
                           </Stack>
                         </Box>
@@ -585,6 +676,8 @@ export default function NutritionClient({
               value={weekTargetValues.calories}
               onChange={e => setWeekTargetValues(v => ({ ...v, calories: e.target.value }))}
               inputProps={{ min: 0 }}
+              error={!!getNumericFieldError(weekTargetValues.calories, 10000)}
+              helperText={getNumericFieldError(weekTargetValues.calories, 10000)}
             />
             <TextField
               label="Protein (g)"
@@ -594,6 +687,8 @@ export default function NutritionClient({
               value={weekTargetValues.protein}
               onChange={e => setWeekTargetValues(v => ({ ...v, protein: e.target.value }))}
               inputProps={{ min: 0 }}
+              error={!!getNumericFieldError(weekTargetValues.protein, 1000)}
+              helperText={getNumericFieldError(weekTargetValues.protein, 1000)}
             />
             <TextField
               label="Carbs (g)"
@@ -603,6 +698,8 @@ export default function NutritionClient({
               value={weekTargetValues.carbs}
               onChange={e => setWeekTargetValues(v => ({ ...v, carbs: e.target.value }))}
               inputProps={{ min: 0 }}
+              error={!!getNumericFieldError(weekTargetValues.carbs, 1000)}
+              helperText={getNumericFieldError(weekTargetValues.carbs, 1000)}
             />
             <TextField
               label="Fat (g)"
@@ -612,6 +709,8 @@ export default function NutritionClient({
               value={weekTargetValues.fat}
               onChange={e => setWeekTargetValues(v => ({ ...v, fat: e.target.value }))}
               inputProps={{ min: 0 }}
+              error={!!getNumericFieldError(weekTargetValues.fat, 1000)}
+              helperText={getNumericFieldError(weekTargetValues.fat, 1000)}
             />
             <TextField
               label="Steps"
@@ -621,15 +720,19 @@ export default function NutritionClient({
               value={weekTargetValues.steps}
               onChange={e => setWeekTargetValues(v => ({ ...v, steps: e.target.value }))}
               inputProps={{ min: 0 }}
+              error={!!getNumericFieldError(weekTargetValues.steps, 100000)}
+              helperText={getNumericFieldError(weekTargetValues.steps, 100000)}
             />
             <TextField
               label="Sleep (mins)"
               size="small"
               type="number"
               fullWidth
-              value={weekTargetValues.sleep}
-              onChange={e => setWeekTargetValues(v => ({ ...v, sleep: e.target.value }))}
+              value={weekTargetValues.sleepMins}
+              onChange={e => setWeekTargetValues(v => ({ ...v, sleepMins: e.target.value }))}
               inputProps={{ min: 0 }}
+              error={!!getNumericFieldError(weekTargetValues.sleepMins, 1440)}
+              helperText={getNumericFieldError(weekTargetValues.sleepMins, 1440)}
             />
           </Stack>
         </DialogContent>
@@ -647,6 +750,18 @@ export default function NutritionClient({
           </Button>
         </DialogActions>
       </Dialog>
+      <Snackbar
+        open={daySaveNotice !== null}
+        autoHideDuration={3000}
+        onClose={() => setDaySaveNotice(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        {daySaveNotice ? (
+          <Alert onClose={() => setDaySaveNotice(null)} severity={daySaveNotice.type} variant="filled" sx={{ width: '100%' }}>
+            {daySaveNotice.message}
+          </Alert>
+        ) : <span />}
+      </Snackbar>
     </>
   );
 }
