@@ -1,6 +1,6 @@
 import {getServerSession} from "next-auth/next";
 import {authOptions} from "@lib/auth";
-import {NextResponse} from "next/server";
+import {forbiddenResponse, unauthenticatedResponse} from '@lib/apiResponses';
 import {getCoachFromUser} from "@lib/api";
 
 /**
@@ -11,13 +11,13 @@ import {getCoachFromUser} from "@lib/api";
 const confirmPermission = async (userId: string): Promise<void> => {
   const session = await getServerSession(authOptions);
   if (!session) {
-    throw NextResponse.json({error: "Not authenticated"}, {status: 401});
+    throw unauthenticatedResponse();
   }
   if (
     session.user.id !== userId &&
     session.user.id !== (await getCoachFromUser(userId))?.coachId
   ) {
-    throw NextResponse.json({error: "Not authorized"}, {status: 403});
+    throw forbiddenResponse();
   }
 };
 

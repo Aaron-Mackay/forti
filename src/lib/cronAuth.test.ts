@@ -33,7 +33,7 @@ describe('validateCronRequest', () => {
     const res = validateCronRequest(req);
 
     expect(res?.status).toBe(401);
-    await expect(res?.json()).resolves.toEqual({ error: 'Unauthorized' });
+    await expect(res?.json()).resolves.toMatchObject({ code: 'UNAUTHENTICATED' });
   });
 
   it('returns null when secret is correct', () => {
