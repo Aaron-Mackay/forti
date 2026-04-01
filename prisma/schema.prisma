@@ -10,43 +10,43 @@ datasource db {
 }
 
 model User {
-  id                String             @id @default(cuid())
-  email             String             @unique
-  name              String
-  image             String?
-  emailVerified     DateTime?
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  image         String?
+  emailVerified DateTime?
 
   // NextAuth required
-  accounts          Account[]
-  sessions          Session[]
+  accounts Account[]
+  sessions Session[]
 
   plans             Plan[]
   events            Event[]
   userExerciseNotes UserExerciseNote[]
   dayMetrics        DayMetric[]
 
-  settings          Json?
+  settings Json?
 
   // self relation (coach <-> clients)
-  coachId           String?
-  coach             User?              @relation("CoachClients", fields: [coachId], references: [id])
-  clients           User[]             @relation("CoachClients")
+  coachId String?
+  coach   User?   @relation("CoachClients", fields: [coachId], references: [id])
+  clients User[]  @relation("CoachClients")
 
   // coach linking system
   coachCode             String?        @unique // 6-digit string, generated once on activation
   sentCoachRequest      CoachRequest?  @relation("ClientRequests")
   receivedCoachRequests CoachRequest[] @relation("CoachRequests")
 
-  aiUsageLogs       AiUsageLog[]
-  weeklyCheckIns    WeeklyCheckIn[]
-  pushSubscriptions PushSubscription[]
-  supplements       Supplement[]
-  notifications     Notification[]
-  createdExercises            Exercise[]                   @relation("UserCreatedExercises")
-  libraryAssets               LibraryAsset[]
-  coachExerciseDescriptions   CoachExerciseDescription[]   @relation("CoachExerciseDescriptions")
-  learningPlans               LearningPlan[]               @relation("CoachLearningPlans")
-  learningAssignments         LearningPlanAssignment[]     @relation("ClientAssignments")
+  aiUsageLogs               AiUsageLog[]
+  weeklyCheckIns            WeeklyCheckIn[]
+  pushSubscriptions         PushSubscription[]
+  supplements               Supplement[]
+  notifications             Notification[]
+  createdExercises          Exercise[]                 @relation("UserCreatedExercises")
+  libraryAssets             LibraryAsset[]
+  coachExerciseDescriptions CoachExerciseDescription[] @relation("CoachExerciseDescriptions")
+  learningPlans             LearningPlan[]             @relation("CoachLearningPlans")
+  learningAssignments       LearningPlanAssignment[]   @relation("ClientAssignments")
 }
 
 enum CoachRequestStatus {
@@ -63,23 +63,23 @@ model CoachRequest {
   status    CoachRequestStatus @default(Pending)
   createdAt DateTime           @default(now())
 
-  @@index([coachId])
+  @@index([coachId, status, createdAt(sort: Desc)])
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?
-  access_token       String?
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?
-  session_state      String?
-  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -123,11 +123,10 @@ model Event {
   customColor         String?
   eventType           EventType
   blockSubtype        BlockSubtype?
-  recurrenceFrequency String?       // "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"; null = not recurring
+  recurrenceFrequency String? // "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"; null = not recurring
   recurrenceEnd       DateTime?     @db.Date // inclusive end date of recurrence; null = forever
 
-  @@index([userId])
-  @@index([startDate, endDate])
+  @@index([userId, startDate, endDate])
 }
 
 model DayMetric {
@@ -152,10 +151,9 @@ model DayMetric {
   sleepMinsTarget Int?
 
   // Custom user-defined metrics: { "<uuid>": { value: Float, target: Float } }
-  customMetrics   Json?
+  customMetrics Json?
 
   @@unique([userId, date])
-  @@index([userId])
 }
 
 model Plan {
@@ -172,10 +170,10 @@ model Plan {
 }
 
 model Week {
-  id      Int      @id @default(autoincrement())
-  order   Int
-  plan    Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
-  planId  Int
+  id       Int       @id @default(autoincrement())
+  order    Int
+  plan     Plan      @relation(fields: [planId], references: [id], onDelete: Cascade)
+  planId   Int
   workouts Workout[]
 
   @@unique([planId, order])
@@ -197,19 +195,19 @@ model Workout {
 }
 
 model Exercise {
-  id               Int                @id @default(autoincrement())
-  name             String
-  category         ExerciseCategory?
-  description      String?
-  equipment        String[]           @default([])
-  primaryMuscles   String[]           @default([])
-  secondaryMuscles String[]           @default([])
+  id                 Int                        @id @default(autoincrement())
+  name               String
+  category           ExerciseCategory?
+  description        String?
+  equipment          String[]                   @default([])
+  primaryMuscles     String[]                   @default([])
+  secondaryMuscles   String[]                   @default([])
   workoutLinks       WorkoutExercise[]
-  substitutedByLinks WorkoutExercise[] @relation("SubstitutedExercises")
+  substitutedByLinks WorkoutExercise[]          @relation("SubstitutedExercises")
   UserExerciseNote   UserExerciseNote[]
-  createdByUserId      String?
-  createdByUser        User?                        @relation("UserCreatedExercises", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  coachDescriptions    CoachExerciseDescription[]
+  createdByUserId    String?
+  createdByUser      User?                      @relation("UserCreatedExercises", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  coachDescriptions  CoachExerciseDescription[]
 
   @@unique([name, category, createdByUserId], name: "name_category_user")
   @@index([createdByUserId])
@@ -225,13 +223,13 @@ model WorkoutExercise {
   restTime         String?
   repRange         String?
   notes            String?
-  targetRpe        Float?        // prescribed RPE target for this exercise
-  targetRir        Int?          // prescribed RIR target for this exercise
+  targetRpe        Float? // prescribed RPE target for this exercise
+  targetRir        Int? // prescribed RIR target for this exercise
   sets             ExerciseSet[]
-  cardioDuration   Float?        // minutes
-  cardioDistance   Float?        // km
-  cardioResistance Float?        // average resistance / incline
-  substitutedForId Int?          // original Exercise.id before substitution
+  cardioDuration   Float? // minutes
+  cardioDistance   Float? // km
+  cardioResistance Float? // average resistance / incline
+  substitutedForId Int? // original Exercise.id before substitution
   substitutedFor   Exercise?     @relation("SubstitutedExercises", fields: [substitutedForId], references: [id])
   isAdded          Boolean       @default(false) // true if added during workout (not in original plan)
   isBfr            Boolean       @default(false) // true if this is a BFR (Blood Flow Restriction) exercise
@@ -268,8 +266,6 @@ model UserExerciseNote {
   note       String
 
   @@unique([userId, exerciseId])
-  @@index([userId])
-  @@index([exerciseId])
 }
 
 model CoachExerciseDescription {
@@ -287,35 +283,34 @@ model CoachExerciseDescription {
 }
 
 model WeeklyCheckIn {
-  id               Int       @id @default(autoincrement())
-  userId           String
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  weekStartDate    DateTime  @db.Date   // the Monday of the check-in week (0 = Mon convention)
-  completedAt      DateTime?            // null = not yet submitted
+  id            Int       @id @default(autoincrement())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStartDate DateTime  @db.Date // the Monday of the check-in week (0 = Mon convention)
+  completedAt   DateTime? // null = not yet submitted
 
   // Subjective ratings (1–5)
-  energyLevel      Int?
-  moodRating       Int?
-  stressLevel      Int?
-  sleepQuality     Int?
-  recoveryRating   Int?
-  adherenceRating  Int?
+  energyLevel     Int?
+  moodRating      Int?
+  stressLevel     Int?
+  sleepQuality    Int?
+  recoveryRating  Int?
+  adherenceRating Int?
 
   // Training counts
   completedWorkouts Int?
   plannedWorkouts   Int?
 
   // Free text
-  weekReview       String?
-  coachMessage     String?
-  goalsNextWeek    String?
+  weekReview    String?
+  coachMessage  String?
+  goalsNextWeek String?
 
   // Coach feedback (written by coach)
-  coachNotes       String?
-  coachReviewedAt  DateTime?
+  coachNotes      String?
+  coachReviewedAt DateTime?
 
   @@unique([userId, weekStartDate])
-  @@index([userId])
 }
 
 model PushSubscription {
@@ -350,8 +345,8 @@ model Supplement {
   startDate DateTime  @db.Date
   endDate   DateTime? @db.Date
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
 }
@@ -399,8 +394,8 @@ model Notification {
   readAt    DateTime?
   createdAt DateTime         @default(now())
 
-  @@index([userId])
   @@index([userId, readAt])
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 model LearningPlan {
@@ -422,7 +417,7 @@ model LearningPlanStep {
   planId    Int
   plan      LearningPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
   order     Int
-  dayOffset Int           // days after assignment startDate to deliver
+  dayOffset Int // days after assignment startDate to deliver
   title     String
   body      String        @db.Text
   assetId   String?
@@ -444,6 +439,5 @@ model LearningPlanAssignment {
   createdAt    DateTime     @default(now())
 
   @@unique([planId, clientId])
-  @@index([clientId])
-  @@index([planId])
+  @@index([clientId, startDate(sort: Desc)])
 }
