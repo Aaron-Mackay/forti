@@ -373,6 +373,7 @@ VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=                   # mailto: URI e.g. mailto:noreply@example.com
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=    # Client-side public key (exposed to browser)
+NEXT_PUBLIC_APP_URL=             # Canonical main-app URL (e.g. https://app.forti.com); used by coach invite link to avoid pointing clients at the coach subdomain. Set in Production + Preview on Vercel; omit locally (falls back to window.location.origin)
 
 # Cron jobs (Vercel)
 CRON_SECRET=                     # Secures /api/cron/* endpoints
