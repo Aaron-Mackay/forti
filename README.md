@@ -85,6 +85,14 @@ There is a github action to update the schema. First, update the `schema.prisma`
 Then, run the `Migrate Database` Github action - it generates the migration file and commits it. 
 When the deployment is promoted to production, any migration files are applied to the production database.
 
+### Deployment environment variables
+
+The following environment variables are required for cron routes in deployed environments:
+
+- `CRON_SECRET` (required): shared secret used by `/api/cron/check-in-reminders` and `/api/cron/learning-plan-steps`.
+  - Requests must include `Authorization: Bearer <CRON_SECRET>`.
+  - If `CRON_SECRET` is missing at runtime, cron routes return `500` and log a configuration error.
+
 ---
 
 ## Database Schema
