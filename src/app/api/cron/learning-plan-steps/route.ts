@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@lib/prisma';
 import { notifyClientLearningPlanStep } from '@lib/notifications';
 import { StepProgressSchema, type StepProgressMap } from '@lib/learningPlanSchemas';
+import { validateCronRequest } from '@lib/cronAuth';
 
 /**
  * GET /api/cron/learning-plan-steps
@@ -10,10 +11,8 @@ import { StepProgressSchema, type StepProgressMap } from '@lib/learningPlanSchem
  * and which have not yet been notified, then delivers them.
  */
 export async function GET(req: NextRequest) {
-  const cronSecret = req.headers.get('authorization');
-  if (cronSecret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const authError = validateCronRequest(req);
+  if (authError) return authError;
 
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);

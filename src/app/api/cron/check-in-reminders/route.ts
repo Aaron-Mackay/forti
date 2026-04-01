@@ -3,6 +3,7 @@ import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import { getWeekStart, toDateOnly } from '@lib/checkInUtils';
 import { sendCheckInReminder, sendPushNotification } from '@lib/notifications';
+import { validateCronRequest } from '@lib/cronAuth';
 
 /**
  * GET /api/cron/check-in-reminders
@@ -11,11 +12,8 @@ import { sendCheckInReminder, sendPushNotification } from '@lib/notifications';
  * this week's check-in, then sends email + push reminders.
  */
 export async function GET(req: NextRequest) {
-  // Verify the request comes from the Vercel Cron scheduler
-  const cronSecret = req.headers.get('authorization');
-  if (cronSecret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const authError = validateCronRequest(req);
+  if (authError) return authError;
 
   // Today as 0=Mon…6=Sun
   const jsDay = new Date().getDay(); // 0=Sun…6=Sat
