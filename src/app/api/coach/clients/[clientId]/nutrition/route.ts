@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
+import { getCoachClientNutritionData } from '@lib/coachNutrition';
 import { notFoundResponse, forbiddenResponse, errorResponse } from '@lib/apiResponses';
 
 /**
@@ -28,26 +29,10 @@ export async function GET(
       return forbiddenResponse();
     }
 
-    // Verify the client belongs to this coach
-    const client = await prisma.user.findUnique({
-      where: { id: clientId },
-      select: { coachId: true },
-    });
-    if (!client) return notFoundResponse('Client');
-    if (client.coachId !== coachId) return forbiddenResponse();
+    const nutritionData = await getCoachClientNutritionData(coachId, clientId);
+    if (!nutritionData) return notFoundResponse('Client');
 
-    const [dayMetrics, events] = await Promise.all([
-      prisma.dayMetric.findMany({
-        where: { userId: clientId },
-        orderBy: { date: 'asc' },
-      }),
-      prisma.event.findMany({
-        where: { userId: clientId },
-        orderBy: { startDate: 'asc' },
-      }),
-    ]);
-
-    return NextResponse.json({ dayMetrics, events });
+    return NextResponse.json(nutritionData);
   } catch (err: unknown) {
     if (isAuthenticationError(err)) return authenticationErrorResponse();
     console.error(err);

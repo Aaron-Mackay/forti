@@ -13,6 +13,7 @@ import {
 import type { DayMetric } from '@prisma/client';
 import MetricsSummaryTable from './MetricsSummaryTable';
 import RatingField from './RatingField';
+import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
 
 interface Props {
   currentWeek: DayMetric[];
@@ -82,6 +83,7 @@ export default function CheckInForm({ currentWeek, weekPrior, onSubmitted }: Pro
         const data = await res.json() as { error?: string };
         throw new Error(data.error ?? 'Submission failed');
       }
+      trackFirstWeekEvent('first_checkin_submitted', { source: 'check-in' });
       onSubmitted();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');

@@ -42,8 +42,8 @@ export default function CheckInClient() {
   }, []);
 
   const loadHistory = useCallback(async (offset: number) => {
-    // Fetch past check-ins, excluding the current week (handled separately)
-    const res = await fetch(`/api/check-in?limit=10&offset=${offset}`);
+    // Fetch past check-ins only; current week is excluded server-side
+    const res = await fetch(`/api/check-in?limit=10&offset=${offset}&excludeCurrent=true`);
     if (!res.ok) throw new Error('Failed to load history');
     return res.json() as Promise<{ checkIns: WeeklyCheckIn[]; total: number }>;
   }, []);
@@ -55,13 +55,8 @@ export default function CheckInClient() {
       try {
         const [curr, hist] = await Promise.all([loadCurrent(), loadHistory(0)]);
         setCurrentData(curr);
-        // Exclude current week from history list (it's shown separately)
-        const currentWeekKey = curr.checkIn.weekStartDate;
-        const filtered = hist.checkIns.filter(
-          c => new Date(c.weekStartDate).getTime() !== new Date(currentWeekKey).getTime()
-        );
-        setHistory(filtered);
-        setHistoryTotal(hist.total - 1); // subtract current week
+        setHistory(hist.checkIns);
+        setHistoryTotal(hist.total);
         setHistoryOffset(0);
       } catch {
         setError('Failed to load your check-in data. Please try again.');
@@ -76,11 +71,7 @@ export default function CheckInClient() {
     const newOffset = historyOffset + 10;
     try {
       const hist = await loadHistory(newOffset);
-      const currentWeekKey = currentData?.checkIn.weekStartDate;
-      const filtered = hist.checkIns.filter(
-        c => !currentWeekKey || new Date(c.weekStartDate).getTime() !== new Date(currentWeekKey).getTime()
-      );
-      setHistory(prev => [...prev, ...filtered]);
+      setHistory(prev => [...prev, ...hist.checkIns]);
       setHistoryOffset(newOffset);
     } catch {
       setError('Failed to load more history.');

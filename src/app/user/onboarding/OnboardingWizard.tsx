@@ -2,6 +2,7 @@
 
 import React, { useState, Suspense } from 'react';
 import {
+  Alert,
   Avatar,
   Box,
   Button,
@@ -19,6 +20,7 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CHECK_IN_DAY_NAMES } from '@/types/checkInTypes';
 import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
 
 const TOTAL_STEPS = 3; // steps 0–2, then a done screen at step 3
 
@@ -234,6 +236,7 @@ function OnboardingWizardInner({ userId, initialName, initialImage }: Props) {
   const [coachModeActive, setCoachModeActive] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [coachCodeError, setCoachCodeError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // ── Avatar initials ──────────────────────────────────────────────────────
   const initials = name
@@ -247,6 +250,7 @@ function OnboardingWizardInner({ userId, initialName, initialImage }: Props) {
   async function handleFinish() {
     setSubmitting(true);
     setCoachCodeError(null);
+    setSubmitError(null);
 
     try {
       // 1. Update display name if changed
@@ -311,8 +315,10 @@ function OnboardingWizardInner({ userId, initialName, initialImage }: Props) {
         }
       }
 
+      trackFirstWeekEvent('onboarding_completed', { source: 'onboarding' });
       router.push('/user');
     } catch {
+      setSubmitError('We couldn’t complete setup. Please review your details and try again.');
       setSubmitting(false);
     }
   }
@@ -398,6 +404,12 @@ function OnboardingWizardInner({ userId, initialName, initialImage }: Props) {
           )}
           {isDoneStep && <StepDone />}
         </Box>
+
+        {submitError && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setSubmitError(null)}>
+            {submitError}
+          </Alert>
+        )}
 
         {/* Navigation */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
