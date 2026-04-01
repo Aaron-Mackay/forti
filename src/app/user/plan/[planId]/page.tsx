@@ -25,6 +25,7 @@ const PlanPage = async ({params}: { params: Promise<{ planId: string }> }) => {
         lockedInEditMode={false}
         categories={categories}
         planId={planId}
+        backHref={userDetails.id === loggedInUserId ? '/user/plan' : `/user/coach/clients/${userDetails.id}/plans`}
       />
     </WorkoutEditorProvider>
   )

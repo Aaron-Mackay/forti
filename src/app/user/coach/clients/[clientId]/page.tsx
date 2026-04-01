@@ -41,7 +41,7 @@ const ClientOverviewPage = async ({ params }: Props) => {
 
   return (
     <>
-      <AppBarTitle title="Overview" />
+      <AppBarTitle title="Overview" showBack backHref="/user/coach/clients" />
       <Paper sx={{ px: 2, pt: 2, minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
         <ClientQuickLinks clientId={clientId} />
         <DashboardCards

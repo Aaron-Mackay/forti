@@ -40,7 +40,7 @@ export default async function ClientPlansPage({ params }: Props) {
 
   return (
     <>
-      <AppBarTitle title="Plans" />
+      <AppBarTitle title="Plans" showBack backHref={`/user/coach/clients/${clientId}`} />
       <Card sx={{ display: 'flex', flexDirection: 'column' }}>
         <CardHeader
           title={`${client.name ?? 'Client'}'s Plans`}
