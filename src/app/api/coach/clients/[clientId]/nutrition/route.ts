@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireSession } from '@lib/requireSession';
+import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import { notFoundResponse, forbiddenResponse, errorResponse } from '@lib/apiResponses';
@@ -49,7 +49,7 @@ export async function GET(
 
     return NextResponse.json({ dayMetrics, events });
   } catch (err: unknown) {
-    if (err instanceof NextResponse) return err;
+    if (isAuthenticationError(err)) return authenticationErrorResponse();
     console.error(err);
     return errorResponse('Failed to fetch client nutrition data', 500);
   }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireSession } from '@lib/requireSession';
+import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import { getUserDayMetrics } from '@lib/api';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import prisma from '@lib/prisma';
@@ -57,7 +57,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    if (error instanceof NextResponse) return error;
+    if (isAuthenticationError(error)) return authenticationErrorResponse();
     console.error(error);
     return errorResponse('Failed to export metrics', 500);
   }

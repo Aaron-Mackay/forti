@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireSession } from '@lib/requireSession';
+import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { errorResponse, notFoundResponse, forbiddenResponse, validationErrorResponse } from '@lib/apiResponses';
 
@@ -38,7 +38,7 @@ export async function PATCH(
     });
     return NextResponse.json(updated);
   } catch (err: unknown) {
-    if (err instanceof NextResponse) return err;
+    if (isAuthenticationError(err)) return authenticationErrorResponse();
     return errorResponse('Failed to update supplement', 500);
   }
 }
@@ -59,7 +59,7 @@ export async function DELETE(
     await prisma.supplement.delete({ where: { id: supplementId } });
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
-    if (err instanceof NextResponse) return err;
+    if (isAuthenticationError(err)) return authenticationErrorResponse();
     return errorResponse('Failed to delete supplement', 500);
   }
 }

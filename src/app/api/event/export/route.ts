@@ -1,5 +1,5 @@
 import {NextResponse} from "next/server";
-import {requireSession} from "@lib/requireSession";
+import { requireSession, authenticationErrorResponse, isAuthenticationError } from "@lib/requireSession";
 import {getUserEvents} from "@lib/api";
 import {buildIcalString} from "@/app/api/event/icalBuilder";
 import {errorResponse} from "@lib/apiResponses";
@@ -17,7 +17,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    if (error instanceof NextResponse) return error;
+    if (isAuthenticationError(error)) return authenticationErrorResponse();
     console.error(error);
     return errorResponse('Failed to export calendar', 500);
   }

@@ -1,5 +1,5 @@
 import {NextRequest, NextResponse} from "next/server";
-import {requireSession} from "@lib/requireSession";
+import { requireSession, authenticationErrorResponse, isAuthenticationError } from "@lib/requireSession";
 import prisma from "@lib/prisma";
 import {buildIcalString} from "@/app/api/event/icalBuilder";
 import {errorResponse, notFoundResponse, forbiddenResponse} from "@lib/apiResponses";
@@ -28,7 +28,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       },
     });
   } catch (error) {
-    if (error instanceof NextResponse) return error;
+    if (isAuthenticationError(error)) return authenticationErrorResponse();
     console.error(error);
     return errorResponse('Failed to export event', 500);
   }

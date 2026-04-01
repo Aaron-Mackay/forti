@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireSession } from '@lib/requireSession';
+import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { errorResponse, validationErrorResponse } from '@lib/apiResponses';
 
@@ -26,7 +26,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json(updated);
   } catch (err: unknown) {
-    if (err instanceof NextResponse) return err;
+    if (isAuthenticationError(err)) return authenticationErrorResponse();
     console.error(err);
     return errorResponse('Failed to update profile', 500);
   }

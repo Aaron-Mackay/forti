@@ -4,6 +4,7 @@ import confirmPermission from "@lib/confirmPermission";
 import {DayMetricSchema} from "@lib/apiSchemas";
 import {errorResponse, validationErrorResponse} from "@lib/apiResponses";
 import {Prisma} from "@prisma/client";
+import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSession";
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
     const updated = await updateUserDayMetric(completeDayMetric);
     return NextResponse.json(updated);
   } catch (err: unknown) {
-    if (err instanceof NextResponse) return err;
+    if (isAuthenticationError(err)) return authenticationErrorResponse();
     console.error(err);
     return errorResponse('Failed to update day metric', 500);
   }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireSession } from '@lib/requireSession';
+import { authenticationErrorResponse, requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { forbiddenResponse, notFoundResponse } from '@lib/apiResponses';
 
@@ -10,8 +10,8 @@ export async function DELETE(
   let session;
   try {
     session = await requireSession();
-  } catch (e) {
-    return e as NextResponse;
+  } catch (_e) {
+    return authenticationErrorResponse();
   }
 
   const { id } = await params;

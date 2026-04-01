@@ -7,6 +7,7 @@ import {PlanInputSchema} from "@lib/planSchemas";
 import {ExerciseCategory} from "@prisma/client";
 import {computeE1rm} from "@lib/e1rm";
 import {findOrCreateExercise} from "@lib/exerciseQueries";
+import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSession";
 
 const SaveUserDataSchema = z.object({
   id: z.string(),
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
   try {
     await confirmPermission(userId);
   } catch (err) {
-    if (err instanceof NextResponse) return err;
+    if (isAuthenticationError(err)) return authenticationErrorResponse();
     throw err;
   }
 

@@ -6,6 +6,8 @@ import { POST } from './route';
 
 vi.mock('@lib/requireSession', () => ({
   requireSession: vi.fn(),
+  isAuthenticationError: (error: unknown) => error instanceof Error && error.name === 'AuthenticationError',
+  authenticationErrorResponse: () => Response.json({ error: 'Unauthorized' }, { status: 401 }),
 }));
 
 const { mockAiUsageLog } = vi.hoisted(() => ({
@@ -96,9 +98,10 @@ beforeEach(() => {
 describe('POST /api/plan/ai-import', () => {
   describe('authentication', () => {
     it('returns 401 when session is missing', async () => {
-      const { NextResponse } = await import('next/server');
       mockRequireSession.mockImplementation(() => {
-        throw NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const err = new Error('Unauthorized');
+        err.name = 'AuthenticationError';
+        throw err;
       });
 
       const req = makeRequest({ input: 'some workout' });

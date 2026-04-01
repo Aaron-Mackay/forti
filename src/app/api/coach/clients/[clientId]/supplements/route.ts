@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireSession } from '@lib/requireSession';
+import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import { forbiddenResponse, errorResponse, validationErrorResponse } from '@lib/apiResponses';
@@ -48,7 +48,7 @@ export async function GET(
     });
     return NextResponse.json(supplements);
   } catch (err: unknown) {
-    if (err instanceof NextResponse) return err;
+    if (isAuthenticationError(err)) return authenticationErrorResponse();
     return errorResponse('Failed to fetch client supplements', 500);
   }
 }
@@ -79,7 +79,7 @@ export async function POST(
     });
     return NextResponse.json(supplement, { status: 201 });
   } catch (err: unknown) {
-    if (err instanceof NextResponse) return err;
+    if (isAuthenticationError(err)) return authenticationErrorResponse();
     return errorResponse('Failed to create supplement', 500);
   }
 }
