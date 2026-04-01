@@ -143,8 +143,8 @@ export default function ExerciseDetailDrawer({
       onClose={onClose}
       onOpen={() => {}}
       PaperProps={{sx: {borderRadius: '16px 16px 0 0', maxHeight: '85dvh', overflowY: 'auto', p: 2}}}
-      disableDiscovery={false}
-      swipeAreaWidth={24}
+      disableDiscovery
+      disableSwipeToOpen
     >
       {exercise && (
         <Box>
