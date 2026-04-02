@@ -472,8 +472,10 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
     }
   }, [selectedWeekId, statePlan.weeks])
 
-  const allExercisesNamed = selectedWeek.workouts.every(wo =>
-    wo.exercises.every(ex => ex.exercise.name.trim().length > 0)
+  const allExercisesNamed = statePlan.weeks.every(week =>
+    week.workouts.every(wo =>
+      wo.exercises.every(ex => ex.exercise.name.trim().length > 0)
+    )
   )
   const canSave = !!statePlan.name.trim() && allExercisesNamed
 
