@@ -36,6 +36,7 @@ export const PlanBuilder = ({ blankPlan, clientId }: { blankPlan: PlanPrisma, cl
       const parsed = JSON.parse(raw) as ParsedPlan
       const plan = parsedPlanToPlanPrisma(parsed, blankPlan)
       dispatch({ type: 'REPLACE_PLAN', planId: PLACEHOLDER_ID, plan })
+      setWeekCount(String(plan.weeks.length))
       setView('editor')
     } catch {
       // ignore malformed data
