@@ -89,6 +89,7 @@ interface PlanSheetViewProps {
   onZoomChange: (zoom: number) => void;
   arrangeMode: boolean;
   creationMode?: boolean;
+  showWeekHeaders?: boolean;
 }
 
 // ── SortableExerciseTbody ──────────────────────────────────────────────────────
@@ -649,6 +650,7 @@ interface WeekBlockProps {
   dispatch: ActionDispatch<[WorkoutEditorAction]>;
   arrangeMode: boolean;
   creationMode: boolean;
+  showWeekHeaders: boolean;
   openPicker: (weekId: number, workoutId: number) => void;
   openRenamePicker: (weekId: number, workoutId: number, workoutExerciseId: number) => void;
   setMenuState: (state: MenuState | null) => void;
@@ -662,6 +664,7 @@ const WeekBlock = ({
   dispatch,
   arrangeMode,
   creationMode,
+  showWeekHeaders,
   openPicker,
   openRenamePicker,
   setMenuState,
@@ -686,7 +689,7 @@ const WeekBlock = ({
   return (
     <Box sx={{ mb: 3 }}>
       {/* Week header — hidden in creation mode */}
-      {!creationMode && (
+      {(!creationMode || showWeekHeaders) && (
         <Box
           sx={{
             display: 'flex',
@@ -784,7 +787,15 @@ const WeekBlock = ({
 
 // ── PlanSheetView ─────────────────────────────────────────────────────────────
 
-const PlanSheetView = ({ plan, planId, zoom, onZoomChange, arrangeMode, creationMode = false }: PlanSheetViewProps) => {
+const PlanSheetView = ({
+  plan,
+  planId,
+  zoom,
+  onZoomChange,
+  arrangeMode,
+  creationMode = false,
+  showWeekHeaders = false,
+}: PlanSheetViewProps) => {
   const { dispatch, allExercises } = useWorkoutEditorContext();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<{ weekId: number; workoutId: number } | null>(null);
@@ -944,6 +955,7 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange, arrangeMode, creation
               dispatch={dispatch}
               arrangeMode={arrangeMode}
               creationMode={creationMode}
+              showWeekHeaders={showWeekHeaders}
               openPicker={openPicker}
               openRenamePicker={openRenamePicker}
               setMenuState={setMenuState}

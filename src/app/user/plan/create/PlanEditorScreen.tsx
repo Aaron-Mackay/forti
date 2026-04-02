@@ -6,6 +6,7 @@ import {
   Autocomplete,
   Box,
   Button,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -85,6 +86,7 @@ const SortableExerciseRow = ({
   addExercise,
   dispatch,
   planId,
+  weekId,
 }: {
   ex: WorkoutExercisePrisma
   exerciseCount: number
@@ -92,6 +94,7 @@ const SortableExerciseRow = ({
   addExercise: (exercise: Exercise) => void
   dispatch: ActionDispatch<[WorkoutEditorAction]>
   planId: number
+  weekId: number
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ex.id,
@@ -147,7 +150,7 @@ const SortableExerciseRow = ({
               dispatch({
                 type: 'UPDATE_EXERCISE',
                 planId,
-                weekId: PLACEHOLDER_ID,
+                weekId,
                 workoutId: ex.workoutId,
                 workoutExerciseId: ex.id,
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -168,7 +171,7 @@ const SortableExerciseRow = ({
               dispatch({
                 type: 'REMOVE_EXERCISE',
                 planId,
-                weekId: PLACEHOLDER_ID,
+                weekId,
                 workoutId: ex.workoutId,
                 exerciseId: ex.id,
               })
@@ -187,7 +190,7 @@ const SortableExerciseRow = ({
           dispatch({
             type: 'UPDATE_EXERCISE',
             planId,
-            weekId: PLACEHOLDER_ID,
+            weekId,
             workoutId: ex.workoutId,
             workoutExerciseId: ex.id,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -210,7 +213,7 @@ const SortableExerciseRow = ({
             dispatch({
               type: 'UPDATE_SET_COUNT',
               planId,
-              weekId: PLACEHOLDER_ID,
+              weekId,
               workoutId: ex.workoutId,
               workoutExerciseId: ex.id,
               setCount: parseInt(e.target.value) || 1,
@@ -229,7 +232,7 @@ const SortableExerciseRow = ({
             dispatch({
               type: 'SET_DROPS_PER_SET',
               planId,
-              weekId: PLACEHOLDER_ID,
+              weekId,
               workoutId: ex.workoutId,
               exerciseId: ex.id,
               dropCount: Math.max(0, parseInt(e.target.value) || 0),
@@ -247,7 +250,7 @@ const SortableExerciseRow = ({
             dispatch({
               type: 'UPDATE_REP_RANGE',
               planId,
-              weekId: PLACEHOLDER_ID,
+              weekId,
               workoutId: ex.workoutId,
               workoutExerciseId: ex.id,
               repRange: e.target.value,
@@ -265,7 +268,7 @@ const SortableExerciseRow = ({
             dispatch({
               type: 'UPDATE_REST_TIME',
               planId,
-              weekId: PLACEHOLDER_ID,
+              weekId,
               workoutId: ex.workoutId,
               workoutExerciseId: ex.id,
               restTime: e.target.value,
@@ -286,6 +289,7 @@ const SortableWorkoutCard = ({
   addExercise,
   dispatch,
   planId,
+  weekId,
 }: {
   workout: WorkoutPrisma
   showDelete: boolean
@@ -293,6 +297,7 @@ const SortableWorkoutCard = ({
   addExercise: (exercise: Exercise) => void
   dispatch: ActionDispatch<[WorkoutEditorAction]>
   planId: number
+  weekId: number
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: workout.id,
@@ -319,7 +324,7 @@ const SortableWorkoutCard = ({
     dispatch({
       type: 'REORDER_EXERCISE',
       planId,
-      weekId: PLACEHOLDER_ID,
+      weekId,
       workoutId: workout.id,
       fromIndex,
       toIndex,
@@ -347,7 +352,7 @@ const SortableWorkoutCard = ({
             dispatch({
               type: 'UPDATE_WORKOUT_NAME',
               planId,
-              weekId: PLACEHOLDER_ID,
+              weekId,
               workoutId: workout.id,
               name: e.target.value,
             })
@@ -359,7 +364,7 @@ const SortableWorkoutCard = ({
             dispatch({
               type: 'DUPLICATE_WORKOUT',
               planId,
-              weekId: PLACEHOLDER_ID,
+              weekId,
               workoutId: workout.id,
             })
           }
@@ -373,7 +378,7 @@ const SortableWorkoutCard = ({
               dispatch({
                 type: 'REMOVE_WORKOUT',
                 planId,
-                weekId: PLACEHOLDER_ID,
+                weekId,
                 workoutId: workout.id,
               })
             }
@@ -397,6 +402,7 @@ const SortableWorkoutCard = ({
                 addExercise={addExercise}
                 dispatch={dispatch}
                 planId={planId}
+                weekId={weekId}
               />
             </React.Fragment>
           ))}
@@ -410,7 +416,7 @@ const SortableWorkoutCard = ({
           dispatch({
             type: 'ADD_EXERCISE_WITH_SET',
             planId: PLACEHOLDER_ID,
-            weekId: PLACEHOLDER_ID,
+            weekId,
             workoutId: workout.id,
           })
         }
@@ -439,6 +445,7 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
   const [enrichedExercises, setEnrichedExercises] = useState<EnrichedExercise[]>([])
   const [viewMode, setViewMode] = useState<'classic' | 'sheet'>('classic')
   const [arrangeMode, setArrangeMode] = useState(false)
+  const [selectedWeekId, setSelectedWeekId] = useState<number | null>(null)
   const [zoom, setZoom] = useState(() => {
     if (typeof window === 'undefined') return 1
     const v = parseFloat(localStorage.getItem('sheetZoom') ?? '')
@@ -451,9 +458,21 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
     localStorage.setItem('sheetZoom', String(rounded))
   }, [])
 
-  const workouts = statePlan.weeks[0].workouts
+  const selectedWeek = statePlan.weeks.find(w => w.id === selectedWeekId) ?? statePlan.weeks[0]
+  const selectedWeekIndex = statePlan.weeks.findIndex(w => w.id === selectedWeek.id)
+  const workouts = selectedWeek.workouts
 
-  const allExercisesNamed = statePlan.weeks[0].workouts.every(wo =>
+  React.useEffect(() => {
+    if (!selectedWeekId && statePlan.weeks[0]) {
+      setSelectedWeekId(statePlan.weeks[0].id)
+      return
+    }
+    if (selectedWeekId && !statePlan.weeks.some(w => w.id === selectedWeekId)) {
+      setSelectedWeekId(statePlan.weeks[0]?.id ?? null)
+    }
+  }, [selectedWeekId, statePlan.weeks])
+
+  const allExercisesNamed = selectedWeek.workouts.every(wo =>
     wo.exercises.every(ex => ex.exercise.name.trim().length > 0)
   )
   const canSave = !!statePlan.name.trim() && allExercisesNamed
@@ -483,16 +502,18 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
     const existingNames = new Set(allExercises.map((e) => e.name.toLowerCase()))
     const seen = new Set<string>()
     const newExercises: { name: string }[] = []
-    for (const wo of statePlan.weeks[0].workouts) {
-      for (const ex of wo.exercises) {
-        const nameLower = ex.exercise.name.toLowerCase()
-        if (
-          (!ex.exercise.id || ex.exercise.id <= 0) &&
-          !existingNames.has(nameLower) &&
-          !seen.has(nameLower)
-        ) {
-          seen.add(nameLower)
-          newExercises.push({ name: ex.exercise.name })
+    for (const week of statePlan.weeks) {
+      for (const wo of week.workouts) {
+        for (const ex of wo.exercises) {
+          const nameLower = ex.exercise.name.toLowerCase()
+          if (
+            (!ex.exercise.id || ex.exercise.id <= 0) &&
+            !existingNames.has(nameLower) &&
+            !seen.has(nameLower)
+          ) {
+            seen.add(nameLower)
+            newExercises.push({ name: ex.exercise.name })
+          }
         }
       }
     }
@@ -566,7 +587,7 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
     dispatch({
       type: 'REORDER_WORKOUT',
       planId: statePlan.id,
-      weekId: PLACEHOLDER_ID,
+      weekId: selectedWeek.id,
       fromIndex,
       toIndex,
     })
@@ -655,6 +676,7 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
               onZoomChange={handleZoomChange}
               arrangeMode={arrangeMode}
               creationMode
+              showWeekHeaders={statePlan.weeks.length > 1}
             />
           </Box>
         ) : (
@@ -662,10 +684,28 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
             <Divider />
 
             <Typography variant="overline" sx={{ px: 2, pt: 1, display: 'block', color: 'text.secondary' }}>
-              Week template
+              {statePlan.weeks.length > 1 ? `Week ${selectedWeekIndex + 1}` : 'Week template'}
             </Typography>
 
             <Box sx={{ p: 2, pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {statePlan.weeks.length > 1 && (
+                <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5 }}>
+                  {statePlan.weeks
+                    .sort((a, b) => a.order - b.order)
+                    .map((week, i) => (
+                      <Chip
+                        key={week.id}
+                        label={`Week ${i + 1}`}
+                        size="small"
+                        clickable
+                        color={week.id === selectedWeek.id ? 'primary' : 'default'}
+                        variant={week.id === selectedWeek.id ? 'filled' : 'outlined'}
+                        onClick={() => setSelectedWeekId(week.id)}
+                        sx={{ flexShrink: 0 }}
+                      />
+                    ))}
+                </Box>
+              )}
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleWorkoutDragEnd}>
                 <SortableContext items={workouts.map((wo) => wo.id)} strategy={verticalListSortingStrategy}>
                   {workouts.map((wo) => (
@@ -677,6 +717,7 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
                       addExercise={addExercise}
                       dispatch={dispatch}
                       planId={statePlan.id}
+                      weekId={selectedWeek.id}
                     />
                   ))}
                 </SortableContext>
@@ -688,7 +729,7 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
                   dispatch({
                     type: 'ADD_WORKOUT_WITH_EXERCISE_WITH_SET',
                     planId: PLACEHOLDER_ID,
-                    weekId: PLACEHOLDER_ID,
+                    weekId: selectedWeek.id,
                   })
                 }
               >
