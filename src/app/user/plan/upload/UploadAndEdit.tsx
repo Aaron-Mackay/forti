@@ -26,6 +26,9 @@ import type { AiImportResponse } from '@/app/api/plan/ai-import/route'
 
 const STEPS = ['Uploading spreadsheet', 'Analysing with AI', 'Building plan']
 
+// Mirror of MAX_INPUT_BYTES_SPREADSHEET in src/app/api/plan/ai-import/route.ts
+const MAX_INPUT_BYTES = 150_000
+
 function StepIcon({ stepIndex, phase }: { stepIndex: number; phase: number }) {
   const stepPhase = stepIndex + 1
   if (phase > stepPhase) return <CheckCircleIcon sx={{ color: 'success.main' }} />
@@ -42,6 +45,9 @@ export const UploadAndEdit = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
+  const inputBytes = new TextEncoder().encode(text).length
+  const isOverLimit = inputBytes > MAX_INPUT_BYTES
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -55,6 +61,10 @@ export const UploadAndEdit = () => {
 
   const handleSubmit = async () => {
     if (!text.trim()) return
+    if (isOverLimit) {
+      setError(`Input too large — please reduce to under 150 KB (currently ${(inputBytes / 1000).toFixed(1)} KB)`)
+      return
+    }
     setError(null)
     setParseIssues([])
     setPhase(1)
@@ -134,6 +144,12 @@ export const UploadAndEdit = () => {
           fullWidth
           sx={{ mb: 2 }}
           disabled={loading}
+          error={isOverLimit}
+          helperText={
+            text.length > 0
+              ? `${inputBytes.toLocaleString()} / ~150,000 bytes${isOverLimit ? ' — too large' : ''}`
+              : undefined
+          }
         />
 
         {error && (
