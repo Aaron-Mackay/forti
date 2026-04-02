@@ -391,6 +391,39 @@ describe('POST /api/plan/ai-import', () => {
       expect(body.plan.weeks[0].workouts[0].name).toBe('Week 1 Session');
       expect(body.plan.weeks[1].workouts[0].name).toBe('Week 2 Session');
     });
+
+    it('infers week count from repeated SESSION rows when only "Week 1" is labeled', async () => {
+      mockMessagesStream.mockResolvedValue(
+        makeToolUseResponse({
+          name: 'Week 1 Training Plan',
+          weeks: [
+            {
+              workouts: [
+                { name: 'Lower Body A', exercises: [{ name: 'Squat', sets: [] }] },
+                { name: 'Push', exercises: [{ name: 'Bench', sets: [] }] },
+              ],
+            },
+          ],
+        }),
+      );
+
+      const req = makeRequest({
+        type: 'spreadsheet',
+        input: [
+          'WEEK 1',
+          'SESSION: LOWER BODY A\tSESSION: PUSH',
+          '...',
+          'SESSION: LOWER BODY A\tSESSION: PUSH',
+          '...',
+          'SESSION: LOWER BODY A\tSESSION: PUSH',
+        ].join('\n'),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.plan.weeks).toHaveLength(3);
+    });
   });
 
   describe('rate limiting', () => {

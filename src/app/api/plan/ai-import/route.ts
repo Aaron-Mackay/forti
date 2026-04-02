@@ -20,17 +20,31 @@ export type AiImportResponse =
 
 function inferWeekCountFromInput(input: string): number | null {
   const matches = [...input.matchAll(/\bweek\s*([0-9]{1,2})\b/gi)];
-  if (matches.length === 0) return null;
-
   const weekNumbers = matches
     .map((m) => Number.parseInt(m[1], 10))
     .filter((n) => Number.isFinite(n) && n > 0);
 
-  if (weekNumbers.length === 0) return null;
+  if (weekNumbers.length > 0) {
+    const uniqueCount = new Set(weekNumbers).size;
+    const maxWeek = Math.max(...weekNumbers);
+    const byWeekMarkers = Math.max(uniqueCount, maxWeek);
+    if (byWeekMarkers > 1) return byWeekMarkers;
+  }
 
-  const uniqueCount = new Set(weekNumbers).size;
-  const maxWeek = Math.max(...weekNumbers);
-  return Math.max(uniqueCount, maxWeek);
+  // Some pasted sheets only include "WEEK 1" but repeat identical SESSION rows
+  // for later weeks. Use repeated SESSION names as a fallback heuristic.
+  const sessionMatches = [...input.matchAll(/\bSESSION:\s*([^\t\r\n]+)/gi)];
+  if (sessionMatches.length === 0) return null;
+
+  const counts = new Map<string, number>();
+  for (const match of sessionMatches) {
+    const normalized = match[1].trim().replace(/\s+/g, ' ').toUpperCase();
+    if (!normalized) continue;
+    counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+  }
+
+  const highestSessionRepeat = Math.max(0, ...counts.values());
+  return highestSessionRepeat > 1 ? highestSessionRepeat : null;
 }
 
 async function readBodyWithLimit(req: NextRequest): Promise<string | null> {
