@@ -18,6 +18,21 @@ export type AiImportResponse =
   | { questions: string[] }
   | { error: string; parseIssues?: string[] };
 
+function inferWeekCountFromInput(input: string): number | null {
+  const matches = [...input.matchAll(/\bweek\s*([0-9]{1,2})\b/gi)];
+  if (matches.length === 0) return null;
+
+  const weekNumbers = matches
+    .map((m) => Number.parseInt(m[1], 10))
+    .filter((n) => Number.isFinite(n) && n > 0);
+
+  if (weekNumbers.length === 0) return null;
+
+  const uniqueCount = new Set(weekNumbers).size;
+  const maxWeek = Math.max(...weekNumbers);
+  return Math.max(uniqueCount, maxWeek);
+}
+
 async function readBodyWithLimit(req: NextRequest): Promise<string | null> {
   // Fast path: reject oversized requests via Content-Length before reading
   const contentLength = req.headers.get('content-length');
@@ -179,7 +194,36 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ questions } satisfies AiImportResponse);
     }
 
-    const plan = parseAiPlanResponse(toolUseBlock.input);
+    const parsedPlan = parseAiPlanResponse(toolUseBlock.input);
+    const inferredWeekCount = isSpreadsheet ? inferWeekCountFromInput(input) : null;
+
+    // Spreadsheet imports occasionally return a single template week even when
+    // the input clearly specifies multiple weeks (e.g. "Week 1 ... Week 8").
+    // In that case, duplicate the parsed week template to the inferred count.
+    const plan =
+      isSpreadsheet &&
+      inferredWeekCount &&
+      inferredWeekCount > 1 &&
+      parsedPlan.weeks.length === 1
+        ? {
+            ...parsedPlan,
+            weeks: Array.from({ length: inferredWeekCount }, (_, i) => {
+              const baseWeek = parsedPlan.weeks[0];
+              return {
+                ...baseWeek,
+                order: i + 1,
+                workouts: baseWeek.workouts.map((workout) => ({
+                  ...workout,
+                  exercises: workout.exercises.map((exercise) => ({
+                    ...exercise,
+                    sets: exercise.sets.map((set) => ({ ...set })),
+                  })),
+                })),
+              };
+            }),
+          }
+        : parsedPlan;
+
     return NextResponse.json({ plan } satisfies AiImportResponse);
   } catch (err) {
     if (err instanceof AiParseError) {

@@ -340,6 +340,57 @@ describe('POST /api/plan/ai-import', () => {
       const res = await POST(req);
       expect(res.status).toBe(413);
     });
+
+    it('expands a single parsed week when spreadsheet input clearly references multiple weeks', async () => {
+      mockMessagesStream.mockResolvedValue(
+        makeToolUseResponse({
+          name: 'Week 1 Training Plan',
+          weeks: [
+            {
+              workouts: [
+                {
+                  name: 'Session 1',
+                  exercises: [{ name: 'Bench Press', sets: [{ reps: 8, weight: 80 }] }],
+                },
+              ],
+            },
+          ],
+        }),
+      );
+
+      const req = makeRequest({
+        type: 'spreadsheet',
+        input: 'Week 1\nSession 1\n...\nWeek 8\nSession 1\n...',
+      });
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.plan.weeks).toHaveLength(8);
+      expect(body.plan.weeks.map((w: { order: number }) => w.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    });
+
+    it('does not expand weeks when the parsed plan already includes multiple weeks', async () => {
+      mockMessagesStream.mockResolvedValue(
+        makeToolUseResponse({
+          name: '8 Week Program',
+          weeks: [
+            { workouts: [{ name: 'Week 1 Session', exercises: [{ name: 'Bench', sets: [] }] }] },
+            { workouts: [{ name: 'Week 2 Session', exercises: [{ name: 'Bench', sets: [] }] }] },
+          ],
+        }),
+      );
+
+      const req = makeRequest({
+        type: 'spreadsheet',
+        input: 'Week 1 ... Week 8 ...',
+      });
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.plan.weeks).toHaveLength(2);
+      expect(body.plan.weeks[0].workouts[0].name).toBe('Week 1 Session');
+      expect(body.plan.weeks[1].workouts[0].name).toBe('Week 2 Session');
+    });
   });
 
   describe('rate limiting', () => {
