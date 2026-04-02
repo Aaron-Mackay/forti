@@ -47,16 +47,25 @@ async function main() {
   // Upsert exercises (global, safe to run at any time)
   validateExercises(exercises);
   for (const ex of exercises) {
-    await prisma.exercise.upsert({
-      where:  { name_category: { name: ex.name, category: ex.category } },
-      update: {
-        equipment:        ex.equipment,
-        primaryMuscles:   ex.primaryMuscles,
-        secondaryMuscles: ex.secondaryMuscles ?? [],
-        description:      ex.description ?? EXERCISE_DESCRIPTION,
-      },
-      create: { ...ex, description: ex.description ?? EXERCISE_DESCRIPTION },
+    const existing = await prisma.exercise.findFirst({
+      where: { name: ex.name, category: ex.category, createdByUserId: null },
+      select: { id: true },
     });
+    if (existing) {
+      await prisma.exercise.update({
+        where: { id: existing.id },
+        data: {
+          equipment:        ex.equipment,
+          primaryMuscles:   ex.primaryMuscles,
+          secondaryMuscles: ex.secondaryMuscles ?? [],
+          description:      ex.description ?? EXERCISE_DESCRIPTION,
+        },
+      });
+    } else {
+      await prisma.exercise.create({
+        data: { ...ex, description: ex.description ?? EXERCISE_DESCRIPTION },
+      });
+    }
   }
   console.log(`  ✓ Exercises upserted`);
 
