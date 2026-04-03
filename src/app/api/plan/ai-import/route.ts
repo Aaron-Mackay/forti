@@ -6,9 +6,9 @@ import prisma from '@lib/prisma';
 
 export const maxDuration = 300; // 5 minutes — large spreadsheet imports can take a while
 
-const MAX_BODY_BYTES = 200_000; // 200 KB — hard cap before JSON parsing (raised to cover spreadsheet imports)
-const MAX_INPUT_BYTES_DEFAULT = 50_000; // 50 KB — cap for text descriptions
-const MAX_INPUT_BYTES_SPREADSHEET = 150_000; // 150 KB — cap for CSV/spreadsheet imports
+const MAX_BODY_BYTES = 300_000; // 300 KB — hard cap before JSON parsing
+const MAX_INPUT_BYTES_DEFAULT = 75_000; // 75 KB — cap for text descriptions
+const MAX_INPUT_BYTES_SPREADSHEET = 225_000; // 225 KB — cap for CSV/spreadsheet imports
 
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
@@ -95,7 +95,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // --- Body size cap (before JSON parsing) ---
   const rawBody = await readBodyWithLimit(req);
   if (rawBody === null) {
-    return NextResponse.json({ error: 'Request body too large (max 100 KB)' }, { status: 413 });
+    return NextResponse.json(
+      { error: `Request body too large (max ${MAX_BODY_BYTES / 1000} KB)` },
+      { status: 413 },
+    );
   }
 
   let body: { input?: unknown; type?: unknown; answers?: unknown };
@@ -174,7 +177,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const stream = client.messages.stream({
       model: 'claude-sonnet-4-6',
-      max_tokens: 32768,
+      max_tokens: 49152,
       tools,
       tool_choice: toolChoice,
       messages: [{ role: 'user', content: userContent }],
