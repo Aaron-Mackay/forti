@@ -2,10 +2,11 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockSignIn = vi.fn();
+const mockUseSearchParams = vi.fn(() => new URLSearchParams());
 vi.mock('next-auth/react', () => ({ signIn: (...args: unknown[]) => mockSignIn(...args) }));
 
 vi.mock('next/navigation', () => ({
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockUseSearchParams(),
 }));
 
 import LoginButtons from './LoginButtons';
@@ -13,6 +14,8 @@ import LoginButtons from './LoginButtons';
 describe('LoginButtons', () => {
   beforeEach(() => {
     mockSignIn.mockClear();
+    mockUseSearchParams.mockReset();
+    mockUseSearchParams.mockReturnValue(new URLSearchParams());
     // Don't resolve by default so buttons stay in loading state
     mockSignIn.mockReturnValue(new Promise(() => {}));
   });
@@ -71,5 +74,12 @@ describe('LoginButtons', () => {
     render(<LoginButtons />);
     fireEvent.click(screen.getByRole('button', { name: /try demo \(coach\)/i }));
     expect(mockSignIn).toHaveBeenCalledWith('demo-coach', { callbackUrl: '/user' });
+  });
+
+  it('falls back to /user when callbackUrl points back to /login', () => {
+    mockUseSearchParams.mockReturnValue(new URLSearchParams('callbackUrl=/login'));
+    render(<LoginButtons />);
+    fireEvent.click(screen.getByRole('button', { name: /^try demo$/i }));
+    expect(mockSignIn).toHaveBeenCalledWith('demo', { callbackUrl: '/user' });
   });
 });
