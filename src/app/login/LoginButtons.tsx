@@ -10,7 +10,29 @@ import { useSearchParams } from "next/navigation";
 function LoginButtonsInner() {
   const [loading, setLoading] = useState<"google" | "demo" | "demo-coach" | null>(null);
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/user";
+  const rawCallbackUrl = searchParams.get("callbackUrl");
+
+  const callbackUrl = (() => {
+    if (!rawCallbackUrl) return "/user";
+
+    // Avoid bouncing back to login/auth endpoints when callbackUrl is stale or malformed.
+    if (rawCallbackUrl.startsWith("/")) {
+      return rawCallbackUrl.startsWith("/login") || rawCallbackUrl.startsWith("/api/auth")
+        ? "/user"
+        : rawCallbackUrl;
+    }
+
+    if (typeof window === "undefined") return "/user";
+
+    try {
+      const parsed = new URL(rawCallbackUrl);
+      if (parsed.origin !== window.location.origin) return "/user";
+      if (parsed.pathname.startsWith("/login") || parsed.pathname.startsWith("/api/auth")) return "/user";
+      return `${parsed.pathname}${parsed.search}${parsed.hash}` || "/user";
+    } catch {
+      return "/user";
+    }
+  })();
 
   const handleSignIn = async (provider: "google" | "demo" | "demo-coach") => {
     setLoading(provider);
