@@ -30,20 +30,25 @@ const STEPS = ['Uploading spreadsheet', 'Analysing with AI', 'Building plan']
 // Mirror of MAX_INPUT_BYTES_SPREADSHEET in src/app/api/plan/ai-import/route.ts
 const MAX_INPUT_BYTES = 225_000
 const CHUNK_WEEK_GROUP_SIZE = 2
-const CHUNK_BYTE_BUDGET = 110_000
+const CHUNK_BYTE_BUDGET = 80_000
 const MAX_CHUNK_ATTEMPTS = 3
-const CHUNK_REQUEST_TIMEOUT_MS = 240_000
+const CHUNK_REQUEST_TIMEOUT_MS = 330_000
 
 function splitByWeekBlocks(input: string, weeksPerChunk: number): string[] {
   const lines = input.split(/\r?\n/)
-  const weekStarts = lines
+  const explicitWeekStarts = lines
     .map((line, i) => (/^\s*WEEK\s+\d+/i.test(line) ? i : -1))
     .filter((i) => i >= 0)
 
-  if (weekStarts.length <= 1) return [input]
+  const sessionRowStarts = lines
+    .map((line, i) => (/\bSESSION:\s*/i.test(line) ? i : -1))
+    .filter((i) => i >= 0)
 
-  const weekBlocks = weekStarts.map((start, i) => {
-    const endExclusive = weekStarts[i + 1] ?? lines.length
+  const blockStarts = explicitWeekStarts.length > 1 ? explicitWeekStarts : sessionRowStarts
+  if (blockStarts.length <= 1) return [input]
+
+  const weekBlocks = blockStarts.map((start, i) => {
+    const endExclusive = blockStarts[i + 1] ?? lines.length
     return lines.slice(start, endExclusive).join('\n').trim()
   }).filter(Boolean)
 
@@ -140,11 +145,11 @@ export const UploadAndEdit = () => {
 
     try {
       const chunks = buildImportChunks(text)
-      setChunkProgress(chunks.length > 1 ? { current: 1, total: chunks.length } : null)
+      setChunkProgress({ current: 1, total: chunks.length })
       const importedPlans: ParsedPlan[] = []
 
       for (let i = 0; i < chunks.length; i++) {
-        setChunkProgress(chunks.length > 1 ? { current: i + 1, total: chunks.length } : null)
+        setChunkProgress({ current: i + 1, total: chunks.length })
         let lastError: string | null = null
 
         for (let attempt = 1; attempt <= MAX_CHUNK_ATTEMPTS; attempt++) {
