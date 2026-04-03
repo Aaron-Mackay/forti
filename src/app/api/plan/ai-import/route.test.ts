@@ -37,14 +37,17 @@ vi.mock('@anthropic-ai/sdk', async () => {
       { APIError: MockAPIError },
     ),
     __finalMessage: finalMessage, // expose for test control
+    __stream: stream,
   };
 });
 
 import { requireSession } from '@lib/requireSession';
 import { __finalMessage as mockFinalMessage } from '@anthropic-ai/sdk';
+import { __stream as mockStream } from '@anthropic-ai/sdk';
 
 const mockRequireSession = requireSession as ReturnType<typeof vi.fn>;
 const mockMessagesStream = mockFinalMessage as ReturnType<typeof vi.fn>;
+const mockAnthropicStream = mockStream as ReturnType<typeof vi.fn>;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -318,6 +321,17 @@ describe('POST /api/plan/ai-import', () => {
   });
 
   describe('spreadsheet type', () => {
+    it('uses spreadsheet parsing guidance that preserves sparse numeric set values', async () => {
+      const req = makeRequest({ input: 'WEEK 1\nSESSION: Lower\nSet 1 Weight\t100', type: 'spreadsheet' });
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      const streamCall = mockAnthropicStream.mock.calls.at(-1)?.[0];
+      const messageContent = streamCall?.messages?.[0]?.content as string;
+      expect(messageContent).toContain('Preserve isolated numeric set values');
+      expect(messageContent).toContain('Do not convert blank spreadsheet cells into 0 values');
+    });
+
     it('accepts input up to 225 KB when type is spreadsheet', async () => {
       const bigInput = 'a'.repeat(150_000); // over default 75 KB limit, under 225 KB spreadsheet limit
       const req = makeRequest({ input: bigInput, type: 'spreadsheet' });
