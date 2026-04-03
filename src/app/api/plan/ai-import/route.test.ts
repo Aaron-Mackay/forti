@@ -37,14 +37,17 @@ vi.mock('@anthropic-ai/sdk', async () => {
       { APIError: MockAPIError },
     ),
     __finalMessage: finalMessage, // expose for test control
+    __stream: stream,
   };
 });
 
 import { requireSession } from '@lib/requireSession';
 import { __finalMessage as mockFinalMessage } from '@anthropic-ai/sdk';
+import { __stream as mockStream } from '@anthropic-ai/sdk';
 
 const mockRequireSession = requireSession as ReturnType<typeof vi.fn>;
 const mockMessagesStream = mockFinalMessage as ReturnType<typeof vi.fn>;
+const mockAnthropicStream = mockStream as ReturnType<typeof vi.fn>;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -137,8 +140,8 @@ describe('POST /api/plan/ai-import', () => {
       expect(res.status).toBe(400);
     });
 
-    it('returns 413 when input exceeds 50 KB', async () => {
-      const bigInput = 'a'.repeat(51_000);
+    it('returns 413 when non-spreadsheet input exceeds 75 KB', async () => {
+      const bigInput = 'a'.repeat(76_000);
       const req = makeRequest({ input: bigInput });
       const res = await POST(req);
       expect(res.status).toBe(413);
@@ -293,11 +296,11 @@ describe('POST /api/plan/ai-import', () => {
   });
 
   describe('body size cap', () => {
-    it('returns 413 when Content-Length header exceeds 200 KB', async () => {
+    it('returns 413 when Content-Length header exceeds 300 KB', async () => {
       const req = new NextRequest('http://localhost/api/plan/ai-import', {
         method: 'POST',
         body: JSON.stringify({ input: 'hi' }),
-        headers: { 'Content-Type': 'application/json', 'Content-Length': '300000' },
+        headers: { 'Content-Type': 'application/json', 'Content-Length': '400000' },
       });
       const res = await POST(req);
       expect(res.status).toBe(413);
@@ -305,8 +308,8 @@ describe('POST /api/plan/ai-import', () => {
       expect(body.error).toMatch(/too large/i);
     });
 
-    it('returns 413 when streamed body exceeds 100 KB', async () => {
-      const bigBody = JSON.stringify({ input: 'a'.repeat(95_000) });
+    it('returns 413 when streamed body exceeds 300 KB', async () => {
+      const bigBody = JSON.stringify({ input: 'a'.repeat(305_000) });
       const req = new NextRequest('http://localhost/api/plan/ai-import', {
         method: 'POST',
         body: bigBody,
@@ -318,15 +321,26 @@ describe('POST /api/plan/ai-import', () => {
   });
 
   describe('spreadsheet type', () => {
-    it('accepts input up to 150 KB when type is spreadsheet', async () => {
-      const bigInput = 'a'.repeat(100_000); // 100 KB — over default 50 KB limit, under 150 KB spreadsheet limit
+    it('uses spreadsheet parsing guidance that preserves sparse numeric set values', async () => {
+      const req = makeRequest({ input: 'WEEK 1\nSESSION: Lower\nSet 1 Weight\t100', type: 'spreadsheet' });
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      const streamCall = mockAnthropicStream.mock.calls.at(-1)?.[0];
+      const messageContent = streamCall?.messages?.[0]?.content as string;
+      expect(messageContent).toContain('Preserve isolated numeric set values');
+      expect(messageContent).toContain('Do not convert blank spreadsheet cells into 0 values');
+    });
+
+    it('accepts input up to 225 KB when type is spreadsheet', async () => {
+      const bigInput = 'a'.repeat(150_000); // over default 75 KB limit, under 225 KB spreadsheet limit
       const req = makeRequest({ input: bigInput, type: 'spreadsheet' });
       const res = await POST(req);
       expect(res.status).toBe(200);
     });
 
-    it('returns 413 when spreadsheet input exceeds 150 KB', async () => {
-      const bigInput = 'a'.repeat(151_000);
+    it('returns 413 when spreadsheet input exceeds 225 KB', async () => {
+      const bigInput = 'a'.repeat(226_000);
       const req = makeRequest({ input: bigInput, type: 'spreadsheet' });
       const res = await POST(req);
       expect(res.status).toBe(413);
@@ -334,11 +348,95 @@ describe('POST /api/plan/ai-import', () => {
       expect(body.error).toMatch(/too large/i);
     });
 
-    it('returns 413 for non-spreadsheet input exceeding 50 KB', async () => {
-      const bigInput = 'a'.repeat(51_000);
+    it('returns 413 for non-spreadsheet input exceeding 75 KB', async () => {
+      const bigInput = 'a'.repeat(76_000);
       const req = makeRequest({ input: bigInput });
       const res = await POST(req);
       expect(res.status).toBe(413);
+    });
+
+    it('expands a single parsed week when spreadsheet input clearly references multiple weeks', async () => {
+      mockMessagesStream.mockResolvedValue(
+        makeToolUseResponse({
+          name: 'Week 1 Training Plan',
+          weeks: [
+            {
+              workouts: [
+                {
+                  name: 'Session 1',
+                  exercises: [{ name: 'Bench Press', sets: [{ reps: 8, weight: 80 }] }],
+                },
+              ],
+            },
+          ],
+        }),
+      );
+
+      const req = makeRequest({
+        type: 'spreadsheet',
+        input: 'Week 1\nSession 1\n...\nWeek 8\nSession 1\n...',
+      });
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.plan.weeks).toHaveLength(8);
+      expect(body.plan.weeks.map((w: { order: number }) => w.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    });
+
+    it('does not expand weeks when the parsed plan already includes multiple weeks', async () => {
+      mockMessagesStream.mockResolvedValue(
+        makeToolUseResponse({
+          name: '8 Week Program',
+          weeks: [
+            { workouts: [{ name: 'Week 1 Session', exercises: [{ name: 'Bench', sets: [] }] }] },
+            { workouts: [{ name: 'Week 2 Session', exercises: [{ name: 'Bench', sets: [] }] }] },
+          ],
+        }),
+      );
+
+      const req = makeRequest({
+        type: 'spreadsheet',
+        input: 'Week 1 ... Week 8 ...',
+      });
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.plan.weeks).toHaveLength(2);
+      expect(body.plan.weeks[0].workouts[0].name).toBe('Week 1 Session');
+      expect(body.plan.weeks[1].workouts[0].name).toBe('Week 2 Session');
+    });
+
+    it('infers week count from repeated SESSION rows when only "Week 1" is labeled', async () => {
+      mockMessagesStream.mockResolvedValue(
+        makeToolUseResponse({
+          name: 'Week 1 Training Plan',
+          weeks: [
+            {
+              workouts: [
+                { name: 'Lower Body A', exercises: [{ name: 'Squat', sets: [] }] },
+                { name: 'Push', exercises: [{ name: 'Bench', sets: [] }] },
+              ],
+            },
+          ],
+        }),
+      );
+
+      const req = makeRequest({
+        type: 'spreadsheet',
+        input: [
+          'WEEK 1',
+          'SESSION: LOWER BODY A\tSESSION: PUSH',
+          '...',
+          'SESSION: LOWER BODY A\tSESSION: PUSH',
+          '...',
+          'SESSION: LOWER BODY A\tSESSION: PUSH',
+        ].join('\n'),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.plan.weeks).toHaveLength(3);
     });
   });
 

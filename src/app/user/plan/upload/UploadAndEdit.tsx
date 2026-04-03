@@ -23,11 +23,79 @@ import UploadFileIcon from '@mui/icons-material/UploadFile'
 import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar'
 import { useAppBar } from '@lib/providers/AppBarProvider'
 import type { AiImportResponse } from '@/app/api/plan/ai-import/route'
+import type { ParsedPlan } from '@/utils/aiPlanParser'
 
 const STEPS = ['Uploading spreadsheet', 'Analysing with AI', 'Building plan']
 
 // Mirror of MAX_INPUT_BYTES_SPREADSHEET in src/app/api/plan/ai-import/route.ts
-const MAX_INPUT_BYTES = 150_000
+const MAX_INPUT_BYTES = 225_000
+const CHUNK_WEEK_GROUP_SIZE = 2
+const CHUNK_BYTE_BUDGET = 80_000
+const MAX_CHUNK_ATTEMPTS = 3
+const CHUNK_REQUEST_TIMEOUT_MS = 330_000
+
+function splitByWeekBlocks(input: string, weeksPerChunk: number): string[] {
+  const lines = input.split(/\r?\n/)
+  const explicitWeekStarts = lines
+    .map((line, i) => (/^\s*WEEK\s+\d+/i.test(line) ? i : -1))
+    .filter((i) => i >= 0)
+
+  const sessionRowStarts = lines
+    .map((line, i) => (/\bSESSION:\s*/i.test(line) ? i : -1))
+    .filter((i) => i >= 0)
+
+  const blockStarts = explicitWeekStarts.length > 1 ? explicitWeekStarts : sessionRowStarts
+  if (blockStarts.length <= 1) return [input]
+
+  const weekBlocks = blockStarts.map((start, i) => {
+    const endExclusive = blockStarts[i + 1] ?? lines.length
+    return lines.slice(start, endExclusive).join('\n').trim()
+  }).filter(Boolean)
+
+  const chunks: string[] = []
+  for (let i = 0; i < weekBlocks.length; i += weeksPerChunk) {
+    chunks.push(weekBlocks.slice(i, i + weeksPerChunk).join('\n\n'))
+  }
+  return chunks.length > 0 ? chunks : [input]
+}
+
+function splitByByteBudget(input: string, byteBudget: number): string[] {
+  const lines = input.split(/\r?\n/)
+  const chunks: string[] = []
+  let current: string[] = []
+  let currentBytes = 0
+
+  for (const line of lines) {
+    const lineBytes = new TextEncoder().encode(line + '\n').length
+    if (current.length > 0 && currentBytes + lineBytes > byteBudget) {
+      chunks.push(current.join('\n'))
+      current = []
+      currentBytes = 0
+    }
+    current.push(line)
+    currentBytes += lineBytes
+  }
+
+  if (current.length > 0) chunks.push(current.join('\n'))
+  return chunks.length > 0 ? chunks : [input]
+}
+
+function buildImportChunks(input: string): string[] {
+  const weekChunks = splitByWeekBlocks(input, CHUNK_WEEK_GROUP_SIZE)
+  if (weekChunks.length > 1) return weekChunks
+
+  const totalBytes = new TextEncoder().encode(input).length
+  if (totalBytes > CHUNK_BYTE_BUDGET) {
+    return splitByByteBudget(input, CHUNK_BYTE_BUDGET)
+  }
+  return [input]
+}
+
+function mergeChunkPlans(plans: ParsedPlan[]): ParsedPlan {
+  const first = plans[0]
+  const mergedWeeks = plans.flatMap((plan) => plan.weeks).map((week, i) => ({ ...week, order: i + 1 }))
+  return { ...first, weeks: mergedWeeks }
+}
 
 function StepIcon({ stepIndex, phase }: { stepIndex: number; phase: number }) {
   const stepPhase = stepIndex + 1
@@ -42,6 +110,7 @@ export const UploadAndEdit = () => {
   const [phase, setPhase] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [parseIssues, setParseIssues] = useState<string[]>([])
+  const [chunkProgress, setChunkProgress] = useState<{ current: number; total: number } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
@@ -62,43 +131,126 @@ export const UploadAndEdit = () => {
   const handleSubmit = async () => {
     if (!text.trim()) return
     if (isOverLimit) {
-      setError(`Input too large — please reduce to under 150 KB (currently ${(inputBytes / 1000).toFixed(1)} KB)`)
+      setError(`Input too large — please reduce to under 225 KB (currently ${(inputBytes / 1000).toFixed(1)} KB)`)
       return
     }
     setError(null)
     setParseIssues([])
     setPhase(1)
+    setChunkProgress(null)
 
     // Briefly show "uploading" step before moving to AI analysis
     await new Promise((resolve) => setTimeout(resolve, 400))
     setPhase(2)
 
     try {
-      const res = await fetch('/api/plan/ai-import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input: text, type: 'spreadsheet' }),
-      })
-      const data: AiImportResponse = await res.json()
-      if ('error' in data) {
-        setPhase(0)
-        setError(data.error)
-        if (data.parseIssues?.length) setParseIssues(data.parseIssues)
-        return
+      const chunks = buildImportChunks(text)
+      setChunkProgress({ current: 1, total: chunks.length })
+      const importedPlans: ParsedPlan[] = []
+
+      for (let i = 0; i < chunks.length; i++) {
+        setChunkProgress({ current: i + 1, total: chunks.length })
+        let lastError: string | null = null
+
+        for (let attempt = 1; attempt <= MAX_CHUNK_ATTEMPTS; attempt++) {
+          const controller = new AbortController()
+          const timeout = setTimeout(() => controller.abort(), CHUNK_REQUEST_TIMEOUT_MS)
+          let clarificationAnswers: string[] = []
+          let clarificationRounds = 0
+          try {
+            while (true) {
+              const res = await fetch('/api/plan/ai-import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  input: chunks[i],
+                  type: 'spreadsheet',
+                  ...(clarificationAnswers.length > 0 ? { answers: clarificationAnswers } : {}),
+                }),
+                signal: controller.signal,
+              })
+              const data: AiImportResponse = await res.json()
+
+              if ('questions' in data) {
+                clarificationRounds += 1
+                if (clarificationRounds > 2) {
+                  lastError = 'Import requires too many clarifications — please simplify and retry.'
+                  break
+                }
+
+                const answers = data.questions
+                  .map((q) => window.prompt(q)?.trim() ?? '')
+                  .filter((a) => a.length > 0)
+                if (answers.length === 0) {
+                  lastError = 'Import needs clarification answers to continue.'
+                  break
+                }
+
+                clarificationAnswers = answers
+                continue
+              }
+
+              if ('error' in data) {
+                lastError = data.error
+                if (res.status >= 500 && attempt < MAX_CHUNK_ATTEMPTS) {
+                  await new Promise((resolve) => setTimeout(resolve, 600 * attempt))
+                  break
+                }
+                if (data.parseIssues?.length) setParseIssues(data.parseIssues)
+                break
+              }
+
+              if (!('plan' in data)) {
+                lastError = 'Could not parse the spreadsheet — please try again.'
+                break
+              }
+
+              importedPlans.push(data.plan as ParsedPlan)
+              lastError = null
+              break
+            }
+
+            if (!lastError) break
+          } catch (err) {
+            if (err instanceof DOMException && err.name === 'AbortError') {
+              lastError = 'Request timed out while importing — try fewer weeks per upload.'
+            } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
+              lastError = 'You appear to be offline — please reconnect and try again.'
+            } else {
+              lastError = 'Network error — please try again'
+            }
+            if (attempt < MAX_CHUNK_ATTEMPTS) {
+              await new Promise((resolve) => setTimeout(resolve, 600 * attempt))
+            }
+          } finally {
+            clearTimeout(timeout)
+          }
+        }
+
+        if (lastError) {
+          setPhase(0)
+          setError(lastError)
+          setChunkProgress(null)
+          return
+        }
       }
-      if (!('plan' in data)) {
-        // Clarifying questions are not supported in the spreadsheet upload flow
+
+      if (importedPlans.length === 0) {
         setPhase(0)
         setError('Could not parse the spreadsheet — please try again.')
+        setChunkProgress(null)
         return
       }
+
+      const mergedPlan = mergeChunkPlans(importedPlans)
       setPhase(3)
-      sessionStorage.setItem('pendingUploadPlan', JSON.stringify(data.plan))
+      sessionStorage.setItem('pendingUploadPlan', JSON.stringify(mergedPlan))
       await new Promise((resolve) => setTimeout(resolve, 500))
       router.push('/user/plan/create')
     } catch {
       setPhase(0)
       setError('Network error — please try again')
+      setChunkProgress(null)
     }
   }
 
@@ -111,6 +263,9 @@ export const UploadAndEdit = () => {
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Upload a CSV or paste your training spreadsheet below. AI will read the exercises, sets, and weights and create a ready-to-edit plan.
         </Typography>
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          AI imports can occasionally miss or misread values. Please review your plan after import, especially weights, reps, and week-to-week changes.
+        </Alert>
         <Button
           variant="outlined"
           startIcon={<UploadFileIcon />}
@@ -147,7 +302,7 @@ export const UploadAndEdit = () => {
           error={isOverLimit}
           helperText={
             text.length > 0
-              ? `${inputBytes.toLocaleString()} / ~150,000 bytes${isOverLimit ? ' — too large' : ''}`
+              ? `${inputBytes.toLocaleString()} / ~225,000 bytes${isOverLimit ? ' — too large' : ''}`
               : undefined
           }
         />
@@ -204,6 +359,11 @@ export const UploadAndEdit = () => {
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
             This may take a few minutes
           </Typography>
+          {chunkProgress && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+              Processing chunk {chunkProgress.current} of {chunkProgress.total}
+            </Typography>
+          )}
         </DialogContent>
       </Dialog>
     </>

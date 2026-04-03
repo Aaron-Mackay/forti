@@ -89,6 +89,7 @@ interface PlanSheetViewProps {
   onZoomChange: (zoom: number) => void;
   arrangeMode: boolean;
   creationMode?: boolean;
+  showWeekHeaders?: boolean;
 }
 
 // ── SortableExerciseTbody ──────────────────────────────────────────────────────
@@ -648,7 +649,7 @@ interface WeekBlockProps {
   slotMaxSets: number[];
   dispatch: ActionDispatch<[WorkoutEditorAction]>;
   arrangeMode: boolean;
-  creationMode: boolean;
+  showWeekHeader: boolean;
   openPicker: (weekId: number, workoutId: number) => void;
   openRenamePicker: (weekId: number, workoutId: number, workoutExerciseId: number) => void;
   setMenuState: (state: MenuState | null) => void;
@@ -661,7 +662,7 @@ const WeekBlock = ({
   slotMaxSets,
   dispatch,
   arrangeMode,
-  creationMode,
+  showWeekHeader,
   openPicker,
   openRenamePicker,
   setMenuState,
@@ -685,8 +686,8 @@ const WeekBlock = ({
 
   return (
     <Box sx={{ mb: 3 }}>
-      {/* Week header — hidden in creation mode */}
-      {!creationMode && (
+      {/* Week header */}
+      {showWeekHeader && (
         <Box
           sx={{
             display: 'flex',
@@ -784,7 +785,15 @@ const WeekBlock = ({
 
 // ── PlanSheetView ─────────────────────────────────────────────────────────────
 
-const PlanSheetView = ({ plan, planId, zoom, onZoomChange, arrangeMode, creationMode = false }: PlanSheetViewProps) => {
+const PlanSheetView = ({
+  plan,
+  planId,
+  zoom,
+  onZoomChange,
+  arrangeMode,
+  creationMode = false,
+  showWeekHeaders = false,
+}: PlanSheetViewProps) => {
   const { dispatch, allExercises } = useWorkoutEditorContext();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<{ weekId: number; workoutId: number } | null>(null);
@@ -943,7 +952,7 @@ const PlanSheetView = ({ plan, planId, zoom, onZoomChange, arrangeMode, creation
               slotMaxSets={slotMaxSets}
               dispatch={dispatch}
               arrangeMode={arrangeMode}
-              creationMode={creationMode}
+              showWeekHeader={!creationMode || showWeekHeaders}
               openPicker={openPicker}
               openRenamePicker={openRenamePicker}
               setMenuState={setMenuState}

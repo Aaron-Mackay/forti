@@ -6,9 +6,9 @@ import prisma from '@lib/prisma';
 
 export const maxDuration = 300; // 5 minutes — large spreadsheet imports can take a while
 
-const MAX_BODY_BYTES = 200_000; // 200 KB — hard cap before JSON parsing (raised to cover spreadsheet imports)
-const MAX_INPUT_BYTES_DEFAULT = 50_000; // 50 KB — cap for text descriptions
-const MAX_INPUT_BYTES_SPREADSHEET = 150_000; // 150 KB — cap for CSV/spreadsheet imports
+const MAX_BODY_BYTES = 300_000; // 300 KB — hard cap before JSON parsing
+const MAX_INPUT_BYTES_DEFAULT = 75_000; // 75 KB — cap for text descriptions
+const MAX_INPUT_BYTES_SPREADSHEET = 225_000; // 225 KB — cap for CSV/spreadsheet imports
 
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
@@ -17,6 +17,35 @@ export type AiImportResponse =
   | { plan: ReturnType<typeof parseAiPlanResponse> }
   | { questions: string[] }
   | { error: string; parseIssues?: string[] };
+
+function inferWeekCountFromInput(input: string): number | null {
+  const matches = [...input.matchAll(/\bweek\s*([0-9]{1,2})\b/gi)];
+  const weekNumbers = matches
+    .map((m) => Number.parseInt(m[1], 10))
+    .filter((n) => Number.isFinite(n) && n > 0);
+
+  if (weekNumbers.length > 0) {
+    const uniqueCount = new Set(weekNumbers).size;
+    const maxWeek = Math.max(...weekNumbers);
+    const byWeekMarkers = Math.max(uniqueCount, maxWeek);
+    if (byWeekMarkers > 1) return byWeekMarkers;
+  }
+
+  // Some pasted sheets only include "WEEK 1" but repeat identical SESSION rows
+  // for later weeks. Use repeated SESSION names as a fallback heuristic.
+  const sessionMatches = [...input.matchAll(/\bSESSION:\s*([^\t\r\n]+)/gi)];
+  if (sessionMatches.length === 0) return null;
+
+  const counts = new Map<string, number>();
+  for (const match of sessionMatches) {
+    const normalized = match[1].trim().replace(/\s+/g, ' ').toUpperCase();
+    if (!normalized) continue;
+    counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+  }
+
+  const highestSessionRepeat = Math.max(0, ...counts.values());
+  return highestSessionRepeat > 1 ? highestSessionRepeat : null;
+}
 
 async function readBodyWithLimit(req: NextRequest): Promise<string | null> {
   // Fast path: reject oversized requests via Content-Length before reading
@@ -66,7 +95,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // --- Body size cap (before JSON parsing) ---
   const rawBody = await readBodyWithLimit(req);
   if (rawBody === null) {
-    return NextResponse.json({ error: 'Request body too large (max 100 KB)' }, { status: 413 });
+    return NextResponse.json(
+      { error: `Request body too large (max ${MAX_BODY_BYTES / 1000} KB)` },
+      { status: 413 },
+    );
   }
 
   let body: { input?: unknown; type?: unknown; answers?: unknown };
@@ -121,6 +153,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         'Sessions may appear side by side — each 14-column group is one session. ' +
         'Ignore TRAINING NOTES rows, Volume column, and quality rating checkboxes. ' +
         'Use numeric weights/reps where available; omit non-numeric values (e.g. BFR, x). ' +
+        'Preserve isolated numeric set values even when neighboring set cells are blank (e.g. keep "Set 1 Weight = 100"). ' +
+        'Do not convert blank spreadsheet cells into 0 values. ' +
         'Capture RPE or RIR annotations per set or exercise where present (e.g. "@RPE 8", "2RIR").'
       : 'Parse the following workout plan. Infer sensible defaults for any missing fields.';
 
@@ -145,7 +179,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const stream = client.messages.stream({
       model: 'claude-sonnet-4-6',
-      max_tokens: 32768,
+      max_tokens: 49152,
       tools,
       tool_choice: toolChoice,
       messages: [{ role: 'user', content: userContent }],
@@ -179,7 +213,36 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ questions } satisfies AiImportResponse);
     }
 
-    const plan = parseAiPlanResponse(toolUseBlock.input);
+    const parsedPlan = parseAiPlanResponse(toolUseBlock.input);
+    const inferredWeekCount = isSpreadsheet ? inferWeekCountFromInput(input) : null;
+
+    // Spreadsheet imports occasionally return a single template week even when
+    // the input clearly specifies multiple weeks (e.g. "Week 1 ... Week 8").
+    // In that case, duplicate the parsed week template to the inferred count.
+    const plan =
+      isSpreadsheet &&
+      inferredWeekCount &&
+      inferredWeekCount > 1 &&
+      parsedPlan.weeks.length === 1
+        ? {
+            ...parsedPlan,
+            weeks: Array.from({ length: inferredWeekCount }, (_, i) => {
+              const baseWeek = parsedPlan.weeks[0];
+              return {
+                ...baseWeek,
+                order: i + 1,
+                workouts: baseWeek.workouts.map((workout) => ({
+                  ...workout,
+                  exercises: workout.exercises.map((exercise) => ({
+                    ...exercise,
+                    sets: exercise.sets.map((set) => ({ ...set })),
+                  })),
+                })),
+              };
+            }),
+          }
+        : parsedPlan;
+
     return NextResponse.json({ plan } satisfies AiImportResponse);
   } catch (err) {
     if (err instanceof AiParseError) {
