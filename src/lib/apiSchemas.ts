@@ -11,16 +11,25 @@ export const DayMetricSchema = z.object({
   protein: z.number().int().optional().nullable(),
   carbs: z.number().int().optional().nullable(),
   fat: z.number().int().optional().nullable(),
-  caloriesTarget: z.number().int().optional().nullable(),
-  proteinTarget: z.number().int().optional().nullable(),
-  carbsTarget: z.number().int().optional().nullable(),
-  fatTarget: z.number().int().optional().nullable(),
-  stepsTarget: z.number().int().optional().nullable(),
-  sleepMinsTarget: z.number().int().optional().nullable(),
   customMetrics: z.record(z.string(), z.object({
     value: z.number().nullable(),
     target: z.number().nullable(),
   })).optional().nullable(),
+});
+
+const TargetDaySchema = z.object({
+  caloriesTarget: z.number().int().nullable().optional(),
+  proteinTarget:  z.number().int().nullable().optional(),
+  carbsTarget:    z.number().int().nullable().optional(),
+  fatTarget:      z.number().int().nullable().optional(),
+});
+
+export const TargetTemplateSchema = z.object({
+  effectiveFrom:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  stepsTarget:     z.number().int().nullable().optional(),
+  sleepMinsTarget: z.number().int().nullable().optional(),
+  // Keys are ISO weekday strings "1"–"7" (coerced to numbers in the route handler)
+  days: z.record(z.string(), TargetDaySchema),
 });
 
 export const RecurrenceFrequency = ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as const;
