@@ -155,30 +155,62 @@ export const UploadAndEdit = () => {
         for (let attempt = 1; attempt <= MAX_CHUNK_ATTEMPTS; attempt++) {
           const controller = new AbortController()
           const timeout = setTimeout(() => controller.abort(), CHUNK_REQUEST_TIMEOUT_MS)
+          let clarificationAnswers: string[] = []
+          let clarificationRounds = 0
           try {
-            const res = await fetch('/api/plan/ai-import', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ input: chunks[i], type: 'spreadsheet' }),
-              signal: controller.signal,
-            })
-            const data: AiImportResponse = await res.json()
-            if ('error' in data) {
-              lastError = data.error
-              if (res.status >= 500 && attempt < MAX_CHUNK_ATTEMPTS) {
-                await new Promise((resolve) => setTimeout(resolve, 600 * attempt))
+            while (true) {
+              const res = await fetch('/api/plan/ai-import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  input: chunks[i],
+                  type: 'spreadsheet',
+                  ...(clarificationAnswers.length > 0 ? { answers: clarificationAnswers } : {}),
+                }),
+                signal: controller.signal,
+              })
+              const data: AiImportResponse = await res.json()
+
+              if ('questions' in data) {
+                clarificationRounds += 1
+                if (clarificationRounds > 2) {
+                  lastError = 'Import requires too many clarifications — please simplify and retry.'
+                  break
+                }
+
+                const answers = data.questions
+                  .map((q) => window.prompt(q)?.trim() ?? '')
+                  .filter((a) => a.length > 0)
+                if (answers.length === 0) {
+                  lastError = 'Import needs clarification answers to continue.'
+                  break
+                }
+
+                clarificationAnswers = answers
                 continue
               }
-              if (data.parseIssues?.length) setParseIssues(data.parseIssues)
+
+              if ('error' in data) {
+                lastError = data.error
+                if (res.status >= 500 && attempt < MAX_CHUNK_ATTEMPTS) {
+                  await new Promise((resolve) => setTimeout(resolve, 600 * attempt))
+                  break
+                }
+                if (data.parseIssues?.length) setParseIssues(data.parseIssues)
+                break
+              }
+
+              if (!('plan' in data)) {
+                lastError = 'Could not parse the spreadsheet — please try again.'
+                break
+              }
+
+              importedPlans.push(data.plan as ParsedPlan)
+              lastError = null
               break
             }
-            if (!('plan' in data)) {
-              lastError = 'Could not parse the spreadsheet — please try again.'
-              break
-            }
-            importedPlans.push(data.plan as ParsedPlan)
-            lastError = null
-            break
+
+            if (!lastError) break
           } catch (err) {
             if (err instanceof DOMException && err.name === 'AbortError') {
               lastError = 'Request timed out while importing — try fewer weeks per upload.'
