@@ -263,6 +263,9 @@ export const UploadAndEdit = () => {
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Upload a CSV or paste your training spreadsheet below. AI will read the exercises, sets, and weights and create a ready-to-edit plan.
         </Typography>
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          AI imports can occasionally miss or misread values. Please review your plan after import, especially weights, reps, and week-to-week changes.
+        </Alert>
         <Button
           variant="outlined"
           startIcon={<UploadFileIcon />}
