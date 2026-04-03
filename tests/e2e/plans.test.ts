@@ -150,6 +150,13 @@ test.describe('Create Plan entry screen', () => {
     await page.getByRole('button', { name: /back/i }).click();
     await expect(page.getByText(/how do you want to start/i).first()).toBeVisible();
   });
+
+  test('clicking "Import from spreadsheet" opens the spreadsheet import flow', async ({ page }) => {
+    await page.getByTestId('entry-upload').click();
+    await expect(page).toHaveURL('/user/plan/upload');
+    await expect(page.getByText(/import from spreadsheet/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /^import$/i })).toBeVisible();
+  });
 });
 
 // ── Template browser ──────────────────────────────────────────────────────────
@@ -303,6 +310,98 @@ test.describe('AI plan creation', () => {
     await expect(errorAlert).toContainText(/unavailable/i);
     // AI form remains visible so the user can retry
     await expect(page.getByRole('button', { name: /generate my plan/i })).toBeVisible();
+  });
+});
+
+// ── Spreadsheet import ────────────────────────────────────────────────────────
+
+test.describe('Spreadsheet import', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/user/plan/create');
+    await page.getByTestId('entry-upload').click();
+    await expect(page).toHaveURL('/user/plan/upload');
+  });
+
+  test('splits multi-week input into chunks and hydrates the editor with merged weeks', async ({ page }) => {
+    const chunkInputs: string[] = [];
+
+    await page.route('**/api/plan/ai-import', async (route) => {
+      const body = route.request().postDataJSON() as { input: string };
+      chunkInputs.push(body.input);
+
+      const responseWeekNumber = chunkInputs.length === 1 ? 1 : 2;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          plan: {
+            name: 'Imported Spreadsheet Plan',
+            order: 1,
+            weeks: [
+              {
+                order: 1,
+                workouts: [
+                  {
+                    order: 1,
+                    name: `Week ${responseWeekNumber} Day 1`,
+                    exercises: [
+                      {
+                        order: 1,
+                        exercise: { name: 'Bench Press', category: 'resistance' },
+                        sets: [{ order: 1, weight: 100, reps: 5 }],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      });
+    });
+
+    await page.getByLabel(/paste in your training sheet/i).fill([
+      'WEEK 1',
+      'SESSION: PUSH',
+      'Bench Press',
+      'WEEK 2',
+      'SESSION: PUSH',
+      'Bench Press',
+      'WEEK 3',
+      'SESSION: PUSH',
+      'Bench Press',
+      'WEEK 4',
+      'SESSION: PUSH',
+      'Bench Press',
+    ].join('\n'));
+
+    await page.getByRole('button', { name: /^import$/i }).click();
+    await expect(page).toHaveURL('/user/plan/create');
+    await expect(page.getByRole('textbox', { name: /plan name/i })).toHaveValue('Imported Spreadsheet Plan');
+    await expect.poll(() => chunkInputs.length).toBe(2);
+    expect(chunkInputs[0]).toContain('WEEK 1');
+    expect(chunkInputs[0]).toContain('WEEK 2');
+    expect(chunkInputs[1]).toContain('WEEK 3');
+    expect(chunkInputs[1]).toContain('WEEK 4');
+  });
+
+  test('shows backend parse issues when spreadsheet import fails', async ({ page }) => {
+    await page.route('**/api/plan/ai-import', async (route) => {
+      await route.fulfill({
+        status: 422,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: 'Could not parse the plan structure returned by AI',
+          parseIssues: ['weeks[0].workouts[0].exercises[0].name: Too small'],
+        }),
+      });
+    });
+
+    await page.getByLabel(/paste in your training sheet/i).fill('WEEK 1\nSESSION: PUSH');
+    await page.getByRole('button', { name: /^import$/i }).click();
+
+    await expect(page.getByRole('alert').filter({ hasText: /could not parse/i })).toBeVisible();
+    await expect(page.getByText(/weeks\[0\]\.workouts\[0\]\.exercises\[0\]\.name/i)).toBeVisible();
   });
 });
 
