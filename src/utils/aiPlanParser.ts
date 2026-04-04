@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { NullableRepRangeSchema } from '@/lib/repRange';
 
 // ── Zod schema for Claude's tool-use output ──────────────────────────────────
 // Intentionally simpler than PlanInputSchema: no `order` fields (we derive
@@ -15,7 +16,7 @@ const AiSetSchema = z.object({
 const AiExerciseSchema = z.object({
   name: z.string().min(1),
   category: z.string().optional().default('resistance'),
-  repRange: z.string().nullable().optional(),
+  repRange: NullableRepRangeSchema,
   restTime: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   targetRpe: z.number().nullable().optional(),
