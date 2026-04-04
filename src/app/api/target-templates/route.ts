@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSession, authenticationErrorResponse, isAuthenticationError } from '@lib/requireSession';
 import { getActiveTemplateForWeek, upsertTargetTemplate } from '@lib/targetTemplates';
 import { TargetTemplateSchema } from '@lib/apiSchemas';
-import { errorResponse, validationErrorResponse } from '@lib/apiResponses';
+import { errorResponse, validationErrorResponse, forbiddenResponse } from '@lib/apiResponses';
 import { getWeekStart } from '@lib/checkInUtils';
+import prisma from '@lib/prisma';
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await requireSession();
-    const userId = session.user.id;
+    const sessionUserId = session.user.id;
 
     const json = await req.json();
     const parsed = TargetTemplateSchema.safeParse(json);
@@ -41,7 +42,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return validationErrorResponse(parsed.error);
     }
 
-    const { effectiveFrom, stepsTarget, sleepMinsTarget, days } = parsed.data;
+    const { effectiveFrom, stepsTarget, sleepMinsTarget, days, targetUserId } = parsed.data;
+    const userId = targetUserId ?? sessionUserId;
+
+    // If writing on behalf of another user, verify the session user is their coach
+    if (userId !== sessionUserId) {
+      const targetUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { coachId: true },
+      });
+      if (!targetUser || targetUser.coachId !== sessionUserId) {
+        return forbiddenResponse();
+      }
+    }
+
     const weekMonday = getWeekStart(new Date(effectiveFrom));
 
     // Coerce string keys ("1"–"7") to numbers and validate range

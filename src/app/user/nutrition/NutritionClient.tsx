@@ -183,13 +183,20 @@ export default function NutritionClient({
   const [dayMetrics, setDayMetrics] = useState<DayMetricPrisma[]>(initialDayMetrics);
   const [events] = useState<EventPrisma[]>(initialEvents);
 
-  // activeTemplate: the carry-forward template whose effectiveFrom <= weekStart
-  const [activeTemplate, setActiveTemplate] = useState<TargetTemplateWithDays | null>(
-    initialTemplate ?? null,
-  );
+  // activeTemplate: the carry-forward template whose effectiveFrom <= weekStart.
+  // Lazy initializer: SSR mode uses initialTemplate; coach mode derives from initialTemplates
+  // so targets are visible on first render without waiting for an effect or navigation.
+  const [activeTemplate, setActiveTemplate] = useState<TargetTemplateWithDays | null>(() => {
+    if (initialTemplate !== undefined) return initialTemplate ?? null;
+    if (initialTemplates) {
+      const initMonday = startOfWeek(new Date(), { weekStartsOn: 1 });
+      return findActiveTemplate(initialTemplates, initMonday);
+    }
+    return null;
+  });
   const [templateLoading, setTemplateLoading] = useState(false);
 
-  // Skip the initial API fetch for the current week when SSR-provided initialTemplate is used
+  // Skip the initial API fetch when SSR or coach mode already provided the template
   const skipInitialFetchRef = useRef(initialTemplate !== undefined || !!initialTemplates);
 
   const [editingDate, setEditingDate] = useState<string | null>(null);
@@ -367,6 +374,7 @@ export default function NutritionClient({
           stepsTarget: toIntOrNull(tmplSteps),
           sleepMinsTarget: toIntOrNull(tmplSleep),
           days,
+          targetUserId: userId,
         }),
       });
       if (!res.ok) throw new Error('Failed to save targets');

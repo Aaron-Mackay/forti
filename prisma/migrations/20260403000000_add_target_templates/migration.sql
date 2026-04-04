@@ -45,7 +45,7 @@ ALTER TABLE "TargetTemplateDay"
 WITH earliest_target_week AS (
   SELECT
     "userId",
-    date_trunc('week', MIN("date")::timestamp)::date AS "effectiveFrom"
+    date_trunc('week', MAX("date")::timestamp)::date AS "effectiveFrom"
   FROM "DayMetric"
   WHERE "caloriesTarget" IS NOT NULL
      OR "proteinTarget"  IS NOT NULL

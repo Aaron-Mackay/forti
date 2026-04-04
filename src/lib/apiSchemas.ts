@@ -30,6 +30,8 @@ export const TargetTemplateSchema = z.object({
   sleepMinsTarget: z.number().int().nullable().optional(),
   // Keys are ISO weekday strings "1"–"7" (coerced to numbers in the route handler)
   days: z.record(z.string(), TargetDaySchema),
+  // Optional: write on behalf of another user (coach editing client targets)
+  targetUserId:    z.string().optional(),
 });
 
 export const RecurrenceFrequency = ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as const;
