@@ -1,21 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
-import { REP_RANGE_AMRAP_DEFAULT_REPS } from '@/lib/repRange'
-import { getTemplateDefaultRepsOrThrow, PLAN_TEMPLATES } from './planTemplates'
+import { parseRepRange, getDefaultRepsFromParsedRepRange, REP_RANGE_AMRAP_DEFAULT_REPS } from '@/lib/repRange'
+import { PLAN_TEMPLATES } from './planTemplates'
 
-describe('getTemplateDefaultRepsOrThrow', () => {
-  it('uses floor/min defaults for exact, range, and plus', () => {
-    expect(getTemplateDefaultRepsOrThrow('10')).toBe(10)
-    expect(getTemplateDefaultRepsOrThrow('5-10')).toBe(5)
-    expect(getTemplateDefaultRepsOrThrow('5+')).toBe(5)
-  })
+describe('template rep defaults use shared parser behavior', () => {
+  it('uses floor/min defaults for exact, range, plus and AMRAP', () => {
+    const exact = parseRepRange('10')
+    const range = parseRepRange('5-10')
+    const plus = parseRepRange('5+')
+    const amrap = parseRepRange('AMRAP')
 
-  it('uses AMRAP fallback default', () => {
-    expect(getTemplateDefaultRepsOrThrow('AMRAP')).toBe(REP_RANGE_AMRAP_DEFAULT_REPS)
-  })
-
-  it('throws on malformed ranges so callers can recover/edit', () => {
-    expect(() => getTemplateDefaultRepsOrThrow('not-a-range')).toThrow('Invalid repRange template value')
+    expect(exact && getDefaultRepsFromParsedRepRange(exact)).toBe(10)
+    expect(range && getDefaultRepsFromParsedRepRange(range)).toBe(5)
+    expect(plus && getDefaultRepsFromParsedRepRange(plus)).toBe(5)
+    expect(amrap && getDefaultRepsFromParsedRepRange(amrap)).toBe(REP_RANGE_AMRAP_DEFAULT_REPS)
   })
 })
 

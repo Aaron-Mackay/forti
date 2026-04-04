@@ -30,7 +30,7 @@ export type PlanTemplate = {
 type ExerciseEntry = ParsedPlan['weeks'][0]['workouts'][0]['exercises'][0]
 type WorkoutEntry = ParsedPlan['weeks'][0]['workouts'][0]
 
-export function getTemplateDefaultRepsOrThrow(repRange: string): number {
+function getTemplateDefaultRepsOrThrow(repRange: string): number {
   const parsedRepRange = parseRepRange(repRange)
   if (parsedRepRange === null) {
     throw new Error(`Invalid repRange template value: "${repRange}". Fix template data before rendering.`)
