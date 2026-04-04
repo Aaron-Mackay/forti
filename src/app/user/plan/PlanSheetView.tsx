@@ -90,6 +90,9 @@ interface PlanSheetViewProps {
   arrangeMode: boolean;
   creationMode?: boolean;
   showWeekHeaders?: boolean;
+  invalidRepRangeIds?: Set<number>;
+  onRepRangeFocus?: (exerciseId: number) => void;
+  onRepRangeBlur?: (exerciseId: number) => void;
 }
 
 // ── SortableExerciseTbody ──────────────────────────────────────────────────────
@@ -107,6 +110,9 @@ interface SortableExerciseTbodyProps {
   openRenamePicker: (weekId: number, workoutId: number, workoutExerciseId: number) => void;
   setMenuState: (state: MenuState | null) => void;
   bestE1rm: number | null;
+  repRangeInvalid: boolean;
+  onRepRangeFocus?: (exerciseId: number) => void;
+  onRepRangeBlur?: (exerciseId: number) => void;
 }
 
 const SortableExerciseTbody = ({
@@ -122,6 +128,9 @@ const SortableExerciseTbody = ({
   openRenamePicker,
   setMenuState,
   bestE1rm,
+  repRangeInvalid,
+  onRepRangeFocus,
+  onRepRangeBlur,
 }: SortableExerciseTbodyProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: 'ex-' + ex.id,
@@ -201,8 +210,15 @@ const SortableExerciseTbody = ({
             type="text"
             value={ex.repRange ?? ''}
             onChange={(e) => dispatch({ type: 'UPDATE_REP_RANGE', planId, weekId, workoutId, workoutExerciseId: ex.id, repRange: e.target.value })}
+            onFocus={() => onRepRangeFocus?.(ex.id)}
+            onBlur={() => onRepRangeBlur?.(ex.id)}
             placeholder="—"
-            style={{ ...inputSx, width: '3.5em' }}
+            style={{
+              ...inputSx,
+              width: '3.5em',
+              borderColor: repRangeInvalid ? 'var(--mui-palette-error-main, #d32f2f)' : undefined,
+              boxShadow: repRangeInvalid ? '0 0 0 1px var(--mui-palette-error-main, #d32f2f) inset' : 'none',
+            }}
           />
         </td>
         <td style={{ ...cellSx, textAlign: 'center' }}>
@@ -352,6 +368,9 @@ interface SortableWorkoutSlotProps {
   openRenamePicker: (weekId: number, workoutId: number, workoutExerciseId: number) => void;
   setMenuState: (state: MenuState | null) => void;
   slotIdx: number;
+  invalidRepRangeIds?: Set<number>;
+  onRepRangeFocus?: (exerciseId: number) => void;
+  onRepRangeBlur?: (exerciseId: number) => void;
 }
 
 const SortableWorkoutSlot = ({
@@ -365,6 +384,9 @@ const SortableWorkoutSlot = ({
   openRenamePicker,
   setMenuState,
   slotIdx,
+  invalidRepRangeIds,
+  onRepRangeFocus,
+  onRepRangeBlur,
 }: SortableWorkoutSlotProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: 'wo-' + workout.id,
@@ -475,6 +497,9 @@ const SortableWorkoutSlot = ({
                       openRenamePicker={openRenamePicker}
                       setMenuState={setMenuState}
                       bestE1rm={bestE1rm}
+                      repRangeInvalid={invalidRepRangeIds?.has(ex.id) ?? false}
+                      onRepRangeFocus={onRepRangeFocus}
+                      onRepRangeBlur={onRepRangeBlur}
                     />
                   );
                 })
@@ -653,6 +678,9 @@ interface WeekBlockProps {
   openPicker: (weekId: number, workoutId: number) => void;
   openRenamePicker: (weekId: number, workoutId: number, workoutExerciseId: number) => void;
   setMenuState: (state: MenuState | null) => void;
+  invalidRepRangeIds?: Set<number>;
+  onRepRangeFocus?: (exerciseId: number) => void;
+  onRepRangeBlur?: (exerciseId: number) => void;
 }
 
 const WeekBlock = ({
@@ -666,6 +694,9 @@ const WeekBlock = ({
   openPicker,
   openRenamePicker,
   setMenuState,
+  invalidRepRangeIds,
+  onRepRangeFocus,
+  onRepRangeBlur,
 }: WeekBlockProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -748,6 +779,9 @@ const WeekBlock = ({
                   openRenamePicker={openRenamePicker}
                   setMenuState={setMenuState}
                   slotIdx={slotIdx}
+                  invalidRepRangeIds={invalidRepRangeIds}
+                  onRepRangeFocus={onRepRangeFocus}
+                  onRepRangeBlur={onRepRangeBlur}
                 />
               );
             })}
@@ -793,6 +827,9 @@ const PlanSheetView = ({
   arrangeMode,
   creationMode = false,
   showWeekHeaders = false,
+  invalidRepRangeIds,
+  onRepRangeFocus,
+  onRepRangeBlur,
 }: PlanSheetViewProps) => {
   const { dispatch, allExercises } = useWorkoutEditorContext();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -956,6 +993,9 @@ const PlanSheetView = ({
               openPicker={openPicker}
               openRenamePicker={openRenamePicker}
               setMenuState={setMenuState}
+              invalidRepRangeIds={invalidRepRangeIds}
+              onRepRangeFocus={onRepRangeFocus}
+              onRepRangeBlur={onRepRangeBlur}
             />
           ))}
 

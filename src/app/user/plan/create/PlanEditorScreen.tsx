@@ -509,7 +509,7 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
     }
     return visible
   }, [repRangeErrors, repRangeTouchedIds, saveAttempted])
-  const canSave = !!statePlan.name.trim() && allExercisesNamed && repRangeErrors.size === 0
+  const canSave = !!statePlan.name.trim() && allExercisesNamed && (!saveAttempted || repRangeErrors.size === 0)
 
   const markRepRangeTouched = (exerciseId: number) => {
     setRepRangeTouchedIds((prev) => {
@@ -552,6 +552,10 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
 
   const handleSave = async () => {
     setSaveAttempted(true)
+    if (repRangeErrors.size > 0) {
+      setSaveError('Please fix the invalid rep range values before saving.')
+      return
+    }
     // Detect exercises not yet in the database — negative placeholder ID AND not already in the global list
     const existingNames = new Set(allExercises.map((e) => e.name.toLowerCase()))
     const seen = new Set<string>()
