@@ -1,3 +1,4 @@
+import { getDefaultRepsFromParsedRepRange, parseRepRange } from '@/lib/repRange'
 import type { ParsedPlan } from '@/utils/aiPlanParser'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -29,6 +30,15 @@ export type PlanTemplate = {
 type ExerciseEntry = ParsedPlan['weeks'][0]['workouts'][0]['exercises'][0]
 type WorkoutEntry = ParsedPlan['weeks'][0]['workouts'][0]
 
+export function getTemplateDefaultRepsOrThrow(repRange: string): number {
+  const parsedRepRange = parseRepRange(repRange)
+  if (parsedRepRange === null) {
+    throw new Error(`Invalid repRange template value: "${repRange}". Fix template data before rendering.`)
+  }
+
+  return getDefaultRepsFromParsedRepRange(parsedRepRange)
+}
+
 function makeSets(count: number, reps = 8): ExerciseEntry['sets'] {
   return Array.from({ length: count }, (_, i) => ({ order: i + 1, weight: null, reps, rpe: null, rir: null }))
 }
@@ -40,7 +50,7 @@ function ex(
   repRange: string,
   restTime: string,
 ): ExerciseEntry {
-  const firstRep = parseInt(repRange.split('-')[0]) || 8
+  const firstRep = getTemplateDefaultRepsOrThrow(repRange)
   return {
     exercise: { name, category: 'resistance' },
     order,
