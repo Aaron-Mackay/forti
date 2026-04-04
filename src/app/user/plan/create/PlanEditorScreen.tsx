@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Autocomplete,
@@ -62,6 +62,7 @@ import { AddExerciseForm } from '@/app/exercises/AddExerciseForm'
 import { createFilterOptions } from '@mui/material/Autocomplete'
 import type { FilterOptionsState } from '@mui/material'
 import PlanSheetView from '../PlanSheetView'
+import { isValidPlanRepRangeInput } from '@lib/repRange'
 
 // ── Autocomplete helpers ───────────────────────────────────────────────────────
 
@@ -86,6 +87,8 @@ const SortableExerciseRow = ({
   dispatch,
   planId,
   weekId,
+  repRangeError,
+  onRepRangeBlur,
 }: {
   ex: WorkoutExercisePrisma
   exerciseCount: number
@@ -94,6 +97,8 @@ const SortableExerciseRow = ({
   dispatch: ActionDispatch<[WorkoutEditorAction]>
   planId: number
   weekId: number
+  repRangeError?: string
+  onRepRangeBlur: (exerciseId: number) => void
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ex.id,
@@ -245,6 +250,8 @@ const SortableExerciseRow = ({
           value={ex.repRange ?? ''}
           autoComplete="off"
           slotProps={{ inputLabel: { shrink: true } }}
+          error={!!repRangeError}
+          helperText={repRangeError ?? ' '}
           onChange={(e) =>
             dispatch({
               type: 'UPDATE_REP_RANGE',
@@ -255,6 +262,7 @@ const SortableExerciseRow = ({
               repRange: e.target.value,
             })
           }
+          onBlur={() => onRepRangeBlur(ex.id)}
         />
         <TextField
           size="small"
@@ -289,6 +297,8 @@ const SortableWorkoutCard = ({
   dispatch,
   planId,
   weekId,
+  repRangeErrors,
+  onRepRangeBlur,
 }: {
   workout: WorkoutPrisma
   showDelete: boolean
@@ -297,6 +307,8 @@ const SortableWorkoutCard = ({
   dispatch: ActionDispatch<[WorkoutEditorAction]>
   planId: number
   weekId: number
+  repRangeErrors: Map<number, string>
+  onRepRangeBlur: (exerciseId: number) => void
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: workout.id,
@@ -402,6 +414,8 @@ const SortableWorkoutCard = ({
                 dispatch={dispatch}
                 planId={planId}
                 weekId={weekId}
+                repRangeError={repRangeErrors.get(ex.id)}
+                onRepRangeBlur={onRepRangeBlur}
               />
             </React.Fragment>
           ))}
@@ -445,6 +459,8 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
   const [viewMode, setViewMode] = useState<'classic' | 'sheet'>('classic')
   const [selectedWeekId, setSelectedWeekId] = useState<number | null>(null)
   const [arrangeMode, setArrangeMode] = useState(false)
+  const [repRangeTouchedIds, setRepRangeTouchedIds] = useState<Set<number>>(new Set())
+  const [saveAttempted, setSaveAttempted] = useState(false)
   const [zoom, setZoom] = useState(() => {
     if (typeof window === 'undefined') return 1
     const v = parseFloat(localStorage.getItem('sheetZoom') ?? '')
@@ -472,7 +488,47 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
   const allExercisesNamed = statePlan.weeks.every((week) =>
     week.workouts.every(wo => wo.exercises.every(ex => ex.exercise.name.trim().length > 0))
   )
-  const canSave = !!statePlan.name.trim() && allExercisesNamed
+  const repRangeErrors = useMemo(() => {
+    const errors = new Map<number, string>()
+    for (const week of statePlan.weeks) {
+      for (const wo of week.workouts) {
+        for (const ex of wo.exercises) {
+          if (!isValidPlanRepRangeInput(ex.repRange)) {
+            errors.set(ex.id, 'Use 10, 5-10, 5+, AMRAP, or leave blank.')
+          }
+        }
+      }
+    }
+    return errors
+  }, [statePlan.weeks])
+  const visibleRepRangeErrors = useMemo(() => {
+    if (saveAttempted) return repRangeErrors
+    const visible = new Map<number, string>()
+    for (const [id, message] of repRangeErrors) {
+      if (repRangeTouchedIds.has(id)) visible.set(id, message)
+    }
+    return visible
+  }, [repRangeErrors, repRangeTouchedIds, saveAttempted])
+  const canSave = !!statePlan.name.trim() && allExercisesNamed && repRangeErrors.size === 0
+
+  const markRepRangeTouched = (exerciseId: number) => {
+    setRepRangeTouchedIds((prev) => {
+      if (prev.has(exerciseId)) return prev
+      const next = new Set(prev)
+      next.add(exerciseId)
+      return next
+    })
+  }
+
+  const buildSaveErrorMessage = (error: unknown) => {
+    if (typeof error === 'string' && error.trim().length > 0) {
+      return `Plan couldn’t be saved: ${error}. Fix the highlighted fields and try again.`
+    }
+    if (error instanceof Error && error.message.trim().length > 0) {
+      return `Plan couldn’t be saved: ${error.message}. Fix the highlighted fields and try again.`
+    }
+    return 'Plan couldn’t be saved due to an unexpected error. Please try again in a moment.'
+  }
 
   const doSave = async (planToSave: typeof statePlan) => {
     setSaving(true)
@@ -485,16 +541,17 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
           : `/user/plan/${response.planId}`
         )
       } else {
-        setSaveError(response.error || 'Failed to save plan. Please try again.')
+        setSaveError(buildSaveErrorMessage(response.error ?? 'The server returned an unknown error'))
       }
-    } catch {
-      setSaveError('Failed to save plan. Please try again.')
+    } catch (error) {
+      setSaveError(buildSaveErrorMessage(error))
     } finally {
       setSaving(false)
     }
   }
 
   const handleSave = async () => {
+    setSaveAttempted(true)
     // Detect exercises not yet in the database — negative placeholder ID AND not already in the global list
     const existingNames = new Set(allExercises.map((e) => e.name.toLowerCase()))
     const seen = new Set<string>()
@@ -665,6 +722,13 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
               </Tooltip>
             </ToggleButtonGroup>
           </Box>
+          {visibleRepRangeErrors.size > 0 && (
+            <Alert severity="warning">
+              {visibleRepRangeErrors.size === 1
+                ? '1 exercise has an invalid rep range. Use formats like 10, 5-10, 5+, or AMRAP.'
+                : `${visibleRepRangeErrors.size} exercises have invalid rep ranges. Use formats like 10, 5-10, 5+, or AMRAP.`}
+            </Alert>
+          )}
         </Box>
 
         {viewMode === 'sheet' ? (
@@ -715,6 +779,8 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
                       dispatch={dispatch}
                       planId={statePlan.id}
                       weekId={selectedWeek.id}
+                      repRangeErrors={visibleRepRangeErrors}
+                      onRepRangeBlur={markRepRangeTouched}
                     />
                   ))}
                 </SortableContext>
