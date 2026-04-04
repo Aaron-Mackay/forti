@@ -18,6 +18,8 @@ async function openDrawer(page: Page) {
   const menuBtn = page.getByRole('button', { name: /menu/i });
   if (await menuBtn.isVisible()) {
     await menuBtn.click();
+    // Wait for the temporary drawer content to become visible before proceeding.
+    await expect(page.getByRole('link', { name: 'Home' })).toBeVisible();
   }
   // On desktop the drawer is permanently open — nothing to do.
 }
@@ -25,8 +27,11 @@ async function openDrawer(page: Page) {
 test.describe('AppBar navigation drawer', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/user');
-    // Wait for the drawer/nav to be present — works on both mobile and desktop.
-    await expect(page.locator('.MuiDrawer-root')).toBeAttached({ timeout: 15_000 });
+    // On mobile the hamburger button is the readiness signal; on desktop the
+    // permanent drawer exposes the Home nav link directly.
+    await expect(
+      page.getByRole('button', { name: /menu/i }).or(page.getByRole('link', { name: 'Home' }))
+    ).toBeVisible({ timeout: 15_000 });
   });
 
   test('hamburger button opens the navigation drawer', async ({ page, isMobile }) => {
