@@ -2,7 +2,7 @@
  * Nutrition page tests (/user/nutrition).
  *
  * Covers: page load, week navigation, weekly summary, daily log,
- * inline editing a day, and the "Set week targets" dialog.
+ * inline editing a day, and the "Set week targets" dialog (7-day template grid).
  */
 import { expect, test } from './fixtures';
 
@@ -62,18 +62,33 @@ test.describe('Nutrition page', () => {
     await expect(page.getByRole('button', { name: 'Set week targets' })).toBeVisible();
   });
 
-  test('clicking Set week targets opens the dialog', async ({ page }) => {
+  test('clicking Set week targets opens the dialog with correct heading', async ({ page }) => {
     await page.getByRole('button', { name: 'Set week targets' }).click();
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByRole('heading', { name: 'Set Week Targets' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Week Targets' })).toBeVisible();
   });
 
-  test('Set week targets dialog has macro input fields', async ({ page }) => {
+  test('Week targets dialog shows 7 day rows (Mon–Sun)', async ({ page }) => {
     await page.getByRole('button', { name: 'Set week targets' }).click();
-    await expect(page.getByLabel('Calories (kcal)')).toBeVisible();
-    await expect(page.getByLabel('Protein (g)')).toBeVisible();
-    await expect(page.getByLabel('Carbs (g)')).toBeVisible();
-    await expect(page.getByLabel('Fat (g)')).toBeVisible();
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
+    for (const day of ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']) {
+      await expect(page.getByText(day, { exact: true }).first()).toBeVisible();
+    }
+  });
+
+  test('Week targets dialog shows column headers Cal, Pro, Carb, Fat', async ({ page }) => {
+    await page.getByRole('button', { name: 'Set week targets' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
+    for (const col of ['Cal', 'Pro', 'Carb', 'Fat']) {
+      await expect(page.getByText(col, { exact: true }).first()).toBeVisible();
+    }
+  });
+
+  test('Week targets dialog has Steps target and Sleep target inputs', async ({ page }) => {
+    await page.getByRole('button', { name: 'Set week targets' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByLabel('Steps target')).toBeVisible();
+    await expect(page.getByLabel('Sleep target (mins)')).toBeVisible();
   });
 
   test('cancelling the dialog closes it', async ({ page }) => {
@@ -88,10 +103,16 @@ test.describe('Nutrition page', () => {
     await expect(editButtons).toHaveCount(7);
   });
 
-  test('clicking edit on a day card opens the inline editor', async ({ page }) => {
+  test('clicking edit on a day card opens the inline editor with macro actuals fields', async ({ page }) => {
     await page.getByRole('button', { name: 'Edit' }).first().click();
     await expect(page.getByLabel('Calories (kcal)')).toBeVisible({ timeout: 3_000 });
     await expect(page.getByLabel('Protein (g)')).toBeVisible();
+  });
+
+  test('day editor does not show nutrition target input fields', async ({ page }) => {
+    await page.getByRole('button', { name: 'Edit' }).first().click();
+    await expect(page.getByLabel('Calories target (kcal)')).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.getByLabel('Protein target (g)')).not.toBeVisible();
   });
 
   test('cancelling inline edit closes it', async ({ page }) => {
