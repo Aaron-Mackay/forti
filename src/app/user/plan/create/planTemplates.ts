@@ -1,4 +1,4 @@
-import { getDefaultRepsFromParsedRepRange, parseRepRange } from '@/lib/repRange'
+import { parseRepRange } from '@/lib/repRange'
 import type { ParsedPlan } from '@/utils/aiPlanParser'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -30,13 +30,24 @@ export type PlanTemplate = {
 type ExerciseEntry = ParsedPlan['weeks'][0]['workouts'][0]['exercises'][0]
 type WorkoutEntry = ParsedPlan['weeks'][0]['workouts'][0]
 
+const TEMPLATE_AMRAP_DEFAULT_REPS = 8
+
 function getTemplateDefaultRepsOrThrow(repRange: string): number {
   const parsedRepRange = parseRepRange(repRange)
   if (parsedRepRange === null) {
     throw new Error(`Invalid repRange template value: "${repRange}". Fix template data before rendering.`)
   }
 
-  return getDefaultRepsFromParsedRepRange(parsedRepRange)
+  switch (parsedRepRange.kind) {
+    case 'exact':
+      return parsedRepRange.value
+    case 'range':
+      return parsedRepRange.min
+    case 'plus':
+      return parsedRepRange.min
+    case 'amrap':
+      return TEMPLATE_AMRAP_DEFAULT_REPS
+  }
 }
 
 function makeSets(count: number, reps = 8): ExerciseEntry['sets'] {

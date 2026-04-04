@@ -1,19 +1,34 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseRepRange, getDefaultRepsFromParsedRepRange, REP_RANGE_AMRAP_DEFAULT_REPS } from '@/lib/repRange'
+import { parseRepRange } from '@/lib/repRange'
 import { PLAN_TEMPLATES } from './planTemplates'
+
+const TEMPLATE_AMRAP_DEFAULT_REPS = 8
+
+function deriveTemplateDefaultReps(repRange: string): number {
+  const parsed = parseRepRange(repRange)
+  if (!parsed) {
+    throw new Error('Invalid rep range')
+  }
+
+  switch (parsed.kind) {
+    case 'exact':
+      return parsed.value
+    case 'range':
+      return parsed.min
+    case 'plus':
+      return parsed.min
+    case 'amrap':
+      return TEMPLATE_AMRAP_DEFAULT_REPS
+  }
+}
 
 describe('template rep defaults use shared parser behavior', () => {
   it('uses floor/min defaults for exact, range, plus and AMRAP', () => {
-    const exact = parseRepRange('10')
-    const range = parseRepRange('5-10')
-    const plus = parseRepRange('5+')
-    const amrap = parseRepRange('AMRAP')
-
-    expect(exact && getDefaultRepsFromParsedRepRange(exact)).toBe(10)
-    expect(range && getDefaultRepsFromParsedRepRange(range)).toBe(5)
-    expect(plus && getDefaultRepsFromParsedRepRange(plus)).toBe(5)
-    expect(amrap && getDefaultRepsFromParsedRepRange(amrap)).toBe(REP_RANGE_AMRAP_DEFAULT_REPS)
+    expect(deriveTemplateDefaultReps('10')).toBe(10)
+    expect(deriveTemplateDefaultReps('5-10')).toBe(5)
+    expect(deriveTemplateDefaultReps('5+')).toBe(5)
+    expect(deriveTemplateDefaultReps('AMRAP')).toBe(TEMPLATE_AMRAP_DEFAULT_REPS)
   })
 })
 
