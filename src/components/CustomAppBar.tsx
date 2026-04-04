@@ -16,7 +16,9 @@ import {
   ListItemText,
   Stack,
   Toolbar,
-  Typography
+  Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import Link from 'next/link';
 import FortiIcon from 'public/forti-icon.svg'
@@ -51,6 +53,7 @@ import {useCoachClients} from '@lib/providers/CoachClientsProvider';
 import {useNotifications} from '@lib/hooks/api/useNotifications';
 
 export const APPBAR_HEIGHT = 56;
+export const DRAWER_WIDTH = 250;
 export const HEIGHT_EXC_APPBAR = `calc(100dvh - ${APPBAR_HEIGHT}px)`
 export default function CustomAppBar(
   {
@@ -69,6 +72,8 @@ export default function CustomAppBar(
     isCoachDomain?: boolean;
   }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
   // URL of the opposite domain (null on localhost / until hydrated)
   const [crossDomainUrl, setCrossDomainUrl] = useState<string | null>(null);
 
@@ -136,10 +141,15 @@ export default function CustomAppBar(
   }
 
   useEffect(() => {
+    if (isDesktop) return;
     setDrawerOpen(false);
-  }, [pathname]);
+  }, [pathname, isDesktop]);
 
   useEffect(() => {
+    if (isDesktop) {
+      document.body.style.overflow = '';
+      return;
+    }
     if (drawerOpen) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -148,7 +158,7 @@ export default function CustomAppBar(
     return () => {
       document.body.style.overflow = '';
     };
-  }, [drawerOpen]);
+  }, [drawerOpen, isDesktop]);
 
 
   const ListLink = ({icon, text, href, disabled, nested, isActive}
@@ -199,16 +209,19 @@ export default function CustomAppBar(
             minHeight: '56px !important', // forces 56px at all widths
           }}
         >
-          {showBack
-            ? <IconButton edge="start" color="inherit" aria-label="back" onClick={onBack} sx={{mr: 2}}>
+          {showBack ? (
+            <IconButton edge="start" color="inherit" aria-label="back" onClick={onBack} sx={{mr: 2}}>
               <ArrowBackIcon/>
             </IconButton>
-            :
+          ) : !isDesktop ? (
             <IconButton edge="start" color="inherit" aria-label="menu" onClick={() => setDrawerOpen(true)} sx={{mr: 2}}>
               <Badge badgeContent={unreadCount} color="error" max={99}>
                 <MenuIcon/>
               </Badge>
-            </IconButton>}
+            </IconButton>
+          ) : (
+            <Box sx={{width: 40, mr: 2}}/>
+          )}
           <Box sx={{flexGrow: 1, overflow: 'hidden'}}>
             <Typography variant="h6" noWrap>
               {title}
@@ -223,17 +236,27 @@ export default function CustomAppBar(
       </AppBar>
       {!noSpacer && <Toolbar sx={{minHeight: APPBAR_HEIGHT}}/>}
       <Drawer
-        open={drawerOpen}
-        variant="temporary"
-        onClose={() => setDrawerOpen(false)}
-        sx={{ zIndex: 1500 }}
-        PaperProps={{
-          sx: {
-            height: '100dvh',
-            width: 250,
+        open={isDesktop || drawerOpen}
+        variant={isDesktop ? "permanent" : "temporary"}
+        onClose={isDesktop ? undefined : () => setDrawerOpen(false)}
+        sx={{
+          zIndex: isDesktop ? 1200 : 1500,
+          width: DRAWER_WIDTH,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: DRAWER_WIDTH,
             display: 'flex',
             flexDirection: 'column',
-          }
+            ...(isDesktop
+              ? {
+                  height: `calc(100dvh - ${APPBAR_HEIGHT}px)`,
+                  mt: `${APPBAR_HEIGHT}px`,
+                  borderRight: `1px solid ${theme.palette.divider}`,
+                }
+              : {
+                  height: '100dvh',
+                }),
+          },
         }}
       >
         {/* Header / Logo */}
