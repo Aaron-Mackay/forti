@@ -54,8 +54,8 @@ export async function PATCH(
         });
       }
       if (hasVersionChanges) {
-        const active = getActiveVersion(supplement);
         const effDate = toDateOnly(effectiveFrom ?? new Date());
+        const active = getActiveVersion(supplement, effDate);
         await tx.supplementVersion.upsert({
           where: { supplementId_effectiveFrom: { supplementId, effectiveFrom: effDate } },
           create: {
