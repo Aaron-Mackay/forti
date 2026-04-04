@@ -2,8 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { Toolbar } from '@mui/material';
-import CustomAppBar, { APPBAR_HEIGHT } from '@/components/CustomAppBar';
+import { Box, Toolbar, useMediaQuery, useTheme } from '@mui/material';
+import CustomAppBar, { APPBAR_HEIGHT, DRAWER_WIDTH } from '@/components/CustomAppBar';
 
 interface AppBarConfig {
   title: string;
@@ -23,6 +23,8 @@ export function AppBarProvider({ children, isCoachDomain = false }: { children: 
   const onBackRef = useRef<(() => void) | undefined>(undefined);
   // Portal requires the DOM to be available — false on SSR, true after hydration.
   const [mounted, setMounted] = useState(false);
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
 
   useEffect(() => {
     setMounted(true);
@@ -53,7 +55,9 @@ export function AppBarProvider({ children, isCoachDomain = false }: { children: 
           pushed down regardless. */}
       {mounted ? createPortal(bar, document.body) : bar}
       {mounted && <Toolbar sx={{ minHeight: APPBAR_HEIGHT }} />}
-      {children}
+      <Box sx={{ ml: mounted && isDesktop ? `${DRAWER_WIDTH}px` : 0 }}>
+        {children}
+      </Box>
     </AppBarContext.Provider>
   );
 }
