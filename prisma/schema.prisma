@@ -360,16 +360,28 @@ model Supplement {
   userId    String
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
-  dosage    String
-  frequency String
-  notes     String?
   startDate DateTime  @db.Date
   endDate   DateTime? @db.Date
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  versions  SupplementVersion[]
+
   @@index([userId])
+}
+
+model SupplementVersion {
+  id            Int        @id @default(autoincrement())
+  supplementId  Int
+  supplement    Supplement @relation(fields: [supplementId], references: [id], onDelete: Cascade)
+  effectiveFrom DateTime   @db.Date
+  dosage        String
+  frequency     String
+  notes         String?
+
+  @@unique([supplementId, effectiveFrom])
+  @@index([supplementId, effectiveFrom])
 }
 
 enum LibraryAssetType {

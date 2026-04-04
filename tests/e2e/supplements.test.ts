@@ -152,6 +152,57 @@ test.describe('Supplements — CRUD', () => {
     }
   });
 
+  test('shows 1 history entry after creating a supplement', async ({ page }) => {
+    await page.request.post('/api/supplements', {
+      data: { name: 'Zinc', dosage: '15mg', frequency: 'Daily', startDate: '2026-01-01' },
+    });
+    await page.goto('/user/supplements');
+
+    await expect(page.getByText('Change history (1 entry)')).toBeVisible();
+
+    // Expand history
+    await page.getByText('Change history (1 entry)').click();
+    await expect(page.getByText(/Added · 15mg · Daily/)).toBeVisible();
+
+    // Clean up
+    const supplements = await (await page.request.get('/api/supplements')).json() as { id: number }[];
+    for (const s of supplements) {
+      await page.request.delete(`/api/supplements/${s.id}`);
+    }
+  });
+
+  test('shows 2 history entries after editing dosage', async ({ page }) => {
+    await page.request.post('/api/supplements', {
+      data: { name: 'Creatine', dosage: '5g', frequency: 'Daily', startDate: '2026-01-01' },
+    });
+    await page.goto('/user/supplements');
+    await expect(page.getByText('Change history (1 entry)')).toBeVisible();
+
+    // Edit dosage via UI (effectiveFrom defaults to today, different from startDate so a new version is created)
+    await page.getByRole('button', { name: 'Edit supplement' }).first().click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.getByLabel('Dosage').clear();
+    await page.getByLabel('Dosage').fill('10g');
+
+    const patchResponse = page.waitForResponse(
+      r => r.url().includes('/api/supplements/') && r.request().method() === 'PATCH',
+    );
+    await page.getByRole('button', { name: 'Save' }).click();
+    await patchResponse;
+
+    await expect(page.getByText('Change history (2 entries)')).toBeVisible();
+
+    // Expand and verify diff
+    await page.getByText('Change history (2 entries)').click();
+    await expect(page.getByText(/Dosage.*5g.*10g/)).toBeVisible();
+
+    // Clean up
+    const supplements = await (await page.request.get('/api/supplements')).json() as { id: number }[];
+    for (const s of supplements) {
+      await page.request.delete(`/api/supplements/${s.id}`);
+    }
+  });
+
   test('supplement with past end date appears in History section', async ({ page }) => {
     await page.request.post('/api/supplements', {
       data: {
