@@ -153,6 +153,7 @@ All routes live under `src/app/api/` and follow Next.js App Router conventions:
 | `api/export/check-ins` | GET weekly check-in history as CSV |
 | `api/user/settings` | PATCH user settings (dashboard/workout/check-in toggles) |
 | `api/users` | User management |
+| `api/target-templates` | GET (backwards lookup active template for current user) / POST (create or update template for given effectiveFrom) |
 | `api/workout/[workoutId]` | Workout CRUD |
 | `api/workoutExercise/[workoutExerciseId]` | Workout exercise management |
 
@@ -185,7 +186,10 @@ User
  │              └── WorkoutExercise[]  (ordered by `order` field)
  │                   └── ExerciseSet[]  (ordered by `order` field)
  ├── Event[]             (calendar events: BlockEvents and CustomEvents)
- ├── DayMetric[]         (one per user per date)
+ ├── DayMetric[]         (one per user per date; actuals only — no target columns)
+ ├── TargetTemplate[]    (versioned day-of-week target pattern; @@unique([userId, effectiveFrom]))
+ │    — stepsTarget, sleepMinsTarget (uniform); effectiveFrom always a Monday
+ │    └── TargetTemplateDay[]  (7 rows per template; caloriesTarget/proteinTarget/carbsTarget/fatTarget per ISO weekday)
  ├── UserExerciseNote[]  (one per user per exercise)
  ├── WeeklyCheckIn[]     (one per user per ISO week start; @@unique([userId, weekStartDate]))
  │    — subjective ratings (1–5): energyLevel, moodRating, stressLevel, sleepQuality,
@@ -229,6 +233,7 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 | `src/lib/theme.ts` | MUI theme configuration |
 | `src/lib/confirmPermission.ts` | Authorization checks for resource access |
 | `src/lib/coachNutrition.ts` | Shared coach-client nutrition access/query helper (`getCoachClientNutritionData`) |
+| `src/lib/targetTemplates.ts` | Backwards-lookup helpers for `TargetTemplate`: `getActiveTemplateForWeek`, `upsertTargetTemplate`, `getMacrosByDow`, `getAllTemplatesForUser` |
 | `src/lib/requireSession.ts` | Server-side session guard for API routes |
 | `src/lib/getLoggedInUser.ts` | Retrieve full User record from session |
 | `src/lib/queries.ts` | Ownership-chain DB helpers: `getWorkoutWithOwner`, `getWorkoutExerciseWithOwner`, `getSetWithOwner` |

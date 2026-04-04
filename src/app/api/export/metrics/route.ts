@@ -8,7 +8,6 @@ import { errorResponse } from '@lib/apiResponses';
 
 const STANDARD_HEADERS = [
   'date', 'weight_kg', 'steps', 'sleep_mins', 'calories', 'protein_g', 'carbs_g', 'fat_g',
-  'calories_target', 'protein_target', 'carbs_target', 'fat_target', 'steps_target', 'sleep_mins_target',
 ];
 
 export async function GET() {
@@ -39,12 +38,6 @@ export async function GET() {
         m.protein ?? '',
         m.carbs ?? '',
         m.fat ?? '',
-        m.caloriesTarget ?? '',
-        m.proteinTarget ?? '',
-        m.carbsTarget ?? '',
-        m.fatTarget ?? '',
-        m.stepsTarget ?? '',
-        m.sleepMinsTarget ?? '',
         ...customValues,
       ];
     });

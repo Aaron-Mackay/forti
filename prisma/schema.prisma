@@ -47,6 +47,7 @@ model User {
   coachExerciseDescriptions CoachExerciseDescription[] @relation("CoachExerciseDescriptions")
   learningPlans             LearningPlan[]             @relation("CoachLearningPlans")
   learningAssignments       LearningPlanAssignment[]   @relation("ClientAssignments")
+  targetTemplates           TargetTemplate[]
 }
 
 enum CoachRequestStatus {
@@ -142,18 +143,38 @@ model DayMetric {
   fat       Int?
   date      DateTime @db.Date
 
-  // Per-day targets
-  caloriesTarget  Int?
-  proteinTarget   Int?
-  carbsTarget     Int?
-  fatTarget       Int?
-  stepsTarget     Int?
-  sleepMinsTarget Int?
-
   // Custom user-defined metrics: { "<uuid>": { value: Float, target: Float } }
   customMetrics Json?
 
   @@unique([userId, date])
+}
+
+model TargetTemplate {
+  id              Int                @id @default(autoincrement())
+  userId          String
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  effectiveFrom   DateTime           @db.Date // Always a Monday (ISO week start)
+  createdAt       DateTime           @default(now())
+  // Uniform daily targets (same every day of the week)
+  stepsTarget     Int?
+  sleepMinsTarget Int?
+  days            TargetTemplateDay[]
+
+  @@unique([userId, effectiveFrom])
+}
+
+model TargetTemplateDay {
+  id             Int            @id @default(autoincrement())
+  templateId     Int
+  template       TargetTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  dayOfWeek      Int            // ISO: 1=Mon … 7=Sun
+  // Per-day macro targets (may vary by training/rest day)
+  caloriesTarget Int?
+  proteinTarget  Int?
+  carbsTarget    Int?
+  fatTarget      Int?
+
+  @@unique([templateId, dayOfWeek])
 }
 
 model Plan {

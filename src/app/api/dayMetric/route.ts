@@ -27,12 +27,6 @@ export async function POST(req: NextRequest) {
       protein: null,
       carbs: null,
       fat: null,
-      caloriesTarget: null,
-      proteinTarget: null,
-      carbsTarget: null,
-      fatTarget: null,
-      stepsTarget: null,
-      sleepMinsTarget: null,
       ...rest,
       customMetrics: (customMetrics ?? null) as Prisma.InputJsonValue | null,
     };

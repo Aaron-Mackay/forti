@@ -1,4 +1,5 @@
 import prisma from '@lib/prisma';
+import { getAllTemplatesForUser } from '@lib/targetTemplates';
 
 export async function getCoachClientNutritionData(coachId: string, clientId: string) {
   const client = await prisma.user.findUnique({
@@ -10,7 +11,7 @@ export async function getCoachClientNutritionData(coachId: string, clientId: str
     return null;
   }
 
-  const [dayMetrics, events] = await Promise.all([
+  const [dayMetrics, events, targetTemplates] = await Promise.all([
     prisma.dayMetric.findMany({
       where: { userId: clientId },
       orderBy: { date: 'asc' },
@@ -19,7 +20,8 @@ export async function getCoachClientNutritionData(coachId: string, clientId: str
       where: { userId: clientId },
       orderBy: { startDate: 'asc' },
     }),
+    getAllTemplatesForUser(clientId),
   ]);
 
-  return { dayMetrics, events };
+  return { dayMetrics, events, targetTemplates };
 }
