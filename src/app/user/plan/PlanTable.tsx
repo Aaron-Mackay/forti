@@ -32,6 +32,9 @@ export const PlanTable: React.FC<{
     severity: 'success',
   });
   const [saving, setSaving] = useState(false);
+  const [saveAttempted, setSaveAttempted] = useState(false);
+  const [repRangeTouchedIds, setRepRangeTouchedIds] = useState<Set<number>>(new Set());
+  const [focusedRepRangeId, setFocusedRepRangeId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'classic' | 'sheet'>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('planViewMode');
@@ -60,22 +63,45 @@ export const PlanTable: React.FC<{
     redirect('/user/plan/create');
   }
 
-  const invalidRepRangeCount = useMemo(() => {
-    return plan.weeks.reduce((weekAcc, week) => weekAcc + week.workouts.reduce((workoutAcc, workout) =>
-      workoutAcc + workout.exercises.reduce((exerciseAcc, exercise) =>
-        exerciseAcc + (isValidPlanRepRangeInput(exercise.repRange) ? 0 : 1), 0
-      ), 0
-    ), 0);
+  const invalidRepRangeIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const week of plan.weeks) {
+      for (const workout of week.workouts) {
+        for (const exercise of workout.exercises) {
+          if (!isValidPlanRepRangeInput(exercise.repRange)) ids.add(exercise.id);
+        }
+      }
+    }
+    return ids;
   }, [plan]);
 
+  const visibleInvalidRepRangeIds = useMemo(() => {
+    if (saveAttempted) return invalidRepRangeIds;
+    const ids = new Set<number>();
+    for (const id of invalidRepRangeIds) {
+      if (repRangeTouchedIds.has(id) && id !== focusedRepRangeId) ids.add(id);
+    }
+    return ids;
+  }, [focusedRepRangeId, invalidRepRangeIds, repRangeTouchedIds, saveAttempted]);
+
+  const markRepRangeTouched = (exerciseId: number) => {
+    setRepRangeTouchedIds((prev) => {
+      if (prev.has(exerciseId)) return prev;
+      const next = new Set(prev);
+      next.add(exerciseId);
+      return next;
+    });
+  };
+
   const handleSave = () => {
-    if (invalidRepRangeCount > 0) {
+    setSaveAttempted(true);
+    if (invalidRepRangeIds.size > 0) {
       setSnackbar({
         open: true,
         severity: 'error',
-        message: invalidRepRangeCount === 1
+        message: invalidRepRangeIds.size === 1
           ? 'Can’t save yet: 1 rep range is invalid. Use 10, 5-10, 5+, AMRAP, or leave blank.'
-          : `Can’t save yet: ${invalidRepRangeCount} rep ranges are invalid. Use 10, 5-10, 5+, AMRAP, or leave blank.`,
+          : `Can’t save yet: ${invalidRepRangeIds.size} rep ranges are invalid. Use 10, 5-10, 5+, AMRAP, or leave blank.`,
       });
       return;
     }
@@ -139,16 +165,28 @@ export const PlanTable: React.FC<{
             </Tooltip>
           </ToggleButtonGroup>
         </Box>
-        {invalidRepRangeCount > 0 && (
+        {visibleInvalidRepRangeIds.size > 0 && (
           <Alert severity="warning" sx={{ mb: 1.5 }}>
-            {invalidRepRangeCount === 1
+            {visibleInvalidRepRangeIds.size === 1
               ? '1 rep range is currently invalid.'
-              : `${invalidRepRangeCount} rep ranges are currently invalid.`} Save is disabled until fixed.
+              : `${visibleInvalidRepRangeIds.size} rep ranges are currently invalid.`} Save is disabled until fixed.
           </Alert>
         )}
 
         {viewMode === 'sheet' ? (
-          <PlanSheetView plan={plan} planId={plan.id} zoom={zoom} onZoomChange={handleZoomChange} arrangeMode={arrangeMode} />
+          <PlanSheetView
+            plan={plan}
+            planId={plan.id}
+            zoom={zoom}
+            onZoomChange={handleZoomChange}
+            arrangeMode={arrangeMode}
+            invalidRepRangeIds={visibleInvalidRepRangeIds}
+            onRepRangeFocus={setFocusedRepRangeId}
+            onRepRangeBlur={(exerciseId) => {
+              setFocusedRepRangeId((prev) => (prev === exerciseId ? null : prev));
+              markRepRangeTouched(exerciseId);
+            }}
+          />
         ) : isMobile ? (
           <PlanWeekView plan={plan} planId={plan.id} />
         ) : (
@@ -175,7 +213,7 @@ export const PlanTable: React.FC<{
         <Button
           onClick={handleSave}
           variant="contained"
-          disabled={saving || invalidRepRangeCount > 0}
+          disabled={saving || visibleInvalidRepRangeIds.size > 0}
           startIcon={saving ? <CircularProgress size={16} color="inherit" /> : undefined}
           sx={{ minWidth: 160 }}
         >
