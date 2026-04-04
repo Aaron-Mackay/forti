@@ -521,6 +521,9 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
   }
 
   const buildSaveErrorMessage = (error: unknown) => {
+    if (typeof error === 'string' && error.trim().length > 0) {
+      return `Plan couldn’t be saved: ${error}. Fix the highlighted fields and try again.`
+    }
     if (error instanceof Error && error.message.trim().length > 0) {
       return `Plan couldn’t be saved: ${error.message}. Fix the highlighted fields and try again.`
     }
