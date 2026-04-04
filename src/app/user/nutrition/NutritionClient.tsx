@@ -388,7 +388,7 @@ export default function NutritionClient({
     } finally {
       setSavingTargets(false);
     }
-  }, [weekStart, tmplSteps, tmplSleep, tmplDays]);
+  }, [weekStart, tmplSteps, tmplSleep, tmplDays, userId]);
 
   const weekLabel = `${format(weekStart, 'MMM yyyy')} · Week ${getISOWeek(weekStart)}`;
 
