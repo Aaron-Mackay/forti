@@ -3,14 +3,17 @@ import { z } from 'zod';
 import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { errorResponse, notFoundResponse, forbiddenResponse, validationErrorResponse } from '@lib/apiResponses';
+import { getActiveVersion, supplementWithVersions } from '@lib/supplementVersions';
+import { toDateOnly } from '@lib/checkInUtils';
 
 const SupplementPatchSchema = z.object({
-  name: z.string().min(1).optional(),
-  dosage: z.string().min(1).optional(),
-  frequency: z.string().min(1).optional(),
-  notes: z.string().nullable().optional(),
-  startDate: z.coerce.date().optional(),
-  endDate: z.coerce.date().nullable().optional(),
+  name:          z.string().min(1).optional(),
+  dosage:        z.string().min(1).optional(),
+  frequency:     z.string().min(1).optional(),
+  notes:         z.string().nullable().optional(),
+  startDate:     z.coerce.date().optional(),
+  endDate:       z.coerce.date().nullable().optional(),
+  effectiveFrom: z.coerce.date().optional(),
 }).strict();
 
 export async function PATCH(
@@ -22,7 +25,10 @@ export async function PATCH(
     const { id } = await params;
     const supplementId = Number(id);
 
-    const supplement = await prisma.supplement.findUnique({ where: { id: supplementId } });
+    const supplement = await prisma.supplement.findUnique({
+      where: { id: supplementId },
+      include: supplementWithVersions,
+    });
     if (!supplement) return notFoundResponse('Supplement');
     if (supplement.userId !== session.user.id) return forbiddenResponse();
 
@@ -32,10 +38,46 @@ export async function PATCH(
       return validationErrorResponse(parsed.error);
     }
 
-    const updated = await prisma.supplement.update({
-      where: { id: supplementId },
-      data: parsed.data,
+    const { name, dosage, frequency, notes, startDate, endDate, effectiveFrom } = parsed.data;
+    const hasVersionChanges = dosage !== undefined || frequency !== undefined || notes !== undefined;
+    const hasHeaderChanges  = name !== undefined || startDate !== undefined || endDate !== undefined;
+
+    const updated = await prisma.$transaction(async (tx) => {
+      if (hasHeaderChanges) {
+        await tx.supplement.update({
+          where: { id: supplementId },
+          data: {
+            ...(name      !== undefined && { name }),
+            ...(startDate !== undefined && { startDate }),
+            ...('endDate' in parsed.data && { endDate }),
+          },
+        });
+      }
+      if (hasVersionChanges) {
+        const effDate = toDateOnly(effectiveFrom ?? new Date());
+        const active = getActiveVersion(supplement, effDate);
+        await tx.supplementVersion.upsert({
+          where: { supplementId_effectiveFrom: { supplementId, effectiveFrom: effDate } },
+          create: {
+            supplementId,
+            effectiveFrom: effDate,
+            dosage:    dosage    ?? active?.dosage    ?? '',
+            frequency: frequency ?? active?.frequency ?? '',
+            notes:     notes !== undefined ? notes : (active?.notes ?? null),
+          },
+          update: {
+            ...(dosage    !== undefined && { dosage }),
+            ...(frequency !== undefined && { frequency }),
+            ...(notes     !== undefined && { notes }),
+          },
+        });
+      }
+      return tx.supplement.findUniqueOrThrow({
+        where: { id: supplementId },
+        include: supplementWithVersions,
+      });
     });
+
     return NextResponse.json(updated);
   } catch (err: unknown) {
     if (isAuthenticationError(err)) return authenticationErrorResponse();

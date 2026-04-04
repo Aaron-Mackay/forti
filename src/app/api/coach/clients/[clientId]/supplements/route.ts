@@ -4,6 +4,8 @@ import { authenticationErrorResponse, isAuthenticationError, requireSession } fr
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import { forbiddenResponse, errorResponse, validationErrorResponse } from '@lib/apiResponses';
+import { supplementWithVersions } from '@lib/supplementVersions';
+import { toDateOnly } from '@lib/checkInUtils';
 
 const SupplementPostSchema = z.object({
   name: z.string().min(1),
@@ -45,6 +47,7 @@ export async function GET(
     const supplements = await prisma.supplement.findMany({
       where: { userId: clientId },
       orderBy: { startDate: 'desc' },
+      include: supplementWithVersions,
     });
     return NextResponse.json(supplements);
   } catch (err: unknown) {
@@ -66,17 +69,32 @@ export async function POST(
     const parsed = SupplementPostSchema.safeParse(json);
     if (!parsed.success) return validationErrorResponse(parsed.error);
 
-    const supplement = await prisma.supplement.create({
-      data: {
-        userId: clientId,
-        name: parsed.data.name,
-        dosage: parsed.data.dosage,
-        frequency: parsed.data.frequency,
-        notes: parsed.data.notes ?? null,
-        startDate: parsed.data.startDate,
-        endDate: parsed.data.endDate ?? null,
-      },
+    const { name, dosage, frequency, notes, startDate, endDate } = parsed.data;
+
+    const supplement = await prisma.$transaction(async (tx) => {
+      const created = await tx.supplement.create({
+        data: {
+          userId: clientId,
+          name,
+          startDate,
+          endDate: endDate ?? null,
+        },
+      });
+      await tx.supplementVersion.create({
+        data: {
+          supplementId: created.id,
+          effectiveFrom: toDateOnly(startDate),
+          dosage,
+          frequency,
+          notes: notes ?? null,
+        },
+      });
+      return tx.supplement.findUniqueOrThrow({
+        where: { id: created.id },
+        include: supplementWithVersions,
+      });
     });
+
     return NextResponse.json(supplement, { status: 201 });
   } catch (err: unknown) {
     if (isAuthenticationError(err)) return authenticationErrorResponse();

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import getLoggedInUser from '@lib/getLoggedInUser';
 import prisma from '@lib/prisma';
 import SupplementsClient from '@/app/user/supplements/SupplementsClient';
+import { supplementWithVersions } from '@lib/supplementVersions';
 
 interface Props {
   params: Promise<{ clientId: string }>;
@@ -23,6 +24,7 @@ export default async function ClientSupplementsPage({ params }: Props) {
   const supplements = await prisma.supplement.findMany({
     where: { userId: clientId },
     orderBy: { startDate: 'desc' },
+    include: supplementWithVersions,
   });
 
   return (
@@ -34,6 +36,10 @@ export default async function ClientSupplementsPage({ params }: Props) {
         endDate: s.endDate?.toISOString() ?? null,
         createdAt: s.createdAt.toISOString(),
         updatedAt: s.updatedAt.toISOString(),
+        versions: s.versions.map(v => ({
+          ...v,
+          effectiveFrom: v.effectiveFrom.toISOString(),
+        })),
       }))}
     />
   );

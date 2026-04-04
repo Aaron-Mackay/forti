@@ -234,6 +234,7 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 | `src/lib/confirmPermission.ts` | Authorization checks for resource access |
 | `src/lib/coachNutrition.ts` | Shared coach-client nutrition access/query helper (`getCoachClientNutritionData`) |
 | `src/lib/targetTemplates.ts` | Backwards-lookup helpers for `TargetTemplate`: `getActiveTemplateForWeek`, `upsertTargetTemplate`, `getMacrosByDow`, `getAllTemplatesForUser` |
+| `src/lib/supplementVersions.ts` | Backwards-lookup helper for `SupplementVersion`: `SupplementWithVersions` type, `supplementWithVersions` include const, `getActiveVersion` |
 | `src/lib/requireSession.ts` | Server-side session guard for API routes |
 | `src/lib/getLoggedInUser.ts` | Retrieve full User record from session |
 | `src/lib/queries.ts` | Ownership-chain DB helpers: `getWorkoutWithOwner`, `getWorkoutExerciseWithOwner`, `getSetWithOwner` |

@@ -5,7 +5,9 @@ import {
   Alert,
   Box,
   Button,
+  ButtonBase,
   CircularProgress,
+  Collapse,
   Dialog,
   DialogActions,
   DialogContent,
@@ -20,20 +22,28 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
 import { useAppBar } from '@lib/providers/AppBarProvider';
+
+interface SupplementVersion {
+  id: number;
+  supplementId: number;
+  effectiveFrom: string; // ISO date "YYYY-MM-DD" (or ISO timestamp from Prisma)
+  dosage: string;
+  frequency: string;
+  notes: string | null;
+}
 
 interface Supplement {
   id: number;
   userId: string;
   name: string;
-  dosage: string;
-  frequency: string;
-  notes: string | null;
   startDate: string;
   endDate: string | null;
   createdAt: string;
   updatedAt: string;
+  versions: SupplementVersion[];
 }
 
 interface SupplementFormData {
@@ -43,6 +53,7 @@ interface SupplementFormData {
   notes: string;
   startDate: string;
   endDate: string;
+  effectiveFrom: string; // only used in edit mode
 }
 
 const EMPTY_FORM: SupplementFormData = {
@@ -52,6 +63,7 @@ const EMPTY_FORM: SupplementFormData = {
   notes: '',
   startDate: '',
   endDate: '',
+  effectiveFrom: '',
 };
 
 function toDateString(date: string | null | undefined): string {
@@ -59,25 +71,103 @@ function toDateString(date: string | null | undefined): string {
   return date.slice(0, 10);
 }
 
+function formatDate(date: string): string {
+  return new Date(date).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 function formatDateRange(startDate: string, endDate: string | null): string {
-  const start = new Date(startDate).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-  if (!endDate) return `Started ${start} · Ongoing`;
-  const end = new Date(endDate).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-  return `${start} – ${end}`;
+  if (!endDate) return `Started ${formatDate(startDate)} · Ongoing`;
+  return `${formatDate(startDate)} – ${formatDate(endDate)}`;
 }
 
 function isActive(supp: Supplement): boolean {
   if (!supp.endDate) return true;
   return supp.endDate >= new Date().toISOString().slice(0, 10);
 }
+
+/** Backwards lookup: most recent version where effectiveFrom <= today. */
+function getActiveVersion(supplement: Supplement, dateStr?: string): SupplementVersion | null {
+  if (!supplement.versions.length) return null;
+  const cutoff = dateStr ?? new Date().toISOString().slice(0, 10);
+  const desc = [...supplement.versions].sort((a, b) =>
+    b.effectiveFrom.slice(0, 10).localeCompare(a.effectiveFrom.slice(0, 10))
+  );
+  return desc.find(v => v.effectiveFrom.slice(0, 10) <= cutoff) ?? supplement.versions[0];
+}
+
+// ---------------------------------------------------------------------------
+// Version history timeline
+// ---------------------------------------------------------------------------
+
+interface VersionDiff {
+  field: string;
+  from: string;
+  to: string;
+}
+
+function computeVersionDiffs(prev: SupplementVersion, curr: SupplementVersion): VersionDiff[] {
+  const diffs: VersionDiff[] = [];
+  if (prev.dosage !== curr.dosage)
+    diffs.push({ field: 'Dosage', from: prev.dosage, to: curr.dosage });
+  if (prev.frequency !== curr.frequency)
+    diffs.push({ field: 'Frequency', from: prev.frequency, to: curr.frequency });
+  if ((prev.notes ?? '') !== (curr.notes ?? ''))
+    diffs.push({ field: 'Notes', from: prev.notes ?? '—', to: curr.notes ?? '—' });
+  return diffs;
+}
+
+function SupplementVersionTimeline({ versions }: { versions: SupplementVersion[] }) {
+  return (
+    <Box sx={{ borderLeft: '2px solid', borderColor: 'divider', pl: 2, mt: 1.5 }}>
+      {versions.map((v, i) => {
+        const isFirst = i === 0;
+        const diffs = isFirst ? [] : computeVersionDiffs(versions[i - 1], v);
+        return (
+          <Box key={v.id} sx={{ position: 'relative', mb: i < versions.length - 1 ? 1.5 : 0 }}>
+            {/* dot on rail */}
+            <Box sx={{
+              position: 'absolute',
+              left: '-21px',
+              top: '5px',
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              bgcolor: 'text.disabled',
+            }} />
+            <Typography variant="caption" display="block" color="text.secondary">
+              {formatDate(v.effectiveFrom)}
+            </Typography>
+            {isFirst ? (
+              <Typography variant="body2">
+                Added · {v.dosage} · {v.frequency}
+                {v.notes && (
+                  <Typography component="span" variant="body2" color="text.secondary"> · {v.notes}</Typography>
+                )}
+              </Typography>
+            ) : diffs.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">No visible changes</Typography>
+            ) : (
+              diffs.map(d => (
+                <Typography key={d.field} variant="body2">
+                  <Typography component="span" variant="body2" fontWeight={500}>{d.field}</Typography>
+                  {': '}{d.from}{' → '}{d.to}
+                </Typography>
+              ))
+            )}
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Supplement card
+// ---------------------------------------------------------------------------
 
 interface SupplementCardProps {
   supplement: Supplement;
@@ -87,6 +177,9 @@ interface SupplementCardProps {
 }
 
 function SupplementCard({ supplement, readOnly, onEdit, onDelete }: SupplementCardProps) {
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  const active = getActiveVersion(supplement);
+
   return (
     <Paper variant="outlined" sx={{ p: 2, mb: 1.5 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -95,14 +188,14 @@ function SupplementCard({ supplement, readOnly, onEdit, onDelete }: SupplementCa
             {supplement.name}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {supplement.dosage} · {supplement.frequency}
+            {active?.dosage} · {active?.frequency}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {formatDateRange(supplement.startDate, supplement.endDate)}
           </Typography>
-          {supplement.notes && (
+          {active?.notes && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {supplement.notes}
+              {active.notes}
             </Typography>
           )}
         </Box>
@@ -117,9 +210,45 @@ function SupplementCard({ supplement, readOnly, onEdit, onDelete }: SupplementCa
           </Stack>
         )}
       </Stack>
+
+      {supplement.versions.length > 0 && (
+        <>
+          <ButtonBase
+            onClick={() => setVersionsOpen(v => !v)}
+            sx={{
+              mt: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              color: 'text.secondary',
+              borderRadius: 1,
+              px: 0.5,
+            }}
+          >
+            <Typography variant="caption">
+              Change history ({supplement.versions.length} {supplement.versions.length === 1 ? 'entry' : 'entries'})
+            </Typography>
+            <ExpandMoreIcon
+              fontSize="small"
+              sx={{
+                transition: 'transform 0.2s',
+                transform: versionsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                fontSize: '16px',
+              }}
+            />
+          </ButtonBase>
+          <Collapse in={versionsOpen}>
+            <SupplementVersionTimeline versions={supplement.versions} />
+          </Collapse>
+        </>
+      )}
     </Paper>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Main client component
+// ---------------------------------------------------------------------------
 
 export default function SupplementsClient({
   readOnly = false,
@@ -171,13 +300,15 @@ export default function SupplementsClient({
 
   const openEdit = (supp: Supplement) => {
     setEditingSupp(supp);
+    const active = getActiveVersion(supp);
     setFormData({
       name: supp.name,
-      dosage: supp.dosage,
-      frequency: supp.frequency,
-      notes: supp.notes ?? '',
+      dosage: active?.dosage ?? '',
+      frequency: active?.frequency ?? '',
+      notes: active?.notes ?? '',
       startDate: toDateString(supp.startDate),
       endDate: toDateString(supp.endDate),
+      effectiveFrom: new Date().toISOString().slice(0, 10),
     });
     setFormError(null);
     setDialogOpen(true);
@@ -196,16 +327,34 @@ export default function SupplementsClient({
     setSaving(true);
     setFormError(null);
     try {
-      const body = {
-        name: formData.name.trim(),
-        dosage: formData.dosage.trim(),
-        frequency: formData.frequency.trim(),
-        notes: formData.notes.trim() || null,
-        startDate: formData.startDate,
-        endDate: formData.endDate || null,
-      };
-
       if (editingSupp) {
+        // Build a diff-only PATCH body to avoid creating spurious version entries
+        const active = getActiveVersion(editingSupp);
+        const body: Record<string, unknown> = {};
+
+        if (formData.name.trim() !== editingSupp.name) body.name = formData.name.trim();
+        if (formData.startDate !== toDateString(editingSupp.startDate)) body.startDate = formData.startDate;
+        const newEndDate = formData.endDate || null;
+        const currentEndDate = editingSupp.endDate ? toDateString(editingSupp.endDate) : null;
+        if (newEndDate !== currentEndDate) body.endDate = newEndDate;
+
+        const newDosage = formData.dosage.trim();
+        const newFrequency = formData.frequency.trim();
+        const newNotes = formData.notes.trim() || null;
+        if (newDosage !== (active?.dosage ?? '')) body.dosage = newDosage;
+        if (newFrequency !== (active?.frequency ?? '')) body.frequency = newFrequency;
+        if (newNotes !== (active?.notes ?? null)) body.notes = newNotes;
+
+        // Include effectiveFrom only if versioned fields changed
+        if ('dosage' in body || 'frequency' in body || 'notes' in body) {
+          body.effectiveFrom = formData.effectiveFrom;
+        }
+
+        if (Object.keys(body).length === 0) {
+          setDialogOpen(false);
+          return;
+        }
+
         const res = await fetch(`${apiBase}/${editingSupp.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -215,6 +364,14 @@ export default function SupplementsClient({
         const updated: Supplement = await res.json();
         setSupplements(prev => prev.map(s => s.id === updated.id ? updated : s));
       } else {
+        const body = {
+          name: formData.name.trim(),
+          dosage: formData.dosage.trim(),
+          frequency: formData.frequency.trim(),
+          notes: formData.notes.trim() || null,
+          startDate: formData.startDate,
+          endDate: formData.endDate || null,
+        };
         const res = await fetch(apiBase, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -348,6 +505,18 @@ export default function SupplementsClient({
               onChange={e => setFormData(f => ({ ...f, frequency: e.target.value }))}
               disabled={saving}
             />
+            {editingSupp && (
+              <TextField
+                label="Effective from"
+                type="date"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                value={formData.effectiveFrom}
+                onChange={e => setFormData(f => ({ ...f, effectiveFrom: e.target.value }))}
+                disabled={saving}
+                helperText="When did this dosage/frequency change take effect?"
+              />
+            )}
             <TextField
               label="Start Date"
               required
