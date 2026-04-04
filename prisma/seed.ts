@@ -43,7 +43,7 @@ function daysAgo(n: number): Date {
 async function main() {
   // Clear existing data
   await prisma.$executeRawUnsafe(`
-    TRUNCATE "ExerciseSet", "WorkoutExercise", "Exercise", "Workout", "Week", "Plan", "User", "Event", "UserExerciseNote", "DayMetric", "Account", "Session", "WeeklyCheckIn", "PushSubscription"
+    TRUNCATE "ExerciseSet", "WorkoutExercise", "Exercise", "Workout", "Week", "Plan", "User", "Event", "UserExerciseNote", "DayMetric", "Account", "Session", "WeeklyCheckIn", "PushSubscription", "TargetTemplate", "TargetTemplateDay"
     CASCADE
   `);
 
@@ -278,6 +278,25 @@ async function main() {
     },
   });
   await seedJeffDemoData(jeff, new Date(), todd.id);
+
+  // Seed a TargetTemplate for Jeff (current week, uniform macros)
+  await prisma.targetTemplate.create({
+    data: {
+      userId: jeff.id,
+      effectiveFrom: toDateOnly(getWeekStart(new Date())),
+      stepsTarget: 10000,
+      sleepMinsTarget: 480,
+      days: {
+        create: [1, 2, 3, 4, 5, 6, 7].map(dow => ({
+          dayOfWeek: dow,
+          caloriesTarget: 2500,
+          proteinTarget: 160,
+          carbsTarget: 280,
+          fatTarget: 70,
+        })),
+      },
+    },
+  });
 
   // ── Library assets ─────────────────────────────────────────────────────────
   await prisma.libraryAsset.createMany({
