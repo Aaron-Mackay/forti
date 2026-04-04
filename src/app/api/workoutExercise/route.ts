@@ -3,6 +3,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from "@lib/apiError";
 import { forbiddenResponse } from '@lib/apiResponses';
+import { normalizeRepRange } from '@/lib/repRange';
 
 export async function POST(req: NextRequest) {
   const session = await requireSession();
@@ -13,8 +14,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({error: 'workoutId, exerciseId and order must be numbers'}, {status: 400});
   }
 
-  const resolvedRepRange: string = typeof repRange === 'string' ? repRange : '8-12';
-  const resolvedRestTime: string = typeof restTime === 'string' ? restTime : '90';
+  const resolvedRepRangeRaw: string = typeof repRange === 'string' ? repRange : '8-12';
+  const resolvedRepRange = normalizeRepRange(resolvedRepRangeRaw);
+  if (!resolvedRepRange) {
+    return NextResponse.json(
+      {error: 'Invalid repRange format. Use exact ("10"), range ("5-10"), plus ("5+"), or "AMRAP".'},
+      {status: 400},
+    );
+  }
+
+  const resolvedRestTime: string = typeof restTime === 'string' ? restTime.trim() : '90';
   const resolvedSetCount: number = typeof setCount === 'number' ? Math.min(10, Math.max(1, setCount)) : 3;
 
   try {
