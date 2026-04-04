@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { redirect, useRouter } from "next/navigation";
 import { useWorkoutEditorContext } from "@/context/WorkoutEditorContext";
 import { saveUserWorkoutData } from "@lib/clientApi";
@@ -12,6 +12,7 @@ import { useAppBar } from '@lib/providers/AppBarProvider';
 import PlanWeekView from "./PlanWeekView";
 import PlanMultiWeekTable from "./PlanMultiWeekTable";
 import PlanSheetView from "./PlanSheetView";
+import { isValidPlanRepRangeInput } from "@lib/repRange";
 
 function readZoom(): number {
   if (typeof window === 'undefined') return 1;
@@ -59,7 +60,25 @@ export const PlanTable: React.FC<{
     redirect('/user/plan/create');
   }
 
+  const invalidRepRangeCount = useMemo(() => {
+    return plan.weeks.reduce((weekAcc, week) => weekAcc + week.workouts.reduce((workoutAcc, workout) =>
+      workoutAcc + workout.exercises.reduce((exerciseAcc, exercise) =>
+        exerciseAcc + (isValidPlanRepRangeInput(exercise.repRange) ? 0 : 1), 0
+      ), 0
+    ), 0);
+  }, [plan]);
+
   const handleSave = () => {
+    if (invalidRepRangeCount > 0) {
+      setSnackbar({
+        open: true,
+        severity: 'error',
+        message: invalidRepRangeCount === 1
+          ? 'Can’t save yet: 1 rep range is invalid. Use 10, 5-10, 5+, AMRAP, or leave blank.'
+          : `Can’t save yet: ${invalidRepRangeCount} rep ranges are invalid. Use 10, 5-10, 5+, AMRAP, or leave blank.`,
+      });
+      return;
+    }
     setSaving(true);
     saveUserWorkoutData(userDataState)
       .then(() => setSnackbar({ open: true, message: 'Saved successfully', severity: 'success' }))
@@ -120,6 +139,13 @@ export const PlanTable: React.FC<{
             </Tooltip>
           </ToggleButtonGroup>
         </Box>
+        {invalidRepRangeCount > 0 && (
+          <Alert severity="warning" sx={{ mb: 1.5 }}>
+            {invalidRepRangeCount === 1
+              ? '1 rep range is currently invalid.'
+              : `${invalidRepRangeCount} rep ranges are currently invalid.`} Save is disabled until fixed.
+          </Alert>
+        )}
 
         {viewMode === 'sheet' ? (
           <PlanSheetView plan={plan} planId={plan.id} zoom={zoom} onZoomChange={handleZoomChange} arrangeMode={arrangeMode} />
@@ -149,7 +175,7 @@ export const PlanTable: React.FC<{
         <Button
           onClick={handleSave}
           variant="contained"
-          disabled={saving}
+          disabled={saving || invalidRepRangeCount > 0}
           startIcon={saving ? <CircularProgress size={16} color="inherit" /> : undefined}
           sx={{ minWidth: 160 }}
         >

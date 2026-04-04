@@ -78,6 +78,12 @@ function normalizeLegacyRepRange(input: string): string | null {
   return null;
 }
 
+export function isValidPlanRepRangeInput(input: string | null | undefined): boolean {
+  if (input == null) return true;
+  if (input.trim() === '') return true;
+  return normalizeRepRange(input) !== null || normalizeLegacyRepRange(input) !== null;
+}
+
 export const RepRangeSchema = z.string().transform((value, ctx) => {
   const normalized = normalizeRepRange(value);
 
