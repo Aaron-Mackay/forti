@@ -1,5 +1,5 @@
 import {z} from "zod";
-import { NullableRepRangeSchema } from "@/lib/repRange";
+import { NullablePlanRepRangeSchema } from "@/lib/repRange";
 
 export const SetInputSchema = z.object({
   id: z.number().optional(),
@@ -21,7 +21,7 @@ export const ExerciseInputSchema = z.object({
     secondaryMuscles: z.array(z.string()).optional().default([]),
   }),
   order: z.number().int(),
-  repRange: NullableRepRangeSchema,
+  repRange: NullablePlanRepRangeSchema,
   restTime: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   targetRpe: z.number().nullable().optional(),

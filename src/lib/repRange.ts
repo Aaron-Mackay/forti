@@ -10,6 +10,7 @@ const EXACT_RE = /^(\d+)$/;
 const RANGE_RE = /^(\d+)\s*-\s*(\d+)$/;
 const PLUS_RE = /^(\d+)\s*\+$/;
 const AMRAP_RE = /^amrap$/i;
+const LEGACY_PYRAMID_RE = /^(\d+)(?:\s*-\s*\d+){2,}$/;
 
 export function parseRepRange(input: string): RepRangeValue | null {
   const value = input.trim();
@@ -61,6 +62,22 @@ export function normalizeRepRange(input: string): string | null {
   }
 }
 
+
+
+function normalizeLegacyRepRange(input: string): string | null {
+  const trimmed = input.trim();
+
+  if (trimmed === '') {
+    return '';
+  }
+
+  if (LEGACY_PYRAMID_RE.test(trimmed)) {
+    return trimmed.split('-').map(part => part.trim()).join('-');
+  }
+
+  return null;
+}
+
 export const RepRangeSchema = z.string().transform((value, ctx) => {
   const normalized = normalizeRepRange(value);
 
@@ -77,3 +94,19 @@ export const RepRangeSchema = z.string().transform((value, ctx) => {
 });
 
 export const NullableRepRangeSchema = RepRangeSchema.nullable().optional();
+
+
+export const NullablePlanRepRangeSchema = z.string().transform((value, ctx) => {
+  const normalized = normalizeRepRange(value) ?? normalizeLegacyRepRange(value);
+
+  if (normalized === null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Invalid repRange format.',
+    });
+
+    return z.NEVER;
+  }
+
+  return normalized;
+}).nullable().optional();

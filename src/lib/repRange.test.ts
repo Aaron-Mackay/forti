@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeRepRange, parseRepRange, RepRangeSchema } from '@/lib/repRange';
+import { NullablePlanRepRangeSchema, normalizeRepRange, parseRepRange, RepRangeSchema } from '@/lib/repRange';
 
 describe('parseRepRange', () => {
   it('parses exact', () => {
@@ -42,5 +42,17 @@ describe('RepRangeSchema', () => {
 
   it('fails invalid value', () => {
     expect(() => RepRangeSchema.parse('invalid')).toThrow();
+  });
+});
+
+
+describe('NullablePlanRepRangeSchema', () => {
+  it('accepts empty strings used by new workout exercises', () => {
+    expect(NullablePlanRepRangeSchema.parse('')).toBe('');
+  });
+
+  it('accepts legacy BFR rep ranges', () => {
+    expect(NullablePlanRepRangeSchema.parse('30-15-15-15')).toBe('30-15-15-15');
+    expect(NullablePlanRepRangeSchema.parse(' 30 - 15 - 15 - 15 ')).toBe('30-15-15-15');
   });
 });

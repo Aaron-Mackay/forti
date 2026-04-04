@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Box, Divider, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import { Box, Chip, Divider, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
@@ -170,6 +170,7 @@ const SortableExerciseTbody = ({
                 }}
               >
                 {ex.exercise.name}
+                {ex.isBfr && <Chip label="BFR" size="small" color="warning" sx={{ height: 16, fontSize: '0.62rem' }} />}
                 <EditIcon className="edit-icon" sx={{ fontSize: '0.65rem', opacity: 0.35, transition: 'opacity 0.15s', flexShrink: 0 }} />
               </Box>
             ) : (
@@ -191,8 +192,9 @@ const SortableExerciseTbody = ({
               </Box>
             )
           ) : (
-            <Box component="span" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
+            <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, fontWeight: 600, fontSize: '0.75rem' }}>
               {ex.exercise?.name ?? ''}
+              {ex.isBfr && <Chip label="BFR" size="small" color="warning" sx={{ height: 16, fontSize: '0.62rem' }} />}
             </Box>
           )}
         </td>
@@ -1043,6 +1045,25 @@ const PlanSheetView = ({
             }}
           >
             Remove drop set
+          </MenuItem>,
+          <MenuItem
+            key="toggle-bfr"
+            dense
+            onClick={() => {
+              if (menuState) {
+                dispatch({
+                  type: 'TOGGLE_BFR',
+                  planId,
+                  weekId: menuState.weekId,
+                  workoutId: menuState.workoutId,
+                  workoutExerciseId: menuState.exerciseId,
+                  enabled: !menuEx?.isBfr,
+                });
+              }
+              closeMenu();
+            }}
+          >
+            {menuEx?.isBfr ? 'Disable BFR' : 'Enable BFR'}
           </MenuItem>,
           <Divider key="div2" />,
           <MenuItem
