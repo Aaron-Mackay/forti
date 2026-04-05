@@ -19,7 +19,16 @@ const HOST_ALLOWLIST = ['blob.vercel-storage.com', 'public.blob.vercel-storage.c
 const PUBLIC_TOKEN_NAMES = ['BLOB_PUBLIC_READ_WRITE_TOKEN', 'BLOB_READ_WRITE_TOKEN'] as const;
 const PRIVATE_TOKEN_NAMES = ['BLOB_PRIVATE_READ_WRITE_TOKEN', 'BLOB_READ_WRITE_TOKEN'] as const;
 
-export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+export const DEFAULT_MAX_UPLOAD_MB = 50;
+
+export function getMaxUploadBytes() {
+  const configured = Number(process.env.LIBRARY_UPLOAD_MAX_MB ?? DEFAULT_MAX_UPLOAD_MB);
+  const safeMb = Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_MAX_UPLOAD_MB;
+  return {
+    maxUploadMb: Math.floor(safeMb),
+    maxUploadBytes: Math.floor(safeMb) * 1024 * 1024,
+  };
+}
 
 export function validateAssetFile(type: Exclude<LibraryAssetType, 'LINK'>, mimeType: string) {
   const allowed = MIME_GROUPS[type];

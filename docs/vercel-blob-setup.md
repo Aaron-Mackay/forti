@@ -55,7 +55,17 @@ The upload/delete logic accepts these environment variables:
 
 ## Limits and file types
 
-- Maximum upload size: **50MB**
+- Maximum upload size: **50MB** by default.
+
+### Increasing upload size limit
+
+The upload limit is configurable:
+
+- Server validation: `LIBRARY_UPLOAD_MAX_MB` (default `50`)
+- Client-side pre-check text/validation: `NEXT_PUBLIC_LIBRARY_UPLOAD_MAX_MB` (default `50`)
+
+Set both to the same value so users get accurate immediate feedback before upload.
+
 - Allowed file types:
   - Document: PDF, DOC, DOCX, TXT
   - Image: JPEG, PNG, WEBP, GIF

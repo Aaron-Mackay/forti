@@ -56,11 +56,21 @@ const FILE_ACCEPT: Record<Exclude<LibraryAssetType, 'LINK'>, string> = {
   VIDEO: 'video/mp4,video/quicktime,video/webm',
 };
 
-const FILE_HELPER: Record<Exclude<LibraryAssetType, 'LINK'>, string> = {
-  DOCUMENT: 'Accepted: PDF, DOC, DOCX, TXT (max 50MB)',
-  IMAGE: 'Accepted: JPEG, PNG, WEBP, GIF (max 50MB)',
-  VIDEO: 'Accepted: MP4, MOV, WEBM (max 50MB)',
-};
+const DEFAULT_MAX_UPLOAD_MB = 50;
+
+function parseMaxUploadMb() {
+  const value = Number(process.env.NEXT_PUBLIC_LIBRARY_UPLOAD_MAX_MB ?? DEFAULT_MAX_UPLOAD_MB);
+  if (!Number.isFinite(value) || value <= 0) return DEFAULT_MAX_UPLOAD_MB;
+  return Math.floor(value);
+}
+
+function buildFileHelper(maxUploadMb: number): Record<Exclude<LibraryAssetType, 'LINK'>, string> {
+  return {
+    DOCUMENT: `Accepted: PDF, DOC, DOCX, TXT (max ${maxUploadMb}MB)`,
+    IMAGE: `Accepted: JPEG, PNG, WEBP, GIF (max ${maxUploadMb}MB)`,
+    VIDEO: `Accepted: MP4, MOV, WEBM (max ${maxUploadMb}MB)`,
+  };
+}
 
 function EmptyState({ message }: { message: string }) {
   return (
@@ -100,6 +110,10 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
   const privateAssets = ownAssets.filter((a) => !a.isCoachAsset);
   const sharedAssets = ownAssets.filter((a) => a.isCoachAsset);
 
+  const maxUploadMb = useMemo(() => parseMaxUploadMb(), []);
+  const maxUploadBytes = maxUploadMb * 1024 * 1024;
+  const fileHelper = useMemo(() => buildFileHelper(maxUploadMb), [maxUploadMb]);
+
   const fileType = form.type === 'LINK' ? null : form.type;
   const fileAccept = useMemo(() => (fileType ? FILE_ACCEPT[fileType] : ''), [fileType]);
 
@@ -126,6 +140,8 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
       }
     } else if (!file) {
       errs.file = 'Please choose a file to upload';
+    } else if (file.size > maxUploadBytes) {
+      errs.file = `File is too large. Max ${maxUploadMb}MB.`;
     }
 
     setErrors(errs);
@@ -337,13 +353,19 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
                     type="file"
                     accept={fileAccept}
                     onChange={(event) => {
-                      setFile(event.target.files?.[0] ?? null);
+                      const selected = event.target.files?.[0] ?? null;
+                      if (selected && selected.size > maxUploadBytes) {
+                        setFile(null);
+                        setErrors((prev) => ({ ...prev, file: `File is too large. Max ${maxUploadMb}MB.` }));
+                        return;
+                      }
+                      setFile(selected);
                       setErrors((prev) => ({ ...prev, file: undefined }));
                     }}
                   />
                 </Button>
                 <Typography variant="caption" color={errors.file ? 'error.main' : 'text.secondary'}>
-                  {errors.file ?? (file ? `Selected: ${file.name}` : fileType ? FILE_HELPER[fileType] : '')}
+                  {errors.file ?? (file ? `Selected: ${file.name}` : fileType ? fileHelper[fileType] : '')}
                 </Typography>
               </Stack>
             )}
