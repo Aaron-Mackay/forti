@@ -9,8 +9,7 @@ import {
   buildBlobPath,
   MAX_UPLOAD_BYTES,
   validateAssetFile,
-  getUploadScope,
-  getUploadToken,
+  getBlobToken,
 } from '@lib/vercelBlob';
 
 const NON_LINK_TYPES = new Set<Exclude<LibraryAssetType, 'LINK'>>(['DOCUMENT', 'IMAGE', 'VIDEO']);
@@ -60,14 +59,14 @@ export async function POST(req: NextRequest) {
     return errorResponse(error instanceof Error ? error.message : 'Unsupported file type', 400);
   }
 
-  const uploadScope = getUploadScope(isCoachAsset);
-  const uploadToken = getUploadToken(isCoachAsset);
+  // Library assets are currently delivered via direct URLs, so uploads use the public Blob store.
+  const uploadToken = getBlobToken('public');
   const path = buildBlobPath(userId, uploadType, file.name);
 
   let blob;
   try {
     blob = await put(path, file, {
-      access: uploadScope,
+      access: 'public',
       addRandomSuffix: true,
       contentType: file.type,
       token: uploadToken,

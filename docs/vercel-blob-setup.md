@@ -14,11 +14,11 @@ This project supports uploading `DOCUMENT`, `IMAGE`, and `VIDEO` assets to Verce
 
 The upload/delete logic accepts these environment variables:
 
-- Public scope (coach-shared assets):
+- Public scope (used by current Library uploads):
   - `BLOB_PUBLIC_READ_WRITE_TOKEN` (preferred)
   - fallback: `BLOB_READ_WRITE_TOKEN`
-- Private scope (non-coach assets):
-  - `BLOB_PRIVATE_READ_WRITE_TOKEN` (preferred)
+- Private scope (reserved for future private-delivery flows):
+  - `BLOB_PRIVATE_READ_WRITE_TOKEN` (optional)
   - fallback: `BLOB_READ_WRITE_TOKEN`
 
 ## What you still need to do manually
@@ -48,8 +48,8 @@ The upload/delete logic accepts these environment variables:
 ## Current behavior and security
 
 - Uploads currently use `access: 'public'` to keep file links directly accessible from Library cards.
-- Coach-shared assets use the public-scope token.
-- Non-coach assets use the private-scope token.
+- Current Library uploads use the public-scope token so assets can be opened directly from Library cards.
+- Private-scope token support remains available for future private-delivery routes.
 - For sensitive progress photos, use a dedicated private delivery flow (private blobs + auth-gated read route).
 
 ## Limits and file types
