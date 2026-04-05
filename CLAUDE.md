@@ -305,7 +305,7 @@ Test files are co-located with source files or in `tests/`. Use `glob **/*.test.
 import { test, expect } from './fixtures';
 ```
 
-**New pages/routes:** When adding a new page route, also update the route table in `.claude/skills/playwright-cli/SKILL.md` and `.claude/agents/frontend-tester.md` so the frontend-tester agent knows about it.
+**New pages/routes:** When adding a new page route, also update any local AI testing or agent configuration files that maintain a route inventory so automation stays aware of the new page.
 
 **Playwright strict mode:** Playwright locators are strict — if a locator matches more than one element the call throws at runtime, even inside `expect()`. This is the most common source of broken E2E tests.
 
@@ -438,25 +438,16 @@ Type declarations for this pattern are in `svgr.d.ts`.
 
 ---
 
-## Environment Constraints
+## Tooling Notes
 
-**Claude Code on Web:** E2E tests (Playwright) cannot be run in this environment — the dev server cannot reach the database and the browser automation stack is unavailable. Do not attempt to start a dev server or run `npm run test:e2e` / `npx playwright test` when running as Claude Code on the web. Unit tests (`npm run test`) and lint/build (`npm run lint`, `npm run build`) work fine and should still be run as part of the pre-commit check.
-
----
-
-## Skills
-
-Skills (slash commands like `/simplify`, `/harden`, `/polish`, etc.) are **prompt-driven** — they do not run automatically. You must explicitly invoke them, either by name (`/simplify`) or in plain English ("run simplify on the changed files").
-
-Claude may **suggest** a relevant skill after completing a task (e.g. "worth running `/simplify` on the changed files") but will not execute it without being asked.
-
-To configure a skill to run automatically on a hook event, use the `update-config` skill.
+- Some AI assistant environments may not be able to run Playwright or a local dev server because browser automation, database access, or long-lived processes are unavailable. In those environments, do not attempt to run `npm run test:e2e` or `npx playwright test`; run the highest-signal checks the environment supports and clearly note what could not be verified.
+- If your local workflow includes agent-specific skills, slash commands, hooks, or route inventories, keep those auxiliary files in sync when you add new pages or workflows. Treat those files as tooling metadata, not the source of truth for product behaviour.
 
 ---
 
 ## Working Style
 
-Before starting implementation on ambiguous tasks, ask 1–2 targeted clarifying questions rather than making assumptions. Good triggers for asking:
+For ambiguous tasks, prefer 1-2 targeted clarifying questions over broad assumptions. Good triggers:
 
 - The task touches multiple areas with unclear scope (e.g. "add a stats page" — which stats?)
 - There are meaningfully different implementation approaches with real trade-offs
@@ -466,17 +457,17 @@ Keep questions short and specific. One good question is better than several vagu
 
 ## UI Planning Rule
 
-Before writing code for any UI that is more than a simple, self-contained component
-(e.g. a button, badge, input field, or icon), you must first output:
+Before implementing any UI that is more than a simple, self-contained component
+(e.g. a button, badge, input field, or icon), first propose:
 
-1. **Layout Spec** — a brief structured list of the page/component sections,
+1. **Layout Spec** — a brief structured list of the page or component sections,
    what content/data each contains, and any key interactions. Note any
    scroll behavior, fixed/sticky elements, or bottom nav usage.
 2. **ASCII Wireframe** — a simple ASCII diagram showing the rough vertical
    layout at ~390px mobile width. Default to single-column stacking unless
    there is a clear reason for side-by-side elements.
 
-Wait for explicit approval before writing any code.
+Wait for explicit approval before writing implementation code.
 
 ### All UIs are assumed to be mobile web unless stated otherwise:
 - Wireframes should reflect portrait orientation and touch interaction
