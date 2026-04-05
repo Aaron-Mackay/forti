@@ -202,6 +202,14 @@ export default function ExerciseSlide({
             <Typography variant="h6" sx={{flex: 1}}>
               {ex.exercise.name}
             </Typography>
+            {ex.isBfr && (
+              <Chip
+                label="BFR"
+                size="small"
+                color="warning"
+                sx={{ height: 18, fontSize: '0.7rem', flexShrink: 0 }}
+              />
+            )}
             {onSubstitute && (
               <IconButton
                 size="small"
@@ -221,11 +229,6 @@ export default function ExerciseSlide({
           {ex.isAdded && !ex.substitutedFor && (
             <Typography variant="caption" color="info.main" sx={{display: 'block', mb: 0.5}}>
               Added during workout
-            </Typography>
-          )}
-          {ex.isBfr && (
-            <Typography variant="caption" color="warning.main" sx={{display: 'block', mb: 0.5}}>
-              BFR protocol
             </Typography>
           )}
           <Typography variant="subtitle1" gutterBottom>

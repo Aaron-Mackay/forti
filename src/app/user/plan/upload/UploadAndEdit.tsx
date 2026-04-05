@@ -357,11 +357,11 @@ export const UploadAndEdit = () => {
           </List>
           <LinearProgress sx={{ mt: 2 }} />
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-            This may take a few minutes
+            This may take up to 10 minutes, depending on spreadsheet size and complexity
           </Typography>
-          {chunkProgress && (
+          {chunkProgress && chunkProgress.total > 1 && (
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-              Processing chunk {chunkProgress.current} of {chunkProgress.total}
+              Processing part {chunkProgress.current} of {chunkProgress.total}
             </Typography>
           )}
         </DialogContent>

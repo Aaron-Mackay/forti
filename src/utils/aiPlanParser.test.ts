@@ -166,6 +166,32 @@ describe('parseAiPlanResponse — optional fields', () => {
     expect(ex.restTime).toBe('90');
     expect(ex.notes).toBe('Pause at bottom');
   });
+
+  it('treats "BFR" in the rep range field as a BFR marker instead of a rep range', () => {
+    const input = {
+      name: 'Plan',
+      weeks: [
+        {
+          workouts: [
+            {
+              name: 'Day 1',
+              exercises: [
+                {
+                  name: 'Leg Extension',
+                  repRange: 'BFR',
+                  sets: [{ reps: 30 }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const ex = parseAiPlanResponse(input).weeks[0].workouts[0].exercises[0];
+    expect(ex.isBfr).toBe(true);
+    expect(ex.repRange).toBeNull();
+  });
 });
 
 // ── Extra unknown fields → ignored cleanly ────────────────────────────────────

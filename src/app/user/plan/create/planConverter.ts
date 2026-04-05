@@ -1,5 +1,6 @@
 import { PLACEHOLDER_ID } from './PlanBuilderWithContext'
 import type { ParsedPlan } from '@/utils/aiPlanParser'
+import { BFR_REP_RANGE, BFR_REST_TIME, BFR_SET_COUNT } from '@/utils/userPlanMutators'
 import type {
   PlanPrisma,
   WeekPrisma,
@@ -39,13 +40,17 @@ export function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPris
             dateCompleted: null,
             exercises: workout.exercises.map((ex): WorkoutExercisePrisma => {
               const exerciseId = nextId()
+              const isBfr = ex.isBfr ?? false
+              const sourceSets = isBfr
+                ? Array.from({ length: BFR_SET_COUNT }, (_, i) => ex.sets[i] ?? null)
+                : ex.sets
               return {
                 id: exerciseId,
                 workoutId,
                 exerciseId: PLACEHOLDER_ID,
                 order: ex.order,
-                repRange: ex.repRange ?? null,
-                restTime: ex.restTime ?? null,
+                repRange: isBfr ? BFR_REP_RANGE : ex.repRange ?? null,
+                restTime: isBfr ? BFR_REST_TIME : ex.restTime ?? null,
                 notes: ex.notes ?? null,
                 targetRpe: ex.targetRpe ?? null,
                 targetRir: ex.targetRir ?? null,
@@ -60,15 +65,15 @@ export function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPris
                   secondaryMuscles: [],
                   createdByUserId: null,
                 },
-                sets: ex.sets.map((set): SetPrisma => ({
+                sets: sourceSets.map((set, index): SetPrisma => ({
                   id: nextId(),
                   workoutExerciseId: exerciseId,
-                  order: set.order,
-                  weight: set.weight ?? null,
-                  reps: set.reps ?? null,
+                  order: index + 1,
+                  weight: set?.weight ?? null,
+                  reps: set?.reps ?? null,
                   e1rm: null,
-                  rpe: set.rpe ?? null,
-                  rir: set.rir ?? null,
+                  rpe: set?.rpe ?? null,
+                  rir: set?.rir ?? null,
                   isDropSet: false,
                   parentSetId: null,
                 })),
@@ -78,7 +83,7 @@ export function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPris
                 substitutedForId: null,
                 substitutedFor: null,
                 isAdded: false,
-                isBfr: false,
+                isBfr,
               }
             }),
           }

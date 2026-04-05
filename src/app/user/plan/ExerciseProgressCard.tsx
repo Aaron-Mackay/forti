@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import { Box, IconButton, Menu, MenuItem, Switch, Typography } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { WorkoutExercisePrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
@@ -251,6 +251,40 @@ const ExerciseProgressCard = ({
             Move down
           </MenuItem>
         )}
+        <MenuItem
+          onClick={() => {
+            dispatch({
+              type: 'TOGGLE_BFR',
+              planId,
+              weekId,
+              workoutId,
+              workoutExerciseId: exerciseLink.id,
+              enabled: !exerciseLink.isBfr,
+            });
+          }}
+          sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}
+        >
+          <Typography variant="inherit">BFR mode</Typography>
+          <Switch
+            size="small"
+            edge="end"
+            checked={exerciseLink.isBfr}
+            tabIndex={-1}
+            disableRipple
+            onClick={(e) => e.stopPropagation()}
+            onChange={(_, checked) => {
+              dispatch({
+                type: 'TOGGLE_BFR',
+                planId,
+                weekId,
+                workoutId,
+                workoutExerciseId: exerciseLink.id,
+                enabled: checked,
+              });
+            }}
+            inputProps={{ 'aria-label': 'Toggle BFR mode' }}
+          />
+        </MenuItem>
         <MenuItem
           onClick={() => {
             dispatch({ type: 'REMOVE_EXERCISE', planId, weekId, workoutId, exerciseId: exerciseLink.id });

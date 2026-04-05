@@ -66,6 +66,7 @@ function ex(
     exercise: { name, category: 'resistance' },
     order,
     repRange,
+    isBfr: false,
     restTime,
     notes: null,
     targetRpe: null,

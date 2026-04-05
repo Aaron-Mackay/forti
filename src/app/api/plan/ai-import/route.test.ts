@@ -10,11 +10,13 @@ vi.mock('@lib/requireSession', () => ({
   authenticationErrorResponse: () => Response.json({ error: 'Unauthorized' }, { status: 401 }),
 }));
 
-const { mockAiUsageLog } = vi.hoisted(() => ({
+const { mockAiUsageLog, mockFinalMessage, mockAnthropicStream } = vi.hoisted(() => ({
   mockAiUsageLog: {
     count: vi.fn().mockResolvedValue(0),
     create: vi.fn().mockResolvedValue({}),
   },
+  mockFinalMessage: vi.fn(),
+  mockAnthropicStream: vi.fn(),
 }));
 
 vi.mock('@lib/prisma', () => ({
@@ -24,30 +26,24 @@ vi.mock('@lib/prisma', () => ({
 vi.mock('@anthropic-ai/sdk', async () => {
   class MockAPIError extends Error {
     status: number;
-    constructor(status: number, message: string) {
+    constructor(status: number, _error: unknown, message: string | undefined, _headers: unknown) {
       super(message);
       this.status = status;
     }
   }
-  const finalMessage = vi.fn();
-  const stream = vi.fn().mockReturnValue({ finalMessage });
+  mockAnthropicStream.mockReturnValue({ finalMessage: mockFinalMessage });
   return {
     default: Object.assign(
-      vi.fn().mockImplementation(() => ({ messages: { stream } })),
+      vi.fn().mockImplementation(() => ({ messages: { stream: mockAnthropicStream } })),
       { APIError: MockAPIError },
     ),
-    __finalMessage: finalMessage, // expose for test control
-    __stream: stream,
   };
 });
 
 import { requireSession } from '@lib/requireSession';
-import { __finalMessage as mockFinalMessage } from '@anthropic-ai/sdk';
-import { __stream as mockStream } from '@anthropic-ai/sdk';
 
 const mockRequireSession = requireSession as ReturnType<typeof vi.fn>;
 const mockMessagesStream = mockFinalMessage as ReturnType<typeof vi.fn>;
-const mockAnthropicStream = mockStream as ReturnType<typeof vi.fn>;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -266,6 +262,29 @@ describe('POST /api/plan/ai-import', () => {
       expect(body.plan.weeks[0].workouts[0].exercises[0].repRange).toBe('5-10');
     });
 
+    it('treats "BFR" rep range markers as BFR exercises instead of parse errors', async () => {
+      mockMessagesStream.mockResolvedValue(
+        makeToolUseResponse({
+          name: 'Plan',
+          weeks: [{
+            workouts: [{
+              name: 'Day 1',
+              exercises: [{ name: 'Leg Extension', repRange: 'BFR', sets: [] }],
+            }],
+          }],
+        }),
+      );
+
+      const req = makeRequest({ input: 'some text' });
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.plan.weeks[0].workouts[0].exercises[0]).toMatchObject({
+        isBfr: true,
+        repRange: null,
+      });
+    });
+
     it('caps parseIssues at 5 entries even when more issues exist', async () => {
       // Provide a completely null input — Zod will generate many issues
       mockMessagesStream.mockResolvedValue(makeToolUseResponse(null));
@@ -279,7 +298,7 @@ describe('POST /api/plan/ai-import', () => {
 
     it('returns 503 when Anthropic returns 429 rate-limit error', async () => {
       const { default: Anthropic } = await import('@anthropic-ai/sdk');
-      mockMessagesStream.mockRejectedValue(new Anthropic.APIError(429, 'rate limited'));
+      mockMessagesStream.mockRejectedValue(new Anthropic.APIError(429, undefined, 'rate limited', undefined));
 
       const req = makeRequest({ input: 'some workout' });
       const res = await POST(req);
@@ -290,7 +309,7 @@ describe('POST /api/plan/ai-import', () => {
 
     it('returns 503 when Anthropic returns 529 overload error', async () => {
       const { default: Anthropic } = await import('@anthropic-ai/sdk');
-      mockMessagesStream.mockRejectedValue(new Anthropic.APIError(529, 'overloaded'));
+      mockMessagesStream.mockRejectedValue(new Anthropic.APIError(529, undefined, 'overloaded', undefined));
 
       const req = makeRequest({ input: 'some workout' });
       const res = await POST(req);
@@ -299,7 +318,7 @@ describe('POST /api/plan/ai-import', () => {
 
     it('returns 502 for other Anthropic API errors', async () => {
       const { default: Anthropic } = await import('@anthropic-ai/sdk');
-      mockMessagesStream.mockRejectedValue(new Anthropic.APIError(400, 'bad request to api'));
+      mockMessagesStream.mockRejectedValue(new Anthropic.APIError(400, undefined, 'bad request to api', undefined));
 
       const req = makeRequest({ input: 'some workout' });
       const res = await POST(req);

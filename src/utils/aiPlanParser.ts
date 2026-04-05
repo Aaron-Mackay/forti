@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { NullableRepRangeSchema } from '@/lib/repRange';
+import { normalizeRepRange } from '@/lib/repRange';
 
 // ── Zod schema for Claude's tool-use output ──────────────────────────────────
 // Intentionally simpler than PlanInputSchema: no `order` fields (we derive
@@ -16,12 +16,37 @@ const AiSetSchema = z.object({
 const AiExerciseSchema = z.object({
   name: z.string().min(1),
   category: z.string().optional().default('resistance'),
-  repRange: NullableRepRangeSchema,
+  repRange: z.string().nullable().optional(),
+  isBfr: z.boolean().optional().default(false),
   restTime: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   targetRpe: z.number().nullable().optional(),
   targetRir: z.number().int().nullable().optional(),
   sets: z.array(AiSetSchema).default([]),
+}).transform((exercise, ctx) => {
+  const rawRepRange = exercise.repRange?.trim() ?? null;
+  const repRangeSignalsBfr = typeof rawRepRange === 'string' && /^bfr$/i.test(rawRepRange);
+  const isBfr = exercise.isBfr || repRangeSignalsBfr;
+
+  let repRange: string | null = null;
+  if (rawRepRange && !repRangeSignalsBfr && !isBfr) {
+    const normalized = normalizeRepRange(rawRepRange);
+    if (!normalized) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['repRange'],
+        message: 'Invalid repRange format. Use exact ("10"), range ("5-10"), plus ("5+"), or "AMRAP".',
+      });
+      return z.NEVER;
+    }
+    repRange = normalized;
+  }
+
+  return {
+    ...exercise,
+    repRange,
+    isBfr,
+  };
 });
 
 const AiWorkoutSchema = z.object({
@@ -59,6 +84,7 @@ export type ParsedPlan = {
         exercise: { name: string; category: string };
         order: number;
         repRange: string | null | undefined;
+        isBfr: boolean;
         restTime: string | null | undefined;
         notes: string | null | undefined;
         targetRpe: number | null | undefined;
@@ -83,7 +109,8 @@ export class AiParseError extends Error {
 
 const REP_RANGE_DESCRIPTION =
   'Rep range string. Valid formats only: exact "10", range "5-10", plus "5+", or "AMRAP". ' +
-  'Do not include words like "reps", do not use "x", and prefer a plain hyphen-minus "-" for ranges.';
+  'Do not include words like "reps", do not use "x", and prefer a plain hyphen-minus "-" for ranges. ' +
+  'If the source says "BFR", set isBfr to true instead of using repRange.';
 
 // ── Clarifying questions tool ─────────────────────────────────────────────────
 // Used in the first pass when input is ambiguous. Claude calls this instead of
@@ -160,6 +187,10 @@ export const AI_PLAN_TOOL = {
                           type: 'string',
                           description: REP_RANGE_DESCRIPTION,
                         },
+                        isBfr: {
+                          type: 'boolean',
+                          description: 'Set true when the spreadsheet marks this exercise as BFR/blood-flow restriction.',
+                        },
                         restTime: {
                           type: 'string',
                           description: 'Rest period in seconds as a string, e.g. "90" or "90-120"',
@@ -232,6 +263,7 @@ export function parseAiPlanResponse(rawInput: unknown): ParsedPlan {
           exercise: { name: ex.name, category: ex.category },
           order: ei + 1,
           repRange: ex.repRange ?? null,
+          isBfr: ex.isBfr,
           restTime: ex.restTime ?? null,
           notes: ex.notes ?? null,
           targetRpe: ex.targetRpe ?? null,

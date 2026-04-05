@@ -50,3 +50,4 @@ node_modules/
 /playwright/.auth/
 /.claude/settings.local.json
 /.playwright-cli/
+/.playwright-mcp/

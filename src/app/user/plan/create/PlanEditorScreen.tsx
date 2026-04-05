@@ -168,6 +168,23 @@ const SortableExerciseRow = ({
             )}
           />
         </Box>
+        <Chip
+          label="BFR"
+          size="small"
+          color={ex.isBfr ? 'warning' : 'default'}
+          variant={ex.isBfr ? 'filled' : 'outlined'}
+          onClick={() =>
+            dispatch({
+              type: 'TOGGLE_BFR',
+              planId,
+              weekId,
+              workoutId: ex.workoutId,
+              workoutExerciseId: ex.id,
+              enabled: !ex.isBfr,
+            })
+          }
+          sx={{ flexShrink: 0 }}
+        />
         {exerciseCount > 1 && (
           <IconButton
             size="small"

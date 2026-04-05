@@ -199,6 +199,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         'Sessions may appear side by side — each 14-column group is one session. ' +
         'Ignore TRAINING NOTES rows, Volume column, and quality rating checkboxes. ' +
         'Use numeric weights/reps where available; omit non-numeric values (e.g. BFR, x). ' +
+        'If an exercise is marked "BFR", set isBfr=true for that exercise instead of using "BFR" as a rep range. ' +
         'Preserve isolated numeric set values even when neighboring set cells are blank (e.g. keep "Set 1 Weight = 100"). ' +
         'Do not convert blank spreadsheet cells into 0 values. ' +
         'Capture RPE or RIR annotations per set or exercise where present (e.g. "@RPE 8", "2RIR").'

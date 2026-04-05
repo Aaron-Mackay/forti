@@ -140,7 +140,12 @@ const ExerciseRow = ({
             renderInput={(params) => <TextField variant="standard" {...params}/>}
           />
         ) : (
-          exerciseName
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <Typography variant="body1">{exerciseName}</Typography>
+            {exerciseLink.isBfr && (
+              <Chip label="BFR" size="small" color="warning" sx={{ height: 18, fontSize: '0.7rem' }} />
+            )}
+          </Box>
         )}
         <AddExerciseForm
           open={createOpen}
@@ -179,9 +184,6 @@ const ExerciseRow = ({
             })
           }
         />
-        {!isInEditMode && exerciseLink.isBfr && (
-          <Chip label="BFR" size="small" color="warning" sx={{mt: 0.5, height: 18, fontSize: '0.7rem'}} />
-        )}
       </TableCell>
 
       <TableCell align={"center"}>

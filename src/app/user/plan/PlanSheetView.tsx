@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Box, Divider, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import { Box, Chip, Divider, IconButton, Menu, MenuItem, Switch, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
@@ -179,6 +179,14 @@ const SortableExerciseTbody = ({
                 }}
               >
                 {ex.exercise.name}
+                {ex.isBfr && (
+                  <Chip
+                    label="BFR"
+                    size="small"
+                    color="warning"
+                    sx={{ height: 16, fontSize: '0.6rem' }}
+                  />
+                )}
                 <EditIcon className="edit-icon" sx={{ fontSize: '0.65rem', opacity: 0.35, transition: 'opacity 0.15s', flexShrink: 0 }} />
               </Box>
             ) : (
@@ -276,7 +284,7 @@ const SortableExerciseTbody = ({
           {!arrangeMode && (
             <IconButton
               size="small"
-              sx={{ p: 0.25, opacity: 0.4, '&:hover': { opacity: 1 } }}
+              sx={{ p: 0.25, opacity: 0.6, '&:hover': { opacity: 1 } }}
               onClick={(e) =>
                 setMenuState({
                   anchor: e.currentTarget,
@@ -567,6 +575,14 @@ const SortableWorkoutSlot = ({
                           }}
                         >
                           {ex.exercise.name}
+                          {ex.isBfr && (
+                            <Chip
+                              label="BFR"
+                              size="small"
+                              color="warning"
+                              sx={{ height: 16, fontSize: '0.6rem' }}
+                            />
+                          )}
                           <EditIcon className="edit-icon" sx={{ fontSize: '0.65rem', opacity: 0.35, transition: 'opacity 0.15s', flexShrink: 0 }} />
                         </Box>
                       ) : (
@@ -611,7 +627,7 @@ const SortableWorkoutSlot = ({
                     {!arrangeMode && (
                       <IconButton
                         size="small"
-                        sx={{ p: 0.25, opacity: 0.4, '&:hover': { opacity: 1 } }}
+                        sx={{ p: 0.25, opacity: 0.6, '&:hover': { opacity: 1 } }}
                         onClick={(e) =>
                           setMenuState({
                             anchor: e.currentTarget,
@@ -1037,7 +1053,7 @@ const PlanSheetView = ({
         onClose={closeMenu}
         slotProps={{ paper: { sx: { minWidth: '10rem' } } }}
       >
-        {!menuState?.isCardio && [
+        {menuState && !menuState.isCardio && [
           <MenuItem
             key="add-set"
             dense
@@ -1106,6 +1122,46 @@ const PlanSheetView = ({
             }}
           >
             Move down
+          </MenuItem>,
+          <MenuItem
+            key="toggle-bfr"
+            dense
+            onClick={() => {
+              if (menuState && menuEx) {
+                dispatch({
+                  type: 'TOGGLE_BFR',
+                  planId,
+                  weekId: menuState.weekId,
+                  workoutId: menuState.workoutId,
+                  workoutExerciseId: menuState.exerciseId,
+                  enabled: !menuEx.isBfr,
+                });
+              }
+            }}
+            sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}
+          >
+            <Typography variant="inherit">BFR mode</Typography>
+            <Switch
+              size="small"
+              edge="end"
+              checked={Boolean(menuEx?.isBfr)}
+              tabIndex={-1}
+              disableRipple
+              onClick={(e) => e.stopPropagation()}
+              onChange={(_, checked) => {
+                if (menuState) {
+                  dispatch({
+                    type: 'TOGGLE_BFR',
+                    planId,
+                    weekId: menuState.weekId,
+                    workoutId: menuState.workoutId,
+                    workoutExerciseId: menuState.exerciseId,
+                    enabled: checked,
+                  });
+                }
+              }}
+              inputProps={{ 'aria-label': 'Toggle BFR mode' }}
+            />
           </MenuItem>,
           <Divider key="div3" />,
         ]}

@@ -129,6 +129,14 @@ export default function ExercisesListView({
                   <Box sx={{flex: 1}}>
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap'}}>
                       <ListItemText primary={ex.exercise.name} sx={{m: 0, flex: 'none'}} />
+                      {ex.isBfr && (
+                        <Chip
+                          label="BFR"
+                          size="small"
+                          color="warning"
+                          sx={{height: 18, fontSize: '0.65rem'}}
+                        />
+                      )}
                       {isSubstituted && (
                         <Chip
                           label="Sub"
