@@ -19,7 +19,10 @@ import {
   TextField,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
@@ -114,14 +117,17 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
-function SectionHeader({ title }: { title: string }) {
+function SectionHeader({ title, actions }: { title: string; actions?: React.ReactNode }) {
   return (
-    <>
-      <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1 }}>
-        {title}
-      </Typography>
+    <Box mb={1.5}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1 }}>
+          {title}
+        </Typography>
+        {actions}
+      </Stack>
       <Divider sx={{ mb: 1.5 }} />
-    </>
+    </Box>
   );
 }
 
@@ -149,6 +155,8 @@ function canOpenInViewer(asset: LibraryAsset): boolean {
 }
 
 export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coachName, isCoach, userId }: Props) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [ownAssets, setOwnAssets] = useState<LibraryAsset[]>(initialOwn);
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -364,6 +372,72 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
     }
   };
 
+  const libraryActions = (
+    <Stack direction="row" spacing={1} alignItems="center">
+      {isMobile ? (
+        <>
+          <Tooltip title="Upload">
+            <IconButton
+              aria-label="Upload"
+              onClick={() => setAddOpen(true)}
+              sx={{
+                color: 'text.secondary',
+                p: 0.75,
+                '&:hover': { bgcolor: 'action.hover' },
+              }}
+            >
+              <AddIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Bulk upload links">
+            <IconButton
+              aria-label="Bulk upload links"
+              onClick={() => setImportOpen(true)}
+              sx={{
+                color: 'text.secondary',
+                p: 0.75,
+                '&:hover': { bgcolor: 'action.hover' },
+              }}
+            >
+              <UploadFileIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </>
+      ) : (
+        <>
+          <Button
+            size="small"
+            variant="text"
+            startIcon={<AddIcon />}
+            onClick={() => setAddOpen(true)}
+            sx={{
+              color: 'text.secondary',
+              fontWeight: 600,
+              px: 1,
+              '&:hover': { bgcolor: 'action.hover' },
+            }}
+          >
+            Upload
+          </Button>
+          <Button
+            size="small"
+            variant="text"
+            startIcon={<UploadFileIcon />}
+            onClick={() => setImportOpen(true)}
+            sx={{
+              color: 'text.secondary',
+              fontWeight: 600,
+              px: 1,
+              '&:hover': { bgcolor: 'action.hover' },
+            }}
+          >
+            Bulk Upload Links
+          </Button>
+        </>
+      )}
+    </Stack>
+  );
+
   return (
     <Paper sx={{ minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto', px: 2, pt: 2, pb: 4 }}>
       {(coachAssets.length > 0 || coachName) && (
@@ -415,7 +489,7 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
       )}
 
       <Box mb={3}>
-        <SectionHeader title="My Library" />
+        <SectionHeader title="My Library" actions={libraryActions} />
         {privateAssets.length === 0 ? (
           <EmptyState message="No items yet. Add your first resource below." />
         ) : (
@@ -435,15 +509,6 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
           </Grid>
         )}
       </Box>
-
-      <Stack direction="row" spacing={1} mt={1} flexWrap="wrap" useFlexGap>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setAddOpen(true)}>
-          Add to Library
-        </Button>
-        <Button variant="outlined" startIcon={<UploadFileIcon />} onClick={() => setImportOpen(true)}>
-          Bulk Upload Links
-        </Button>
-      </Stack>
 
       <ImportLinksDialog
         open={importOpen}
