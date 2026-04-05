@@ -227,7 +227,7 @@ describe('POST /api/plan/ai-import', () => {
       expect(nameIssue).toMatch(/name:.*character/i);
     });
 
-    it('formats a nested path issue with bracket notation for indices', async () => {
+    it('formats a nested path issue with human-readable week/workout/exercise labels', async () => {
       mockMessagesStream.mockResolvedValue(
         makeToolUseResponse({
           name: 'Plan',
@@ -240,10 +240,30 @@ describe('POST /api/plan/ai-import', () => {
       const body = await res.json();
 
       const nestedIssue = (body.parseIssues as string[]).find((s: string) =>
-        s.includes('weeks[0]'),
+        s.includes('Week 1'),
       );
       expect(nestedIssue).toBeDefined();
-      expect(nestedIssue).toMatch(/weeks\[0\]\.workouts\[0\]\.exercises\[0\]\.name/);
+      expect(nestedIssue).toMatch(/Week 1 > Workout 1 > Exercise 1 > name/);
+    });
+
+    it('accepts rep ranges that use a smart dash character', async () => {
+      mockMessagesStream.mockResolvedValue(
+        makeToolUseResponse({
+          name: 'Plan',
+          weeks: [{
+            workouts: [{
+              name: 'Day 1',
+              exercises: [{ name: 'Bench Press', repRange: '5–10', sets: [] }],
+            }],
+          }],
+        }),
+      );
+
+      const req = makeRequest({ input: 'some text' });
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.plan.weeks[0].workouts[0].exercises[0].repRange).toBe('5-10');
     });
 
     it('caps parseIssues at 5 entries even when more issues exist', async () => {

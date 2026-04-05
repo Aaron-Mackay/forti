@@ -13,7 +13,9 @@ const AMRAP_RE = /^amrap$/i;
 const LEGACY_PYRAMID_RE = /^(\d+)(?:\s*-\s*\d+){2,}$/;
 
 export function parseRepRange(input: string): RepRangeValue | null {
-  const value = input.trim();
+  const value = input
+    .trim()
+    .replace(/[\u2012\u2013\u2014\u2212]/g, '-');
 
   if (AMRAP_RE.test(value)) {
     return { kind: 'amrap' };

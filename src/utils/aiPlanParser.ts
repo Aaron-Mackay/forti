@@ -81,6 +81,10 @@ export class AiParseError extends Error {
   }
 }
 
+const REP_RANGE_DESCRIPTION =
+  'Rep range string. Valid formats only: exact "10", range "5-10", plus "5+", or "AMRAP". ' +
+  'Do not include words like "reps", do not use "x", and prefer a plain hyphen-minus "-" for ranges.';
+
 // ── Clarifying questions tool ─────────────────────────────────────────────────
 // Used in the first pass when input is ambiguous. Claude calls this instead of
 // create_workout_plan and returns 1–5 short questions for the user to answer.
@@ -154,7 +158,7 @@ export const AI_PLAN_TOOL = {
                         },
                         repRange: {
                           type: 'string',
-                          description: 'Rep range as a string, e.g. "8-12" or "5"',
+                          description: REP_RANGE_DESCRIPTION,
                         },
                         restTime: {
                           type: 'string',

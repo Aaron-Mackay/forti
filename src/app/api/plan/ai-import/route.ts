@@ -18,6 +18,52 @@ export type AiImportResponse =
   | { questions: string[] }
   | { error: string; parseIssues?: string[] };
 
+function formatAiIssuePath(path: PropertyKey[]): string {
+  if (path.length === 0) return '';
+
+  const segments: string[] = [];
+  for (let i = 0; i < path.length; i += 1) {
+    const segment = path[i];
+
+    if (segment === 'weeks' && typeof path[i + 1] === 'number') {
+      const weekIndex = path[i + 1] as number;
+      segments.push(`Week ${weekIndex + 1}`);
+      i += 1;
+      continue;
+    }
+
+    if (segment === 'workouts' && typeof path[i + 1] === 'number') {
+      const workoutIndex = path[i + 1] as number;
+      segments.push(`Workout ${workoutIndex + 1}`);
+      i += 1;
+      continue;
+    }
+
+    if (segment === 'exercises' && typeof path[i + 1] === 'number') {
+      const exerciseIndex = path[i + 1] as number;
+      segments.push(`Exercise ${exerciseIndex + 1}`);
+      i += 1;
+      continue;
+    }
+
+    if (segment === 'sets' && typeof path[i + 1] === 'number') {
+      const setIndex = path[i + 1] as number;
+      segments.push(`Set ${setIndex + 1}`);
+      i += 1;
+      continue;
+    }
+
+    if (typeof segment === 'number') {
+      segments.push(`Item ${segment + 1}`);
+      continue;
+    }
+
+    segments.push(String(segment));
+  }
+
+  return segments.join(' > ');
+}
+
 function inferWeekCountFromInput(input: string): number | null {
   const matches = [...input.matchAll(/\bweek\s*([0-9]{1,2})\b/gi)];
   const weekNumbers = matches
@@ -248,10 +294,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (err instanceof AiParseError) {
       console.error('AI plan parse error:', err.message, err.issues);
       const parseIssues = err.issues.slice(0, 5).map((issue) => {
-        const path = issue.path.reduce<string>((acc, segment, i) => {
-          if (typeof segment === 'number') return `${acc}[${segment}]`;
-          return i === 0 ? String(segment) : `${acc}.${String(segment)}`;
-        }, '');
+        const path = formatAiIssuePath(issue.path);
         return path ? `${path}: ${issue.message}` : issue.message;
       });
       return NextResponse.json(
