@@ -31,12 +31,11 @@ interface Props {
 
 export default function LibraryAssetCard({ asset, canDelete, onDelete }: Props) {
   const meta = TYPE_META[asset.type];
-  const isLink = asset.type === 'LINK';
+  const hasUrl = Boolean(asset.url);
 
   const cardContent = (
     <CardContent sx={{ pb: '12px !important' }}>
       <Stack direction="row" alignItems="flex-start" spacing={1.5}>
-        {/* Type icon */}
         <Stack
           alignItems="center"
           justifyContent="center"
@@ -53,7 +52,6 @@ export default function LibraryAssetCard({ asset, canDelete, onDelete }: Props) 
           {meta.icon}
         </Stack>
 
-        {/* Content */}
         <Stack flexGrow={1} minWidth={0} spacing={0.5}>
           <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={0.5}>
             <Typography
@@ -103,15 +101,13 @@ export default function LibraryAssetCard({ asset, canDelete, onDelete }: Props) 
             </Typography>
           )}
 
-          {!isLink && (
-            <Chip
-              label="Coming soon"
-              size="small"
-              sx={{ alignSelf: 'flex-start', mt: 0.5, fontSize: '0.65rem', height: 20 }}
-            />
-          )}
+          <Chip
+            label={meta.label}
+            size="small"
+            sx={{ alignSelf: 'flex-start', mt: 0.5, fontSize: '0.65rem', height: 20 }}
+          />
 
-          {isLink && asset.url && (
+          {hasUrl && (
             <Typography
               variant="caption"
               color="primary"
@@ -129,11 +125,11 @@ export default function LibraryAssetCard({ asset, canDelete, onDelete }: Props) 
     </CardContent>
   );
 
-  if (isLink && asset.url) {
+  if (hasUrl) {
     return (
       <Card
         component="a"
-        href={asset.url}
+        href={asset.url!}
         target="_blank"
         rel="noopener noreferrer"
         sx={{ textDecoration: 'none', display: 'block', '&:hover': { boxShadow: 3 }, transition: 'box-shadow 0.2s' }}

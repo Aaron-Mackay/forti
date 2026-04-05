@@ -3,7 +3,6 @@
 import {
   Box,
   Button,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -22,7 +21,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { LibraryAsset, LibraryAssetType } from '@prisma/client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import LibraryAssetCard from './LibraryAssetCard';
 import ImportLinksDialog from './ImportLinksDialog';
 import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
@@ -43,13 +42,23 @@ interface AddForm {
   isCoachAsset: boolean;
 }
 
-const PLACEHOLDER_TYPES: LibraryAssetType[] = ['DOCUMENT', 'IMAGE', 'VIDEO'];
-
 const TYPE_LABELS: Record<LibraryAssetType, string> = {
   LINK: 'Link',
   DOCUMENT: 'Document',
   IMAGE: 'Image',
   VIDEO: 'Video',
+};
+
+const FILE_ACCEPT: Record<Exclude<LibraryAssetType, 'LINK'>, string> = {
+  DOCUMENT: '.pdf,.doc,.docx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain',
+  IMAGE: 'image/*',
+  VIDEO: 'video/mp4,video/quicktime,video/webm',
+};
+
+const FILE_HELPER: Record<Exclude<LibraryAssetType, 'LINK'>, string> = {
+  DOCUMENT: 'Accepted: PDF, DOC, DOCX, TXT (max 50MB)',
+  IMAGE: 'Accepted: JPEG, PNG, WEBP, GIF (max 50MB)',
+  VIDEO: 'Accepted: MP4, MOV, WEBM (max 50MB)',
 };
 
 function EmptyState({ message }: { message: string }) {
@@ -83,13 +92,18 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
     url: '',
     isCoachAsset: false,
   });
-  const [errors, setErrors] = useState<{ title?: string; url?: string }>({});
+  const [file, setFile] = useState<File | null>(null);
+  const [errors, setErrors] = useState<{ title?: string; url?: string; file?: string }>({});
 
   const privateAssets = ownAssets.filter((a) => !a.isCoachAsset);
   const sharedAssets = ownAssets.filter((a) => a.isCoachAsset);
 
+  const fileType = form.type === 'LINK' ? null : form.type;
+  const fileAccept = useMemo(() => (fileType ? FILE_ACCEPT[fileType] : ''), [fileType]);
+
   const resetForm = () => {
     setForm({ type: 'LINK', title: '', description: '', url: '', isCoachAsset: false });
+    setFile(null);
     setErrors({});
   };
 
@@ -99,7 +113,7 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
   };
 
   const validate = (): boolean => {
-    const errs: { title?: string; url?: string } = {};
+    const errs: { title?: string; url?: string; file?: string } = {};
     if (!form.title.trim()) errs.title = 'Title is required';
     if (form.type === 'LINK') {
       if (!form.url.trim()) {
@@ -107,7 +121,10 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
       } else if (!/^https?:\/\/.+/.test(form.url.trim())) {
         errs.url = 'Must start with http:// or https://';
       }
+    } else if (!file) {
+      errs.file = 'Please choose a file to upload';
     }
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -116,17 +133,31 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
     if (!validate()) return;
     setSubmitting(true);
     try {
-      const res = await fetch('/api/library', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: form.type,
-          title: form.title.trim(),
-          description: form.description.trim() || null,
-          url: form.type === 'LINK' ? form.url.trim() : null,
-          isCoachAsset: isCoach && form.isCoachAsset,
-        }),
-      });
+      const endpoint = form.type === 'LINK' ? '/api/library' : '/api/library/upload';
+      const options =
+        form.type === 'LINK'
+          ? {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: form.type,
+                title: form.title.trim(),
+                description: form.description.trim() || null,
+                url: form.url.trim(),
+                isCoachAsset: isCoach && form.isCoachAsset,
+              }),
+            }
+          : (() => {
+              const payload = new FormData();
+              payload.append('type', form.type);
+              payload.append('title', form.title.trim());
+              payload.append('description', form.description.trim());
+              payload.append('isCoachAsset', String(isCoach && form.isCoachAsset));
+              payload.append('file', file!);
+              return { method: 'POST', body: payload };
+            })();
+
+      const res = await fetch(endpoint, options);
       if (res.ok) {
         const created: LibraryAsset = await res.json();
         setOwnAssets((prev) => [created, ...prev]);
@@ -142,11 +173,8 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
     await fetch(`/api/library/${id}`, { method: 'DELETE' });
   };
 
-  const isPlaceholder = PLACEHOLDER_TYPES.includes(form.type);
-
   return (
     <Paper sx={{ minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto', px: 2, pt: 2, pb: 4 }}>
-      {/* Coach assets section — shown when user has a coach */}
       {(coachAssets.length > 0 || coachName) && (
         <Box mb={3}>
           <SectionHeader title={coachName ? `From ${coachName}` : 'From Your Coach'} />
@@ -164,7 +192,6 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
         </Box>
       )}
 
-      {/* Coach's own shared-with-clients section */}
       {isCoach && (
         <Box mb={3}>
           <SectionHeader title="Shared with Clients" />
@@ -186,7 +213,6 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
         </Box>
       )}
 
-      {/* Private assets section */}
       <Box mb={3}>
         <SectionHeader title="My Library" />
         {privateAssets.length === 0 ? (
@@ -207,18 +233,10 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
       </Box>
 
       <Stack direction="row" spacing={1} mt={1} flexWrap="wrap" useFlexGap>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setAddOpen(true)}
-        >
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setAddOpen(true)}>
           Add to Library
         </Button>
-        <Button
-          variant="outlined"
-          startIcon={<UploadFileIcon />}
-          onClick={() => setImportOpen(true)}
-        >
+        <Button variant="outlined" startIcon={<UploadFileIcon />} onClick={() => setImportOpen(true)}>
           Bulk Upload Links
         </Button>
       </Stack>
@@ -230,12 +248,10 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
         isCoach={isCoach}
       />
 
-      {/* Add dialog */}
       <Dialog open={addOpen} onClose={handleClose} fullWidth maxWidth="xs">
         <DialogTitle>Add to Library</DialogTitle>
         <DialogContent>
           <Stack spacing={2.5} mt={0.5}>
-            {/* Type selector */}
             <Box>
               <Typography variant="caption" color="text.secondary" display="block" mb={0.75}>
                 Type
@@ -243,7 +259,12 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
               <ToggleButtonGroup
                 value={form.type}
                 exclusive
-                onChange={(_e, val) => val && setForm((f) => ({ ...f, type: val as LibraryAssetType, url: '' }))}
+                onChange={(_e, val) => {
+                  if (!val) return;
+                  setForm((f) => ({ ...f, type: val as LibraryAssetType, url: '' }));
+                  setFile(null);
+                  setErrors({});
+                }}
                 size="small"
                 fullWidth
               >
@@ -255,13 +276,6 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
                   </ToggleButton>
                 ))}
               </ToggleButtonGroup>
-              {isPlaceholder && (
-                <Chip
-                  label="Coming soon — placeholder only"
-                  size="small"
-                  sx={{ mt: 1, fontSize: '0.65rem', height: 20 }}
-                />
-              )}
             </Box>
 
             <TextField
@@ -285,7 +299,7 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
               rows={2}
             />
 
-            {form.type === 'LINK' && (
+            {form.type === 'LINK' ? (
               <TextField
                 label="URL"
                 value={form.url}
@@ -298,6 +312,24 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
                 placeholder="https://"
                 inputProps={{ inputMode: 'url' }}
               />
+            ) : (
+              <Stack spacing={1}>
+                <Button variant="outlined" component="label" startIcon={<UploadFileIcon />}>
+                  {file ? 'Change file' : 'Choose file'}
+                  <input
+                    hidden
+                    type="file"
+                    accept={fileAccept}
+                    onChange={(event) => {
+                      setFile(event.target.files?.[0] ?? null);
+                      setErrors((prev) => ({ ...prev, file: undefined }));
+                    }}
+                  />
+                </Button>
+                <Typography variant="caption" color={errors.file ? 'error.main' : 'text.secondary'}>
+                  {errors.file ?? (file ? `Selected: ${file.name}` : fileType ? FILE_HELPER[fileType] : '')}
+                </Typography>
+              </Stack>
             )}
 
             {isCoach && (
@@ -309,9 +341,7 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
                     size="small"
                   />
                 }
-                label={
-                  <Typography variant="body2">Share with my clients</Typography>
-                }
+                label={<Typography variant="body2">Share with my clients</Typography>}
               />
             )}
           </Stack>
