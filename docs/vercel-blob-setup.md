@@ -49,6 +49,7 @@ The upload/delete logic accepts these environment variables:
 
 - Uploads currently use `access: 'public'` to keep file links directly accessible from Library cards.
 - Current Library uploads use the public-scope token so assets can be opened directly from Library cards.
+- **Tradeoff note:** this direct-public-URL approach favors speed and simplicity over strict access control, and may be changed later to a private/signed delivery model.
 - Private-scope token support remains available for future private-delivery routes.
 - For sensitive progress photos, use a dedicated private delivery flow (private blobs + auth-gated read route).
 
