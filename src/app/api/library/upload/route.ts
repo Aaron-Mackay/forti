@@ -7,7 +7,7 @@ import { errorResponse } from '@lib/apiResponses';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import {
   buildBlobPath,
-  MAX_UPLOAD_BYTES,
+  getMaxUploadBytes,
   validateAssetFile,
   getBlobToken,
 } from '@lib/vercelBlob';
@@ -28,7 +28,14 @@ export async function POST(req: NextRequest) {
   }
 
   const userId = session.user.id;
-  const form = await req.formData();
+  const { maxUploadMb, maxUploadBytes } = getMaxUploadBytes();
+
+  let form: FormData;
+  try {
+    form = await req.formData();
+  } catch {
+    return errorResponse(`Upload request too large. Max ${maxUploadMb}MB.`, 400);
+  }
 
   const title = (form.get('title')?.toString().trim() ?? '');
   const description = form.get('description')?.toString().trim() ?? '';
@@ -43,7 +50,8 @@ export async function POST(req: NextRequest) {
   const uploadType = type as Exclude<LibraryAssetType, 'LINK'>;
   if (!(file instanceof File)) return errorResponse('File is required', 400);
   if (file.size <= 0) return errorResponse('File cannot be empty', 400);
-  if (file.size > MAX_UPLOAD_BYTES) return errorResponse('File is too large (max 50MB)', 400);
+
+  if (file.size > maxUploadBytes) return errorResponse(`File is too large (max ${maxUploadMb}MB)`, 400);
 
   if (isCoachAsset) {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { settings: true } });
