@@ -28,7 +28,14 @@ export async function POST(req: NextRequest) {
   }
 
   const userId = session.user.id;
-  const form = await req.formData();
+  const { maxUploadMb, maxUploadBytes } = getMaxUploadBytes();
+
+  let form: FormData;
+  try {
+    form = await req.formData();
+  } catch {
+    return errorResponse(`Upload request too large. Max ${maxUploadMb}MB.`, 400);
+  }
 
   const title = (form.get('title')?.toString().trim() ?? '');
   const description = form.get('description')?.toString().trim() ?? '';
@@ -44,7 +51,6 @@ export async function POST(req: NextRequest) {
   if (!(file instanceof File)) return errorResponse('File is required', 400);
   if (file.size <= 0) return errorResponse('File cannot be empty', 400);
 
-  const { maxUploadMb, maxUploadBytes } = getMaxUploadBytes();
   if (file.size > maxUploadBytes) return errorResponse(`File is too large (max ${maxUploadMb}MB)`, 400);
 
   if (isCoachAsset) {

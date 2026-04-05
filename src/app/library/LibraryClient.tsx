@@ -72,6 +72,29 @@ function buildFileHelper(maxUploadMb: number): Record<Exclude<LibraryAssetType, 
   };
 }
 
+
+function getFormErrors(
+  form: AddForm,
+  file: File | null,
+  maxUploadBytes: number,
+  maxUploadMb: number,
+): { title?: string; url?: string; file?: string } {
+  const errs: { title?: string; url?: string; file?: string } = {};
+  if (!form.title.trim()) errs.title = 'Title is required';
+  if (form.type === 'LINK') {
+    if (!form.url.trim()) {
+      errs.url = 'URL is required for links';
+    } else if (!/^https?:\/\/.+/.test(form.url.trim())) {
+      errs.url = 'Must start with http:// or https://';
+    }
+  } else if (!file) {
+    errs.file = 'Please choose a file to upload';
+  } else if (file.size > maxUploadBytes) {
+    errs.file = `File is too large. Max ${maxUploadMb}MB.`;
+  }
+  return errs;
+}
+
 function EmptyState({ message }: { message: string }) {
   return (
     <Typography variant="body2" color="text.disabled" sx={{ py: 1, fontStyle: 'italic' }}>
@@ -129,21 +152,13 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
     resetForm();
   };
 
-  const validate = (): boolean => {
-    const errs: { title?: string; url?: string; file?: string } = {};
-    if (!form.title.trim()) errs.title = 'Title is required';
-    if (form.type === 'LINK') {
-      if (!form.url.trim()) {
-        errs.url = 'URL is required for links';
-      } else if (!/^https?:\/\/.+/.test(form.url.trim())) {
-        errs.url = 'Must start with http:// or https://';
-      }
-    } else if (!file) {
-      errs.file = 'Please choose a file to upload';
-    } else if (file.size > maxUploadBytes) {
-      errs.file = `File is too large. Max ${maxUploadMb}MB.`;
-    }
+  const isFormValid = useMemo(
+    () => Object.keys(getFormErrors(form, file, maxUploadBytes, maxUploadMb)).length === 0,
+    [form, file, maxUploadBytes, maxUploadMb],
+  );
 
+  const validate = (): boolean => {
+    const errs = getFormErrors(form, file, maxUploadBytes, maxUploadMb);
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -388,7 +403,7 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
           <Button onClick={handleClose} disabled={submitting}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} variant="contained" disabled={submitting}>
+          <Button onClick={handleSubmit} variant="contained" disabled={submitting || !isFormValid}>
             Add
           </Button>
         </DialogActions>
