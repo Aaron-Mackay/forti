@@ -9,6 +9,7 @@ import {
   buildBlobPath,
   MAX_UPLOAD_BYTES,
   validateAssetFile,
+  getUploadScope,
   getUploadToken,
 } from '@lib/vercelBlob';
 
@@ -59,14 +60,22 @@ export async function POST(req: NextRequest) {
     return errorResponse(error instanceof Error ? error.message : 'Unsupported file type', 400);
   }
 
+  const uploadScope = getUploadScope(isCoachAsset);
   const uploadToken = getUploadToken(isCoachAsset);
   const path = buildBlobPath(userId, uploadType, file.name);
-  const blob = await put(path, file, {
-    access: 'public',
-    addRandomSuffix: true,
-    contentType: file.type,
-    token: uploadToken,
-  });
+
+  let blob;
+  try {
+    blob = await put(path, file, {
+      access: uploadScope,
+      addRandomSuffix: true,
+      contentType: file.type,
+      token: uploadToken,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Upload failed';
+    return errorResponse(message, 500);
+  }
 
   const asset = await prisma.libraryAsset.create({
     data: {

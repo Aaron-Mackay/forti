@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Alert,
   Box,
   Button,
   Dialog,
@@ -85,6 +86,7 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [form, setForm] = useState<AddForm>({
     type: 'LINK',
     title: '',
@@ -105,6 +107,7 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
     setForm({ type: 'LINK', title: '', description: '', url: '', isCoachAsset: false });
     setFile(null);
     setErrors({});
+    setSubmitError(null);
   };
 
   const handleClose = () => {
@@ -131,6 +134,7 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
 
   const handleSubmit = async () => {
     if (!validate()) return;
+    setSubmitError(null);
     setSubmitting(true);
     try {
       const endpoint = form.type === 'LINK' ? '/api/library' : '/api/library/upload';
@@ -162,7 +166,18 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
         const created: LibraryAsset = await res.json();
         setOwnAssets((prev) => [created, ...prev]);
         handleClose();
+      } else {
+        let message = 'Upload failed. Please try again.';
+        try {
+          const payload = await res.json() as { error?: string };
+          if (payload?.error) message = payload.error;
+        } catch {
+          // Ignore JSON parse issues and fall back to default message
+        }
+        setSubmitError(message);
       }
+    } catch {
+      setSubmitError('Upload failed. Please check your connection and try again.');
     } finally {
       setSubmitting(false);
     }
@@ -252,6 +267,7 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
         <DialogTitle>Add to Library</DialogTitle>
         <DialogContent>
           <Stack spacing={2.5} mt={0.5}>
+            {submitError && <Alert severity="error">{submitError}</Alert>}
             <Box>
               <Typography variant="caption" color="text.secondary" display="block" mb={0.75}>
                 Type
