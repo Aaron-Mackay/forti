@@ -17,6 +17,8 @@
  */
 import { test, expect } from './fixtures';
 import type { Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -35,6 +37,63 @@ test.describe('Library page', () => {
   ): Promise<{ id: string }> {
     const res = await page.request.post('/api/library', { data });
     if (!res.ok()) throw new Error(`createAsset failed: ${res.status()} ${await res.text()}`);
+    const asset = (await res.json()) as { id: string };
+    createdIds.push(asset.id);
+    return asset;
+  }
+
+  async function createUploadedAsset(
+    page: Page,
+    data: {
+      type: 'DOCUMENT' | 'IMAGE' | 'VIDEO';
+      title: string;
+      description?: string;
+      filePath: string;
+      mimeType: string;
+    },
+  ): Promise<{ id: string }> {
+    const res = await page.request.post('/api/library/upload', {
+      multipart: {
+        type: data.type,
+        title: data.title,
+        description: data.description ?? '',
+        file: {
+          name: path.basename(data.filePath),
+          mimeType: data.mimeType,
+          buffer: readFileSync(data.filePath),
+        },
+      },
+    });
+    if (!res.ok()) throw new Error(`createUploadedAsset failed: ${res.status()} ${await res.text()}`);
+    const asset = (await res.json()) as { id: string };
+    createdIds.push(asset.id);
+    return asset;
+  }
+
+  async function createUploadedAssetFromBuffer(
+    page: Page,
+    data: {
+      type: 'DOCUMENT' | 'IMAGE' | 'VIDEO';
+      title: string;
+      description?: string;
+      fileName: string;
+      mimeType: string;
+      buffer: Buffer;
+    },
+  ): Promise<{ id: string }> {
+    const res = await page.request.post('/api/library/upload', {
+      multipart: {
+        type: data.type,
+        title: data.title,
+        description: data.description ?? '',
+        file: {
+          name: data.fileName,
+          mimeType: data.mimeType,
+          buffer: data.buffer,
+        },
+      },
+    });
+    if (!res.ok()) throw new Error(`createUploadedAssetFromBuffer failed: ${res.status()} ${await res.text()}`);
     const asset = (await res.json()) as { id: string };
     createdIds.push(asset.id);
     return asset;
@@ -96,15 +155,59 @@ test.describe('Library page', () => {
     await expect(page.getByText('My PR Tracker')).toBeVisible();
   });
 
-  test('non-link asset shows Coming soon chip on its card', async ({ page }) => {
-    await createAsset(page, {
-      type: 'VIDEO',
-      title: 'PR Attempt — Deadlift',
-      description: 'Form check from last max attempt.',
+  test('image asset opens in the media viewer instead of exposing a raw link', async ({ page }) => {
+    await createUploadedAsset(page, {
+      type: 'IMAGE',
+      title: 'Movement Standards',
+      description: 'Reference images for key lifts.',
+      filePath: path.resolve(process.cwd(), 'debug-sparkline.png'),
+      mimeType: 'image/png',
     });
     await page.goto('/library');
-    const card = page.locator('.MuiCard-root').filter({ hasText: 'PR Attempt — Deadlift' }).first(); // targeted card
-    await expect(card.getByText('Coming soon')).toBeVisible();
+    const card = page.locator('.MuiCard-root').filter({ hasText: 'Movement Standards' }).first(); // targeted card
+    await expect(card.locator('img')).toBeVisible();
+    await expect(card.getByText(/vercel-storage|blob\.vercel-storage|https?:\/\//i)).not.toBeVisible();
+    await card.click();
+    await expect(page.getByRole('dialog', { name: 'Movement Standards' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Movement Standards' }).locator('img')).toBeVisible();
+  });
+
+  test('pdf document opens in the media viewer', async ({ page }) => {
+    await createUploadedAssetFromBuffer(page, {
+      type: 'DOCUMENT',
+      title: 'Training Programme Overview',
+      description: 'Weekly expectation notes.',
+      fileName: 'overview.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF'),
+    });
+
+    await page.goto('/library');
+    const card = page.locator('.MuiCard-root').filter({ hasText: 'Training Programme Overview' }).first();
+    await card.click();
+
+    const dialog = page.getByRole('dialog', { name: 'Training Programme Overview' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('iframe')).toBeVisible();
+  });
+
+  test('txt document opens in the media viewer', async ({ page }) => {
+    await createUploadedAssetFromBuffer(page, {
+      type: 'DOCUMENT',
+      title: 'Cue Sheet',
+      description: 'Session reminders.',
+      fileName: 'cues.txt',
+      mimeType: 'text/plain',
+      buffer: Buffer.from('Brace hard\nDrive through the floor\nKeep the bar close\n'),
+    });
+
+    await page.goto('/library');
+    const card = page.locator('.MuiCard-root').filter({ hasText: 'Cue Sheet' }).first();
+    await card.click();
+
+    const dialog = page.getByRole('dialog', { name: 'Cue Sheet' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText('Brace hard')).toBeVisible();
   });
 
   test('can add a link asset via the dialog', async ({ page }) => {
@@ -130,22 +233,33 @@ test.describe('Library page', () => {
     await expect(page.getByText('Test Resource')).toBeVisible();
   });
 
-  test('add dialog requires title', async ({ page }) => {
+  test('add dialog keeps Add disabled until title is entered', async ({ page }) => {
     await page.goto('/library');
     await page.getByRole('button', { name: /add to library/i }).click();
-    // Submit without title — dialog stays open with error
-    await page.getByRole('button', { name: /^add$/i }).click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByText('Title is required')).toBeVisible();
+    const addButton = page.getByRole('button', { name: /^add$/i });
+
+    await expect(addButton).toBeDisabled();
+
+    await page.getByLabel('URL').fill('https://example.com/ready');
+    await expect(addButton).toBeDisabled();
+
+    await page.getByLabel('Title').fill('Ready to save');
+    await expect(addButton).toBeEnabled();
   });
 
-  test('add dialog requires URL for link type', async ({ page }) => {
+  test('add dialog keeps Add disabled until URL is valid for links', async ({ page }) => {
     await page.goto('/library');
     await page.getByRole('button', { name: /add to library/i }).click();
+    const addButton = page.getByRole('button', { name: /^add$/i });
+
     await page.getByLabel('Title').fill('No URL Link');
-    // Leave URL empty
-    await page.getByRole('button', { name: /^add$/i }).click();
-    await expect(page.getByText('URL is required for links')).toBeVisible();
+    await expect(addButton).toBeDisabled();
+
+    await page.getByLabel('URL').fill('not-a-url');
+    await expect(addButton).toBeDisabled();
+
+    await page.getByLabel('URL').fill('https://example.com/link');
+    await expect(addButton).toBeEnabled();
   });
 
   test('non-link type hides URL field and shows Coming soon note in dialog', async ({ page }) => {
@@ -177,7 +291,32 @@ test.describe('Library page', () => {
 
     const card = page.locator('.MuiCard-root').filter({ hasText: 'Delete Me' }).first(); // targeted card
     await card.getByRole('button', { name: /delete/i }).click();
+    await expect(card.getByRole('button', { name: /confirm delete/i })).toBeVisible();
+    await card.getByRole('button', { name: /confirm delete/i }).click();
     await expect(page.getByText('Delete Me')).not.toBeVisible();
+  });
+
+  test('can edit an own asset title and description', async ({ page }) => {
+    await createAsset(page, {
+      type: 'LINK',
+      title: 'Original Asset',
+      url: 'https://example.com/original',
+      description: 'Original description',
+    });
+
+    await page.goto('/library');
+    const card = page.locator('.MuiCard-root').filter({ hasText: 'Original Asset' }).first();
+
+    await card.getByRole('button', { name: /edit asset/i }).click();
+    await expect(page.getByRole('dialog', { name: 'Edit Asset' })).toBeVisible();
+
+    await page.getByLabel('Title').fill('Updated Asset');
+    await page.getByLabel('Description (optional)').fill('Updated description');
+    await page.getByRole('button', { name: /^save$/i }).click();
+
+    await expect(page.getByRole('dialog', { name: 'Edit Asset' })).not.toBeVisible();
+    await expect(page.getByText('Updated Asset')).toBeVisible();
+    await expect(page.getByText('Updated description')).toBeVisible();
   });
 
   // ── Bulk Upload Links ────────────────────────────────────────────────────
