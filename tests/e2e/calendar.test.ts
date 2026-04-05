@@ -50,6 +50,7 @@ test.describe('Calendar page', () => {
   test('clicking the add FAB opens the event creation form', async ({page}) => {
     await page.getByRole('button', {name: 'add'}).click();
     await expect(page.getByText(/^Event$/i)).toBeVisible({timeout: 5_000});
+    await expect(page.getByRole('button', {name: 'Back'})).toHaveCount(0);
   });
 
   test('clicking a day cell opens the bottom drawer with day details', async ({page}) => {

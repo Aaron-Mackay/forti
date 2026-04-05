@@ -132,19 +132,31 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
       </Box>
 
       {/* Form Panel */}
-      <Box ref={formPanelRef} sx={{width: '50%', p: 2, position: 'relative'}}>
-        <DayMetricInput
-          setSelectedMetric={setSelectedMetric}
-          selectedMetric={selectedMetric}
-          setInputValue={setInputValue}
-          inputValue={inputValue}
-          setDayMetricsStateCb={setDayMetricsStateCb}
-          selectedDate={selectedDate}
-          userId={userId}
-          dateDayMetrics={dateDayMetrics}
-          customMetricDefs={customMetricDefs}
-          weightUnit={weightUnit}
-        />
+      <Box
+        ref={formPanelRef}
+        aria-hidden={!selectedMetric}
+        sx={{
+          width: '50%',
+          p: 2,
+          position: 'relative',
+          pointerEvents: selectedMetric ? 'auto' : 'none',
+          visibility: selectedMetric ? 'visible' : 'hidden',
+        }}
+      >
+        {selectedMetric && (
+          <DayMetricInput
+            setSelectedMetric={setSelectedMetric}
+            selectedMetric={selectedMetric}
+            setInputValue={setInputValue}
+            inputValue={inputValue}
+            setDayMetricsStateCb={setDayMetricsStateCb}
+            selectedDate={selectedDate}
+            userId={userId}
+            dateDayMetrics={dateDayMetrics}
+            customMetricDefs={customMetricDefs}
+            weightUnit={weightUnit}
+          />
+        )}
       </Box>
     </Box>
   </Drawer>

@@ -13,24 +13,35 @@ function LoginButtonsInner() {
   const rawCallbackUrl = searchParams.get("callbackUrl");
 
   const callbackUrl = (() => {
-    if (!rawCallbackUrl) return "/user";
+    const fallbackPath = "/user";
+
+    const normalizePath = (path: string) => (
+      path.startsWith("/login") || path.startsWith("/api/auth")
+        ? fallbackPath
+        : path
+    );
+
+    const toAbsoluteUrl = (path: string) => {
+      if (typeof window === "undefined") return path;
+      return new URL(path, window.location.origin).toString();
+    };
+
+    if (!rawCallbackUrl) return toAbsoluteUrl(fallbackPath);
 
     // Avoid bouncing back to login/auth endpoints when callbackUrl is stale or malformed.
     if (rawCallbackUrl.startsWith("/")) {
-      return rawCallbackUrl.startsWith("/login") || rawCallbackUrl.startsWith("/api/auth")
-        ? "/user"
-        : rawCallbackUrl;
+      return toAbsoluteUrl(normalizePath(rawCallbackUrl));
     }
 
-    if (typeof window === "undefined") return "/user";
+    if (typeof window === "undefined") return fallbackPath;
 
     try {
       const parsed = new URL(rawCallbackUrl);
-      if (parsed.origin !== window.location.origin) return "/user";
-      if (parsed.pathname.startsWith("/login") || parsed.pathname.startsWith("/api/auth")) return "/user";
-      return `${parsed.pathname}${parsed.search}${parsed.hash}` || "/user";
+      if (parsed.origin !== window.location.origin) return toAbsoluteUrl(fallbackPath);
+      const normalizedPath = normalizePath(`${parsed.pathname}${parsed.search}${parsed.hash}` || fallbackPath);
+      return toAbsoluteUrl(normalizedPath);
     } catch {
-      return "/user";
+      return toAbsoluteUrl(fallbackPath);
     }
   })();
 
