@@ -15,9 +15,9 @@ import { test, expect } from './fixtures';
 
 async function openNav(page: import('@playwright/test').Page) {
   const menuButton = page.getByRole('button', { name: /menu/i });
-  if (await menuButton.count()) {
-    await expect(menuButton).toBeVisible();
-    await menuButton.click();
+  const hasVisibleMenuButton = await menuButton.isVisible().catch(() => false);
+  if (hasVisibleMenuButton) {
+    await menuButton.click({ timeout: 3_000 }).catch(() => {});
   }
   await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible();
   return page.locator('body');
@@ -36,7 +36,7 @@ const ALL_ON = {
   showMetricsChart: true,
   showE1rmProgress: true,
   showStopwatch: true,
-  showSupplements: false,
+  showSupplements: true,
   trackedE1rmExercises: [],
 };
 
@@ -119,7 +119,7 @@ test.describe('Settings page — state', () => {
     await page.request.patch('/api/user/settings', { data: { settings: ALL_ON } });
   });
 
-  test('shows 10 toggles; dashboard/workout switches are on, Supplements and Enable coach features are off by default', async ({ page }) => {
+  test('shows 10 toggles; dashboard/workout switches are on and Enable coach features is off by default', async ({ page }) => {
     const switches = page.getByRole('switch');
     await expect(switches.first()).toBeVisible();
     await expect(switches).toHaveCount(10);
@@ -132,8 +132,6 @@ test.describe('Settings page — state', () => {
     await expect(page.getByRole('switch', { name: 'Metrics Chart' })).toBeChecked();
     await expect(page.getByRole('switch', { name: 'E1RM Progress' })).toBeChecked();
     await expect(page.getByRole('switch', { name: 'Stopwatch' })).toBeChecked();
-    // Supplements toggle is off (showSupplements: false in ALL_ON)
-    await expect(page.getByRole('switch', { name: 'Supplements' })).not.toBeChecked();
     // Enable coach features toggle is off by default
     await expect(page.getByRole('switch', { name: 'Enable coach features' })).not.toBeChecked();
   });

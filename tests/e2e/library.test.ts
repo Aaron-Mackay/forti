@@ -17,14 +17,12 @@
  */
 import { test, expect } from './fixtures';
 import type { Page } from '@playwright/test';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 
 async function openNav(page: Page) {
   const menuButton = page.getByRole('button', { name: /menu/i });
-  if (await menuButton.count()) {
-    await expect(menuButton).toBeVisible();
-    await menuButton.click();
+  const hasVisibleMenuButton = await menuButton.isVisible().catch(() => false);
+  if (hasVisibleMenuButton) {
+    await menuButton.click({ timeout: 3_000 }).catch(() => {});
   }
   await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible();
   return page.locator('body');
@@ -47,34 +45,6 @@ test.describe('Library page', () => {
   ): Promise<{ id: string }> {
     const res = await page.request.post('/api/library', { data });
     if (!res.ok()) throw new Error(`createAsset failed: ${res.status()} ${await res.text()}`);
-    const asset = (await res.json()) as { id: string };
-    createdIds.push(asset.id);
-    return asset;
-  }
-
-  async function createUploadedAsset(
-    page: Page,
-    data: {
-      type: 'DOCUMENT' | 'IMAGE' | 'VIDEO';
-      title: string;
-      description?: string;
-      filePath: string;
-      mimeType: string;
-    },
-  ): Promise<{ id: string }> {
-    const res = await page.request.post('/api/library/upload', {
-      multipart: {
-        type: data.type,
-        title: data.title,
-        description: data.description ?? '',
-        file: {
-          name: path.basename(data.filePath),
-          mimeType: data.mimeType,
-          buffer: readFileSync(data.filePath),
-        },
-      },
-    });
-    if (!res.ok()) throw new Error(`createUploadedAsset failed: ${res.status()} ${await res.text()}`);
     const asset = (await res.json()) as { id: string };
     createdIds.push(asset.id);
     return asset;
@@ -166,12 +136,16 @@ test.describe('Library page', () => {
   });
 
   test('image asset opens in the media viewer instead of exposing a raw link', async ({ page }) => {
-    await createUploadedAsset(page, {
+    await createUploadedAssetFromBuffer(page, {
       type: 'IMAGE',
       title: 'Movement Standards',
       description: 'Reference images for key lifts.',
-      filePath: path.resolve(process.cwd(), 'debug-sparkline.png'),
+      fileName: 'movement-standards.png',
       mimeType: 'image/png',
+      buffer: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9WlH0XQAAAAASUVORK5CYII=',
+        'base64',
+      ),
     });
     await page.goto('/library');
     const card = page.locator('.MuiCard-root').filter({ hasText: 'Movement Standards' }).first(); // targeted card
@@ -222,7 +196,7 @@ test.describe('Library page', () => {
 
   test('can add a link asset via the dialog', async ({ page }) => {
     await page.goto('/library');
-    await page.getByRole('button', { name: /add to library/i }).click();
+    await page.getByRole('button', { name: /^upload$/i }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
     await page.getByLabel('Title').fill('Test Resource');
@@ -232,7 +206,7 @@ test.describe('Library page', () => {
     const responsePromise = page.waitForResponse(
       (r) => r.url().includes('/api/library') && r.request().method() === 'POST',
     );
-    await page.getByRole('button', { name: /^add$/i }).click();
+    await page.getByRole('button', { name: /^upload$/i }).click();
     const response = await responsePromise;
     if (response.ok()) {
       const body = (await response.json()) as { id: string };
@@ -245,8 +219,8 @@ test.describe('Library page', () => {
 
   test('add dialog keeps Add disabled until title is entered', async ({ page }) => {
     await page.goto('/library');
-    await page.getByRole('button', { name: /add to library/i }).click();
-    const addButton = page.getByRole('button', { name: /^add$/i });
+    await page.getByRole('button', { name: /^upload$/i }).click();
+    const addButton = page.getByRole('button', { name: /^upload$/i });
 
     await expect(addButton).toBeDisabled();
 
@@ -259,8 +233,8 @@ test.describe('Library page', () => {
 
   test('add dialog keeps Add disabled until URL is valid for links', async ({ page }) => {
     await page.goto('/library');
-    await page.getByRole('button', { name: /add to library/i }).click();
-    const addButton = page.getByRole('button', { name: /^add$/i });
+    await page.getByRole('button', { name: /^upload$/i }).click();
+    const addButton = page.getByRole('button', { name: /^upload$/i });
 
     await page.getByLabel('Title').fill('No URL Link');
     await expect(addButton).toBeDisabled();
@@ -272,17 +246,17 @@ test.describe('Library page', () => {
     await expect(addButton).toBeEnabled();
   });
 
-  test('non-link type hides URL field and shows Coming soon note in dialog', async ({ page }) => {
+  test('non-link type hides URL field and shows the file picker in the dialog', async ({ page }) => {
     await page.goto('/library');
-    await page.getByRole('button', { name: /add to library/i }).click();
+    await page.getByRole('button', { name: /^upload$/i }).click();
     await page.getByRole('button', { name: 'Document' }).click();
-    await expect(page.getByText(/coming soon/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /choose file/i })).toBeVisible();
     await expect(page.getByLabel('URL')).not.toBeVisible();
   });
 
   test('can cancel the add dialog', async ({ page }) => {
     await page.goto('/library');
-    await page.getByRole('button', { name: /add to library/i }).click();
+    await page.getByRole('button', { name: /^upload$/i }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();

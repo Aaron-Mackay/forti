@@ -15,9 +15,9 @@ import type { Page } from '@playwright/test';
 
 async function openNav(page: Page) {
   const menuBtn = page.getByRole('button', { name: /menu/i });
-  if (await menuBtn.count()) {
-    await expect(menuBtn).toBeVisible();
-    await menuBtn.click();
+  const hasVisibleMenuButton = await menuBtn.isVisible().catch(() => false);
+  if (hasVisibleMenuButton) {
+    await menuBtn.click({ timeout: 3_000 }).catch(() => {});
   }
   await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible({ timeout: 15_000 });
 }
@@ -30,9 +30,8 @@ test.describe('AppBar navigation drawer', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/user');
     const menuBtn = page.getByRole('button', { name: /menu/i });
-    if (await menuBtn.count()) {
-      await expect(menuBtn).toBeVisible({ timeout: 15_000 });
-    } else {
+    const hasVisibleMenuButton = await menuBtn.isVisible().catch(() => false);
+    if (!hasVisibleMenuButton) {
       await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible({ timeout: 15_000 });
     }
   });

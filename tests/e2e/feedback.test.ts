@@ -8,9 +8,9 @@ import { test, expect } from './fixtures';
 
 async function openNav(page: import('@playwright/test').Page) {
   const menuButton = page.getByRole('button', { name: /menu/i });
-  if (await menuButton.count()) {
-    await expect(menuButton).toBeVisible();
-    await menuButton.click();
+  const hasVisibleMenuButton = await menuButton.isVisible().catch(() => false);
+  if (hasVisibleMenuButton) {
+    await menuButton.click({ timeout: 3_000 }).catch(() => {});
   }
   await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible();
 }

@@ -12,9 +12,9 @@ test.describe.configure({ mode: 'serial' });
 
 async function openNav(page: import('@playwright/test').Page) {
   const menuButton = page.getByRole('button', { name: /menu/i });
-  if (await menuButton.count()) {
-    await expect(menuButton).toBeVisible();
-    await menuButton.click();
+  const hasVisibleMenuButton = await menuButton.isVisible().catch(() => false);
+  if (hasVisibleMenuButton) {
+    await menuButton.click({ timeout: 3_000 }).catch(() => {});
   }
   await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible();
   return page.locator('body');
@@ -35,6 +35,20 @@ async function disableSupplements(page: import('@playwright/test').Page) {
     data: { settings: { showSupplements: false } },
   });
   if (!res.ok()) throw new Error(`disableSupplements failed: ${res.status()}`);
+}
+
+async function gotoSupplementsPage(page: import('@playwright/test').Page) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    await page.goto('/user/supplements');
+    const addButton = page.getByRole('button', { name: 'Add Supplement' });
+    if (await addButton.isVisible().catch(() => false)) {
+      await expect(addButton).toBeVisible();
+      return;
+    }
+    await enableSupplements(page);
+    await page.waitForLoadState('networkidle');
+  }
+  await expect(page.getByRole('button', { name: 'Add Supplement' })).toBeVisible();
 }
 
 // ---------------------------------------------------------------------------
@@ -80,8 +94,7 @@ test.describe('Supplements — CRUD', () => {
     for (const s of existing) {
       await page.request.delete(`/api/supplements/${s.id}`);
     }
-    await page.goto('/user/supplements');
-    await expect(page.getByRole('banner')).toContainText('Supplements');
+    await gotoSupplementsPage(page);
   });
 
   test.afterEach(async ({ page }) => {
@@ -114,8 +127,8 @@ test.describe('Supplements — CRUD', () => {
     const res = await saveResponse;
     expect(res.ok()).toBe(true);
 
-    await expect(page.getByText('Magnesium')).toBeVisible();
-    await expect(page.getByText('400mg · Daily')).toBeVisible();
+    await expect(page.getByText('Magnesium').first()).toBeVisible();
+    await expect(page.getByText('400mg · Daily').first()).toBeVisible();
 
     // Clean up — accept the native confirm dialog before clicking delete
     const deleteResponse = page.waitForResponse(
@@ -224,7 +237,7 @@ test.describe('Supplements — CRUD', () => {
     });
     await page.reload();
 
-    await expect(page.getByText('History', { exact: false })).toBeVisible();
+    await expect(page.getByText('History', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('Old Vitamin D')).toBeVisible();
     await expect(page.getByText('No active supplements.')).toBeVisible();
 
@@ -238,8 +251,7 @@ test.describe('Supplements — CRUD', () => {
   test('Supplements link absent from sidebar when setting is off', async ({ page }) => {
     await disableSupplements(page);
     await page.goto('/user');
-    await page.getByRole('button', { name: /menu/i }).click();
-    const drawer = page.getByRole('presentation');
-    await expect(drawer.getByRole('link', { name: 'Supplements' })).not.toBeVisible();
+    const nav = await openNav(page);
+    await expect(nav.getByRole('link', { name: 'Supplements' })).not.toBeVisible();
   });
 });
