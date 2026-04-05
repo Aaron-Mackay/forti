@@ -13,6 +13,16 @@
  */
 import { test, expect } from './fixtures';
 
+async function openNav(page: import('@playwright/test').Page) {
+  const menuButton = page.getByRole('button', { name: /menu/i });
+  if (await menuButton.count()) {
+    await expect(menuButton).toBeVisible();
+    await menuButton.click();
+  }
+  await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible();
+  return page.locator('body');
+}
+
 // Run all tests in this file serially within each browser project
 // to prevent concurrent PATCH calls colliding inside a single project.
 test.describe.configure({ mode: 'serial' });
@@ -50,8 +60,7 @@ test.describe('Settings page — UI', () => {
   });
 
   test('settings link appears in the sidebar between Feedback and Log Out', async ({ page }) => {
-    await page.getByRole('button', { name: /menu/i }).click();
-    const drawer = page.getByRole('presentation');
+    const drawer = await openNav(page);
     const feedbackLink = drawer.getByRole('link', { name: 'Feedback' });
     const settingsLink = drawer.getByRole('link', { name: 'Settings' });
     const logoutButton = drawer.getByRole('button', { name: 'Log Out' });

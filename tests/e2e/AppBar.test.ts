@@ -13,28 +13,34 @@
 import { test, expect } from './fixtures';
 import type { Page } from '@playwright/test';
 
-/** Opens the nav drawer if it is not already open (mobile only). */
-async function openDrawer(page: Page) {
+async function openNav(page: Page) {
   const menuBtn = page.getByRole('button', { name: /menu/i });
-  if (await menuBtn.isVisible()) {
+  if (await menuBtn.count()) {
+    await expect(menuBtn).toBeVisible();
     await menuBtn.click();
   }
-  // On desktop the drawer is permanently open — nothing to do.
+  await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible({ timeout: 15_000 });
+}
+
+async function openDrawer(page: Page) {
+  await openNav(page);
 }
 
 test.describe('AppBar navigation drawer', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/user');
-    // Wait for the drawer/nav to be present — works on both mobile and desktop.
-    await expect(page.locator('.MuiDrawer-root')).toBeAttached({ timeout: 15_000 });
+    const menuBtn = page.getByRole('button', { name: /menu/i });
+    if (await menuBtn.count()) {
+      await expect(menuBtn).toBeVisible({ timeout: 15_000 });
+    } else {
+      await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible({ timeout: 15_000 });
+    }
   });
 
   test('hamburger button opens the navigation drawer', async ({ page, isMobile }) => {
     // The hamburger only exists on mobile viewports; skip on desktop.
     test.skip(!isMobile, 'desktop: drawer is permanently open, no hamburger button');
-    await page.getByRole('button', { name: /menu/i }).click();
-    // Drawer is open — the Forti brand heading is visible inside it
-    await expect(page.getByRole('navigation').or(page.locator('.MuiDrawer-root'))).toBeVisible();
+    await openNav(page);
   });
 
   test('drawer shows all primary navigation links', async ({ page }) => {
@@ -82,10 +88,9 @@ test.describe('AppBar navigation drawer', () => {
   test('closing the drawer by clicking outside hides it', async ({ page, isMobile }) => {
     // The temporary drawer only exists on mobile; on desktop it is always open.
     test.skip(!isMobile, 'desktop: drawer is permanent and cannot be closed');
-    await page.getByRole('button', { name: /menu/i }).click();
-    // Click on the backdrop (outside drawer)
+    await openNav(page);
     await page.keyboard.press('Escape');
-    await expect(page.locator('.MuiDrawer-root .MuiPaper-root')).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.getByRole('link', { name: 'Home' }).first()).not.toBeVisible({ timeout: 3_000 });
   });
 });
 

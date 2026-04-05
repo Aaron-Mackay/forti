@@ -7,13 +7,23 @@
  */
 import {test, expect} from './fixtures';
 
+async function openNav(page: import('@playwright/test').Page) {
+  const menuButton = page.getByRole('button', { name: /menu/i });
+  if (await menuButton.count()) {
+    await expect(menuButton).toBeVisible();
+    await menuButton.click();
+  }
+  await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible();
+  return page.locator('body');
+}
+
 test.describe('Exercises browse page', () => {
   test.beforeEach(async ({page}) => {
     await page.goto('/exercises');
   });
 
   test('renders the Exercises heading', async ({page}) => {
-    await expect(page.getByText(/Exercises/, {exact: true})).toBeVisible();
+    await expect(page.getByRole('banner')).toContainText('Exercises');
   });
 
   test('renders exercise cards from seed data', async ({page}) => {
@@ -57,9 +67,8 @@ test.describe('Exercises browse page', () => {
   });
 
   test('shows sidebar Exercises link that is active', async ({page}) => {
-    // Open drawer via menu button
-    await page.getByRole('button', {name: /menu/i}).click();
-    await expect(page.getByRole('link', {name: 'Exercises'})).toBeVisible();
+    const nav = await openNav(page);
+    await expect(nav.getByRole('link', {name: 'Exercises'})).toBeVisible();
   });
 
   test.describe('exercise detail drawer', () => {

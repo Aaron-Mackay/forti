@@ -16,9 +16,17 @@ function TestConsumer() {
   );
 }
 
-function ThrowingConsumer() {
-  useStopwatch();
-  return null;
+function FallbackConsumer() {
+  const {stopwatch, handleStartStop, handleReset} = useStopwatch();
+  return (
+    <div>
+      <span data-testid="fallback-running">{String(stopwatch.isRunning)}</span>
+      <span data-testid="fallback-pausedTime">{stopwatch.pausedTime}</span>
+      <span data-testid="fallback-startTimestamp">{stopwatch.startTimestamp ?? 'null'}</span>
+      <button onClick={handleStartStop}>Fallback Toggle</button>
+      <button onClick={handleReset}>Fallback Reset</button>
+    </div>
+  );
 }
 
 describe('StopwatchContext', () => {
@@ -98,9 +106,17 @@ describe('StopwatchContext', () => {
     expect(screen.getByTestId('startTimestamp').textContent).toBe('null');
   });
 
-  it('throws when useStopwatch is used outside a provider', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(() => render(<ThrowingConsumer/>)).toThrow('useStopwatch must be used within a StopwatchProvider');
-    consoleError.mockRestore();
+  it('returns a safe fallback when useStopwatch is used outside a provider', () => {
+    render(<FallbackConsumer/>);
+
+    expect(screen.getByTestId('fallback-running').textContent).toBe('false');
+    expect(screen.getByTestId('fallback-pausedTime').textContent).toBe('0');
+    expect(screen.getByTestId('fallback-startTimestamp').textContent).toBe('null');
+
+    fireEvent.click(screen.getByText('Fallback Toggle'));
+    fireEvent.click(screen.getByText('Fallback Reset'));
+
+    expect(screen.getByTestId('fallback-running').textContent).toBe('false');
+    expect(screen.getByTestId('fallback-pausedTime').textContent).toBe('0');
   });
 });

@@ -20,6 +20,16 @@ import type { Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
+async function openNav(page: Page) {
+  const menuButton = page.getByRole('button', { name: /menu/i });
+  if (await menuButton.count()) {
+    await expect(menuButton).toBeVisible();
+    await menuButton.click();
+  }
+  await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible();
+  return page.locator('body');
+}
+
 test.describe.configure({ mode: 'serial' });
 
 test.describe('Library page', () => {
@@ -125,13 +135,13 @@ test.describe('Library page', () => {
 
   test('renders the Library heading', async ({ page }) => {
     await page.goto('/library');
-    await expect(page.getByText('Library', { exact: true })).toBeVisible();
+    await expect(page.getByRole('banner')).toContainText('Library');
   });
 
   test('shows Library link in sidebar', async ({ page }) => {
     await page.goto('/library');
-    await page.getByRole('button', { name: /menu/i }).click();
-    await expect(page.getByRole('link', { name: 'Library' })).toBeVisible();
+    const nav = await openNav(page);
+    await expect(nav.getByRole('link', { name: 'Library' })).toBeVisible();
   });
 
   test('shows empty state when user has no assets', async ({ page }) => {

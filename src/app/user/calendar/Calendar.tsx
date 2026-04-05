@@ -7,12 +7,12 @@ import interactionPlugin, {DateClickArg} from "@fullcalendar/interaction";
 import rrulePlugin from "@fullcalendar/rrule";
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import './calendar.css'
-import {Alert, Box, Collapse, Fab, ToggleButton, ToggleButtonGroup} from "@mui/material";
+import {Alert, Box, Collapse, Fab, ToggleButton, ToggleButtonGroup, useMediaQuery, useTheme} from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import CalendarBottomDrawer from "./CalendarBottomDrawer";
-import {APPBAR_HEIGHT} from "@/components/CustomAppBar";
+import {APPBAR_HEIGHT, DRAWER_WIDTH} from "@/components/CustomAppBar";
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import {format, isAfter, isBefore, isSameDay} from 'date-fns';
 import {getEventsOnDate, parsedEvents} from "@/app/user/calendar/utils";
@@ -40,6 +40,8 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
   useAppBar({ title: 'Calendar' });
   const calendarRef = useRef<FullCalendar | null>(null);
   const { settings } = useSettings();
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
 
   const [viewMode, setViewMode] = useState<CalendarViewMode>('calendar');
   const [eventsInState, setEventsInState] = useState<EventPrisma[]>(events);
@@ -229,7 +231,7 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
       <Box sx={{
         position: 'absolute',
         bottom: 25,
-        left: 25,
+        left: isDesktop ? DRAWER_WIDTH + 25 : 25,
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'flex-end',

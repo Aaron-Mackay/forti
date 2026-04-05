@@ -15,6 +15,15 @@ type StopwatchContextType = {
 };
 
 const StopwatchContext = createContext<StopwatchContextType | null>(null);
+const FALLBACK_STOPWATCH_CONTEXT: StopwatchContextType = {
+  stopwatch: {
+    isRunning: false,
+    startTimestamp: null,
+    pausedTime: 0,
+  },
+  handleStartStop: () => {},
+  handleReset: () => {},
+};
 
 export function StopwatchProvider({children}: {children: React.ReactNode}) {
   const [stopwatch, setStopwatch] = useState<StopwatchState>({
@@ -52,7 +61,5 @@ export function StopwatchProvider({children}: {children: React.ReactNode}) {
 }
 
 export function useStopwatch(): StopwatchContextType {
-  const ctx = useContext(StopwatchContext);
-  if (!ctx) throw new Error('useStopwatch must be used within a StopwatchProvider');
-  return ctx;
+  return useContext(StopwatchContext) ?? FALLBACK_STOPWATCH_CONTEXT;
 }

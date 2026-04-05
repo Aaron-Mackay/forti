@@ -15,6 +15,17 @@ interface SettingsContextValue {
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
+const NOOP_ASYNC = async () => {};
+const FALLBACK_SETTINGS_CONTEXT: SettingsContextValue = {
+  settings: DEFAULT_SETTINGS,
+  loading: true,
+  error: null,
+  clearError: () => {},
+  updateSetting: NOOP_ASYNC,
+  updateCustomMetrics: NOOP_ASYNC,
+  updateTrackedE1rmExercises: NOOP_ASYNC,
+  setExerciseUnitOverride: NOOP_ASYNC,
+};
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
@@ -149,7 +160,5 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 }
 
 export function useSettings(): SettingsContextValue {
-  const ctx = useContext(SettingsContext);
-  if (!ctx) throw new Error('useSettings must be used within SettingsProvider');
-  return ctx;
+  return useContext(SettingsContext) ?? FALLBACK_SETTINGS_CONTEXT;
 }

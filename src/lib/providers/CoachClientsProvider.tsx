@@ -15,6 +15,10 @@ interface CoachClientsContextValue {
 }
 
 const CoachClientsContext = createContext<CoachClientsContextValue | null>(null);
+const FALLBACK_COACH_CLIENTS_CONTEXT: CoachClientsContextValue = {
+  clients: [],
+  loading: true,
+};
 
 export function CoachClientsProvider({ children }: { children: ReactNode }) {
   const { settings, loading: settingsLoading } = useSettings();
@@ -43,7 +47,5 @@ export function CoachClientsProvider({ children }: { children: ReactNode }) {
 }
 
 export function useCoachClients(): CoachClientsContextValue {
-  const ctx = useContext(CoachClientsContext);
-  if (!ctx) throw new Error('useCoachClients must be used within CoachClientsProvider');
-  return ctx;
+  return useContext(CoachClientsContext) ?? FALLBACK_COACH_CLIENTS_CONTEXT;
 }

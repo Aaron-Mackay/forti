@@ -7,6 +7,15 @@
  */
 import { expect, test } from './fixtures';
 
+async function openNav(page: import('@playwright/test').Page) {
+  const menuButton = page.getByRole('button', { name: /menu/i });
+  if (await menuButton.count()) {
+    await expect(menuButton).toBeVisible();
+    await menuButton.click();
+  }
+  await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible();
+}
+
 // ---------------------------------------------------------------------------
 // Helper — returns the ISO Monday of the current week as YYYY-MM-DD
 // ---------------------------------------------------------------------------
@@ -142,7 +151,7 @@ test.describe('Nutrition page', () => {
   });
 
   test('Nutrition link is present in the nav drawer', async ({ page }) => {
-    await page.getByRole('button', { name: /menu/i }).click();
+    await openNav(page);
     await expect(page.getByRole('link', { name: 'Nutrition' })).toBeVisible({ timeout: 3_000 });
   });
 });

@@ -6,6 +6,15 @@
  */
 import { test, expect } from './fixtures';
 
+async function openNav(page: import('@playwright/test').Page) {
+  const menuButton = page.getByRole('button', { name: /menu/i });
+  if (await menuButton.count()) {
+    await expect(menuButton).toBeVisible();
+    await menuButton.click();
+  }
+  await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible();
+}
+
 test.describe('Feedback page', () => {
   test('renders without error when navigated to directly', async ({ page }) => {
     await page.goto('/user/feedback');
@@ -25,7 +34,7 @@ test.describe('Feedback page', () => {
 
   test('drawer Feedback link navigates to the feedback page', async ({ page }) => {
     await page.goto('/user');
-    await page.getByRole('button', { name: /menu/i }).click();
+    await openNav(page);
     await page.getByRole('link', { name: /Feedback/i }).click();
     await expect(page).toHaveURL('/user/feedback');
     await expect(page.getByRole('heading', { name: 'Send Feedback' })).toBeVisible();

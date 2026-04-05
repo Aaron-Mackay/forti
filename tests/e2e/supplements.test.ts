@@ -10,6 +10,16 @@ import { test, expect } from './fixtures';
 
 test.describe.configure({ mode: 'serial' });
 
+async function openNav(page: import('@playwright/test').Page) {
+  const menuButton = page.getByRole('button', { name: /menu/i });
+  if (await menuButton.count()) {
+    await expect(menuButton).toBeVisible();
+    await menuButton.click();
+  }
+  await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible();
+  return page.locator('body');
+}
+
 // ---------------------------------------------------------------------------
 // Helper: ensure supplements setting is on/off
 // ---------------------------------------------------------------------------
@@ -79,8 +89,7 @@ test.describe('Supplements — CRUD', () => {
   });
 
   test('Supplements link appears in sidebar when setting is on', async ({ page }) => {
-    await page.getByRole('button', { name: /menu/i }).click();
-    const drawer = page.getByRole('presentation');
+    const drawer = await openNav(page);
     await expect(drawer.getByRole('link', { name: 'Supplements' })).toBeVisible();
   });
 

@@ -70,9 +70,9 @@ export function AppBarProvider({ children, isCoachDomain = false }: { children: 
  */
 export function useAppBar({ title, showBack = false, onBack }: AppBarConfig) {
   const ctx = useContext(AppBarContext);
-  if (!ctx) throw new Error('useAppBar must be used within AppBarProvider');
-  const { setAppBar } = ctx;
+  const setAppBar = ctx?.setAppBar;
   useLayoutEffect(() => {
+    if (!setAppBar) return;
     setAppBar({ title, showBack, onBack });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setAppBar, title, showBack]);
