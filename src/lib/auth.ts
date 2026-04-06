@@ -4,6 +4,11 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 
+function isAllowedDevTunnelHost(hostname: string) {
+  if (process.env.NODE_ENV === 'production') return false;
+  return hostname.endsWith('.trycloudflare.com');
+}
+
 export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
@@ -121,7 +126,8 @@ export const authOptions: AuthOptions = {
         const isCookieDomainUrl = cookieDomain
           ? target.hostname === cookieDomain || target.hostname.endsWith(`.${cookieDomain}`)
           : false;
-        if (urlOrigin === baseOrigin || isCookieDomainUrl) return url;
+        const isAllowedDevTunnelUrl = isAllowedDevTunnelHost(target.hostname);
+        if (urlOrigin === baseOrigin || isCookieDomainUrl || isAllowedDevTunnelUrl) return url;
       } catch {
         // not a valid absolute URL — fall through to default
       }
