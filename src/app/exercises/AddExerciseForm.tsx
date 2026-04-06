@@ -13,7 +13,7 @@ import {
   DialogTitle,
   TextField,
 } from '@mui/material';
-import {EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, ExerciseEquipment, ExerciseMuscle} from '@/types/dataTypes';
+import {EQUIPMENT_NAMES, EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, ExerciseEquipment, ExerciseMuscle, MUSCLE_NAMES} from '@/types/dataTypes';
 import MuscleHighlight from '@/components/MuscleHighlight';
 import {Exercise} from '@prisma/client';
 
@@ -140,6 +140,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, initialName}: A
               value={equipment}
               onChange={(_e, val: ExerciseEquipment[]) => setEquipment(val)}
               onBlur={() => setTouchedEquipment(true)}
+              getOptionLabel={option => EQUIPMENT_NAMES[option]}
               slotProps={{ popper: { style: { zIndex: 1520 } } }}
               renderInput={params => (
                 <TextField
@@ -159,6 +160,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, initialName}: A
               value={primaryMuscles}
               onChange={(_e, val: ExerciseMuscle[]) => setPrimaryMuscles(val)}
               onBlur={() => setTouchedPrimaryMuscles(true)}
+              getOptionLabel={option => MUSCLE_NAMES[option]}
               slotProps={{ popper: { style: { zIndex: 1520 } } }}
               renderInput={params => (
                 <TextField
@@ -177,6 +179,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, initialName}: A
               options={[...EXERCISE_MUSCLES]}
               value={secondaryMuscles}
               onChange={(_e, val: ExerciseMuscle[]) => setSecondaryMuscles(val)}
+              getOptionLabel={option => MUSCLE_NAMES[option]}
               slotProps={{ popper: { style: { zIndex: 1520 } } }}
               renderInput={params => (
                 <TextField

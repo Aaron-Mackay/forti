@@ -60,6 +60,24 @@ export const EXERCISE_EQUIPMENT = [
 
 export type ExerciseEquipment = typeof EXERCISE_EQUIPMENT[number];
 
+export const EQUIPMENT_NAMES: Record<ExerciseEquipment, string> = {
+  cable: 'Cable',
+  barbell: 'Barbell',
+  bodyweight: 'Bodyweight',
+  kettlebell: 'Kettlebell',
+  dumbbell: 'Dumbbell',
+  machine: 'Machine',
+  'ez bar': 'EZ Bar',
+  'speciality bar': 'Speciality Bar',
+  'smith machine': 'Smith Machine',
+  'squat rack': 'Squat Rack',
+  'bench press': 'Bench Press',
+  'adjustable bench': 'Adjustable Bench',
+  'dip station': 'Dip Station',
+  'pullup bar': 'Pull-Up Bar',
+  'preacher bench': 'Preacher Bench',
+};
+
 export const EXERCISE_MUSCLES = [
   'upper-traps',
   'ant-delts',
