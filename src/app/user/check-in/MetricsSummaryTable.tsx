@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import {
   Box,
   Table,
@@ -8,17 +7,18 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  Typography,
 } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import RemoveIcon from '@mui/icons-material/Remove';
 import type { DayMetric } from '@prisma/client';
 import { computeMetricSummary, formatSleepMins } from '@/types/checkInTypes';
+import type { WeekTargets } from '@/types/checkInTypes';
 
 interface Props {
   currentWeek: DayMetric[];
   weekPrior: DayMetric[];
+  weekTargets: WeekTargets | null;
 }
 
 type DeltaDir = 'up' | 'down' | 'flat';
@@ -36,66 +36,94 @@ function DeltaIcon({ dir }: { dir: DeltaDir }) {
   return <RemoveIcon sx={{ fontSize: 14, color: 'text.disabled', verticalAlign: 'middle' }} />;
 }
 
-export default function MetricsSummaryTable({ currentWeek, weekPrior }: Props) {
+function withTarget(value: string, target: string | null): string {
+  return target !== null ? `${value}/${target}` : value;
+}
+
+export default function MetricsSummaryTable({ currentWeek, weekPrior, weekTargets }: Props) {
   const curr = computeMetricSummary(currentWeek);
   const prior = computeMetricSummary(weekPrior);
 
-  const rows: { label: string; current: string; prior: string; dir: DeltaDir }[] = [
+  const tgt = weekTargets;
+
+  const rows: { label: string; current: string; prior: string; dir: DeltaDir; hasData: boolean }[] = [
     {
-      label: 'Avg Weight (kg)',
+      label: 'Weight (kg)',
       current: curr.avgWeight !== null ? `${curr.avgWeight}` : '—',
       prior:   prior.avgWeight !== null ? `${prior.avgWeight}` : '—',
       dir: delta(curr.avgWeight, prior.avgWeight),
+      hasData: curr.avgWeight !== null,
     },
     {
-      label: 'Avg Steps',
-      current: curr.avgSteps !== null ? curr.avgSteps.toLocaleString() : '—',
-      prior:   prior.avgSteps !== null ? prior.avgSteps.toLocaleString() : '—',
+      label: 'Steps',
+      current: withTarget(
+        curr.avgSteps !== null ? Math.round(curr.avgSteps).toLocaleString() : '—',
+        tgt?.stepsTarget != null ? tgt.stepsTarget.toLocaleString() : null,
+      ),
+      prior: prior.avgSteps !== null ? Math.round(prior.avgSteps).toLocaleString() : '—',
       dir: delta(curr.avgSteps, prior.avgSteps),
+      hasData: curr.avgSteps !== null,
     },
     {
-      label: 'Avg Sleep',
-      current: formatSleepMins(curr.avgSleepMins),
-      prior:   formatSleepMins(prior.avgSleepMins),
+      label: 'Sleep',
+      current: withTarget(
+        formatSleepMins(curr.avgSleepMins),
+        tgt?.sleepMinsTarget != null ? formatSleepMins(tgt.sleepMinsTarget) : null,
+      ),
+      prior: formatSleepMins(prior.avgSleepMins),
       dir: delta(curr.avgSleepMins, prior.avgSleepMins),
+      hasData: curr.avgSleepMins !== null,
     },
     {
-      label: 'Avg Calories',
-      current: curr.avgCalories !== null ? curr.avgCalories.toLocaleString() : '—',
-      prior:   prior.avgCalories !== null ? prior.avgCalories.toLocaleString() : '—',
+      label: 'Calories',
+      current: withTarget(
+        curr.avgCalories !== null ? Math.round(curr.avgCalories).toLocaleString() : '—',
+        tgt?.caloriesTarget != null ? tgt.caloriesTarget.toLocaleString() : null,
+      ),
+      prior: prior.avgCalories !== null ? Math.round(prior.avgCalories).toLocaleString() : '—',
       dir: delta(curr.avgCalories, prior.avgCalories),
+      hasData: curr.avgCalories !== null,
     },
     {
-      label: 'Avg Protein (g)',
-      current: curr.avgProtein !== null ? `${curr.avgProtein}` : '—',
-      prior:   prior.avgProtein !== null ? `${prior.avgProtein}` : '—',
+      label: 'Protein (g)',
+      current: withTarget(
+        curr.avgProtein !== null ? `${Math.round(curr.avgProtein)}` : '—',
+        tgt?.proteinTarget != null ? `${tgt.proteinTarget}` : null,
+      ),
+      prior: prior.avgProtein !== null ? `${Math.round(prior.avgProtein)}` : '—',
       dir: delta(curr.avgProtein, prior.avgProtein),
+      hasData: curr.avgProtein !== null,
     },
     {
-      label: 'Avg Carbs (g)',
-      current: curr.avgCarbs !== null ? `${curr.avgCarbs}` : '—',
-      prior:   prior.avgCarbs !== null ? `${prior.avgCarbs}` : '—',
+      label: 'Carbs (g)',
+      current: withTarget(
+        curr.avgCarbs !== null ? `${Math.round(curr.avgCarbs)}` : '—',
+        tgt?.carbsTarget != null ? `${tgt.carbsTarget}` : null,
+      ),
+      prior: prior.avgCarbs !== null ? `${Math.round(prior.avgCarbs)}` : '—',
       dir: delta(curr.avgCarbs, prior.avgCarbs),
+      hasData: curr.avgCarbs !== null,
     },
     {
-      label: 'Avg Fat (g)',
-      current: curr.avgFat !== null ? `${curr.avgFat}` : '—',
-      prior:   prior.avgFat !== null ? `${prior.avgFat}` : '—',
+      label: 'Fat (g)',
+      current: withTarget(
+        curr.avgFat !== null ? `${Math.round(curr.avgFat)}` : '—',
+        tgt?.fatTarget != null ? `${tgt.fatTarget}` : null,
+      ),
+      prior: prior.avgFat !== null ? `${Math.round(prior.avgFat)}` : '—',
       dir: delta(curr.avgFat, prior.avgFat),
+      hasData: curr.avgFat !== null,
     },
   ];
 
   return (
     <Box sx={{ overflowX: 'auto' }}>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-        Trend arrows compare this week vs previous week.
-      </Typography>
       <Table size="small">
         <TableHead>
           <TableRow>
-            <TableCell sx={{ fontWeight: 600 }}>Metric</TableCell>
-            <TableCell align="right" sx={{ fontWeight: 600 }}>Prior week</TableCell>
-            <TableCell align="right" sx={{ fontWeight: 600 }}>This week</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>Metric (avg)</TableCell>
+            <TableCell align="right" sx={{ fontWeight: 600 }}>Prev</TableCell>
+            <TableCell align="right" sx={{ fontWeight: 600 }}>Current/tgt</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -104,7 +132,7 @@ export default function MetricsSummaryTable({ currentWeek, weekPrior }: Props) {
               <TableCell>{row.label}</TableCell>
               <TableCell align="right" sx={{ color: 'text.secondary' }}>{row.prior}</TableCell>
               <TableCell align="right">
-                {row.current} <DeltaIcon dir={row.dir} />
+                {row.current}{row.hasData && <> <DeltaIcon dir={row.dir} /></>}
               </TableCell>
             </TableRow>
           ))}

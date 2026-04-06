@@ -13,16 +13,13 @@ import {
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-import type { DayMetric, WeeklyCheckIn } from '@prisma/client';
+import type { WeeklyCheckIn } from '@prisma/client';
 import CheckInForm from './CheckInForm';
 import CheckInHistoryCard from './CheckInHistoryCard';
 import { usePushSubscription } from '@lib/usePushSubscription';
+import type { CurrentCheckInResponse } from '@/types/checkInTypes';
 
-interface CurrentData {
-  checkIn: WeeklyCheckIn;
-  currentWeek: DayMetric[];
-  weekPrior: DayMetric[];
-}
+type CurrentData = CurrentCheckInResponse;
 
 export default function CheckInClient() {
   const [currentData, setCurrentData] = useState<CurrentData | null>(null);
@@ -38,7 +35,7 @@ export default function CheckInClient() {
   const loadCurrent = useCallback(async () => {
     const res = await fetch('/api/check-in/current');
     if (!res.ok) throw new Error('Failed to load check-in');
-    return res.json() as Promise<CurrentData>;
+    return res.json() as Promise<CurrentCheckInResponse>;
   }, []);
 
   const loadHistory = useCallback(async (offset: number) => {
@@ -128,16 +125,19 @@ export default function CheckInClient() {
           </Box>
         ) : (
           <Box>
-            <Typography variant="body1" fontWeight={600} sx={{ mb: 0.5 }}>
+            <Typography variant="body1" fontWeight={600} sx={{ mb: 2 }}>
               Week of {weekLabel}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Complete your weekly check-in below.
             </Typography>
             {currentData && (
               <CheckInForm
                 currentWeek={currentData.currentWeek}
                 weekPrior={currentData.weekPrior}
+                checkIn={currentData.checkIn}
+                previousPhotos={currentData.previousPhotos}
+                weekTargets={currentData.weekTargets}
+                completedWorkoutsCount={currentData.completedWorkoutsCount}
+                plannedWorkoutsCount={currentData.plannedWorkoutsCount}
+                activePlanId={currentData.activePlanId}
                 onSubmitted={() => setSubmitted(s => !s)}
               />
             )}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Alert,
   Box,
@@ -10,14 +10,24 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { DayMetric } from '@prisma/client';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { useRouter } from 'next/navigation';
+import type { DayMetric, WeeklyCheckIn } from '@prisma/client';
 import MetricsSummaryTable from './MetricsSummaryTable';
 import RatingField from './RatingField';
+import ProgressPhotoSection from './ProgressPhotoSection';
 import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
+import type { PreviousPhotos, WeekTargets } from '@/types/checkInTypes';
 
 interface Props {
   currentWeek: DayMetric[];
   weekPrior: DayMetric[];
+  checkIn: WeeklyCheckIn;
+  previousPhotos: PreviousPhotos | null;
+  weekTargets: WeekTargets | null;
+  completedWorkoutsCount: number;
+  plannedWorkoutsCount: number;
+  activePlanId: number | null;
   onSubmitted: () => void;
 }
 
@@ -28,14 +38,18 @@ interface FormState {
   sleepQuality: number | null;
   recoveryRating: number | null;
   adherenceRating: number | null;
-  completedWorkouts: string;
-  plannedWorkouts: string;
   weekReview: string;
   coachMessage: string;
   goalsNextWeek: string;
 }
 
-export default function CheckInForm({ currentWeek, weekPrior, onSubmitted }: Props) {
+export default function CheckInForm({ currentWeek, weekPrior, checkIn, previousPhotos, weekTargets, completedWorkoutsCount, plannedWorkoutsCount, activePlanId, onSubmitted }: Props) {
+  const router = useRouter();
+  const [photoUrls, setPhotoUrls] = useState<{ front: string | null; back: string | null; side: string | null }>({
+    front: checkIn.frontPhotoUrl ?? null,
+    back: checkIn.backPhotoUrl ?? null,
+    side: checkIn.sidePhotoUrl ?? null,
+  });
   const [form, setForm] = useState<FormState>({
     energyLevel: null,
     moodRating: null,
@@ -43,8 +57,6 @@ export default function CheckInForm({ currentWeek, weekPrior, onSubmitted }: Pro
     sleepQuality: null,
     recoveryRating: null,
     adherenceRating: null,
-    completedWorkouts: '',
-    plannedWorkouts: '',
     weekReview: '',
     coachMessage: '',
     goalsNextWeek: '',
@@ -62,8 +74,8 @@ export default function CheckInForm({ currentWeek, weekPrior, onSubmitted }: Pro
     try {
       const body = {
         ...form,
-        completedWorkouts: form.completedWorkouts !== '' ? parseInt(form.completedWorkouts) : undefined,
-        plannedWorkouts: form.plannedWorkouts !== '' ? parseInt(form.plannedWorkouts) : undefined,
+        completedWorkouts: completedWorkoutsCount,
+        plannedWorkouts: plannedWorkoutsCount,
         energyLevel: form.energyLevel ?? undefined,
         moodRating: form.moodRating ?? undefined,
         stressLevel: form.stressLevel ?? undefined,
@@ -92,13 +104,50 @@ export default function CheckInForm({ currentWeek, weekPrior, onSubmitted }: Pro
     }
   }
 
+  const workoutClickable = completedWorkoutsCount > 0 && activePlanId !== null;
+
   return (
     <Box>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
-      {/* Metrics summary */}
+      {/* Progress photos — first section */}
+      <ProgressPhotoSection
+        currentPhotos={photoUrls}
+        previousPhotos={previousPhotos}
+        weekStart={new Date(checkIn.weekStartDate).toISOString()}
+        onPhotoUploaded={(angle, url) => setPhotoUrls(p => ({ ...p, [angle]: url }))}
+      />
+
+      <Divider sx={{ my: 3 }} />
+
+      {/* Metrics summary + workout count */}
       <Typography variant="subtitle2" sx={{ mb: 1 }}>Last 2 weeks of metrics</Typography>
-      <MetricsSummaryTable currentWeek={currentWeek} weekPrior={weekPrior} />
+      <MetricsSummaryTable currentWeek={currentWeek} weekPrior={weekPrior} weekTargets={weekTargets} />
+
+      {/* Workout completed/planned row */}
+      <Box
+        onClick={workoutClickable ? () => router.push(`/user/plan/${activePlanId}`) : undefined}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          mt: 1.5,
+          px: 1,
+          py: 0.75,
+          borderRadius: 1,
+          bgcolor: 'action.hover',
+          cursor: workoutClickable ? 'pointer' : 'default',
+          ...(workoutClickable && { '&:hover': { bgcolor: 'action.selected' } }),
+        }}
+      >
+        <Typography variant="body2" color="text.secondary">Workouts</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography variant="body2" fontWeight={600}>
+            {completedWorkoutsCount}/{plannedWorkoutsCount}
+          </Typography>
+          {workoutClickable && <ChevronRightIcon sx={{ fontSize: 16, color: 'text.disabled' }} />}
+        </Box>
+      </Box>
 
       <Divider sx={{ my: 3 }} />
 
@@ -110,31 +159,6 @@ export default function CheckInForm({ currentWeek, weekPrior, onSubmitted }: Pro
       <RatingField label="Sleep quality (subjective)" value={form.sleepQuality} onChange={setRating('sleepQuality')} />
       <RatingField label="Recovery between sessions" value={form.recoveryRating} onChange={setRating('recoveryRating')} />
       <RatingField label="Adherence to plan" value={form.adherenceRating} onChange={setRating('adherenceRating')} />
-
-      <Divider sx={{ my: 3 }} />
-
-      {/* Training counts */}
-      <Typography variant="subtitle2" sx={{ mb: 2 }}>Training this week</Typography>
-      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-        <TextField
-          label="Workouts planned"
-          type="number"
-          size="small"
-          value={form.plannedWorkouts}
-          onChange={e => setForm(f => ({ ...f, plannedWorkouts: e.target.value }))}
-          slotProps={{ htmlInput: { min: 0, max: 99 } }}
-          sx={{ flex: 1 }}
-        />
-        <TextField
-          label="Workouts completed"
-          type="number"
-          size="small"
-          value={form.completedWorkouts}
-          onChange={e => setForm(f => ({ ...f, completedWorkouts: e.target.value }))}
-          slotProps={{ htmlInput: { min: 0, max: 99 } }}
-          sx={{ flex: 1 }}
-        />
-      </Box>
 
       <Divider sx={{ my: 3 }} />
 
