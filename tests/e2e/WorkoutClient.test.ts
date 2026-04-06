@@ -386,11 +386,11 @@ test.describe('Workout page', () => {
       await createDialog.getByLabel('Exercise Name').fill('Nordic Curl');
       // Select equipment
       await createDialog.getByLabel('Equipment (required)').click();
-      await page.getByRole('option', {name: 'bodyweight'}).click();
+      await page.getByRole('option', {name: /bodyweight/i}).click();
       await page.keyboard.press('Escape');
       // Select primary muscles
       await createDialog.getByLabel('Primary Muscles (required)').click();
-      await page.getByRole('option', {name: 'hamstrings'}).click();
+      await page.getByRole('option', {name: /hamstrings/i}).click();
       await page.keyboard.press('Escape');
       await createDialog.getByRole('button', {name: 'Add Exercise'}).click();
       // Should auto-proceed to config dialog

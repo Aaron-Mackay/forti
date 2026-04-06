@@ -177,7 +177,7 @@ test.describe('Add Exercise dialog', () => {
     // Select muscles but not equipment
     const musclesInput = dialog.getByLabel('Primary Muscles (required)');
     await musclesInput.click();
-    await page.getByRole('option', {name: 'biceps'}).click();
+    await page.getByRole('option', {name: /biceps/i}).click();
     await page.keyboard.press('Escape');
     const addBtn = dialog.getByRole('button', {name: /^add exercise$/i});
     await expect(addBtn).toBeDisabled();
@@ -190,7 +190,7 @@ test.describe('Add Exercise dialog', () => {
     // Select equipment but not muscles
     const equipmentInput = dialog.getByLabel('Equipment (required)');
     await equipmentInput.click();
-    await page.getByRole('option', {name: 'barbell'}).click();
+    await page.getByRole('option', {name: /barbell/i}).click();
     await page.keyboard.press('Escape');
     const addBtn = dialog.getByRole('button', {name: /^add exercise$/i});
     await expect(addBtn).toBeDisabled();
@@ -205,7 +205,7 @@ test.describe('Add Exercise dialog', () => {
     // Select a muscle and confirm the wrapper is still visible (SVGs rendered)
     const musclesInput = dialog.getByLabel('Primary Muscles (required)');
     await musclesInput.click();
-    await page.getByRole('option', {name: 'biceps'}).click();
+    await page.getByRole('option', {name: /biceps/i}).click();
     await page.keyboard.press('Escape');
     await expect(anatomyWrapper).toBeVisible();
   });
@@ -230,12 +230,12 @@ test.describe('Add Exercise dialog', () => {
 
     const equipmentInput = dialog.getByLabel('Equipment (required)');
     await equipmentInput.click();
-    await page.getByRole('option', {name: 'barbell'}).click();
+    await page.getByRole('option', {name: /barbell/i}).click();
     await page.keyboard.press('Escape');
 
     const musclesInput = dialog.getByLabel('Primary Muscles (required)');
     await musclesInput.click();
-    await page.getByRole('option', {name: 'sternal-pec'}).click();
+    await page.getByRole('option', {name: /^chest$/i}).click();
     await page.keyboard.press('Escape');
 
     await dialog.getByRole('button', {name: /^add exercise$/i}).click();
@@ -272,12 +272,12 @@ test.describe('Add Exercise dialog', () => {
 
     const equipmentInput = dialog.getByLabel('Equipment (required)');
     await equipmentInput.click();
-    await page.getByRole('option', {name: 'barbell'}).click();
+    await page.getByRole('option', {name: /barbell/i}).click();
     await page.keyboard.press('Escape');
 
     const musclesInput = dialog.getByLabel('Primary Muscles (required)');
     await musclesInput.click();
-    await page.getByRole('option', {name: 'biceps'}).click();
+    await page.getByRole('option', {name: /biceps/i}).click();
     await page.keyboard.press('Escape');
 
     await dialog.getByRole('button', {name: /^add exercise$/i}).click();

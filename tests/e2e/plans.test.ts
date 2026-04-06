@@ -116,7 +116,7 @@ test.describe('Create Plan entry screen', () => {
   });
 
   test('clicking "Start from scratch" shows the plan editor', async ({ page }) => {
-    await page.getByTestId('entry-scratch').click();
+    await page.getByTestId('entry-scratch').first().click();
     await expect(page.getByLabel(/plan name/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /save plan/i })).toBeVisible();
   });
@@ -146,7 +146,7 @@ test.describe('Create Plan entry screen', () => {
   });
 
   test('back arrow on plan editor returns to entry screen', async ({ page }) => {
-    await page.getByTestId('entry-scratch').click();
+    await page.getByTestId('entry-scratch').first().click();
     await page.getByRole('button', { name: /back/i }).click();
     await expect(page.getByText(/how do you want to start/i).first()).toBeVisible();
   });
@@ -410,7 +410,7 @@ test.describe('Spreadsheet import', () => {
 test.describe('Plan editor (scratch)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/user/plan/create');
-    await page.getByTestId('entry-scratch').click();
+    await page.getByTestId('entry-scratch').first().click();
   });
 
   test('shows the plan name field', async ({ page }) => {
@@ -421,8 +421,8 @@ test.describe('Plan editor (scratch)', () => {
     await expect(page.getByLabel(/duration/i)).toBeVisible();
   });
 
-  test('shows an Add workout day button', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /add workout day/i })).toBeVisible();
+  test('shows a + Workout control', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /^\+ workout$/i }).first()).toBeVisible();
   });
 
   test('Save Plan button is disabled when plan name is empty', async ({ page }) => {
@@ -431,37 +431,48 @@ test.describe('Plan editor (scratch)', () => {
 
   test('Save Plan button enables after typing a plan name and exercise name', async ({ page }) => {
     await page.getByLabel(/plan name/i).fill('My Test Plan');
-    await page.getByLabel(/exercise/i).first().fill('Squat');
+    await page.getByText('+ Exercise').first().click();
+    const dialog = page.getByRole('dialog', { name: 'Add Exercise' });
+    await dialog.getByLabel('Search exercises').fill('Squat');
+    await dialog.getByRole('button', { name: /^Squat$/ }).click();
     await expect(page.getByRole('button', { name: /save plan/i })).not.toBeDisabled();
   });
 
   test('shows create option when exercise name has no match', async ({ page }) => {
-    await page.getByLabel(/exercise/i).first().fill('Nonexistent Exercise XYZ');
-    await expect(page.getByRole('option', { name: /Create "Nonexistent Exercise XYZ"/ })).toBeVisible();
+    await page.getByText('+ Exercise').first().click();
+    const dialog = page.getByRole('dialog', { name: 'Add Exercise' });
+    await dialog.getByLabel('Search exercises').fill('Nonexistent Exercise XYZ');
+    await expect(dialog.getByRole('button', { name: /Create "Nonexistent Exercise XYZ"/ })).toBeVisible();
   });
 
   test('does not show create option when exercise field is empty', async ({ page }) => {
-    await expect(page.getByRole('option', { name: /Create "/ })).not.toBeVisible();
+    await page.getByText('+ Exercise').first().click();
+    const dialog = page.getByRole('dialog', { name: 'Add Exercise' });
+    await expect(dialog.getByRole('button', { name: /Create "/ })).not.toBeVisible();
   });
 
   test('does not show create option when exercise name matches an existing exercise', async ({ page }) => {
-    // Seed data contains 'Squat' — typing it should not show create option
-    await page.getByLabel(/exercise/i).first().fill('Squat');
-    await expect(page.getByRole('option', { name: /Create "/ })).not.toBeVisible();
+    await page.getByText('+ Exercise').first().click();
+    const dialog = page.getByRole('dialog', { name: 'Add Exercise' });
+    await dialog.getByLabel('Search exercises').fill('Squat');
+    await expect(dialog.getByRole('button', { name: /Create "/ })).not.toBeVisible();
   });
 
   test('clicking create option opens Add New Exercise dialog with name pre-filled', async ({ page }) => {
-    await page.getByLabel(/exercise/i).first().fill('Nordic Curl');
-    await page.getByRole('option', { name: /Create "Nordic Curl"/ }).click();
+    await page.getByText('+ Exercise').first().click();
+    const pickerDialog = page.getByRole('dialog', { name: 'Add Exercise' });
+    await pickerDialog.getByLabel('Search exercises').fill('Nordic Curl');
+    await pickerDialog.getByRole('button', { name: /Create "Nordic Curl"/ }).click();
     const dialog = page.getByRole('dialog', { name: 'Add New Exercise' });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByLabel('Exercise Name')).toHaveValue('Nordic Curl');
   });
 
-  test('clicking Add workout day adds a new workout card', async ({ page }) => {
-    const initialCards = await page.getByLabel(/workout name/i).count();
-    await page.getByRole('button', { name: /add workout day/i }).click();
-    await expect(page.getByLabel(/workout name/i)).toHaveCount(initialCards + 1);
+  test('clicking + Workout adds a new workout card', async ({ page }) => {
+    const workoutChips = page.getByRole('button', { name: /^workout \d+$/i });
+    const initialCards = await workoutChips.count();
+    await page.getByRole('button', { name: /^\+ workout$/i }).first().click();
+    await expect(workoutChips).toHaveCount(initialCards + 1);
   });
 });
 
@@ -586,6 +597,6 @@ test.describe('Plan creation — sheet view', () => {
     test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
     await page.getByRole('button', { name: /sheet view/i }).click();
     await page.getByRole('button', { name: /classic view/i }).click();
-    await expect(page.getByRole('button', { name: /add workout day/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^\+ workout$/i }).first()).toBeVisible();
   });
 });

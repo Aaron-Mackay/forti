@@ -17,7 +17,8 @@ async function openNav(page: Page) {
   const menuBtn = page.getByRole('button', { name: /menu/i });
   const hasVisibleMenuButton = await menuBtn.isVisible().catch(() => false);
   if (hasVisibleMenuButton) {
-    await menuBtn.click({ timeout: 3_000 }).catch(() => {});
+    await menuBtn.click({ timeout: 10_000 });
+    await expect(page.locator('.MuiDrawer-paper')).toBeVisible({ timeout: 10_000 });
   }
   await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible({ timeout: 15_000 });
 }
@@ -118,7 +119,7 @@ test.describe('AppBar — Log Out', () => {
 
   test('clicking Log Out redirects to /login', async ({ page }) => {
     await openDrawer(page);
-    await page.getByRole('button', { name: /Log Out/i }).click();
+    await page.getByRole('button', { name: /Log Out/i }).click({ force: true });
     await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
   });
 });

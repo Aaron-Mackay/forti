@@ -18,6 +18,10 @@
 import { test, expect } from './fixtures';
 import type { Page } from '@playwright/test';
 
+const hasBlobUploadToken = Boolean(
+  process.env.BLOB_PUBLIC_READ_WRITE_TOKEN || process.env.BLOB_READ_WRITE_TOKEN,
+);
+
 async function openNav(page: Page) {
   const menuButton = page.getByRole('button', { name: /menu/i });
   const hasVisibleMenuButton = await menuButton.isVisible().catch(() => false);
@@ -136,6 +140,7 @@ test.describe('Library page', () => {
   });
 
   test('image asset opens in the media viewer instead of exposing a raw link', async ({ page }) => {
+    test.skip(!hasBlobUploadToken, 'blob upload token is not configured in this environment');
     await createUploadedAssetFromBuffer(page, {
       type: 'IMAGE',
       title: 'Movement Standards',
@@ -157,6 +162,7 @@ test.describe('Library page', () => {
   });
 
   test('pdf document opens in the media viewer', async ({ page }) => {
+    test.skip(!hasBlobUploadToken, 'blob upload token is not configured in this environment');
     await createUploadedAssetFromBuffer(page, {
       type: 'DOCUMENT',
       title: 'Training Programme Overview',
@@ -176,6 +182,7 @@ test.describe('Library page', () => {
   });
 
   test('txt document opens in the media viewer', async ({ page }) => {
+    test.skip(!hasBlobUploadToken, 'blob upload token is not configured in this environment');
     await createUploadedAssetFromBuffer(page, {
       type: 'DOCUMENT',
       title: 'Cue Sheet',
