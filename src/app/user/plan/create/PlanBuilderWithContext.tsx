@@ -1,6 +1,6 @@
 import {WorkoutEditorProvider} from "@/context/WorkoutEditorContext";
 import {PlanBuilder} from "./PlanBuilder";
-import {PlanPrisma, SetPrisma, UserPrisma, WeekPrisma, WorkoutExercisePrisma, WorkoutPrisma} from "@/types/dataTypes";
+import {PlanPrisma, UserPrisma, WeekPrisma, WorkoutPrisma} from "@/types/dataTypes";
 import {Exercise} from "@prisma/client";
 
 export const PLACEHOLDER_ID = -1
@@ -13,49 +13,6 @@ export default function PlanBuilderWithContext({userData, allExercises, clientId
   const maxOrder = userData.plans
     .reduce((max, obj) => Math.max(max, obj.order), -Infinity)
 
-  const placeholderSet: SetPrisma = {
-    id: PLACEHOLDER_ID,
-    workoutExerciseId: PLACEHOLDER_ID,
-    reps: null,
-    weight: null,
-    order: 1,
-    e1rm: null,
-    rpe: null,
-    rir: null,
-    isDropSet: false,
-    parentSetId: null,
-  }
-
-  const placeholderExercise: WorkoutExercisePrisma = {
-    id: PLACEHOLDER_ID,
-    notes: null,
-    order: 1,
-    workoutId: PLACEHOLDER_ID,
-    exercise: {
-      category: null,
-      name: "",
-      id: PLACEHOLDER_ID,
-      description: null,
-      equipment: [],
-      primaryMuscles: [],
-      secondaryMuscles: [],
-      createdByUserId: null,
-    },
-    exerciseId: PLACEHOLDER_ID,
-    repRange: "",
-    restTime: "",
-    targetRpe: null,
-    targetRir: null,
-    sets: [placeholderSet],
-    cardioDuration: null,
-    cardioDistance: null,
-    cardioResistance: null,
-    substitutedForId: null,
-    substitutedFor: null,
-    isAdded: false,
-    isBfr: false,
-  }
-
   const placeholderWorkout: WorkoutPrisma = {
     name: "Workout 1",
     id: PLACEHOLDER_ID,
@@ -63,7 +20,7 @@ export default function PlanBuilderWithContext({userData, allExercises, clientId
     order: 1,
     notes: null,
     dateCompleted: null,
-    exercises: [placeholderExercise],
+    exercises: [],
   }
 
   const placeholderWeek: WeekPrisma = {

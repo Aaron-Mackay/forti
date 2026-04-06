@@ -4,52 +4,35 @@ import React, { useState } from 'react';
 import { Box, Chip, IconButton, LinearProgress, TextField, Typography } from '@mui/material';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import { PlanPrisma, WorkoutExercisePrisma } from '@/types/dataTypes';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { PlanPrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { getWorkoutStatus } from '@/lib/workoutProgress';
 import ExerciseProgressCard from './ExerciseProgressCard';
 import ExercisePickerDialog from '@/app/user/workout/ExercisePickerDialog';
-
-/** Strips trailing parenthetical from workout names, e.g. "Workout 1 (Plan 1 - Week 2)" → "Workout 1" */
-function stripSuffix(name: string): string {
-  return name.replace(/\s*\([^)]*\)\s*$/, '').trim();
-}
-
-function getPrevExercise(
-  plan: PlanPrisma,
-  currentWeekOrder: number,
-  workoutOrder: number,
-  exerciseId: number,
-): WorkoutExercisePrisma | null {
-  const prevWeek = plan.weeks.find(w => w.order === currentWeekOrder - 1);
-  const workout = prevWeek?.workouts.find(w => w.order === workoutOrder);
-  return workout?.exercises.find(e => e.exercise?.id === exerciseId) ?? null;
-}
+import { getLatestTrackedWeekIndex, getPreviousTrackedExercise, stripWorkoutSuffix } from './planPresentation';
 
 interface PlanWeekViewProps {
   plan: PlanPrisma;
   planId: number;
+  hideWeekNavigationWhenSingleWeek?: boolean;
+  showProgress?: boolean;
 }
 
-const PlanWeekView = ({ plan, planId }: PlanWeekViewProps) => {
+const PlanWeekView = ({
+  plan,
+  planId,
+  hideWeekNavigationWhenSingleWeek = false,
+  showProgress = true,
+}: PlanWeekViewProps) => {
   const { dispatch, debouncedDispatch } = useWorkoutEditorContext();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<{ weekId: number; workoutId: number } | null>(null);
   const sortedWeeks = [...plan.weeks].sort((a, b) => a.order - b.order);
 
   // Default to the latest week that has any weight/reps entered, or the last week
-  const defaultWeekIdx = (() => {
-    let last = -1;
-    sortedWeeks.forEach((w, i) => {
-      const hasData = w.workouts.some(wo =>
-        wo.exercises.some(ex =>
-          ex.sets.some(s => s.weight != null || (s.reps != null && s.reps > 0))
-        )
-      );
-      if (hasData) last = i;
-    });
-    return last >= 0 ? last : Math.max(0, sortedWeeks.length - 1);
-  })();
+  const defaultWeekIdx = getLatestTrackedWeekIndex(plan);
 
   const [weekIdx, setWeekIdx] = useState(defaultWeekIdx);
   const [selectedWorkoutIdx, setSelectedWorkoutIdx] = useState(0);
@@ -76,48 +59,76 @@ const PlanWeekView = ({ plan, planId }: PlanWeekViewProps) => {
   return (
     <Box sx={{ pb: 8 }}>
       {/* Week navigation */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-        <IconButton
-          size="small"
-          disabled={weekIdx === 0}
-          onClick={() => { setWeekIdx(i => i - 1); setSelectedWorkoutIdx(0); }}
-          aria-label="Previous week"
-        >
-          <ArrowBackIosNewIcon fontSize="small" />
-        </IconButton>
+      {(!hideWeekNavigationWhenSingleWeek || sortedWeeks.length > 1) && (
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+          <IconButton
+            size="small"
+            disabled={weekIdx === 0}
+            onClick={() => { setWeekIdx(i => i - 1); setSelectedWorkoutIdx(0); }}
+            aria-label="Previous week"
+          >
+            <ArrowBackIosNewIcon fontSize="small" />
+          </IconButton>
 
-        <Typography variant="body2" fontWeight={600}>
-          Wk {week.order} of {sortedWeeks.length}
-        </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Typography variant="body2" fontWeight={600}>
+              Wk {week.order} of {sortedWeeks.length}
+            </Typography>
+            {sortedWeeks.length > 1 && (
+              <IconButton
+                size="small"
+                onClick={() => {
+                  dispatch({ type: 'REMOVE_WEEK', planId, weekId: week.id });
+                  setWeekIdx((prev) => Math.max(0, Math.min(prev, sortedWeeks.length - 2)));
+                  setSelectedWorkoutIdx(0);
+                }}
+                aria-label="Delete week"
+                sx={{ color: 'text.secondary' }}
+              >
+                <DeleteOutlineIcon fontSize="small" />
+              </IconButton>
+            )}
+          </Box>
 
-        <IconButton
-          size="small"
-          disabled={weekIdx === sortedWeeks.length - 1}
-          onClick={() => { setWeekIdx(i => i + 1); setSelectedWorkoutIdx(0); }}
-          aria-label="Next week"
-        >
-          <ArrowForwardIosIcon fontSize="small" />
-        </IconButton>
-      </Box>
+          <IconButton
+            size="small"
+            onClick={() => {
+              if (weekIdx === sortedWeeks.length - 1) {
+                dispatch({ type: 'DUPLICATE_WEEK', planId, weekId: week.id });
+                setWeekIdx(sortedWeeks.length);
+                setSelectedWorkoutIdx(0);
+                return;
+              }
+              setWeekIdx(i => i + 1);
+              setSelectedWorkoutIdx(0);
+            }}
+            aria-label={weekIdx === sortedWeeks.length - 1 ? 'Add week' : 'Next week'}
+          >
+            {weekIdx === sortedWeeks.length - 1 ? <AddIcon fontSize="small" /> : <ArrowForwardIosIcon fontSize="small" />}
+          </IconButton>
+        </Box>
+      )}
 
       {/* Progress bar */}
-      <Box sx={{ mb: 2 }}>
-        <LinearProgress
-          variant="determinate"
-          value={progress * 100}
-          sx={{ height: 4, borderRadius: 2, mb: 0.5 }}
-        />
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-          {doneCount}/{sortedWorkouts.length} workouts done
-        </Typography>
-      </Box>
+      {showProgress && (
+        <Box sx={{ mb: 2 }}>
+          <LinearProgress
+            variant="determinate"
+            value={progress * 100}
+            sx={{ height: 4, borderRadius: 2, mb: 0.5 }}
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+            {doneCount}/{sortedWorkouts.length} workouts done
+          </Typography>
+        </Box>
+      )}
 
       {/* Workout chips + add workout */}
       <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', pb: 1, mb: 2, alignItems: 'center' }}>
         {sortedWorkouts.map((w, i) => (
           <Chip
             key={w.id}
-            label={w.name ? stripSuffix(w.name) : `Workout ${w.order}`}
+            label={w.name ? stripWorkoutSuffix(w.name) : `Workout ${w.order}`}
             onClick={() => setSelectedWorkoutIdx(i)}
             variant={selectedWorkoutIdx === i ? 'filled' : 'outlined'}
             color={selectedWorkoutIdx === i ? 'primary' : 'default'}
@@ -139,22 +150,35 @@ const PlanWeekView = ({ plan, planId }: PlanWeekViewProps) => {
 
       {/* Editable workout name */}
       {workout && (
-        <TextField
-          size="small"
-          label="Workout name"
-          value={workout.name ?? ''}
-          onChange={(e) =>
-            debouncedDispatch({
-              type: 'UPDATE_WORKOUT_NAME',
-              planId,
-              weekId: week.id,
-              workoutId: workout.id,
-              name: e.target.value,
-            })
-          }
-          sx={{ mb: 2, width: '100%', maxWidth: 320 }}
-          autoComplete="off"
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <TextField
+            size="small"
+            label="Workout name"
+            value={workout.name ?? ''}
+            onChange={(e) =>
+              debouncedDispatch({
+                type: 'UPDATE_WORKOUT_NAME',
+                planId,
+                weekId: week.id,
+                workoutId: workout.id,
+                name: e.target.value,
+              })
+            }
+            sx={{ width: '100%', maxWidth: 320 }}
+            autoComplete="off"
+          />
+          <IconButton
+            size="small"
+            disabled={sortedWorkouts.length <= 1}
+            onClick={() => {
+              dispatch({ type: 'REMOVE_WORKOUT', planId, weekId: week.id, workoutId: workout.id });
+              setSelectedWorkoutIdx((prev) => Math.max(0, Math.min(prev, sortedWorkouts.length - 2)));
+            }}
+            aria-label="Delete workout"
+          >
+            <DeleteOutlineIcon fontSize="small" />
+          </IconButton>
+        </Box>
       )}
 
       {/* Exercises */}
@@ -169,7 +193,7 @@ const PlanWeekView = ({ plan, planId }: PlanWeekViewProps) => {
           <ExerciseProgressCard
             key={exerciseLink.id}
             exerciseLink={exerciseLink}
-            prevExercise={getPrevExercise(
+            prevExercise={getPreviousTrackedExercise(
               plan,
               week.order,
               workout.order,

@@ -14,10 +14,13 @@ import { parsedPlanToPlanPrisma } from './planConverter'
 import type { ParsedPlan } from '@/utils/aiPlanParser'
 
 type View = 'entry' | 'templates' | 'ai' | 'editor'
+type EditorSource = 'scratch' | 'template' | 'ai' | 'import'
 
 export const PlanBuilder = ({ blankPlan, clientId }: { blankPlan: PlanPrisma, clientId?: string }) => {
   const [view, setView] = useState<View>('entry')
   const [weekCount, setWeekCount] = useState('6')
+  const [editorInitialViewMode, setEditorInitialViewMode] = useState<'classic' | 'sheet'>('classic')
+  const [editorSource, setEditorSource] = useState<EditorSource>('scratch')
   const { dispatch } = useWorkoutEditorContext()
   const router = useRouter()
 
@@ -37,6 +40,8 @@ export const PlanBuilder = ({ blankPlan, clientId }: { blankPlan: PlanPrisma, cl
       const plan = parsedPlanToPlanPrisma(parsed, blankPlan)
       dispatch({ type: 'REPLACE_PLAN', planId: PLACEHOLDER_ID, plan })
       setWeekCount(String(plan.weeks.length))
+      setEditorInitialViewMode('sheet')
+      setEditorSource('import')
       setView('editor')
     } catch {
       // ignore malformed data
@@ -63,7 +68,11 @@ export const PlanBuilder = ({ blankPlan, clientId }: { blankPlan: PlanPrisma, cl
         <EntryScreen
           onSelectTemplates={() => setView('templates')}
           onSelectAi={() => setView('ai')}
-          onSelectScratch={() => setView('editor')}
+          onSelectScratch={() => {
+            setEditorInitialViewMode('classic')
+            setEditorSource('scratch')
+            setView('editor')
+          }}
         />
       )}
 
@@ -71,6 +80,8 @@ export const PlanBuilder = ({ blankPlan, clientId }: { blankPlan: PlanPrisma, cl
         <TemplateBrowserScreen
           onSelect={(wc) => {
             setWeekCount(wc)
+            setEditorInitialViewMode('classic')
+            setEditorSource('template')
             setView('editor')
           }}
         />
@@ -80,13 +91,21 @@ export const PlanBuilder = ({ blankPlan, clientId }: { blankPlan: PlanPrisma, cl
         <AiFormScreen
           onSuccess={(wc) => {
             setWeekCount(wc)
+            setEditorInitialViewMode('classic')
+            setEditorSource('ai')
             setView('editor')
           }}
         />
       )}
 
       {view === 'editor' && (
-        <PlanEditorScreen weekCount={weekCount} setWeekCount={setWeekCount} clientId={clientId} />
+        <PlanEditorScreen
+          weekCount={weekCount}
+          setWeekCount={setWeekCount}
+          clientId={clientId}
+          initialViewMode={editorInitialViewMode}
+          source={editorSource}
+        />
       )}
     </>
   )

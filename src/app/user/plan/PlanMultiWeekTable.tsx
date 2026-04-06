@@ -1,58 +1,36 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Box, Chip, TextField, Typography } from '@mui/material';
+import { Box, Chip, IconButton, Menu, MenuItem, Stack, Switch, TextField, Typography } from '@mui/material';
 import { PlanPrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { getWeekStatus } from '@/lib/workoutProgress';
 import ExercisePickerDialog from '@/app/user/workout/ExercisePickerDialog';
-import { computeE1rm } from '@/lib/e1rm';
-
-/** Strips trailing parenthetical from workout names, e.g. "Workout 1 (Plan 1 - Week 2)" → "Workout 1" */
-function stripSuffix(name: string): string {
-  return name.replace(/\s*\([^)]*\)\s*$/, '').trim();
-}
-
-const inputSx: React.CSSProperties = {
-  width: '3.2em',
-  textAlign: 'center',
-  border: '1px solid rgba(0,0,0,0.23)',
-  borderRadius: '4px',
-  padding: '2px 3px',
-  fontSize: '0.75rem',
-  fontFamily: 'inherit',
-  background: 'transparent',
-  color: 'inherit',
-  outline: 'none',
-  MozAppearance: 'textfield',
-};
+import { getLatestTrackedWeekId, stripWorkoutSuffix } from './planPresentation';
+import { buildExerciseMetaParts, CompactSetEditor, ExerciseNameWithMeta, SetCountControls } from './PlanExercisePrimitives';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 
 interface PlanMultiWeekTableProps {
   plan: PlanPrisma;
   planId: number;
+  creationMode?: boolean;
 }
 
-const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
-  const { dispatch, debouncedDispatch } = useWorkoutEditorContext();
+const PlanMultiWeekTable = ({ plan, planId, creationMode = false }: PlanMultiWeekTableProps) => {
+  const { allExercises, dispatch, debouncedDispatch } = useWorkoutEditorContext();
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'add' | 'change'>('add');
+  const [exerciseMenu, setExerciseMenu] = useState<null | { anchor: HTMLElement; exerciseId: number }>(null);
+  const [dropEnabledExerciseIds, setDropEnabledExerciseIds] = useState<Set<number>>(new Set());
   const sortedWeeks = [...plan.weeks].sort((a, b) => a.order - b.order);
 
   const maxWorkoutCount = Math.max(0, ...plan.weeks.map(w => w.workouts.length));
   const [selectedWorkoutOrder, setSelectedWorkoutOrder] = useState(1);
 
   // Find the id of the latest week that has any weight/reps entered
-  const scrollTargetWeekId = (() => {
-    let lastId: number | null = null;
-    for (const week of sortedWeeks) {
-      const hasData = week.workouts.some(wo =>
-        wo.exercises.some(ex =>
-          ex.sets.some(s => s.weight != null || (s.reps != null && s.reps > 0))
-        )
-      );
-      if (hasData) lastId = week.id;
-    }
-    return lastId ?? sortedWeeks[sortedWeeks.length - 1]?.id ?? null;
-  })();
+  const scrollTargetWeekId = getLatestTrackedWeekId(plan);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -72,7 +50,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
   const slotLabels: string[] = Array.from({ length: maxWorkoutCount }, (_, i) => {
     for (const week of plan.weeks) {
       const w = week.workouts.find(wk => wk.order === i + 1);
-      if (w?.name) return stripSuffix(w.name);
+      if (w?.name) return stripWorkoutSuffix(w.name);
     }
     return `Workout ${i + 1}`;
   });
@@ -93,7 +71,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
   // Order preserves first occurrence across weeks in order
   const exerciseMap = new Map<
     number,
-    { exerciseId: number; name: string; repRange: string | null; restTime: string | null; targetRpe: number | null; targetRir: number | null }
+    { exerciseId: number; name: string; category: string | null; repRange: string | null; restTime: string | null; targetRpe: number | null; targetRir: number | null }
   >();
   for (const { workout } of workoutsByWeek) {
     if (!workout) continue;
@@ -104,6 +82,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
         exerciseMap.set(eid, {
           exerciseId: eid,
           name: ex.exercise?.name ?? '(unnamed)',
+          category: ex.exercise?.category ?? null,
           repRange: ex.repRange,
           restTime: ex.restTime,
           targetRpe: ex.targetRpe,
@@ -116,9 +95,53 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
 
   // Active workout (for + Exercise action)
   const activeWorkout = workoutsByWeek.find(x => x.week.order === activeWeekOrder)?.workout ?? null;
+  const menuRows = exerciseMenu
+    ? workoutsByWeek
+        .map(({ week, workout }) => ({
+          week,
+          workout,
+          ex: workout?.exercises.find((exercise) => exercise.exercise?.id === exerciseMenu.exerciseId) ?? null,
+        }))
+        .filter(({ ex }) => ex)
+    : [];
+  const menuExercise = menuRows[0]?.ex ?? null;
+  const menuHasTrailingDrops = menuRows.some(({ ex }) => {
+    if (!ex) return false;
+    const regularSets = ex.sets.filter((set) => !set.isDropSet).sort((a, b) => a.order - b.order);
+    const lastRegularSet = regularSets[regularSets.length - 1];
+    if (!lastRegularSet) return false;
+    return ex.sets.some((set) => set.isDropSet && set.parentSetId === lastRegularSet.id);
+  });
+  const menuDropEnabled = exerciseMenu ? (dropEnabledExerciseIds.has(exerciseMenu.exerciseId) || menuHasTrailingDrops) : false;
 
   return (
     <Box>
+      <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap" sx={{ mb: 1.5 }}>
+        {sortedWeeks.map((week) => (
+          <Chip
+            key={week.id}
+            label={`Week ${week.order}`}
+            onDelete={sortedWeeks.length > 1 ? () => dispatch({ type: 'REMOVE_WEEK', planId, weekId: week.id }) : undefined}
+            size="small"
+            variant={week.order === activeWeekOrder ? 'filled' : 'outlined'}
+            color={week.order === activeWeekOrder ? 'primary' : 'default'}
+          />
+        ))}
+        {!creationMode && (
+          <Chip
+            icon={<AddIcon />}
+            label="Week"
+            onClick={() => {
+              const lastWeek = sortedWeeks[sortedWeeks.length - 1];
+              if (lastWeek) dispatch({ type: 'DUPLICATE_WEEK', planId, weekId: lastWeek.id });
+            }}
+            variant="outlined"
+            size="small"
+            sx={{ borderStyle: 'dashed' }}
+          />
+        )}
+      </Stack>
+
       {/* Workout chips + add */}
       <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', pb: 1, mb: 1, alignItems: 'center' }}>
         {slotLabels.map((label, i) => (
@@ -150,27 +173,42 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
 
       {/* Editable workout name */}
       {activeWorkout && (
-        <TextField
-          size="small"
-          label="Workout name"
-          value={activeWorkout.name ?? ''}
-          onChange={(e) => {
-            // Update name for this workout in all weeks that have a workout at this order slot
-            workoutsByWeek.forEach(({ week, workout: wo }) => {
-              if (wo) {
-                debouncedDispatch({
-                  type: 'UPDATE_WORKOUT_NAME',
-                  planId,
-                  weekId: week.id,
-                  workoutId: wo.id,
-                  name: e.target.value,
-                });
-              }
-            });
-          }}
-          sx={{ mb: 2, width: '100%', maxWidth: 320 }}
-          autoComplete="off"
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <TextField
+            size="small"
+            label="Workout name"
+            value={activeWorkout.name ?? ''}
+            onChange={(e) => {
+              workoutsByWeek.forEach(({ week, workout: wo }) => {
+                if (wo) {
+                  debouncedDispatch({
+                    type: 'UPDATE_WORKOUT_NAME',
+                    planId,
+                    weekId: week.id,
+                    workoutId: wo.id,
+                    name: e.target.value,
+                  });
+                }
+              });
+            }}
+            sx={{ width: '100%', maxWidth: 320 }}
+            autoComplete="off"
+          />
+          <IconButton
+            size="small"
+            disabled={maxWorkoutCount <= 1}
+            onClick={() => {
+              workoutsByWeek.forEach(({ week, workout }) => {
+                if (workout) {
+                  dispatch({ type: 'REMOVE_WORKOUT', planId, weekId: week.id, workoutId: workout.id });
+                }
+              });
+            }}
+            aria-label="Delete workout"
+          >
+            <DeleteOutlineIcon fontSize="small" />
+          </IconButton>
+        </Box>
       )}
 
       {/* Scrollable table */}
@@ -215,13 +253,21 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
             </tr>
           </thead>
           <tbody>
-            {exerciseList.map(({ exerciseId, name, repRange, restTime, targetRpe, targetRir }) => {
+            {exerciseList.map(({ exerciseId, name, category, repRange, restTime, targetRpe, targetRir }) => {
               // Find this exercise's WorkoutExercise entry per week
               const exByWeek = workoutsByWeek.map(({ week, workout }) => ({
                 week,
                 workout,
                 ex: workout?.exercises.find(e => e.exercise?.id === exerciseId) ?? null,
               }));
+              const isCardio = category === 'cardio';
+              const dropControlsEnabled = dropEnabledExerciseIds.has(exerciseId) || exByWeek.some(({ ex }) => {
+                if (!ex) return false;
+                const regularSets = ex.sets.filter((set) => !set.isDropSet).sort((a, b) => a.order - b.order);
+                const lastRegularSet = regularSets[regularSets.length - 1];
+                if (!lastRegularSet) return false;
+                return ex.sets.some((set) => set.isDropSet && set.parentSetId === lastRegularSet.id);
+              });
 
               const maxSets = Math.max(
                 0,
@@ -230,33 +276,77 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
                 ),
               );
 
-              if (maxSets === 0) return null;
+              if (!isCardio && maxSets === 0) return null;
 
-              const metaParts = [
-                repRange && `${repRange} reps`,
-                restTime,
-                targetRpe != null && `RPE ${targetRpe}`,
-                targetRir != null && `${targetRir} RIR`,
-              ].filter(Boolean);
+              const isBfr = exByWeek.some(({ ex }) => ex?.isBfr)
+              const metaParts = buildExerciseMetaParts({ repRange, restTime, targetRpe, targetRir });
 
               return (
                 <tr key={exerciseId} style={{ borderTop: '1px solid var(--mui-palette-divider, #e0e0e0)' }}>
                   {/* Exercise name + meta */}
                   <td style={{ padding: '8px 12px 8px 0', verticalAlign: 'top' }}>
-                    <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.3 }}>
-                      {name}
-                    </Typography>
-                    {metaParts.length > 0 && (
-                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem' }}>
-                        {metaParts.join(' · ')}
-                      </Typography>
-                    )}
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 0.5 }}>
+                      <Box sx={{ minWidth: 0 }}>
+                        <ExerciseNameWithMeta name={name} metaParts={metaParts} isBfr={isBfr} />
+                      </Box>
+                      <IconButton
+                        size="small"
+                        sx={{ p: 0.25, opacity: 0.6, '&:hover': { opacity: 1 } }}
+                        onClick={(event) => setExerciseMenu({ anchor: event.currentTarget, exerciseId })}
+                        aria-label="Exercise options"
+                      >
+                        <MoreVertIcon sx={{ fontSize: '0.9rem' }} />
+                      </IconButton>
+                    </Box>
                   </td>
 
                   {/* One cell per week */}
                   {exByWeek.map(({ week, workout, ex }) => {
+                    if (isCardio) {
+                      return (
+                        <td key={week.id} style={{ padding: '8px 12px', verticalAlign: 'top', textAlign: 'center' }}>
+                          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, max-content)', justifyContent: 'center', gap: 0.75 }}>
+                            {([
+                              ['cardioDuration', 'Min', ex?.cardioDuration ?? null],
+                              ['cardioDistance', 'km', ex?.cardioDistance ?? null],
+                              ['cardioResistance', 'Resistance', ex?.cardioResistance ?? null],
+                            ] as const).map(([field, label, value]) => (
+                              <Box key={field} sx={{ minWidth: 0 }}>
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.65rem', mb: 0.25 }}>
+                                  {label}
+                                </Typography>
+                                <input
+                                  type="number"
+                                  value={value ?? ''}
+                                  onChange={(event) => {
+                                    if (!ex || !workout) return;
+                                    const nextValue = event.target.value === '' ? null : parseFloat(event.target.value);
+                                    dispatch({
+                                      type: 'UPDATE_CARDIO_DATA',
+                                      planId,
+                                      weekId: week.id,
+                                      workoutId: workout.id,
+                                      exerciseId: ex.id,
+                                      field,
+                                      value: isNaN(nextValue as number) ? null : nextValue,
+                                    });
+                                  }}
+                                  placeholder="—"
+                                  style={{ width: '4.25em', minWidth: 0, boxSizing: 'border-box', textAlign: 'center', border: '1px solid rgba(0,0,0,0.23)', borderRadius: '4px', padding: '4px 6px', fontSize: '0.78rem', fontFamily: 'inherit', background: 'transparent', color: 'inherit', outline: 'none', MozAppearance: 'textfield', WebkitAppearance: 'none', appearance: 'textfield' }}
+                                />
+                              </Box>
+                            ))}
+                          </Box>
+                        </td>
+                      );
+                    }
+
                     const regularSets = ex
                       ? ex.sets.filter(s => !s.isDropSet).sort((a, b) => a.order - b.order)
+                      : [];
+                    const lastRegularSet = regularSets[regularSets.length - 1] ?? null;
+                    const trailingDropSets = ex && lastRegularSet
+                      ? ex.sets.filter((set) => set.isDropSet && set.parentSetId === lastRegularSet.id).sort((a, b) => a.order - b.order)
                       : [];
 
                     return (
@@ -268,20 +358,13 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
                         )}
 
                         {regularSets.map((set, si) => {
-                          const e1rm = computeE1rm(set.weight, set.reps);
                           return (
-                          <Box
-                            key={set.id}
-                            sx={{ display: 'flex', gap: 0.25, alignItems: 'center', justifyContent: 'center', mb: 0.25 }}
-                          >
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', minWidth: '1em' }}>
-                              S{si + 1}
-                            </Typography>
-                            <input
-                              type="number"
-                              value={set.weight ?? ''}
-                              onChange={(e) => {
-                                const v = e.target.value === '' ? null : parseFloat(e.target.value);
+                            <CompactSetEditor
+                              key={set.id}
+                              label={`S${si + 1}`}
+                              weight={set.weight}
+                              reps={set.reps}
+                              onWeightChange={(weight) => {
                                 if (ex && workout) {
                                   dispatch({
                                     type: 'UPDATE_SET_WEIGHT',
@@ -290,22 +373,12 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
                                     workoutId: workout.id,
                                     exerciseId: ex.id,
                                     setId: set.id,
-                                    weight: isNaN(v as number) ? null : v,
+                                    weight,
                                   });
                                 }
                               }}
-                              placeholder="kg"
-                              style={inputSx}
-                            />
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-                              ×
-                            </Typography>
-                            <input
-                              type="number"
-                              value={set.reps ?? ''}
-                              onChange={(e) => {
-                                const v = parseInt(e.target.value, 10);
-                                if (!isNaN(v) && ex && workout) {
+                              onRepsChange={(reps) => {
+                                if (ex && workout) {
                                   dispatch({
                                     type: 'UPDATE_SET_REPS',
                                     planId,
@@ -313,48 +386,74 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
                                     workoutId: workout.id,
                                     exerciseId: ex.id,
                                     setId: set.id,
-                                    reps: v,
+                                    reps,
                                   });
                                 }
                               }}
-                              placeholder="reps"
-                              style={inputSx}
                             />
-                            <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem', minWidth: '2.5em', textAlign: 'right' }}>
-                              {e1rm != null ? `~${Math.round(e1rm)}` : ''}
-                            </Typography>
-                          </Box>
                           );
                         })}
 
+                        {trailingDropSets.map((set, si) => (
+                          <CompactSetEditor
+                            key={set.id}
+                            label={`D${si + 1}`}
+                            weight={set.weight}
+                            reps={set.reps}
+                            onWeightChange={(weight) => {
+                              if (ex && workout) {
+                                dispatch({
+                                  type: 'UPDATE_SET_WEIGHT',
+                                  planId,
+                                  weekId: week.id,
+                                  workoutId: workout.id,
+                                  exerciseId: ex.id,
+                                  setId: set.id,
+                                  weight,
+                                });
+                              }
+                            }}
+                            onRepsChange={(reps) => {
+                              if (ex && workout) {
+                                dispatch({
+                                  type: 'UPDATE_SET_REPS',
+                                  planId,
+                                  weekId: week.id,
+                                  workoutId: workout.id,
+                                  exerciseId: ex.id,
+                                  setId: set.id,
+                                  reps,
+                                });
+                              }
+                            }}
+                          />
+                        ))}
+
                         {/* + Set − */}
                         {ex && workout && (
-                          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 0.75, mt: 0.5 }}>
-                            <Typography
-                              variant="caption"
-                              color="primary"
-                              sx={{ cursor: 'pointer', fontSize: '0.85rem', lineHeight: 1, userSelect: 'none' }}
-                              onClick={() =>
-                                dispatch({ type: 'ADD_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id })
+                          <SetCountControls
+                            canRemove={regularSets.length > 0}
+                            onAdd={() => dispatch({ type: 'ADD_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id })}
+                            onRemove={() => {
+                              if (lastRegularSet && trailingDropSets.length > 0) {
+                                const confirmed = window.confirm(`Remove the last set and its ${trailingDropSets.length} attached drop ${trailingDropSets.length === 1 ? 'set' : 'sets'}?`);
+                                if (!confirmed) return;
                               }
-                            >
-                              +
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                              Set
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color={regularSets.length > 0 ? 'primary' : 'text.disabled'}
-                              sx={{ cursor: regularSets.length > 0 ? 'pointer' : 'default', fontSize: '0.85rem', lineHeight: 1, userSelect: 'none' }}
-                              onClick={() => {
-                                if (regularSets.length > 0)
-                                  dispatch({ type: 'REMOVE_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id });
-                              }}
-                            >
-                              −
-                            </Typography>
-                          </Box>
+                              dispatch({ type: 'REMOVE_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id });
+                            }}
+                            canRemoveDrop={dropControlsEnabled && trailingDropSets.length > 0}
+                            onAddDrop={dropControlsEnabled ? (() => {
+                              const parentSetId = lastRegularSet?.id;
+                              if (parentSetId == null) return;
+                              dispatch({ type: 'ADD_DROP_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, parentSetId });
+                            }) : undefined}
+                            onRemoveDrop={dropControlsEnabled ? (() => {
+                              const lastDrop = trailingDropSets[trailingDropSets.length - 1];
+                              if (!lastDrop) return;
+                              dispatch({ type: 'REMOVE_DROP_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, setId: lastDrop.id });
+                            }) : undefined}
+                            layout="stacked"
+                          />
                         )}
                       </td>
                     );
@@ -371,7 +470,10 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
                     variant="body2"
                     color="primary"
                     sx={{ cursor: 'pointer' }}
-                    onClick={() => setPickerOpen(true)}
+                    onClick={() => {
+                      setPickerMode('add');
+                      setPickerOpen(true);
+                    }}
                   >
                     + Exercise
                   </Typography>
@@ -388,10 +490,28 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
 
       <ExercisePickerDialog
         open={pickerOpen}
-        title="Add Exercise"
+        title={pickerMode === 'change' ? 'Change Exercise' : 'Add Exercise'}
         onClose={() => setPickerOpen(false)}
         onSelect={(exercise) => {
           setPickerOpen(false);
+          if (pickerMode === 'change' && exerciseMenu) {
+            menuRows.forEach(({ week, workout, ex }) => {
+              if (workout && ex) {
+                dispatch({
+                  type: 'UPDATE_EXERCISE',
+                  planId,
+                  weekId: week.id,
+                  workoutId: workout.id,
+                  workoutExerciseId: ex.id,
+                  exerciseName: exercise.name,
+                  exercises: allExercises,
+                  category: exercise.category ?? 'resistance',
+                });
+              }
+            });
+            setExerciseMenu(null);
+            return;
+          }
           const activeWeekEntry = workoutsByWeek.find(x => x.workout?.id === activeWorkout?.id);
           if (activeWeekEntry && activeWorkout) {
             dispatch({
@@ -404,6 +524,138 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
           }
         }}
       />
+
+      <Menu anchorEl={exerciseMenu?.anchor ?? null} open={Boolean(exerciseMenu)} onClose={() => setExerciseMenu(null)}>
+        <MenuItem
+          onClick={() => {
+            setPickerMode('change');
+            setPickerOpen(true);
+          }}
+        >
+          Change exercise
+        </MenuItem>
+        {menuExercise?.exercise?.category !== 'cardio' && (
+          <MenuItem
+            sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}
+            onClick={() => {
+              if (!exerciseMenu) return;
+              if (menuDropEnabled) {
+                menuRows.forEach(({ week, workout, ex }) => {
+                  if (!workout || !ex) return;
+                  const regularSets = ex.sets.filter((set) => !set.isDropSet).sort((a, b) => a.order - b.order);
+                  const lastRegularSet = regularSets[regularSets.length - 1];
+                  if (!lastRegularSet) return;
+                  ex.sets
+                    .filter((set) => set.isDropSet && set.parentSetId === lastRegularSet.id)
+                    .forEach((set) => {
+                      dispatch({ type: 'REMOVE_DROP_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, setId: set.id });
+                    });
+                });
+                setDropEnabledExerciseIds((prev) => {
+                  const next = new Set(prev);
+                  next.delete(exerciseMenu.exerciseId);
+                  return next;
+                });
+                return;
+              }
+              setDropEnabledExerciseIds((prev) => new Set(prev).add(exerciseMenu.exerciseId));
+            }}
+          >
+            <Typography variant="inherit">Enable drop sets</Typography>
+            <Switch
+              size="small"
+              edge="end"
+              checked={menuDropEnabled}
+              tabIndex={-1}
+              disableRipple
+              onClick={(e) => e.stopPropagation()}
+              onChange={(_, checked) => {
+                if (!exerciseMenu) return;
+                if (!checked) {
+                  menuRows.forEach(({ week, workout, ex }) => {
+                    if (!workout || !ex) return;
+                    const regularSets = ex.sets.filter((set) => !set.isDropSet).sort((a, b) => a.order - b.order);
+                    const lastRegularSet = regularSets[regularSets.length - 1];
+                    if (!lastRegularSet) return;
+                    ex.sets
+                      .filter((set) => set.isDropSet && set.parentSetId === lastRegularSet.id)
+                      .forEach((set) => {
+                        dispatch({ type: 'REMOVE_DROP_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, setId: set.id });
+                      });
+                  });
+                  setDropEnabledExerciseIds((prev) => {
+                    const next = new Set(prev);
+                    next.delete(exerciseMenu.exerciseId);
+                    return next;
+                  });
+                  return;
+                }
+                setDropEnabledExerciseIds((prev) => new Set(prev).add(exerciseMenu.exerciseId));
+              }}
+              inputProps={{ 'aria-label': 'Toggle drop sets' }}
+            />
+          </MenuItem>
+        )}
+        {menuExercise?.exercise?.category !== 'cardio' && (
+          <MenuItem
+            sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}
+            onClick={() => {
+              if (menuExercise) {
+                menuRows.forEach(({ week, workout, ex }) => {
+                  if (workout && ex) {
+                    dispatch({
+                      type: 'TOGGLE_BFR',
+                      planId,
+                      weekId: week.id,
+                      workoutId: workout.id,
+                      workoutExerciseId: ex.id,
+                      enabled: !menuExercise.isBfr,
+                    });
+                  }
+                });
+              }
+            }}
+          >
+            <Typography variant="inherit">BFR mode</Typography>
+            <Switch
+              size="small"
+              edge="end"
+              checked={Boolean(menuExercise?.isBfr)}
+              tabIndex={-1}
+              disableRipple
+              onClick={(e) => e.stopPropagation()}
+              onChange={(_, checked) => {
+                menuRows.forEach(({ week, workout, ex }) => {
+                  if (workout && ex) {
+                    dispatch({
+                      type: 'TOGGLE_BFR',
+                      planId,
+                      weekId: week.id,
+                      workoutId: workout.id,
+                      workoutExerciseId: ex.id,
+                      enabled: checked,
+                    });
+                  }
+                });
+              }}
+              inputProps={{ 'aria-label': 'Toggle BFR mode' }}
+            />
+          </MenuItem>
+        )}
+        <MenuItem
+          sx={{ color: 'error.main' }}
+          onClick={() => {
+            menuRows.forEach(({ week, workout, ex }) => {
+              if (workout && ex) {
+                dispatch({ type: 'REMOVE_EXERCISE', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id });
+              }
+            });
+            setExerciseMenu(null);
+          }}
+        >
+          Delete exercise
+        </MenuItem>
+      </Menu>
     </Box>
   );
 };

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useState } from "react";
 import { redirect, useRouter } from "next/navigation";
 import { useWorkoutEditorContext } from "@/context/WorkoutEditorContext";
 import { saveUserWorkoutData } from "@lib/clientApi";
@@ -12,42 +12,31 @@ import { useAppBar } from '@lib/providers/AppBarProvider';
 import PlanWeekView from "./PlanWeekView";
 import PlanMultiWeekTable from "./PlanMultiWeekTable";
 import PlanSheetView from "./PlanSheetView";
-import { isValidPlanRepRangeInput } from "@lib/repRange";
-
-function readZoom(): number {
-  if (typeof window === 'undefined') return 1;
-  const v = parseFloat(localStorage.getItem('sheetZoom') ?? '');
-  return isNaN(v) ? 1 : Math.max(0.25, Math.min(1, v));
-}
+import { usePlanViewControls } from "./usePlanViewControls";
+import { usePlanRepRangeValidation } from "./usePlanRepRangeValidation";
 
 export const PlanTable: React.FC<{
-  lockedInEditMode: boolean;
-  categories: string[];
   planId?: string;
   backHref?: string;
-}> = ({ lockedInEditMode: _lockedInEditMode, categories: _categories, planId, backHref }) => {
+}> = ({ planId, backHref }) => {
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
     severity: 'success',
   });
   const [saving, setSaving] = useState(false);
-  const [saveAttempted, setSaveAttempted] = useState(false);
-  const [repRangeTouchedIds, setRepRangeTouchedIds] = useState<Set<number>>(new Set());
-  const [focusedRepRangeId, setFocusedRepRangeId] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<'classic' | 'sheet'>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('planViewMode');
-      if (stored === 'classic' || stored === 'sheet') return stored;
-    }
-    return 'classic';
-  });
-  const [zoom, setZoom] = useState(readZoom);
-  const [arrangeMode, setArrangeMode] = useState(false);
   const { state: userDataState } = useWorkoutEditorContext();
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const {
+    arrangeMode,
+    handleZoomChange,
+    setViewMode,
+    toggleArrangeMode,
+    viewMode,
+    zoom,
+  } = usePlanViewControls({ persistViewMode: true });
 
   const plan = planId
     ? userDataState.plans.find(p => p.id === parseInt(planId))
@@ -62,36 +51,13 @@ export const PlanTable: React.FC<{
   if (!plan) {
     redirect('/user/plan/create');
   }
-
-  const invalidRepRangeIds = useMemo(() => {
-    const ids = new Set<number>();
-    for (const week of plan.weeks) {
-      for (const workout of week.workouts) {
-        for (const exercise of workout.exercises) {
-          if (!isValidPlanRepRangeInput(exercise.repRange)) ids.add(exercise.id);
-        }
-      }
-    }
-    return ids;
-  }, [plan]);
-
-  const visibleInvalidRepRangeIds = useMemo(() => {
-    if (saveAttempted) return invalidRepRangeIds;
-    const ids = new Set<number>();
-    for (const id of invalidRepRangeIds) {
-      if (repRangeTouchedIds.has(id) && id !== focusedRepRangeId) ids.add(id);
-    }
-    return ids;
-  }, [focusedRepRangeId, invalidRepRangeIds, repRangeTouchedIds, saveAttempted]);
-
-  const markRepRangeTouched = (exerciseId: number) => {
-    setRepRangeTouchedIds((prev) => {
-      if (prev.has(exerciseId)) return prev;
-      const next = new Set(prev);
-      next.add(exerciseId);
-      return next;
-    });
-  };
+  const {
+    handleRepRangeBlur,
+    handleRepRangeFocus,
+    invalidRepRangeIds,
+    setSaveAttempted,
+    visibleInvalidRepRangeIds,
+  } = usePlanRepRangeValidation(plan, { hideFocused: true });
 
   const handleSave = () => {
     setSaveAttempted(true);
@@ -112,18 +78,6 @@ export const PlanTable: React.FC<{
       .finally(() => setSaving(false));
   };
 
-  const handleViewModeChange = (_: React.MouseEvent<HTMLElement>, next: 'classic' | 'sheet' | null) => {
-    if (!next) return;
-    setViewMode(next);
-    localStorage.setItem('planViewMode', next);
-  };
-
-  const handleZoomChange = useCallback((newZoom: number) => {
-    const rounded = Math.round(newZoom * 100) / 100;
-    setZoom(rounded);
-    localStorage.setItem('sheetZoom', String(rounded));
-  }, []);
-
   return (
     <>
       <Box sx={{ p: 1.5, overflow: 'auto' }}>
@@ -134,7 +88,7 @@ export const PlanTable: React.FC<{
               <ToggleButton
                 value="arrange"
                 selected={arrangeMode}
-                onChange={() => setArrangeMode(v => !v)}
+                onChange={toggleArrangeMode}
                 size="small"
                 sx={{ px: 1, py: 0.5, border: '1px solid', borderColor: 'divider', display: { xs: 'none', sm: 'flex' } }}
                 aria-label={arrangeMode ? 'Exit arrange mode' : 'Arrange mode'}
@@ -147,7 +101,9 @@ export const PlanTable: React.FC<{
           <ToggleButtonGroup
             value={viewMode}
             exclusive
-            onChange={handleViewModeChange}
+            onChange={(_, next) => {
+              if (next) setViewMode(next)
+            }}
             size="small"
             aria-label="plan view mode"
           >
@@ -181,11 +137,8 @@ export const PlanTable: React.FC<{
             onZoomChange={handleZoomChange}
             arrangeMode={arrangeMode}
             invalidRepRangeIds={visibleInvalidRepRangeIds}
-            onRepRangeFocus={setFocusedRepRangeId}
-            onRepRangeBlur={(exerciseId) => {
-              setFocusedRepRangeId((prev) => (prev === exerciseId ? null : prev));
-              markRepRangeTouched(exerciseId);
-            }}
+            onRepRangeFocus={handleRepRangeFocus}
+            onRepRangeBlur={handleRepRangeBlur}
           />
         ) : isMobile ? (
           <PlanWeekView plan={plan} planId={plan.id} />

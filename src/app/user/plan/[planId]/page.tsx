@@ -17,13 +17,11 @@ const PlanPage = async ({params}: { params: Promise<{ planId: string }> }) => {
   if (!userData) {
     return notFound()
   }
-  const {allExercises, categories} = await getExercisesAndCategories()
+  const {allExercises} = await getExercisesAndCategories()
 
   return (
-    <WorkoutEditorProvider userData={userData} allExercises={allExercises}>
+      <WorkoutEditorProvider userData={userData} allExercises={allExercises}>
       <PlanTable
-        lockedInEditMode={false}
-        categories={categories}
         planId={planId}
         backHref={userDetails.id === loggedInUserId ? '/user/plan' : `/user/coach/clients/${userDetails.id}/plans`}
       />

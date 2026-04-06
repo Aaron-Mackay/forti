@@ -1,541 +1,175 @@
 'use client'
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import {
   Alert,
-  Autocomplete,
   Box,
   Button,
   CircularProgress,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Divider,
-  IconButton,
   LinearProgress,
   List,
   ListItem,
   ListItemText,
-  Paper,
   Snackbar,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
   Tooltip,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
-import CloseIcon from '@mui/icons-material/Close'
-import AddIcon from '@mui/icons-material/Add'
-import ContentCopyIcon from '@mui/icons-material/ContentCopy'
-import DragHandleIcon from '@mui/icons-material/DragHandle'
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import GridOnIcon from '@mui/icons-material/GridOn'
 import ViewListIcon from '@mui/icons-material/ViewList'
 import OpenWithIcon from '@mui/icons-material/OpenWith'
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core'
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import { useNewPlan } from './useNewPlan'
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext'
-import { WorkoutPrisma, WorkoutExercisePrisma } from '@/types/dataTypes'
 import { savePlan } from '@lib/clientApi'
 import { useRouter } from 'next/navigation'
 import { Exercise } from '@prisma/client'
 import type { EnrichedExercise } from '@/app/api/exercises/enrich/route'
-import { ActionDispatch } from 'react'
-import { WorkoutEditorAction } from '@lib/useWorkoutEditor'
-import { AddExerciseForm } from '@/app/exercises/AddExerciseForm'
-import { createFilterOptions } from '@mui/material/Autocomplete'
-import type { FilterOptionsState } from '@mui/material'
 import PlanSheetView from '../PlanSheetView'
-import { isValidPlanRepRangeInput } from '@lib/repRange'
+import PlanWeekView from '../PlanWeekView'
+import PlanMultiWeekTable from '../PlanMultiWeekTable'
+import { usePlanViewControls } from '../usePlanViewControls'
+import { usePlanRepRangeValidation } from '../usePlanRepRangeValidation'
+import { PlanPrisma, SetPrisma, WeekPrisma, WorkoutPrisma, WorkoutExercisePrisma } from '@/types/dataTypes'
 
-// ── Autocomplete helpers ───────────────────────────────────────────────────────
-
-const CREATE_PREFIX = '__create__:'
-const _baseFilter = createFilterOptions<string>()
-const exerciseFilterOptions = (options: string[], params: FilterOptionsState<string>) => {
-  const filtered = _baseFilter(options, params)
-  const { inputValue } = params
-  if (inputValue.trim().length > 0 && !options.some(o => o.toLowerCase() === inputValue.toLowerCase())) {
-    filtered.push(`${CREATE_PREFIX}${inputValue}`)
+function cloneSetWithIds(
+  set: SetPrisma,
+  workoutExerciseId: number,
+  nextId: () => number,
+  parentIdMap: Map<number, number>,
+): SetPrisma {
+  const clonedId = nextId()
+  parentIdMap.set(set.id, clonedId)
+  return {
+    ...set,
+    id: clonedId,
+    workoutExerciseId,
+    parentSetId: null,
   }
-  return filtered
 }
 
-// ── Sortable exercise row ──────────────────────────────────────────────────────
+function cloneExerciseForWeek(
+  exercise: WorkoutExercisePrisma,
+  workoutId: number,
+  order: number,
+  nextId: () => number,
+): WorkoutExercisePrisma {
+  const workoutExerciseId = nextId()
+  const parentIdMap = new Map<number, number>()
+  const clonedSets = exercise.sets.map((set) => cloneSetWithIds(set, workoutExerciseId, nextId, parentIdMap))
 
-const SortableExerciseRow = ({
-  ex,
-  exerciseCount,
-  allExercises,
-  addExercise,
-  dispatch,
-  planId,
-  weekId,
-  repRangeError,
-  onRepRangeBlur,
-}: {
-  ex: WorkoutExercisePrisma
-  exerciseCount: number
-  allExercises: Exercise[]
-  addExercise: (exercise: Exercise) => void
-  dispatch: ActionDispatch<[WorkoutEditorAction]>
-  planId: number
-  weekId: number
-  repRangeError?: string
-  onRepRangeBlur: (exerciseId: number) => void
-}) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: ex.id,
-  })
-  const [createOpen, setCreateOpen] = useState(false)
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+  return {
+    ...exercise,
+    id: workoutExerciseId,
+    workoutId,
+    order,
+    sets: clonedSets.map((set) => ({
+      ...set,
+      parentSetId: set.parentSetId != null ? (parentIdMap.get(set.parentSetId) ?? null) : null,
+    })),
   }
-
-  const regularSets = ex.sets.filter(s => !s.isDropSet);
-  const firstRegular = regularSets[0];
-  const dropsPerSet = firstRegular
-    ? ex.sets.filter(s => s.isDropSet && s.parentSetId === firstRegular.id).length
-    : 0;
-
-  const inputValue = ex.exercise.name
-
-  return (
-    <Box ref={setNodeRef} style={style} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <IconButton size="small" sx={{ cursor: 'grab', touchAction: 'none', color: 'text.disabled' }} {...attributes} {...listeners}>
-          <DragHandleIcon fontSize="small" />
-        </IconButton>
-        <Box sx={{ flex: 1 }}>
-          <Autocomplete
-            freeSolo
-            size="small"
-            options={allExercises.map((e) => e.name)}
-            inputValue={inputValue}
-            filterOptions={exerciseFilterOptions}
-            getOptionLabel={(option) =>
-              option.startsWith(CREATE_PREFIX) ? option.slice(CREATE_PREFIX.length) : option
-            }
-            renderOption={({ key, ...optionProps }, option) =>
-              option.startsWith(CREATE_PREFIX) ? (
-                <li key={key} {...optionProps}>
-                  <em>+ Create &quot;{option.slice(CREATE_PREFIX.length)}&quot;</em>
-                </li>
-              ) : (
-                <li key={key} {...optionProps}>{option}</li>
-              )
-            }
-            onChange={(_, newValue) => {
-              if (typeof newValue === 'string' && newValue.startsWith(CREATE_PREFIX)) {
-                setCreateOpen(true)
-              }
-            }}
-            onInputChange={(_, newValue) => {
-              if (newValue.startsWith(CREATE_PREFIX)) return
-              dispatch({
-                type: 'UPDATE_EXERCISE',
-                planId,
-                weekId,
-                workoutId: ex.workoutId,
-                workoutExerciseId: ex.id,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                category: (ex.exercise.category ?? 'resistance') as any,
-                exerciseName: newValue,
-                exercises: allExercises,
-              })
-            }}
-            renderInput={(params) => (
-              <TextField {...params} label="Exercise" autoComplete="off" />
-            )}
-          />
-        </Box>
-        <Chip
-          label="BFR"
-          size="small"
-          color={ex.isBfr ? 'warning' : 'default'}
-          variant={ex.isBfr ? 'filled' : 'outlined'}
-          onClick={() =>
-            dispatch({
-              type: 'TOGGLE_BFR',
-              planId,
-              weekId,
-              workoutId: ex.workoutId,
-              workoutExerciseId: ex.id,
-              enabled: !ex.isBfr,
-            })
-          }
-          sx={{ flexShrink: 0 }}
-        />
-        {exerciseCount > 1 && (
-          <IconButton
-            size="small"
-            onClick={() =>
-              dispatch({
-                type: 'REMOVE_EXERCISE',
-                planId,
-                weekId,
-                workoutId: ex.workoutId,
-                exerciseId: ex.id,
-              })
-            }
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        )}
-      </Box>
-      <AddExerciseForm
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        initialName={inputValue}
-        onExerciseAdded={(newExercise) => {
-          addExercise(newExercise)
-          dispatch({
-            type: 'UPDATE_EXERCISE',
-            planId,
-            weekId,
-            workoutId: ex.workoutId,
-            workoutExerciseId: ex.id,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            category: (ex.exercise.category ?? 'resistance') as any,
-            exerciseName: newExercise.name,
-            exercises: [...allExercises, newExercise],
-          })
-          setCreateOpen(false)
-        }}
-      />
-      <Box sx={{ display: 'flex', gap: 1, pl: '40px' }}>
-        <TextField
-          size="small"
-          sx={{ flex: 1 }}
-          label="Sets"
-          value={regularSets.length}
-          autoComplete="off"
-          inputMode="numeric"
-          onChange={(e) =>
-            dispatch({
-              type: 'UPDATE_SET_COUNT',
-              planId,
-              weekId,
-              workoutId: ex.workoutId,
-              workoutExerciseId: ex.id,
-              setCount: parseInt(e.target.value) || 1,
-            })
-          }
-        />
-        <TextField
-          size="small"
-          sx={{ flex: 1 }}
-          label="Drops"
-          value={dropsPerSet}
-          autoComplete="off"
-          inputMode="numeric"
-          slotProps={{ inputLabel: { shrink: true } }}
-          onChange={(e) =>
-            dispatch({
-              type: 'SET_DROPS_PER_SET',
-              planId,
-              weekId,
-              workoutId: ex.workoutId,
-              exerciseId: ex.id,
-              dropCount: Math.max(0, parseInt(e.target.value) || 0),
-            })
-          }
-        />
-        <TextField
-          size="small"
-          sx={{ flex: 1 }}
-          label="Reps"
-          value={ex.repRange ?? ''}
-          autoComplete="off"
-          slotProps={{ inputLabel: { shrink: true } }}
-          error={!!repRangeError}
-          helperText={repRangeError ?? ' '}
-          onChange={(e) =>
-            dispatch({
-              type: 'UPDATE_REP_RANGE',
-              planId,
-              weekId,
-              workoutId: ex.workoutId,
-              workoutExerciseId: ex.id,
-              repRange: e.target.value,
-            })
-          }
-          onBlur={() => onRepRangeBlur(ex.id)}
-        />
-        <TextField
-          size="small"
-          sx={{ flex: 1 }}
-          label="Rest"
-          value={ex.restTime ?? ''}
-          autoComplete="off"
-          slotProps={{ inputLabel: { shrink: true } }}
-          onChange={(e) =>
-            dispatch({
-              type: 'UPDATE_REST_TIME',
-              planId,
-              weekId,
-              workoutId: ex.workoutId,
-              workoutExerciseId: ex.id,
-              restTime: e.target.value,
-            })
-          }
-        />
-      </Box>
-    </Box>
-  )
 }
 
-// ── Sortable workout card ──────────────────────────────────────────────────────
+function cloneWorkoutForWeek(
+  workout: WorkoutPrisma,
+  weekId: number,
+  order: number,
+  nextId: () => number,
+): WorkoutPrisma {
+  const workoutId = nextId()
+  return {
+    ...workout,
+    id: workoutId,
+    weekId,
+    order,
+    dateCompleted: null,
+    exercises: workout.exercises.map((exercise, index) => cloneExerciseForWeek(exercise, workoutId, index + 1, nextId)),
+  }
+}
 
-const SortableWorkoutCard = ({
-  workout,
-  showDelete,
-  allExercises,
-  addExercise,
-  dispatch,
-  planId,
-  weekId,
-  repRangeErrors,
-  onRepRangeBlur,
-}: {
-  workout: WorkoutPrisma
-  showDelete: boolean
-  allExercises: Exercise[]
-  addExercise: (exercise: Exercise) => void
-  dispatch: ActionDispatch<[WorkoutEditorAction]>
-  planId: number
-  weekId: number
-  repRangeErrors: Map<number, string>
-  onRepRangeBlur: (exerciseId: number) => void
-}) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: workout.id,
+function buildTemplateWeekCopies(plan: PlanPrisma, weekCount: number): PlanPrisma {
+  const templateWeek = [...plan.weeks].sort((a, b) => a.order - b.order)[0]
+  if (!templateWeek) return plan
+
+  let idSeed = -1_000_000
+  const nextId = () => idSeed--
+
+  const weeks: WeekPrisma[] = Array.from({ length: Math.max(1, weekCount) }, (_, index) => {
+    const weekId = nextId()
+    return {
+      ...templateWeek,
+      id: weekId,
+      planId: plan.id,
+      order: index + 1,
+      workouts: templateWeek.workouts.map((workout, workoutIndex) => cloneWorkoutForWeek(workout, weekId, workoutIndex + 1, nextId)),
+    }
   })
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+  return {
+    ...plan,
+    weeks,
   }
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
-  )
-
-  const handleExerciseDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-    const exercises = workout.exercises
-    const fromIndex = exercises.findIndex((ex) => ex.id === active.id)
-    const toIndex = exercises.findIndex((ex) => ex.id === over.id)
-    if (fromIndex === -1 || toIndex === -1) return
-    dispatch({
-      type: 'REORDER_EXERCISE',
-      planId,
-      weekId,
-      workoutId: workout.id,
-      fromIndex,
-      toIndex,
-    })
-  }
-
-  return (
-    <Paper
-      ref={setNodeRef}
-      style={style}
-      variant="outlined"
-      sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <IconButton size="small" sx={{ cursor: 'grab', touchAction: 'none' }} {...attributes} {...listeners}>
-          <DragIndicatorIcon fontSize="small" />
-        </IconButton>
-        <TextField
-          size="small"
-          sx={{ flex: 1 }}
-          label="Workout name"
-          value={workout.name}
-          autoComplete="off"
-          onChange={(e) =>
-            dispatch({
-              type: 'UPDATE_WORKOUT_NAME',
-              planId,
-              weekId,
-              workoutId: workout.id,
-              name: e.target.value,
-            })
-          }
-        />
-        <IconButton
-          size="small"
-          onClick={() =>
-            dispatch({
-              type: 'DUPLICATE_WORKOUT',
-              planId,
-              weekId,
-              workoutId: workout.id,
-            })
-          }
-        >
-          <ContentCopyIcon fontSize="small" />
-        </IconButton>
-        {showDelete && (
-          <IconButton
-            size="small"
-            onClick={() =>
-              dispatch({
-                type: 'REMOVE_WORKOUT',
-                planId,
-                weekId,
-                workoutId: workout.id,
-              })
-            }
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        )}
-      </Box>
-
-      <Divider />
-
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleExerciseDragEnd}>
-        <SortableContext items={workout.exercises.map((ex) => ex.id)} strategy={verticalListSortingStrategy}>
-          {workout.exercises.map((ex, i) => (
-            <React.Fragment key={ex.id}>
-              {i > 0 && <Divider />}
-              <SortableExerciseRow
-                ex={ex}
-                exerciseCount={workout.exercises.length}
-                allExercises={allExercises}
-                addExercise={addExercise}
-                dispatch={dispatch}
-                planId={planId}
-                weekId={weekId}
-                repRangeError={repRangeErrors.get(ex.id)}
-                onRepRangeBlur={onRepRangeBlur}
-              />
-            </React.Fragment>
-          ))}
-        </SortableContext>
-      </DndContext>
-
-      <Button
-        size="small"
-        startIcon={<AddIcon />}
-        onClick={() =>
-          dispatch({
-            type: 'ADD_EXERCISE_WITH_SET',
-            planId,
-            weekId,
-            workoutId: workout.id,
-          })
-        }
-      >
-        Add exercise
-      </Button>
-    </Paper>
-  )
 }
-
-// ── Main screen ───────────────────────────────────────────────────────────────
 
 type PlanEditorScreenProps = {
   weekCount: string
   setWeekCount: (v: string) => void
   clientId?: string
+  initialViewMode?: 'classic' | 'sheet'
+  source?: 'scratch' | 'template' | 'ai' | 'import'
 }
 
-export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEditorScreenProps) => {
+export const PlanEditorScreen = ({
+  weekCount,
+  setWeekCount,
+  clientId,
+  initialViewMode = 'classic',
+  source = 'scratch',
+}: PlanEditorScreenProps) => {
   const { statePlan, dispatch } = useNewPlan()
-  const { allExercises, addExercise } = useWorkoutEditorContext()
+  const { allExercises } = useWorkoutEditorContext()
   const router = useRouter()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [enrichPhase, setEnrichPhase] = useState<'enriching' | 'review' | null>(null)
   const [enrichedExercises, setEnrichedExercises] = useState<EnrichedExercise[]>([])
-  const [viewMode, setViewMode] = useState<'classic' | 'sheet'>('classic')
-  const [selectedWeekId, setSelectedWeekId] = useState<number | null>(null)
-  const [arrangeMode, setArrangeMode] = useState(false)
-  const [repRangeTouchedIds, setRepRangeTouchedIds] = useState<Set<number>>(new Set())
-  const [saveAttempted, setSaveAttempted] = useState(false)
-  const [zoom, setZoom] = useState(() => {
-    if (typeof window === 'undefined') return 1
-    const v = parseFloat(localStorage.getItem('sheetZoom') ?? '')
-    return isNaN(v) ? 1 : Math.max(0.25, Math.min(1, v))
-  })
-
-  const handleZoomChange = useCallback((newZoom: number) => {
-    const rounded = Math.round(newZoom * 100) / 100
-    setZoom(rounded)
-    localStorage.setItem('sheetZoom', String(rounded))
-  }, [])
+  const {
+    arrangeMode,
+    handleZoomChange,
+    setViewMode,
+    toggleArrangeMode,
+    viewMode,
+    zoom,
+  } = usePlanViewControls({ defaultViewMode: initialViewMode })
+  const {
+    repRangeErrors,
+    setSaveAttempted,
+    visibleRepRangeErrors,
+  } = usePlanRepRangeValidation(statePlan)
 
   const sortedWeeks = [...statePlan.weeks].sort((a, b) => a.order - b.order)
-  const selectedWeek = sortedWeeks.find((week) => week.id === selectedWeekId) ?? sortedWeeks[0]
-  const firstWeekId = sortedWeeks[0]?.id ?? null
-  const workouts = selectedWeek?.workouts ?? []
-  const hasMultipleWeeks = sortedWeeks.length > 1
-
-  useEffect(() => {
-    if (!selectedWeekId || !statePlan.weeks.some((week) => week.id === selectedWeekId)) {
-      setSelectedWeekId(firstWeekId)
-    }
-  }, [firstWeekId, selectedWeekId, statePlan.weeks])
-
-  const allExercisesNamed = statePlan.weeks.every((week) =>
-    week.workouts.every(wo => wo.exercises.every(ex => ex.exercise.name.trim().length > 0))
-  )
-  const repRangeErrors = useMemo(() => {
-    const errors = new Map<number, string>()
-    for (const week of statePlan.weeks) {
-      for (const wo of week.workouts) {
-        for (const ex of wo.exercises) {
-          if (!isValidPlanRepRangeInput(ex.repRange)) {
-            errors.set(ex.id, 'Use 10, 5-10, 5+, AMRAP, or leave blank.')
-          }
-        }
+  const usesSingleWeekTemplate = source !== 'import'
+  const showsDurationInput = source !== 'import'
+  const displayPlan = usesSingleWeekTemplate
+    ? {
+        ...statePlan,
+        weeks: sortedWeeks.length > 0 ? [{ ...sortedWeeks[0], order: 1 }] : statePlan.weeks,
       }
-    }
-    return errors
-  }, [statePlan.weeks])
-  const visibleRepRangeErrors = useMemo(() => {
-    if (saveAttempted) return repRangeErrors
-    const visible = new Map<number, string>()
-    for (const [id, message] of repRangeErrors) {
-      if (repRangeTouchedIds.has(id)) visible.set(id, message)
-    }
-    return visible
-  }, [repRangeErrors, repRangeTouchedIds, saveAttempted])
-  const canSave = !!statePlan.name.trim() && allExercisesNamed && (!saveAttempted || repRangeErrors.size === 0)
-
-  const markRepRangeTouched = (exerciseId: number) => {
-    setRepRangeTouchedIds((prev) => {
-      if (prev.has(exerciseId)) return prev
-      const next = new Set(prev)
-      next.add(exerciseId)
-      return next
-    })
-  }
+    : statePlan
+  const allExercisesNamed = statePlan.weeks.every((week) =>
+    week.workouts.every((workout) => workout.exercises.every((exercise) => exercise.exercise.name.trim().length > 0)),
+  )
+  const canSave = !!statePlan.name.trim() && allExercisesNamed && repRangeErrors.size === 0
 
   const buildSaveErrorMessage = (error: unknown) => {
     if (typeof error === 'string' && error.trim().length > 0) {
@@ -553,10 +187,7 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
     try {
       const response = await savePlan(planToSave)
       if (response.success) {
-        router.push(clientId
-          ? `/user/coach/clients/${clientId}/plans`
-          : `/user/plan/${response.planId}`
-        )
+        router.push(clientId ? `/user/coach/clients/${clientId}/plans` : `/user/plan/${response.planId}`)
       } else {
         setSaveError(buildSaveErrorMessage(response.error ?? 'The server returned an unknown error'))
       }
@@ -573,28 +204,29 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
       setSaveError('Please fix the invalid rep range values before saving.')
       return
     }
-    // Detect exercises not yet in the database — negative placeholder ID AND not already in the global list
-    const existingNames = new Set(allExercises.map((e) => e.name.toLowerCase()))
+
+    const existingNames = new Set(allExercises.map((exercise) => exercise.name.toLowerCase()))
     const seen = new Set<string>()
     const newExercises: { name: string }[] = []
+
     for (const week of statePlan.weeks) {
-      for (const wo of week.workouts) {
-        for (const ex of wo.exercises) {
-          const nameLower = ex.exercise.name.toLowerCase()
-          if (
-            (!ex.exercise.id || ex.exercise.id <= 0) &&
-            !existingNames.has(nameLower) &&
-            !seen.has(nameLower)
-          ) {
+      for (const workout of week.workouts) {
+        for (const exercise of workout.exercises) {
+          const nameLower = exercise.exercise.name.toLowerCase()
+          if ((!exercise.exercise.id || exercise.exercise.id <= 0) && !existingNames.has(nameLower) && !seen.has(nameLower)) {
             seen.add(nameLower)
-            newExercises.push({ name: ex.exercise.name })
+            newExercises.push({ name: exercise.exercise.name })
           }
         }
       }
     }
 
+    const planToPersist = usesSingleWeekTemplate
+      ? buildTemplateWeekCopies(statePlan, parseInt(weekCount, 10) || 1)
+      : statePlan
+
     if (newExercises.length === 0) {
-      return doSave(statePlan)
+      return doSave(planToPersist)
     }
 
     setEnrichPhase('enriching')
@@ -605,36 +237,33 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
         body: JSON.stringify({ exercises: newExercises }),
       })
       if (!res.ok) {
-        // Non-blocking: fall back to saving without enrichment
         setEnrichPhase(null)
-        return doSave(statePlan)
+        return doSave(planToPersist)
       }
       const data = await res.json()
       setEnrichedExercises(data.exercises ?? [])
       setEnrichPhase('review')
     } catch {
-      // Non-blocking: fall back to saving without enrichment
       setEnrichPhase(null)
-      doSave(statePlan)
+      doSave(planToPersist)
     }
   }
 
   const handleConfirmEnrich = () => {
-    // Merge enriched data into plan exercises before saving
-    const enrichMap = new Map(enrichedExercises.map((e) => [e.name, e]))
+    const enrichMap = new Map(enrichedExercises.map((exercise) => [exercise.name, exercise]))
     const enrichedPlan = {
       ...statePlan,
       weeks: statePlan.weeks.map((week) => ({
         ...week,
-        workouts: week.workouts.map((wo) => ({
-          ...wo,
-          exercises: wo.exercises.map((ex) => {
-            const enrichment = enrichMap.get(ex.exercise.name)
-            if (!enrichment) return ex
+        workouts: week.workouts.map((workout) => ({
+          ...workout,
+          exercises: workout.exercises.map((exercise) => {
+            const enrichment = enrichMap.get(exercise.exercise.name)
+            if (!enrichment) return exercise
             return {
-              ...ex,
+              ...exercise,
               exercise: {
-                ...ex.exercise,
+                ...exercise.exercise,
                 category: enrichment.category as Exercise['category'],
                 primaryMuscles: enrichment.primaryMuscles,
                 secondaryMuscles: enrichment.secondaryMuscles,
@@ -648,32 +277,8 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
     doSave(enrichedPlan)
   }
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
-  )
-
-  const handleWorkoutDragEnd = (event: DragEndEvent) => {
-    if (!selectedWeek) return
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-    const fromIndex = workouts.findIndex((wo) => wo.id === active.id)
-    const toIndex = workouts.findIndex((wo) => wo.id === over.id)
-    if (fromIndex === -1 || toIndex === -1) return
-    dispatch({
-      type: 'REORDER_WORKOUT',
-      planId: statePlan.id,
-      weekId: selectedWeek.id,
-      fromIndex,
-      toIndex,
-    })
-  }
-
-  if (!selectedWeek) return null
-
   return (
     <>
-      {/* Scrollable content with bottom padding for sticky button */}
       <Box sx={{ pb: '80px' }}>
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
@@ -681,68 +286,70 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
             label="Plan name"
             value={statePlan.name}
             autoComplete="off"
-            onChange={(e) =>
-              dispatch({
-                type: 'UPDATE_PLAN_NAME',
-                planId: statePlan.id,
-                name: e.target.value,
-              })
-            }
+            onChange={(event) => dispatch({ type: 'UPDATE_PLAN_NAME', planId: statePlan.id, name: event.target.value })}
           />
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TextField
-              label="Duration"
-              value={weekCount}
-              inputMode="numeric"
-              sx={{ width: '6em' }}
-              autoComplete="off"
-              onChange={(e) => setWeekCount(e.target.value.replace(/\D/g, ''))}
-            />
-            <Typography variant="body2" color="text.secondary">
-              weeks
-            </Typography>
-
-            <Box sx={{ flex: 1 }} />
-
-            {/* Arrange toggle — sheet mode, desktop only */}
-            {viewMode === 'sheet' && (
-              <Tooltip title={arrangeMode ? 'Exit arrange mode' : 'Arrange mode'}>
-                <ToggleButton
-                  value="arrange"
-                  selected={arrangeMode}
-                  onChange={() => setArrangeMode(v => !v)}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            {showsDurationInput ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TextField
+                  label="Duration"
+                  value={weekCount}
+                  inputMode="numeric"
                   size="small"
-                  sx={{ px: 1, py: 0.5, border: '1px solid', borderColor: 'divider', display: { xs: 'none', sm: 'flex' } }}
-                  aria-label={arrangeMode ? 'Exit arrange mode' : 'Arrange mode'}
-                >
-                  <OpenWithIcon fontSize="small" />
-                </ToggleButton>
-              </Tooltip>
+                  sx={{ width: '4.5em' }}
+                  autoComplete="off"
+                  onChange={(event) => setWeekCount(event.target.value.replace(/\D/g, ''))}
+                />
+                <Typography variant="body2" color="text.secondary">
+                  weeks
+                </Typography>
+              </Box>
+            ) : (
+              <Box />
             )}
 
-            {/* View toggle */}
-            <ToggleButtonGroup
-              value={viewMode}
-              exclusive
-              onChange={(_, next) => { if (next) { setViewMode(next); if (next === 'classic') setArrangeMode(false) } }}
-              size="small"
-              aria-label="plan view mode"
-            >
-              <Tooltip title="Classic view">
-                <ToggleButton value="classic" aria-label="classic view" sx={{ px: 1, py: 0.5 }}>
-                  <ViewListIcon fontSize="small" />
-                  <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' }, ml: 0.75, fontSize: '0.7rem' }}>Classic</Box>
-                </ToggleButton>
-              </Tooltip>
-              <Tooltip title="Sheet view">
-                <ToggleButton value="sheet" aria-label="sheet view" sx={{ px: 1, py: 0.5 }}>
-                  <GridOnIcon fontSize="small" />
-                  <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' }, ml: 0.75, fontSize: '0.7rem' }}>Sheet</Box>
-                </ToggleButton>
-              </Tooltip>
-            </ToggleButtonGroup>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {viewMode === 'sheet' && (
+                <Tooltip title={arrangeMode ? 'Exit arrange mode' : 'Arrange mode'}>
+                  <ToggleButton
+                    value="arrange"
+                    selected={arrangeMode}
+                    onChange={toggleArrangeMode}
+                    size="small"
+                    sx={{ px: 1, py: 0.5, border: '1px solid', borderColor: 'divider', display: { xs: 'none', sm: 'flex' } }}
+                    aria-label={arrangeMode ? 'Exit arrange mode' : 'Arrange mode'}
+                  >
+                    <OpenWithIcon fontSize="small" />
+                  </ToggleButton>
+                </Tooltip>
+              )}
+
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={(_, next) => {
+                  if (next) setViewMode(next)
+                }}
+                size="small"
+                aria-label="plan view mode"
+              >
+                <Tooltip title="Classic view">
+                  <ToggleButton value="classic" aria-label="classic view" sx={{ px: 1, py: 0.5 }}>
+                    <ViewListIcon fontSize="small" />
+                    <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' }, ml: 0.75, fontSize: '0.7rem' }}>Classic</Box>
+                  </ToggleButton>
+                </Tooltip>
+                <Tooltip title="Sheet view">
+                  <ToggleButton value="sheet" aria-label="sheet view" sx={{ px: 1, py: 0.5 }}>
+                    <GridOnIcon fontSize="small" />
+                    <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' }, ml: 0.75, fontSize: '0.7rem' }}>Sheet</Box>
+                  </ToggleButton>
+                </Tooltip>
+              </ToggleButtonGroup>
+            </Box>
           </Box>
+
           {visibleRepRangeErrors.size > 0 && (
             <Alert severity="warning">
               {visibleRepRangeErrors.size === 1
@@ -755,76 +362,31 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
         {viewMode === 'sheet' ? (
           <Box sx={{ px: 2, pt: 1, overflow: 'auto' }}>
             <PlanSheetView
-              plan={statePlan}
+              plan={displayPlan}
               planId={statePlan.id}
               zoom={zoom}
               onZoomChange={handleZoomChange}
               arrangeMode={arrangeMode}
               creationMode
-              showWeekHeaders={hasMultipleWeeks}
+              showWeekHeaders={!usesSingleWeekTemplate && sortedWeeks.length > 1}
             />
           </Box>
         ) : (
-          <>
-            <Divider />
-
-            <Typography variant="overline" sx={{ px: 2, pt: 1, display: 'block', color: 'text.secondary' }}>
-              {hasMultipleWeeks ? `Week ${selectedWeek?.order ?? 1}` : 'Week template'}
-            </Typography>
-
-            {hasMultipleWeeks && (
-              <Box sx={{ px: 2, pt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                {sortedWeeks.map((week) => (
-                  <Chip
-                    key={week.id}
-                    size="small"
-                    label={`Week ${week.order}`}
-                    color={selectedWeek?.id === week.id ? 'primary' : 'default'}
-                    variant={selectedWeek?.id === week.id ? 'filled' : 'outlined'}
-                    onClick={() => setSelectedWeekId(week.id)}
-                  />
-                ))}
-              </Box>
+          <Box sx={{ px: 2, pt: 1 }}>
+            {isMobile ? (
+              <PlanWeekView
+                plan={displayPlan}
+                planId={statePlan.id}
+                hideWeekNavigationWhenSingleWeek={usesSingleWeekTemplate}
+                showProgress={false}
+              />
+            ) : (
+              <PlanMultiWeekTable plan={displayPlan} planId={statePlan.id} creationMode={usesSingleWeekTemplate} />
             )}
-
-            <Box sx={{ p: 2, pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleWorkoutDragEnd}>
-                <SortableContext items={workouts.map((wo) => wo.id)} strategy={verticalListSortingStrategy}>
-                  {workouts.map((wo) => (
-                    <SortableWorkoutCard
-                      key={wo.id}
-                      workout={wo}
-                      showDelete={workouts.length > 1}
-                      allExercises={allExercises}
-                      addExercise={addExercise}
-                      dispatch={dispatch}
-                      planId={statePlan.id}
-                      weekId={selectedWeek.id}
-                      repRangeErrors={visibleRepRangeErrors}
-                      onRepRangeBlur={markRepRangeTouched}
-                    />
-                  ))}
-                </SortableContext>
-              </DndContext>
-
-              <Button
-                startIcon={<AddIcon />}
-                onClick={() =>
-                  dispatch({
-                    type: 'ADD_WORKOUT_WITH_EXERCISE_WITH_SET',
-                    planId: statePlan.id,
-                    weekId: selectedWeek.id,
-                  })
-                }
-              >
-                Add workout day
-              </Button>
-            </Box>
-          </>
+          </Box>
         )}
       </Box>
 
-      {/* Sticky save button */}
       <Box
         sx={{
           position: 'fixed',
@@ -838,13 +400,7 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
           zIndex: 1,
         }}
       >
-        <Button
-          variant="contained"
-          fullWidth
-          size="large"
-          onClick={handleSave}
-          disabled={saving || !canSave}
-        >
+        <Button variant="contained" fullWidth size="large" onClick={handleSave} disabled={saving || !canSave}>
           {saving ? 'Saving…' : 'Save Plan'}
         </Button>
       </Box>
@@ -855,7 +411,6 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
         </Alert>
       </Snackbar>
 
-      {/* Exercise enrichment modal — container offset keeps it below the AppBar */}
       <Dialog
         open={enrichPhase !== null}
         maxWidth="xs"
@@ -883,21 +438,17 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
           )}
           {enrichPhase === 'review' && (
             <List disablePadding>
-              {enrichedExercises.map((ex, i) => (
-                <React.Fragment key={ex.name}>
-                  {i > 0 && <Divider component="li" />}
+              {enrichedExercises.map((exercise, index) => (
+                <React.Fragment key={exercise.name}>
+                  {index > 0 && <Divider component="li" />}
                   <ListItem disablePadding sx={{ py: 1 }}>
                     <ListItemText
-                      primary={ex.name}
+                      primary={exercise.name}
                       secondary={[
-                        `${ex.category.charAt(0).toUpperCase() + ex.category.slice(1)}`,
-                        ex.primaryMuscles.length > 0 ? ex.primaryMuscles.join(', ') : null,
-                        ex.secondaryMuscles.length > 0
-                          ? `+ ${ex.secondaryMuscles.join(', ')}`
-                          : null,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
+                        `${exercise.category.charAt(0).toUpperCase() + exercise.category.slice(1)}`,
+                        exercise.primaryMuscles.length > 0 ? exercise.primaryMuscles.join(', ') : null,
+                        exercise.secondaryMuscles.length > 0 ? `+ ${exercise.secondaryMuscles.join(', ')}` : null,
+                      ].filter(Boolean).join(' · ')}
                     />
                   </ListItem>
                 </React.Fragment>
@@ -905,9 +456,7 @@ export const PlanEditorScreen = ({ weekCount, setWeekCount, clientId }: PlanEdit
             </List>
           )}
         </DialogContent>
-        {enrichPhase === 'enriching' && (
-          <LinearProgress sx={{ mx: 2, mb: 2, borderRadius: 1 }} />
-        )}
+        {enrichPhase === 'enriching' && <LinearProgress sx={{ mx: 2, mb: 2, borderRadius: 1 }} />}
         {enrichPhase === 'review' && (
           <DialogActions>
             <Button onClick={handleConfirmEnrich} variant="contained" fullWidth disabled={saving}>

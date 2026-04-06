@@ -85,6 +85,35 @@ describe('reducer', () => {
     expect(original.workouts[0].exercises[0].sets[0].weight).toBe(100);
   });
 
+  it('DUPLICATE_WEEK clears workout completion on the duplicated week', () => {
+    const completedWorkout = new WorkoutBuilder(1002)
+      .addExercise(
+        new ExerciseBuilder(1003)
+          .addSet(
+            new SetBuilder(1004).build()
+          )
+          .build()
+      )
+      .build();
+    completedWorkout.dateCompleted = new Date('2025-01-01T10:00:00.000Z');
+
+    const week = new WeekBuilder(1001)
+      .addWorkout(completedWorkout)
+      .build();
+    const plan = new PlanBuilder(1)
+      .addWeek(week)
+      .build();
+    const state = new UserBuilder(1)
+      .addPlan(plan)
+      .build();
+
+    const action: WorkoutEditorAction = {type: 'DUPLICATE_WEEK', planId: 1, weekId: 1001};
+    const newState = reducer(state, action, mockUuid);
+    const duplicate = newState.plans[0].weeks[1];
+
+    expect(duplicate.workouts[0].dateCompleted).toBeNull();
+  });
+
   it('DUPLICATE_WORKOUT duplicates a workout in a week with new IDs', () => {
     const workout = new WorkoutBuilder(1002)
       .addExercise(
@@ -249,6 +278,42 @@ describe('reducer', () => {
     const newState = reducer(state, action, mockUuid);
     expect(newState.plans[0].weeks[0].workouts[0].exercises[0].sets.length).toBe(1);
     expect(newState.plans[0].weeks[0].workouts[0].exercises[0].sets[0].id).toBe(1);
+  });
+
+  it('ADD_EXERCISE_WITH_SET_FOR_EXERCISE does not seed resistance sets for cardio exercises', () => {
+    const workout = new WorkoutBuilder(2).build();
+    const week = new WeekBuilder(1)
+      .addWorkout(workout)
+      .build();
+    const plan = new PlanBuilder(1)
+      .addWeek(week)
+      .build();
+    const state = new UserBuilder(1)
+      .addPlan(plan)
+      .build();
+
+    const action: WorkoutEditorAction = {
+      type: 'ADD_EXERCISE_WITH_SET_FOR_EXERCISE',
+      planId: 1,
+      weekId: 1,
+      workoutId: 2,
+      exercise: {
+        id: 99,
+        name: 'Battle Ropes',
+        category: ExerciseCategory.cardio,
+        description: null,
+        equipment: [],
+        primaryMuscles: [],
+        secondaryMuscles: [],
+        createdByUserId: null,
+      },
+    };
+
+    const newState = reducer(state, action, mockUuid);
+    const addedExercise = newState.plans[0].weeks[0].workouts[0].exercises[0];
+
+    expect(addedExercise.exercise.category).toBe(ExerciseCategory.cardio);
+    expect(addedExercise.sets).toEqual([]);
   });
 
   it('REMOVE_SET removes the last set from an exercise', () => {

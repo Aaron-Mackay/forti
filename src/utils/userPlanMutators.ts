@@ -270,6 +270,7 @@ function duplicateWorkoutData(workout: WorkoutPrisma, createUuid: CreateUuid, ne
     ...workout,
     order: newOrder || workout.order,
     id: createUuid(),
+    dateCompleted: null,
     exercises: workout.exercises.map(ex => duplicateExerciseData(ex, createUuid)),
   };
 }
@@ -603,6 +604,7 @@ export function addExerciseWithSetForExercise(
 ): UserPrisma {
   return withWorkout(user, planId, weekId, workoutId, workout => {
     const newExerciseId = createUuid();
+    const isCardio = exercise.category === 'cardio';
     return {
       ...workout,
       exercises: [
@@ -611,11 +613,13 @@ export function addExerciseWithSetForExercise(
           ...makeEmptyWorkoutExercise(newExerciseId, workout.id, workout.exercises.length + 1),
           exerciseId: exercise.id,
           exercise,
-          sets: [
-            makeEmptySet(createUuid(), newExerciseId, 1),
-            makeEmptySet(createUuid(), newExerciseId, 2),
-            makeEmptySet(createUuid(), newExerciseId, 3),
-          ],
+          sets: isCardio
+            ? []
+            : [
+                makeEmptySet(createUuid(), newExerciseId, 1),
+                makeEmptySet(createUuid(), newExerciseId, 2),
+                makeEmptySet(createUuid(), newExerciseId, 3),
+              ],
         },
       ],
     };
