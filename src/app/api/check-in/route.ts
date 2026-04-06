@@ -111,5 +111,11 @@ export async function POST(req: NextRequest) {
     ).catch(err => console.error('Failed to send coach notification:', err));
   }
 
-  return NextResponse.json({ checkIn }, { status: isEditingCompletedCheckIn ? 200 : 201 });
+  const mappedCheckIn = {
+    ...checkIn,
+    frontPhotoUrl: checkIn.frontPhotoUrl ? `/api/check-in/photos/${checkIn.id}/front` : null,
+    backPhotoUrl: checkIn.backPhotoUrl ? `/api/check-in/photos/${checkIn.id}/back` : null,
+    sidePhotoUrl: checkIn.sidePhotoUrl ? `/api/check-in/photos/${checkIn.id}/side` : null,
+  };
+  return NextResponse.json({ checkIn: mappedCheckIn }, { status: isEditingCompletedCheckIn ? 200 : 201 });
 }
