@@ -11,6 +11,7 @@ const AiSetSchema = z.object({
   reps: z.number().int().nullable().optional(),
   rpe: z.number().nullable().optional(),
   rir: z.number().int().nullable().optional(),
+  isDropSet: z.boolean().optional().default(false),
 });
 
 const AiExerciseSchema = z.object({
@@ -80,19 +81,19 @@ export type ParsedPlan = {
       notes: string | null | undefined;
       order: number;
       dateCompleted: null;
-      exercises: Array<{
-        exercise: { name: string; category: string };
-        order: number;
-        repRange: string | null | undefined;
-        isBfr: boolean;
+        exercises: Array<{
+          exercise: { name: string; category: string };
+          order: number;
+          repRange: string | null | undefined;
+          isBfr: boolean;
         restTime: string | null | undefined;
         notes: string | null | undefined;
-        targetRpe: number | null | undefined;
-        targetRir: number | null | undefined;
-        sets: Array<{ order: number; weight: number | null | undefined; reps: number | null | undefined; rpe: number | null | undefined; rir: number | null | undefined }>;
+          targetRpe: number | null | undefined;
+          targetRir: number | null | undefined;
+          sets: Array<{ order: number; weight: number | null | undefined; reps: number | null | undefined; rpe: number | null | undefined; rir: number | null | undefined; isDropSet: boolean; parentSetId: number | null | undefined }>;
+        }>;
       }>;
     }>;
-  }>;
 };
 
 // ── Error type ────────────────────────────────────────────────────────────────
@@ -111,6 +112,9 @@ const REP_RANGE_DESCRIPTION =
   'Rep range string. Valid formats only: exact "10", range "5-10", plus "5+", or "AMRAP". ' +
   'Do not include words like "reps", do not use "x", and prefer a plain hyphen-minus "-" for ranges. ' +
   'If the source says "BFR", set isBfr to true instead of using repRange.';
+const DROP_SET_DESCRIPTION =
+  'Set true only for drop sets. Drop sets should come after the final normal set for the exercise. ' +
+  'Do not mark normal working sets as drop sets.';
 
 // ── Clarifying questions tool ─────────────────────────────────────────────────
 // Used in the first pass when input is ambiguous. Claude calls this instead of
@@ -210,6 +214,7 @@ export const AI_PLAN_TOOL = {
                               reps: { type: 'integer', description: 'Number of reps. Omit if unknown.' },
                               rpe: { type: 'number', description: 'RPE (Rate of Perceived Exertion) for this set, e.g. 8 or 8.5. Omit if not specified.' },
                               rir: { type: 'integer', description: 'RIR (Reps In Reserve) for this set, e.g. 2. Omit if not specified.' },
+                              isDropSet: { type: 'boolean', description: DROP_SET_DESCRIPTION },
                             },
                           },
                         },
@@ -268,13 +273,39 @@ export function parseAiPlanResponse(rawInput: unknown): ParsedPlan {
           notes: ex.notes ?? null,
           targetRpe: ex.targetRpe ?? null,
           targetRir: ex.targetRir ?? null,
-          sets: ex.sets.map((set, si) => ({
-            order: si + 1,
-            weight: set.weight ?? null,
-            reps: set.reps ?? null,
-            rpe: set.rpe ?? null,
-            rir: set.rir ?? null,
-          })),
+          sets: (() => {
+            let lastNormalSetOrder: number | null = null
+
+            return ex.sets.map((set, si) => {
+              const order = si + 1
+              const isDropSet = set.isDropSet ?? false
+
+              if (isDropSet && lastNormalSetOrder == null) {
+                throw new AiParseError(
+                  [{
+                    code: z.ZodIssueCode.custom,
+                    path: ['weeks', wi, 'workouts', woi, 'exercises', ei, 'sets', si, 'isDropSet'],
+                    message: 'Drop sets must come after at least one normal set.',
+                  }],
+                  'AI response failed validation: drop sets must follow a normal set',
+                )
+              }
+
+              if (!isDropSet) {
+                lastNormalSetOrder = order
+              }
+
+              return {
+                order,
+                weight: set.weight ?? null,
+                reps: set.reps ?? null,
+                rpe: set.rpe ?? null,
+                rir: set.rir ?? null,
+                isDropSet,
+                parentSetId: isDropSet ? lastNormalSetOrder : null,
+              }
+            })
+          })(),
         })),
       })),
     })),

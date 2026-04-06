@@ -192,6 +192,37 @@ describe('parseAiPlanResponse — optional fields', () => {
     expect(ex.isBfr).toBe(true);
     expect(ex.repRange).toBeNull();
   });
+
+  it('preserves trailing drop sets and links them to the final normal set', () => {
+    const input = {
+      name: 'Plan',
+      weeks: [
+        {
+          workouts: [
+            {
+              name: 'Day 1',
+              exercises: [
+                {
+                  name: 'Bench Press',
+                  sets: [
+                    { reps: 8, weight: 80 },
+                    { reps: 8, weight: 80 },
+                    { reps: 6, weight: 60, isDropSet: true },
+                    { reps: 6, weight: 55, isDropSet: true },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const sets = parseAiPlanResponse(input).weeks[0].workouts[0].exercises[0].sets;
+    expect(sets.map((set) => set.isDropSet)).toEqual([false, false, true, true]);
+    expect(sets[2].parentSetId).toBe(2);
+    expect(sets[3].parentSetId).toBe(2);
+  });
 });
 
 // ── Extra unknown fields → ignored cleanly ────────────────────────────────────
@@ -287,6 +318,26 @@ describe('parseAiPlanResponse — validation errors', () => {
         { workouts: [{ name: 'W1', exercises: [{ name: '', sets: [] }] }] },
       ],
     };
+    expect(() => parseAiPlanResponse(input)).toThrow(AiParseError);
+  });
+
+  it('throws AiParseError when a drop set appears before any normal set', () => {
+    const input = {
+      name: 'Plan',
+      weeks: [
+        {
+          workouts: [
+            {
+              name: 'W1',
+              exercises: [
+                { name: 'Bench Press', sets: [{ reps: 8, isDropSet: true }] },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
     expect(() => parseAiPlanResponse(input)).toThrow(AiParseError);
   });
 

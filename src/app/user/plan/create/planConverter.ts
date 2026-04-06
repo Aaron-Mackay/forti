@@ -44,6 +44,10 @@ export function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPris
               const sourceSets = isBfr
                 ? Array.from({ length: BFR_SET_COUNT }, (_, i) => ex.sets[i] ?? null)
                 : ex.sets
+              const sourceOrderToNewId = new Map<number, number>()
+              sourceSets.forEach((set) => {
+                if (set) sourceOrderToNewId.set(set.order, nextId())
+              })
               return {
                 id: exerciseId,
                 workoutId,
@@ -66,7 +70,7 @@ export function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPris
                   createdByUserId: null,
                 },
                 sets: sourceSets.map((set, index): SetPrisma => ({
-                  id: nextId(),
+                  id: set ? (sourceOrderToNewId.get(set.order) ?? nextId()) : nextId(),
                   workoutExerciseId: exerciseId,
                   order: index + 1,
                   weight: set?.weight ?? null,
@@ -74,8 +78,8 @@ export function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPris
                   e1rm: null,
                   rpe: set?.rpe ?? null,
                   rir: set?.rir ?? null,
-                  isDropSet: false,
-                  parentSetId: null,
+                  isDropSet: isBfr ? false : (set?.isDropSet ?? false),
+                  parentSetId: isBfr ? null : (set?.parentSetId != null ? (sourceOrderToNewId.get(set.parentSetId) ?? null) : null),
                 })),
                 cardioDuration: null,
                 cardioDistance: null,

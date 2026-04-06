@@ -51,7 +51,15 @@ function getTemplateDefaultRepsOrThrow(repRange: string): number {
 }
 
 function makeSets(count: number, reps = 8): ExerciseEntry['sets'] {
-  return Array.from({ length: count }, (_, i) => ({ order: i + 1, weight: null, reps, rpe: null, rir: null }))
+  return Array.from({ length: count }, (_, i) => ({
+    order: i + 1,
+    weight: null,
+    reps,
+    rpe: null,
+    rir: null,
+    isDropSet: false,
+    parentSetId: null,
+  }))
 }
 
 function ex(
