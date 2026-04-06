@@ -112,6 +112,33 @@ export default function CheckInHistoryCard({ checkIn }: Props) {
           </>
         )}
 
+        {/* Progress photos */}
+        {(checkIn.frontPhotoUrl || checkIn.backPhotoUrl || checkIn.sidePhotoUrl) && (
+          <>
+            <Divider sx={{ my: 1.5 }} />
+            <Typography variant="overline" color="text.secondary">Progress Photos</Typography>
+            <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+              {(['frontPhotoUrl', 'backPhotoUrl', 'sidePhotoUrl'] as const).map(field => {
+                const url = checkIn[field];
+                return url ? (
+                  <Box
+                    key={field}
+                    component="img"
+                    src={url}
+                    alt={field.replace('PhotoUrl', '')}
+                    sx={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}
+                  />
+                ) : (
+                  <Box
+                    key={field}
+                    sx={{ width: 72, height: 72, borderRadius: 1, border: '1px dashed', borderColor: 'divider', bgcolor: 'action.hover' }}
+                  />
+                );
+              })}
+            </Box>
+          </>
+        )}
+
         {/* Coach notes */}
         {checkIn.coachNotes && (
           <>
