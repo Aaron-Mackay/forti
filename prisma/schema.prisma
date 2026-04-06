@@ -331,6 +331,11 @@ model WeeklyCheckIn {
   coachNotes      String?
   coachReviewedAt DateTime?
 
+  // Progress photos (uploaded via /api/check-in/photos)
+  frontPhotoUrl String?
+  backPhotoUrl  String?
+  sidePhotoUrl  String?
+
   @@unique([userId, weekStartDate])
 }
 

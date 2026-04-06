@@ -119,7 +119,8 @@ All routes live under `src/app/api/` and follow Next.js App Router conventions:
 | `api/auth/[...nextauth]` | NextAuth handler (Google + Demo login) |
 | `api/calendar-data` | Calendar sync data |
 | `api/check-in` | GET/POST weekly check-in |
-| `api/check-in/current` | GET current week's check-in + day metrics |
+| `api/check-in/current` | GET current week's check-in + day metrics + previous week photo URLs |
+| `api/check-in/photos` | POST upload a progress photo (front/back/side) for current week's check-in |
 | `api/coach` | GET/PUT coach info |
 | `api/coach/activate` | POST to generate a coach invite code |
 | `api/coach/clients/[clientId]` | GET client data (coach access) |
