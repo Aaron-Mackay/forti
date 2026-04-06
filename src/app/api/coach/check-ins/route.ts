@@ -79,8 +79,15 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
+  const mappedCheckIns = checkIns.map(c => ({
+    ...c,
+    frontPhotoUrl: c.frontPhotoUrl ? `/api/check-in/photos/${c.id}/front` : null,
+    backPhotoUrl: c.backPhotoUrl ? `/api/check-in/photos/${c.id}/back` : null,
+    sidePhotoUrl: c.sidePhotoUrl ? `/api/check-in/photos/${c.id}/side` : null,
+  }));
+
   return NextResponse.json({
-    checkIns,
+    checkIns: mappedCheckIns,
     total,
     clients: coach?.clients ?? [],
   });

@@ -29,7 +29,14 @@ export async function GET(req: NextRequest) {
     prisma.weeklyCheckIn.count({ where }),
   ]);
 
-  return NextResponse.json({ checkIns, total });
+  const mappedCheckIns = checkIns.map(c => ({
+    ...c,
+    frontPhotoUrl: c.frontPhotoUrl ? `/api/check-in/photos/${c.id}/front` : null,
+    backPhotoUrl: c.backPhotoUrl ? `/api/check-in/photos/${c.id}/back` : null,
+    sidePhotoUrl: c.sidePhotoUrl ? `/api/check-in/photos/${c.id}/side` : null,
+  }));
+
+  return NextResponse.json({ checkIns: mappedCheckIns, total });
 }
 
 interface CheckInBody {

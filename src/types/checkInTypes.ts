@@ -6,10 +6,30 @@ export interface CheckInWithUser extends WeeklyCheckIn {
   user: { id: string; name: string };
 }
 
+export interface PreviousPhotos {
+  frontPhotoUrl: string | null;
+  backPhotoUrl: string | null;
+  sidePhotoUrl: string | null;
+}
+
+export interface WeekTargets {
+  stepsTarget: number | null;
+  sleepMinsTarget: number | null;
+  caloriesTarget: number | null;
+  proteinTarget: number | null;
+  carbsTarget: number | null;
+  fatTarget: number | null;
+}
+
 export interface CurrentCheckInResponse {
   checkIn: WeeklyCheckIn;
   currentWeek: DayMetric[];
   weekPrior: DayMetric[];
+  previousPhotos: PreviousPhotos | null;
+  weekTargets: WeekTargets | null;
+  completedWorkoutsCount: number;
+  plannedWorkoutsCount: number;
+  activePlanId: number | null;
 }
 
 export interface MetricSummary {

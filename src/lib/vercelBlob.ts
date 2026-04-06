@@ -14,7 +14,7 @@ const MIME_GROUPS: Record<Exclude<LibraryAssetType, 'LINK'>, readonly string[]> 
   VIDEO: ['video/mp4', 'video/quicktime', 'video/webm'],
 };
 
-const HOST_ALLOWLIST = ['blob.vercel-storage.com', 'public.blob.vercel-storage.com'];
+const HOST_ALLOWLIST = ['blob.vercel-storage.com', 'public.blob.vercel-storage.com', 'private.blob.vercel-storage.com'];
 
 const PUBLIC_TOKEN_NAMES = ['BLOB_PUBLIC_READ_WRITE_TOKEN', 'BLOB_READ_WRITE_TOKEN'] as const;
 const PRIVATE_TOKEN_NAMES = ['BLOB_PRIVATE_READ_WRITE_TOKEN', 'BLOB_READ_WRITE_TOKEN'] as const;
