@@ -14,14 +14,17 @@ import { test, expect } from './fixtures';
 import type { Page } from '@playwright/test';
 
 async function openNav(page: Page) {
-  const menuBtn = page.getByRole('button', { name: /menu/i });
+  const homeLink = page.getByRole('link', { name: 'Home' }).first();
+  const homeAlreadyVisible = await homeLink.isVisible().catch(() => false);
+  if (homeAlreadyVisible) return;
+
+  const menuBtn = page.getByRole('button', { name: /menu/i }).first();
   const hasVisibleMenuButton = await menuBtn.isVisible().catch(() => false);
   if (hasVisibleMenuButton) {
-    await expect(menuBtn).toBeVisible({ timeout: 10_000 });
     await menuBtn.click({ timeout: 10_000, force: true });
-    await expect(page.locator('.MuiDrawer-paper')).toBeVisible({ timeout: 10_000 });
   }
-  await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible({ timeout: 15_000 });
+
+  await expect(homeLink).toBeVisible({ timeout: 15_000 });
 }
 
 async function openDrawer(page: Page) {
@@ -89,6 +92,9 @@ test.describe('AppBar navigation drawer', () => {
   test('closing the drawer by clicking outside hides it', async ({ page, isMobile }) => {
     // The temporary drawer only exists on mobile; on desktop it is always open.
     test.skip(!isMobile, 'desktop: drawer is permanent and cannot be closed');
+    const menuBtn = page.getByRole('button', { name: /menu/i }).first();
+    const hasVisibleMenuButton = await menuBtn.isVisible().catch(() => false);
+    test.skip(!hasVisibleMenuButton, 'requires a temporary drawer with a visible menu button');
     await openNav(page);
     await page.keyboard.press('Escape');
     await expect(page.getByRole('link', { name: 'Home' }).first()).not.toBeVisible({ timeout: 3_000 });

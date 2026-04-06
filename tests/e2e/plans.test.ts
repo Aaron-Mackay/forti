@@ -215,7 +215,7 @@ test.describe('Template browser', () => {
 test.describe('AI plan creation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/user/plan/create');
-    await page.getByTestId('entry-ai').click();
+    await page.getByTestId('entry-ai').first().click();
   });
 
   test('Generate button is disabled until all chips are selected', async ({ page }) => {
