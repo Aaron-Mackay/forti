@@ -9,11 +9,10 @@ import React, {
 import {
   Box,
   Button,
+  Chip,
   CircularProgress,
   Dialog,
   IconButton,
-  MenuItem,
-  Select,
   Typography,
   useMediaQuery,
   useTheme,
@@ -21,6 +20,8 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import FlipCameraIosIcon from '@mui/icons-material/FlipCameraIos';
+
+import { getCoverDrawRect, getOrderedCameraDeviceIds } from './photoCaptureUtils';
 
 type Angle = 'front' | 'back' | 'side';
 type FacingMode = 'user' | 'environment';
@@ -69,6 +70,93 @@ function resizeToMax(blob: Blob, maxLong: number): Promise<Blob> {
   });
 }
 
+function drawCoverImage(
+  ctx: CanvasRenderingContext2D,
+  image: CanvasImageSource,
+  sourceWidth: number,
+  sourceHeight: number,
+  destWidth: number,
+  destHeight: number,
+  destX = 0,
+  destY = 0,
+) {
+  const rect = getCoverDrawRect(sourceWidth, sourceHeight, destWidth, destHeight);
+  if (!rect) return false;
+
+  ctx.drawImage(
+    image,
+    rect.sx,
+    rect.sy,
+    rect.sw,
+    rect.sh,
+    destX,
+    destY,
+    destWidth,
+    destHeight,
+  );
+
+  return true;
+}
+
+function MobileCloseButton({ onClose }: { onClose: () => void }) {
+  return (
+    <IconButton
+      onClick={onClose}
+      aria-label="Close camera"
+      sx={{
+        position: 'absolute',
+        top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+        left: 8,
+        zIndex: 2,
+        color: 'white',
+        bgcolor: 'rgba(0,0,0,0.5)',
+        '&:hover': { bgcolor: 'rgba(0,0,0,0.65)' },
+      }}
+    >
+      <CloseIcon />
+    </IconButton>
+  );
+}
+
+function OverlayChip({
+  label,
+  onClick,
+  disabled = false,
+  clickable = true,
+}: {
+  label: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  clickable?: boolean;
+}) {
+  return (
+    <Chip
+      label={label}
+      onClick={disabled || !clickable ? undefined : onClick}
+      clickable={clickable && !disabled}
+      disabled={disabled}
+      sx={{
+        bgcolor: 'rgba(0,0,0,0.55)',
+        color: 'white',
+        backdropFilter: 'blur(8px)',
+        border: '1px solid rgba(255,255,255,0.14)',
+        cursor: clickable && !disabled ? 'pointer' : 'default',
+        '& .MuiChip-label': {
+          px: 1.25,
+          fontWeight: 600,
+        },
+        '& .MuiTouchRipple-root': {
+          display: clickable && !disabled ? 'block' : 'none',
+        },
+        '&.Mui-disabled': {
+          opacity: 0.55,
+          color: 'rgba(255,255,255,0.8)',
+        },
+      }}
+    />
+  );
+}
+
 export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded }: Props) {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -83,10 +171,10 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
 
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const ghostImgRef = useRef<HTMLImageElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const rafRef = useRef<number | null>(null);
+  const activeDeviceIdRef = useRef<string | null>(null);
+  const startRequestIdRef = useRef(0);
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const capturedBlobRef = useRef<Blob | null>(null);
 
@@ -106,31 +194,66 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
 
   // ── Camera setup ──────────────────────────────────────────────────────────
 
-  const stopStream = useCallback(() => {
+  const stopStream = useCallback((invalidatePending = true) => {
+    if (invalidatePending) {
+      startRequestIdRef.current += 1;
+    }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
     }
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
+    activeDeviceIdRef.current = null;
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.srcObject = null;
     }
   }, []);
 
   const startCamera = useCallback(async (facing: FacingMode) => {
-    stopStream();
+    const requestId = startRequestIdRef.current + 1;
+    startRequestIdRef.current = requestId;
+    setCameraError(false);
+    stopStream(false);
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: facing },
-      });
+      const devices = await navigator.mediaDevices.enumerateDevices().catch(() => []);
+      const candidateDeviceIds = getOrderedCameraDeviceIds(devices, facing, activeDeviceIdRef.current);
+      const rawConstraints: Array<MediaStreamConstraints | null> = [
+        ...candidateDeviceIds.map(deviceId => ({ video: { deviceId: { exact: deviceId } } })),
+        { video: { facingMode: { exact: facing } } },
+        { video: { facingMode: { ideal: facing } } },
+        facing === 'user' ? { video: true } : null,
+      ];
+      const constraintsToTry = rawConstraints.filter((value): value is MediaStreamConstraints => value !== null);
+
+      let stream: MediaStream | null = null;
+      for (const constraints of constraintsToTry) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+          break;
+        } catch {
+          // Try the next fallback.
+        }
+      }
+
+      if (!stream) throw new Error('Unable to start camera');
+      if (requestId !== startRequestIdRef.current) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+
       streamRef.current = stream;
+      activeDeviceIdRef.current = stream.getVideoTracks()[0]?.getSettings().deviceId ?? null;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        void videoRef.current.play().catch(() => {
+          // Some mobile browsers transiently reject play() despite a valid stream.
+        });
       }
-      setCameraError(false);
     } catch {
-      setCameraError(true);
+      if (requestId === startRequestIdRef.current) {
+        setCameraError(true);
+      }
     }
   }, [stopStream]);
 
@@ -149,53 +272,6 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
     img.onload = () => { ghostImgRef.current = img; };
   }, [ghostUrl]);
 
-  // ── rAF draw loop ─────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (stage !== 'capture' || cameraError) return;
-
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    if (!canvas || !video) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    function draw() {
-      if (!canvas || !video || !ctx) return;
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-
-      const w = canvas.width;
-      const h = canvas.height;
-
-      // Mirror front camera (selfie-style)
-      if (facingMode === 'user') {
-        ctx.save();
-        ctx.translate(w, 0);
-        ctx.scale(-1, 1);
-      }
-
-      ctx.drawImage(video, 0, 0, w, h);
-
-      if (facingMode === 'user') ctx.restore();
-
-      // Ghost overlay
-      if (ghostImgRef.current) {
-        ctx.globalAlpha = GHOST_ALPHA;
-        ctx.drawImage(ghostImgRef.current, 0, 0, w, h);
-        ctx.globalAlpha = 1;
-      }
-
-      rafRef.current = requestAnimationFrame(draw);
-    }
-
-    rafRef.current = requestAnimationFrame(draw);
-    return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    };
-  }, [stage, cameraError, facingMode]);
-
   // ── Countdown ─────────────────────────────────────────────────────────────
 
   function clearCountdown() {
@@ -207,21 +283,46 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
   }
 
   function captureSnapshot() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    const sourceWidth = video.videoWidth;
+    const sourceHeight = video.videoHeight;
+    if (sourceWidth <= 0 || sourceHeight <= 0) return;
+
+    const outputHeight = 1600;
+    const outputWidth = Math.round((outputHeight * 3) / 4);
+    const canvas = document.createElement('canvas');
+    canvas.width = outputWidth;
+    canvas.height = outputHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    if (facingMode === 'user') {
+      ctx.save();
+      ctx.translate(outputWidth, 0);
+      ctx.scale(-1, 1);
+    }
+
+    drawCoverImage(ctx, video, sourceWidth, sourceHeight, outputWidth, outputHeight);
+
+    if (facingMode === 'user') ctx.restore();
+
     canvas.toBlob(blob => {
       if (!blob) return;
       capturedBlobRef.current = blob;
       stopStream();
       clearCountdown();
       setStage('adjust');
-      // Init adjust transform
       gestureRef.current = { ...gestureRef.current, dx: 0, dy: 0, scale: 1, dragging: false, pinching: false };
     }, 'image/jpeg', 0.92);
   }
 
   function handleCapture() {
-    if (countdown !== null) return; // already counting
+    if (countdown !== null) {
+      clearCountdown();
+      return;
+    }
     if (delay === 0) {
       captureSnapshot();
       return;
@@ -243,6 +344,13 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
     if (countdown !== null) clearCountdown();
   }
 
+  function handleCycleDelay() {
+    if (countdown !== null) return;
+    const currentIndex = DELAY_OPTIONS.indexOf(delay as (typeof DELAY_OPTIONS)[number]);
+    const nextIndex = (currentIndex + 1) % DELAY_OPTIONS.length;
+    setDelay(DELAY_OPTIONS[nextIndex]);
+  }
+
   // ── Flip camera ───────────────────────────────────────────────────────────
 
   function handleFlip() {
@@ -260,7 +368,6 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
     img.onload = () => { adjustImgRef.current = img; drawAdjust(); };
     img.src = url;
     return () => URL.revokeObjectURL(url);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
   function drawAdjust() {
@@ -273,6 +380,7 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
     const w = canvas.width;
     const h = canvas.height;
     const { dx, dy, scale } = gestureRef.current;
+    ctx.clearRect(0, 0, w, h);
 
     // Ghost
     if (ghostImgRef.current) {
@@ -286,7 +394,7 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
       ctx.save();
       ctx.translate(w / 2 + dx, h / 2 + dy);
       ctx.scale(scale, scale);
-      ctx.drawImage(adjustImgRef.current, -w / 2, -h / 2, w, h);
+      drawCoverImage(ctx, adjustImgRef.current, adjustImgRef.current.width, adjustImgRef.current.height, w, h, -w / 2, -h / 2);
       ctx.restore();
     }
   }
@@ -346,7 +454,7 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
       ctx.save();
       ctx.translate(w / 2 + dx, h / 2 + dy);
       ctx.scale(scale, scale);
-      ctx.drawImage(adjustImgRef.current, -w / 2, -h / 2, w, h);
+      drawCoverImage(ctx, adjustImgRef.current, adjustImgRef.current.width, adjustImgRef.current.height, w, h, -w / 2, -h / 2);
       ctx.restore();
 
       const blob: Blob = await new Promise((resolve, reject) =>
@@ -392,7 +500,8 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  const title = `${stage === 'adjust' ? 'Adjust — ' : ''}${ANGLE_LABELS[angle]}`;
+  const title = `${stage === 'adjust' ? 'Adjust - ' : ''}${ANGLE_LABELS[angle]}`;
+  const delayLabel = delay === 0 ? 'Timer Off' : `Timer ${delay}s`;
 
   return (
     <Dialog
@@ -401,57 +510,38 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
       fullWidth
       maxWidth="sm"
       onClose={onClose}
-      slotProps={{ paper: { sx: { bgcolor: 'black' } } }}
+      sx={{ zIndex: 1500 }}
+      slotProps={{
+        paper: {
+          sx: {
+            bgcolor: 'black',
+            overflow: 'hidden',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+        },
+      }}
     >
-      {/* Header */}
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          px: 1,
-          py: 0.5,
-          color: 'white',
+          position: 'relative',
+          width: '100%',
+          maxWidth: fullScreen ? '100%' : 520,
+          maxHeight: '100dvh',
+          height: fullScreen ? '100dvh' : 'min(100dvh, calc((100vw - 64px) * 4 / 3))',
+          aspectRatio: fullScreen ? 'auto' : '3/4',
+          bgcolor: '#111',
+          cursor: countdown !== null ? 'pointer' : 'default',
+          overflow: 'hidden',
         }}
+        onClick={handleCancelCountdown}
       >
-        <IconButton onClick={onClose} sx={{ color: 'white' }}>
-          <CloseIcon />
-        </IconButton>
-        <Typography variant="subtitle1" sx={{ flex: 1, textAlign: 'center' }}>
-          {title}
-        </Typography>
-        {stage === 'capture' && !cameraError && (
-          <IconButton onClick={handleFlip} sx={{ color: 'white' }}>
-            <FlipCameraIosIcon />
-          </IconButton>
-        )}
-        {(stage === 'adjust' || (stage === 'capture' && cameraError)) && (
-          <Box sx={{ width: 40 }} /> /* spacer */
-        )}
-      </Box>
+        <MobileCloseButton onClose={onClose} />
 
-      {/* ── Capture stage ── */}
-      {stage === 'capture' && (
-        <>
-          {/* Hidden video element */}
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            style={{ display: 'none' }}
-          />
-
-          {/* Canvas viewport */}
-          <Box
-            sx={{
-              position: 'relative',
-              width: '100%',
-              aspectRatio: '3/4',
-              bgcolor: '#111',
-              cursor: countdown !== null ? 'pointer' : 'default',
-            }}
-            onClick={handleCancelCountdown}
-          >
+        {stage === 'capture' && (
+          <>
             {cameraError ? (
               <Box
                 sx={{
@@ -471,107 +561,46 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
                 </Typography>
               </Box>
             ) : (
-              <canvas
-                ref={canvasRef}
-                style={{ width: '100%', height: '100%', display: 'block' }}
-              />
+              <>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'block',
+                    objectFit: 'cover',
+                    transform: facingMode === 'user' ? 'scaleX(-1)' : 'none',
+                  }}
+                />
+                {ghostUrl && (
+                  <Box
+                    component="img"
+                    src={ghostUrl}
+                    alt=""
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      opacity: GHOST_ALPHA,
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
+              </>
             )}
+          </>
+        )}
 
-            {/* Countdown overlay */}
-            {countdown !== null && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  bgcolor: 'rgba(0,0,0,0.35)',
-                  pointerEvents: 'none',
-                }}
-              >
-                <Typography variant="h1" sx={{ color: 'white', fontWeight: 700, fontSize: '5rem' }}>
-                  {countdown}
-                </Typography>
-              </Box>
-            )}
-
-            {/* Ghost hint */}
-            {ghostUrl && (
-              <Typography
-                variant="caption"
-                sx={{
-                  position: 'absolute',
-                  bottom: 8,
-                  left: 0,
-                  right: 0,
-                  textAlign: 'center',
-                  color: 'rgba(255,255,255,0.7)',
-                }}
-              >
-                Align with last week ↑
-              </Typography>
-            )}
-          </Box>
-
-          {/* Controls */}
-          {!cameraError && (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 2,
-                py: 2,
-                px: 2,
-              }}
-            >
-              {/* Delay picker */}
-              <Select
-                size="small"
-                value={delay}
-                onChange={e => setDelay(Number(e.target.value))}
-                sx={{
-                  color: 'white',
-                  '.MuiOutlinedInput-notchedOutline': { borderColor: 'grey.700' },
-                  '.MuiSvgIcon-root': { color: 'white' },
-                  minWidth: 80,
-                }}
-              >
-                {DELAY_OPTIONS.map(d => (
-                  <MenuItem key={d} value={d}>{d === 0 ? 'Off' : `${d}s`}</MenuItem>
-                ))}
-              </Select>
-
-              {/* Capture button */}
-              <IconButton
-                onClick={handleCapture}
-                disabled={countdown !== null}
-                sx={{
-                  bgcolor: 'white',
-                  width: 64,
-                  height: 64,
-                  '&:hover': { bgcolor: 'grey.200' },
-                  '&.Mui-disabled': { bgcolor: 'grey.600' },
-                }}
-              >
-                <CameraAltIcon sx={{ fontSize: 32, color: 'black' }} />
-              </IconButton>
-
-            </Box>
-          )}
-        </>
-      )}
-
-      {/* ── Adjust stage ── */}
-      {stage === 'adjust' && (
-        <>
+        {stage === 'adjust' && (
           <Box
             sx={{
-              position: 'relative',
-              width: '100%',
-              aspectRatio: '3/4',
-              bgcolor: '#111',
+              position: 'absolute',
+              inset: 0,
               touchAction: 'none',
             }}
             onPointerDown={onPointerDown}
@@ -584,52 +613,161 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
               ref={adjustCanvasRef}
               style={{ width: '100%', height: '100%', display: 'block' }}
             />
-            {ghostUrl && (
-              <Typography
-                variant="caption"
-                sx={{
-                  position: 'absolute',
-                  bottom: 8,
-                  left: 0,
-                  right: 0,
-                  textAlign: 'center',
-                  color: 'rgba(255,255,255,0.7)',
-                  pointerEvents: 'none',
-                }}
-              >
-                Pinch &amp; drag to align
-              </Typography>
-            )}
           </Box>
+        )}
 
-          {uploadError && (
-            <Typography variant="caption" color="error" sx={{ textAlign: 'center', py: 1 }}>
-              {uploadError}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 'calc(env(safe-area-inset-top, 0px) + 10px)',
+            left: 56,
+            right: 56,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          pointerEvents: 'none',
+        }}
+      >
+        <Box sx={{ pointerEvents: 'auto' }}>
+            <OverlayChip label={title} clickable={false} />
+        </Box>
+      </Box>
+
+        {stage === 'capture' && !cameraError && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 'calc(env(safe-area-inset-top, 0px) + 10px)',
+              right: 12,
+              display: 'flex',
+              gap: 1,
+              alignItems: 'center',
+            }}
+          >
+            <OverlayChip label={delayLabel} onClick={handleCycleDelay} disabled={countdown !== null} />
+            <IconButton
+              onClick={(event) => {
+                event.stopPropagation();
+                handleFlip();
+              }}
+              sx={{
+                color: 'white',
+                bgcolor: 'rgba(0,0,0,0.55)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255,255,255,0.14)',
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.68)' },
+              }}
+            >
+              <FlipCameraIosIcon />
+            </IconButton>
+          </Box>
+        )}
+
+        {countdown !== null && (
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: 'rgba(0,0,0,0.28)',
+              pointerEvents: 'none',
+            }}
+          >
+            <Typography variant="h1" sx={{ color: 'white', fontWeight: 700, fontSize: '5rem' }}>
+              {countdown}
             </Typography>
+          </Box>
+        )}
+
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
+            left: 0,
+            right: 0,
+            px: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 1.5,
+          }}
+        >
+          {stage === 'capture' && ghostUrl && (
+            <OverlayChip label="Align with last week" />
           )}
 
-          <Box sx={{ display: 'flex', gap: 2, p: 2 }}>
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={handleRetake}
-              disabled={uploading}
-              sx={{ color: 'white', borderColor: 'grey.600' }}
+          {stage === 'adjust' && ghostUrl && (
+            <OverlayChip label="Pinch and drag to align" />
+          )}
+
+          {uploadError && (
+            <OverlayChip label={uploadError} />
+          )}
+
+          {stage === 'capture' && !cameraError && (
+            <IconButton
+              onClick={(event) => {
+                event.stopPropagation();
+                handleCapture();
+              }}
+              sx={{
+                bgcolor: countdown !== null ? 'rgba(255,255,255,0.82)' : 'white',
+                width: 72,
+                height: 72,
+                border: '4px solid rgba(0,0,0,0.18)',
+                '&:hover': { bgcolor: 'grey.200' },
+              }}
             >
-              Retake
-            </Button>
-            <Button
-              variant="contained"
-              fullWidth
-              onClick={handleSave}
-              disabled={uploading}
-              startIcon={uploading ? <CircularProgress size={16} color="inherit" /> : undefined}
-            >
-              Save
-            </Button>
-          </Box>
-        </>
-      )}
+              {countdown !== null ? (
+                <CloseIcon sx={{ fontSize: 32, color: 'black' }} />
+              ) : (
+                <CameraAltIcon sx={{ fontSize: 34, color: 'black' }} />
+              )}
+            </IconButton>
+          )}
+
+          {stage === 'adjust' && (
+            <Box sx={{ display: 'flex', gap: 1.25, width: '100%', maxWidth: 320 }}>
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleRetake();
+                }}
+                disabled={uploading}
+                sx={{
+                  color: 'white',
+                  borderColor: 'rgba(255,255,255,0.25)',
+                  bgcolor: 'rgba(0,0,0,0.45)',
+                  backdropFilter: 'blur(8px)',
+                }}
+              >
+                Retake
+              </Button>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void handleSave();
+                }}
+                disabled={uploading}
+                startIcon={uploading ? <CircularProgress size={16} color="inherit" /> : undefined}
+                sx={{
+                  bgcolor: 'rgba(255,255,255,0.9)',
+                  color: 'black',
+                  '&:hover': { bgcolor: 'white' },
+                }}
+              >
+                Save
+              </Button>
+            </Box>
+          )}
+        </Box>
+      </Box>
     </Dialog>
   );
 }

@@ -89,3 +89,56 @@ export async function POST(req: NextRequest) {
   const proxyUrl = `/api/check-in/photos/${checkIn.id}/${angle}`;
   return NextResponse.json({ url: proxyUrl });
 }
+
+export async function DELETE(req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession();
+  } catch {
+    return authenticationErrorResponse();
+  }
+  const userId = session.user.id;
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return errorResponse('Invalid request body', 400);
+  }
+
+  const angle = typeof body === 'object' && body !== null && 'angle' in body
+    ? (body.angle as Angle | undefined)
+    : undefined;
+
+  if (!angle || !(VALID_ANGLES as readonly string[]).includes(angle)) {
+    return errorResponse('angle must be front, back, or side', 400);
+  }
+
+  const weekStart = toDateOnly(getWeekStart(new Date()));
+  const checkIn = await prisma.weeklyCheckIn.findUnique({
+    where: { userId_weekStartDate: { userId, weekStartDate: weekStart } },
+    select: {
+      id: true,
+      frontPhotoUrl: true,
+      backPhotoUrl: true,
+      sidePhotoUrl: true,
+    },
+  });
+
+  if (!checkIn) {
+    return NextResponse.json({ ok: true });
+  }
+
+  const field = ANGLE_FIELD[angle];
+  const existingUrl = checkIn[field];
+
+  if (existingUrl) {
+    await deleteBlobIfManaged(existingUrl);
+    await prisma.weeklyCheckIn.update({
+      where: { id: checkIn.id },
+      data: { [field]: null },
+    });
+  }
+
+  return NextResponse.json({ ok: true });
+}

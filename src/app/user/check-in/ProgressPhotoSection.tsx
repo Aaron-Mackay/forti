@@ -5,6 +5,7 @@ import { Box, CircularProgress, Divider, Typography } from '@mui/material';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { PreviousPhotos } from '@/types/checkInTypes';
 import PhotoCaptureModal from './PhotoCaptureModal';
 
@@ -21,6 +22,7 @@ interface Props {
   previousPhotos: PreviousPhotos | null;
   weekStart: string;
   onPhotoUploaded: (angle: Angle, url: string) => void;
+  onPhotoRemoved: (angle: Angle) => void;
 }
 
 const ANGLES: { key: Angle; label: string }[] = [
@@ -35,16 +37,20 @@ function PhotoSlot({
   photoUrl,
   previousUrl,
   uploading,
+  deleting,
   onOpenCamera,
   onFileSelected,
+  onRemovePhoto,
 }: {
   angle: Angle;
   label: string;
   photoUrl: string | null;
   previousUrl: string | null;
   uploading: boolean;
+  deleting: boolean;
   onOpenCamera: (angle: Angle) => void;
   onFileSelected: (angle: Angle, file: File) => void;
+  onRemovePhoto: (angle: Angle) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -65,7 +71,7 @@ function PhotoSlot({
         }}
       >
         {photoUrl ? (
-          /* Captured state — full thumbnail, click to retake via camera */
+          /* Captured state — full thumbnail, tap to retake via camera */
           <Box
             onClick={() => onOpenCamera(angle)}
             sx={{ width: '100%', height: '100%', position: 'relative', cursor: 'pointer' }}
@@ -88,8 +94,31 @@ function PhotoSlot({
             >
               <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
             </Box>
+            <Box
+              onClick={(event) => {
+                event.stopPropagation();
+                onRemovePhoto(angle);
+              }}
+              sx={{
+                position: 'absolute',
+                top: 4,
+                left: 4,
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                bgcolor: 'rgba(0,0,0,0.6)',
+                color: 'common.white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background-color 0.2s ease',
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.75)' },
+              }}
+            >
+              {deleting ? <CircularProgress size={16} color="inherit" /> : <DeleteOutlineIcon sx={{ fontSize: 18 }} />}
+            </Box>
           </Box>
-        ) : uploading ? (
+        ) : uploading || deleting ? (
           <Box sx={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <CircularProgress size={24} />
           </Box>
@@ -152,9 +181,11 @@ export default function ProgressPhotoSection({
   currentPhotos,
   previousPhotos,
   onPhotoUploaded,
+  onPhotoRemoved,
 }: Props) {
   const [activeAngle, setActiveAngle] = useState<Angle | null>(null);
   const [uploadingAngle, setUploadingAngle] = useState<Angle | null>(null);
+  const [deletingAngle, setDeletingAngle] = useState<Angle | null>(null);
 
   const activeGhostUrl = activeAngle
     ? (previousPhotos?.[`${activeAngle}PhotoUrl`] ?? null)
@@ -175,6 +206,21 @@ export default function ProgressPhotoSection({
     }
   }
 
+  async function handleRemovePhoto(angle: Angle) {
+    setDeletingAngle(angle);
+    try {
+      const res = await fetch('/api/check-in/photos', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ angle }),
+      });
+      if (!res.ok) return;
+      onPhotoRemoved(angle);
+    } finally {
+      setDeletingAngle(null);
+    }
+  }
+
   return (
     <Box>
       <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
@@ -192,8 +238,10 @@ export default function ProgressPhotoSection({
             photoUrl={currentPhotos[key]}
             previousUrl={previousPhotos?.[`${key}PhotoUrl`] ?? null}
             uploading={uploadingAngle === key}
+            deleting={deletingAngle === key}
             onOpenCamera={setActiveAngle}
             onFileSelected={handleFileSelected}
+            onRemovePhoto={handleRemovePhoto}
           />
         ))}
       </Box>
