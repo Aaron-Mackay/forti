@@ -1,16 +1,20 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Box, Chip, IconButton, Menu, MenuItem, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Box, Chip, IconButton, Menu, Stack, TextField, Typography } from '@mui/material';
 import { PlanPrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { getWeekStatus } from '@/lib/workoutProgress';
 import ExercisePickerDialog from '@/app/user/workout/ExercisePickerDialog';
+import { ExerciseMenuActionItem, ExerciseMenuDropAndBfrItems } from './ExerciseMenuItems';
 import { getLatestTrackedWeekId, stripWorkoutSuffix } from './planPresentation';
-import { buildExerciseMetaParts, CompactSetEditor, ExerciseNameWithMeta, SetCountControls } from './PlanExercisePrimitives';
+import { buildExerciseMetaParts, CompactSetEditor, EditableExerciseNameWithMeta, SetCountControls } from './PlanExercisePrimitives';
+import { confirmRemoveLastSetWithDrops, getExerciseSetModel } from './exerciseSetModel';
+import { hasTrailingDropSets, removeExercises, removeTrailingDropSets, setBfrEnabled } from './exerciseMenuActions';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import ExerciseDetailsDialog from './ExerciseDetailsDialog';
 
 interface PlanMultiWeekTableProps {
   plan: PlanPrisma;
@@ -23,6 +27,8 @@ const PlanMultiWeekTable = ({ plan, planId, creationMode = false }: PlanMultiWee
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState<'add' | 'change'>('add');
   const [exerciseMenu, setExerciseMenu] = useState<null | { anchor: HTMLElement; exerciseId: number }>(null);
+  const [changeExerciseId, setChangeExerciseId] = useState<number | null>(null);
+  const [detailsExerciseId, setDetailsExerciseId] = useState<number | null>(null);
   const [dropEnabledExerciseIds, setDropEnabledExerciseIds] = useState<Set<number>>(new Set());
   const sortedWeeks = [...plan.weeks].sort((a, b) => a.order - b.order);
 
@@ -95,24 +101,22 @@ const PlanMultiWeekTable = ({ plan, planId, creationMode = false }: PlanMultiWee
 
   // Active workout (for + Exercise action)
   const activeWorkout = workoutsByWeek.find(x => x.week.order === activeWeekOrder)?.workout ?? null;
-  const menuRows = exerciseMenu
+  const targetExerciseId = exerciseMenu?.exerciseId ?? changeExerciseId ?? detailsExerciseId;
+  const menuRows = targetExerciseId != null
     ? workoutsByWeek
         .map(({ week, workout }) => ({
           week,
           workout,
-          ex: workout?.exercises.find((exercise) => exercise.exercise?.id === exerciseMenu.exerciseId) ?? null,
+          ex: workout?.exercises.find((exercise) => exercise.exercise?.id === targetExerciseId) ?? null,
         }))
         .filter(({ ex }) => ex)
     : [];
   const menuExercise = menuRows[0]?.ex ?? null;
-  const menuHasTrailingDrops = menuRows.some(({ ex }) => {
-    if (!ex) return false;
-    const regularSets = ex.sets.filter((set) => !set.isDropSet).sort((a, b) => a.order - b.order);
-    const lastRegularSet = regularSets[regularSets.length - 1];
-    if (!lastRegularSet) return false;
-    return ex.sets.some((set) => set.isDropSet && set.parentSetId === lastRegularSet.id);
-  });
-  const menuDropEnabled = exerciseMenu ? (dropEnabledExerciseIds.has(exerciseMenu.exerciseId) || menuHasTrailingDrops) : false;
+  const menuTargets = menuRows.flatMap(({ week, workout, ex }) =>
+    workout && ex ? [{ weekId: week.id, workoutId: workout.id, exercise: ex }] : [],
+  );
+  const menuHasTrailingDrops = menuTargets.some((target) => hasTrailingDropSets(target.exercise));
+  const menuDropEnabled = targetExerciseId != null ? (dropEnabledExerciseIds.has(targetExerciseId) || menuHasTrailingDrops) : false;
 
   return (
     <Box>
@@ -160,6 +164,7 @@ const PlanMultiWeekTable = ({ plan, planId, creationMode = false }: PlanMultiWee
           onClick={() => {
             const newOrder = maxWorkoutCount + 1;
             setSelectedWorkoutOrder(newOrder);
+            setChangeExerciseId(null);
             const activeWeek = sortedWeeks.find(w => w.order === activeWeekOrder);
             if (activeWeek) {
               dispatch({ type: 'ADD_WORKOUT', planId, weekId: activeWeek.id });
@@ -287,7 +292,16 @@ const PlanMultiWeekTable = ({ plan, planId, creationMode = false }: PlanMultiWee
                   <td style={{ padding: '8px 12px 8px 0', verticalAlign: 'top' }}>
                     <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 0.5 }}>
                       <Box sx={{ minWidth: 0 }}>
-                        <ExerciseNameWithMeta name={name} metaParts={metaParts} isBfr={isBfr} />
+                        <EditableExerciseNameWithMeta
+                          name={name}
+                          metaParts={metaParts}
+                          isBfr={isBfr}
+                          onClick={() => {
+                            setChangeExerciseId(exerciseId);
+                            setPickerMode('change');
+                            setPickerOpen(true);
+                          }}
+                        />
                       </Box>
                       <IconButton
                         size="small"
@@ -341,13 +355,10 @@ const PlanMultiWeekTable = ({ plan, planId, creationMode = false }: PlanMultiWee
                       );
                     }
 
-                    const regularSets = ex
-                      ? ex.sets.filter(s => !s.isDropSet).sort((a, b) => a.order - b.order)
-                      : [];
-                    const lastRegularSet = regularSets[regularSets.length - 1] ?? null;
-                    const trailingDropSets = ex && lastRegularSet
-                      ? ex.sets.filter((set) => set.isDropSet && set.parentSetId === lastRegularSet.id).sort((a, b) => a.order - b.order)
-                      : [];
+                    const setModel = ex ? getExerciseSetModel(ex) : null;
+                    const regularSets = setModel?.topLevelSets ?? [];
+                    const lastRegularSet = setModel?.lastTopLevelSet ?? null;
+                    const trailingDropSets = setModel?.trailingDropSets ?? [];
 
                     return (
                       <td key={week.id} style={{ padding: '8px 12px', verticalAlign: 'top', textAlign: 'center' }}>
@@ -435,10 +446,7 @@ const PlanMultiWeekTable = ({ plan, planId, creationMode = false }: PlanMultiWee
                             canRemove={regularSets.length > 0}
                             onAdd={() => dispatch({ type: 'ADD_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id })}
                             onRemove={() => {
-                              if (lastRegularSet && trailingDropSets.length > 0) {
-                                const confirmed = window.confirm(`Remove the last set and its ${trailingDropSets.length} attached drop ${trailingDropSets.length === 1 ? 'set' : 'sets'}?`);
-                                if (!confirmed) return;
-                              }
+                              if (!confirmRemoveLastSetWithDrops(ex)) return;
                               dispatch({ type: 'REMOVE_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id });
                             }}
                             canRemoveDrop={dropControlsEnabled && trailingDropSets.length > 0}
@@ -471,6 +479,7 @@ const PlanMultiWeekTable = ({ plan, planId, creationMode = false }: PlanMultiWee
                     color="primary"
                     sx={{ cursor: 'pointer' }}
                     onClick={() => {
+                      setChangeExerciseId(null);
                       setPickerMode('add');
                       setPickerOpen(true);
                     }}
@@ -491,10 +500,13 @@ const PlanMultiWeekTable = ({ plan, planId, creationMode = false }: PlanMultiWee
       <ExercisePickerDialog
         open={pickerOpen}
         title={pickerMode === 'change' ? 'Change Exercise' : 'Add Exercise'}
-        onClose={() => setPickerOpen(false)}
+        onClose={() => {
+          setPickerOpen(false);
+          setChangeExerciseId(null);
+        }}
         onSelect={(exercise) => {
           setPickerOpen(false);
-          if (pickerMode === 'change' && exerciseMenu) {
+          if (pickerMode === 'change' && targetExerciseId != null) {
             menuRows.forEach(({ week, workout, ex }) => {
               if (workout && ex) {
                 dispatch({
@@ -510,8 +522,10 @@ const PlanMultiWeekTable = ({ plan, planId, creationMode = false }: PlanMultiWee
               }
             });
             setExerciseMenu(null);
+            setChangeExerciseId(null);
             return;
           }
+          setChangeExerciseId(null);
           const activeWeekEntry = workoutsByWeek.find(x => x.workout?.id === activeWorkout?.id);
           if (activeWeekEntry && activeWorkout) {
             dispatch({
@@ -526,136 +540,76 @@ const PlanMultiWeekTable = ({ plan, planId, creationMode = false }: PlanMultiWee
       />
 
       <Menu anchorEl={exerciseMenu?.anchor ?? null} open={Boolean(exerciseMenu)} onClose={() => setExerciseMenu(null)}>
-        <MenuItem
-          onClick={() => {
-            setPickerMode('change');
-            setPickerOpen(true);
-          }}
-        >
-          Change exercise
-        </MenuItem>
         {menuExercise?.exercise?.category !== 'cardio' && (
-          <MenuItem
-            sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}
+          <ExerciseMenuActionItem
             onClick={() => {
               if (!exerciseMenu) return;
-              if (menuDropEnabled) {
-                menuRows.forEach(({ week, workout, ex }) => {
-                  if (!workout || !ex) return;
-                  const regularSets = ex.sets.filter((set) => !set.isDropSet).sort((a, b) => a.order - b.order);
-                  const lastRegularSet = regularSets[regularSets.length - 1];
-                  if (!lastRegularSet) return;
-                  ex.sets
-                    .filter((set) => set.isDropSet && set.parentSetId === lastRegularSet.id)
-                    .forEach((set) => {
-                      dispatch({ type: 'REMOVE_DROP_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, setId: set.id });
-                    });
-                });
-                setDropEnabledExerciseIds((prev) => {
-                  const next = new Set(prev);
-                  next.delete(exerciseMenu.exerciseId);
-                  return next;
-                });
-                return;
-              }
-              setDropEnabledExerciseIds((prev) => new Set(prev).add(exerciseMenu.exerciseId));
+              setDetailsExerciseId(exerciseMenu.exerciseId);
+              setExerciseMenu(null);
             }}
           >
-            <Typography variant="inherit">Enable drop sets</Typography>
-            <Switch
-              size="small"
-              edge="end"
-              checked={menuDropEnabled}
-              tabIndex={-1}
-              disableRipple
-              onClick={(e) => e.stopPropagation()}
-              onChange={(_, checked) => {
-                if (!exerciseMenu) return;
-                if (!checked) {
-                  menuRows.forEach(({ week, workout, ex }) => {
-                    if (!workout || !ex) return;
-                    const regularSets = ex.sets.filter((set) => !set.isDropSet).sort((a, b) => a.order - b.order);
-                    const lastRegularSet = regularSets[regularSets.length - 1];
-                    if (!lastRegularSet) return;
-                    ex.sets
-                      .filter((set) => set.isDropSet && set.parentSetId === lastRegularSet.id)
-                      .forEach((set) => {
-                        dispatch({ type: 'REMOVE_DROP_SET', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id, setId: set.id });
-                      });
-                  });
-                  setDropEnabledExerciseIds((prev) => {
-                    const next = new Set(prev);
-                    next.delete(exerciseMenu.exerciseId);
-                    return next;
-                  });
-                  return;
-                }
-                setDropEnabledExerciseIds((prev) => new Set(prev).add(exerciseMenu.exerciseId));
-              }}
-              inputProps={{ 'aria-label': 'Toggle drop sets' }}
-            />
-          </MenuItem>
+            Edit details
+          </ExerciseMenuActionItem>
         )}
-        {menuExercise?.exercise?.category !== 'cardio' && (
-          <MenuItem
-            sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}
-            onClick={() => {
-              if (menuExercise) {
-                menuRows.forEach(({ week, workout, ex }) => {
-                  if (workout && ex) {
-                    dispatch({
-                      type: 'TOGGLE_BFR',
-                      planId,
-                      weekId: week.id,
-                      workoutId: workout.id,
-                      workoutExerciseId: ex.id,
-                      enabled: !menuExercise.isBfr,
-                    });
-                  }
-                });
-              }
-            }}
-          >
-            <Typography variant="inherit">BFR mode</Typography>
-            <Switch
-              size="small"
-              edge="end"
-              checked={Boolean(menuExercise?.isBfr)}
-              tabIndex={-1}
-              disableRipple
-              onClick={(e) => e.stopPropagation()}
-              onChange={(_, checked) => {
-                menuRows.forEach(({ week, workout, ex }) => {
-                  if (workout && ex) {
-                    dispatch({
-                      type: 'TOGGLE_BFR',
-                      planId,
-                      weekId: week.id,
-                      workoutId: workout.id,
-                      workoutExerciseId: ex.id,
-                      enabled: checked,
-                    });
-                  }
-                });
-              }}
-              inputProps={{ 'aria-label': 'Toggle BFR mode' }}
-            />
-          </MenuItem>
-        )}
-        <MenuItem
-          sx={{ color: 'error.main' }}
+        <ExerciseMenuDropAndBfrItems
+          isCardio={menuExercise?.exercise?.category === 'cardio'}
+          dropSetsEnabled={menuDropEnabled}
+          isBfr={Boolean(menuExercise?.isBfr)}
+          onToggleDropSets={(checked) => {
+            if (targetExerciseId == null) return;
+            if (!checked) {
+              removeTrailingDropSets({ dispatch, planId, targets: menuTargets });
+              setDropEnabledExerciseIds((prev) => {
+                const next = new Set(prev);
+                next.delete(targetExerciseId);
+                return next;
+              });
+              return;
+            }
+            setDropEnabledExerciseIds((prev) => new Set(prev).add(targetExerciseId));
+          }}
+          onToggleBfr={(checked) => {
+            setBfrEnabled({ dispatch, planId, targets: menuTargets, enabled: checked });
+          }}
+        />
+        <ExerciseMenuActionItem
+          color="error.main"
           onClick={() => {
-            menuRows.forEach(({ week, workout, ex }) => {
-              if (workout && ex) {
-                dispatch({ type: 'REMOVE_EXERCISE', planId, weekId: week.id, workoutId: workout.id, exerciseId: ex.id });
-              }
-            });
+            removeExercises({ dispatch, planId, targets: menuTargets });
             setExerciseMenu(null);
           }}
         >
           Delete exercise
-        </MenuItem>
+        </ExerciseMenuActionItem>
       </Menu>
+      <ExerciseDetailsDialog
+        open={detailsExerciseId != null}
+        repRange={menuExercise?.repRange ?? null}
+        restTime={menuExercise?.restTime ?? null}
+        onClose={() => setDetailsExerciseId(null)}
+        onSave={({ repRange: nextRepRange, restTime: nextRestTime }) => {
+          menuRows.forEach(({ week, workout, ex }) => {
+            if (!workout || !ex) return;
+            dispatch({
+              type: 'UPDATE_REP_RANGE',
+              planId,
+              weekId: week.id,
+              workoutId: workout.id,
+              workoutExerciseId: ex.id,
+              repRange: nextRepRange,
+            });
+            dispatch({
+              type: 'UPDATE_REST_TIME',
+              planId,
+              weekId: week.id,
+              workoutId: workout.id,
+              workoutExerciseId: ex.id,
+              restTime: nextRestTime,
+            });
+          });
+          setDetailsExerciseId(null);
+        }}
+      />
     </Box>
   );
 };

@@ -1,11 +1,10 @@
 'use client'
 
 import React from 'react'
-import { Box, Chip, IconButton, Typography } from '@mui/material'
+import { Box, IconButton, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import CloseIcon from '@mui/icons-material/Close'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
-import EditIcon from '@mui/icons-material/Edit'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 import {
   DndContext,
@@ -25,7 +24,9 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { PlanPrisma, WorkoutPrisma, WorkoutExercisePrisma } from '@/types/dataTypes'
 import { computeE1rm } from '@lib/e1rm'
+import { getExerciseSetModel } from './exerciseSetModel'
 import { stripWorkoutSuffix } from './planPresentation'
+import { EditableExerciseNameWithMeta } from './PlanExercisePrimitives'
 import { cellSx, headerCellSx, inputSx, MenuState, WorkoutEditorDispatch } from './PlanSheetShared'
 
 type WeekData = PlanPrisma['weeks'][number]
@@ -69,15 +70,7 @@ const SortableExerciseTbody = ({
     id: `ex-${ex.id}`,
   })
 
-  const topLevelSets = ex.sets.filter((set) => !set.isDropSet).sort((a, b) => a.order - b.order)
-  const dropSets = ex.sets.filter((set) => set.isDropSet).sort((a, b) => a.order - b.order)
-  const dropsByParent = new Map<number, typeof dropSets>()
-
-  for (const dropSet of dropSets) {
-    if (dropSet.parentSetId == null) continue
-    if (!dropsByParent.has(dropSet.parentSetId)) dropsByParent.set(dropSet.parentSetId, [])
-    dropsByParent.get(dropSet.parentSetId)!.push(dropSet)
-  }
+  const { topLevelSets, dropsByParent } = getExerciseSetModel(ex)
 
   return (
     <tbody
@@ -101,51 +94,12 @@ const SortableExerciseTbody = ({
             </span>
           )}
           {!arrangeMode ? (
-            ex.exercise?.name ? (
-              <Box
-                component="span"
-                onClick={() => openRenamePicker(weekId, workoutId, ex.id)}
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 0.25,
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                  borderBottom: '1px dashed',
-                  borderColor: 'divider',
-                  '&:hover .edit-icon': { opacity: 1 },
-                }}
-              >
-                {ex.exercise.name}
-                {ex.isBfr && <Chip label="BFR" size="small" color="warning" sx={{ height: 16, fontSize: '0.6rem' }} />}
-                <EditIcon className="edit-icon" sx={{ fontSize: '0.65rem', opacity: 0.35, transition: 'opacity 0.15s', flexShrink: 0 }} />
-              </Box>
-            ) : (
-              <Box
-                component="span"
-                onClick={() => openRenamePicker(weekId, workoutId, ex.id)}
-                aria-label="Add exercise"
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 0.25,
-                  cursor: 'pointer',
-                  fontSize: '0.7rem',
-                  color: 'text.disabled',
-                  border: '1px dashed',
-                  borderColor: 'divider',
-                  borderRadius: 0.5,
-                  px: 0.5,
-                  py: 0.25,
-                  '&:hover': { color: 'text.secondary', borderColor: 'text.secondary' },
-                  transition: 'color 0.15s, border-color 0.15s',
-                }}
-              >
-                <EditIcon sx={{ fontSize: '0.65rem' }} />
-                Add exercise
-              </Box>
-            )
+            <EditableExerciseNameWithMeta
+              name={ex.exercise?.name}
+              isBfr={ex.isBfr}
+              compact
+              onClick={() => openRenamePicker(weekId, workoutId, ex.id)}
+            />
           ) : (
             <Box component="span" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
               {ex.exercise?.name ?? ''}
@@ -500,51 +454,12 @@ const SortableWorkoutSlot = ({
                 <tr key={exercise.id}>
                   <td style={{ ...cellSx, textAlign: 'left', maxWidth: '14rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {!arrangeMode ? (
-                      exercise.exercise?.name ? (
-                        <Box
-                          component="span"
-                          onClick={() => openRenamePicker(weekId, workout.id, exercise.id)}
-                          sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 0.25,
-                            cursor: 'pointer',
-                            fontWeight: 600,
-                            fontSize: '0.75rem',
-                            borderBottom: '1px dashed',
-                            borderColor: 'divider',
-                            '&:hover .edit-icon': { opacity: 1 },
-                          }}
-                        >
-                          {exercise.exercise.name}
-                          {exercise.isBfr && <Chip label="BFR" size="small" color="warning" sx={{ height: 16, fontSize: '0.6rem' }} />}
-                          <EditIcon className="edit-icon" sx={{ fontSize: '0.65rem', opacity: 0.35, transition: 'opacity 0.15s', flexShrink: 0 }} />
-                        </Box>
-                      ) : (
-                        <Box
-                          component="span"
-                          onClick={() => openRenamePicker(weekId, workout.id, exercise.id)}
-                          aria-label="Add exercise"
-                          sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 0.25,
-                            cursor: 'pointer',
-                            fontSize: '0.7rem',
-                            color: 'text.disabled',
-                            border: '1px dashed',
-                            borderColor: 'divider',
-                            borderRadius: 0.5,
-                            px: 0.5,
-                            py: 0.25,
-                            '&:hover': { color: 'text.secondary', borderColor: 'text.secondary' },
-                            transition: 'color 0.15s, border-color 0.15s',
-                          }}
-                        >
-                          <EditIcon sx={{ fontSize: '0.65rem' }} />
-                          Add exercise
-                        </Box>
-                      )
+                      <EditableExerciseNameWithMeta
+                        name={exercise.exercise?.name}
+                        isBfr={exercise.isBfr}
+                        compact
+                        onClick={() => openRenamePicker(weekId, workout.id, exercise.id)}
+                      />
                     ) : (
                       <Box component="span" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
                         {exercise.exercise?.name ?? ''}

@@ -1,14 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, IconButton, Menu, MenuItem, Switch, Typography } from '@mui/material';
+import { Box, IconButton, Menu, Typography } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { WorkoutExercisePrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { Dir } from '@/lib/useWorkoutEditor';
 import { computeE1rm } from '@/lib/e1rm';
-import { buildExerciseMetaParts, CompactSetEditor, ExerciseNameWithMeta, SetCountControls } from './PlanExercisePrimitives';
+import { ExerciseMenuActionItem, ExerciseMenuDropAndBfrItems, ExerciseMenuMoveItems } from './ExerciseMenuItems';
+import { buildExerciseMetaParts, CompactSetEditor, EditableExerciseNameWithMeta, SetCountControls } from './PlanExercisePrimitives';
+import { confirmRemoveLastSetWithDrops, getExerciseSetModel } from './exerciseSetModel';
+import { hasTrailingDropSets, removeExercises, removeTrailingDropSets as removeTrailingDropSetsForTargets, setBfrEnabled } from './exerciseMenuActions';
 import ExercisePickerDialog from '@/app/user/workout/ExercisePickerDialog';
+import ExerciseDetailsDialog from './ExerciseDetailsDialog';
 
 interface ExerciseProgressCardProps {
   exerciseLink: WorkoutExercisePrisma;
@@ -71,39 +75,27 @@ const ExerciseProgressCard = ({
   const { allExercises, dispatch } = useWorkoutEditorContext();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [dropSetsEnabled, setDropSetsEnabled] = useState(false);
 
-  const exerciseName = exerciseLink.exercise?.name || '(unnamed exercise)';
+  const exerciseName = exerciseLink.exercise?.name ?? null;
   const isCardio = exerciseLink.exercise?.category === 'cardio';
   const { repRange, restTime, targetRpe, targetRir } = exerciseLink;
-  const regularSets = exerciseLink.sets
-    .filter(s => !s.isDropSet)
-    .sort((a, b) => a.order - b.order);
-  const dropSets = exerciseLink.sets
-    .filter(s => s.isDropSet)
-    .sort((a, b) => a.order - b.order);
+  const { lastTopLevelSet, topLevelSets: regularSets, trailingDropSets } = getExerciseSetModel(exerciseLink);
   const prevRegularSets = (prevExercise?.sets ?? [])
     .filter(s => !s.isDropSet)
     .sort((a, b) => a.order - b.order);
-  const lastRegularSet = regularSets[regularSets.length - 1] ?? null;
-  const trailingDropSets = lastRegularSet
-    ? dropSets.filter((set) => set.parentSetId === lastRegularSet.id)
-    : [];
 
   const maxSets = Math.max(regularSets.length, prevRegularSets.length);
 
   const metaParts = buildExerciseMetaParts({ repRange, restTime, targetRpe, targetRir });
-  const showDropControls = dropSetsEnabled || trailingDropSets.length > 0;
-  const removeTrailingDropSets = () => {
-    trailingDropSets.forEach((set) => {
-      dispatch({ type: 'REMOVE_DROP_SET', planId, weekId, workoutId, exerciseId: exerciseLink.id, setId: set.id });
-    });
+  const showDropControls = dropSetsEnabled || hasTrailingDropSets(exerciseLink);
+  const menuTarget = { weekId, workoutId, exercise: exerciseLink };
+  const handleDisableDropSets = () => {
+    removeTrailingDropSetsForTargets({ dispatch, planId, targets: [menuTarget] });
   };
   const handleRemoveSet = () => {
-    if (lastRegularSet && trailingDropSets.length > 0) {
-      const confirmed = window.confirm(`Remove the last set and its ${trailingDropSets.length} attached drop ${trailingDropSets.length === 1 ? 'set' : 'sets'}?`);
-      if (!confirmed) return;
-    }
+    if (!confirmRemoveLastSetWithDrops(exerciseLink)) return
     dispatch({ type: 'REMOVE_SET', planId, weekId, workoutId, exerciseId: exerciseLink.id });
   };
 
@@ -112,7 +104,13 @@ const ExerciseProgressCard = ({
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <ExerciseNameWithMeta name={exerciseName} metaParts={metaParts} index={index} isBfr={exerciseLink.isBfr} />
+          <EditableExerciseNameWithMeta
+            name={exerciseName}
+            metaParts={metaParts}
+            index={index}
+            isBfr={exerciseLink.isBfr}
+            onClick={() => setPickerOpen(true)}
+          />
         </Box>
         <IconButton size="small" onClick={(e) => setMenuAnchor(e.currentTarget)} sx={{ ml: 0.5, mt: -0.25 }}>
           <MoreVertIcon fontSize="small" />
@@ -350,7 +348,7 @@ const ExerciseProgressCard = ({
               onRemove={handleRemoveSet}
               canRemoveDrop={showDropControls && trailingDropSets.length > 0}
               onAddDrop={showDropControls ? (() => {
-                const parentSetId = lastRegularSet?.id;
+                const parentSetId = lastTopLevelSet?.id;
                 if (parentSetId == null) return;
                 dispatch({ type: 'ADD_DROP_SET', planId, weekId, workoutId, exerciseId: exerciseLink.id, parentSetId });
               }) : undefined}
@@ -367,111 +365,53 @@ const ExerciseProgressCard = ({
 
       {/* Contextual menu */}
       <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
-        <MenuItem
-          onClick={() => {
-            setMenuAnchor(null);
-            setPickerOpen(true);
-          }}
-        >
-          Change exercise
-        </MenuItem>
-        {!isFirst && (
-          <MenuItem
-            onClick={() => {
-              dispatch({ type: 'MOVE_EXERCISE', planId, weekId, workoutId, dir: Dir.UP, index });
-              setMenuAnchor(null);
-            }}
-          >
-            Move up
-          </MenuItem>
-        )}
-        {!isLast && (
-          <MenuItem
-            onClick={() => {
-              dispatch({ type: 'MOVE_EXERCISE', planId, weekId, workoutId, dir: Dir.DOWN, index });
-              setMenuAnchor(null);
-            }}
-          >
-            Move down
-          </MenuItem>
-        )}
         {!isCardio && (
-          <MenuItem
+          <ExerciseMenuActionItem
             onClick={() => {
-              if (showDropControls) {
-                removeTrailingDropSets();
-                setDropSetsEnabled(false);
-                return;
-              }
-              setDropSetsEnabled(true);
+              setMenuAnchor(null);
+              setDetailsOpen(true);
             }}
-            sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}
           >
-            <Typography variant="inherit">Enable drop sets</Typography>
-            <Switch
-              size="small"
-              edge="end"
-              checked={showDropControls}
-              tabIndex={-1}
-              disableRipple
-              onClick={(e) => e.stopPropagation()}
-              onChange={(_, checked) => {
-                if (!checked) {
-                  removeTrailingDropSets();
-                  setDropSetsEnabled(false);
-                  return;
-                }
-                setDropSetsEnabled(true);
-              }}
-              inputProps={{ 'aria-label': 'Toggle drop sets' }}
-            />
-          </MenuItem>
+            Edit details
+          </ExerciseMenuActionItem>
         )}
-        {!isCardio && (
-          <MenuItem
-            onClick={() => {
-              dispatch({
-                type: 'TOGGLE_BFR',
-                planId,
-                weekId,
-                workoutId,
-                workoutExerciseId: exerciseLink.id,
-                enabled: !exerciseLink.isBfr,
-              });
-            }}
-            sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}
-          >
-            <Typography variant="inherit">BFR mode</Typography>
-            <Switch
-              size="small"
-              edge="end"
-              checked={exerciseLink.isBfr}
-              tabIndex={-1}
-              disableRipple
-              onClick={(e) => e.stopPropagation()}
-              onChange={(_, checked) => {
-                dispatch({
-                  type: 'TOGGLE_BFR',
-                  planId,
-                  weekId,
-                  workoutId,
-                  workoutExerciseId: exerciseLink.id,
-                  enabled: checked,
-                });
-              }}
-              inputProps={{ 'aria-label': 'Toggle BFR mode' }}
-            />
-          </MenuItem>
-        )}
-        <MenuItem
-          onClick={() => {
-            dispatch({ type: 'REMOVE_EXERCISE', planId, weekId, workoutId, exerciseId: exerciseLink.id });
+        <ExerciseMenuMoveItems
+          canMoveUp={!isFirst}
+          canMoveDown={!isLast}
+          onMoveUp={() => {
+            dispatch({ type: 'MOVE_EXERCISE', planId, weekId, workoutId, dir: Dir.UP, index });
             setMenuAnchor(null);
           }}
-          sx={{ color: 'error.main' }}
+          onMoveDown={() => {
+            dispatch({ type: 'MOVE_EXERCISE', planId, weekId, workoutId, dir: Dir.DOWN, index });
+            setMenuAnchor(null);
+          }}
+        />
+        <ExerciseMenuDropAndBfrItems
+          isCardio={isCardio}
+          dropSetsEnabled={showDropControls}
+          isBfr={exerciseLink.isBfr}
+          onToggleDropSets={(checked) => {
+            if (!checked) {
+              handleDisableDropSets();
+              setDropSetsEnabled(false);
+              return;
+            }
+            setDropSetsEnabled(true);
+          }}
+          onToggleBfr={(checked) => {
+            setBfrEnabled({ dispatch, planId, targets: [menuTarget], enabled: checked });
+          }}
+        />
+        <ExerciseMenuActionItem
+          color="error.main"
+          onClick={() => {
+            removeExercises({ dispatch, planId, targets: [menuTarget] });
+            setMenuAnchor(null);
+          }}
         >
           Remove
-        </MenuItem>
+        </ExerciseMenuActionItem>
       </Menu>
 
       <ExercisePickerDialog
@@ -490,6 +430,31 @@ const ExerciseProgressCard = ({
             exercises: allExercises,
             category: exercise.category ?? 'resistance',
           });
+        }}
+      />
+      <ExerciseDetailsDialog
+        open={detailsOpen}
+        repRange={exerciseLink.repRange}
+        restTime={exerciseLink.restTime}
+        onClose={() => setDetailsOpen(false)}
+        onSave={({ repRange: nextRepRange, restTime: nextRestTime }) => {
+          dispatch({
+            type: 'UPDATE_REP_RANGE',
+            planId,
+            weekId,
+            workoutId,
+            workoutExerciseId: exerciseLink.id,
+            repRange: nextRepRange,
+          });
+          dispatch({
+            type: 'UPDATE_REST_TIME',
+            planId,
+            weekId,
+            workoutId,
+            workoutExerciseId: exerciseLink.id,
+            restTime: nextRestTime,
+          });
+          setDetailsOpen(false);
         }}
       />
     </Box>

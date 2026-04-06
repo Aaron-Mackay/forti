@@ -3,6 +3,7 @@
 import React from 'react'
 import { Box, Chip, Typography } from '@mui/material'
 import type { SxProps, Theme } from '@mui/material/styles'
+import EditIcon from '@mui/icons-material/Edit'
 import { computeE1rm } from '@/lib/e1rm'
 
 type ExerciseMetaInput = {
@@ -49,6 +50,113 @@ export function ExerciseNameWithMeta({
         </Typography>
       )}
     </>
+  )
+}
+
+export function EditableExerciseNameWithMeta({
+  name,
+  metaParts,
+  index,
+  isBfr = false,
+  onClick,
+  compact = false,
+  emptyLabel = 'Add exercise',
+}: {
+  name: string | null | undefined
+  metaParts?: string[]
+  index?: number
+  isBfr?: boolean
+  onClick: () => void
+  compact?: boolean
+  emptyLabel?: string
+}) {
+  const displayName = name?.trim() ? name : null
+  const details = metaParts ?? []
+
+  return (
+    <Box sx={{ minWidth: 0 }}>
+      {displayName ? (
+        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.35, minWidth: 0, flexWrap: 'wrap' }}>
+          {index != null && (
+            <Typography variant={compact ? 'caption' : 'body2'} fontWeight={600} sx={{ lineHeight: 1.3, flexShrink: 0 }}>
+              {index + 1}.
+            </Typography>
+          )}
+          <Box
+            component="button"
+            type="button"
+            onClick={onClick}
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.4,
+              maxWidth: '100%',
+              cursor: 'pointer',
+              background: 'none',
+              border: 0,
+              p: 0,
+              m: 0,
+              color: 'inherit',
+              textAlign: 'left',
+              '&:hover .edit-icon': { opacity: 1 },
+            }}
+          >
+            <Typography
+              variant={compact ? 'caption' : 'body2'}
+              fontWeight={600}
+              sx={{
+                lineHeight: 1.3,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                flexWrap: 'wrap',
+                minWidth: 0,
+              }}
+            >
+              <Box component="span" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', borderBottom: '1px dashed', borderColor: 'divider' }}>
+                {displayName}
+              </Box>
+              {isBfr && <Chip label="BFR" size="small" color="warning" sx={{ height: 16, fontSize: '0.6rem' }} />}
+            </Typography>
+            <EditIcon
+              className="edit-icon"
+              sx={{ fontSize: compact ? '0.7rem' : '0.85rem', opacity: 0.35, transition: 'opacity 0.15s', flexShrink: 0 }}
+            />
+          </Box>
+        </Box>
+      ) : (
+        <Box
+          component="button"
+          type="button"
+          onClick={onClick}
+          aria-label="Add exercise"
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 0.25,
+            cursor: 'pointer',
+            fontSize: compact ? '0.7rem' : '0.8rem',
+            color: 'text.disabled',
+            background: 'none',
+            border: '1px dashed',
+            borderColor: 'divider',
+            borderRadius: 0.5,
+            px: 0.6,
+            py: 0.3,
+            '&:hover': { color: 'text.secondary', borderColor: 'text.secondary' },
+            transition: 'color 0.15s, border-color 0.15s',
+          }}
+        >
+          <EditIcon sx={{ fontSize: compact ? '0.65rem' : '0.8rem' }} />
+          {emptyLabel}
+        </Box>
+      )}
+      {details.length > 0 && (
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: compact ? '0.66rem' : '0.68rem', display: 'block', mt: 0.25 }}>
+          {details.join(' · ')}
+        </Typography>
+      )}
+    </Box>
   )
 }
 

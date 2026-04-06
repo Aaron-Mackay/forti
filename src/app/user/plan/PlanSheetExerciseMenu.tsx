@@ -1,9 +1,12 @@
 'use client'
 
 import React from 'react'
-import { Divider, Menu, MenuItem, Switch, Typography } from '@mui/material'
+import { Divider, Menu } from '@mui/material'
 import { Dir } from '@lib/useWorkoutEditor'
 import { WorkoutExercisePrisma } from '@/types/dataTypes'
+import { addTrailingDropSet, removeExercises, removeTrailingDropSets, setBfrEnabled } from './exerciseMenuActions'
+import { confirmRemoveLastSetWithDrops } from './exerciseSetModel'
+import { ExerciseMenuActionItem, ExerciseMenuDropAndBfrItems, ExerciseMenuMoveItems } from './ExerciseMenuItems'
 import { MenuState, WorkoutEditorDispatch } from './PlanSheetShared'
 
 type PlanSheetExerciseMenuProps = {
@@ -25,6 +28,10 @@ export function PlanSheetExerciseMenu({
   onClose,
   planId,
 }: PlanSheetExerciseMenuProps) {
+  const menuTarget = menuState && menuEx
+    ? [{ weekId: menuState.weekId, workoutId: menuState.workoutId, exercise: menuEx }]
+    : []
+
   return (
     <Menu
       anchorEl={menuState?.anchor ?? null}
@@ -33,48 +40,27 @@ export function PlanSheetExerciseMenu({
       slotProps={{ paper: { sx: { minWidth: '10rem' } } }}
     >
       {menuState && !menuState.isCardio && [
-        <MenuItem
-          key="toggle-drops"
+        <ExerciseMenuDropAndBfrItems
+          key="toggle-drop-bfr"
           dense
-          onClick={() => {
-            const lastTopLevelSet = menuTopLevelSets[menuTopLevelSets.length - 1]
-            if (menuDropSets.length > 0) {
-              menuDropSets.forEach((set) => {
-                dispatch({ type: 'REMOVE_DROP_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId, setId: set.id })
-              })
+          isCardio={menuState.isCardio}
+          dropSetsEnabled={menuDropSets.length > 0}
+          isBfr={Boolean(menuEx?.isBfr)}
+          onToggleDropSets={(checked) => {
+            if (!checked) {
+              removeTrailingDropSets({ dispatch, planId, targets: menuTarget })
               return
             }
-            if (lastTopLevelSet) {
-              dispatch({ type: 'ADD_DROP_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId, parentSetId: lastTopLevelSet.id })
+            if (menuTarget[0]) {
+              addTrailingDropSet({ dispatch, planId, target: menuTarget[0] })
             }
           }}
-          sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}
-        >
-          <Typography variant="inherit">Enable drop sets</Typography>
-          <Switch
-            size="small"
-            edge="end"
-            checked={menuDropSets.length > 0}
-            tabIndex={-1}
-            disableRipple
-            onClick={(event) => event.stopPropagation()}
-            onChange={(_, checked) => {
-              const lastTopLevelSet = menuTopLevelSets[menuTopLevelSets.length - 1]
-              if (!checked) {
-                menuDropSets.forEach((set) => {
-                  dispatch({ type: 'REMOVE_DROP_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId, setId: set.id })
-                })
-                return
-              }
-              if (lastTopLevelSet && menuDropSets.length === 0) {
-                dispatch({ type: 'ADD_DROP_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId, parentSetId: lastTopLevelSet.id })
-              }
-            }}
-            inputProps={{ 'aria-label': 'Toggle drop sets' }}
-          />
-        </MenuItem>,
+          onToggleBfr={(checked) => {
+            setBfrEnabled({ dispatch, planId, targets: menuTarget, enabled: checked })
+          }}
+        />,
         <Divider key="div0" />,
-        <MenuItem
+        <ExerciseMenuActionItem
           key="add-set"
           dense
           onClick={() => {
@@ -83,28 +69,21 @@ export function PlanSheetExerciseMenu({
           }}
         >
           Add set
-        </MenuItem>,
-        <MenuItem
+        </ExerciseMenuActionItem>,
+        <ExerciseMenuActionItem
           key="remove-set"
           dense
           disabled={menuTopLevelSets.length === 0}
           onClick={() => {
-            const lastTopLevelSet = menuTopLevelSets[menuTopLevelSets.length - 1]
-            const attachedDropCount = lastTopLevelSet
-              ? menuDropSets.filter((set) => set.parentSetId === lastTopLevelSet.id).length
-              : 0
-            if (attachedDropCount > 0) {
-              const confirmed = window.confirm(`Remove the last set and its ${attachedDropCount} attached drop ${attachedDropCount === 1 ? 'set' : 'sets'}?`)
-              if (!confirmed) return
-            }
+            if (menuEx && !confirmRemoveLastSetWithDrops(menuEx)) return
             dispatch({ type: 'REMOVE_SET', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId })
             onClose()
           }}
         >
           Remove set
-        </MenuItem>,
+        </ExerciseMenuActionItem>,
         <Divider key="div1" />,
-        <MenuItem
+        <ExerciseMenuActionItem
           key="add-drop"
           dense
           disabled={menuTopLevelSets.length === 0 || menuDropSets.length === 0}
@@ -117,8 +96,8 @@ export function PlanSheetExerciseMenu({
           }}
         >
           Add drop set
-        </MenuItem>,
-        <MenuItem
+        </ExerciseMenuActionItem>,
+        <ExerciseMenuActionItem
           key="remove-drop"
           dense
           disabled={menuDropSets.length === 0}
@@ -131,82 +110,34 @@ export function PlanSheetExerciseMenu({
           }}
         >
           Remove drop set
-        </MenuItem>,
+        </ExerciseMenuActionItem>,
         <Divider key="div2" />,
-        <MenuItem
-          key="move-up"
+        <ExerciseMenuMoveItems
+          key="move-items"
           dense
-          disabled={menuState.exerciseIndex === 0}
-          onClick={() => {
+          canMoveUp={menuState.exerciseIndex > 0}
+          canMoveDown={menuState.exerciseIndex < menuState.exerciseCount - 1}
+          onMoveUp={() => {
             dispatch({ type: 'MOVE_EXERCISE', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, dir: Dir.UP, index: menuState.exerciseIndex })
             onClose()
           }}
-        >
-          Move up
-        </MenuItem>,
-        <MenuItem
-          key="move-down"
-          dense
-          disabled={menuState.exerciseIndex === menuState.exerciseCount - 1}
-          onClick={() => {
+          onMoveDown={() => {
             dispatch({ type: 'MOVE_EXERCISE', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, dir: Dir.DOWN, index: menuState.exerciseIndex })
             onClose()
           }}
-        >
-          Move down
-        </MenuItem>,
-        <MenuItem
-          key="toggle-bfr"
-          dense
-          onClick={() => {
-            if (menuEx) {
-              dispatch({
-                type: 'TOGGLE_BFR',
-                planId,
-                weekId: menuState.weekId,
-                workoutId: menuState.workoutId,
-                workoutExerciseId: menuState.exerciseId,
-                enabled: !menuEx.isBfr,
-              })
-            }
-          }}
-          sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}
-        >
-          <Typography variant="inherit">BFR mode</Typography>
-          <Switch
-            size="small"
-            edge="end"
-            checked={Boolean(menuEx?.isBfr)}
-            tabIndex={-1}
-            disableRipple
-            onClick={(event) => event.stopPropagation()}
-            onChange={(_, checked) => {
-              dispatch({
-                type: 'TOGGLE_BFR',
-                planId,
-                weekId: menuState.weekId,
-                workoutId: menuState.workoutId,
-                workoutExerciseId: menuState.exerciseId,
-                enabled: checked,
-              })
-            }}
-            inputProps={{ 'aria-label': 'Toggle BFR mode' }}
-          />
-        </MenuItem>,
+        />,
         <Divider key="div3" />,
       ]}
-      <MenuItem
+      <ExerciseMenuActionItem
         dense
-        sx={{ color: 'error.main' }}
+        color="error.main"
         onClick={() => {
-          if (menuState) {
-            dispatch({ type: 'REMOVE_EXERCISE', planId, weekId: menuState.weekId, workoutId: menuState.workoutId, exerciseId: menuState.exerciseId })
-          }
+          removeExercises({ dispatch, planId, targets: menuTarget })
           onClose()
         }}
       >
         Delete exercise
-      </MenuItem>
+      </ExerciseMenuActionItem>
     </Menu>
   )
 }
