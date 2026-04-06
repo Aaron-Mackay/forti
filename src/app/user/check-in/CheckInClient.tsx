@@ -7,15 +7,17 @@ import {
   Button,
   CircularProgress,
   Divider,
+  IconButton,
   Paper,
   Skeleton,
   Typography,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import type { WeeklyCheckIn } from '@prisma/client';
 import CheckInForm from './CheckInForm';
-import CheckInHistoryCard from './CheckInHistoryCard';
+import CheckInHistoryCard, { CheckInDetails } from './CheckInHistoryCard';
 import { usePushSubscription } from '@lib/usePushSubscription';
 import type { CurrentCheckInResponse } from '@/types/checkInTypes';
 
@@ -29,6 +31,7 @@ export default function CheckInClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [editingCurrent, setEditingCurrent] = useState(false);
 
   const { permission, subscribing, subscribe } = usePushSubscription();
 
@@ -52,6 +55,7 @@ export default function CheckInClient() {
       try {
         const [curr, hist] = await Promise.all([loadCurrent(), loadHistory(0)]);
         setCurrentData(curr);
+        setEditingCurrent(false);
         setHistory(hist.checkIns);
         setHistoryTotal(hist.total);
         setHistoryOffset(0);
@@ -115,13 +119,46 @@ export default function CheckInClient() {
       <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
         {loading ? (
           <Skeleton variant="rounded" height={120} />
-        ) : isCompleted ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CheckCircleIcon color="success" />
-            <Box>
-              <Typography variant="body1" fontWeight={600}>Check-in complete</Typography>
-              <Typography variant="body2" color="text.secondary">Week of {weekLabel}</Typography>
+        ) : editingCurrent && currentData ? (
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="body1" fontWeight={600}>
+                Edit submitted check-in
+              </Typography>
+              <Button size="small" onClick={() => setEditingCurrent(false)}>
+                Cancel
+              </Button>
             </Box>
+            <CheckInForm
+              currentWeek={currentData.currentWeek}
+              weekPrior={currentData.weekPrior}
+              checkIn={currentData.checkIn}
+              previousPhotos={currentData.previousPhotos}
+              weekTargets={currentData.weekTargets}
+              completedWorkoutsCount={currentData.completedWorkoutsCount}
+              plannedWorkoutsCount={currentData.plannedWorkoutsCount}
+              activePlanId={currentData.activePlanId}
+              onSubmitted={() => setSubmitted(s => !s)}
+            />
+          </Box>
+        ) : isCompleted ? (
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <CheckCircleIcon color="success" />
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="body1" fontWeight={600}>Check-in complete</Typography>
+                <Typography variant="body2" color="text.secondary">Week of {weekLabel}</Typography>
+              </Box>
+              <IconButton
+                size="small"
+                aria-label="Edit current check-in"
+                onClick={() => setEditingCurrent(true)}
+                sx={{ color: 'text.secondary' }}
+              >
+                <EditOutlinedIcon fontSize="small" />
+              </IconButton>
+            </Box>
+            {currentData && <CheckInDetails checkIn={currentData.checkIn} />}
           </Box>
         ) : (
           <Box>

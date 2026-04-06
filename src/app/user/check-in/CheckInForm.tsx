@@ -45,21 +45,22 @@ interface FormState {
 
 export default function CheckInForm({ currentWeek, weekPrior, checkIn, previousPhotos, weekTargets, completedWorkoutsCount, plannedWorkoutsCount, activePlanId, onSubmitted }: Props) {
   const router = useRouter();
+  const isEditing = Boolean(checkIn.completedAt);
   const [photoUrls, setPhotoUrls] = useState<{ front: string | null; back: string | null; side: string | null }>({
     front: checkIn.frontPhotoUrl ?? null,
     back: checkIn.backPhotoUrl ?? null,
     side: checkIn.sidePhotoUrl ?? null,
   });
   const [form, setForm] = useState<FormState>({
-    energyLevel: null,
-    moodRating: null,
-    stressLevel: null,
-    sleepQuality: null,
-    recoveryRating: null,
-    adherenceRating: null,
-    weekReview: '',
-    coachMessage: '',
-    goalsNextWeek: '',
+    energyLevel: checkIn.energyLevel,
+    moodRating: checkIn.moodRating,
+    stressLevel: checkIn.stressLevel,
+    sleepQuality: checkIn.sleepQuality,
+    recoveryRating: checkIn.recoveryRating,
+    adherenceRating: checkIn.adherenceRating,
+    weekReview: checkIn.weekReview ?? '',
+    coachMessage: checkIn.coachMessage ?? '',
+    goalsNextWeek: checkIn.goalsNextWeek ?? '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +96,9 @@ export default function CheckInForm({ currentWeek, weekPrior, checkIn, previousP
         const data = await res.json() as { error?: string };
         throw new Error(data.error ?? 'Submission failed');
       }
-      trackFirstWeekEvent('first_checkin_submitted', { source: 'check-in' });
+      if (!isEditing) {
+        trackFirstWeekEvent('first_checkin_submitted', { source: 'check-in' });
+      }
       onSubmitted();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -116,6 +119,7 @@ export default function CheckInForm({ currentWeek, weekPrior, checkIn, previousP
         previousPhotos={previousPhotos}
         weekStart={new Date(checkIn.weekStartDate).toISOString()}
         onPhotoUploaded={(angle, url) => setPhotoUrls(p => ({ ...p, [angle]: url }))}
+        onPhotoRemoved={(angle) => setPhotoUrls(p => ({ ...p, [angle]: null }))}
       />
 
       <Divider sx={{ my: 3 }} />
@@ -200,7 +204,7 @@ export default function CheckInForm({ currentWeek, weekPrior, checkIn, previousP
         startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : undefined}
         size="large"
       >
-        Submit Check-in
+        {isEditing ? 'Resubmit Check-in' : 'Submit Check-in'}
       </Button>
     </Box>
   );

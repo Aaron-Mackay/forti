@@ -71,24 +71,22 @@ export async function POST(req: NextRequest) {
 
   const weekStart = toDateOnly(getWeekStart(new Date()));
 
-  // Prevent re-submitting an already completed check-in
   const existing = await prisma.weeklyCheckIn.findUnique({
     where: { userId_weekStartDate: { userId, weekStartDate: weekStart } },
   });
-  if (existing?.completedAt) {
-    return NextResponse.json({ error: 'Check-in for this week is already submitted' }, { status: 409 });
-  }
+  const isEditingCompletedCheckIn = Boolean(existing?.completedAt);
+  const completedAt = isEditingCompletedCheckIn ? new Date() : new Date();
 
   const checkIn = await prisma.weeklyCheckIn.upsert({
     where: { userId_weekStartDate: { userId, weekStartDate: weekStart } },
     create: {
       userId,
       weekStartDate: weekStart,
-      completedAt: new Date(),
+      completedAt,
       ...body,
     },
     update: {
-      completedAt: new Date(),
+      completedAt,
       ...body,
     },
   });
@@ -103,7 +101,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  if (user?.coach) {
+  if (user?.coach && !isEditingCompletedCheckIn) {
     const settings = parseDashboardSettings(user.settings);
     await notifyCoachCheckInSubmitted(
       user.coach.id,
@@ -113,5 +111,5 @@ export async function POST(req: NextRequest) {
     ).catch(err => console.error('Failed to send coach notification:', err));
   }
 
-  return NextResponse.json({ checkIn }, { status: 201 });
+  return NextResponse.json({ checkIn }, { status: isEditingCompletedCheckIn ? 200 : 201 });
 }

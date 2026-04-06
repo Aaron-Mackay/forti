@@ -18,14 +18,14 @@ function makeCurrentResponse(completed: boolean) {
       userId: 'test',
       weekStartDate: CURRENT_WEEK,
       completedAt: completed ? '2026-03-20T10:00:00.000Z' : null,
-      energyLevel: null,
+      energyLevel: completed ? 4 : null,
       moodRating: null,
       stressLevel: null,
       sleepQuality: null,
       recoveryRating: null,
       adherenceRating: null,
-      completedWorkouts: null,
-      plannedWorkouts: null,
+      completedWorkouts: completed ? 3 : null,
+      plannedWorkouts: completed ? 4 : null,
       weekReview: null,
       coachMessage: null,
       goalsNextWeek: null,
@@ -116,6 +116,10 @@ test.describe('Check-in page — already submitted', () => {
     await expect(page.getByText(/Check-in complete/i)).toBeVisible();
   });
 
+  test('still shows the submitted check-in details when already submitted', async ({ page }) => {
+    await expect(page.getByText(/Ratings/i)).toBeVisible();
+  });
+
   test('does not show the Submit Check-in button when already submitted', async ({ page }) => {
     await expect(page.getByRole('button', { name: /Submit Check-in/i })).not.toBeVisible();
   });
@@ -162,6 +166,7 @@ test.describe('Check-in page — form submission', () => {
 
     expect(postCalled).toBe(true);
     await expect(page.getByText(/Check-in complete/i)).toBeVisible();
+    await expect(page.getByText(/Ratings/i)).toBeVisible();
   });
 });
 
