@@ -1,5 +1,4 @@
 export {
-  apiErrorResponse,
   errorResponse,
   forbiddenResponse,
   notFoundResponse,

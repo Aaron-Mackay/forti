@@ -1,0 +1,23 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "src/app/**/{page,layout,loading,error,not-found,default,template}.tsx",
+    "src/app/**/route.ts",
+    "tests/**/*.ts",
+    "scripts/**/*.ts",
+    "prisma/**/*.ts",
+    "*.config.{js,ts,mjs,mts}"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "tests/**/*.ts",
+    "scripts/**/*.ts",
+    "prisma/**/*.ts"
+  ],
+  "ignoreDependencies": [
+    "@svgr/webpack"
+  ],
+  "ignoreBinaries": [
+    "psql"
+  ]
+}

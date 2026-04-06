@@ -41,34 +41,6 @@ export async function sendCheckInReminder({
   await mailer().email.send(params);
 }
 
-/** Notify a coach that a client has completed their check-in */
-export async function sendCheckInCoachAlert({
-  coach,
-  clientName,
-  weekStartDate,
-  checkInDay,
-}: {
-  coach: { email: string; name: string };
-  clientName: string;
-  weekStartDate: Date;
-  checkInDay: number;
-}): Promise<void> {
-  if (!process.env.MAILERSEND_API_KEY || !FROM_EMAIL) return;
-
-  const checkInDate = getCheckInDate(weekStartDate, checkInDay);
-  const formatted = checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-
-  const params = new EmailParams()
-    .setFrom(new Sender(FROM_EMAIL, FROM_NAME))
-    .setTo([new Recipient(coach.email, coach.name)])
-    .setSubject(`${clientName} completed their check-in`)
-    .setText(
-      `Hi ${coach.name},\n\n${clientName} has just submitted their weekly check-in for the week of ${formatted}.\n\nLog in to Forti and visit Client Check-ins to review it.\n\n— The Forti Team`
-    );
-
-  await mailer().email.send(params);
-}
-
 // ---------------------------------------------------------------------------
 // Unified event notifications (DB record + push + email in one call)
 // ---------------------------------------------------------------------------

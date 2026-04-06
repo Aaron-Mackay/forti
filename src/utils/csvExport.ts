@@ -7,7 +7,7 @@
 
 /** Escape a single cell value. Strings containing commas, newlines, or
  *  double-quotes are wrapped in double-quotes per RFC 4180. */
-export function escapeCsvCell(val: unknown): string {
+function escapeCsvCell(val: unknown): string {
   if (val === null || val === undefined) return '';
   const str = String(val);
   if (str.includes(',') || str.includes('\n') || str.includes('\r') || str.includes('"')) {

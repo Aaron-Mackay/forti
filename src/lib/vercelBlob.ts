@@ -19,7 +19,7 @@ const HOST_ALLOWLIST = ['blob.vercel-storage.com', 'public.blob.vercel-storage.c
 const PUBLIC_TOKEN_NAMES = ['BLOB_PUBLIC_READ_WRITE_TOKEN', 'BLOB_READ_WRITE_TOKEN'] as const;
 const PRIVATE_TOKEN_NAMES = ['BLOB_PRIVATE_READ_WRITE_TOKEN', 'BLOB_READ_WRITE_TOKEN'] as const;
 
-export const DEFAULT_MAX_UPLOAD_MB = 50;
+const DEFAULT_MAX_UPLOAD_MB = 50;
 
 export function getMaxUploadBytes() {
   const configured = Number(process.env.LIBRARY_UPLOAD_MAX_MB ?? DEFAULT_MAX_UPLOAD_MB);
@@ -54,20 +54,12 @@ export function getBlobToken(scope: BlobScope): string {
   return token;
 }
 
-export function getUploadScope(isCoachAsset: boolean): BlobScope {
-  return isCoachAsset ? 'public' : 'private';
-}
-
-export function getUploadToken(isCoachAsset: boolean): string {
-  return getBlobToken(getUploadScope(isCoachAsset));
-}
-
 export function buildBlobPath(userId: string, type: Exclude<LibraryAssetType, 'LINK'>, filename: string) {
   const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '-').toLowerCase();
   return `library/${userId}/${type.toLowerCase()}/${safeName}`;
 }
 
-export function isManagedBlobUrl(url: string | null | undefined): boolean {
+function isManagedBlobUrl(url: string | null | undefined): boolean {
   if (!url) return false;
   try {
     const parsed = new URL(url);

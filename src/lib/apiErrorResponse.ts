@@ -14,7 +14,7 @@ const STATUS_BY_CODE: Record<ApiErrorCode, number> = {
   INTERNAL: 500,
 };
 
-export function apiErrorResponse(
+function apiErrorResponse(
   code: ApiErrorCode,
   message: string,
   options?: { details?: unknown; status?: number },

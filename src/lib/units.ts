@@ -23,9 +23,3 @@ export function formatWeight(kg: number | null | undefined, unit: WeightUnit): s
   const display = v % 1 === 0 ? v.toString() : v.toFixed(1);
   return `${display} ${unit}`;
 }
-
-/** Round a kg value to the nearest sensible plate-loaded step in the given unit. */
-export function roundToStep(kg: number, unit: WeightUnit): number {
-  const step = unit === 'lbs' ? 5 / KG_TO_LBS : 2.5; // 5 lbs or 2.5 kg
-  return Math.round(kg / step) * step;
-}

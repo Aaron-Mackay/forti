@@ -27,7 +27,7 @@ export type ApiErrorEnvelope = {
   details?: unknown;
 };
 
-export function isApiErrorEnvelope(value: unknown): value is ApiErrorEnvelope {
+function isApiErrorEnvelope(value: unknown): value is ApiErrorEnvelope {
   if (!value || typeof value !== 'object') return false;
   const candidate = value as { code?: unknown; error?: unknown };
   return typeof candidate.code === 'string' && typeof candidate.error === 'string';

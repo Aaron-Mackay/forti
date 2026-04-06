@@ -16,7 +16,7 @@ export type BuiltInMetricKey = 'weight' | 'calories' | 'steps' | 'sleepMins';
 // Custom metric keys are the UUID strings of the custom metric definitions
 export type MetricKey = BuiltInMetricKey | string;
 
-export interface CustomMetricEntry {
+interface CustomMetricEntry {
   value: number | null;
   target: number | null;
 }
@@ -127,5 +127,3 @@ export const DayMetricsBar: React.FC<{
     </Box>
   );
 }
-
-export default DayMetricsBar;

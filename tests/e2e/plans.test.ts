@@ -466,7 +466,7 @@ test.describe('Plan editor (scratch)', () => {
 });
 
 // ── BFR preset toggle ─────────────────────────────────────────────────────────
-// TODO: BFR toggle was previously in ExerciseRow (Week.tsx desktop table).
+// TODO: BFR toggle coverage for the current plan editor surfaces.
 // The new PlanMultiWeekTable does not yet expose per-exercise BFR controls.
 // These tests will be re-added once BFR is supported in the new plan view.
 

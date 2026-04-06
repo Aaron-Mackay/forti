@@ -22,7 +22,6 @@ export interface MetricSummary {
   avgFat: number | null;
 }
 
-export const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export const CHECK_IN_DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export function computeMetricSummary(metrics: DayMetric[]): MetricSummary {

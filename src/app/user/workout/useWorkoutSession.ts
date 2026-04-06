@@ -20,7 +20,7 @@ import {Exercise} from '@prisma/client';
 import {AddExerciseConfig} from './AddExerciseConfigDialog';
 import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
 
-export type SnackbarState = {
+type SnackbarState = {
   open: boolean;
   message: string;
   severity: 'success' | 'info';
@@ -29,7 +29,7 @@ export type SnackbarState = {
 type CompletionModal = {workout: WorkoutPrisma; done: number; total: number};
 type Field = 'weight' | 'reps';
 
-export type SubstituteTarget = {
+type SubstituteTarget = {
   workoutExerciseId: number;
   exerciseId: number;
   category: string;
@@ -51,7 +51,7 @@ function detectStructuralChange(prev: UserPrisma, next: UserPrisma): boolean {
   return false;
 }
 
-export function findWorkoutContext(userData: UserPrisma, workoutId: number) {
+function findWorkoutContext(userData: UserPrisma, workoutId: number) {
   for (const plan of userData.plans) {
     for (const week of plan.weeks) {
       for (const workout of week.workouts) {
