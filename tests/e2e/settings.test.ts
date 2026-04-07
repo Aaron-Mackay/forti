@@ -5,8 +5,6 @@
  * and that toggling a card off causes it to disappear from the dashboard.
  *
  * Notes:
- * - Mobile Safari (WebKit) auth is a pre-existing environment issue;
- *   all E2E tests fail for that browser.
  * - State-dependent tests are restricted to chromium only because
  *   fullyParallel: true runs all browser projects concurrently, and
  *   they all share the same DB user — leading to PATCH races.
@@ -14,10 +12,10 @@
 import { test, expect } from './fixtures';
 
 async function openNav(page: import('@playwright/test').Page) {
-  const menuButton = page.getByRole('button', { name: /menu/i });
+  const menuButton = page.getByRole('button', { name: /menu/i }).first();
   const hasVisibleMenuButton = await menuButton.isVisible().catch(() => false);
   if (hasVisibleMenuButton) {
-    await menuButton.click({ timeout: 3_000 }).catch(() => {});
+    await menuButton.click({ timeout: 10_000 });
   }
   await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible();
   return page.locator('body');

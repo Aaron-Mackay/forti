@@ -21,7 +21,7 @@ async function openNav(page: Page) {
   const menuBtn = page.getByRole('button', { name: /menu/i }).first();
   const hasVisibleMenuButton = await menuBtn.isVisible().catch(() => false);
   if (hasVisibleMenuButton) {
-    await menuBtn.click({ timeout: 10_000, force: true });
+    await menuBtn.click({ timeout: 10_000 });
   }
 
   await expect(homeLink).toBeVisible({ timeout: 15_000 });
@@ -127,11 +127,7 @@ test.describe('AppBar — Log Out', () => {
   test('clicking Log Out redirects to /login', async ({ page }) => {
     await openDrawer(page);
     const logoutButton = page.getByRole('button', { name: /Log Out/i });
-    await logoutButton.click({ force: true });
-    const redirected = await page.waitForURL(/\/login/, { timeout: 3_000 }).then(() => true).catch(() => false);
-    if (!redirected) {
-      await logoutButton.click();
-      await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
-    }
+    await logoutButton.click();
+    await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
   });
 });
