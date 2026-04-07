@@ -35,7 +35,20 @@ export default function E1rmSparkline({
   }
 
   const valid = history.filter(p => typeof p.bestE1rm === 'number');
-  if (valid.length === 0 && todayE1RM === null) return null;
+  if (valid.length === 0 && todayE1RM === null) {
+    return (
+      <Box sx={{width: '100%', mb: 1}}>
+        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', px: 0.5}}>
+          <Typography variant="caption" color="text.secondary">
+            Est. 1RM history
+          </Typography>
+          <Typography variant="caption" color="text.disabled">
+            No history yet
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
 
   const historicalBest = valid.length > 0 ? valid[valid.length - 1].bestE1rm : null;
   const displayBest = Math.max(todayE1RM || 0, (historicalBest || 0))

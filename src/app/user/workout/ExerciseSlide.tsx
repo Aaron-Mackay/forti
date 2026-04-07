@@ -162,6 +162,8 @@ export default function ExerciseSlide({
 
   const hasFormCue = formCue.trim().length > 0;
 
+  const showPreviousSetRow = previousSets === undefined || previousSets.length > 0;
+
   const todayBestE1rm = ex.sets
     .filter(s => !s.isDropSet)
     .reduce<number | null>((best, set) => {
@@ -370,7 +372,7 @@ export default function ExerciseSlide({
                         </Box>
                         {previousSets === undefined ? (
                           <Skeleton variant="text" width={70} height={21} sx={{mt: 0.25}}/>
-                        ) : (
+                        ) : showPreviousSetRow ? (
                           <Typography
                             variant="caption"
                             color="text.disabled"
@@ -379,7 +381,7 @@ export default function ExerciseSlide({
                           >
                             Prev: {prev ? kgToDisplay(prev.weight, effectiveUnit === 'none' ? 'kg' : effectiveUnit) ?? '—' : '—'} × {prev?.reps ?? '—'}
                           </Typography>
-                        )}
+                        ) : null}
                       </Box>
                       <WeightInput
                         valueKg={group.parent.weight}
