@@ -1,4 +1,4 @@
-import {Event} from '@prisma/client';
+import {Event} from '@/generated/prisma/browser';
 import {addDays, format} from 'date-fns';
 
 const formatIcalDate = (date: Date): string => format(date, 'yyyyMMdd');

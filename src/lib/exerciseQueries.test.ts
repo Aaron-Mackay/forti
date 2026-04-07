@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ExerciseCategory } from '@prisma/client';
+import { ExerciseCategory } from '@/generated/prisma/browser';
 
 vi.mock('@/lib/prisma', () => ({ default: {} }));
 

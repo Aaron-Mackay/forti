@@ -1,7 +1,7 @@
 import {WorkoutEditorProvider} from "@/context/WorkoutEditorContext";
 import {PlanBuilder} from "./PlanBuilder";
 import {PlanPrisma, UserPrisma, WeekPrisma, WorkoutPrisma} from "@/types/dataTypes";
-import {Exercise} from "@prisma/client";
+import {Exercise} from "@/generated/prisma/browser";
 
 export const PLACEHOLDER_ID = -1
 

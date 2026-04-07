@@ -5,7 +5,7 @@ import {useWorkoutEditor, WorkoutEditorAction} from '@/lib/useWorkoutEditor';
 import useDebouncedDispatch from "@/utils/useDebouncedDispatch";
 
 import {UserPrisma} from "@/types/dataTypes";
-import {Exercise} from "@prisma/client";
+import {Exercise} from "@/generated/prisma/browser";
 
 export interface WorkoutEditorContextType {
   state: UserPrisma;

@@ -36,7 +36,7 @@ import {computeE1rm} from '@/lib/e1rm';
 import {kgToDisplay, formatWeight} from '@/lib/units';
 import type {ExerciseUnitOverride} from '@/types/settingsTypes';
 import {SetPrisma, WorkoutExercisePrisma} from '@/types/dataTypes';
-import {UserExerciseNote} from '@prisma/client';
+import {UserExerciseNote} from '@/generated/prisma/browser';
 import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
 import {useSettings} from '@lib/providers/SettingsProvider';
 

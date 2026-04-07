@@ -10,7 +10,7 @@ import TuneIcon from '@mui/icons-material/TuneRounded';
 import {minToHhMm} from "@/app/user/calendar/utils";
 import {CustomMetricDef, WeightUnit} from "@/types/settingsTypes";
 import {kgToDisplay} from "@/lib/units";
-import {Prisma} from "@prisma/client";
+import {Prisma} from "@/generated/prisma/browser";
 
 export type BuiltInMetricKey = 'weight' | 'calories' | 'steps' | 'sleepMins';
 // Custom metric keys are the UUID strings of the custom metric definitions

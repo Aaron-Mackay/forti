@@ -20,7 +20,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import Link from 'next/link';
 import { useSettings } from '@lib/providers/SettingsProvider';
 import { useApiGet } from '@lib/hooks/api/useApiGet';
-import { DayMetricPrisma, UserPrisma } from '@/types/dataTypes';
+import { DayMetricPrisma, PlanPrisma, WeekPrisma, WorkoutPrisma, UserPrisma } from '@/types/dataTypes';
 import { convertDateToDateString } from '@lib/dateUtils';
 
 interface CheckInResponse {
@@ -62,8 +62,8 @@ export default function GettingStartedCard({ userData, dayMetrics, today }: Prop
     },
     {
       label: 'Do your first workout',
-      done: userData?.plans.some(p =>
-        p.weeks.some(w => w.workouts.some(wo => wo.dateCompleted !== null))
+      done: userData?.plans.some((p: PlanPrisma) =>
+        p.weeks.some((w: WeekPrisma) => w.workouts.some((wo: WorkoutPrisma) => wo.dateCompleted !== null))
       ) ?? false,
       href: '/user/workout',
     },

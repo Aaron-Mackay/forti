@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useRouter } from 'next/navigation';
-import type { DayMetric, WeeklyCheckIn } from '@prisma/client';
+import type { DayMetric, WeeklyCheckIn } from '@/generated/prisma/browser';
 import MetricsSummaryTable from './MetricsSummaryTable';
 import RatingField from './RatingField';
 import ProgressPhotoSection from './ProgressPhotoSection';

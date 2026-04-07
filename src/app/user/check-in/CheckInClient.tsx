@@ -15,7 +15,7 @@ import {
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-import type { WeeklyCheckIn } from '@prisma/client';
+import type { WeeklyCheckIn } from '@/generated/prisma/browser';
 import CheckInForm from './CheckInForm';
 import CheckInHistoryCard, { CheckInDetails } from './CheckInHistoryCard';
 import { usePushSubscription } from '@lib/usePushSubscription';

@@ -21,7 +21,7 @@ import {
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import { LibraryAsset } from '@prisma/client';
+import { LibraryAsset } from '@/generated/prisma/browser';
 import { useMemo, useRef, useState } from 'react';
 import { parseLibraryCsv } from '@/utils/csvImport';
 

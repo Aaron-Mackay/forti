@@ -1,5 +1,5 @@
 import {useReducer} from 'react';
-import {Exercise} from "@prisma/client";
+import {Exercise} from "@/generated/prisma/browser";
 
 import {PlanPrisma, SetPrisma, UserPrisma, WeekPrisma, WorkoutExercisePrisma, WorkoutPrisma} from "@/types/dataTypes";
 import * as userPlanMutators from "@/utils/userPlanMutators";

@@ -34,7 +34,7 @@ vi.mock('@anthropic-ai/sdk', async () => {
   mockAnthropicStream.mockReturnValue({ finalMessage: mockFinalMessage });
   return {
     default: Object.assign(
-      vi.fn().mockImplementation(() => ({ messages: { stream: mockAnthropicStream } })),
+      vi.fn().mockImplementation(function() { return { messages: { stream: mockAnthropicStream } }; }),
       { APIError: MockAPIError },
     ),
   };

@@ -2,7 +2,7 @@ import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import CardioSlide from './CardioSlide';
-import {ExerciseCategory} from '@prisma/client';
+import {ExerciseCategory} from '@/generated/prisma/browser';
 import {WorkoutExercisePrisma} from '@/types/dataTypes';
 
 function buildCardioExercise(overrides: Partial<WorkoutExercisePrisma> = {}): WorkoutExercisePrisma {

@@ -1,7 +1,7 @@
 import {getExercises, getUserData} from "@lib/api";
 import {notFound} from "next/navigation";
 import PlanBuilderWithContext from "@/app/user/plan/create/PlanBuilderWithContext";
-import {Exercise} from "@prisma/client";
+import {Exercise} from "@/generated/prisma/browser";
 import getLoggedInUser from "@lib/getLoggedInUser";
 import prisma from "@lib/prisma";
 

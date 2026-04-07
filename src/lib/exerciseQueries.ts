@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import {ExerciseCategory, Prisma} from '@prisma/client';
+import {ExerciseCategory, Prisma} from '@/generated/prisma/browser';
 
 /**
  * Looks up the dateCompleted for the given workoutId.

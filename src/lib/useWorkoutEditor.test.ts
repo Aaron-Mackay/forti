@@ -1,7 +1,7 @@
 import {Dir, reducer, WorkoutEditorAction} from './useWorkoutEditor';
 import {ExerciseBuilder, SetBuilder, UserBuilder, WeekBuilder, WorkoutBuilder, PlanBuilder} from '@/testUtils/builders';
 import {describe, expect, it} from "vitest";
-import {ExerciseCategory} from "@prisma/client";
+import {ExerciseCategory} from "@/generated/prisma/browser";
 import {SetPrisma, UserPrisma} from "@/types/dataTypes";
 import {updateUserSets} from "@/utils/userPlanMutators";
 

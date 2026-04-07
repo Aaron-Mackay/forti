@@ -11,7 +11,7 @@ vi.mock('@lib/providers/AppBarProvider', () => ({ useAppBar: vi.fn() }));
 
 import ExercisesListView from './ExercisesListView';
 import {StopwatchProvider} from './StopwatchContext';
-import {ExerciseCategory} from '@prisma/client';
+import {ExerciseCategory} from '@/generated/prisma/browser';
 import {WorkoutPrisma} from '@/types/dataTypes';
 
 function buildWorkout(overrides: Partial<WorkoutPrisma> = {}): WorkoutPrisma {

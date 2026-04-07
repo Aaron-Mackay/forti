@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Notification } from '@prisma/client';
+import type { Notification } from '@/generated/prisma/browser';
 
 interface NotificationsData {
   notifications: Notification[];

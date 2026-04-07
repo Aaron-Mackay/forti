@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import type { WeeklyCheckIn } from '@prisma/client';
+import type { WeeklyCheckIn } from '@/generated/prisma/browser';
 
 interface Props {
   checkIn: WeeklyCheckIn;

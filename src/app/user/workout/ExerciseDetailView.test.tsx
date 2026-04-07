@@ -14,7 +14,7 @@ vi.mock('@lib/providers/AppBarProvider', () => ({ useAppBar: vi.fn() }));
 
 import ExerciseDetailView from './ExerciseDetailView';
 import {StopwatchProvider} from './StopwatchContext';
-import {ExerciseCategory} from '@prisma/client';
+import {ExerciseCategory} from '@/generated/prisma/browser';
 import {WorkoutPrisma} from '@/types/dataTypes';
 
 // Swiper doesn't render well in jsdom — mock the parts we need

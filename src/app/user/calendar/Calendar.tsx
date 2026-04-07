@@ -16,7 +16,7 @@ import {APPBAR_HEIGHT, DRAWER_WIDTH} from "@/components/CustomAppBar";
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import {format, isAfter, isBefore, isSameDay} from 'date-fns';
 import {getEventsOnDate, parsedEvents} from "@/app/user/calendar/utils";
-import {EventType} from "@prisma/client";
+import {EventType} from "@/generated/prisma/browser";
 import {CalendarRightDrawer} from "@/app/user/calendar/CalendarRightDrawer";
 import {getDayMetricsCache, getEventsCache, saveDayMetricsCache, saveEventsCache} from "@/utils/clientDb";
 import {useOfflineCache} from '@lib/hooks/useOfflineCache';

@@ -1,6 +1,6 @@
 import { EmailParams, MailerSend, Recipient, Sender } from 'mailersend';
 import webpush from 'web-push';
-import type { PushSubscription as DbPushSubscription } from '@prisma/client';
+import type { PushSubscription as DbPushSubscription } from '@/generated/prisma/browser';
 import { getCheckInDate } from './checkInUtils';
 import prisma from './prisma';
 

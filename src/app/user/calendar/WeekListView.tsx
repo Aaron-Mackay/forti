@@ -12,7 +12,7 @@ import {
   startOfDay,
 } from 'date-fns';
 import { EventPrisma } from '@/types/dataTypes';
-import { EventType } from '@prisma/client';
+import { EventType } from '@/generated/prisma/browser';
 import { getEventColor } from './utils';
 
 type Props = {

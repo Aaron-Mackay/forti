@@ -20,7 +20,7 @@ import {
   useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import {Exercise} from '@prisma/client';
+import {Exercise} from '@/generated/prisma/browser';
 import {AddExerciseForm} from '@/app/exercises/AddExerciseForm';
 
 // Maps plain-English search terms to substrings found in muscle IDs.

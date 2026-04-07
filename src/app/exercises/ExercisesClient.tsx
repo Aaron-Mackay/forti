@@ -1,7 +1,7 @@
 'use client';
 
 import {useCallback, useMemo, useState} from 'react';
-import {Exercise} from '@prisma/client';
+import {Exercise} from '@/generated/prisma/browser';
 import {Autocomplete, Box, Button, TextField, Typography} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import {useRouter} from 'next/navigation';

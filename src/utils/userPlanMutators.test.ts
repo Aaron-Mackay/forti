@@ -40,7 +40,7 @@ import {
   WeekBuilder,
   WorkoutBuilder,
 } from '@/testUtils/builders';
-import { Exercise, ExerciseCategory } from '@prisma/client';
+import { Exercise, ExerciseCategory } from '@/generated/prisma/browser';
 
 let nextId = 100;
 const mockUuid = () => nextId++;

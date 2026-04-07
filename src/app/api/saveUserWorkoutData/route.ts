@@ -4,7 +4,7 @@ import confirmPermission from "@lib/confirmPermission";
 import {z} from "zod";
 import {extractErrorMessage} from "@lib/apiError";
 import {PlanInputSchema} from "@lib/planSchemas";
-import {ExerciseCategory} from "@prisma/client";
+import {ExerciseCategory} from "@/generated/prisma/browser";
 import {computeE1rm} from "@lib/e1rm";
 import {findOrCreateExercise} from "@lib/exerciseQueries";
 import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSession";

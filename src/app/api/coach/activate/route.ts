@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { parseDashboardSettings, Settings } from '@/types/settingsTypes';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@/generated/prisma/browser';
 
 async function generateUniqueCoachCode(): Promise<string> {
   for (let attempt = 0; attempt < 10; attempt++) {

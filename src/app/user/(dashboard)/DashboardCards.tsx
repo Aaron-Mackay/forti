@@ -18,7 +18,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import Link from "next/link";
 import {DayMetricPrisma, EventPrisma, UserPrisma} from "@/types/dataTypes";
 import {Settings} from "@/types/settingsTypes";
-import {EventType} from "@prisma/client";
+import {EventType} from "@/generated/prisma/browser";
 import {convertDateToDateString} from "@lib/dateUtils";
 import {getDefinedBlockColor} from "@/app/user/calendar/utils";
 import {DayMetricsBar, MetricKey} from "@/app/user/calendar/DayMetricBar";
