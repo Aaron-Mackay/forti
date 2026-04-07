@@ -37,7 +37,7 @@ import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import { useParams } from 'next/navigation';
 import { useApiGet } from '@lib/hooks/api/useApiGet';
 import { useApiMutation } from '@lib/hooks/useApiMutation';
-import type { LibraryAssetType } from '@prisma/client';
+import type { LibraryAssetType } from '@/generated/prisma/browser';
 import type { StepProgressMap } from '@lib/learningPlanSchemas';
 
 interface AssetSummary {

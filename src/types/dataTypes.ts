@@ -1,4 +1,4 @@
-import {Prisma, Event, DayMetric, ExerciseCategory} from "@prisma/client";
+import {Prisma, Event, DayMetric, ExerciseCategory} from "@/generated/prisma/browser";
 
 export type EventPrisma = Event
 export type DayMetricPrisma = DayMetric

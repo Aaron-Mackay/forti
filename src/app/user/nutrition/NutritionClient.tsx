@@ -29,7 +29,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import { addDays, format, getISOWeek, startOfWeek } from 'date-fns';
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import { DayMetricPrisma, EventPrisma } from '@/types/dataTypes';
-import { EventType } from '@prisma/client';
+import { EventType } from '@/generated/prisma/browser';
 import { getDefinedBlockColor } from '@/app/user/calendar/utils';
 import { updateDayMetricClient } from '@lib/dayMetrics';
 import { convertDateToDateString } from '@lib/dateUtils';

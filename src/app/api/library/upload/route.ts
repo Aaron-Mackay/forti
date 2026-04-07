@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
-import { LibraryAssetType } from '@prisma/client';
+import { LibraryAssetType } from '@/generated/prisma/browser';
 import { authenticationErrorResponse, requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { errorResponse } from '@lib/apiResponses';

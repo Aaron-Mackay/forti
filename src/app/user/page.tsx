@@ -7,7 +7,7 @@ import DashboardChart from "@/app/user/(dashboard)/DashboardChart";
 import DashboardCards from "@/app/user/(dashboard)/DashboardCards";
 import E1rmProgressCard from "@/app/user/(dashboard)/E1rmProgressCard";
 import {getUserData, getUserDayMetrics, getUserEvents} from "@lib/api";
-import {EventType} from "@prisma/client";
+import {Event as PrismaEvent, EventType} from "@/generated/prisma/browser";
 import prisma from "@lib/prisma";
 import {parseDashboardSettings} from "@/types/settingsTypes";
 import {redirect} from "next/navigation";
@@ -20,7 +20,7 @@ export default async function UserPage() {
     getUserData(user.id),
     prisma.user.findUnique({ where: { id: user.id }, select: { settings: true } }),
   ])
-  const userBlocks = allEvents.filter(ev => ev.eventType === EventType.BlockEvent)
+  const userBlocks = allEvents.filter((ev: PrismaEvent) => ev.eventType === EventType.BlockEvent)
   const settings = parseDashboardSettings(userRecord?.settings)
 
   if (!settings.registrationComplete) {

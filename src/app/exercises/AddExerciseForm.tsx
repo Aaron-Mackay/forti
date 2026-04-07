@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import {EQUIPMENT_NAMES, EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, ExerciseEquipment, ExerciseMuscle, MUSCLE_NAMES} from '@/types/dataTypes';
 import MuscleHighlight from '@/components/MuscleHighlight';
-import {Exercise} from '@prisma/client';
+import {Exercise} from '@/generated/prisma/browser';
 
 interface AddExerciseFormProps {
   open: boolean;

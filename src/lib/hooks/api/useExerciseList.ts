@@ -2,7 +2,7 @@
 
 import {useEffect, useState} from 'react';
 import {fetchJson} from '@lib/fetchWrapper';
-import {Exercise} from '@prisma/client';
+import {Exercise} from '@/generated/prisma/browser';
 
 type ExerciseListState = {
   exercises: Exercise[];

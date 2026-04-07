@@ -10,7 +10,7 @@ import E1rmProgressCard from '@/app/user/(dashboard)/E1rmProgressCard';
 import ClientQuickLinks from './ClientQuickLinks';
 import { Paper } from '@mui/material';
 import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
-import { EventType } from '@prisma/client';
+import { Event as PrismaEvent, EventType } from '@/generated/prisma/browser';
 
 interface Props {
   params: Promise<{ clientId: string }>;
@@ -55,7 +55,7 @@ const ClientOverviewPage = async ({ params }: Props) => {
         {dayMetrics.length > 0 && (
           <DashboardChart
             dayMetrics={dayMetrics}
-            blocks={events.filter(e => e.eventType === EventType.BlockEvent)}
+            blocks={events.filter((e: PrismaEvent) => e.eventType === EventType.BlockEvent)}
           />
         )}
         {clientSettings.trackedE1rmExercises.length > 0 && (

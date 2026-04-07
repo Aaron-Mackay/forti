@@ -27,7 +27,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CloseIcon from '@mui/icons-material/Close';
-import { LibraryAsset, LibraryAssetType } from '@prisma/client';
+import { LibraryAsset, LibraryAssetType } from '@/generated/prisma/browser';
 import { useEffect, useMemo, useState } from 'react';
 import LibraryAssetCard from './LibraryAssetCard';
 import ImportLinksDialog from './ImportLinksDialog';

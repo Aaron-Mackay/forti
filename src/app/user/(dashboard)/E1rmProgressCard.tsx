@@ -84,7 +84,7 @@ function ExerciseRow({ exercise, weightUnit }: { exercise: TrackedE1rmExercise; 
           stroke: { curve: 'smooth', width: 2 },
           markers: { size: 0 },
           tooltip: {
-            x: { formatter: (_v: number, { dataPointIndex }: { dataPointIndex: number }) => categories[dataPointIndex] ?? '' },
+            x: { formatter: (_v: number, opts?: { dataPointIndex?: number }) => categories[opts?.dataPointIndex ?? 0] ?? '' },
           },
           colors: [PRIMARY_COLOUR],
           xaxis: {

@@ -11,7 +11,7 @@ import {
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import RemoveIcon from '@mui/icons-material/Remove';
-import type { DayMetric } from '@prisma/client';
+import type { DayMetric } from '@/generated/prisma/browser';
 import { computeMetricSummary, formatSleepMins } from '@/types/checkInTypes';
 import type { WeekTargets } from '@/types/checkInTypes';
 

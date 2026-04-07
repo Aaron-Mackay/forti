@@ -19,7 +19,7 @@ import VideocamOutlinedIcon from '@mui/icons-material/VideocamOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import { LibraryAsset, LibraryAssetType } from '@prisma/client';
+import { LibraryAsset, LibraryAssetType } from '@/generated/prisma/browser';
 import { useState } from 'react';
 
 const TYPE_META: Record<LibraryAssetType, { icon: React.ReactNode; label: string; color: string }> = {

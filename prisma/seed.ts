@@ -1,5 +1,5 @@
 import prisma from '../src/lib/prisma';
-import { BlockSubtype, EventType, LibraryAssetType } from "@prisma/client";
+import { BlockSubtype, EventType, LibraryAssetType } from "../src/generated/prisma/browser";
 import { seedTestUserData } from './lib/testUserSeedData';
 import { seedJeffDemoData } from './lib/jeffDemoSeedData';
 import { getWeekStart, toDateOnly } from '../src/lib/checkInUtils';

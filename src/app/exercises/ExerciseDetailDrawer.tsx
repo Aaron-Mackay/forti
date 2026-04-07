@@ -12,7 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
-import {Exercise} from '@prisma/client';
+import {Exercise} from '@/generated/prisma/browser';
 import {format} from 'date-fns';
 import MuscleHighlight from '@/components/MuscleHighlight';
 import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';

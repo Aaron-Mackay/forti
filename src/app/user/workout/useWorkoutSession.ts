@@ -16,7 +16,7 @@ import {
   updateWorkoutDateCompleted,
   updateWorkoutNotes,
 } from '@/utils/userPlanMutators';
-import {Exercise} from '@prisma/client';
+import {Exercise} from '@/generated/prisma/browser';
 import {AddExerciseConfig} from './AddExerciseConfigDialog';
 import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
 

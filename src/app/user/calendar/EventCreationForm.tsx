@@ -1,5 +1,5 @@
 import React, {FormEvent, useState} from "react";
-import {BlockSubtype, EventType} from "@prisma/client";
+import {BlockSubtype, EventType} from "@/generated/prisma/browser";
 import {
   Box,
   Button,

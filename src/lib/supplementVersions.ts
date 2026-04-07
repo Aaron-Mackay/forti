@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@/generated/prisma/browser';
 import { toDateOnly } from '@lib/checkInUtils';
 
 const supplementWithVersions = {

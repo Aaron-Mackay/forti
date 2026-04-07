@@ -1,5 +1,5 @@
 import {addDays, differenceInDays, format, getISOWeek} from "date-fns";
-import {BlockSubtype, EventType} from "@prisma/client";
+import {BlockSubtype, EventType} from "@/generated/prisma/browser";
 import {EventPrisma} from "@/types/dataTypes";
 import {DateClickArg} from "@fullcalendar/interaction";
 

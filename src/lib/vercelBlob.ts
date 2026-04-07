@@ -1,5 +1,5 @@
 import { del } from '@vercel/blob';
-import { LibraryAssetType } from '@prisma/client';
+import { LibraryAssetType } from '@/generated/prisma/browser';
 
 export type BlobScope = 'public' | 'private';
 

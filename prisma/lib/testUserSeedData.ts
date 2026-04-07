@@ -9,7 +9,7 @@
  */
 
 import prisma from '../../src/lib/prisma';
-import { BlockSubtype, EventType } from '@prisma/client';
+import { BlockSubtype, EventType } from '../../src/generated/prisma/browser';
 import { getWeekStart, toDateOnly } from '../../src/lib/checkInUtils';
 
 // ─── Exercise definitions ──────────────────────────────────────────────────

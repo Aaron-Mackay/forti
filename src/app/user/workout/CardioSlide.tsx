@@ -12,7 +12,7 @@ import {
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import InfoIcon from '@mui/icons-material/Info';
 import {WorkoutExercisePrisma} from '@/types/dataTypes';
-import {UserExerciseNote} from '@prisma/client';
+import {UserExerciseNote} from '@/generated/prisma/browser';
 
 export type PreviousCardio = {
   cardioDuration: number | null;

@@ -14,7 +14,7 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import './styles.css';
 import {WorkoutPrisma} from '@/types/dataTypes';
-import {UserExerciseNote} from '@prisma/client';
+import {UserExerciseNote} from '@/generated/prisma/browser';
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";

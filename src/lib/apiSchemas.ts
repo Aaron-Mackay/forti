@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {BlockSubtype, EventType} from '@prisma/client';
+import {BlockSubtype, EventType} from '@/generated/prisma/browser';
 
 export const DayMetricSchema = z.object({
   userId: z.string(),

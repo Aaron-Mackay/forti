@@ -1,4 +1,4 @@
-import {ExerciseCategory} from "@prisma/client";
+import {ExerciseCategory} from "@/generated/prisma/browser";
 import {
   SetPrisma,
   UserPrisma,

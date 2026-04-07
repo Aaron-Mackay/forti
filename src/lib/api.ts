@@ -1,4 +1,4 @@
-import {Exercise, Prisma} from '@prisma/client';
+import {Exercise, Prisma} from '@/generated/prisma/browser';
 import prisma from '@/lib/prisma';
 import {findOrCreateExercise} from '@lib/exerciseQueries';
 import {DayMetricPrisma, EventPrisma, PlanPrisma, UserPrisma} from "@/types/dataTypes";

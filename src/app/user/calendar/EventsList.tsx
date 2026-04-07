@@ -1,7 +1,7 @@
 import React from "react";
 import {BottomDrawerView} from "@/app/user/calendar/Calendar";
 import {Divider, Stack, Typography} from "@mui/material";
-import {EventType} from "@prisma/client";
+import {EventType} from "@/generated/prisma/browser";
 import Button from "@mui/material/Button";
 import {EventListItem} from "@/app/user/calendar/EventListItem";
 import {EventPrisma} from "@/types/dataTypes";

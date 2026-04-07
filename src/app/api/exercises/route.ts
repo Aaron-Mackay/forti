@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import { z } from 'zod';
 import prisma from '@lib/prisma';
-import { ExerciseCategory } from '@prisma/client';
+import { ExerciseCategory } from '@/generated/prisma/browser';
 import { EXERCISE_EQUIPMENT, EXERCISE_MUSCLES } from '@/types/dataTypes';
 
 const CreateExerciseSchema = z.object({

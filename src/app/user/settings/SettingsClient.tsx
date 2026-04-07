@@ -26,7 +26,7 @@ import { Settings, CustomMetricDef, TrackedE1rmExercise } from '@/types/settings
 import { CHECK_IN_DAY_NAMES } from '@/types/checkInTypes';
 import { useSettings } from '@lib/providers/SettingsProvider';
 import { useExerciseList } from '@lib/hooks/api/useExerciseList';
-import { Exercise } from '@prisma/client';
+import { Exercise } from '@/generated/prisma/browser';
 import CoachingSettings from './CoachingSettings';
 
 type BooleanSettingKey = { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings];

@@ -1,6 +1,6 @@
 import prisma from '@lib/prisma';
 import { toDateOnly } from '@lib/checkInUtils';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@/generated/prisma/browser';
 
 const templateWithDays = {
   days: true,

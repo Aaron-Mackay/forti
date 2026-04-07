@@ -96,7 +96,7 @@ export default function E1rmSparkline({
               discrete: discreteMarkers,
             },
           tooltip: {
-            x: {formatter: (_v, {dataPointIndex}) => categories[dataPointIndex] ?? ''},
+            x: {formatter: (_v, opts?: {dataPointIndex?: number}) => categories[opts?.dataPointIndex ?? 0] ?? ''},
           },
             colors: [PRIMARY_COLOUR],
             xaxis: {

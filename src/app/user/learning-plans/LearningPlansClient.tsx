@@ -20,7 +20,7 @@ import SchoolIcon from '@mui/icons-material/School';
 import LockIcon from '@mui/icons-material/Lock';
 import { useApiGet } from '@lib/hooks/api/useApiGet';
 import { useApiMutation } from '@lib/hooks/useApiMutation';
-import type { LibraryAssetType } from '@prisma/client';
+import type { LibraryAssetType } from '@/generated/prisma/browser';
 import type { StepProgressMap } from '@lib/learningPlanSchemas';
 import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
 

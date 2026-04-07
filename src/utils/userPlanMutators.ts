@@ -1,5 +1,5 @@
 import {PlanPrisma, SetPrisma, UserPrisma, WeekPrisma, WorkoutExercisePrisma, WorkoutPrisma} from "@/types/dataTypes";
-import {Exercise} from "@prisma/client";
+import {Exercise} from "@/generated/prisma/browser";
 import {CreateUuid, Dir} from "@lib/useWorkoutEditor";
 
 // ─── BFR preset constants ────────────────────────────────────────────────────

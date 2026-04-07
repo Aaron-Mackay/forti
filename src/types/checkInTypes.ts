@@ -1,4 +1,4 @@
-import type { DayMetric, WeeklyCheckIn } from '@prisma/client';
+import type { DayMetric, WeeklyCheckIn } from '@/generated/prisma/browser';
 
 export type { WeeklyCheckIn };
 

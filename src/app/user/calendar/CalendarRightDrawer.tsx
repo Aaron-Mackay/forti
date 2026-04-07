@@ -1,6 +1,6 @@
 import {EventPrisma} from "@/types/dataTypes";
 import {Box, Button, Divider, Drawer, Stack, Typography} from "@mui/material";
-import {EventType} from "@prisma/client";
+import {EventType} from "@/generated/prisma/browser";
 import {EventListItem} from "@/app/user/calendar/EventListItem";
 import React from "react";
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';

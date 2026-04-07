@@ -4,7 +4,7 @@ import {requireSession} from "@lib/requireSession";
 import prisma from "@/lib/prisma";
 import {isPrismaNotFound} from "@lib/apiError";
 import {z} from "zod";
-import {BlockSubtype, EventType} from "@prisma/client";
+import {BlockSubtype, EventType} from "@/generated/prisma/browser";
 import { forbiddenResponse } from '@lib/apiResponses';
 
 const EventPatchSchema = z.object({

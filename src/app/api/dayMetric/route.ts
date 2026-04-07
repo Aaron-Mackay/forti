@@ -3,7 +3,7 @@ import {updateUserDayMetric} from '@/lib/api';
 import confirmPermission from "@lib/confirmPermission";
 import {DayMetricSchema} from "@lib/apiSchemas";
 import {errorResponse, validationErrorResponse} from "@lib/apiResponses";
-import {Prisma} from "@prisma/client";
+import {Prisma} from "@/generated/prisma/browser";
 import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSession";
 
 export async function POST(req: NextRequest) {

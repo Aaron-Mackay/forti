@@ -4,7 +4,7 @@ import prisma from '@lib/prisma';
 import { errorResponse, validationErrorResponse } from '@lib/apiResponses';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import { z } from 'zod';
-import { LibraryAssetType } from '@prisma/client';
+import { LibraryAssetType } from '@/generated/prisma/browser';
 
 const createSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
