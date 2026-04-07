@@ -56,7 +56,7 @@ jobs:
             NAME="migration_$(date +%Y%m%d%H%M%S)"
           fi
           # Reset clears any drift and re-applies all existing migrations cleanly
-          npx prisma migrate reset --force --skip-seed
+          npx prisma migrate reset --force
           # Non-interactively generate a migration file for any schema changes
           # (prisma migrate dev requires interactive confirmation for destructive changes)
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
