@@ -15,15 +15,17 @@ import type { Page } from '@playwright/test';
 
 async function openNav(page: Page) {
   const homeLink = page.getByRole('link', { name: 'Home' }).first();
-  const homeAlreadyVisible = await homeLink.isVisible().catch(() => false);
+
+  // Wait briefly for the Home link to appear — on desktop the permanent drawer
+  // opens after React hydration (which also portals the AppBar), so this acts as
+  // a hydration gate. On mobile the drawer stays closed, so this times out and
+  // we fall through to click the hamburger.
+  const homeAlreadyVisible = await homeLink.waitFor({ state: 'visible', timeout: 5_000 })
+    .then(() => true).catch(() => false);
   if (homeAlreadyVisible) return;
 
-  const menuBtn = page.getByRole('button', { name: /menu/i }).first();
-  const hasVisibleMenuButton = await menuBtn.isVisible().catch(() => false);
-  if (hasVisibleMenuButton) {
-    await menuBtn.click({ timeout: 10_000 });
-  }
-
+  // Mobile: click the hamburger. By now hydration is complete so React's onClick fires.
+  await page.getByRole('button', { name: /menu/i }).first().click({ timeout: 10_000 });
   await expect(homeLink).toBeVisible({ timeout: 15_000 });
 }
 
@@ -34,11 +36,14 @@ async function openDrawer(page: Page) {
 test.describe('AppBar navigation drawer', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/user');
-    const menuBtn = page.getByRole('button', { name: /menu/i });
-    const hasVisibleMenuButton = await menuBtn.isVisible().catch(() => false);
-    if (!hasVisibleMenuButton) {
-      await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible({ timeout: 15_000 });
-    }
+    // Wait for post-hydration state: either the permanent drawer (desktop) or
+    // the hamburger button (mobile) to be ready. openNav() in each test will
+    // handle actually opening the drawer if needed.
+    await expect(
+      page.getByRole('link', { name: 'Home' }).first().or(
+        page.getByRole('button', { name: /menu/i }).first()
+      )
+    ).toBeVisible({ timeout: 15_000 });
   });
 
   test('hamburger button opens the navigation drawer', async ({ page, isMobile }) => {

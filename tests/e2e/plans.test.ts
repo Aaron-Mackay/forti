@@ -122,25 +122,25 @@ test.describe('Create Plan entry screen', () => {
   });
 
   test('clicking "Build with AI" shows the AI form', async ({ page }) => {
-    await page.getByTestId('entry-ai').click();
+    await page.getByTestId('entry-ai').first().click();
     await expect(page.getByText(/how many days per week/i)).toBeVisible();
     await expect(page.getByText(/main goal/i)).toBeVisible();
     await expect(page.getByText(/experience level/i)).toBeVisible();
   });
 
   test('back arrow on AI form returns to entry screen', async ({ page }) => {
-    await page.getByTestId('entry-ai').click();
+    await page.getByTestId('entry-ai').first().click();
     await page.getByRole('button', { name: /back/i }).click();
     await expect(page.getByText(/how do you want to start/i).first()).toBeVisible();
   });
 
   test('clicking "From a template" shows the template browser', async ({ page }) => {
-    await page.getByTestId('entry-templates').click();
+    await page.getByTestId('entry-templates').first().click(); // multiple during SSR/hydration overlap
     await expect(page.getByText(/push \/ pull \/ legs/i)).toBeVisible();
   });
 
   test('back arrow on template browser returns to entry screen', async ({ page }) => {
-    await page.getByTestId('entry-templates').click();
+    await page.getByTestId('entry-templates').first().click(); // multiple during SSR/hydration overlap
     await page.getByRole('button', { name: /back/i }).click();
     await expect(page.getByText(/how do you want to start/i).first()).toBeVisible();
   });
@@ -164,7 +164,7 @@ test.describe('Create Plan entry screen', () => {
 test.describe('Template browser', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/user/plan/create');
-    await page.getByTestId('entry-templates').click();
+    await page.getByTestId('entry-templates').first().click(); // multiple during SSR/hydration overlap
   });
 
   test('shows all templates by default', async ({ page }) => {

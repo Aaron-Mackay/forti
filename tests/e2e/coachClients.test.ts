@@ -11,12 +11,12 @@ import { test, expect } from './fixtures';
 test.describe.configure({ mode: 'serial' });
 
 async function openNav(page: import('@playwright/test').Page) {
-  const menuButton = page.getByRole('button', { name: /menu/i }).first();
-  const hasVisibleMenuButton = await menuButton.isVisible().catch(() => false);
-  if (hasVisibleMenuButton) {
-    await menuButton.click({ timeout: 10_000 });
-  }
-  await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible();
+  const homeLink = page.getByRole('link', { name: 'Home' }).first();
+  const homeAlreadyVisible = await homeLink.waitFor({ state: 'visible', timeout: 5_000 })
+    .then(() => true).catch(() => false);
+  if (homeAlreadyVisible) return;
+  await page.getByRole('button', { name: /menu/i }).first().click({ timeout: 10_000 });
+  await expect(homeLink).toBeVisible({ timeout: 15_000 });
 }
 
 test.describe('Coach client navigation', () => {
