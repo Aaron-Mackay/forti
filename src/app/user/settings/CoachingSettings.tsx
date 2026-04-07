@@ -144,6 +144,7 @@ export default function CoachingSettings() {
       setCropImageUrl(reader.result as string);
       setCrop({ x: 0, y: 0 });
       setZoom(1);
+      setCroppedAreaPixels(null);
       setCropDialogOpen(true);
     };
     reader.readAsDataURL(file);
@@ -155,9 +156,16 @@ export default function CoachingSettings() {
     setLogoUploading(true);
     setLogoError(null);
     try {
-      const img = new Image();
-      img.src = cropImageUrl;
-      await new Promise<void>(resolve => { img.onload = () => resolve(); });
+      // Load image avoiding the onload race condition (data URL may already be
+      // in memory from the Cropper, causing load to fire before the handler is set)
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = () => reject(new Error('Image load failed'));
+        el.src = cropImageUrl!;
+        // If the browser loaded synchronously (data URL already cached), resolve immediately
+        if (el.complete && el.naturalWidth > 0) resolve(el);
+      });
       // Render the cropped square at 200×200 (4× retina for 50×50 display)
       const SIZE = 200;
       const canvas = document.createElement('canvas');
