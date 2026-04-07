@@ -366,9 +366,9 @@ describe('POST /api/plan/ai-import', () => {
       expect(res.status).toBe(200);
 
       const streamCall = mockAnthropicStream.mock.calls.at(-1)?.[0];
-      const messageContent = streamCall?.messages?.[0]?.content as string;
-      expect(messageContent).toContain('Preserve isolated numeric set values');
-      expect(messageContent).toContain('Do not convert blank spreadsheet cells into 0 values');
+      const systemPrompt = streamCall?.system as string;
+      expect(systemPrompt).toContain('Preserve isolated numeric set values');
+      expect(systemPrompt).toContain('Do not convert blank spreadsheet cells into 0 values');
     });
 
     it('accepts input up to 225 KB when type is spreadsheet', async () => {

@@ -108,15 +108,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const stream = client.messages.stream({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 2048,
+      system:
+        'Enrich exercise names with category and muscle group data. ' +
+        'Call the enrich_exercises tool with all provided exercises.',
       tools: [ENRICH_TOOL],
       tool_choice: { type: 'any' },
       messages: [
         {
           role: 'user',
           content:
-            `Enrich the following exercise names with category and muscle data. ` +
-            `Call the enrich_exercises tool with all ${names.length} exercises.\n\n` +
-            names.map((n, i) => `${i + 1}. ${n}`).join('\n'),
+            `Call the enrich_exercises tool with all ${names.length} exercises.\n\n<exercise_names>\n` +
+            names.map((n, i) => `${i + 1}. ${n}`).join('\n') +
+            '\n</exercise_names>',
         },
       ],
     });

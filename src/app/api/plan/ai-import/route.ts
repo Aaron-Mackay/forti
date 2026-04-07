@@ -214,20 +214,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       : ({ type: 'any' } as const);
 
     const userContent = hasAnswers
-      ? baseInstruction +
-        '\n\nAdditional context provided by the user:\n' +
+      ? 'Additional context provided by the user:\n<user_answers>\n' +
         answers.map((a, i) => `${i + 1}. ${a}`).join('\n') +
-        '\n\nNow call create_workout_plan with the structured plan.\n\n' +
-        input
-      : baseInstruction +
-        '\n\nIf the input is clear enough, call create_workout_plan directly. ' +
+        '\n</user_answers>\n\nNow call create_workout_plan with the structured plan.\n\n<user_input>\n' +
+        input +
+        '\n</user_input>'
+      : 'If the input is clear enough, call create_workout_plan directly. ' +
         'Only call ask_clarifying_questions if there is genuine ambiguity that ' +
-        'prevents you from building a complete plan.\n\n' +
-        input;
+        'prevents you from building a complete plan.\n\n<user_input>\n' +
+        input +
+        '\n</user_input>';
 
     const stream = client.messages.stream({
       model: 'claude-sonnet-4-6',
       max_tokens: 49152,
+      system: baseInstruction,
       tools,
       tool_choice: toolChoice,
       messages: [{ role: 'user', content: userContent }],
