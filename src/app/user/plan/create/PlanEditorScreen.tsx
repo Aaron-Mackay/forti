@@ -3,19 +3,20 @@
 import React, { useState } from 'react'
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Divider,
+  IconButton,
   LinearProgress,
-  List,
-  ListItem,
-  ListItemText,
   Snackbar,
+  Stack,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
@@ -27,18 +28,77 @@ import {
 import GridOnIcon from '@mui/icons-material/GridOn'
 import ViewListIcon from '@mui/icons-material/ViewList'
 import OpenWithIcon from '@mui/icons-material/OpenWith'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import CheckIcon from '@mui/icons-material/Check'
 import { useNewPlan } from './useNewPlan'
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext'
 import { savePlan } from '@lib/clientApi'
 import { useRouter } from 'next/navigation'
-import { Exercise } from '@/generated/prisma/browser'
+import { Exercise, ExerciseCategory } from '@/generated/prisma/browser'
 import type { EnrichedExercise } from '@/app/api/exercises/enrich/route'
 import PlanSheetView from '../PlanSheetView'
 import PlanWeekView from '../PlanWeekView'
 import PlanMultiWeekTable from '../PlanMultiWeekTable'
 import { usePlanViewControls } from '../usePlanViewControls'
 import { usePlanRepRangeValidation } from '../usePlanRepRangeValidation'
-import { PlanPrisma, SetPrisma, WeekPrisma, WorkoutPrisma, WorkoutExercisePrisma } from '@/types/dataTypes'
+import MuscleHighlight from '@/components/MuscleHighlight'
+import {
+  EXERCISE_MUSCLES,
+  ExerciseMuscle,
+  MUSCLE_NAMES,
+  PlanPrisma,
+  SetPrisma,
+  WeekPrisma,
+  WorkoutPrisma,
+  WorkoutExercisePrisma,
+} from '@/types/dataTypes'
+
+const CATEGORY_OPTIONS: ExerciseCategory[] = ['resistance', 'cardio']
+
+function isExerciseMuscle(value: string): value is ExerciseMuscle {
+  return (EXERCISE_MUSCLES as readonly string[]).includes(value)
+}
+
+function toKnownMuscles(muscles: string[]): ExerciseMuscle[] {
+  return muscles.filter(isExerciseMuscle)
+}
+
+function formatCategoryLabel(category: string) {
+  return category.charAt(0).toUpperCase() + category.slice(1)
+}
+
+function formatMuscleLabel(muscle: string) {
+  return isExerciseMuscle(muscle)
+    ? MUSCLE_NAMES[muscle]
+    : muscle
+        .split(/[-_\s]+/)
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ')
+}
+
+function MuscleSection({ label, muscles, color }: { label: string; muscles: string[]; color: 'primary' | 'default' }) {
+  if (muscles.length === 0) return null
+
+  return (
+    <Box>
+      <Typography variant="caption" sx={{ display: 'block', mb: 0.75, color: 'text.secondary', fontWeight: 700 }}>
+        {label}
+      </Typography>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+        {muscles.map((muscle) => (
+          <Chip
+            key={`${label}-${muscle}`}
+            label={formatMuscleLabel(muscle)}
+            size="small"
+            color={color}
+            variant={color === 'primary' ? 'filled' : 'outlined'}
+          />
+        ))}
+      </Box>
+    </Box>
+  )
+}
 
 function cloneSetWithIds(
   set: SetPrisma,
@@ -143,6 +203,7 @@ export const PlanEditorScreen = ({
   const [saveError, setSaveError] = useState<string | null>(null)
   const [enrichPhase, setEnrichPhase] = useState<'enriching' | 'review' | null>(null)
   const [enrichedExercises, setEnrichedExercises] = useState<EnrichedExercise[]>([])
+  const [editingExerciseName, setEditingExerciseName] = useState<string | null>(null)
   const {
     arrangeMode,
     handleZoomChange,
@@ -208,6 +269,7 @@ export const PlanEditorScreen = ({
     const existingNames = new Set(allExercises.map((exercise) => exercise.name.toLowerCase()))
     const seen = new Set<string>()
     const newExercises: { name: string }[] = []
+    let hasMissingMetadata = false
 
     for (const week of statePlan.weeks) {
       for (const workout of week.workouts) {
@@ -215,7 +277,18 @@ export const PlanEditorScreen = ({
           const nameLower = exercise.exercise.name.toLowerCase()
           if ((!exercise.exercise.id || exercise.exercise.id <= 0) && !existingNames.has(nameLower) && !seen.has(nameLower)) {
             seen.add(nameLower)
-            newExercises.push({ name: exercise.exercise.name })
+            const hasExerciseMetadata =
+              exercise.exercise.category != null
+              && (
+                exercise.exercise.primaryMuscles.length > 0
+                || exercise.exercise.secondaryMuscles.length > 0
+                || exercise.exercise.category === 'cardio'
+              )
+
+            if (!hasExerciseMetadata) {
+              hasMissingMetadata = true
+              newExercises.push({ name: exercise.exercise.name })
+            }
           }
         }
       }
@@ -225,7 +298,7 @@ export const PlanEditorScreen = ({
       ? buildTemplateWeekCopies(statePlan, parseInt(weekCount, 10) || 1)
       : statePlan
 
-    if (newExercises.length === 0) {
+    if (!hasMissingMetadata || newExercises.length === 0) {
       return doSave(planToPersist)
     }
 
@@ -242,11 +315,18 @@ export const PlanEditorScreen = ({
       }
       const data = await res.json()
       setEnrichedExercises(data.exercises ?? [])
+      setEditingExerciseName(data.exercises?.[0]?.name ?? null)
       setEnrichPhase('review')
     } catch {
       setEnrichPhase(null)
       doSave(planToPersist)
     }
+  }
+
+  const updateReviewedExercise = (exerciseName: string, updates: Partial<EnrichedExercise>) => {
+    setEnrichedExercises((current) =>
+      current.map((exercise) => (exercise.name === exerciseName ? { ...exercise, ...updates } : exercise)),
+    )
   }
 
   const handleConfirmEnrich = () => {
@@ -273,6 +353,7 @@ export const PlanEditorScreen = ({
         })),
       })),
     }
+    setEditingExerciseName(null)
     setEnrichPhase(null)
     doSave(enrichedPlan)
   }
@@ -416,18 +497,32 @@ export const PlanEditorScreen = ({
         maxWidth="xs"
         fullWidth
         disableEscapeKeyDown={enrichPhase === 'enriching'}
-        onClose={enrichPhase === 'review' ? () => setEnrichPhase(null) : undefined}
+        onClose={enrichPhase === 'review' ? () => {
+          setEditingExerciseName(null)
+          setEnrichPhase(null)
+        } : undefined}
+        PaperProps={{
+          sx: {
+            display: 'flex',
+            flexDirection: 'column',
+            maxHeight: {
+              xs: 'min(680px, calc(100dvh - 32px))',
+              sm: 'min(760px, calc(100dvh - 48px))',
+            },
+            m: { xs: 2, sm: 3 },
+          },
+        }}
         sx={{
           '& .MuiDialog-container': {
-            alignItems: 'flex-start',
-            pt: { xs: '56px', sm: '64px' },
+            alignItems: 'center',
+            p: { xs: 0, sm: 2 },
           },
         }}
       >
         <DialogTitle>
           {enrichPhase === 'enriching' ? 'Enriching new exercises' : 'Review new exercises'}
         </DialogTitle>
-        <DialogContent>
+        <DialogContent dividers sx={{ overflowY: 'auto', pb: enrichPhase === 'review' ? 2.5 : 2 }}>
           {enrichPhase === 'enriching' && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1 }}>
               <CircularProgress size={20} />
@@ -437,28 +532,152 @@ export const PlanEditorScreen = ({
             </Box>
           )}
           {enrichPhase === 'review' && (
-            <List disablePadding>
-              {enrichedExercises.map((exercise, index) => (
-                <React.Fragment key={exercise.name}>
-                  {index > 0 && <Divider component="li" />}
-                  <ListItem disablePadding sx={{ py: 1 }}>
-                    <ListItemText
-                      primary={exercise.name}
-                      secondary={[
-                        `${exercise.category.charAt(0).toUpperCase() + exercise.category.slice(1)}`,
-                        exercise.primaryMuscles.length > 0 ? exercise.primaryMuscles.join(', ') : null,
-                        exercise.secondaryMuscles.length > 0 ? `+ ${exercise.secondaryMuscles.join(', ')}` : null,
-                      ].filter(Boolean).join(' · ')}
-                    />
-                  </ListItem>
-                </React.Fragment>
-              ))}
-            </List>
+            <Stack spacing={1.5}>
+              <Typography variant="body2" color="text.secondary">
+                Check each new exercise before saving. You can rename it and adjust the training type or muscle groups here.
+              </Typography>
+
+              {enrichedExercises.map((exercise) => {
+                const isEditing = editingExerciseName === exercise.name
+
+                return (
+                  <Box
+                    key={exercise.name}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 2,
+                      p: 2,
+                      bgcolor: isEditing ? 'action.hover' : 'background.paper',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5 }}>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.3 }}>
+                          {exercise.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                          {formatCategoryLabel(exercise.category)}
+                        </Typography>
+                      </Box>
+                      <IconButton
+                        size="small"
+                        color={isEditing ? 'primary' : 'default'}
+                        onClick={() => setEditingExerciseName(isEditing ? null : exercise.name)}
+                        aria-label={isEditing ? `Done editing ${exercise.name}` : `Edit ${exercise.name}`}
+                      >
+                        {isEditing ? <CheckIcon fontSize="small" /> : <EditOutlinedIcon fontSize="small" />}
+                      </IconButton>
+                    </Box>
+
+                    <Box
+                      sx={{
+                        mt: 1.5,
+                        display: 'grid',
+                        gap: 2,
+                        gridTemplateColumns: { xs: '1fr', sm: 'minmax(0, 1fr) 112px' },
+                        alignItems: 'start',
+                      }}
+                    >
+                      <Stack spacing={1.5}>
+                        <MuscleSection label="Primary muscles" muscles={exercise.primaryMuscles} color="primary" />
+                        <MuscleSection label="Secondary muscles" muscles={exercise.secondaryMuscles} color="default" />
+                      </Stack>
+
+                      <Box
+                        sx={{
+                          minHeight: 150,
+                          borderRadius: 2,
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          bgcolor: 'background.default',
+                          p: 1,
+                        }}
+                      >
+                        <MuscleHighlight
+                          primaryMuscles={toKnownMuscles(exercise.primaryMuscles)}
+                          secondaryMuscles={toKnownMuscles(exercise.secondaryMuscles)}
+                          exerciseId={exercise.name.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0)}
+                          alwaysShow
+                        />
+                      </Box>
+                    </Box>
+
+                    {isEditing && (
+                      <>
+                        <Divider sx={{ my: 2 }} />
+                        <Stack spacing={1.5}>
+                          <TextField
+                            fullWidth
+                            label="Exercise name"
+                            value={exercise.name}
+                            autoComplete="off"
+                            onChange={(event) => updateReviewedExercise(exercise.name, { name: event.target.value })}
+                          />
+
+                          <Autocomplete
+                            options={CATEGORY_OPTIONS}
+                            value={exercise.category}
+                            onChange={(_, value) => {
+                              if (!value) return
+                              updateReviewedExercise(exercise.name, { category: value })
+                            }}
+                            disableClearable
+                            getOptionLabel={formatCategoryLabel}
+                            renderInput={(params) => <TextField {...params} label="Training type" />}
+                          />
+
+                          <Autocomplete
+                            multiple
+                            disableCloseOnSelect
+                            options={[...EXERCISE_MUSCLES]}
+                            value={toKnownMuscles(exercise.primaryMuscles)}
+                            onChange={(_, value) => updateReviewedExercise(exercise.name, { primaryMuscles: value })}
+                            getOptionLabel={(option) => MUSCLE_NAMES[option]}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Primary muscles"
+                                helperText="Main muscles this exercise directly trains."
+                              />
+                            )}
+                          />
+
+                          <Autocomplete
+                            multiple
+                            disableCloseOnSelect
+                            options={[...EXERCISE_MUSCLES]}
+                            value={toKnownMuscles(exercise.secondaryMuscles)}
+                            onChange={(_, value) => updateReviewedExercise(exercise.name, { secondaryMuscles: value })}
+                            getOptionLabel={(option) => MUSCLE_NAMES[option]}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Secondary muscles"
+                                helperText="Supporting or stabilising muscles."
+                              />
+                            )}
+                          />
+                        </Stack>
+                      </>
+                    )}
+                  </Box>
+                )
+              })}
+            </Stack>
           )}
         </DialogContent>
         {enrichPhase === 'enriching' && <LinearProgress sx={{ mx: 2, mb: 2, borderRadius: 1 }} />}
         {enrichPhase === 'review' && (
-          <DialogActions>
+          <DialogActions
+            sx={{
+              px: 3,
+              py: 2,
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
+            }}
+          >
             <Button onClick={handleConfirmEnrich} variant="contained" fullWidth disabled={saving}>
               {saving ? 'Saving…' : 'Confirm & Save Plan'}
             </Button>

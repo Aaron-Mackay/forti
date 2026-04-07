@@ -1,4 +1,5 @@
 import { PLACEHOLDER_ID } from './PlanBuilderWithContext'
+import type { ReviewedExercise } from '@/app/user/plan/upload/uploadFlow'
 import type { ParsedPlan } from '@/utils/aiPlanParser'
 import { BFR_REP_RANGE, BFR_REST_TIME, BFR_SET_COUNT } from '@/utils/userPlanMutators'
 import type {
@@ -13,9 +14,14 @@ import type {
  * Convert a ParsedPlan (from AI response or template) to a PlanPrisma
  * with placeholder negative IDs, ready to dispatch as REPLACE_PLAN.
  */
-export function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPrisma): PlanPrisma {
+export function parsedPlanToPlanPrisma(
+  parsed: ParsedPlan,
+  currentPlan: PlanPrisma,
+  reviewedExercises: ReviewedExercise[] = [],
+): PlanPrisma {
   let idCounter = 0
   const nextId = () => -(++idCounter)
+  const reviewedExerciseMap = new Map(reviewedExercises.map((exercise) => [exercise.name, exercise]))
 
   return {
     id: PLACEHOLDER_ID,
@@ -40,6 +46,7 @@ export function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPris
             dateCompleted: null,
             exercises: workout.exercises.map((ex): WorkoutExercisePrisma => {
               const exerciseId = nextId()
+              const reviewedExercise = reviewedExerciseMap.get(ex.exercise.name)
               const isBfr = ex.isBfr ?? false
               const sourceSets = isBfr
                 ? Array.from({ length: BFR_SET_COUNT }, (_, i) => ex.sets[i] ?? null)
@@ -61,12 +68,11 @@ export function parsedPlanToPlanPrisma(parsed: ParsedPlan, currentPlan: PlanPris
                 exercise: {
                   id: PLACEHOLDER_ID,
                   name: ex.exercise.name,
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  category: ex.exercise.category as any,
+                  category: (reviewedExercise?.category ?? ex.exercise.category) as WorkoutExercisePrisma['exercise']['category'],
                   description: null,
                   equipment: [],
-                  primaryMuscles: [],
-                  secondaryMuscles: [],
+                  primaryMuscles: reviewedExercise?.primaryMuscles ?? [],
+                  secondaryMuscles: reviewedExercise?.secondaryMuscles ?? [],
                   createdByUserId: null,
                 },
                 sets: sourceSets.map((set, index): SetPrisma => ({

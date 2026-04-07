@@ -1,31 +1,51 @@
 'use client'
 
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import CircularProgress from '@mui/material/CircularProgress'
-import Dialog from '@mui/material/Dialog'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import Divider from '@mui/material/Divider'
-import LinearProgress from '@mui/material/LinearProgress'
-import List from '@mui/material/List'
-import ListItem from '@mui/material/ListItem'
-import ListItemIcon from '@mui/material/ListItemIcon'
-import ListItemText from '@mui/material/ListItemText'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
+import {
+  Alert,
+  Autocomplete,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Divider,
+  LinearProgress,
+  Stack,
+  Step,
+  StepLabel,
+  Stepper,
+  TextField,
+  Typography,
+} from '@mui/material'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar'
+import MuscleHighlight from '@/components/MuscleHighlight'
 import { useAppBar } from '@lib/providers/AppBarProvider'
+import { ExerciseCategory } from '@/generated/prisma/browser'
 import type { AiImportResponse } from '@/app/api/plan/ai-import/route'
+import {
+  calculateMuscleVolumes,
+  applyReviewedExercisesToPlan,
+  countUniqueExercises,
+  PendingUploadPlan,
+  ReviewedExercise,
+} from '@/app/user/plan/upload/uploadFlow'
 import type { ParsedPlan } from '@/utils/aiPlanParser'
+import {
+  EXERCISE_MUSCLES,
+  ExerciseMuscle,
+  MUSCLE_NAMES,
+} from '@/types/dataTypes'
+import MuscleVolumeDiagram from './MuscleVolumeDiagram'
 
-const STEPS = ['Uploading spreadsheet', 'Analysing with AI', 'Building plan']
+const WIZARD_STEPS = ['Upload or paste', 'Review new exercises', 'Summary']
+const CATEGORY_OPTIONS: ExerciseCategory[] = ['resistance', 'cardio']
 
 // Mirror of MAX_INPUT_BYTES_SPREADSHEET in src/app/api/plan/ai-import/route.ts
 const MAX_INPUT_BYTES = 225_000
@@ -97,11 +117,23 @@ function mergeChunkPlans(plans: ParsedPlan[]): ParsedPlan {
   return { ...first, weeks: mergedWeeks }
 }
 
-function StepIcon({ stepIndex, phase }: { stepIndex: number; phase: number }) {
-  const stepPhase = stepIndex + 1
-  if (phase > stepPhase) return <CheckCircleIcon sx={{ color: 'success.main' }} />
-  if (phase === stepPhase) return <CircularProgress size={20} />
-  return <RadioButtonUncheckedIcon sx={{ color: 'text.disabled' }} />
+function isExerciseMuscle(value: string): value is ExerciseMuscle {
+  return (EXERCISE_MUSCLES as readonly string[]).includes(value)
+}
+
+function formatCategoryLabel(category: string) {
+  return category.charAt(0).toUpperCase() + category.slice(1)
+}
+
+function exerciseCount(plan: ParsedPlan | null) {
+  if (!plan) return 0
+  return plan.weeks.reduce((total, week) => total + week.workouts.reduce((sum, workout) => sum + workout.exercises.length, 0), 0)
+}
+
+function reviewStepDescription(reviewedExercises: ReviewedExercise[]) {
+  if (reviewedExercises.length === 0) return 'No new exercises were detected in this import.'
+  if (reviewedExercises.length === 1) return '1 new exercise needs a quick metadata check.'
+  return `${reviewedExercises.length} new exercises need a quick metadata check.`
 }
 
 export const UploadAndEdit = () => {
@@ -111,11 +143,42 @@ export const UploadAndEdit = () => {
   const [error, setError] = useState<string | null>(null)
   const [parseIssues, setParseIssues] = useState<string[]>([])
   const [chunkProgress, setChunkProgress] = useState<{ current: number; total: number } | null>(null)
+  const [activeStep, setActiveStep] = useState(0)
+  const [importedPlan, setImportedPlan] = useState<ParsedPlan | null>(null)
+  const [reviewedExercises, setReviewedExercises] = useState<ReviewedExercise[]>([])
+  const [existingExerciseNames, setExistingExerciseNames] = useState<Set<string>>(new Set())
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadExercises() {
+      try {
+        const response = await fetch('/api/exercises')
+        if (!response.ok) return
+        const exercises = await response.json() as Array<{ name: string }>
+        if (cancelled) return
+        setExistingExerciseNames(new Set(exercises.map((exercise) => exercise.name.toLowerCase())))
+      } catch {
+        // Ignore: review step can still continue with empty defaults.
+      }
+    }
+
+    loadExercises()
+    return () => { cancelled = true }
+  }, [])
+
   const inputBytes = new TextEncoder().encode(text).length
   const isOverLimit = inputBytes > MAX_INPUT_BYTES
+  const loading = phase > 0
+  const reviewedPlan = importedPlan ? applyReviewedExercisesToPlan(importedPlan, reviewedExercises) : null
+  const muscleVolumes: Partial<Record<ExerciseMuscle, number>> = importedPlan
+    ? calculateMuscleVolumes(importedPlan, reviewedExercises)
+    : {}
+  const sortedMuscleVolumes = Object.entries(muscleVolumes)
+    .sort(([, a], [, b]) => (b ?? 0) - (a ?? 0))
+    .slice(0, 6)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -134,13 +197,15 @@ export const UploadAndEdit = () => {
       setError(`Input too large — please reduce to under 225 KB (currently ${(inputBytes / 1000).toFixed(1)} KB)`)
       return
     }
+
     setError(null)
     setParseIssues([])
-    setPhase(1)
+    setImportedPlan(null)
+    setReviewedExercises([])
     setChunkProgress(null)
+    setPhase(1)
 
-    // Briefly show "uploading" step before moving to AI analysis
-    await new Promise((resolve) => setTimeout(resolve, 400))
+    await new Promise((resolve) => setTimeout(resolve, 350))
     setPhase(2)
 
     try {
@@ -157,6 +222,7 @@ export const UploadAndEdit = () => {
           const timeout = setTimeout(() => controller.abort(), CHUNK_REQUEST_TIMEOUT_MS)
           let clarificationAnswers: string[] = []
           let clarificationRounds = 0
+
           try {
             while (true) {
               const res = await fetch('/api/plan/ai-import', {
@@ -179,8 +245,8 @@ export const UploadAndEdit = () => {
                 }
 
                 const answers = data.questions
-                  .map((q) => window.prompt(q)?.trim() ?? '')
-                  .filter((a) => a.length > 0)
+                  .map((question) => window.prompt(question)?.trim() ?? '')
+                  .filter((answer) => answer.length > 0)
                 if (answers.length === 0) {
                   lastError = 'Import needs clarification answers to continue.'
                   break
@@ -243,10 +309,55 @@ export const UploadAndEdit = () => {
       }
 
       const mergedPlan = mergeChunkPlans(importedPlans)
+      setImportedPlan(mergedPlan)
       setPhase(3)
-      sessionStorage.setItem('pendingUploadPlan', JSON.stringify(mergedPlan))
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      router.push('/user/plan/create')
+
+      const importedExerciseNames = Array.from(new Set(
+        mergedPlan.weeks.flatMap((week) =>
+          week.workouts.flatMap((workout) => workout.exercises.map((exercise) => exercise.exercise.name)),
+        ),
+      ))
+
+      const newExerciseNames = importedExerciseNames.filter(
+        (name) => !existingExerciseNames.has(name.toLowerCase()),
+      )
+
+      if (newExerciseNames.length === 0) {
+        setReviewedExercises([])
+        setPhase(0)
+        setChunkProgress(null)
+        setActiveStep(2)
+        return
+      }
+
+      const enrichResponse = await fetch('/api/exercises/enrich', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ exercises: newExerciseNames.map((name) => ({ name })) }),
+      })
+
+      if (!enrichResponse.ok) {
+        setReviewedExercises([])
+        setPhase(0)
+        setChunkProgress(null)
+        setError('The plan imported, but new exercise details could not be prefilled. Continue to the editor to review them there.')
+        setActiveStep(2)
+        return
+      }
+
+      const enrichData = await enrichResponse.json() as { exercises?: Array<{ name: string; category: ExerciseCategory; primaryMuscles: string[]; secondaryMuscles: string[] }> }
+      setReviewedExercises(
+        (enrichData.exercises ?? []).map((exercise) => ({
+          originalName: exercise.name,
+          name: exercise.name,
+          category: exercise.category,
+          primaryMuscles: exercise.primaryMuscles.filter(isExerciseMuscle),
+          secondaryMuscles: exercise.secondaryMuscles.filter(isExerciseMuscle),
+        })),
+      )
+      setPhase(0)
+      setChunkProgress(null)
+      setActiveStep(1)
     } catch {
       setPhase(0)
       setError('Network error — please try again')
@@ -254,118 +365,424 @@ export const UploadAndEdit = () => {
     }
   }
 
-  useAppBar({ title: 'Import from Spreadsheet', showBack: true });
-  const loading = phase > 0
+  const handleExerciseChange = (originalName: string, updates: Partial<ReviewedExercise>) => {
+    setReviewedExercises((current) =>
+      current.map((exercise) => (
+        exercise.originalName === originalName
+          ? { ...exercise, ...updates }
+          : exercise
+      )),
+    )
+  }
+
+  const handleContinueToSummary = () => {
+    setActiveStep(2)
+  }
+
+  const handleContinueToEditor = () => {
+    if (!importedPlan) return
+    const pendingUploadPlan: PendingUploadPlan = {
+      plan: importedPlan,
+      reviewedExercises,
+    }
+    sessionStorage.setItem('pendingUploadPlan', JSON.stringify(pendingUploadPlan))
+    router.push('/user/plan/create')
+  }
+
+  useAppBar({ title: 'Import from Spreadsheet', showBack: true })
 
   return (
-    <>
-      <Box sx={{ height: HEIGHT_EXC_APPBAR, overflowY: 'auto', p: 2, maxWidth: 600, mx: 'auto' }}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Upload a CSV or paste your training spreadsheet below. AI will read the exercises, sets, and weights and create a ready-to-edit plan.
-        </Typography>
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          AI imports can occasionally miss or misread values. Please review your plan after import, especially weights, reps, and week-to-week changes.
-        </Alert>
-        <Button
-          variant="outlined"
-          startIcon={<UploadFileIcon />}
-          fullWidth
-          onClick={() => fileInputRef.current?.click()}
-          disabled={loading}
-        >
-          Upload CSV file
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv,text/csv,text/plain"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, mb: 1 }}>
-          {fileName ?? 'No file selected'}
-        </Typography>
+    <Box sx={{ height: HEIGHT_EXC_APPBAR, overflowY: 'auto', bgcolor: 'background.default' }}>
+      <Box sx={{ maxWidth: 960, mx: 'auto', px: { xs: 2, sm: 3 }, py: 3 }}>
+        <Stepper alternativeLabel activeStep={activeStep} sx={{ mb: 4 }}>
+          {WIZARD_STEPS.map((label, index) => (
+            <Step
+              key={label}
+              completed={index < activeStep || (index === 1 && activeStep === 2 && reviewedExercises.length === 0)}
+            >
+              <StepLabel optional={index === 1 ? <Typography variant="caption">Only if needed</Typography> : undefined}>
+                {label}
+              </StepLabel>
+            </Step>
+          ))}
+        </Stepper>
 
-        <Divider sx={{ my: 2 }}>
-          <Typography variant="body2" color="text.secondary">or</Typography>
-        </Divider>
+        {activeStep === 0 && (
+          <Stack spacing={3}>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+                Upload or paste your training sheet
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Bring in a CSV or raw spreadsheet export. Forti will parse the weeks, sessions, and sets, then stop for review before opening the plan editor.
+              </Typography>
+            </Box>
 
-        <TextField
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          label="Paste in your training sheet"
-          multiline
-          rows={4}
-          fullWidth
-          sx={{ mb: 2 }}
-          disabled={loading}
-          error={isOverLimit}
-          helperText={
-            text.length > 0
-              ? `${inputBytes.toLocaleString()} / ~225,000 bytes${isOverLimit ? ' — too large' : ''}`
-              : undefined
-          }
-        />
+            <Alert severity="warning">
+              AI imports can miss or misread values. Check names, rep schemes, and week-to-week changes before saving the finished plan.
+            </Alert>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-            {parseIssues.length > 0 && (
-              <Box component="ul" sx={{ mt: 1, mb: 0, pl: 2 }}>
-                {parseIssues.map((issue, i) => (
-                  <li key={i}><Typography variant="caption">{issue}</Typography></li>
-                ))}
-              </Box>
-            )}
-          </Alert>
+            <Card variant="outlined" sx={{ borderRadius: 3 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                <Stack spacing={2.5}>
+                  <Box>
+                    <Button
+                      variant="outlined"
+                      startIcon={<UploadFileIcon />}
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={loading}
+                    >
+                      Upload CSV file
+                    </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".csv,text/csv,text/plain"
+                      style={{ display: 'none' }}
+                      onChange={handleFileChange}
+                    />
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                      {fileName ?? 'No file selected'}
+                    </Typography>
+                  </Box>
+
+                  <Divider>
+                    <Typography variant="body2" color="text.secondary">or</Typography>
+                  </Divider>
+
+                  <TextField
+                    value={text}
+                    onChange={(event) => setText(event.target.value)}
+                    label="Paste in your training sheet"
+                    multiline
+                    minRows={10}
+                    fullWidth
+                    disabled={loading}
+                    error={isOverLimit}
+                    helperText={
+                      text.length > 0
+                        ? `${inputBytes.toLocaleString()} / ~225,000 bytes${isOverLimit ? ' — too large' : ''}`
+                        : 'Paste a block exactly as exported from your sheet or coaching doc.'
+                    }
+                  />
+
+                  {(loading || error || parseIssues.length > 0) && (
+                    <Box sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', p: 2 }}>
+                      {loading && (
+                        <Stack spacing={1.25}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <CircularProgress size={18} />
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {phase === 1 && 'Uploading spreadsheet…'}
+                              {phase === 2 && 'Analysing your spreadsheet with AI…'}
+                              {phase === 3 && 'Preparing review data…'}
+                            </Typography>
+                          </Box>
+                          <LinearProgress />
+                          <Typography variant="caption" color="text.secondary">
+                            This may take a few minutes for larger sheets.
+                            {chunkProgress && chunkProgress.total > 1
+                              ? ` Processing part ${chunkProgress.current} of ${chunkProgress.total}.`
+                              : ''}
+                          </Typography>
+                        </Stack>
+                      )}
+
+                      {error && !loading && (
+                        <Alert severity="error">
+                          {error}
+                          {parseIssues.length > 0 && (
+                            <Box component="ul" sx={{ mt: 1, mb: 0, pl: 2 }}>
+                              {parseIssues.map((issue, index) => (
+                                <li key={index}>
+                                  <Typography variant="caption">{issue}</Typography>
+                                </li>
+                              ))}
+                            </Box>
+                          )}
+                        </Alert>
+                      )}
+                    </Box>
+                  )}
+
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button
+                      variant="contained"
+                      onClick={handleSubmit}
+                      disabled={loading || !text.trim()}
+                      endIcon={<ArrowForwardIcon />}
+                    >
+                      Analyse import
+                    </Button>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Stack>
         )}
 
-        <Button
-          variant="contained"
-          onClick={handleSubmit}
-          fullWidth
-          disabled={loading || !text.trim()}
-        >
-          Import
-        </Button>
-      </Box>
+        {activeStep === 1 && importedPlan && (
+          <Stack spacing={3}>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+                Review new exercises
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {reviewStepDescription(reviewedExercises)}
+              </Typography>
+            </Box>
 
-      <Dialog
-        open={loading}
-        maxWidth="xs"
-        fullWidth
-        disableEscapeKeyDown
-      >
-        <DialogTitle>Importing your plan</DialogTitle>
-        <DialogContent>
-          <List dense disablePadding>
-            {STEPS.map((label, i) => (
-              <ListItem key={label} disableGutters>
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  <StepIcon stepIndex={i} phase={phase} />
-                </ListItemIcon>
-                <ListItemText
-                  primary={label}
-                  slotProps={{
-                    primary: {
-                      color: phase === i + 1 ? 'text.primary' : phase > i + 1 ? 'text.primary' : 'text.disabled',
-                    },
-                  }}
-                />
-              </ListItem>
-            ))}
-          </List>
-          <LinearProgress sx={{ mt: 2 }} />
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-            This may take up to 10 minutes, depending on spreadsheet size and complexity
-          </Typography>
-          {chunkProgress && chunkProgress.total > 1 && (
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-              Processing part {chunkProgress.current} of {chunkProgress.total}
-            </Typography>
-          )}
-        </DialogContent>
-      </Dialog>
-    </>
+            {reviewedExercises.length === 0 ? (
+              <Alert severity="info">Every exercise in this import already exists in your library. You can skip straight to the summary.</Alert>
+            ) : (
+              <Stack spacing={2}>
+                {reviewedExercises.map((exercise) => (
+                  <Card key={exercise.originalName} variant="outlined" sx={{ borderRadius: 3 }}>
+                    <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                      <Box
+                        sx={{
+                          display: 'grid',
+                          gap: 2,
+                          gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) 180px' },
+                          alignItems: 'start',
+                        }}
+                      >
+                        <Stack spacing={2}>
+                          <TextField
+                            label="Exercise name"
+                            value={exercise.name}
+                            autoComplete="off"
+                            onChange={(event) => handleExerciseChange(exercise.originalName, { name: event.target.value })}
+                          />
+
+                          <Autocomplete
+                            options={CATEGORY_OPTIONS}
+                            value={exercise.category}
+                            onChange={(_, value) => {
+                              if (!value) return
+                              handleExerciseChange(exercise.originalName, { category: value })
+                            }}
+                            disableClearable
+                            getOptionLabel={formatCategoryLabel}
+                            renderInput={(params) => <TextField {...params} label="Training type" />}
+                          />
+
+                          <Autocomplete
+                            multiple
+                            disableCloseOnSelect
+                            options={[...EXERCISE_MUSCLES]}
+                            value={exercise.primaryMuscles}
+                            onChange={(_, value) => handleExerciseChange(exercise.originalName, { primaryMuscles: value })}
+                            getOptionLabel={(option) => MUSCLE_NAMES[option]}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Primary muscles"
+                                helperText="Main muscles this exercise is intended to train."
+                              />
+                            )}
+                          />
+
+                          <Autocomplete
+                            multiple
+                            disableCloseOnSelect
+                            options={[...EXERCISE_MUSCLES]}
+                            value={exercise.secondaryMuscles}
+                            onChange={(_, value) => handleExerciseChange(exercise.originalName, { secondaryMuscles: value })}
+                            getOptionLabel={(option) => MUSCLE_NAMES[option]}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Secondary muscles"
+                                helperText="Supporting or stabilising muscles."
+                              />
+                            )}
+                          />
+                        </Stack>
+
+                        <Stack spacing={1.5}>
+                          <Box
+                            sx={{
+                              minHeight: 220,
+                              borderRadius: 2,
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              bgcolor: 'background.default',
+                              p: 1.5,
+                            }}
+                          >
+                            <MuscleHighlight
+                              primaryMuscles={exercise.primaryMuscles}
+                              secondaryMuscles={exercise.secondaryMuscles}
+                              exerciseId={Number(exercise.originalName.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0))}
+                              alwaysShow
+                            />
+                          </Box>
+
+                          <Box>
+                            <Typography variant="caption" sx={{ display: 'block', mb: 0.75, color: 'text.secondary', fontWeight: 700 }}>
+                              Primary muscles
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                              {exercise.primaryMuscles.length > 0 ? exercise.primaryMuscles.map((muscle) => (
+                                <Chip key={`${exercise.originalName}-${muscle}`} label={MUSCLE_NAMES[muscle]} size="small" color="primary" />
+                              )) : (
+                                <Typography variant="caption" color="text.secondary">No primary muscles selected yet.</Typography>
+                              )}
+                            </Box>
+                          </Box>
+
+                          {exercise.secondaryMuscles.length > 0 && (
+                            <Box>
+                              <Typography variant="caption" sx={{ display: 'block', mb: 0.75, color: 'text.secondary', fontWeight: 700 }}>
+                                Secondary muscles
+                              </Typography>
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                                {exercise.secondaryMuscles.map((muscle) => (
+                                  <Chip key={`${exercise.originalName}-secondary-${muscle}`} label={MUSCLE_NAMES[muscle]} size="small" variant="outlined" />
+                                ))}
+                              </Box>
+                            </Box>
+                          )}
+                        </Stack>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Stack>
+            )}
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+              <Button onClick={() => setActiveStep(0)} startIcon={<ArrowBackIcon />}>
+                Back
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleContinueToSummary}
+                endIcon={<ArrowForwardIcon />}
+              >
+                Continue to summary
+              </Button>
+            </Box>
+          </Stack>
+        )}
+
+        {activeStep === 2 && reviewedPlan && (
+          <Stack spacing={3}>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+                Summary before the editor
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Sanity-check the structure and muscle balance before opening the full plan editor.
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: 'grid',
+                gap: 2,
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' },
+              }}
+            >
+              {[
+                { label: 'Weeks', value: reviewedPlan.weeks.length },
+                { label: 'Workouts', value: reviewedPlan.weeks.reduce((sum, week) => sum + week.workouts.length, 0) },
+                { label: 'Exercises', value: exerciseCount(reviewedPlan) },
+                { label: 'New exercises', value: reviewedExercises.length },
+              ].map((item) => (
+                <Card key={item.label} variant="outlined" sx={{ borderRadius: 3 }}>
+                  <CardContent>
+                    <Typography variant="caption" color="text.secondary">{item.label}</Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 700, mt: 1 }}>{item.value}</Typography>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+
+            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.1fr) minmax(320px, 0.9fr)' } }}>
+              <Card variant="outlined" sx={{ borderRadius: 3 }}>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+                    Plan structure
+                  </Typography>
+                  <Stack spacing={1.5}>
+                    <Typography variant="body2" color="text.secondary">
+                      Plan name: <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{reviewedPlan.name}</Box>
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Unique exercises: <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{countUniqueExercises(reviewedPlan)}</Box>
+                    </Typography>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }}>
+                        Workouts per week
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                        {reviewedPlan.weeks.map((week) => (
+                          <Chip
+                            key={week.order}
+                            label={`Week ${week.order}: ${week.workouts.length}`}
+                            size="small"
+                            variant="outlined"
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                    <Alert severity="info" icon={<CheckCircleIcon fontSize="inherit" />}>
+                      {reviewedExercises.length > 0
+                        ? `${reviewedExercises.length} new exercises will be carried into the editor with the metadata you just reviewed.`
+                        : 'No new exercises were introduced by this import, so the editor can focus on plan structure and set details.'}
+                    </Alert>
+                  </Stack>
+                </CardContent>
+              </Card>
+
+              <Card variant="outlined" sx={{ borderRadius: 3 }}>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+                    Muscle balance
+                  </Typography>
+                  <MuscleVolumeDiagram volumes={muscleVolumes} />
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5, mb: 1 }}>
+                    Estimated weekly volume uses working set count, with full credit for primary muscles and half credit for secondary muscles.
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                    {sortedMuscleVolumes.length > 0 ? sortedMuscleVolumes.map(([muscle, volume]) => (
+                      <Chip
+                        key={muscle}
+                        label={`${MUSCLE_NAMES[muscle as ExerciseMuscle]} ${(volume ?? 0).toFixed(1)}`}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                      />
+                    )) : (
+                      <Typography variant="body2" color="text.secondary">
+                        Muscle volume becomes available once new exercises have muscle data.
+                      </Typography>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+              <Button
+                onClick={() => setActiveStep(reviewedExercises.length > 0 ? 1 : 0)}
+                startIcon={<ArrowBackIcon />}
+              >
+                Back
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleContinueToEditor}
+                endIcon={<ArrowForwardIcon />}
+              >
+                Continue to editor
+              </Button>
+            </Box>
+          </Stack>
+        )}
+      </Box>
+    </Box>
   )
 }

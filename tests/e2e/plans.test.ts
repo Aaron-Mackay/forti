@@ -375,14 +375,16 @@ test.describe('Spreadsheet import', () => {
       'Bench Press',
     ].join('\n'));
 
-    await page.getByRole('button', { name: /^import$/i }).click();
-    await expect(page).toHaveURL('/user/plan/create');
-    await expect(page.getByRole('textbox', { name: /plan name/i })).toHaveValue('Imported Spreadsheet Plan');
+    await page.getByRole('button', { name: /analyse import/i }).click();
+    await expect(page.getByRole('heading', { name: /summary before the editor/i })).toBeVisible();
     await expect.poll(() => chunkInputs.length).toBe(2);
     expect(chunkInputs[0]).toContain('WEEK 1');
     expect(chunkInputs[0]).toContain('WEEK 2');
     expect(chunkInputs[1]).toContain('WEEK 3');
     expect(chunkInputs[1]).toContain('WEEK 4');
+    await page.getByRole('button', { name: /continue to editor/i }).click();
+    await expect(page).toHaveURL('/user/plan/create');
+    await expect(page.getByRole('textbox', { name: /plan name/i })).toHaveValue('Imported Spreadsheet Plan');
   });
 
   test('shows backend parse issues when spreadsheet import fails', async ({ page }) => {
@@ -398,7 +400,7 @@ test.describe('Spreadsheet import', () => {
     });
 
     await page.getByLabel(/paste in your training sheet/i).fill('WEEK 1\nSESSION: PUSH');
-    await page.getByRole('button', { name: /^import$/i }).click();
+    await page.getByRole('button', { name: /analyse import/i }).click();
 
     await expect(page.getByRole('alert').filter({ hasText: /could not parse/i })).toBeVisible();
     await expect(page.getByText(/weeks\[0\]\.workouts\[0\]\.exercises\[0\]\.name/i)).toBeVisible();
