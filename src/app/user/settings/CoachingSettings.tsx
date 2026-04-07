@@ -7,6 +7,10 @@ import {
   Box,
   Button,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   FormControlLabel,
   IconButton,
@@ -15,6 +19,7 @@ import {
   ListItem,
   ListItemText,
   Skeleton,
+  Slider,
   Switch,
   TextField,
   Tooltip,
@@ -24,6 +29,8 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import HourglassTopIcon from '@mui/icons-material/HourglassTop';
 import CancelIcon from '@mui/icons-material/Cancel';
+import Cropper from 'react-easy-crop';
+import type { Area } from 'react-easy-crop';
 
 interface CoachInfo {
   coachCode: string | null;
@@ -48,6 +55,11 @@ export default function CoachingSettings() {
   const [inviteSent, setInviteSent] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [cropImageUrl, setCropImageUrl] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
   const load = useCallback(async () => {
     setFetchError(null);
@@ -123,23 +135,40 @@ export default function CoachingSettings() {
     doAction(`remove-${clientId}`, () => fetch(`/api/coach/clients/${clientId}`, { method: 'DELETE' }), 'Failed to remove client');
   }
 
-  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImageUrl(reader.result as string);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCropDialogOpen(true);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleCropConfirm() {
+    if (!cropImageUrl || !croppedAreaPixels) return;
+    setCropDialogOpen(false);
     setLogoUploading(true);
     setLogoError(null);
     try {
-      const bitmap = await createImageBitmap(file);
-      const MAX = 200;
-      const scale = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height));
-      const w = Math.round(bitmap.width * scale);
-      const h = Math.round(bitmap.height * scale);
+      const img = new Image();
+      img.src = cropImageUrl;
+      await new Promise<void>(resolve => { img.onload = () => resolve(); });
+      // Render the cropped square at 200×200 (4× retina for 50×50 display)
+      const SIZE = 200;
       const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      canvas.getContext('2d')!.drawImage(bitmap, 0, 0, w, h);
-      bitmap.close();
+      canvas.width = SIZE;
+      canvas.height = SIZE;
+      canvas.getContext('2d')!.drawImage(
+        img,
+        croppedAreaPixels.x, croppedAreaPixels.y,
+        croppedAreaPixels.width, croppedAreaPixels.height,
+        0, 0, SIZE, SIZE
+      );
       const blob = await new Promise<Blob>((resolve, reject) =>
         canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/jpeg', 0.9)
       );
@@ -596,7 +625,7 @@ export default function CoachingSettings() {
               component="img"
               src={info.coachLogoUrl}
               alt="Coach logo"
-              sx={{ maxHeight: 50, maxWidth: 120, objectFit: 'contain', display: 'block', borderRadius: 1, my: 2 }}
+              sx={{ width: 80, height: 80, objectFit: 'contain', display: 'block', borderRadius: 1, my: 2, border: '1px solid', borderColor: 'divider' }}
             />
           )}
 
@@ -628,6 +657,41 @@ export default function CoachingSettings() {
           </Box>
         </Box>
       )}
+
+      {/* ── Crop dialog ───────────────────────────────── */}
+      <Dialog open={cropDialogOpen} onClose={() => setCropDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Crop Logo</DialogTitle>
+        <DialogContent>
+          <Box sx={{ position: 'relative', height: 300, bgcolor: 'black', borderRadius: 1, overflow: 'hidden' }}>
+            {cropImageUrl && (
+              <Cropper
+                image={cropImageUrl}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={(_croppedArea, pixels) => setCroppedAreaPixels(pixels)}
+              />
+            )}
+          </Box>
+          <Box sx={{ mt: 2, px: 1 }}>
+            <Typography variant="caption" color="text.secondary" display="block" gutterBottom>Zoom</Typography>
+            <Slider
+              value={zoom}
+              min={1}
+              max={3}
+              step={0.01}
+              onChange={(_e, v) => setZoom(v as number)}
+              size="small"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCropDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleCropConfirm}>Save</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
