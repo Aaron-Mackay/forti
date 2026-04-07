@@ -63,7 +63,7 @@ jobs:
           MIGRATION_DIR="prisma/migrations/${TIMESTAMP}_${NAME}"
           mkdir -p "$MIGRATION_DIR"
           npx prisma migrate diff \
-            --from-schema-datasource prisma/schema.prisma \
+            --from-config-datasource \
             --to-schema-datamodel prisma/schema.prisma \
             --script > "$MIGRATION_DIR/migration.sql"
           if grep -qvE "^(--|[[:space:]]*$)" "$MIGRATION_DIR/migration.sql"; then
