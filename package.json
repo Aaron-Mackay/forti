@@ -5,6 +5,7 @@
     "node": ">=24"
   },
   "private": true,
+  "license": "UNLICENSED",
   "scripts": {
     "dev": "next dev",
     "dev:share": "./scripts/dev-share.sh",
