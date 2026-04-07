@@ -203,37 +203,17 @@ test.describe('Settings page — coaching section', () => {
     await expect(page.getByText('No coach found with that code')).toBeVisible();
   });
 
-  test('activating Enable coach features reveals the invite code', async ({ page }) => {
+  test('activating Enable coach features keeps invite tools out of Forti settings', async ({ page }) => {
     const coachModeSwitch = page.getByRole('switch', { name: 'Enable coach features' });
     await expect(coachModeSwitch).not.toBeChecked();
-    await coachModeSwitch.click();
-    await expect(page.getByText('Share this code with your clients:')).toBeVisible();
-    const codeInput = page.locator('input[readonly]').first();
-    await expect(codeInput).toBeVisible();
-    await expect(codeInput).toHaveValue(/^\d{6}$/);
-  });
-
-  test('deactivating Enable coach features hides the code section', async ({ page }) => {
-    // Activate first
-    await page.request.post('/api/coach/activate', { data: { active: true } });
-    await page.reload();
-    await expect(page.getByText('Share this code with your clients:')).toBeVisible();
-    // Deactivate
-    const coachModeSwitch = page.getByRole('switch', { name: 'Enable coach features' });
     await coachModeSwitch.click();
     await expect(page.getByText('Share this code with your clients:')).not.toBeVisible();
   });
 
-  test('activating Enable coach features reveals the shareable link', async ({ page }) => {
+  test('coach invite tools are not shown in Forti settings even when coach mode is already active', async ({ page }) => {
     await page.request.post('/api/coach/activate', { data: { active: true } });
     await page.reload();
-    await expect(page.getByText('Or share this link:')).toBeVisible();
-    // Find the link input (second readonly input after the code input)
-    const readonlyInputs = page.locator('input[readonly]');
-    const linkInput = readonlyInputs.nth(1);
-    await expect(linkInput).toBeVisible();
-    const value = await linkInput.inputValue();
-    expect(value).toMatch(/\/coach\/\d{6}$/);
+    await expect(page.getByText('Share this code with your clients:')).not.toBeVisible();
   });
 });
 
