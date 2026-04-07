@@ -34,6 +34,7 @@ model User {
 
   // coach linking system
   coachCode             String?        @unique // 6-digit string, generated once on activation
+  coachLogoUrl          String?
   sentCoachRequest      CoachRequest?  @relation("ClientRequests")
   receivedCoachRequests CoachRequest[] @relation("CoachRequests")
 

@@ -51,6 +51,7 @@ import {signOut} from "next-auth/react";
 import {useSettings} from '@lib/providers/SettingsProvider';
 import {useCoachClients} from '@lib/providers/CoachClientsProvider';
 import {useNotifications} from '@lib/hooks/api/useNotifications';
+import {useApiGet} from '@lib/hooks/api/useApiGet';
 
 export const APPBAR_HEIGHT = 56;
 export const DRAWER_WIDTH = 250;
@@ -81,6 +82,7 @@ export default function CustomAppBar(
   const { settings, loading: settingsLoading } = useSettings();
   const { clients } = useCoachClients();
   const { unreadCount } = useNotifications();
+  const { data: coachLogoData } = useApiGet<{ coachLogoUrl: string | null }>('/api/coach/logo');
 
   const educationPaths = ['/library', '/user/learning-plans', '/user/coach/learning-plans'];
   const [educationOpen, setEducationOpen] = useState(
@@ -261,7 +263,16 @@ export default function CustomAppBar(
       >
         {/* Header / Logo */}
         <Stack direction="row" alignItems="center" spacing={1} sx={{p: 1.5}}>
-          <FortiIcon style={{width: 50, height: 50}}/>
+          {coachLogoData?.coachLogoUrl ? (
+            <Box
+              component="img"
+              src={coachLogoData.coachLogoUrl}
+              alt="Coach logo"
+              sx={{ height: 40, maxWidth: 120, objectFit: 'contain', borderRadius: 1, flexShrink: 0 }}
+            />
+          ) : (
+            <FortiIcon style={{width: 50, height: 50}}/>
+          )}
           <Typography variant="h5">{isCoachDomain ? 'Coach' : 'Forti'}</Typography>
           <Chip label="Beta" size="small" sx={{bgcolor: "rgba(45,127,249,0.15)", color: "rgb(45,127,249)", fontWeight: 600, fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.05em", border: "none", height: 20, flexShrink: 0}}/>
           <Box sx={{flexGrow: 1}}/>

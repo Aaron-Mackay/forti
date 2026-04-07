@@ -27,6 +27,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 
 interface CoachInfo {
   coachCode: string | null;
+  coachLogoUrl: string | null;
   coachModeActive: boolean;
   currentCoach: { id: string; name: string } | null;
   sentRequest: { id: number; status: 'Pending' | 'Rejected'; coach: { id: string; name: string } } | null;
@@ -45,6 +46,8 @@ export default function CoachingSettings() {
   const [busy, setBusy] = useState<string | null>(null); // tracks which action is in-flight
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteSent, setInviteSent] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setFetchError(null);
@@ -118,6 +121,60 @@ export default function CoachingSettings() {
 
   function handleRemoveClient(clientId: string) {
     doAction(`remove-${clientId}`, () => fetch(`/api/coach/clients/${clientId}`, { method: 'DELETE' }), 'Failed to remove client');
+  }
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setLogoUploading(true);
+    setLogoError(null);
+    try {
+      const bitmap = await createImageBitmap(file);
+      const MAX = 200;
+      const scale = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height));
+      const w = Math.round(bitmap.width * scale);
+      const h = Math.round(bitmap.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d')!.drawImage(bitmap, 0, 0, w, h);
+      bitmap.close();
+      const blob = await new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/jpeg', 0.9)
+      );
+      const form = new FormData();
+      form.append('file', new File([blob], 'logo.jpg', { type: 'image/jpeg' }));
+      const res = await fetch('/api/coach/logo', { method: 'POST', body: form });
+      if (!res.ok) {
+        const body = await res.json() as { error?: string };
+        setLogoError(body.error ?? 'Upload failed');
+      } else {
+        await load();
+      }
+    } catch {
+      setLogoError('Upload failed');
+    } finally {
+      setLogoUploading(false);
+    }
+  }
+
+  async function handleLogoRemove() {
+    setLogoUploading(true);
+    setLogoError(null);
+    try {
+      const res = await fetch('/api/coach/logo', { method: 'DELETE' });
+      if (!res.ok) {
+        const body = await res.json() as { error?: string };
+        setLogoError(body.error ?? 'Remove failed');
+      } else {
+        await load();
+      }
+    } catch {
+      setLogoError('Remove failed');
+    } finally {
+      setLogoUploading(false);
+    }
   }
 
   async function handleToggleCoachMode(active: boolean) {
@@ -521,6 +578,52 @@ export default function CoachingSettings() {
               ))}
             </List>
           )}
+
+          {/* ── Branding ─────────────────────────────────── */}
+          <Divider sx={{ my: 3 }} />
+          <Typography variant="overline" color="text.secondary">Branding</Typography>
+
+          {logoError && (
+            <Alert severity="error" sx={{ mt: 1, mb: 2 }} onClose={() => setLogoError(null)}>
+              {logoError}
+            </Alert>
+          )}
+
+          {info.coachLogoUrl && (
+            <Box
+              component="img"
+              src={info.coachLogoUrl}
+              alt="Coach logo"
+              sx={{ maxHeight: 50, maxWidth: 120, objectFit: 'contain', display: 'block', borderRadius: 1, my: 2 }}
+            />
+          )}
+
+          <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+            <Button
+              variant="outlined"
+              component="label"
+              disabled={logoUploading}
+              startIcon={logoUploading ? <CircularProgress size={14} /> : undefined}
+            >
+              {info.coachLogoUrl ? 'Replace Logo' : 'Upload Logo'}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                hidden
+                onChange={handleLogoUpload}
+              />
+            </Button>
+            {info.coachLogoUrl && (
+              <Button
+                variant="outlined"
+                color="error"
+                disabled={logoUploading}
+                onClick={handleLogoRemove}
+              >
+                Remove Logo
+              </Button>
+            )}
+          </Box>
         </Box>
       )}
     </Box>

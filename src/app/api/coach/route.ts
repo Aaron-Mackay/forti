@@ -11,6 +11,7 @@ export async function GET() {
     where: { id: userId },
     select: {
       coachCode: true,
+      coachLogoUrl: true,
       settings: true,
       coachId: true,
       coach: { select: { id: true, name: true } },
@@ -44,6 +45,7 @@ export async function GET() {
 
   return NextResponse.json({
     coachCode: user.coachCode,
+    coachLogoUrl: user.coachLogoUrl ?? null,
     coachModeActive: settings.coachModeActive,
     currentCoach: user.coach ?? null,
     sentRequest: user.sentCoachRequest ?? null,
