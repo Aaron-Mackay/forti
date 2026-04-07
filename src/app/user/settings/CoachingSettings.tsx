@@ -151,6 +151,7 @@ export default function CoachingSettings() {
         setLogoError(body.error ?? 'Upload failed');
       } else {
         await load();
+        window.dispatchEvent(new CustomEvent('coach-logo-changed'));
       }
     } catch {
       setLogoError('Upload failed');
@@ -169,6 +170,7 @@ export default function CoachingSettings() {
         setLogoError(body.error ?? 'Remove failed');
       } else {
         await load();
+        window.dispatchEvent(new CustomEvent('coach-logo-changed'));
       }
     } catch {
       setLogoError('Remove failed');
