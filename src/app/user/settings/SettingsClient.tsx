@@ -190,7 +190,15 @@ const FEATURE_LABELS: {key: BooleanSettingKey; label: string}[] = [
   {key: 'showSupplements', label: 'Supplements'},
 ];
 
-export default function SettingsClient({ initialName, initialImage }: { initialName: string; initialImage: string | null }) {
+export default function SettingsClient({
+  initialName,
+  initialImage,
+  isCoachDomain,
+}: {
+  initialName: string;
+  initialImage: string | null;
+  isCoachDomain: boolean;
+}) {
   const { settings, loading, error, clearError, updateSetting } = useSettings();
 
   // Profile state
@@ -233,6 +241,14 @@ export default function SettingsClient({ initialName, initialImage }: { initialN
   const handleToggle = (key: BooleanSettingKey) => {
     updateSetting(key, !settings[key]);
   };
+
+  if (isCoachDomain) {
+    return (
+      <Box sx={{pt: 2, pb: 4, maxWidth: 480}}>
+        <CoachingSettings mode="coachPortal" />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{pt: 2, pb: 4, maxWidth: 480}}>
@@ -507,7 +523,7 @@ export default function SettingsClient({ initialName, initialImage }: { initialN
       </Box>
 
       <Divider sx={{my: 3}}/>
-      <CoachingSettings />
+      <CoachingSettings mode="normal" />
     </Box>
   );
 }

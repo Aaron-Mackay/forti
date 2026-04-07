@@ -42,7 +42,7 @@ interface CoachInfo {
   confirmedClients: { id: string; name: string }[];
 }
 
-export default function CoachingSettings() {
+export default function CoachingSettings({ mode = 'normal' }: { mode?: 'normal' | 'coachPortal' }) {
   const { updateSetting } = useSettings();
   const [info, setInfo] = useState<CoachInfo | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -289,6 +289,8 @@ export default function CoachingSettings() {
     );
   }
 
+  const showCoachPortalTools = mode === 'coachPortal';
+
   return (
     <Box>
       {actionError && (
@@ -297,372 +299,389 @@ export default function CoachingSettings() {
         </Alert>
       )}
 
-      {/* ── Your Coach ─────────────────────────────────── */}
-      <Typography variant="overline" color="text.secondary">Your Coach</Typography>
+      {mode === 'normal' && (
+        <>
+          {/* ── Your Coach ─────────────────────────────────── */}
+          <Typography variant="overline" color="text.secondary">Your Coach</Typography>
 
-      {!info ? (
-        <Box sx={{ mb: 2 }}>
-          <Skeleton variant="rounded" height={56} />
-        </Box>
-      ) : info.currentCoach ? (
-        // Confirmed coach
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            border: '1px solid',
-            borderColor: 'success.main',
-            borderRadius: 1,
-            px: 2,
-            py: 1.5,
-            mb: 2,
-            gap: 1,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CheckCircleOutlineIcon color="success" fontSize="small" />
-            <Typography variant="body2">
-              Coach: <strong>{info.currentCoach.name}</strong>
-            </Typography>
-          </Box>
-          <Button
-            size="small"
-            color="error"
-            variant="outlined"
-            disabled={busy === 'unlink'}
-            onClick={handleUnlink}
-            startIcon={busy === 'unlink' ? <CircularProgress size={14} /> : undefined}
-          >
-            Unlink
-          </Button>
-        </Box>
-      ) : info.sentRequest?.status === 'Pending' ? (
-        // Pending request
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            border: '1px solid',
-            borderColor: 'warning.main',
-            borderRadius: 1,
-            px: 2,
-            py: 1.5,
-            mb: 2,
-            gap: 1,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <HourglassTopIcon color="warning" fontSize="small" />
-            <Typography variant="body2">
-              Pending: <strong>{info.sentRequest.coach.name}</strong>
-            </Typography>
-          </Box>
-          <Button
-            size="small"
-            color="inherit"
-            variant="outlined"
-            disabled={busy === 'cancel'}
-            onClick={handleCancelRequest}
-            startIcon={busy === 'cancel' ? <CircularProgress size={14} /> : undefined}
-          >
-            Cancel
-          </Button>
-        </Box>
-      ) : info.sentRequest?.status === 'Rejected' ? (
-        // Rejected request
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            border: '1px solid',
-            borderColor: 'error.main',
-            borderRadius: 1,
-            px: 2,
-            py: 1.5,
-            mb: 2,
-            gap: 1,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CancelIcon color="error" fontSize="small" />
-            <Typography variant="body2">
-              Request declined by <strong>{info.sentRequest.coach.name}</strong>
-            </Typography>
-          </Box>
-          <Button
-            size="small"
-            color="inherit"
-            variant="outlined"
-            disabled={busy === 'cancel'}
-            onClick={handleCancelRequest}
-            startIcon={busy === 'cancel' ? <CircularProgress size={14} /> : undefined}
-          >
-            Dismiss
-          </Button>
-        </Box>
-      ) : (
-        // No coach — show input
-        <Box sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'flex-start' }}>
-          <TextField
-            label="Enter coach code"
-            value={codeInput}
-            onChange={(e) => {
-              const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-              setCodeInput(val);
-            }}
-            inputProps={{ inputMode: 'numeric', maxLength: 6 }}
-            size="small"
-            sx={{ flex: 1 }}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleLink(); }}
-          />
-          <Button
-            variant="contained"
-            onClick={handleLink}
-            disabled={busy === 'link' || codeInput.length !== 6}
-            startIcon={busy === 'link' ? <CircularProgress size={14} color="inherit" /> : undefined}
-            sx={{ whiteSpace: 'nowrap', height: 40 }}
-          >
-            Link
-          </Button>
-        </Box>
-      )}
-
-      <Divider sx={{ my: 3 }} />
-
-      {/* ── Coach Mode ─────────────────────────────────── */}
-      <Typography variant="overline" color="text.secondary">Coaching</Typography>
-
-      {!info ? (
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1 }}>
-          <Typography variant="body1">Enable coach features</Typography>
-          <Skeleton variant="rounded" width={52} height={32} />
-        </Box>
-      ) : (
-        <FormControlLabel
-          control={
-            <Switch
-              checked={info.coachModeActive}
-              onChange={(e) => handleToggleCoachMode(e.target.checked)}
-              disabled={busy === 'coach-mode'}
-            />
-          }
-          label="Enable coach features"
-          labelPlacement="start"
-          sx={{ width: '100%', mx: 0, justifyContent: 'space-between' }}
-        />
-      )}
-
-      {info?.coachModeActive && (
-        <Box sx={{ mt: 2 }}>
-          {/* Invite code display */}
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Share this code with your clients:
-          </Typography>
-          <TextField
-            value={info.coachCode ?? ''}
-            size="small"
-            slotProps={{
-              input: {
-                readOnly: true,
-                sx: { fontFamily: 'monospace', fontSize: '1.25rem', letterSpacing: '0.3em' },
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Tooltip title={copied ? 'Copied!' : 'Copy code'}>
-                      <IconButton onClick={handleCopyCode} edge="end" size="small">
-                        <ContentCopyIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </InputAdornment>
-                ),
-              },
-            }}
-            sx={{ mb: 1.5, maxWidth: 200 }}
-          />
-
-          {/* Shareable link */}
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Or share this link:
-          </Typography>
-          <TextField
-            value={info.coachCode ? `${process.env.NEXT_PUBLIC_APP_URL ?? (typeof window !== 'undefined' ? window.location.origin : '')}/coach/${info.coachCode}` : ''}
-            fullWidth
-            size="small"
-            slotProps={{
-              input: {
-                readOnly: true,
-                sx: { fontFamily: 'monospace', fontSize: '0.8rem' },
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Tooltip title={linkCopied ? 'Copied!' : 'Copy link'}>
-                      <IconButton onClick={handleCopyLink} edge="end" size="small">
-                        <ContentCopyIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </InputAdornment>
-                ),
-              },
-            }}
-            sx={{ mb: 3 }}
-          />
-
-          {/* Invite by email */}
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Invite by email:
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, mb: 3, alignItems: 'flex-start' }}>
-            <TextField
-              label="Client's email"
-              type="email"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              size="small"
-              sx={{ flex: 1 }}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSendInvite(); }}
-            />
-            <Button
-              variant="contained"
-              onClick={handleSendInvite}
-              disabled={busy === 'invite' || !inviteEmail.trim()}
-              startIcon={busy === 'invite' ? <CircularProgress size={14} color="inherit" /> : undefined}
-              sx={{ whiteSpace: 'nowrap', height: 40 }}
-            >
-              Send
-            </Button>
-          </Box>
-          {inviteSent && (
-            <Alert severity="success" sx={{ mb: 2 }}>
-              Invite sent to {inviteSent}
-            </Alert>
-          )}
-
-          {/* Pending requests */}
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Pending Requests
-          </Typography>
-          {info.pendingRequests.length === 0 ? (
-            <Typography variant="body2" sx={{ mb: 2, pl: 1 }}>No pending requests.</Typography>
-          ) : (
-            <List disablePadding sx={{ mb: 2 }}>
-              {info.pendingRequests.map((req, i) => (
-                <React.Fragment key={req.id}>
-                  {i > 0 && <Divider />}
-                  <ListItem
-                    disablePadding
-                    sx={{ py: 1, gap: 1 }}
-                    secondaryAction={
-                      <Box sx={{ display: 'flex', gap: 1, pr: 0 }}>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          color="success"
-                          disabled={!!busy}
-                          onClick={() => handleAccept(req.id)}
-                          startIcon={busy === `accept-${req.id}` ? <CircularProgress size={12} color="inherit" /> : undefined}
-                        >
-                          Accept
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="error"
-                          disabled={!!busy}
-                          onClick={() => handleReject(req.id)}
-                          startIcon={busy === `reject-${req.id}` ? <CircularProgress size={12} color="inherit" /> : undefined}
-                        >
-                          Reject
-                        </Button>
-                      </Box>
-                    }
-                  >
-                    <ListItemText primary={req.client.name} />
-                  </ListItem>
-                </React.Fragment>
-              ))}
-            </List>
-          )}
-
-          {/* Confirmed clients */}
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Confirmed Clients
-          </Typography>
-          {info.confirmedClients.length === 0 ? (
-            <Typography variant="body2" sx={{ pl: 1 }}>No confirmed clients.</Typography>
-          ) : (
-            <List disablePadding>
-              {info.confirmedClients.map((client, i) => (
-                <React.Fragment key={client.id}>
-                  {i > 0 && <Divider />}
-                  <ListItem
-                    disablePadding
-                    sx={{ py: 1 }}
-                    secondaryAction={
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color="error"
-                        disabled={!!busy}
-                        onClick={() => handleRemoveClient(client.id)}
-                        startIcon={busy === `remove-${client.id}` ? <CircularProgress size={12} color="inherit" /> : undefined}
-                      >
-                        Remove
-                      </Button>
-                    }
-                  >
-                    <ListItemText primary={client.name} />
-                  </ListItem>
-                </React.Fragment>
-              ))}
-            </List>
-          )}
-
-          {/* ── Branding ─────────────────────────────────── */}
-          <Divider sx={{ my: 3 }} />
-          <Typography variant="overline" color="text.secondary">Branding</Typography>
-
-          {logoError && (
-            <Alert severity="error" sx={{ mt: 1, mb: 2 }} onClose={() => setLogoError(null)}>
-              {logoError}
-            </Alert>
-          )}
-
-          {info.coachLogoUrl && (
+          {!info ? (
+            <Box sx={{ mb: 2 }}>
+              <Skeleton variant="rounded" height={56} />
+            </Box>
+          ) : info.currentCoach ? (
+            // Confirmed coach
             <Box
-              component="img"
-              src={info.coachLogoUrl}
-              alt="Coach logo"
-              sx={{ width: 80, height: 80, objectFit: 'contain', display: 'block', borderRadius: 1, my: 2, border: '1px solid', borderColor: 'divider' }}
-            />
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                border: '1px solid',
+                borderColor: 'success.main',
+                borderRadius: 1,
+                px: 2,
+                py: 1.5,
+                mb: 2,
+                gap: 1,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CheckCircleOutlineIcon color="success" fontSize="small" />
+                <Typography variant="body2">
+                  Coach: <strong>{info.currentCoach.name}</strong>
+                </Typography>
+              </Box>
+              <Button
+                size="small"
+                color="error"
+                variant="outlined"
+                disabled={busy === 'unlink'}
+                onClick={handleUnlink}
+                startIcon={busy === 'unlink' ? <CircularProgress size={14} /> : undefined}
+              >
+                Unlink
+              </Button>
+            </Box>
+          ) : info.sentRequest?.status === 'Pending' ? (
+            // Pending request
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                border: '1px solid',
+                borderColor: 'warning.main',
+                borderRadius: 1,
+                px: 2,
+                py: 1.5,
+                mb: 2,
+                gap: 1,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <HourglassTopIcon color="warning" fontSize="small" />
+                <Typography variant="body2">
+                  Pending: <strong>{info.sentRequest.coach.name}</strong>
+                </Typography>
+              </Box>
+              <Button
+                size="small"
+                color="inherit"
+                variant="outlined"
+                disabled={busy === 'cancel'}
+                onClick={handleCancelRequest}
+                startIcon={busy === 'cancel' ? <CircularProgress size={14} /> : undefined}
+              >
+                Cancel
+              </Button>
+            </Box>
+          ) : info.sentRequest?.status === 'Rejected' ? (
+            // Rejected request
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                border: '1px solid',
+                borderColor: 'error.main',
+                borderRadius: 1,
+                px: 2,
+                py: 1.5,
+                mb: 2,
+                gap: 1,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CancelIcon color="error" fontSize="small" />
+                <Typography variant="body2">
+                  Request declined by <strong>{info.sentRequest.coach.name}</strong>
+                </Typography>
+              </Box>
+              <Button
+                size="small"
+                color="inherit"
+                variant="outlined"
+                disabled={busy === 'cancel'}
+                onClick={handleCancelRequest}
+                startIcon={busy === 'cancel' ? <CircularProgress size={14} /> : undefined}
+              >
+                Dismiss
+              </Button>
+            </Box>
+          ) : (
+            // No coach — show input
+            <Box sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'flex-start' }}>
+              <TextField
+                label="Enter coach code"
+                value={codeInput}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                  setCodeInput(val);
+                }}
+                inputProps={{ inputMode: 'numeric', maxLength: 6 }}
+                size="small"
+                sx={{ flex: 1 }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleLink(); }}
+              />
+              <Button
+                variant="contained"
+                onClick={handleLink}
+                disabled={busy === 'link' || codeInput.length !== 6}
+                startIcon={busy === 'link' ? <CircularProgress size={14} color="inherit" /> : undefined}
+                sx={{ whiteSpace: 'nowrap', height: 40 }}
+              >
+                Link
+              </Button>
+            </Box>
           )}
 
-          <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-            <Button
-              variant="outlined"
-              component="label"
-              disabled={logoUploading}
-              startIcon={logoUploading ? <CircularProgress size={14} /> : undefined}
-            >
-              {info.coachLogoUrl ? 'Replace Logo' : 'Upload Logo'}
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                hidden
-                onChange={handleLogoUpload}
+          <Divider sx={{ my: 3 }} />
+
+          {/* ── Coach Mode ─────────────────────────────────── */}
+          <Typography variant="overline" color="text.secondary">Coaching</Typography>
+
+          {!info ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1 }}>
+              <Typography variant="body1">Enable coach features</Typography>
+              <Skeleton variant="rounded" width={52} height={32} />
+            </Box>
+          ) : (
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={info.coachModeActive}
+                  onChange={(e) => handleToggleCoachMode(e.target.checked)}
+                  disabled={busy === 'coach-mode'}
+                />
+              }
+              label="Enable coach features"
+              labelPlacement="start"
+              sx={{ width: '100%', mx: 0, justifyContent: 'space-between' }}
+            />
+          )}
+        </>
+      )}
+
+      {showCoachPortalTools && (
+        <Box sx={{ mt: 1 }}>
+          <Typography variant="overline" color="text.secondary">Coach Settings</Typography>
+          {!info ? (
+            <Box sx={{ mt: 1 }}>
+              <Skeleton variant="rounded" height={56} />
+            </Box>
+          ) : !info.coachModeActive ? (
+            <Alert severity="info" sx={{ mt: 1 }}>
+              Turn on &quot;Enable coach features&quot; in Forti settings to manage coach invites and branding.
+            </Alert>
+          ) : (
+            <Box sx={{ mt: 1 }}>
+              {/* Invite code display */}
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Share this code with your clients:
+              </Typography>
+              <TextField
+                value={info.coachCode ?? ''}
+                size="small"
+                slotProps={{
+                  input: {
+                    readOnly: true,
+                    sx: { fontFamily: 'monospace', fontSize: '1.25rem', letterSpacing: '0.3em' },
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Tooltip title={copied ? 'Copied!' : 'Copy code'}>
+                          <IconButton onClick={handleCopyCode} edge="end" size="small">
+                            <ContentCopyIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+                sx={{ mb: 1.5, maxWidth: 200 }}
               />
-            </Button>
-            {info.coachLogoUrl && (
-              <Button
-                variant="outlined"
-                color="error"
-                disabled={logoUploading}
-                onClick={handleLogoRemove}
-              >
-                Remove Logo
-              </Button>
-            )}
-          </Box>
+
+              {/* Shareable link */}
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Or share this link:
+              </Typography>
+              <TextField
+                value={info.coachCode ? `${process.env.NEXT_PUBLIC_APP_URL ?? (typeof window !== 'undefined' ? window.location.origin : '')}/coach/${info.coachCode}` : ''}
+                fullWidth
+                size="small"
+                slotProps={{
+                  input: {
+                    readOnly: true,
+                    sx: { fontFamily: 'monospace', fontSize: '0.8rem' },
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Tooltip title={linkCopied ? 'Copied!' : 'Copy link'}>
+                          <IconButton onClick={handleCopyLink} edge="end" size="small">
+                            <ContentCopyIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+                sx={{ mb: 3 }}
+              />
+
+              {/* Invite by email */}
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Invite by email:
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, mb: 3, alignItems: 'flex-start' }}>
+                <TextField
+                  label="Client's email"
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  size="small"
+                  sx={{ flex: 1 }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSendInvite(); }}
+                />
+                <Button
+                  variant="contained"
+                  onClick={handleSendInvite}
+                  disabled={busy === 'invite' || !inviteEmail.trim()}
+                  startIcon={busy === 'invite' ? <CircularProgress size={14} color="inherit" /> : undefined}
+                  sx={{ whiteSpace: 'nowrap', height: 40 }}
+                >
+                  Send
+                </Button>
+              </Box>
+              {inviteSent && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  Invite sent to {inviteSent}
+                </Alert>
+              )}
+
+              {/* Pending requests */}
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Pending Requests
+              </Typography>
+              {info.pendingRequests.length === 0 ? (
+                <Typography variant="body2" sx={{ mb: 2, pl: 1 }}>No pending requests.</Typography>
+              ) : (
+                <List disablePadding sx={{ mb: 2 }}>
+                  {info.pendingRequests.map((req, i) => (
+                    <React.Fragment key={req.id}>
+                      {i > 0 && <Divider />}
+                      <ListItem
+                        disablePadding
+                        sx={{ py: 1, gap: 1 }}
+                        secondaryAction={
+                          <Box sx={{ display: 'flex', gap: 1, pr: 0 }}>
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="success"
+                              disabled={!!busy}
+                              onClick={() => handleAccept(req.id)}
+                              startIcon={busy === `accept-${req.id}` ? <CircularProgress size={12} color="inherit" /> : undefined}
+                            >
+                              Accept
+                            </Button>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="error"
+                              disabled={!!busy}
+                              onClick={() => handleReject(req.id)}
+                              startIcon={busy === `reject-${req.id}` ? <CircularProgress size={12} color="inherit" /> : undefined}
+                            >
+                              Reject
+                            </Button>
+                          </Box>
+                        }
+                      >
+                        <ListItemText primary={req.client.name} />
+                      </ListItem>
+                    </React.Fragment>
+                  ))}
+                </List>
+              )}
+
+              {/* Confirmed clients */}
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Confirmed Clients
+              </Typography>
+              {info.confirmedClients.length === 0 ? (
+                <Typography variant="body2" sx={{ pl: 1 }}>No confirmed clients.</Typography>
+              ) : (
+                <List disablePadding>
+                  {info.confirmedClients.map((client, i) => (
+                    <React.Fragment key={client.id}>
+                      {i > 0 && <Divider />}
+                      <ListItem
+                        disablePadding
+                        sx={{ py: 1 }}
+                        secondaryAction={
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            disabled={!!busy}
+                            onClick={() => handleRemoveClient(client.id)}
+                            startIcon={busy === `remove-${client.id}` ? <CircularProgress size={12} color="inherit" /> : undefined}
+                          >
+                            Remove
+                          </Button>
+                        }
+                      >
+                        <ListItemText primary={client.name} />
+                      </ListItem>
+                    </React.Fragment>
+                  ))}
+                </List>
+              )}
+
+              {/* ── Branding ─────────────────────────────────── */}
+              <Divider sx={{ my: 3 }} />
+              <Typography variant="overline" color="text.secondary">Branding</Typography>
+
+              {logoError && (
+                <Alert severity="error" sx={{ mt: 1, mb: 2 }} onClose={() => setLogoError(null)}>
+                  {logoError}
+                </Alert>
+              )}
+
+              {info.coachLogoUrl && (
+                <Box
+                  component="img"
+                  src={info.coachLogoUrl}
+                  alt="Coach logo"
+                  sx={{ width: 80, height: 80, objectFit: 'contain', display: 'block', borderRadius: 1, my: 2, border: '1px solid', borderColor: 'divider' }}
+                />
+              )}
+
+              <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                <Button
+                  variant="outlined"
+                  component="label"
+                  disabled={logoUploading}
+                  startIcon={logoUploading ? <CircularProgress size={14} /> : undefined}
+                >
+                  {info.coachLogoUrl ? 'Replace Logo' : 'Upload Logo'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    hidden
+                    onChange={handleLogoUpload}
+                  />
+                </Button>
+                {info.coachLogoUrl && (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    disabled={logoUploading}
+                    onClick={handleLogoRemove}
+                  >
+                    Remove Logo
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          )}
         </Box>
       )}
 
