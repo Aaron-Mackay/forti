@@ -8,6 +8,11 @@ if [ -s "$NVM_DIR/nvm.sh" ]; then
   nvm use
 fi
 
+if [ ! -d "src/generated/prisma" ]; then
+  echo "⚙️  Prisma client not found — generating..."
+  npx prisma generate
+fi
+
 npm run check
 
 DB_HOST=$(echo "$DATABASE_URL" | sed 's|.*@\([^:/]*\).*|\1|')
