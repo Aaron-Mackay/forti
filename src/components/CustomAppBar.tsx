@@ -268,7 +268,7 @@ export default function CustomAppBar(
               component="img"
               src={coachLogoData.coachLogoUrl}
               alt="Coach logo"
-              sx={{ height: 40, maxWidth: 120, objectFit: 'contain', borderRadius: 1, flexShrink: 0 }}
+              sx={{ width: 50, height: 50, objectFit: 'contain', flexShrink: 0 }}
             />
           ) : (
             <FortiIcon style={{width: 50, height: 50}}/>
