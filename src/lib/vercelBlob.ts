@@ -63,7 +63,7 @@ function isManagedBlobUrl(url: string | null | undefined): boolean {
   if (!url) return false;
   try {
     const parsed = new URL(url);
-    return HOST_ALLOWLIST.some((host) => parsed.hostname.endsWith(host));
+    return HOST_ALLOWLIST.some((host) => parsed.hostname === host || parsed.hostname.endsWith('.' + host));
   } catch {
     return false;
   }

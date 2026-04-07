@@ -77,6 +77,10 @@ export async function GET(
   const contentType = upstream.headers.get('Content-Type') ?? 'image/jpeg';
   return new NextResponse(upstream.body, {
     status: 200,
-    headers: { 'Content-Type': contentType },
+    headers: {
+      'Content-Type': contentType,
+      'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff',
+    },
   });
 }
