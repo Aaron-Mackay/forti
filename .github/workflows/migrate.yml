@@ -64,7 +64,7 @@ jobs:
           mkdir -p "$MIGRATION_DIR"
           npx prisma migrate diff \
             --from-config-datasource \
-            --to-schema-datamodel prisma/schema.prisma \
+            --to-schema=prisma/schema.prisma \
             --script > "$MIGRATION_DIR/migration.sql"
           if grep -qvE "^(--|[[:space:]]*$)" "$MIGRATION_DIR/migration.sql"; then
             echo "Schema changes detected — applying migration."
