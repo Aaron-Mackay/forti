@@ -12,6 +12,7 @@ import { PlanPrisma } from '@/types/dataTypes'
 import { PLACEHOLDER_ID } from './PlanBuilderWithContext'
 import { parsedPlanToPlanPrisma } from './planConverter'
 import type { ParsedPlan } from '@/utils/aiPlanParser'
+import { applyReviewedExercisesToPlan, PendingUploadPlan } from '@/app/user/plan/upload/uploadFlow'
 
 type View = 'entry' | 'templates' | 'ai' | 'editor'
 type EditorSource = 'scratch' | 'template' | 'ai' | 'import'
@@ -36,8 +37,12 @@ export const PlanBuilder = ({ blankPlan, clientId }: { blankPlan: PlanPrisma, cl
     if (!raw) return
     sessionStorage.removeItem('pendingUploadPlan')
     try {
-      const parsed = JSON.parse(raw) as ParsedPlan
-      const plan = parsedPlanToPlanPrisma(parsed, blankPlan)
+      const parsed = JSON.parse(raw) as ParsedPlan | PendingUploadPlan
+      const pendingUpload = 'plan' in parsed
+        ? parsed
+        : { plan: parsed, reviewedExercises: [] }
+      const hydratedPlan = applyReviewedExercisesToPlan(pendingUpload.plan, pendingUpload.reviewedExercises)
+      const plan = parsedPlanToPlanPrisma(hydratedPlan, blankPlan, pendingUpload.reviewedExercises)
       dispatch({ type: 'REPLACE_PLAN', planId: PLACEHOLDER_ID, plan })
       setWeekCount(String(plan.weeks.length))
       setEditorInitialViewMode('sheet')
