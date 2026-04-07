@@ -109,7 +109,7 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
       zoom: {enabled: false},
       animations: {enabled: false},
       events: {
-        zoomed: (_, {xaxis}) => setSelection({xaxis})
+        zoomed: (_, ctx) => ctx && setSelection({xaxis: ctx.xaxis})
       },
       toolbar: {
         show: false
