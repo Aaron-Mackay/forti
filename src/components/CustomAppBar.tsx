@@ -82,7 +82,16 @@ export default function CustomAppBar(
   const { settings, loading: settingsLoading } = useSettings();
   const { clients } = useCoachClients();
   const { unreadCount } = useNotifications();
-  const { data: coachLogoData } = useApiGet<{ coachLogoUrl: string | null }>('/api/coach/logo');
+  const [logoRev, setLogoRev] = useState(0);
+  const { data: coachLogoData } = useApiGet<{ coachLogoUrl: string | null }>(
+    `/api/coach/logo${logoRev > 0 ? `?rev=${logoRev}` : ''}`
+  );
+
+  useEffect(() => {
+    const handler = () => setLogoRev(r => r + 1);
+    window.addEventListener('coach-logo-changed', handler);
+    return () => window.removeEventListener('coach-logo-changed', handler);
+  }, []);
 
   const educationPaths = ['/library', '/user/learning-plans', '/user/coach/learning-plans'];
   const [educationOpen, setEducationOpen] = useState(
