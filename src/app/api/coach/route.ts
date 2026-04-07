@@ -3,6 +3,15 @@ import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 
+async function generateUniqueCoachCode(): Promise<string> {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const existing = await prisma.user.findUnique({ where: { coachCode: code } });
+    if (!existing) return code;
+  }
+  throw new Error('Failed to generate a unique coach code');
+}
+
 export async function GET() {
   const session = await requireSession();
   const userId = session.user.id;
@@ -43,8 +52,15 @@ export async function GET() {
 
   const settings = parseDashboardSettings(user.settings);
 
+  // Heal any existing coach who has coach mode active but no code (e.g. seeded or migrated users)
+  let coachCode = user.coachCode;
+  if (settings.coachModeActive && !coachCode) {
+    coachCode = await generateUniqueCoachCode();
+    await prisma.user.update({ where: { id: userId }, data: { coachCode } });
+  }
+
   return NextResponse.json({
-    coachCode: user.coachCode,
+    coachCode,
     coachLogoUrl: user.coachLogoUrl ?? null,
     coachModeActive: settings.coachModeActive,
     currentCoach: user.coach ?? null,

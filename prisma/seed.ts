@@ -77,6 +77,7 @@ async function main() {
     data: {
       name: 'Todd',
       email: 'todd@example.com',
+      coachCode: '123456',
       settings: { registrationComplete: true, onboardingSeenWelcome: true, onboardingDismissed: true, coachModeActive: true },
     },
   });
