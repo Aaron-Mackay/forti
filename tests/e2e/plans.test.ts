@@ -152,10 +152,10 @@ test.describe('Create Plan entry screen', () => {
   });
 
   test('clicking "Import from spreadsheet" opens the spreadsheet import flow', async ({ page }) => {
-    await page.getByTestId('entry-upload').click();
+    await page.getByTestId('entry-upload').first().click(); // multiple during SSR/hydration overlap
     await expect(page).toHaveURL('/user/plan/upload');
     await expect(page.getByText(/import from spreadsheet/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /^import$/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /analyse import/i })).toBeVisible();
   });
 });
 
