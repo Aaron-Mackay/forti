@@ -38,12 +38,24 @@ export default function E1rmSparkline({
   if (valid.length === 0 && todayE1RM === null) {
     return (
       <Box sx={{width: '100%', mb: 1}}>
-        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', px: 0.5}}>
+        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', px: 0.5, mb: 0.5}}>
           <Typography variant="caption" color="text.secondary">
             Est. 1RM history
           </Typography>
+        </Box>
+        <Box
+          sx={{
+            height: 80,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px dashed',
+            borderColor: 'divider',
+            borderRadius: 1,
+          }}
+        >
           <Typography variant="caption" color="text.disabled">
-            No history yet
+            Log a weighted set to start tracking
           </Typography>
         </Box>
       </Box>

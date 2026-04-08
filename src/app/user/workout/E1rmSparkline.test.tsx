@@ -7,7 +7,7 @@ vi.mock('next/dynamic', () => ({
 }));
 
 describe('E1rmSparkline', () => {
-  it('shows empty-state row when there is no history and no live e1rm', () => {
+  it('shows empty-state placeholder when there is no history and no live e1rm', () => {
     render(
       <E1rmSparkline
         exerciseId={1}
@@ -18,6 +18,6 @@ describe('E1rmSparkline', () => {
     );
 
     expect(screen.getByText('Est. 1RM history')).toBeInTheDocument();
-    expect(screen.getByText('No history yet')).toBeInTheDocument();
+    expect(screen.getByText('Log a weighted set to start tracking')).toBeInTheDocument();
   });
 });
