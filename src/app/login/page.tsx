@@ -54,6 +54,7 @@ export default function LoginPage() {
             alt="Logo"
             width={200}
             height={200}
+            priority
             style={{margin: "0 auto", filter: "invert(1)"}}
           />
           <Box sx={{display: "flex", justifyContent: "center"}}>
@@ -83,6 +84,7 @@ export default function LoginPage() {
             sx={{ height: 250, objectFit: "contain", display: { xs: "flex", md: "none" }}}
             image="/forti-icon.svg"
             title="Logo"
+            loading="eager"
           />
           <CardContent sx={{textAlign: "center"}}>
             <Box sx={{display: {xs: "flex", md: "none"}, justifyContent: "center", mt: -1, mb: 0.5}}>
