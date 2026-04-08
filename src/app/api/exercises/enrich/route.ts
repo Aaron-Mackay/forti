@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
+import { EXERCISE_MUSCLES } from '@/types/dataTypes';
 
 export const maxDuration = 30;
 
@@ -20,8 +21,8 @@ const RequestSchema = z.object({
 const EnrichedExerciseSchema = z.object({
   name: z.string(),
   category: z.enum(['resistance', 'cardio']),
-  primaryMuscles: z.array(z.string()),
-  secondaryMuscles: z.array(z.string()),
+  primaryMuscles: z.array(z.enum(EXERCISE_MUSCLES)),
+  secondaryMuscles: z.array(z.enum(EXERCISE_MUSCLES)),
 });
 
 const EnrichToolResponseSchema = z.object({
@@ -38,7 +39,8 @@ const ENRICH_TOOL: Anthropic.Tool = {
   description:
     'Return category and muscle group data for a list of exercise names. ' +
     'Use "resistance" for strength/weight training exercises and "cardio" for aerobic exercises. ' +
-    'List primary muscles (directly targeted) and secondary muscles (stabilisers/assistors).',
+    'List primary muscles (directly targeted) and secondary muscles (stabilisers/assistors). ' +
+    'Muscle values MUST be chosen from the allowed enum — do not invent new values.',
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -49,8 +51,8 @@ const ENRICH_TOOL: Anthropic.Tool = {
           properties: {
             name: { type: 'string' },
             category: { type: 'string', enum: ['resistance', 'cardio'] },
-            primaryMuscles: { type: 'array', items: { type: 'string' } },
-            secondaryMuscles: { type: 'array', items: { type: 'string' } },
+            primaryMuscles: { type: 'array', items: { type: 'string', enum: [...EXERCISE_MUSCLES] } },
+            secondaryMuscles: { type: 'array', items: { type: 'string', enum: [...EXERCISE_MUSCLES] } },
           },
           required: ['name', 'category', 'primaryMuscles', 'secondaryMuscles'],
         },
@@ -110,7 +112,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       max_tokens: 2048,
       system:
         'Enrich exercise names with category and muscle group data. ' +
-        'Call the enrich_exercises tool with all provided exercises.',
+        'Call the enrich_exercises tool with all provided exercises. ' +
+        `Muscle values must only come from this allowed list: ${EXERCISE_MUSCLES.join(', ')}. ` +
+        'Do not use any muscle name not in that list.',
       tools: [ENRICH_TOOL],
       tool_choice: { type: 'any' },
       messages: [
