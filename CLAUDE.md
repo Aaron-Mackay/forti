@@ -252,7 +252,6 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 | `src/lib/hooks/api/useApiGet.ts` | Generic GET hook — `{data, loading, error}`; pass `null` URL to defer |
 | `src/lib/hooks/api/useExerciseList.ts` | Lazy-loads exercise list; exposes `{exercises, loading, addExercise}` |
 | `src/lib/hooks/api/usePlanCount.ts` | Thin wrapper around `useApiGet` for plan count |
-| `src/lib/hooks/api/useNotifications.ts` | Fetches notifications + unread count; exposes `{notifications, unreadCount, loading, markRead, markAllRead}` with 60s polling |
 | `src/lib/hooks/useApiMutation.ts` | Generic mutation hook — `{mutate, loading, error, data, reset}` |
 | `src/lib/hooks/useOfflineCache.ts` | Hydrates/primes IndexedDB cache for offline-capable pages |
 | `src/lib/usePushSubscription.ts` | Manages browser push permission + subscription registration |
@@ -260,6 +259,7 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 | `src/lib/providers/AppBarProvider.tsx` | Persistent AppBar context; exposes `useAppBar({ title, showBack?, onBack? })` for client components; use `<AppBarTitle>` (src/components/AppBarTitle.tsx) for server component pages |
 | `src/lib/providers/SettingsProvider.tsx` | Manages user settings state; exposes `useSettings()` hook |
 | `src/lib/providers/CoachClientsProvider.tsx` | Fetches coach's client list when `coachModeActive`; exposes `useCoachClients()` returning `{ clients, loading }` |
+| `src/lib/providers/NotificationsProvider.tsx` | Shared notifications state (single fetch/poll instance); exposes `useNotifications()` returning `{ notifications, unreadCount, loading, markRead, markAllRead }` |
 | `src/context/WorkoutEditorContext.tsx` | Workout editor state: `state`, `dispatch`, `debouncedDispatch`, `allExercises`, `addExercise` |
 | `src/types/dataTypes.ts` | Prisma type helpers (`UserPrisma`, `PlanPrisma`, etc.) + exercise constants |
 | `src/types/checkInTypes.ts` | Check-in interfaces, `computeMetricSummary`, `formatSleepMins` |

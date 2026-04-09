@@ -50,7 +50,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {signOut} from "next-auth/react";
 import {useSettings} from '@lib/providers/SettingsProvider';
 import {useCoachClients} from '@lib/providers/CoachClientsProvider';
-import {useNotifications} from '@lib/hooks/api/useNotifications';
+import {useNotifications} from '@lib/providers/NotificationsProvider';
 import {useApiGet} from '@lib/hooks/api/useApiGet';
 
 export const APPBAR_HEIGHT = 56;

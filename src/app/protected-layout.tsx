@@ -5,6 +5,7 @@ import {authOptions} from "@/lib/auth";
 import { SettingsProvider } from "@lib/providers/SettingsProvider";
 import { AppBarProvider } from "@lib/providers/AppBarProvider";
 import { CoachClientsProvider } from "@lib/providers/CoachClientsProvider";
+import { NotificationsProvider } from "@lib/providers/NotificationsProvider";
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 
@@ -37,11 +38,13 @@ export default async function ProtectedLayout({children}: { children: React.Reac
 
   return (
     <SettingsProvider>
-      <CoachClientsProvider>
-        <AppBarProvider isCoachDomain={isCoachDomain}>
-          {children}
-        </AppBarProvider>
-      </CoachClientsProvider>
+      <NotificationsProvider>
+        <CoachClientsProvider>
+          <AppBarProvider isCoachDomain={isCoachDomain}>
+            {children}
+          </AppBarProvider>
+        </CoachClientsProvider>
+      </NotificationsProvider>
     </SettingsProvider>
   );
 }
