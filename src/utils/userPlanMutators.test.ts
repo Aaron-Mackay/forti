@@ -729,6 +729,34 @@ describe('substituteExercise', () => {
     expect(ex.exercise.name).toBe('Cable Fly');
   });
 
+  it('clears substitutedForId and substitutedFor when reverting to the original exercise', () => {
+    const originalExercise = {
+      id: 1,
+      name: 'Bench Press',
+      category: 'resistance' as ExerciseCategory,
+      description: null,
+      equipment: [],
+      primaryMuscles: [],
+      secondaryMuscles: [],
+      createdByUserId: null,
+    };
+    const set = new SetBuilder(401, 1).build();
+    const exercise = new ExerciseBuilder(301, 1).addSet(set).build();
+    exercise.substitutedForId = originalExercise.id;
+    exercise.substitutedFor = originalExercise;
+    const workout = new WorkoutBuilder(201, 1).addExercise(exercise).build();
+    const week = new WeekBuilder(101, 1).addWorkout(workout).build();
+    const plan = new PlanBuilder(1).addWeek(week).build();
+    const user = new UserBuilder(1).addPlan(plan).build();
+
+    const result = substituteExercise(user, 1, 101, 201, 301, originalExercise, originalExercise.id);
+    const ex = result.plans[0].weeks[0].workouts[0].exercises[0];
+
+    expect(ex.exercise.name).toBe('Bench Press');
+    expect(ex.substitutedForId).toBeNull();
+    expect(ex.substitutedFor).toBeNull();
+  });
+
   it('does not affect other exercises in the workout', () => {
     const set1 = new SetBuilder(401, 1).build();
     const set2 = new SetBuilder(402, 1).build();

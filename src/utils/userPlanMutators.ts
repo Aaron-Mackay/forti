@@ -523,13 +523,16 @@ export function substituteExercise(
   newExercise: Exercise,
   originalExerciseId: number
 ): UserPrisma {
-  return withExercise(user, planId, weekId, workoutId, workoutExerciseId, ex => ({
-    ...ex,
-    exercise: newExercise,
-    exerciseId: newExercise.id,
-    substitutedForId: ex.substitutedForId ?? originalExerciseId,
-    substitutedFor: ex.substitutedFor ?? ex.exercise,
-  }));
+  return withExercise(user, planId, weekId, workoutId, workoutExerciseId, ex => {
+    const isRevertingToOriginal = ex.substitutedForId != null && newExercise.id === ex.substitutedForId;
+    return {
+      ...ex,
+      exercise: newExercise,
+      exerciseId: newExercise.id,
+      substitutedForId: isRevertingToOriginal ? null : (ex.substitutedForId ?? originalExerciseId),
+      substitutedFor: isRevertingToOriginal ? null : (ex.substitutedFor ?? ex.exercise),
+    };
+  });
 }
 
 export function addExerciseToWorkout(

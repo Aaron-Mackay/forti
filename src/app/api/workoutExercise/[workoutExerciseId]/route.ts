@@ -64,7 +64,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
       targetRpe?: number | null;
       targetRir?: number | null;
       exerciseId?: number;
-      substitutedForId?: number;
+      substitutedForId?: number | null;
       isBfr?: boolean;
     } = {};
 
@@ -87,8 +87,11 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
       const exercise = await prisma.exercise.findUnique({where: {id: exerciseId}});
       if (!exercise) return notFoundResponse('Exercise');
       updateData.exerciseId = exerciseId;
-      // Record the original exercise if not already substituted
-      if (!workoutExercise.substitutedForId) {
+      if (workoutExercise.substitutedForId !== null && exerciseId === workoutExercise.substitutedForId) {
+        // Reverting to the original exercise — clear the substitution marker
+        updateData.substitutedForId = null;
+      } else if (!workoutExercise.substitutedForId) {
+        // First substitution — record the original exercise
         updateData.substitutedForId = workoutExercise.exerciseId;
       }
     }
