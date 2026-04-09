@@ -11,6 +11,7 @@ import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSe
 
 const SaveUserDataSchema = z.object({
   id: z.string(),
+  activePlanId: z.number().int().positive().nullable().optional(),
   plans: z.array(PlanInputSchema),
 });
 
@@ -34,6 +35,18 @@ export async function POST(req: Request) {
 
   try {
     await prisma.$transaction(async (tx) => {
+      const existingUser = await tx.user.findUnique({
+        where: { id: userId },
+        select: { activePlanId: true },
+      });
+
+      const previousActivePlan = existingUser?.activePlanId == null
+        ? null
+        : await tx.plan.findUnique({
+            where: { id: existingUser.activePlanId },
+            select: { order: true },
+          });
+
       // 1. Delete all nested data
       const planIds = await tx.plan.findMany({
         where: {userId},
@@ -146,6 +159,34 @@ export async function POST(req: Request) {
           }
         }
       }
+
+      const requestedActivePlanOrder = body.activePlanId === undefined
+        ? undefined
+        : body.activePlanId === null
+          ? null
+          : body.plans.find((plan) => plan.id === body.activePlanId)?.order ?? null;
+
+      const activePlanOrder = requestedActivePlanOrder === undefined
+        ? previousActivePlan?.order ?? null
+        : requestedActivePlanOrder;
+
+      if (activePlanOrder === null) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { activePlanId: null },
+        });
+        return;
+      }
+
+      const remappedActivePlan = await tx.plan.findFirst({
+        where: { userId, order: activePlanOrder },
+        select: { id: true },
+      });
+
+      await tx.user.update({
+        where: { id: userId },
+        data: { activePlanId: remappedActivePlan?.id ?? null },
+      });
     });
 
     return NextResponse.json({success: true}, {status: 200});

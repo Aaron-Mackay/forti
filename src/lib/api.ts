@@ -114,12 +114,24 @@ function omit<T extends object, K extends keyof T>(
 
 export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
   return prisma.$transaction(async (tx) => {
+    const existingPlanCount = await tx.plan.count({
+      where: { userId: planData.userId },
+    });
+
     const uploadedPlan = await tx.plan.create({
       data: {
         ...omit(planData, ["weeks", "id", "userId"]),
         user: {connect: {id: planData.userId}}
       }
     });
+
+    if (existingPlanCount === 0) {
+      await tx.user.update({
+        where: { id: planData.userId },
+        data: { activePlanId: uploadedPlan.id },
+      });
+    }
+
     for (const week of planData.weeks) {
       const uploadedWeek = await tx.week.create({
         data: {...omit(week, ["workouts", "id"]), planId: uploadedPlan.id}
@@ -202,13 +214,25 @@ export async function findOverlappingBlockEvent(userId: string, startDate: Date,
 }
 
 export async function getAllLinkedPlans(userId: string) {
-  const [userPlans, clientPlans] = await Promise.all([
+  const [user, userPlans, clientPlans] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { activePlanId: true },
+    }),
     prisma.plan.findMany({
       where: { userId },
       select: {
         id: true,
         name: true,
+        order: true,
+        lastActivityDate: true,
+        _count: {
+          select: {
+            weeks: true,
+          },
+        },
       },
+      orderBy: { order: 'asc' },
     }),
 
     prisma.plan.findMany({
@@ -218,13 +242,30 @@ export async function getAllLinkedPlans(userId: string) {
       select: {
         id: true,
         name: true,
+        order: true,
+        userId: true,
+        lastActivityDate: true,
+        _count: {
+          select: {
+            weeks: true,
+          },
+        },
         user: { select: { id: true, name: true } },
       },
+      orderBy: [{ userId: 'asc' }, { order: 'asc' }],
     }),
   ])
 
   return {
-    userPlans,
+    activePlanId: user?.activePlanId ?? null,
+    userPlans: userPlans.map((plan) => ({
+      id: plan.id,
+      name: plan.name,
+      order: plan.order,
+      weekCount: plan._count.weeks,
+      lastActivityDate: plan.lastActivityDate,
+      isActive: plan.id === user?.activePlanId,
+    })),
     clientPlans,
   }
 }

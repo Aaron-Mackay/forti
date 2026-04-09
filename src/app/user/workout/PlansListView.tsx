@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Container, List, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
+import { Box, Chip, Container, List, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
 import { UserPrisma } from '@/types/dataTypes';
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import ProgressIcon from '@/lib/ProgressIcon';
@@ -23,7 +23,10 @@ export default function PlansListView({
         <List>
           {userData.plans.map((plan) => (
             <ListItem key={plan.id} disablePadding secondaryAction={
-              <ProgressIcon status={getPlanStatus(plan)} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {plan.id === userData.activePlanId && <Chip label="Active" size="small" color="primary" />}
+                <ProgressIcon status={getPlanStatus(plan)} />
+              </Box>
             }>
               <ListItemButton onClick={() => onSelectPlan(plan.id)}>
                 <ListItemText primary={`Plan ${plan.order} - ${plan.name}`} />

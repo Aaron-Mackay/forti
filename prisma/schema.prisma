@@ -20,7 +20,9 @@ model User {
   accounts Account[]
   sessions Session[]
 
-  plans             Plan[]
+  plans             Plan[]   @relation("OwnedPlans")
+  activePlanId      Int?
+  activePlan        Plan?    @relation("ActivePlan", fields: [activePlanId], references: [id], onDelete: SetNull)
   events            Event[]
   userExerciseNotes UserExerciseNote[]
   dayMetrics        DayMetric[]
@@ -180,12 +182,14 @@ model TargetTemplateDay {
 
 model Plan {
   id          Int     @id @default(autoincrement())
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User    @relation("OwnedPlans", fields: [userId], references: [id], onDelete: Cascade)
   userId      String
   order       Int
   name        String
   description String?
+  lastActivityDate DateTime? @db.Date
   weeks       Week[]
+  activeForUsers User[] @relation("ActivePlan")
 
   @@unique([userId, order])
   @@index([userId])

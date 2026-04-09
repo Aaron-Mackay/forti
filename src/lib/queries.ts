@@ -15,6 +15,7 @@ export function getWorkoutWithOwner(workoutId: number) {
         select: {
           plan: {
             select: {
+              id: true,
               userId: true,
             },
           },
@@ -63,6 +64,7 @@ export function getSetWithOwner(setId: number) {
                 select: {
                   plan: {
                     select: {
+                      id: true,
                       userId: true,
                     },
                   },

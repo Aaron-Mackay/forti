@@ -19,6 +19,7 @@ export class UserBuilder {
       email: "test@test.com",
       name: "Test User",
       plans: [],
+      activePlanId: null,
       userExerciseNotes: [],
       image: null,
       emailVerified: null,
@@ -66,6 +67,7 @@ export class PlanBuilder {
       order,
       name: "Test Plan",
       description: "",
+      lastActivityDate: null,
       weeks: [],
     };
   }

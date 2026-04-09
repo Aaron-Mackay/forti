@@ -69,7 +69,7 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
     ? findWorkoutContext(userData, initialWorkoutId)
     : null;
 
-  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(initialContext?.planId ?? null);
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(initialContext?.planId ?? userData.activePlanId ?? null);
   const [selectedWeekId, setSelectedWeekId] = useState<number | null>(initialContext?.weekId ?? null);
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<number | null>(initialContext?.workoutId ?? null);
   const [selectedExerciseId, setSelectedExerciseId] = useState<number | null>(null);

@@ -46,6 +46,7 @@ export const WeekInputSchema = z.object({
 
 // Used by POST /api/saveUserWorkoutData (userId lives at the top level there)
 export const PlanInputSchema = z.object({
+  id: z.number().int().optional(),
   name: z.string(),
   description: z.string().nullable().optional(),
   order: z.number().int(),

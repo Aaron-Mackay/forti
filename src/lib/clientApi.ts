@@ -17,3 +17,11 @@ export async function savePlan(plan: PlanPrisma): Promise<PlanUploadResponse> {
     headers: {'Content-Type': 'application/json'},
   });
 }
+
+export async function setActivePlan(planId: number | null, targetUserId?: string) {
+  return fetchJson('/api/plan/active', {
+    method: 'PATCH',
+    body: JSON.stringify({ planId, targetUserId }),
+    headers: {'Content-Type': 'application/json'},
+  });
+}

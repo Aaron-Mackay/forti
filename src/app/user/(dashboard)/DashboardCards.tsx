@@ -28,16 +28,19 @@ import GettingStartedCard from "@/app/user/(dashboard)/GettingStartedCard";
 
 function findNextWorkout(userData: UserPrisma | null) {
   if (!userData) return null;
-  for (const plan of userData.plans) {
-    for (const week of plan.weeks) {
-      for (const workout of week.workouts) {
-        if (!workout.dateCompleted) {
-          return {workout, week, plan};
-        }
+
+  const activePlan = userData.plans.find((plan) => plan.id === userData.activePlanId);
+  if (!activePlan) return null;
+
+  for (const week of activePlan.weeks) {
+    for (const workout of week.workouts) {
+      if (!workout.dateCompleted) {
+        return { workout, week, plan: activePlan };
       }
     }
   }
-  return null;
+
+  return { workout: null, week: null, plan: activePlan };
 }
 
 function getTodayMetric(dayMetrics: DayMetricPrisma[], today: Date) {
@@ -136,26 +139,38 @@ export default function DashboardCards({userData, dayMetrics, events, today, use
         {settings.showNextWorkout && <Grid size={{xs: 12, sm: 6, md: 4}}>
           <Card variant="outlined" sx={{height: '100%'}}>
             {nextWorkout ? (
-              <CardActionArea
-                component={Link}
-                href={`/user/workout?workoutId=${nextWorkout.workout.id}`}
-                sx={{height: '100%'}}
-              >
+              nextWorkout.workout ? (
+                <CardActionArea
+                  component={Link}
+                  href={`/user/workout?workoutId=${nextWorkout.workout.id}`}
+                  sx={{height: '100%'}}
+                >
+                  <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
+                      <FitnessCenterIcon color="primary" fontSize="small"/>
+                      <Typography variant="overline" color="text.secondary" sx={{flexGrow: 1}}>Next Workout</Typography>
+                      <ChevronRightIcon fontSize="small" color="action"/>
+                    </Box>
+                    <Typography variant="h6" sx={{fontWeight: 600, lineHeight: 1.2, mb: 0.5}}>
+                      {nextWorkout.workout.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {nextWorkout.plan.name} · Week {nextWorkout.week!.order} ·{" "}
+                      {nextWorkout.workout.exercises.length} exercise{nextWorkout.workout.exercises.length !== 1 ? "s" : ""}
+                    </Typography>
+                  </CardContent>
+                </CardActionArea>
+              ) : (
                 <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
                   <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
                     <FitnessCenterIcon color="primary" fontSize="small"/>
-                    <Typography variant="overline" color="text.secondary" sx={{flexGrow: 1}}>Next Workout</Typography>
-                    <ChevronRightIcon fontSize="small" color="action"/>
+                    <Typography variant="overline" color="text.secondary">Next Workout</Typography>
                   </Box>
-                  <Typography variant="h6" sx={{fontWeight: 600, lineHeight: 1.2, mb: 0.5}}>
-                    {nextWorkout.workout.name}
-                  </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {nextWorkout.plan.name} · Week {nextWorkout.week.order} ·{" "}
-                    {nextWorkout.workout.exercises.length} exercise{nextWorkout.workout.exercises.length !== 1 ? "s" : ""}
+                    {nextWorkout.plan.name} has no remaining workouts.
                   </Typography>
                 </CardContent>
-              </CardActionArea>
+              )
             ) : (
               <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
@@ -163,7 +178,7 @@ export default function DashboardCards({userData, dayMetrics, events, today, use
                   <Typography variant="overline" color="text.secondary">Next Workout</Typography>
                 </Box>
                 <Typography variant="body2" color="text.secondary">
-                  No workouts planned yet.
+                  No active plan selected.
                 </Typography>
               </CardContent>
             )}

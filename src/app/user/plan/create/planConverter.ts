@@ -29,6 +29,7 @@ export function parsedPlanToPlanPrisma(
     name: parsed.name,
     description: parsed.description ?? null,
     order: currentPlan.order,
+    lastActivityDate: currentPlan.lastActivityDate ?? null,
     weeks: parsed.weeks.map((week): WeekPrisma => {
       const weekId = nextId()
       return {

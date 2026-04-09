@@ -5,6 +5,7 @@ import {extractErrorMessage} from "@lib/apiError";
 import {computeE1rm} from "@lib/e1rm";
 import {getSetWithOwner} from "@lib/queries";
 import {errorResponse, forbiddenResponse, notFoundResponse} from "@lib/apiResponses";
+import { touchPlanActivity } from '@lib/planActivity';
 
 export async function DELETE(_req: NextRequest, props: { params: Promise<{ setId: string }> }) {
   const params = await props.params;
@@ -62,6 +63,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ setId: 
       where: {id: Number(setId)},
       data,
     });
+
+    await touchPlanActivity(set.workoutExercise.workout.week.plan.id);
 
     return NextResponse.json(updated);
   } catch (err: unknown) {

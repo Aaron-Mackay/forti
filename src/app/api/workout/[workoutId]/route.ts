@@ -4,6 +4,7 @@ import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from "@lib/apiError";
 import {getWorkoutWithOwner} from "@lib/queries";
 import {errorResponse, forbiddenResponse, notFoundResponse} from "@lib/apiResponses";
+import { touchPlanActivity } from '@lib/planActivity';
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ workoutId: string }> }) {
   const params = await props.params;
@@ -44,6 +45,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
       where: {id: workoutId},
       data: updateData,
     });
+
+    await touchPlanActivity(workout.week.plan.id);
 
     return NextResponse.json(updated);
   } catch (err: unknown) {

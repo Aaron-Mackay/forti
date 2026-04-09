@@ -7,12 +7,13 @@ import {EventPrisma, UserPrisma} from "@/types/dataTypes";
 
 vi.mock('@/lib/prisma', () => ({
   default: {
-    user: { findMany: vi.fn(), findUnique: vi.fn() },
+    user: { findMany: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
     exercise: { findMany: vi.fn() },
     workoutExercise: { findUnique: vi.fn() },
     event: { findMany: vi.fn() },
     dayMetric: { findMany: vi.fn(), upsert: vi.fn() },
     plan: { findMany: vi.fn(), findUnique: vi.fn() },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -169,16 +170,88 @@ describe('API functions', () => {
     });
   });
 
+  describe('saveUserPlan', () => {
+    it('sets the new plan active when it is the user’s first plan', async () => {
+      const tx = {
+        plan: {
+          count: vi.fn().mockResolvedValue(0),
+          create: vi.fn().mockResolvedValue({ id: 11 }),
+        },
+        user: {
+          update: vi.fn().mockResolvedValue({}),
+        },
+        week: { create: vi.fn() },
+        workout: { create: vi.fn() },
+        workoutExercise: { create: vi.fn() },
+        exerciseSet: { create: vi.fn() },
+      };
+
+      (prisma.$transaction as unknown as ReturnType<typeof vi.fn>).mockImplementation(async (callback: (txArg: typeof tx) => Promise<number>) => callback(tx));
+
+      const plan = { id: 0, userId: 'u1', order: 1, name: 'First Plan', description: null, weeks: [] };
+      const result = await api.saveUserPlan(plan as never);
+
+      expect(result).toBe(11);
+      expect(tx.user.update).toHaveBeenCalledWith({
+        where: { id: 'u1' },
+        data: { activePlanId: 11 },
+      });
+    });
+
+    it('does not change active plan when the user already has plans', async () => {
+      const tx = {
+        plan: {
+          count: vi.fn().mockResolvedValue(2),
+          create: vi.fn().mockResolvedValue({ id: 12 }),
+        },
+        user: {
+          update: vi.fn().mockResolvedValue({}),
+        },
+        week: { create: vi.fn() },
+        workout: { create: vi.fn() },
+        workoutExercise: { create: vi.fn() },
+        exerciseSet: { create: vi.fn() },
+      };
+
+      (prisma.$transaction as unknown as ReturnType<typeof vi.fn>).mockImplementation(async (callback: (txArg: typeof tx) => Promise<number>) => callback(tx));
+
+      const plan = { id: 0, userId: 'u1', order: 3, name: 'Later Plan', description: null, weeks: [] };
+      const result = await api.saveUserPlan(plan as never);
+
+      expect(result).toBe(12);
+      expect(tx.user.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('setActivePlan', () => {
+    it('patches the active plan endpoint', async () => {
+      const mockResponse = { success: true, activePlanId: 3 };
+      (fetchWrapper.fetchJson as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      const result = await clientApi.setActivePlan(3, 'u1');
+
+      expect(fetchWrapper.fetchJson).toHaveBeenCalledWith('/api/plan/active', {
+        method: 'PATCH',
+        body: JSON.stringify({ planId: 3, targetUserId: 'u1' }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
   describe('getAllLinkedPlans', () => {
-    it('returns own plans and client plans', async () => {
-      const userPlans = [{ id: 1, name: 'Plan A' }];
-      const clientPlans = [{ id: 2, name: 'Plan B', user: { id: 'c1', name: 'Client' } }];
+    it('returns own plans with active flags and client plans', async () => {
+      const lastActivityDate = new Date('2026-04-09T00:00:00.000Z');
+      const userPlans = [{ id: 1, name: 'Plan A', order: 1, lastActivityDate, _count: { weeks: 3 } }];
+      const clientPlans = [{ id: 2, name: 'Plan B', order: 1, userId: 'c1', lastActivityDate, _count: { weeks: 2 }, user: { id: 'c1', name: 'Client' } }];
+      (prisma.user.findUnique as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ activePlanId: 1 });
       (prisma.plan.findMany as unknown as ReturnType<typeof vi.fn>)
         .mockResolvedValueOnce(userPlans)
         .mockResolvedValueOnce(clientPlans);
 
       const result = await api.getAllLinkedPlans('u1');
-      expect(result.userPlans).toEqual(userPlans);
+      expect(result.activePlanId).toBe(1);
+      expect(result.userPlans).toEqual([{ id: 1, name: 'Plan A', order: 1, weekCount: 3, lastActivityDate, isActive: true }]);
       expect(result.clientPlans).toEqual(clientPlans);
     });
   });

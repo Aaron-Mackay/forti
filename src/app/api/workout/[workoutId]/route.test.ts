@@ -11,6 +11,10 @@ vi.mock('@/lib/prisma', () => ({
   },
 }));
 
+vi.mock('@lib/planActivity', () => ({
+  touchPlanActivity: vi.fn(),
+}));
+
 vi.mock('@lib/requireSession', () => ({
   requireSession: vi.fn(),
   isAuthenticationError: (error: unknown) => error instanceof Error && error.name === 'AuthenticationError',
@@ -19,10 +23,12 @@ vi.mock('@lib/requireSession', () => ({
 
 import prisma from '@/lib/prisma';
 import {requireSession} from '@lib/requireSession';
+import { touchPlanActivity } from '@lib/planActivity';
 
 const mockFindUnique = prisma.workout.findUnique as ReturnType<typeof vi.fn>;
 const mockUpdate = prisma.workout.update as ReturnType<typeof vi.fn>;
 const mockRequireSession = requireSession as ReturnType<typeof vi.fn>;
+const mockTouchPlanActivity = touchPlanActivity as ReturnType<typeof vi.fn>;
 
 function makeRequest(body: unknown, workoutId = '42'): [NextRequest, { params: Promise<{ workoutId: string }> }] {
   const req = new NextRequest(`http://localhost/api/workout/${workoutId}`, {
@@ -37,7 +43,7 @@ function makeRequest(body: unknown, workoutId = '42'): [NextRequest, { params: P
 const mockWorkout = {
   id: 42,
   week: {
-    plan: {userId: 'user-1'},
+    plan: {id: 7, userId: 'user-1'},
   },
 };
 
@@ -46,6 +52,7 @@ beforeEach(() => {
   mockRequireSession.mockResolvedValue({user: {id: 'user-1'}});
   mockFindUnique.mockResolvedValue(mockWorkout);
   mockUpdate.mockResolvedValue({id: 42, notes: '', dateCompleted: null});
+  mockTouchPlanActivity.mockResolvedValue(undefined);
 });
 
 describe('PATCH /api/workout/[workoutId]', () => {
@@ -100,6 +107,7 @@ describe('PATCH /api/workout/[workoutId]', () => {
       expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
         data: {notes: 'great session'},
       }));
+      expect(mockTouchPlanActivity).toHaveBeenCalledWith(7);
     });
   });
 
@@ -113,6 +121,7 @@ describe('PATCH /api/workout/[workoutId]', () => {
       expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
         data: {dateCompleted: new Date(isoDate)},
       }));
+      expect(mockTouchPlanActivity).toHaveBeenCalledWith(7);
     });
 
     it('clears dateCompleted when passed null', async () => {
