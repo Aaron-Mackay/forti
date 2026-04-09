@@ -44,6 +44,10 @@ export interface Settings {
   registrationComplete: boolean;
   // Per-set effort metric shown in the workout view. 'none' = disabled (default).
   effortMetric: 'none' | 'rpe' | 'rir';
+  // Show the "Suggest warmup sets" button during a workout. Off by default.
+  showWarmupSuggestions: boolean;
+  // Show the plate calculator icon on barbell sets during a workout. Off by default.
+  showPlateCalculator: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -66,6 +70,8 @@ export const DEFAULT_SETTINGS: Settings = {
   showE1rmProgress: true,
   registrationComplete: false,
   effortMetric: 'none',
+  showWarmupSuggestions: false,
+  showPlateCalculator: false,
 };
 
 function parseCustomMetrics(raw: unknown): CustomMetricDef[] {
@@ -148,5 +154,7 @@ export function parseDashboardSettings(raw: unknown): Settings {
     // Absent means existing user (pre-onboarding feature) — treat as complete
     registrationComplete:    typeof s.registrationComplete === 'boolean' ? s.registrationComplete : true,
     effortMetric:            (s.effortMetric === 'rpe' || s.effortMetric === 'rir') ? s.effortMetric : 'none',
+    showWarmupSuggestions:   typeof s.showWarmupSuggestions === 'boolean' ? s.showWarmupSuggestions : false,
+    showPlateCalculator:     typeof s.showPlateCalculator === 'boolean' ? s.showPlateCalculator : false,
   };
 }

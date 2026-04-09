@@ -183,7 +183,9 @@ const CARD_LABELS: {key: BooleanSettingKey; label: string}[] = [
 ];
 
 const WORKOUT_LABELS: {key: BooleanSettingKey; label: string}[] = [
-  {key: 'showStopwatch', label: 'Stopwatch'}
+  {key: 'showStopwatch',          label: 'Stopwatch'},
+  {key: 'showWarmupSuggestions',  label: 'Warmup Suggestions'},
+  {key: 'showPlateCalculator',    label: 'Plate Calculator'},
 ];
 
 const FEATURE_LABELS: {key: BooleanSettingKey; label: string}[] = [

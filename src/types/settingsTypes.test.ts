@@ -60,6 +60,8 @@ describe('parseDashboardSettings', () => {
       showE1rmProgress: false,
       registrationComplete: false,
       effortMetric: 'none' as const,
+      showWarmupSuggestions: false,
+      showPlateCalculator: false,
     };
     expect(parseDashboardSettings(allFalse)).toEqual(allFalse);
   });
@@ -211,6 +213,36 @@ describe('parseDashboardSettings', () => {
     it('defaults to true for non-boolean values', () => {
       expect(parseDashboardSettings({ showE1rmProgress: 'yes' }).showE1rmProgress).toBe(true);
       expect(parseDashboardSettings({ showE1rmProgress: 1 }).showE1rmProgress).toBe(true);
+    });
+  });
+
+  describe('showWarmupSuggestions parsing', () => {
+    it('defaults to false when absent', () => {
+      expect(parseDashboardSettings({}).showWarmupSuggestions).toBe(false);
+    });
+
+    it('parses true correctly', () => {
+      expect(parseDashboardSettings({ showWarmupSuggestions: true }).showWarmupSuggestions).toBe(true);
+    });
+
+    it('defaults to false for non-boolean values', () => {
+      expect(parseDashboardSettings({ showWarmupSuggestions: 'yes' }).showWarmupSuggestions).toBe(false);
+      expect(parseDashboardSettings({ showWarmupSuggestions: 1 }).showWarmupSuggestions).toBe(false);
+    });
+  });
+
+  describe('showPlateCalculator parsing', () => {
+    it('defaults to false when absent', () => {
+      expect(parseDashboardSettings({}).showPlateCalculator).toBe(false);
+    });
+
+    it('parses true correctly', () => {
+      expect(parseDashboardSettings({ showPlateCalculator: true }).showPlateCalculator).toBe(true);
+    });
+
+    it('defaults to false for non-boolean values', () => {
+      expect(parseDashboardSettings({ showPlateCalculator: 'yes' }).showPlateCalculator).toBe(false);
+      expect(parseDashboardSettings({ showPlateCalculator: 1 }).showPlateCalculator).toBe(false);
     });
   });
 

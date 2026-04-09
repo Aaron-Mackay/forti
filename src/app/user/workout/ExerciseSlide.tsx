@@ -2,6 +2,7 @@
 
 import {useState} from 'react';
 import {
+  alpha,
   Box,
   Button,
   Chip,
@@ -19,21 +20,20 @@ import {
   TableRow,
   TextField,
   Typography,
-  alpha,
 } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import InfoIcon from '@mui/icons-material/Info';
 import CheckIcon from '@mui/icons-material/Check';
+import EditIcon from '@mui/icons-material/Edit';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import CalculateOutlinedIcon from '@mui/icons-material/CalculateOutlined';
 import MuscleHighlight from '@/components/MuscleHighlight';
 import E1rmSparkline from './E1rmSparkline';
 import WeightInput from './WeightInput';
 import PlateCalculatorSheet from './PlateCalculatorSheet';
 import {computeE1rm} from '@/lib/e1rm';
-import {kgToDisplay, formatWeight} from '@/lib/units';
+import {formatWeight, kgToDisplay} from '@/lib/units';
 import type {ExerciseUnitOverride} from '@/types/settingsTypes';
 import {SetPrisma, WorkoutExercisePrisma} from '@/types/dataTypes';
 import {UserExerciseNote} from '@/generated/prisma/browser';
@@ -46,10 +46,10 @@ const RPE_VALUES = [6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
 const RIR_VALUES = [0, 1, 2, 3, 4];
 
 function EffortChipRow({
-  metric,
-  value,
-  onSelect,
-}: {
+                         metric,
+                         value,
+                         onSelect,
+                       }: {
   metric: 'rpe' | 'rir';
   value: number | null;
   onSelect: (v: number | null) => void;
@@ -66,10 +66,10 @@ function EffortChipRow({
         pl: 0.5,
         // hide scrollbar but keep scroll functionality
         scrollbarWidth: 'none',
-        '&::-webkit-scrollbar': { display: 'none' },
+        '&::-webkit-scrollbar': {display: 'none'},
       }}
     >
-      <Typography variant="caption" color="text.secondary" sx={{ flex: 'none', fontWeight: 600, minWidth: 28 }}>
+      <Typography variant="caption" color="text.secondary" sx={{flex: 'none', fontWeight: 600, minWidth: 28}}>
         {metric.toUpperCase()}
       </Typography>
       {values.map(v => (
@@ -80,7 +80,7 @@ function EffortChipRow({
           variant={value === v ? 'filled' : 'outlined'}
           color={value === v ? 'primary' : 'default'}
           onClick={() => onSelect(value === v ? null : v)}
-          sx={{ flex: 'none', minWidth: 40 }}
+          sx={{flex: 'none', minWidth: 40}}
         />
       ))}
     </Box>
@@ -100,15 +100,15 @@ function groupSets(sets: SetPrisma[]): SetGroup[] {
 }
 
 export default function ExerciseSlide({
-  ex,
-  userExerciseNote,
-  onFormCueBlur,
-  handleSetUpdate,
-  handleEffortUpdate,
-  previousSets,
-  history,
-  onSubstitute,
-}: {
+                                        ex,
+                                        userExerciseNote,
+                                        onFormCueBlur,
+                                        handleSetUpdate,
+                                        handleEffortUpdate,
+                                        previousSets,
+                                        history,
+                                        onSubstitute,
+                                      }: {
   ex: WorkoutExercisePrisma;
   userExerciseNote: UserExerciseNote | undefined;
   onFormCueBlur: (exerciseId: number, note: string) => void;
@@ -118,7 +118,7 @@ export default function ExerciseSlide({
   history: E1rmHistoryPoint[] | null;
   onSubstitute?: () => void;
 }) {
-  const { settings, setExerciseUnitOverride } = useSettings();
+  const {settings, setExerciseUnitOverride} = useSettings();
   const override = settings.exerciseUnitOverrides[String(ex.exerciseId)] ?? null;
   const effectiveUnit = override ?? settings.weightUnit;
 
@@ -140,18 +140,18 @@ export default function ExerciseSlide({
     null;
 
   const WARMUP_STEPS = [
-    {pct: 0.5,  reps: 10},
-    {pct: 0.6,  reps: 5},
+    {pct: 0.5, reps: 10},
+    {pct: 0.6, reps: 5},
     {pct: 0.75, reps: 3},
     {pct: 0.85, reps: 1},
   ];
 
   const warmupSets = workingWeight
     ? WARMUP_STEPS.map(({pct, reps}) => ({
-        weightKg: Math.round((workingWeight * pct) / 2.5) * 2.5,
-        reps,
-        pct: Math.round(pct * 100),
-      }))
+      weightKg: Math.round((workingWeight * pct) / 2.5) * 2.5,
+      reps,
+      pct: Math.round(pct * 100),
+    }))
     : null;
 
   const handleListScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -198,31 +198,11 @@ export default function ExerciseSlide({
       }}
     >
       {/* Header row: name/rest/reps/notes toggle on left, anatomy on right */}
-      <Box sx={{display: 'flex', alignItems: 'stretch', width: '100%', mb: 1}}>
-        <Box sx={{flex: 1}}>
-          <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-            <Typography variant="h6" sx={{flex: 1}}>
-              {ex.exercise.name}
-            </Typography>
-            {ex.isBfr && (
-              <Chip
-                label="BFR"
-                size="small"
-                color="warning"
-                sx={{ height: 18, fontSize: '0.7rem', flexShrink: 0 }}
-              />
-            )}
-            {onSubstitute && (
-              <IconButton
-                size="small"
-                onClick={onSubstitute}
-                aria-label="Substitute exercise"
-                title="Substitute exercise"
-              >
-                <SwapHorizIcon fontSize="small" />
-              </IconButton>
-            )}
-          </Box>
+      <Box sx={{display: 'flex', width: "100%", justifyContent: 'space-between', alignItems: 'flex-start'}}>
+        <Box>
+          <Typography variant="h6">
+            {ex.exercise.name}
+          </Typography>
           {ex.substitutedFor && (
             <Typography variant="caption" color="warning.main" sx={{display: 'block', mb: 0.5}}>
               Originally: {ex.substitutedFor.name}
@@ -233,6 +213,31 @@ export default function ExerciseSlide({
               Added during workout
             </Typography>
           )}
+        </Box>
+        {onSubstitute && (
+          <IconButton
+            size="small"
+            onClick={onSubstitute}
+            aria-label="Substitute exercise"
+            title="Substitute exercise"
+          >
+            <EditIcon fontSize="small"/>
+          </IconButton>
+        )}
+      </Box>
+      <Box sx={{display: 'flex', alignItems: 'stretch', width: '100%', mb: 1}}>
+        <Box sx={{flex: 1}}>
+          <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+            {ex.isBfr && (
+              <Chip
+                label="BFR"
+                size="small"
+                color="warning"
+                sx={{height: 18, fontSize: '0.7rem', flexShrink: 0}}
+              />
+            )}
+
+          </Box>
           <Typography variant="subtitle1" gutterBottom>
             Rest: {ex.restTime}
           </Typography>
@@ -295,8 +300,12 @@ export default function ExerciseSlide({
         />
       </Collapse>
 
-      {/* Warmup suggestions — hidden for 'no unit' machines */}
-      <Box sx={{width: '100%', mb: 1, display: effectiveUnit === 'none' ? 'none' : undefined}}>
+      {/* Warmup suggestions — hidden for 'no unit' machines and when setting is off */}
+      <Box sx={{
+        width: '100%',
+        mb: 1,
+        display: (effectiveUnit === 'none' || !settings.showWarmupSuggestions) ? 'none' : undefined
+      }}>
         <Button
           size="small"
           variant="outlined"
@@ -313,7 +322,8 @@ export default function ExerciseSlide({
                 {warmupSets.map(({weightKg, reps, pct}) => (
                   <TableRow key={pct}>
                     <TableCell sx={{color: 'text.secondary', width: 40}}>{pct}%</TableCell>
-                    <TableCell sx={{fontWeight: 500}}>{formatWeight(weightKg, effectiveUnit === 'none' ? 'kg' : effectiveUnit)}</TableCell>
+                    <TableCell
+                      sx={{fontWeight: 500}}>{formatWeight(weightKg, effectiveUnit === 'none' ? 'kg' : effectiveUnit)}</TableCell>
                     <TableCell sx={{color: 'text.secondary'}}>× {reps} {reps === 1 ? 'rep' : 'reps'}</TableCell>
                   </TableRow>
                 ))}
@@ -356,7 +366,7 @@ export default function ExerciseSlide({
                           >
                             <Typography variant="caption" fontWeight={600}>{groupIdx + 1}</Typography>
                           </Box>
-                          {isBarbell && effectiveUnit !== 'none' && (
+                          {isBarbell && effectiveUnit !== 'none' && settings.showPlateCalculator && (
                             <IconButton
                               size="small"
                               aria-label="Open plate calculator"
@@ -364,9 +374,9 @@ export default function ExerciseSlide({
                                 setPlateCalcSetIdx(parentSetIdx);
                                 setPlateCalcOpen(true);
                               }}
-                              sx={{ p: 0.25 }}
+                              sx={{p: 0.25}}
                             >
-                              <CalculateOutlinedIcon fontSize="small" />
+                              <CalculateOutlinedIcon fontSize="small"/>
                             </IconButton>
                           )}
                         </Box>
@@ -514,12 +524,12 @@ export default function ExerciseSlide({
       >
         {(
           [
-            { value: null,  label: `Default (${settings.weightUnit})` },
-            { value: 'kg'  as ExerciseUnitOverride, label: 'Force kg' },
-            { value: 'lbs' as ExerciseUnitOverride, label: 'Force lbs' },
-            { value: 'none' as ExerciseUnitOverride, label: 'No unit (machine)' },
+            {value: null, label: `Default (${settings.weightUnit})`},
+            {value: 'kg' as ExerciseUnitOverride, label: 'Force kg'},
+            {value: 'lbs' as ExerciseUnitOverride, label: 'Force lbs'},
+            {value: 'none' as ExerciseUnitOverride, label: 'No unit (machine)'},
           ] as { value: ExerciseUnitOverride | null; label: string }[]
-        ).map(({ value, label }) => (
+        ).map(({value, label}) => (
           <MenuItem
             key={String(value)}
             onClick={() => {
@@ -527,9 +537,9 @@ export default function ExerciseSlide({
               setUnitMenuAnchor(null);
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 180 }}>
-              <Box sx={{ width: 20 }}>
-                {override === value && <CheckIcon fontSize="small" color="primary" />}
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 1, minWidth: 180}}>
+              <Box sx={{width: 20}}>
+                {override === value && <CheckIcon fontSize="small" color="primary"/>}
               </Box>
               {label}
             </Box>
