@@ -129,6 +129,7 @@ export default function WorkoutClient({userData}: {userData: UserPrisma}) {
         open={substituteTarget !== null}
         title="Substitute Exercise"
         defaultCategory={substituteTarget?.category}
+        excludeExerciseId={substituteTarget?.exerciseId}
         onClose={() => setSubstituteTarget(null)}
         onSelect={handleSubstituteConfirm}
       />

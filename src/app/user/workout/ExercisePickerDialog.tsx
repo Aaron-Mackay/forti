@@ -82,6 +82,8 @@ interface ExercisePickerDialogProps {
   title: string;
   /** When provided, filters to this category and hides the category toggle (use for substitution). */
   defaultCategory?: string;
+  /** When provided, this exercise id is excluded from the list (e.g. the exercise being substituted). */
+  excludeExerciseId?: number;
   onClose: () => void;
   onSelect: (exercise: Exercise) => void;
 }
@@ -90,6 +92,7 @@ export default function ExercisePickerDialog({
   open,
   title,
   defaultCategory,
+  excludeExerciseId,
   onClose,
   onSelect,
 }: ExercisePickerDialogProps) {
@@ -112,7 +115,8 @@ export default function ExercisePickerDialog({
   const filtered = exercises.filter(ex => {
     const matchesCategory = ex.category === category;
     const matchesSearch = exerciseMatchesSearch(ex, search);
-    return matchesCategory && matchesSearch;
+    const notExcluded = excludeExerciseId == null || ex.id !== excludeExerciseId;
+    return matchesCategory && matchesSearch && notExcluded;
   });
 
   return (
