@@ -4,6 +4,7 @@ import {Box, Chip, Dialog, DialogContent, DialogTitle, IconButton, Typography} f
 import CloseIcon from '@mui/icons-material/Close';
 import MuscleHighlight from '@/components/MuscleHighlight';
 import {WorkoutPrisma} from '@/types/dataTypes';
+import {APPBAR_HEIGHT} from '@/components/CustomAppBar';
 
 function ordinal(n: number): string {
   const s = ['th', 'st', 'nd', 'rd'];
@@ -47,7 +48,8 @@ export default function WorkoutCompletionModal({
       fullWidth
       maxWidth="sm"
       slotProps={{
-        paper: {sx: {height: '85dvh', maxHeight: '85dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden'}},
+        backdrop: {sx: {top: `${APPBAR_HEIGHT}px`}},
+        paper: {sx: {mt: `${APPBAR_HEIGHT}px`, height: `calc(85dvh - ${APPBAR_HEIGHT}px)`, maxHeight: `calc(85dvh - ${APPBAR_HEIGHT}px)`, display: 'flex', flexDirection: 'column', overflow: 'hidden'}},
       }}
     >
       <DialogTitle sx={{pb: 1}}>
