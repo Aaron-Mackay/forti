@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+import {alpha} from '@mui/material/styles';
 import {
   Box,
   Button,
@@ -49,6 +50,15 @@ export default function ExercisesListView({
   useAppBar({ title: workout.name, showBack: true, onBack });
   const [notesOpen, setNotesOpen] = useState(false);
   const [noteValue, setNoteValue] = useState(workout.notes ?? '');
+
+  const [hasScrollAbove, setHasScrollAbove] = useState(false);
+  const [hasScrollBelow, setHasScrollBelow] = useState(true);
+
+  const handleListScroll = (e: React.UIEvent<HTMLUListElement>) => {
+    const el = e.currentTarget;
+    setHasScrollAbove(el.scrollTop > 4);
+    setHasScrollBelow(el.scrollTop + el.clientHeight < el.scrollHeight - 4);
+  };
 
   const hasNote = noteValue.trim().length > 0;
   const isCompleted = !!workout.dateCompleted;
@@ -102,13 +112,14 @@ export default function ExercisesListView({
             sx={{mb: 1}}
           />
         </Collapse>
+        <Box sx={{position: 'relative', flex: 1, minHeight: 0, mb: 2}}>
         <List
           className={"maskedOverflow"}
+          onScroll={handleListScroll}
           sx={{
-            flex: 1,
+            height: '100%',
             overflowY: 'auto',
-            mb: 2,
-            minHeight: 0
+            minHeight: 0,
           }}
         >
           {workout.exercises.map((ex) => {
@@ -200,6 +211,25 @@ export default function ExercisesListView({
             );
           })}
         </List>
+        {hasScrollAbove && (
+          <Box
+            sx={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 40,
+              background: theme => `linear-gradient(to top, ${alpha(theme.palette.background.default, 0)}, ${theme.palette.background.default})`,
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+        {hasScrollBelow && (
+          <Box
+            sx={{
+              position: 'absolute', bottom: 0, left: 0, right: 0, height: 40,
+              background: theme => `linear-gradient(to bottom, ${alpha(theme.palette.background.default, 0)}, ${theme.palette.background.default})`,
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+        </Box>
         <Button
           variant="outlined"
           fullWidth
