@@ -1,7 +1,8 @@
 'use client';
 
-import { useInsertionEffect } from 'react';
-import { Box, Typography } from '@mui/material';
+import { useInsertionEffect, useState } from 'react';
+import { Box, Dialog, DialogContent, DialogTitle, IconButton, Typography } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import FrontBody from '@/components/front.svg';
 import BackBody from '@/components/back.svg';
 import { WeekPrisma, ExerciseMuscle, MUSCLE_NAMES } from '@/types/dataTypes';
@@ -61,6 +62,7 @@ function computeMuscleCounts(week: WeekPrisma): MuscleCounts {
 export default function WeekMuscleSummary({ week }: { week: WeekPrisma }) {
   const counts = computeMuscleCounts(week);
   const id = `week-muscle-${week.id}`;
+  const [modalOpen, setModalOpen] = useState(false);
 
   const targeted = (Object.entries(counts) as [ExerciseMuscle, { planned: number; done: number }][])
     .filter(([, { planned }]) => planned > 0)
@@ -85,57 +87,48 @@ export default function WeekMuscleSummary({ week }: { week: WeekPrisma }) {
 
   if (targeted.length === 0) return null;
 
-  const LEGEND = [
-    { label: '1–2', color: '#93c5fd' },
-    { label: '3–4', color: '#3b82f6' },
-    { label: '5–6', color: '#1d4ed8' },
-    { label: '7+',  color: '#1e3a8a' },
-  ];
-
   return (
     <Box sx={{ mb: 3 }}>
       <Typography variant="subtitle2" sx={{ mb: 1 }}>
         Muscle Coverage
       </Typography>
 
-      {/* Body diagram */}
+      {/* Body diagram — tappable to open muscle detail modal */}
       <Box
         id={id}
-        sx={{ display: 'flex', gap: 0.5, height: 130, justifyContent: 'center' }}
+        onClick={() => setModalOpen(true)}
+        sx={{ display: 'flex', gap: 0.5, height: 195, justifyContent: 'center', cursor: 'pointer' }}
       >
         <FrontBody style={{ height: '100%', width: 'auto' }} />
         <BackBody style={{ height: '100%', width: 'auto' }} />
       </Box>
 
-      {/* Legend */}
-      <Box sx={{ display: 'flex', gap: 1.5, mt: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-        <Typography variant="caption" color="text.secondary">
-          Done sets:
-        </Typography>
-        {LEGEND.map(({ label, color }) => (
-          <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: color }} />
-            <Typography variant="caption" color="text.secondary">{label}</Typography>
+      {/* Muscle detail modal */}
+      <Dialog open={modalOpen} onClose={() => setModalOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          Muscle Coverage
+          <IconButton onClick={() => setModalOpen(false)} size="small" edge="end" aria-label="Close">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.25 }}>
+            {targeted.map(([muscle, { planned, done }]) => (
+              <Box
+                key={muscle}
+                sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', px: 0.5, py: 0.25 }}
+              >
+                <Typography variant="body2" noWrap sx={{ mr: 0.5, minWidth: 0 }}>
+                  {MUSCLE_NAMES[muscle] ?? muscle}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+                  {Number.isInteger(done) ? done : done.toFixed(1)}/{Number.isInteger(planned) ? planned : planned.toFixed(1)}
+                </Typography>
+              </Box>
+            ))}
           </Box>
-        ))}
-      </Box>
-
-      {/* Per-muscle done/planned list — two columns */}
-      <Box sx={{ mt: 1.5, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.25 }}>
-        {targeted.map(([muscle, { planned, done }]) => (
-          <Box
-            key={muscle}
-            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', px: 0.5, py: 0.25, borderRadius: 1 }}
-          >
-            <Typography variant="body2" noWrap sx={{ mr: 0.5, minWidth: 0 }}>
-              {MUSCLE_NAMES[muscle] ?? muscle}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
-              {Number.isInteger(done) ? done : done.toFixed(1)}/{Number.isInteger(planned) ? planned : planned.toFixed(1)}
-            </Typography>
-          </Box>
-        ))}
-      </Box>
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }
