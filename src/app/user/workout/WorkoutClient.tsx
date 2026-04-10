@@ -33,7 +33,7 @@ export default function WorkoutClient({userData}: {userData: UserPrisma}) {
     substituteTarget, setSubstituteTarget,
     showAddExercise, setShowAddExercise,
     pendingExercise, setPendingExercise,
-    goBack,
+    navigateBack,
     handleSetUpdate,
     handleEffortUpdate,
     handleWorkoutNoteBlur,
@@ -56,7 +56,7 @@ export default function WorkoutClient({userData}: {userData: UserPrisma}) {
         currentWorkoutId={selectedWorkout.id}
         activeExerciseId={selectedExerciseId}
         userExerciseNotes={userDataState.userExerciseNotes}
-        onBack={goBack}
+        onBack={navigateBack}
         onSlideChange={(swiper) => {
           const newExercise = selectedWorkout.exercises[swiper.activeIndex];
           if (newExercise && newExercise.id !== selectedExerciseId) {
@@ -76,7 +76,7 @@ export default function WorkoutClient({userData}: {userData: UserPrisma}) {
     view = (
       <ExercisesListView
         workout={selectedWorkout}
-        onBack={goBack}
+        onBack={navigateBack}
         onSelectExercise={setSelectedExerciseId}
         onWorkoutNoteBlur={handleWorkoutNoteBlur}
         onCompleteWorkout={handleCompleteWorkout}
@@ -88,7 +88,7 @@ export default function WorkoutClient({userData}: {userData: UserPrisma}) {
     view = (
       <WorkoutsListView
         week={selectedWeek}
-        onBack={goBack}
+        onBack={navigateBack}
         onSelectWorkout={setSelectedWorkoutId}
       />
     );
@@ -96,7 +96,7 @@ export default function WorkoutClient({userData}: {userData: UserPrisma}) {
     view = (
       <WeeksListView
         plan={selectedPlan}
-        onBack={goBack}
+        onBack={navigateBack}
         onSelectWeek={setSelectedWeekId}
       />
     );

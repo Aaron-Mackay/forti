@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {queueOrSendRequest, syncQueuedRequests} from '@/utils/offlineSync';
 import {getUserDataCache, saveUserDataCache} from '@/utils/clientDb';
 import {useOfflineCache} from '@lib/hooks/useOfflineCache';
@@ -129,12 +129,58 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
   const selectedWeek = selectedPlan?.weeks.find(w => w.id === selectedWeekId);
   const selectedWorkout = selectedWeek?.workouts.find(w => w.id === selectedWorkoutId);
 
-  const goBack = () => {
+  const depth = selectedExerciseId ? 4 : selectedWorkoutId ? 3 : selectedWeekId ? 2 : selectedPlanId ? 1 : 0;
+
+  const prevDepthRef = useRef<number | null>(null);
+  const isPopStateNavRef = useRef(false);
+
+  const goBack = useCallback(() => {
     if (selectedExerciseId) setSelectedExerciseId(null);
     else if (selectedWorkoutId) setSelectedWorkoutId(null);
     else if (selectedWeekId) setSelectedWeekId(null);
     else if (selectedPlanId) setSelectedPlanId(null);
-  };
+  }, [selectedExerciseId, selectedWorkoutId, selectedWeekId, selectedPlanId]);
+
+  const goBackRef = useRef(goBack);
+  useEffect(() => { goBackRef.current = goBack; }, [goBack]);
+
+  // Push browser history entries on forward navigation so the browser back button
+  // mirrors the AppBar back button. On initial render, seed entries for any
+  // pre-selected depth (handles deep-links like ?workoutId=123).
+  useEffect(() => {
+    if (prevDepthRef.current === null) {
+      history.replaceState({ workoutClientDepth: 0 }, '');
+      for (let i = 1; i <= depth; i++) {
+        history.pushState({ workoutClientDepth: i }, '');
+      }
+      prevDepthRef.current = depth;
+      return;
+    }
+    if (isPopStateNavRef.current) {
+      isPopStateNavRef.current = false;
+      prevDepthRef.current = depth;
+      return;
+    }
+    if (depth > prevDepthRef.current) {
+      history.pushState({ workoutClientDepth: depth }, '');
+    }
+    prevDepthRef.current = depth;
+  }, [depth]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      isPopStateNavRef.current = true;
+      goBackRef.current();
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Used by the AppBar back button — routes through history.back() so browser
+  // history and React state stay in sync (no ghost entries).
+  const navigateBack = useCallback(() => {
+    if (depth > 0) history.back();
+  }, [depth]);
 
   const handleSetUpdate = (setIdx: number, field: Field, value: string) => {
     if (!(selectedPlanId && selectedWeekId && selectedWorkoutId && selectedExerciseId)) return;
@@ -360,7 +406,7 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
     showAddExercise, setShowAddExercise,
     pendingExercise, setPendingExercise,
     // Handlers
-    goBack,
+    navigateBack,
     handleSetUpdate,
     handleEffortUpdate,
     handleWorkoutNoteBlur,
