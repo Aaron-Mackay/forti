@@ -40,8 +40,10 @@ export default function CardioSlide({
   onCardioUpdate: (field: 'cardioDuration' | 'cardioDistance' | 'cardioResistance', value: number | null) => void;
   previousCardio: PreviousCardio | null | undefined;
 }) {
-  const [formCue, setFormCue] = useState(userExerciseNote?.note ?? '');
+  const [editValue, setEditValue] = useState<string | null>(null);
   const [formCueOpen, setFormCueOpen] = useState(false);
+
+  const formCue = editValue ?? userExerciseNote?.note ?? '';
 
   const hasFormCue = formCue.trim().length > 0;
 
@@ -113,15 +115,11 @@ export default function CardioSlide({
           maxRows={4}
           placeholder="Add form cues and notes for this exercise..."
           value={formCue}
-          onChange={e => setFormCue(e.target.value)}
-          onBlur={() => onFormCueBlur(ex.exerciseId, formCue)}
+          onChange={e => setEditValue(e.target.value)}
+          onFocus={() => setEditValue(formCue)}
+          onBlur={() => { onFormCueBlur(ex.exerciseId, formCue); setEditValue(null); }}
           size="small"
-          sx={{
-            mt: 0.5,
-            '& .MuiOutlinedInput-root': {
-              '&.Mui-focused fieldset': {borderColor: 'warning.main'},
-            },
-          }}
+          sx={{mt: 0.5}}
         />
       </Collapse>
 

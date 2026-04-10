@@ -17,6 +17,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import {Exercise} from '@/generated/prisma/browser';
+import {APPBAR_HEIGHT, HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar';
 
 export interface AddExerciseConfig {
   setCount: number;
@@ -68,6 +69,7 @@ export default function AddExerciseConfigDialog({
       fullScreen={fullScreen}
       fullWidth
       maxWidth="xs"
+      slotProps={fullScreen ? {paper: {sx: {mt: `${APPBAR_HEIGHT}px`, height: HEIGHT_EXC_APPBAR}}} : undefined}
     >
       <DialogTitle>
         Configure Exercise

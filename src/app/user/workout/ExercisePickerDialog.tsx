@@ -22,7 +22,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import {Exercise} from '@/generated/prisma/browser';
 import {AddExerciseForm} from '@/app/exercises/AddExerciseForm';
-import {APPBAR_HEIGHT} from '@/components/CustomAppBar';
+import {APPBAR_HEIGHT, HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar';
 
 // Maps plain-English search terms to substrings found in muscle IDs.
 // Muscle IDs use kebab shorthand (e.g. sternal-pec, ant-delts, lower-back).
@@ -138,7 +138,7 @@ export default function ExercisePickerDialog({
         sx: {
           display: 'flex',
           flexDirection: 'column',
-          maxHeight: fullScreen ? `calc(100dvh - ${APPBAR_HEIGHT}px)` : '80vh',
+          maxHeight: fullScreen ? HEIGHT_EXC_APPBAR : '80vh',
           mt: fullScreen ? `${APPBAR_HEIGHT}px` : 0,
           borderTopLeftRadius: fullScreen ? 12 : undefined,
           borderTopRightRadius: fullScreen ? 12 : undefined,

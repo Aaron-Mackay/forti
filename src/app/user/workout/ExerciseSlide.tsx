@@ -122,8 +122,11 @@ export default function ExerciseSlide({
   const override = settings.exerciseUnitOverrides[String(ex.exerciseId)] ?? null;
   const effectiveUnit = override ?? settings.weightUnit;
 
-  const [formCue, setFormCue] = useState(userExerciseNote?.note ?? '');
+  // null = not editing; drives value from prop so duplicate-exercise slides stay in sync
+  const [editValue, setEditValue] = useState<string | null>(null);
   const [formCueOpen, setFormCueOpen] = useState(false);
+
+  const formCue = editValue ?? userExerciseNote?.note ?? '';
   const [warmupOpen, setWarmupOpen] = useState(false);
   const [plateCalcOpen, setPlateCalcOpen] = useState(false);
   const [plateCalcSetIdx, setPlateCalcSetIdx] = useState<number | null>(null);
@@ -287,16 +290,11 @@ export default function ExerciseSlide({
           maxRows={4}
           placeholder="Add form cues and notes for this exercise..."
           value={formCue}
-          onChange={e => setFormCue(e.target.value)}
-          onBlur={() => onFormCueBlur(ex.exerciseId, formCue)}
+          onChange={e => setEditValue(e.target.value)}
+          onFocus={() => setEditValue(formCue)}
+          onBlur={() => { onFormCueBlur(ex.exerciseId, formCue); setEditValue(null); }}
           size="small"
-          sx={{
-            mt: 0.5,
-            '& .MuiOutlinedInput-root': {
-              borderColor: 'warning.main',
-              '&.Mui-focused fieldset': {borderColor: 'warning.main'},
-            },
-          }}
+          sx={{mt: 0.5}}
         />
       </Collapse>
 
