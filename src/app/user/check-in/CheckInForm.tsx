@@ -178,21 +178,21 @@ export default function CheckInForm({ currentWeek, weekPrior, checkIn, previousP
         sx={{ mb: 2 }}
       />
       <TextField
-        label="Message to your coach (optional)"
-        multiline
-        minRows={2}
-        fullWidth
-        value={form.coachMessage}
-        onChange={e => setForm(f => ({ ...f, coachMessage: e.target.value }))}
-        sx={{ mb: 2 }}
-      />
-      <TextField
         label="Goals / focus for next week"
         multiline
         minRows={2}
         fullWidth
         value={form.goalsNextWeek}
         onChange={e => setForm(f => ({ ...f, goalsNextWeek: e.target.value }))}
+        sx={{ mb: 2 }}
+      />
+      <TextField
+        label="Message to your coach (optional)"
+        multiline
+        minRows={2}
+        fullWidth
+        value={form.coachMessage}
+        onChange={e => setForm(f => ({ ...f, coachMessage: e.target.value }))}
         sx={{ mb: 3 }}
       />
 

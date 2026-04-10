@@ -334,6 +334,7 @@ model WeeklyCheckIn {
 
   // Coach feedback (written by coach)
   coachNotes      String?
+  coachResponseUrl String?
   coachReviewedAt DateTime?
 
   // Progress photos (uploaded via /api/check-in/photos)

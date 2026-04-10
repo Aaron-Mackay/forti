@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Box,
@@ -19,6 +19,7 @@ import {
   Typography,
 } from '@mui/material';
 import type { CheckInWithUser } from '@/types/checkInTypes';
+import CoachCheckInListItem from './CoachCheckInListItem';
 
 interface Client {
   id: string;
@@ -98,23 +99,14 @@ export default function CoachCheckInsClient({ lockedClientId }: { lockedClientId
     }
   }
 
-  function handleNotesUpdated(id: number, notes: string) {
-    setNewCheckIns(prev => prev.map(c => c.id === id ? { ...c, coachNotes: notes, coachReviewedAt: new Date() } : c));
-    setBrowseCheckIns(prev => prev.map(c => c.id === id ? { ...c, coachNotes: notes, coachReviewedAt: new Date() } : c));
+  function getCheckInHref(checkIn: CheckInWithUser) {
+    return lockedClientId
+      ? `/user/coach/clients/${lockedClientId}/check-ins/${checkIn.id}`
+      : `/user/coach/check-ins/${checkIn.id}`;
   }
 
-  // Lazy-import the card to keep this file leaner
-  const [CardComponent, setCardComponent] = useState<React.ComponentType<{
-    checkIn: CheckInWithUser;
-    onNotesUpdated: (id: number, notes: string) => void;
-  }> | null>(null);
-
-  useEffect(() => {
-    import('./CoachCheckInCard').then(m => setCardComponent(() => m.default));
-  }, []);
-
   return (
-    <Box sx={{ pt: 2, pb: 6, maxWidth: 640 }}>
+    <Box sx={{ pt: 2, pb: 6, maxWidth: 1040, mx: 'auto' }}>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>
       )}
@@ -146,12 +138,9 @@ export default function CoachCheckInsClient({ lockedClientId }: { lockedClientId
             </Typography>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {CardComponent
-                ? newCheckIns.map(c => (
-                    <CardComponent key={c.id} checkIn={c} onNotesUpdated={handleNotesUpdated} />
-                  ))
-                : <CircularProgress size={24} />
-              }
+              {newCheckIns.map(c => (
+                <CoachCheckInListItem key={c.id} checkIn={c} href={getCheckInHref(c)} />
+              ))}
             </Box>
           )}
         </>
@@ -161,9 +150,17 @@ export default function CoachCheckInsClient({ lockedClientId }: { lockedClientId
       {tab === 1 && (
         <>
           {/* Filters */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 2,
+              mb: 2,
+              gridTemplateColumns: { xs: '1fr', md: lockedClientId ? 'repeat(3, minmax(0, 1fr))' : 'minmax(220px, 1fr) repeat(3, minmax(0, 1fr))' },
+              alignItems: 'start',
+            }}
+          >
             {!lockedClientId && (
-              <FormControl size="small" fullWidth>
+              <FormControl size="small" fullWidth sx={{ minWidth: 0 }}>
                 <InputLabel>Client</InputLabel>
                 <Select
                   value={filterClientId}
@@ -177,27 +174,30 @@ export default function CoachCheckInsClient({ lockedClientId }: { lockedClientId
                 </Select>
               </FormControl>
             )}
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="From"
-                type="date"
-                size="small"
-                value={filterFrom}
-                onChange={e => setFilterFrom(e.target.value)}
-                slotProps={{ inputLabel: { shrink: true } }}
-                sx={{ flex: 1 }}
-              />
-              <TextField
-                label="To"
-                type="date"
-                size="small"
-                value={filterTo}
-                onChange={e => setFilterTo(e.target.value)}
-                slotProps={{ inputLabel: { shrink: true } }}
-                sx={{ flex: 1 }}
-              />
-            </Box>
-            <Button variant="outlined" onClick={() => runBrowse(0)} disabled={browseLoading}>
+            <TextField
+              label="From"
+              type="date"
+              size="small"
+              value={filterFrom}
+              onChange={e => setFilterFrom(e.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
+              sx={{ minWidth: 0 }}
+            />
+            <TextField
+              label="To"
+              type="date"
+              size="small"
+              value={filterTo}
+              onChange={e => setFilterTo(e.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
+              sx={{ minWidth: 0 }}
+            />
+            <Button
+              variant="outlined"
+              onClick={() => runBrowse(0)}
+              disabled={browseLoading}
+              sx={{ minHeight: 40 }}
+            >
               {browseLoading ? <CircularProgress size={18} /> : 'Search'}
             </Button>
           </Box>
@@ -214,12 +214,9 @@ export default function CoachCheckInsClient({ lockedClientId }: { lockedClientId
             </Typography>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {CardComponent
-                ? browseCheckIns.map(c => (
-                    <CardComponent key={c.id} checkIn={c} onNotesUpdated={handleNotesUpdated} />
-                  ))
-                : <CircularProgress size={24} />
-              }
+              {browseCheckIns.map(c => (
+                <CoachCheckInListItem key={c.id} checkIn={c} href={getCheckInHref(c)} />
+              ))}
               {browseCheckIns.length < browseTotal && (
                 <Button
                   variant="text"

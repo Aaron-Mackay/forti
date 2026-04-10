@@ -100,6 +100,7 @@ async function deliverNotification({
 /** Notify a coach that a client has submitted their check-in (replaces sendCheckInCoachAlert) */
 export async function notifyCoachCheckInSubmitted(
   coachId: string,
+  checkInId: number,
   clientName: string,
   weekStartDate: Date,
   checkInDay: number
@@ -112,7 +113,7 @@ export async function notifyCoachCheckInSubmitted(
     type: 'CheckInSubmitted',
     title: `New check-in from ${clientName}`,
     body: `${clientName} submitted their weekly check-in`,
-    url: '/user/coach/check-ins',
+    url: `/user/coach/check-ins/${checkInId}`,
     emailSubject: `${clientName} completed their check-in`,
     emailText: `Hi,\n\n${clientName} has just submitted their weekly check-in for the week of ${formatted}.\n\nLog in to Forti and visit Client Check-ins to review it.\n\n— The Forti Team`,
   });

@@ -3,7 +3,7 @@ import getLoggedInUser from '@lib/getLoggedInUser';
 import prisma from '@lib/prisma';
 import AppBarTitle from '@/components/AppBarTitle';
 import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
-import { Paper } from '@mui/material';
+import { Box, Paper } from '@mui/material';
 import CoachCheckInsClient from '@/app/user/coach/check-ins/CoachCheckInsClient';
 
 interface Props {
@@ -26,8 +26,10 @@ export default async function ClientCheckInsPage({ params }: Props) {
   return (
     <>
       <AppBarTitle title="Check-ins" showBack backHref={`/user/coach/clients/${clientId}`} />
-      <Paper sx={{ px: 2, minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
-        <CoachCheckInsClient lockedClientId={clientId} />
+      <Paper sx={{ minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
+        <Box sx={{ px: { xs: 2, sm: 3 } }}>
+          <CoachCheckInsClient lockedClientId={clientId} />
+        </Box>
       </Paper>
     </>
   );

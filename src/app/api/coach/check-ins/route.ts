@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
-import { parseDashboardSettings } from '@/types/settingsTypes';
+import { getCoachCheckInAccess, mapCoachCheckIn } from '@lib/coachCheckIns';
 
 /**
  * GET /api/coach/check-ins
@@ -18,19 +18,12 @@ export async function GET(req: NextRequest) {
   const session = await requireSession();
   const userId = session.user.id;
 
-  // Verify coach mode is active
-  const coach = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { settings: true, clients: { select: { id: true, name: true, email: true } } },
-  });
-
-  const settings = parseDashboardSettings(coach?.settings);
-  if (!settings.coachModeActive) {
+  const coach = await getCoachCheckInAccess(userId);
+  if (!coach.coachModeActive) {
     return NextResponse.json({ error: 'Coach mode is not active' }, { status: 403 });
   }
 
-  const clientIds = (coach?.clients ?? []).map(c => c.id);
-  if (clientIds.length === 0) {
+  if (coach.clientIds.length === 0) {
     return NextResponse.json({ checkIns: [], total: 0, clients: [] });
   }
 
@@ -42,12 +35,12 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(parseInt(searchParams.get('limit') ?? '20'), 100);
   const offset = parseInt(searchParams.get('offset') ?? '0');
 
-  const whereUserId = clientId && clientIds.includes(clientId) ? clientId : undefined;
+  const whereUserId = clientId && coach.clientIds.includes(clientId) ? clientId : undefined;
 
   const [checkIns, total] = await Promise.all([
     prisma.weeklyCheckIn.findMany({
       where: {
-        userId: whereUserId ?? { in: clientIds },
+        userId: whereUserId ?? { in: coach.clientIds },
         completedAt: { not: null },
         ...(from || to ? {
           weekStartDate: {
@@ -66,7 +59,7 @@ export async function GET(req: NextRequest) {
     }),
     prisma.weeklyCheckIn.count({
       where: {
-        userId: whereUserId ?? { in: clientIds },
+        userId: whereUserId ?? { in: coach.clientIds },
         completedAt: { not: null },
         ...(from || to ? {
           weekStartDate: {
@@ -79,16 +72,9 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
-  const mappedCheckIns = checkIns.map(c => ({
-    ...c,
-    frontPhotoUrl: c.frontPhotoUrl ? `/api/check-in/photos/${c.id}/front` : null,
-    backPhotoUrl: c.backPhotoUrl ? `/api/check-in/photos/${c.id}/back` : null,
-    sidePhotoUrl: c.sidePhotoUrl ? `/api/check-in/photos/${c.id}/side` : null,
-  }));
-
   return NextResponse.json({
-    checkIns: mappedCheckIns,
+    checkIns: checkIns.map(mapCoachCheckIn),
     total,
-    clients: coach?.clients ?? [],
+    clients: coach.clients,
   });
 }

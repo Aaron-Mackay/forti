@@ -105,6 +105,7 @@ export async function POST(req: NextRequest) {
     const settings = parseDashboardSettings(user.settings);
     await notifyCoachCheckInSubmitted(
       user.coach.id,
+      checkIn.id,
       user.name,
       weekStart,
       settings.checkInDay,

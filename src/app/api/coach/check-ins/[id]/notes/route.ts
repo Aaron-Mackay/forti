@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
-import { parseDashboardSettings } from '@/types/settingsTypes';
 import { notifyClientCoachFeedback } from '@lib/notifications';
+import { getCoachCheckInById } from '@lib/coachCheckIns';
 
 /** PATCH /api/coach/check-ins/[id]/notes — coach saves notes on a client's check-in */
 export async function PATCH(
@@ -18,32 +18,47 @@ export async function PATCH(
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
 
-  // Verify coach mode
-  const coach = await prisma.user.findUnique({
-    where: { id: coachId },
-    select: { settings: true, clients: { select: { id: true } } },
-  });
-  const settings = parseDashboardSettings(coach?.settings);
-  if (!settings.coachModeActive) {
+  const checkInResult = await getCoachCheckInById(coachId, checkInId);
+  if (checkInResult.status === 'forbidden') {
     return NextResponse.json({ error: 'Coach mode is not active' }, { status: 403 });
   }
-
-  const clientIds = (coach?.clients ?? []).map(c => c.id);
-
-  // Ensure the check-in belongs to one of this coach's clients
-  const checkIn = await prisma.weeklyCheckIn.findUnique({ where: { id: checkInId } });
-  if (!checkIn || !clientIds.includes(checkIn.userId)) {
+  if (checkInResult.status === 'not_found') {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const body = await req.json() as { coachNotes: string };
+  const { checkIn } = checkInResult;
+
+  const body = await req.json() as { coachNotes: string; coachResponseUrl?: string | null };
   if (typeof body.coachNotes !== 'string') {
     return NextResponse.json({ error: 'coachNotes must be a string' }, { status: 400 });
+  }
+  if (
+    body.coachResponseUrl !== undefined
+    && body.coachResponseUrl !== null
+    && typeof body.coachResponseUrl !== 'string'
+  ) {
+    return NextResponse.json({ error: 'coachResponseUrl must be a string' }, { status: 400 });
+  }
+
+  const trimmedCoachResponseUrl = body.coachResponseUrl?.trim() ?? '';
+  if (trimmedCoachResponseUrl) {
+    try {
+      const parsed = new URL(trimmedCoachResponseUrl);
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        throw new Error('Invalid protocol');
+      }
+    } catch {
+      return NextResponse.json({ error: 'coachResponseUrl must be a valid http(s) URL' }, { status: 400 });
+    }
   }
 
   const updated = await prisma.weeklyCheckIn.update({
     where: { id: checkInId },
-    data: { coachNotes: body.coachNotes, coachReviewedAt: new Date() },
+    data: {
+      coachNotes: body.coachNotes,
+      coachResponseUrl: trimmedCoachResponseUrl || null,
+      coachReviewedAt: new Date(),
+    },
   });
 
   const coachName = (await prisma.user.findUnique({ where: { id: coachId }, select: { name: true } }))?.name ?? 'Your coach';

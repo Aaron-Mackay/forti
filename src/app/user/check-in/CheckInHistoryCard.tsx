@@ -8,6 +8,7 @@ import {
   Box,
   Chip,
   Divider,
+  Link,
   Typography,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -89,8 +90,8 @@ export function CheckInDetails({ checkIn }: { checkIn: WeeklyCheckIn }) {
           {(hasRatings || hasTraining) && <Divider sx={{ my: 1.5 }} />}
           <Typography variant="overline" color="text.secondary">Reflection</Typography>
           <TextField label="Week review" value={checkIn.weekReview} />
-          <TextField label="Message to coach" value={checkIn.coachMessage} />
           <TextField label="Goals for next week" value={checkIn.goalsNextWeek} />
+          <TextField label="Message to coach" value={checkIn.coachMessage} />
         </>
       )}
 
@@ -125,6 +126,17 @@ export function CheckInDetails({ checkIn }: { checkIn: WeeklyCheckIn }) {
           {(hasRatings || hasTraining || hasReflection || hasPhotos) && <Divider sx={{ my: 1.5 }} />}
           <Typography variant="overline" color="text.secondary">Coach Feedback</Typography>
           <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>{checkIn.coachNotes}</Typography>
+          {checkIn.coachResponseUrl && (
+            <Link
+              href={checkIn.coachResponseUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="body2"
+              sx={{ display: 'inline-block', mt: 1 }}
+            >
+              Open coach response
+            </Link>
+          )}
         </>
       )}
     </>

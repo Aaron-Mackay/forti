@@ -2,7 +2,8 @@
  * Coach check-in review tests (/user/coach/check-ins).
  *
  * Covers: page rendering, New/Browse tabs, unreviewed badge count,
- * check-in card rendering, coach notes submission, and reviewed state.
+ * check-in list rendering, dedicated review page, coach notes submission,
+ * and reviewed state.
  *
  * All API calls are mocked to avoid dependency on seeded DB state
  * or the TestUser having a coach relationship.
@@ -26,6 +27,7 @@ const UNREVIEWED_CHECK_IN = {
   coachMessage: 'How did my technique look?',
   goalsNextWeek: 'More sleep',
   coachNotes: null,
+  coachResponseUrl: null,
   coachReviewedAt: null,
   user: { id: 'client-1', name: 'Alice Smith' },
 };
@@ -71,86 +73,104 @@ test.describe('Coach check-ins page — basic rendering', () => {
       .locator('.MuiChip-root')).toContainText('1');
   });
 
-  test('shows check-in card for the unreviewed client check-in', async ({ page }) => {
-    // CoachCheckInCard is lazy-loaded; wait for client name to appear
+  test('shows check-in list item for the unreviewed client check-in', async ({ page }) => {
     await expect(page.getByText('Alice Smith').first()).toBeVisible();
   });
 });
 
-test.describe('Coach check-ins — adding notes to a check-in', () => {
-  test('saving notes calls PATCH /api/coach/check-ins/{id}/notes', async ({ page }) => {
-    let patchCalled = false;
-    let patchBody: Record<string, unknown> | null = null;
-
+test.describe('Coach check-ins — dedicated review page', () => {
+  test('clicking a list item opens the dedicated check-in review page', async ({ page }) => {
     await page.route('**/api/coach/check-ins**', (route) => {
       const url = route.request().url();
-      const method = route.request().method();
-
-      if (method === 'PATCH' && url.includes('/notes')) {
-        patchCalled = true;
-        patchBody = JSON.parse(route.request().postData() ?? '{}') as Record<string, unknown>;
+      if (url.includes('/api/coach/check-ins/10')) {
         route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ coachNotes: 'Well done this week', coachReviewedAt: new Date().toISOString() }),
+          body: JSON.stringify({ checkIn: UNREVIEWED_CHECK_IN }),
         });
-      } else {
-        route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(makeApiResponse([UNREVIEWED_CHECK_IN])),
-        });
+        return;
       }
+
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(makeApiResponse([UNREVIEWED_CHECK_IN])),
+      });
     });
 
     await page.goto('/user/coach/check-ins');
+    await page.getByRole('link', { name: /Alice Smith/i }).click();
 
-    // Expand the check-in card
-    await page.getByText('Alice Smith').first().click();
+    await expect(page).toHaveURL('/user/coach/check-ins/10');
+    await expect(page.getByRole('heading', { name: 'Alice Smith' })).toBeVisible();
+    await expect(page.getByText('Week review')).toBeVisible();
+  });
+});
 
-    // Fill in coach notes
+test.describe('Coach check-ins — adding notes to a check-in', () => {
+  test('sending review from the dedicated page calls PATCH /api/coach/check-ins/{id}/notes', async ({ page }) => {
+    let patchCalled = false;
+    let patchBody: Record<string, unknown> | null = null;
+
+    await page.route('**/api/coach/check-ins/10/notes', (route) => {
+      patchCalled = true;
+      patchBody = JSON.parse(route.request().postData() ?? '{}') as Record<string, unknown>;
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ coachNotes: 'Well done this week', coachReviewedAt: new Date().toISOString() }),
+      });
+    });
+    await page.route('**/api/coach/check-ins/10', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ checkIn: UNREVIEWED_CHECK_IN }),
+      }),
+    );
+
+    await page.goto('/user/coach/check-ins/10');
+
     const notesField = page.getByPlaceholder(/Leave feedback for your client/i);
     await notesField.fill('Well done this week');
+    await page.getByLabel(/Review link/i).fill('https://www.loom.com/share/test-review');
 
-    // Save Notes button should now be enabled (notes changed from null/'')
-    const saveBtn = page.getByRole('button', { name: /Save Notes/i });
+    const saveBtn = page.getByRole('button', { name: /Send Review/i });
     await expect(saveBtn).not.toBeDisabled();
     await saveBtn.click();
 
     expect(patchCalled).toBe(true);
-    expect(patchBody).toMatchObject({ coachNotes: 'Well done this week' });
+    expect(patchBody).toMatchObject({
+      coachNotes: 'Well done this week',
+      coachResponseUrl: 'https://www.loom.com/share/test-review',
+    });
   });
 });
 
 test.describe('Coach check-ins — reviewed state', () => {
   test.beforeEach(async ({ page }) => {
-    await page.route('**/api/coach/check-ins**', (route) =>
+    await page.route('**/api/coach/check-ins/11', (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(makeApiResponse([REVIEWED_CHECK_IN])),
+        body: JSON.stringify({ checkIn: REVIEWED_CHECK_IN }),
       }),
     );
-    await page.goto('/user/coach/check-ins');
+    await page.goto('/user/coach/check-ins/11');
   });
 
-  test('reviewed check-in card renders with client name', async ({ page }) => {
-    await expect(page.getByText('Alice Smith').first()).toBeVisible();
+  test('reviewed check-in page renders with client name', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Alice Smith' })).toBeVisible();
   });
 
-  test('reviewed check-in card shows pre-filled coach notes when expanded', async ({ page }) => {
-    // Expand the card
-    await page.getByText('Alice Smith').first().click();
-
+  test('reviewed check-in page shows pre-filled coach notes', async ({ page }) => {
     // The notes field should show the existing coach notes
     const notesField = page.getByPlaceholder(/Leave feedback for your client/i);
     await expect(notesField).toHaveValue('Great progress this week!');
   });
 
-  test('Save Notes button is disabled when notes are unchanged', async ({ page }) => {
-    await page.getByText('Alice Smith').first().click();
-    // Button starts disabled because notes match coachNotes
-    await expect(page.getByRole('button', { name: /Save Notes/i })).toBeDisabled();
+  test('Send Review button is disabled when values are unchanged', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /Send Review/i })).toBeDisabled();
   });
 });
 
@@ -173,7 +193,7 @@ test.describe('Coach check-ins — Browse tab', () => {
 
   test('Browse tab shows date filter fields', async ({ page }) => {
     await page.getByRole('tab', { name: /Browse/i }).click();
-    await expect(page.getByLabel(/From/i)).toBeVisible();
-    await expect(page.getByLabel(/To/i)).toBeVisible();
+    await expect(page.locator('input[type="date"]').nth(0)).toBeVisible();
+    await expect(page.locator('input[type="date"]').nth(1)).toBeVisible();
   });
 });
