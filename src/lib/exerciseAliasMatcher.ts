@@ -19,40 +19,53 @@ const WHOLE_STRING_ALIASES: Record<string, string> = {
   'incline db bench': 'incline dumbbell bench press',
   'decline bb bench': 'decline barbell bench press',
   'ohp': 'overhead press',
+  'military press': 'overhead press',
   'seated db press': 'seated dumbbell shoulder press',
   'bench': 'bench press',
 
   // Pulling / back
   'lat pull down': 'lat pulldown',
+  'lat pulldown': 'lat pulldown',
   'pullup': 'pull up',
   'chinup': 'chin up',
-  'tbar row': 't-bar row',
+  'tbar row': 't bar row',
+  'cable row': 'seated cable row',
 
   // Lower body
+  'barbell rdl': 'romanian deadlift',
   'rdl': 'romanian deadlift',
-  'sldl': 'stiff-leg deadlift',
-  'conv deadlift': 'deadlift',
+  'sldl': 'stiff leg deadlift',
+  'conv deadlift': 'conventional deadlift',
   'conventional deadlift': 'deadlift',
   'sumo dl': 'sumo deadlift',
   'bulgarian split squat': 'bulgarian split squat',
   'bss': 'bulgarian split squat',
+  'goblet squat': 'goblet squat',
   'leg ext': 'leg extension',
   'knee extension': 'leg extension',
   'knee ext': 'leg extension',
+  'leg curl': 'lying leg curl',
   'leg curls': 'lying leg curls',
-  'hip thrusts': 'hip thrusts',
-  'calf raises': 'standing calf raises',
+  'hip thrusts': 'hip thrust',
+  'calf raises': 'standing calf raise',
 
   // Arms / accessories
+  'skull crushers': 'lying triceps extension',
+  'rope pushdown': 'triceps rope pushdown',
   'tricep rope pushdown': 'rope pushdown',
+  'tricep pushdown': 'triceps pushdown',
+  'preacher curls': 'preacher curl',
+  'hammer curls': 'hammer curl',
   'lat raises': 'lateral raise',
   'rear delt flys': 'rear delt fly',
 
   // Cardio common variants
+  'treadmill run': 'running',
   'jogging': 'running',
   'bike': 'cycling',
   'stationary bike': 'cycling',
   'rower': 'rowing',
+  'jump rope': 'jumping rope',
   'stairmaster': 'stair climber',
 };
 
@@ -62,6 +75,7 @@ const TOKEN_ALIASES: Record<string, string> = {
   bb: 'barbell',
   kb: 'kettlebell',
   bw: 'bodyweight',
+  sm: 'smith machine',
 
   // Exercise shorthand
   ohp: 'overhead press',
@@ -69,8 +83,7 @@ const TOKEN_ALIASES: Record<string, string> = {
   dl: 'deadlift',
   sldl: 'stiff leg deadlift',
   bss: 'bulgarian split squat',
-  curl: 'curls',
-  ext: 'extension',
+  tri: 'triceps',
 
   // Descriptor shorthand
   alt: 'alternating',
@@ -78,8 +91,8 @@ const TOKEN_ALIASES: Record<string, string> = {
   inc: 'incline',
   dec: 'decline',
   uni: 'unilateral',
-  pronated: 'overhand',
-  supinated: 'underhand',
+  pron: 'pronated',
+  sup: 'supinated',
 };
 
 

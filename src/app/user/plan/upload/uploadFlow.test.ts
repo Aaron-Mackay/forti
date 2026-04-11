@@ -89,6 +89,18 @@ describe('uploadFlow helpers', () => {
     expect(muscleVolumes.hamstrings).toBe(1.5)
   })
 
+  it('falls back to existing exercise metadata when no new exercises are reviewed', () => {
+    const existingExerciseMuscles = new Map([
+      ['mystery squat', { primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['hamstrings'] }],
+    ])
+
+    const muscleVolumes = calculateMuscleVolumes(parsedPlan, [], existingExerciseMuscles)
+
+    expect(muscleVolumes.quads).toBe(3)
+    expect(muscleVolumes.glutes).toBe(3)
+    expect(muscleVolumes.hamstrings).toBe(1.5)
+  })
+
   it('counts unique exercises after review-friendly renames', () => {
     const reviewedPlan = applyReviewedExercisesToPlan(parsedPlan, reviewedExercises)
 
