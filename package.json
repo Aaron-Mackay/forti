@@ -17,6 +17,7 @@
     "lint": "eslint src tests",
     "seed": "ts-node prisma/seed.ts",
     "recalculate-e1rm": "ts-node scripts/recalculate-e1rm.ts",
+    "merge-exercises": "ts-node scripts/merge-exercises.ts",
     "seed:demo": "ts-node prisma/seed-demo.ts",
     "local-db": "psql -h localhost -U postgres -d postgres",
     "test": "vitest run",
