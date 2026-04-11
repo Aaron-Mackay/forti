@@ -9,6 +9,10 @@ interface OfflineRequest {
 
 const MAX_RETRIES = 3;
 
+// Prevent concurrent sync runs (multiple online/visibilitychange/pageshow triggers
+// firing close together can otherwise replay the same queued mutations in parallel)
+let syncInProgress = false;
+
 export async function retryFetch(req: OfflineRequest, retries = MAX_RETRIES): Promise<Response> {
   for (let i = 0; i < retries; i++) {
     try {
@@ -74,26 +78,38 @@ export async function queueOrSendRequest(url: string, method: string, body: Reco
 
 
 export async function syncQueuedRequests(): Promise<void> {
-  if (!navigator.onLine) return;
+  if (!navigator.onLine || syncInProgress) return;
+  syncInProgress = true;
 
-  const requests = await getAllRequests();
-  let failCount = 0;
+  try {
+    const requests = await getAllRequests();
+    let failCount = 0;
 
-  for (const req of requests) {
-    try {
-      await retryFetch(req);
-      if (req.id !== undefined) await deleteRequest(req.id);
-    } catch (err) {
-      failCount++;
-      console.error('Failed to send queued request:', req, err);
+    for (const req of requests) {
+      try {
+        await retryFetch(req);
+        if (req.id !== undefined) await deleteRequest(req.id);
+      } catch (err) {
+        const is4xx = err instanceof Error && /^HTTP 4\d\d$/.test(err.message);
+        if (is4xx) {
+          // Permanently invalid — drop from queue so it never blocks future syncs
+          if (req.id !== undefined) await deleteRequest(req.id);
+          console.warn('Dropping non-retryable queued request:', req.url, err.message);
+        } else {
+          failCount++;
+          console.error('Failed to send queued request:', req, err);
+        }
+      }
     }
-  }
 
-  if (requests.length) {
-    console.log(`${requests.length - failCount}/${requests.length} queued request(s) synced`);
-  }
+    if (requests.length) {
+      console.log(`${requests.length - failCount}/${requests.length} queued request(s) synced`);
+    }
 
-  if (failCount > 0) {
-    window.dispatchEvent(new CustomEvent('sync-failed', {detail: {count: failCount}}));
+    if (failCount > 0) {
+      window.dispatchEvent(new CustomEvent('sync-failed', {detail: {count: failCount}}));
+    }
+  } finally {
+    syncInProgress = false;
   }
 }
