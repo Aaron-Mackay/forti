@@ -3,6 +3,7 @@ import 'fake-indexeddb/auto';
 import {
   addRequest,
   clearRequests,
+  deleteRequest,
   getAllRequests,
   getDayMetricsCache,
   getEventsCache,
@@ -68,6 +69,25 @@ describe('clientDb (Vitest)', () => {
     const all = await getAllRequests();
     expect(all).toHaveLength(0);
     expect(handler).toHaveBeenCalledOnce(); // once in beforeEach
+  });
+
+  it('deletes a single request by id and dispatches queue-updated', async () => {
+    await addRequest({url: '/a', method: 'POST', body: mockPayload});
+    await addRequest({url: '/b', method: 'POST', body: mockPayload});
+
+    const all = await getAllRequests();
+    expect(all).toHaveLength(2);
+    const idToDelete = all[0].id as number;
+
+    const handler = vi.fn();
+    window.addEventListener('queue-updated', handler);
+
+    await deleteRequest(idToDelete);
+
+    const remaining = await getAllRequests();
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].url).toBe('/b');
+    expect(handler).toHaveBeenCalled();
   });
 });
 
