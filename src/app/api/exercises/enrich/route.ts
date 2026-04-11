@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { EXERCISE_MUSCLES } from '@/types/dataTypes';
+import { matchExercisesByAlias } from '@lib/exerciseAliasMatcher';
 
 export const maxDuration = 30;
 
@@ -88,6 +89,36 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
+  const names = parsed.data.exercises.map((e) => e.name);
+
+  const visibleExercises = await prisma.exercise.findMany({
+    where: { OR: [{ createdByUserId: null }, { createdByUserId: userId }] },
+    select: {
+      id: true,
+      name: true,
+      category: true,
+      primaryMuscles: true,
+      secondaryMuscles: true,
+    },
+  });
+
+  const { matched, unmatched } = matchExercisesByAlias(names, visibleExercises);
+
+  if (unmatched.length === 0) {
+    return NextResponse.json({
+      exercises: names.map((name) => {
+        const resolved = matched.find((m) => m.inputName === name);
+        if (!resolved) throw new Error(`Match missing for ${name}`);
+        return {
+          name,
+          category: resolved.category,
+          primaryMuscles: resolved.primaryMuscles,
+          secondaryMuscles: resolved.secondaryMuscles,
+        };
+      }),
+    } satisfies EnrichResponse);
+  }
+
   // Rate limiting — shared with ai-import (10 requests / hour)
   const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
   const recentCount = await prisma.aiUsageLog.count({
@@ -104,7 +135,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   await prisma.aiUsageLog.create({ data: { userId } });
 
   const client = new Anthropic();
-  const names = parsed.data.exercises.map((e) => e.name);
 
   try {
     const stream = client.messages.stream({
@@ -121,8 +151,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         {
           role: 'user',
           content:
-            `Call the enrich_exercises tool with all ${names.length} exercises.\n\n<exercise_names>\n` +
-            names.map((n, i) => `${i + 1}. ${n}`).join('\n') +
+            `Call the enrich_exercises tool with all ${unmatched.length} exercises.\n\n<exercise_names>\n` +
+            unmatched.map((n, i) => `${i + 1}. ${n}`).join('\n') +
             '\n</exercise_names>',
         },
       ],
@@ -140,7 +170,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'AI returned invalid enrichment data' }, { status: 422 });
     }
 
-    return NextResponse.json({ exercises: validation.data.exercises } satisfies EnrichResponse);
+    const enrichedByName = new Map(validation.data.exercises.map((ex) => [ex.name, ex]));
+
+    return NextResponse.json({
+      exercises: names.map((name) => {
+        const preMatched = matched.find((m) => m.inputName === name);
+        if (preMatched) {
+          return {
+            name,
+            category: preMatched.category,
+            primaryMuscles: preMatched.primaryMuscles,
+            secondaryMuscles: preMatched.secondaryMuscles,
+          };
+        }
+
+        const aiEnriched = enrichedByName.get(name);
+        if (!aiEnriched) {
+          throw new Error(`AI enrichment missing result for ${name}`);
+        }
+        return aiEnriched;
+      }),
+    } satisfies EnrichResponse);
   } catch (err) {
     if (err instanceof Anthropic.APIError) {
       if (err.status === 429 || err.status === 529 || err.status === 503) {
