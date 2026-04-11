@@ -196,18 +196,18 @@ export default function ExerciseDetailDrawer({
           {isCoach ? (
             <Box sx={{mb: 2}}>
               <Typography variant="subtitle2" sx={{mb: 1}}>
-                Description for clients
+                Notes for clients
               </Typography>
               <TextField
                 multiline
                 fullWidth
                 minRows={3}
                 maxRows={6}
-                placeholder="Add a custom description your clients will see for this exercise..."
+                placeholder="Add custom notes your clients will see for this exercise..."
                 value={coachDraft}
                 onChange={e => setCoachDraft(e.target.value)}
                 size="small"
-                inputProps={{'aria-label': 'Description for clients'}}
+                inputProps={{'aria-label': 'Notes for clients'}}
               />
               <Box sx={{display: 'flex', gap: 1, mt: 1}}>
                 <Button
