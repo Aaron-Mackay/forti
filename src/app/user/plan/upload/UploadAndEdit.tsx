@@ -54,6 +54,8 @@ const CHUNK_WEEK_GROUP_SIZE = 2
 const CHUNK_BYTE_BUDGET = 80_000
 const MAX_CHUNK_ATTEMPTS = 3
 const CHUNK_REQUEST_TIMEOUT_MS = 330_000
+// Mirror of MAX_EXERCISES in src/app/api/exercises/enrich/route.ts
+const ENRICH_BATCH_SIZE = 30
 
 function splitByWeekBlocks(input: string, weeksPerChunk: number): string[] {
   const lines = input.split(/\r?\n/)
@@ -131,10 +133,22 @@ function exerciseCount(plan: ParsedPlan | null) {
   return plan.weeks.reduce((total, week) => total + week.workouts.reduce((sum, workout) => sum + workout.exercises.length, 0), 0)
 }
 
-function reviewStepDescription(reviewedExercises: ReviewedExercise[]) {
-  if (reviewedExercises.length === 0) return 'No new exercises were detected in this import.'
-  if (reviewedExercises.length === 1) return '1 new exercise needs a quick metadata check.'
-  return `${reviewedExercises.length} new exercises need a quick metadata check.`
+function normalizeExerciseName(name: string): string {
+  return name.trim().toLowerCase()
+}
+
+function chunkArray<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = []
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size))
+  }
+  return chunks
+}
+
+function reviewStepDescription(reviewedExercises: ReviewedExercise[], detectedNewExerciseCount: number) {
+  if (detectedNewExerciseCount === 0) return 'No new exercises were detected in this import.'
+  if (reviewedExercises.length === 1) return '1 new exercise needs a quick check.'
+  return `${reviewedExercises.length} new exercises need a quick check.`
 }
 
 export const UploadAndEdit = () => {
@@ -147,7 +161,11 @@ export const UploadAndEdit = () => {
   const [activeStep, setActiveStep] = useState(0)
   const [importedPlan, setImportedPlan] = useState<ParsedPlan | null>(null)
   const [reviewedExercises, setReviewedExercises] = useState<ReviewedExercise[]>([])
-  const [existingExerciseNames, setExistingExerciseNames] = useState<Set<string>>(new Set())
+  const [detectedNewExerciseCount, setDetectedNewExerciseCount] = useState(0)
+  const [existingExerciseMetadata, setExistingExerciseMetadata] = useState<Map<string, {
+    primaryMuscles: ExerciseMuscle[]
+    secondaryMuscles: ExerciseMuscle[]
+  }>>(new Map())
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
@@ -158,9 +176,21 @@ export const UploadAndEdit = () => {
       try {
         const response = await fetch('/api/exercises')
         if (!response.ok) return
-        const exercises = await response.json() as Array<{ name: string }>
+        const exercises = await response.json() as Array<{
+          name: string
+          primaryMuscles: string[]
+          secondaryMuscles: string[]
+        }>
         if (cancelled) return
-        setExistingExerciseNames(new Set(exercises.map((exercise) => exercise.name.toLowerCase())))
+        setExistingExerciseMetadata(new Map(
+          exercises.map((exercise) => [
+            normalizeExerciseName(exercise.name),
+            {
+              primaryMuscles: exercise.primaryMuscles.filter(isExerciseMuscle),
+              secondaryMuscles: exercise.secondaryMuscles.filter(isExerciseMuscle),
+            },
+          ]),
+        ))
       } catch {
         // Ignore: review step can still continue with empty defaults.
       }
@@ -174,8 +204,8 @@ export const UploadAndEdit = () => {
   const isOverLimit = inputBytes > MAX_INPUT_BYTES
   const loading = phase > 0
   const reviewedPlan = importedPlan ? applyReviewedExercisesToPlan(importedPlan, reviewedExercises) : null
-  const muscleVolumes: Partial<Record<ExerciseMuscle, number>> = importedPlan
-    ? calculateMuscleVolumes(importedPlan, reviewedExercises)
+  const muscleVolumes: Partial<Record<ExerciseMuscle, number>> = reviewedPlan
+    ? calculateMuscleVolumes(reviewedPlan, reviewedExercises, existingExerciseMetadata)
     : {}
   const sortedMuscleVolumes = Object.entries(muscleVolumes)
     .sort(([, a], [, b]) => (b ?? 0) - (a ?? 0))
@@ -203,6 +233,7 @@ export const UploadAndEdit = () => {
     setParseIssues([])
     setImportedPlan(null)
     setReviewedExercises([])
+    setDetectedNewExerciseCount(0)
     setChunkProgress(null)
     setPhase(1)
 
@@ -320,10 +351,11 @@ export const UploadAndEdit = () => {
       ))
 
       const newExerciseNames = importedExerciseNames.filter(
-        (name) => !existingExerciseNames.has(name.toLowerCase()),
+        (name) => !existingExerciseMetadata.has(normalizeExerciseName(name)),
       )
 
       if (newExerciseNames.length === 0) {
+        setDetectedNewExerciseCount(0)
         setReviewedExercises([])
         setPhase(0)
         setChunkProgress(null)
@@ -331,25 +363,40 @@ export const UploadAndEdit = () => {
         return
       }
 
-      const enrichResponse = await fetch('/api/exercises/enrich', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ exercises: newExerciseNames.map((name) => ({ name })) }),
-      })
+      setDetectedNewExerciseCount(newExerciseNames.length)
 
-      if (!enrichResponse.ok) {
-        setReviewedExercises([])
-        setPhase(0)
-        setChunkProgress(null)
-        setError('The plan imported, but new exercise details could not be prefilled. Continue to the editor to review them there.')
-        setActiveStep(2)
-        return
-      }
-
-      const enrichData = await enrichResponse.json() as {
+      const enrichResponses: Array<{
         exercises?: Array<{ name: string; category: ExerciseCategory; primaryMuscles: string[]; secondaryMuscles: string[] }>
         matchSuggestions?: MatchSuggestion[]
+      }> = []
+
+      for (const namesBatch of chunkArray(newExerciseNames, ENRICH_BATCH_SIZE)) {
+        const enrichResponse = await fetch('/api/exercises/enrich', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ exercises: namesBatch.map((name) => ({ name })) }),
+        })
+
+        if (!enrichResponse.ok) {
+          setReviewedExercises([])
+          setPhase(0)
+          setChunkProgress(null)
+          setError(`The plan imported and ${newExerciseNames.length} new exercises were detected, but their details could not be prefilled. Continue to the editor to review them there.`)
+          setActiveStep(2)
+          return
+        }
+
+        enrichResponses.push(await enrichResponse.json() as {
+          exercises?: Array<{ name: string; category: ExerciseCategory; primaryMuscles: string[]; secondaryMuscles: string[] }>
+          matchSuggestions?: MatchSuggestion[]
+        })
       }
+
+      const enrichData = {
+        exercises: enrichResponses.flatMap((response) => response.exercises ?? []),
+        matchSuggestions: enrichResponses.flatMap((response) => response.matchSuggestions ?? []),
+      }
+
       const suggestionsByInput = new Map((enrichData.matchSuggestions ?? []).map((s) => [s.inputName, s]))
       setReviewedExercises(
         (enrichData.exercises ?? []).map((exercise) => {
@@ -541,12 +588,16 @@ export const UploadAndEdit = () => {
                 Review new exercises
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {reviewStepDescription(reviewedExercises)}
+                {reviewStepDescription(reviewedExercises, detectedNewExerciseCount)}
               </Typography>
             </Box>
 
             {reviewedExercises.length === 0 ? (
-              <Alert severity="info">Every exercise in this import already exists in your library. You can skip straight to the summary.</Alert>
+              <Alert severity="info">
+                {detectedNewExerciseCount === 0
+                  ? 'Every exercise in this import already exists in your library. You can skip straight to the summary.'
+                  : `${detectedNewExerciseCount} new exercises were detected, but their metadata could not be prefilled here. You can continue to the editor to review them there.`}
+              </Alert>
             ) : (
               <Stack spacing={2}>
                 {reviewedExercises.map((exercise) => (
@@ -556,8 +607,8 @@ export const UploadAndEdit = () => {
                         sx={{
                           display: 'grid',
                           gap: 2,
-                          gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) 180px' },
-                          alignItems: 'start',
+                          gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.2fr) minmax(280px, 0.8fr)' },
+                          alignItems: 'stretch',
                         }}
                       >
                         <Stack spacing={2}>
@@ -607,7 +658,6 @@ export const UploadAndEdit = () => {
                               <TextField
                                 {...params}
                                 label="Primary muscles"
-                                helperText="Main muscles this exercise is intended to train."
                               />
                             )}
                           />
@@ -623,16 +673,18 @@ export const UploadAndEdit = () => {
                               <TextField
                                 {...params}
                                 label="Secondary muscles"
-                                helperText="Supporting or stabilising muscles."
                               />
                             )}
                           />
                         </Stack>
 
-                        <Stack spacing={1.5}>
+                        <Stack spacing={1.5} sx={{ height: '100%', display: { xs: 'none', md: 'flex' } }}>
                           <Box
                             sx={{
-                              minHeight: 220,
+                              height: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                               borderRadius: 2,
                               border: '1px solid',
                               borderColor: 'divider',
@@ -640,39 +692,15 @@ export const UploadAndEdit = () => {
                               p: 1.5,
                             }}
                           >
-                            <MuscleHighlight
-                              primaryMuscles={exercise.primaryMuscles}
-                              secondaryMuscles={exercise.secondaryMuscles}
-                              exerciseId={Number(exercise.originalName.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0))}
-                              alwaysShow
-                            />
-                          </Box>
-
-                          <Box>
-                            <Typography variant="caption" sx={{ display: 'block', mb: 0.75, color: 'text.secondary', fontWeight: 700 }}>
-                              Primary muscles
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                              {exercise.primaryMuscles.length > 0 ? exercise.primaryMuscles.map((muscle) => (
-                                <Chip key={`${exercise.originalName}-${muscle}`} label={MUSCLE_NAMES[muscle]} size="small" color="primary" />
-                              )) : (
-                                <Typography variant="caption" color="text.secondary">No primary muscles selected yet.</Typography>
-                              )}
+                            <Box sx={{ height: 'calc(100% - 24px)', maxHeight: '100%', display: 'flex', alignItems: 'center' }}>
+                              <MuscleHighlight
+                                primaryMuscles={exercise.primaryMuscles}
+                                secondaryMuscles={exercise.secondaryMuscles}
+                                exerciseId={Number(exercise.originalName.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0))}
+                                alwaysShow
+                              />
                             </Box>
                           </Box>
-
-                          {exercise.secondaryMuscles.length > 0 && (
-                            <Box>
-                              <Typography variant="caption" sx={{ display: 'block', mb: 0.75, color: 'text.secondary', fontWeight: 700 }}>
-                                Secondary muscles
-                              </Typography>
-                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                                {exercise.secondaryMuscles.map((muscle) => (
-                                  <Chip key={`${exercise.originalName}-secondary-${muscle}`} label={MUSCLE_NAMES[muscle]} size="small" variant="outlined" />
-                                ))}
-                              </Box>
-                            </Box>
-                          )}
                         </Stack>
                       </Box>
                     </CardContent>
@@ -718,7 +746,7 @@ export const UploadAndEdit = () => {
                 { label: 'Weeks', value: reviewedPlan.weeks.length },
                 { label: 'Workouts', value: reviewedPlan.weeks.reduce((sum, week) => sum + week.workouts.length, 0) },
                 { label: 'Exercises', value: exerciseCount(reviewedPlan) },
-                { label: 'New exercises', value: reviewedExercises.length },
+                { label: 'New exercises', value: detectedNewExerciseCount },
               ].map((item) => (
                 <Card key={item.label} variant="outlined" sx={{ borderRadius: 3 }}>
                   <CardContent>
@@ -758,9 +786,11 @@ export const UploadAndEdit = () => {
                       </Box>
                     </Box>
                     <Alert severity="info" icon={<CheckCircleIcon fontSize="inherit" />}>
-                      {reviewedExercises.length > 0
-                        ? `${reviewedExercises.length} new exercises will be carried into the editor with the metadata you just reviewed.`
-                        : 'No new exercises were introduced by this import, so the editor can focus on plan structure and set details.'}
+                      {detectedNewExerciseCount === 0
+                        ? 'No new exercises were introduced by this import, so the editor can focus on plan structure and set details.'
+                        : reviewedExercises.length > 0
+                          ? `${reviewedExercises.length} new exercises will be carried into the editor with the metadata you just reviewed.`
+                          : `${detectedNewExerciseCount} new exercises were detected, but their metadata could not be prefilled in this step.`}
                     </Alert>
                   </Stack>
                 </CardContent>
@@ -786,7 +816,7 @@ export const UploadAndEdit = () => {
                       />
                     )) : (
                       <Typography variant="body2" color="text.secondary">
-                        Muscle volume becomes available once new exercises have muscle data.
+                        Muscle volume appears when imported exercise names map to library entries with muscle metadata.
                       </Typography>
                     )}
                   </Box>
@@ -796,7 +826,7 @@ export const UploadAndEdit = () => {
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
               <Button
-                onClick={() => setActiveStep(reviewedExercises.length > 0 ? 1 : 0)}
+                onClick={() => setActiveStep(detectedNewExerciseCount > 0 ? 1 : 0)}
                 startIcon={<ArrowBackIcon />}
               >
                 Back

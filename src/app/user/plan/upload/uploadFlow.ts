@@ -20,6 +20,15 @@ export type PendingUploadPlan = {
   reviewedExercises: ReviewedExercise[]
 }
 
+type ExerciseMuscleMetadata = {
+  primaryMuscles: ExerciseMuscle[]
+  secondaryMuscles: ExerciseMuscle[]
+}
+
+function normalizeExerciseKey(name: string): string {
+  return name.trim().toLowerCase()
+}
+
 export function applyReviewedExercisesToPlan(plan: ParsedPlan, reviewedExercises: ReviewedExercise[]): ParsedPlan {
   const reviewMap = new Map(reviewedExercises.map((exercise) => [exercise.originalName, exercise]))
 
@@ -47,25 +56,33 @@ export function applyReviewedExercisesToPlan(plan: ParsedPlan, reviewedExercises
   }
 }
 
-export function calculateMuscleVolumes(plan: ParsedPlan, reviewedExercises: ReviewedExercise[]): Record<ExerciseMuscle, number> {
-  const reviewMap = new Map(reviewedExercises.map((exercise) => [exercise.originalName, exercise]))
+export function calculateMuscleVolumes(
+  plan: ParsedPlan,
+  reviewedExercises: ReviewedExercise[],
+  existingExerciseMuscles: Map<string, ExerciseMuscleMetadata> = new Map(),
+): Record<ExerciseMuscle, number> {
+  const reviewedByOriginalName = new Map(reviewedExercises.map((exercise) => [exercise.originalName, exercise]))
+  const reviewedByCurrentName = new Map(reviewedExercises.map((exercise) => [exercise.name, exercise]))
   const volumes = new Map<ExerciseMuscle, number>()
 
   for (const week of plan.weeks) {
     for (const workout of week.workouts) {
       for (const exercise of workout.exercises) {
-        const reviewedExercise = reviewMap.get(exercise.exercise.name)
-        if (!reviewedExercise) continue
+        const reviewedExercise = reviewedByOriginalName.get(exercise.exercise.name) ?? reviewedByCurrentName.get(exercise.exercise.name)
+        const existingExercise = existingExerciseMuscles.get(normalizeExerciseKey(exercise.exercise.name))
+        const primaryMuscles = reviewedExercise?.primaryMuscles ?? existingExercise?.primaryMuscles ?? []
+        const secondaryMuscles = reviewedExercise?.secondaryMuscles ?? existingExercise?.secondaryMuscles ?? []
+        if (primaryMuscles.length === 0 && secondaryMuscles.length === 0) continue
 
         const workingSetCount = Math.max(
           1,
           exercise.sets.filter((set) => !set.isDropSet).length || exercise.sets.length,
         )
 
-        for (const muscle of reviewedExercise.primaryMuscles) {
+        for (const muscle of primaryMuscles) {
           volumes.set(muscle, (volumes.get(muscle) ?? 0) + workingSetCount)
         }
-        for (const muscle of reviewedExercise.secondaryMuscles) {
+        for (const muscle of secondaryMuscles) {
           volumes.set(muscle, (volumes.get(muscle) ?? 0) + workingSetCount * 0.5)
         }
       }

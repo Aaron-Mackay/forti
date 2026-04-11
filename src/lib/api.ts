@@ -1,6 +1,5 @@
-import {Exercise, Prisma} from '@/generated/prisma/browser';
+import {Exercise, ExerciseCategory, Prisma} from '@/generated/prisma/browser';
 import prisma from '@/lib/prisma';
-import {findOrCreateExercise} from '@lib/exerciseQueries';
 import {DayMetricPrisma, EventPrisma, PlanPrisma, UserPrisma} from "@/types/dataTypes";
 
 export async function getUsers() {
@@ -112,7 +111,112 @@ function omit<T extends object, K extends keyof T>(
   return result;
 }
 
+type PlanExerciseSeed = {
+  name: string;
+  category: ExerciseCategory | null;
+  primaryMuscles: string[];
+  secondaryMuscles: string[];
+};
+
+function isPrismaUniqueConstraintError(error: unknown): error is { code: string } {
+  return typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string';
+}
+
+function getPlanExerciseKey(name: string, category: ExerciseCategory | null): string {
+  return `${name}::${category ?? 'null'}`;
+}
+
+async function resolvePlanExerciseIds(
+  planData: PlanPrisma,
+): Promise<Map<string, number>> {
+  const uniqueExercises = new Map<string, PlanExerciseSeed>();
+
+  for (const week of planData.weeks) {
+    for (const workout of week.workouts) {
+      for (const workoutExercise of workout.exercises) {
+        const category = workoutExercise.exercise.category ?? null;
+        const key = getPlanExerciseKey(workoutExercise.exercise.name, category);
+        if (!uniqueExercises.has(key)) {
+          uniqueExercises.set(key, {
+            name: workoutExercise.exercise.name,
+            category,
+            primaryMuscles: workoutExercise.exercise.primaryMuscles ?? [],
+            secondaryMuscles: workoutExercise.exercise.secondaryMuscles ?? [],
+          });
+        }
+      }
+    }
+  }
+
+  if (uniqueExercises.size === 0) return new Map();
+
+  const existing = await prisma.exercise.findMany({
+    where: {
+      OR: Array.from(uniqueExercises.values()).map((exercise) => ({
+        name: exercise.name,
+        category: exercise.category,
+        OR: [{ createdByUserId: planData.userId }, { createdByUserId: null }],
+      })),
+    },
+    select: {
+      id: true,
+      name: true,
+      category: true,
+      createdByUserId: true,
+    },
+  });
+
+  const resolvedIds = new Map<string, number>();
+  for (const exercise of existing) {
+    const key = getPlanExerciseKey(exercise.name, exercise.category);
+    const existingId = resolvedIds.get(key);
+    if (existingId == null || exercise.createdByUserId === planData.userId) {
+      resolvedIds.set(key, exercise.id);
+    }
+  }
+
+  for (const exercise of uniqueExercises.values()) {
+    const key = getPlanExerciseKey(exercise.name, exercise.category);
+    if (resolvedIds.has(key)) continue;
+
+    try {
+      const created = await prisma.exercise.create({
+        data: {
+          name: exercise.name,
+          category: exercise.category,
+          createdByUserId: planData.userId,
+          primaryMuscles: exercise.primaryMuscles,
+          secondaryMuscles: exercise.secondaryMuscles,
+        },
+        select: { id: true },
+      });
+      resolvedIds.set(key, created.id);
+    } catch (error) {
+      if (!isPrismaUniqueConstraintError(error) || error.code !== 'P2002') {
+        throw error;
+      }
+
+      const existingExercise = await prisma.exercise.findFirst({
+        where: {
+          name: exercise.name,
+          category: exercise.category,
+          OR: [{ createdByUserId: planData.userId }, { createdByUserId: null }],
+        },
+        orderBy: { createdByUserId: 'desc' },
+        select: { id: true },
+      });
+
+      if (!existingExercise) throw error;
+      resolvedIds.set(key, existingExercise.id);
+    }
+  }
+
+  return resolvedIds;
+}
+
 export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
+  const exerciseIdsByKey = await resolvePlanExerciseIds(planData);
+
   return prisma.$transaction(async (tx) => {
     const existingPlanCount = await tx.plan.count({
       where: { userId: planData.userId },
@@ -141,16 +245,12 @@ export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
           data: {...omit(workout, ["exercises", "id"]), weekId: uploadedWeek.id}
         });
         for (const exercise of workout.exercises) {
-          const exerciseRecord = await findOrCreateExercise(
-            tx,
-            exercise.exercise.name,
-            exercise.exercise.category ?? null,
-            planData.userId,
-            {
-              primaryMuscles: exercise.exercise.primaryMuscles ?? [],
-              secondaryMuscles: exercise.exercise.secondaryMuscles ?? [],
-            },
+          const exerciseId = exerciseIdsByKey.get(
+            getPlanExerciseKey(exercise.exercise.name, exercise.exercise.category ?? null),
           );
+          if (exerciseId == null) {
+            throw new Error(`Missing exercise id for ${exercise.exercise.name}`);
+          }
 
           const uploadedWorkoutExercise = await tx.workoutExercise.create({
             data: {
@@ -160,7 +260,7 @@ export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
               repRange: exercise.repRange,
               targetRpe: exercise.targetRpe ?? null,
               targetRir: exercise.targetRir ?? null,
-              exerciseId: exerciseRecord.id,
+              exerciseId,
               isBfr: exercise.isBfr ?? false,
             },
           });
@@ -186,7 +286,7 @@ export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
       }
     }
     return uploadedPlan.id;
-  });
+  }, { timeout: 15000 });
 }
 
 export async function deleteUserEvent(eventId: number, userId: string) {
