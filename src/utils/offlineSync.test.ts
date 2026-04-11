@@ -176,7 +176,7 @@ describe('offlineSync', () => {
       expect(mockClearRequests).not.toHaveBeenCalled();
     });
 
-    it('keeps failed requests in queue and emits sync-failed event', async () => {
+    it('keeps network-failed requests in queue and emits sync-failed event', async () => {
       (globalThis.navigator as any).onLine = true;
       const requests = [
         { id: 1, url: '/api/1', method: 'POST', body: { a: 1 } },
@@ -186,9 +186,9 @@ describe('offlineSync', () => {
       mockDeleteRequest.mockResolvedValue(undefined);
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      // Request 1 fails with a 4xx (no retry), request 2 succeeds
+      // Request 1 fails with a network error (retryable), request 2 succeeds
       globalThis.fetch = vi.fn((url: string) => {
-        if (url === '/api/1') return Promise.resolve({ ok: false, status: 400 } as Response);
+        if (url === '/api/1') return Promise.reject(new Error('network fail'));
         return Promise.resolve({ ok: true } as Response);
       });
 
@@ -197,13 +197,59 @@ describe('offlineSync', () => {
 
       await syncQueuedRequests();
 
-      // Only the successful second request should be deleted
+      // Request 1 stays in queue (only request 2 is deleted)
       expect(mockDeleteRequest).toHaveBeenCalledTimes(1);
       expect(mockDeleteRequest).toHaveBeenCalledWith(2);
       expect(syncFailedHandler).toHaveBeenCalledTimes(1);
 
       window.removeEventListener('sync-failed', syncFailedHandler);
       consoleError.mockRestore();
+    });
+
+    it('drops 4xx requests from queue without triggering sync-failed', async () => {
+      (globalThis.navigator as any).onLine = true;
+      const requests = [
+        { id: 1, url: '/api/1', method: 'POST', body: { a: 1 } },
+        { id: 2, url: '/api/2', method: 'POST', body: { b: 2 } },
+      ];
+      mockGetAllRequests.mockResolvedValue(requests);
+      mockDeleteRequest.mockResolvedValue(undefined);
+      const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      // Request 1 returns 4xx (permanently invalid), request 2 succeeds
+      globalThis.fetch = vi.fn((url: string) => {
+        if (url === '/api/1') return Promise.resolve({ ok: false, status: 409 } as Response);
+        return Promise.resolve({ ok: true } as Response);
+      });
+
+      const syncFailedHandler = vi.fn();
+      window.addEventListener('sync-failed', syncFailedHandler);
+
+      await syncQueuedRequests();
+
+      // Both requests deleted (4xx dropped, 2xx succeeded)
+      expect(mockDeleteRequest).toHaveBeenCalledTimes(2);
+      expect(mockDeleteRequest).toHaveBeenCalledWith(1);
+      expect(mockDeleteRequest).toHaveBeenCalledWith(2);
+      // No retry banner for non-retryable failures
+      expect(syncFailedHandler).not.toHaveBeenCalled();
+      expect(consoleWarn).toHaveBeenCalled();
+
+      window.removeEventListener('sync-failed', syncFailedHandler);
+      consoleWarn.mockRestore();
+    });
+
+    it('does not run concurrently when called multiple times', async () => {
+      (globalThis.navigator as any).onLine = true;
+      mockGetAllRequests.mockResolvedValue([]);
+
+      // Start two concurrent calls
+      const p1 = syncQueuedRequests();
+      const p2 = syncQueuedRequests();
+      await Promise.all([p1, p2]);
+
+      // Only one actually ran
+      expect(mockGetAllRequests).toHaveBeenCalledTimes(1);
     });
 
     it('logs error if a request fails', async () => {
