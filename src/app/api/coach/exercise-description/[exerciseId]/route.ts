@@ -18,17 +18,27 @@ export async function PUT(req: NextRequest, props: {params: Promise<{exerciseId:
     return forbiddenResponse();
   }
 
-  const {description} = await req.json();
-  if (typeof description !== 'string' || description.trim().length === 0) {
-    return errorResponse('description must be a non-empty string', 400);
+  const {note, url} = await req.json();
+  if (typeof note !== 'string') {
+    return errorResponse('note must be a string', 400);
+  }
+  if (url != null && typeof url !== 'string') {
+    return errorResponse('url must be a string when provided', 400);
+  }
+
+  const trimmedNote = note.trim();
+  const trimmedUrl = typeof url === 'string' ? url.trim() : null;
+
+  if (trimmedNote.length === 0 && !trimmedUrl) {
+    return errorResponse('note or url is required', 400);
   }
 
   try {
     const exerciseId = Number(params.exerciseId);
-    const updated = await prisma.coachExerciseDescription.upsert({
+    const updated = await prisma.coachExerciseNote.upsert({
       where: {coachId_exerciseId: {coachId: userId, exerciseId}},
-      update: {description: description.trim()},
-      create: {coachId: userId, exerciseId, description: description.trim()},
+      update: {note: trimmedNote, url: trimmedUrl || null},
+      create: {coachId: userId, exerciseId, note: trimmedNote, url: trimmedUrl || null},
     });
     return NextResponse.json(updated);
   } catch (err) {
@@ -47,7 +57,7 @@ export async function DELETE(_req: NextRequest, props: {params: Promise<{exercis
 
   try {
     const exerciseId = Number(params.exerciseId);
-    await prisma.coachExerciseDescription.deleteMany({
+    await prisma.coachExerciseNote.deleteMany({
       where: {coachId: userId, exerciseId},
     });
     return new NextResponse(null, {status: 204});

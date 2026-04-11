@@ -114,7 +114,7 @@ test.describe('Exercises browse page', () => {
   });
 });
 
-test.describe('Coach exercise description override', () => {
+test.describe('Coach exercise notes', () => {
   test.describe.configure({mode: 'serial'});
   test.skip(({browserName}) => browserName !== 'chromium',
     'State-dependent tests run on chromium only');
@@ -129,14 +129,15 @@ test.describe('Coach exercise description override', () => {
     await expect(page.getByText('Est. 1RM Progress')).toBeVisible();
 
     // Neither coach section should be visible for a user with no coach relationship
-    await expect(page.getByText('Description for clients')).not.toBeVisible();
+    await expect(page.getByText('Notes for clients')).not.toBeVisible();
     await expect(page.getByText('From your coach')).not.toBeVisible();
+    await expect(page.getByText('Your exercise notes')).toBeVisible();
   });
 
   test('PUT /api/coach/exercise-description returns 403 when caller is not a coach', async ({page}) => {
     await page.goto('/exercises');
     const res = await page.request.put('/api/coach/exercise-description/1', {
-      data: {description: 'Test override'},
+      data: {note: 'Test override', url: 'https://example.com/demo'},
     });
     expect(res.status()).toBe(403);
   });

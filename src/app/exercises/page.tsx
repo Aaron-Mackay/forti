@@ -3,29 +3,36 @@ import {getExercises} from '@lib/api';
 import ExercisesClient from './ExercisesClient';
 import getLoggedInUser from '@lib/getLoggedInUser';
 import prisma from '@/lib/prisma';
+import {headers} from 'next/headers';
+import type {ExerciseCoachNote} from './types';
 
 export default async function ExercisesPage() {
+  const headersList = await headers();
+  const isCoachPortal = headersList.get('x-is-coach-domain') === '1';
   const sessionUser = await getLoggedInUser();
   const [exercises, dbUser] = await Promise.all([
     getExercises(),
     prisma.user.findUniqueOrThrow({where: {id: sessionUser.id}, select: {id: true, coachId: true}}),
   ]);
 
-  const clientCount = await prisma.user.count({where: {coachId: dbUser.id}});
-  const isCoach = clientCount > 0;
-
-  let coachDescriptions: Record<number, string> = {};
-  const coachId = isCoach ? dbUser.id : (dbUser.coachId ?? null);
+  let coachNotes: Record<number, ExerciseCoachNote> = {};
+  const coachId = isCoachPortal ? dbUser.id : (dbUser.coachId ?? null);
   if (coachId) {
-    const overrides = await prisma.coachExerciseDescription.findMany({where: {coachId}});
-    coachDescriptions = Object.fromEntries(overrides.map(o => [o.exerciseId, o.description]));
+    const notes = await prisma.coachExerciseNote.findMany({where: {coachId}});
+    coachNotes = Object.fromEntries(notes.map(o => [o.exerciseId, {note: o.note, url: o.url}]));
   }
+
+  const userNotes = await prisma.userExerciseNote.findMany({
+    where: {userId: dbUser.id},
+  });
+  const userExerciseNotes = Object.fromEntries(userNotes.map(note => [note.exerciseId, note.note]));
 
   return (
     <ExercisesClient
       initialExercises={exercises}
-      coachDescriptions={coachDescriptions}
-      isCoach={isCoach}
+      coachNotes={coachNotes}
+      userExerciseNotes={userExerciseNotes}
+      isCoachPortal={isCoachPortal}
     />
   );
 }

@@ -15,7 +15,7 @@ function makeDb() {
     update: vi.fn(),
     delete: vi.fn(),
   }
-  const coachExerciseDescription = {
+  const coachExerciseNote = {
     findMany: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
@@ -25,7 +25,7 @@ function makeDb() {
     exercise,
     workoutExercise,
     userExerciseNote,
-    coachExerciseDescription,
+    coachExerciseNote,
   }
 
   return {
@@ -49,10 +49,10 @@ describe('mergeExercises', () => {
       { id: 11, userId: 'u1', exerciseId: 2, note: 'new' },
       { id: 12, userId: 'u2', exerciseId: 1, note: 'solo' },
     ])
-    db.coachExerciseDescription.findMany.mockResolvedValue([
-      { id: 20, coachId: 'c1', exerciseId: 1, description: 'source' },
-      { id: 21, coachId: 'c1', exerciseId: 2, description: 'target' },
-      { id: 22, coachId: 'c2', exerciseId: 1, description: 'solo' },
+    db.coachExerciseNote.findMany.mockResolvedValue([
+      { id: 20, coachId: 'c1', exerciseId: 1, note: 'source', url: null },
+      { id: 21, coachId: 'c1', exerciseId: 2, note: 'target', url: null },
+      { id: 22, coachId: 'c2', exerciseId: 1, note: 'solo', url: null },
     ])
 
     const result = await mergeExercises(db, 1, 2, { dryRun: true })
@@ -66,8 +66,8 @@ describe('mergeExercises', () => {
         updatedSubstitutionRefs: 1,
         movedUserExerciseNotes: 1,
         mergedUserExerciseNotes: 1,
-        movedCoachExerciseDescriptions: 1,
-        mergedCoachExerciseDescriptions: 1,
+        movedCoachExerciseNotes: 1,
+        mergedCoachExerciseNotes: 1,
       },
     })
     expect(db.$transaction).not.toHaveBeenCalled()
@@ -94,14 +94,14 @@ describe('mergeExercises', () => {
         { id: 11, userId: 'u1', exerciseId: 2, note: 'Target note' },
         { id: 12, userId: 'u2', exerciseId: 1, note: 'Only source note' },
       ])
-    db.coachExerciseDescription.findMany
+    db.coachExerciseNote.findMany
       .mockResolvedValueOnce([
-        { id: 20, coachId: 'c1', exerciseId: 1, description: 'Source description' },
-        { id: 21, coachId: 'c1', exerciseId: 2, description: 'Target description' },
+        { id: 20, coachId: 'c1', exerciseId: 1, note: 'Source description', url: 'https://source.example' },
+        { id: 21, coachId: 'c1', exerciseId: 2, note: 'Target description', url: null },
       ])
       .mockResolvedValueOnce([
-        { id: 20, coachId: 'c1', exerciseId: 1, description: 'Source description' },
-        { id: 21, coachId: 'c1', exerciseId: 2, description: 'Target description' },
+        { id: 20, coachId: 'c1', exerciseId: 1, note: 'Source description', url: 'https://source.example' },
+        { id: 21, coachId: 'c1', exerciseId: 2, note: 'Target description', url: null },
       ])
 
     await mergeExercises(db, 1, 2)
@@ -117,11 +117,14 @@ describe('mergeExercises', () => {
     })
     expect(db.userExerciseNote.delete).toHaveBeenCalledWith({ where: { id: 10 } })
 
-    expect(db.coachExerciseDescription.update).toHaveBeenCalledWith({
+    expect(db.coachExerciseNote.update).toHaveBeenCalledWith({
       where: { id: 21 },
-      data: { description: 'Target description\n\n--- merged from duplicate exercise: OHP ---\n\nSource description' },
+      data: {
+        note: 'Target description\n\n--- merged from duplicate exercise: OHP ---\n\nSource description',
+        url: 'https://source.example',
+      },
     })
-    expect(db.coachExerciseDescription.delete).toHaveBeenCalledWith({ where: { id: 20 } })
+    expect(db.coachExerciseNote.delete).toHaveBeenCalledWith({ where: { id: 20 } })
 
     expect(db.workoutExercise.updateMany).toHaveBeenCalledWith({
       where: { exerciseId: 1 },
@@ -148,7 +151,7 @@ describe('mergeExercises', () => {
       .mockResolvedValueOnce(0)
       .mockResolvedValueOnce(0)
     db.userExerciseNote.findMany.mockResolvedValue([])
-    db.coachExerciseDescription.findMany.mockResolvedValue([])
+    db.coachExerciseNote.findMany.mockResolvedValue([])
 
     await expect(mergeExercises(db, 1, 2)).rejects.toThrow(
       'Category mismatch: cardio -> resistance',

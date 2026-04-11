@@ -13,11 +13,12 @@ type UserExerciseNoteRecord = {
   note: string
 }
 
-type CoachExerciseDescriptionRecord = {
+type CoachExerciseNoteRecord = {
   id: number
   coachId: string
   exerciseId: number
-  description: string
+  note: string
+  url: string | null
 }
 
 type ExerciseMergeTx = {
@@ -40,9 +41,9 @@ type ExerciseMergeTx = {
     update: (args: { where: { id: number }; data: { exerciseId?: number; note?: string } }) => Promise<unknown>
     delete: (args: { where: { id: number } }) => Promise<unknown>
   }
-  coachExerciseDescription: {
-    findMany: (args: { where: { exerciseId: { in: number[] } } }) => Promise<CoachExerciseDescriptionRecord[]>
-    update: (args: { where: { id: number }; data: { exerciseId?: number; description?: string } }) => Promise<unknown>
+  coachExerciseNote: {
+    findMany: (args: { where: { exerciseId: { in: number[] } } }) => Promise<CoachExerciseNoteRecord[]>
+    update: (args: { where: { id: number }; data: { exerciseId?: number; note?: string; url?: string | null } }) => Promise<unknown>
     delete: (args: { where: { id: number } }) => Promise<unknown>
   }
 }
@@ -65,8 +66,8 @@ export type MergeExercisesSummary = {
     updatedSubstitutionRefs: number
     movedUserExerciseNotes: number
     mergedUserExerciseNotes: number
-    movedCoachExerciseDescriptions: number
-    mergedCoachExerciseDescriptions: number
+    movedCoachExerciseNotes: number
+    mergedCoachExerciseNotes: number
   }
 }
 
@@ -93,11 +94,11 @@ async function getMergeSummary(tx: ExerciseMergeTx, sourceExerciseId: number, ta
   if (!sourceExercise) throw new Error(`Source exercise ${sourceExerciseId} not found`)
   if (!targetExercise) throw new Error(`Target exercise ${targetExerciseId} not found`)
 
-  const [movedWorkoutExercises, updatedSubstitutionRefs, notes, descriptions] = await Promise.all([
+  const [movedWorkoutExercises, updatedSubstitutionRefs, notes, coachNotes] = await Promise.all([
     tx.workoutExercise.count({ where: { exerciseId: sourceExerciseId } }),
     tx.workoutExercise.count({ where: { substitutedForId: sourceExerciseId } }),
     tx.userExerciseNote.findMany({ where: { exerciseId: { in: [sourceExerciseId, targetExerciseId] } } }),
-    tx.coachExerciseDescription.findMany({ where: { exerciseId: { in: [sourceExerciseId, targetExerciseId] } } }),
+    tx.coachExerciseNote.findMany({ where: { exerciseId: { in: [sourceExerciseId, targetExerciseId] } } }),
   ])
 
   const sourceNotes = notes.filter((note) => note.exerciseId === sourceExerciseId)
@@ -109,14 +110,14 @@ async function getMergeSummary(tx: ExerciseMergeTx, sourceExerciseId: number, ta
   const mergedUserExerciseNotes = sourceNotes.filter((note) => targetNotesByUser.has(note.userId)).length
   const movedUserExerciseNotes = sourceNotes.length - mergedUserExerciseNotes
 
-  const sourceDescriptions = descriptions.filter((description) => description.exerciseId === sourceExerciseId)
-  const targetDescriptionsByCoach = new Map(
-    descriptions
-      .filter((description) => description.exerciseId === targetExerciseId)
-      .map((description) => [description.coachId, description]),
+  const sourceCoachNotes = coachNotes.filter((note) => note.exerciseId === sourceExerciseId)
+  const targetCoachNotesByCoach = new Map(
+    coachNotes
+      .filter((note) => note.exerciseId === targetExerciseId)
+      .map((note) => [note.coachId, note]),
   )
-  const mergedCoachExerciseDescriptions = sourceDescriptions.filter((description) => targetDescriptionsByCoach.has(description.coachId)).length
-  const movedCoachExerciseDescriptions = sourceDescriptions.length - mergedCoachExerciseDescriptions
+  const mergedCoachExerciseNotes = sourceCoachNotes.filter((note) => targetCoachNotesByCoach.has(note.coachId)).length
+  const movedCoachExerciseNotes = sourceCoachNotes.length - mergedCoachExerciseNotes
 
   return {
     dryRun: false,
@@ -127,8 +128,8 @@ async function getMergeSummary(tx: ExerciseMergeTx, sourceExerciseId: number, ta
       updatedSubstitutionRefs,
       movedUserExerciseNotes,
       mergedUserExerciseNotes,
-      movedCoachExerciseDescriptions,
-      mergedCoachExerciseDescriptions,
+      movedCoachExerciseNotes,
+      mergedCoachExerciseNotes,
     },
   }
 }
@@ -162,30 +163,33 @@ async function mergeUserExerciseNotes(tx: ExerciseMergeTx, sourceExerciseId: num
   }
 }
 
-async function mergeCoachExerciseDescriptions(tx: ExerciseMergeTx, sourceExerciseId: number, targetExerciseId: number, sourceName: string) {
-  const descriptions = await tx.coachExerciseDescription.findMany({
+async function mergeCoachExerciseNotes(tx: ExerciseMergeTx, sourceExerciseId: number, targetExerciseId: number, sourceName: string) {
+  const coachNotes = await tx.coachExerciseNote.findMany({
     where: { exerciseId: { in: [sourceExerciseId, targetExerciseId] } },
   })
 
-  const targetDescriptionsByCoach = new Map(
-    descriptions
-      .filter((description) => description.exerciseId === targetExerciseId)
-      .map((description) => [description.coachId, description]),
+  const targetCoachNotesByCoach = new Map(
+    coachNotes
+      .filter((note) => note.exerciseId === targetExerciseId)
+      .map((note) => [note.coachId, note]),
   )
 
-  for (const sourceDescription of descriptions.filter((description) => description.exerciseId === sourceExerciseId)) {
-    const targetDescription = targetDescriptionsByCoach.get(sourceDescription.coachId)
-    if (targetDescription) {
-      await tx.coachExerciseDescription.update({
-        where: { id: targetDescription.id },
-        data: { description: appendMergedText(targetDescription.description, sourceDescription.description, sourceName) },
+  for (const sourceCoachNote of coachNotes.filter((note) => note.exerciseId === sourceExerciseId)) {
+    const targetCoachNote = targetCoachNotesByCoach.get(sourceCoachNote.coachId)
+    if (targetCoachNote) {
+      await tx.coachExerciseNote.update({
+        where: { id: targetCoachNote.id },
+        data: {
+          note: appendMergedText(targetCoachNote.note, sourceCoachNote.note, sourceName),
+          url: targetCoachNote.url ?? sourceCoachNote.url,
+        },
       })
-      await tx.coachExerciseDescription.delete({ where: { id: sourceDescription.id } })
+      await tx.coachExerciseNote.delete({ where: { id: sourceCoachNote.id } })
       continue
     }
 
-    await tx.coachExerciseDescription.update({
-      where: { id: sourceDescription.id },
+    await tx.coachExerciseNote.update({
+      where: { id: sourceCoachNote.id },
       data: { exerciseId: targetExerciseId },
     })
   }
@@ -218,7 +222,7 @@ export async function mergeExercises(
 
   await db.$transaction(async (tx) => {
     await mergeUserExerciseNotes(tx, sourceExerciseId, targetExerciseId, summary.sourceExercise.name)
-    await mergeCoachExerciseDescriptions(tx, sourceExerciseId, targetExerciseId, summary.sourceExercise.name)
+    await mergeCoachExerciseNotes(tx, sourceExerciseId, targetExerciseId, summary.sourceExercise.name)
 
     await tx.workoutExercise.updateMany({
       where: { exerciseId: sourceExerciseId },

@@ -47,7 +47,7 @@ model User {
   notifications             Notification[]
   createdExercises          Exercise[]                 @relation("UserCreatedExercises")
   libraryAssets             LibraryAsset[]
-  coachExerciseDescriptions CoachExerciseDescription[] @relation("CoachExerciseDescriptions")
+  coachExerciseNotes        CoachExerciseNote[]        @relation("CoachExerciseNotes")
   learningPlans             LearningPlan[]             @relation("CoachLearningPlans")
   learningAssignments       LearningPlanAssignment[]   @relation("ClientAssignments")
   targetTemplates           TargetTemplate[]
@@ -233,7 +233,7 @@ model Exercise {
   UserExerciseNote   UserExerciseNote[]
   createdByUserId    String?
   createdByUser      User?                      @relation("UserCreatedExercises", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  coachDescriptions  CoachExerciseDescription[]
+  coachNotes         CoachExerciseNote[]
 
   @@unique([name, category, createdByUserId], name: "name_category_user")
   @@index([createdByUserId])
@@ -294,15 +294,16 @@ model UserExerciseNote {
   @@unique([userId, exerciseId])
 }
 
-model CoachExerciseDescription {
-  id          Int      @id @default(autoincrement())
-  coachId     String
-  coach       User     @relation("CoachExerciseDescriptions", fields: [coachId], references: [id], onDelete: Cascade)
-  exerciseId  Int
-  exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-  description String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model CoachExerciseNote {
+  id         Int      @id @default(autoincrement())
+  coachId    String
+  coach      User     @relation("CoachExerciseNotes", fields: [coachId], references: [id], onDelete: Cascade)
+  exerciseId Int
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  note       String
+  url        String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([coachId, exerciseId])
   @@index([coachId])

@@ -12,11 +12,13 @@ import {
   Typography,
 } from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
+import LinkIcon from '@mui/icons-material/Link';
 import {Exercise} from '@/generated/prisma/browser';
 import {format} from 'date-fns';
 import MuscleHighlight from '@/components/MuscleHighlight';
 import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
 import {PRIMARY_COLOUR} from '@lib/theme';
+import type {ExerciseCoachNote} from './types';
 
 const Chart = dynamic(
   () => import('react-apexcharts').catch(() => ({default: () => null})),
@@ -87,23 +89,35 @@ function E1rmChart({exercise}: {exercise: Exercise}) {
 export default function ExerciseDetailDrawer({
   exercise,
   onClose,
-  coachDescription,
-  isCoach,
-  onCoachDescriptionSave,
+  coachNote,
+  userExerciseNote,
+  isCoachPortal,
+  onCoachNoteSave,
+  onUserExerciseNoteSave,
 }: {
   exercise: Exercise | null;
   onClose: () => void;
-  coachDescription?: string;
-  isCoach: boolean;
-  onCoachDescriptionSave: (exerciseId: number, description: string | null) => void;
+  coachNote?: ExerciseCoachNote;
+  userExerciseNote: string;
+  isCoachPortal: boolean;
+  onCoachNoteSave: (exerciseId: number, note: ExerciseCoachNote | null) => void;
+  onUserExerciseNoteSave: (exerciseId: number, note: string) => void;
 }) {
   const [coachDraft, setCoachDraft] = useState('');
+  const [coachUrlDraft, setCoachUrlDraft] = useState('');
+  const [userNoteDraft, setUserNoteDraft] = useState('');
   const [saving, setSaving] = useState(false);
+  const [userSaving, setUserSaving] = useState(false);
 
-  // Sync draft when the selected exercise or its coach description changes
+  // Sync draft when the selected exercise or its coach note changes
   useEffect(() => {
-    setCoachDraft(coachDescription ?? '');
-  }, [exercise?.id, coachDescription]);
+    setCoachDraft(coachNote?.note ?? '');
+    setCoachUrlDraft(coachNote?.url ?? '');
+  }, [exercise?.id, coachNote]);
+
+  useEffect(() => {
+    setUserNoteDraft(userExerciseNote);
+  }, [exercise?.id, userExerciseNote]);
 
   const handleSave = async () => {
     if (!exercise) return;
@@ -112,10 +126,13 @@ export default function ExerciseDetailDrawer({
       const res = await fetch(`/api/coach/exercise-description/${exercise.id}`, {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({description: coachDraft}),
+        body: JSON.stringify({note: coachDraft, url: coachUrlDraft}),
       });
       if (res.ok) {
-        onCoachDescriptionSave(exercise.id, coachDraft.trim());
+        onCoachNoteSave(exercise.id, {
+          note: coachDraft.trim(),
+          url: coachUrlDraft.trim() || null,
+        });
       }
     } finally {
       setSaving(false);
@@ -129,10 +146,28 @@ export default function ExerciseDetailDrawer({
       const res = await fetch(`/api/coach/exercise-description/${exercise.id}`, {method: 'DELETE'});
       if (res.ok) {
         setCoachDraft('');
-        onCoachDescriptionSave(exercise.id, null);
+        setCoachUrlDraft('');
+        onCoachNoteSave(exercise.id, null);
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleUserNoteBlur = async () => {
+    if (!exercise) return;
+    setUserSaving(true);
+    try {
+      const res = await fetch(`/api/exerciseNote/${exercise.id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({note: userNoteDraft}),
+      });
+      if (res.ok) {
+        onUserExerciseNoteSave(exercise.id, userNoteDraft);
+      }
+    } finally {
+      setUserSaving(false);
     }
   };
 
@@ -193,7 +228,7 @@ export default function ExerciseDetailDrawer({
           )}
 
           {/* Coach section */}
-          {isCoach ? (
+          {isCoachPortal ? (
             <Box sx={{mb: 2}}>
               <Typography variant="subtitle2" sx={{mb: 1}}>
                 Notes for clients
@@ -209,16 +244,26 @@ export default function ExerciseDetailDrawer({
                 size="small"
                 inputProps={{'aria-label': 'Notes for clients'}}
               />
+              <TextField
+                fullWidth
+                label="Reference URL"
+                placeholder="https://www.youtube.com/watch?v=..."
+                value={coachUrlDraft}
+                onChange={e => setCoachUrlDraft(e.target.value)}
+                size="small"
+                sx={{mt: 1}}
+                inputProps={{'aria-label': 'Reference URL'}}
+              />
               <Box sx={{display: 'flex', gap: 1, mt: 1}}>
                 <Button
                   variant="contained"
                   size="small"
                   onClick={handleSave}
-                  disabled={saving || coachDraft.trim().length === 0}
+                  disabled={saving || (coachDraft.trim().length === 0 && coachUrlDraft.trim().length === 0)}
                 >
                   Save
                 </Button>
-                {coachDescription && (
+                {(coachNote?.note || coachNote?.url) && (
                   <Button
                     variant="outlined"
                     size="small"
@@ -231,7 +276,7 @@ export default function ExerciseDetailDrawer({
                 )}
               </Box>
             </Box>
-          ) : coachDescription ? (
+          ) : coachNote?.note || coachNote?.url ? (
             <Box
               sx={{
                 mb: 2,
@@ -248,11 +293,47 @@ export default function ExerciseDetailDrawer({
                   From your coach
                 </Typography>
               </Box>
-              <Typography variant="body2" color="text.primary">
-                {coachDescription}
-              </Typography>
+              {coachNote?.note && (
+                <Typography variant="body2" color="text.primary">
+                  {coachNote.note}
+                </Typography>
+              )}
+              {coachNote?.url && (
+                <Button
+                  component="a"
+                  href={coachNote.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  size="small"
+                  startIcon={<LinkIcon fontSize="small"/>}
+                  sx={{mt: coachNote.note ? 1 : 0}}
+                >
+                  Open coach link
+                </Button>
+              )}
             </Box>
           ) : null}
+
+          {!isCoachPortal && (
+            <Box sx={{mb: 2}}>
+              <Typography variant="subtitle2" sx={{mb: 1}}>
+                Your exercise notes
+              </Typography>
+              <TextField
+                multiline
+                fullWidth
+                minRows={3}
+                maxRows={6}
+                placeholder="Add your own notes for this exercise..."
+                value={userNoteDraft}
+                onChange={e => setUserNoteDraft(e.target.value)}
+                onBlur={handleUserNoteBlur}
+                size="small"
+                disabled={userSaving}
+                inputProps={{'aria-label': 'Your exercise notes'}}
+              />
+            </Box>
+          )}
 
           {/* E1RM history chart */}
           <Typography variant="subtitle2" sx={{mb: 0.5}}>

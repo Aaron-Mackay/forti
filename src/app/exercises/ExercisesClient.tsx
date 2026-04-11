@@ -11,6 +11,7 @@ import {AddExerciseForm} from './AddExerciseForm';
 import ExerciseDetailDrawer from './ExerciseDetailDrawer';
 import {HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar';
 import { useAppBar } from '@lib/providers/AppBarProvider';
+import type {ExerciseCoachNote} from './types';
 
 function toTitleCase(str: string) {
   return str.split(/[-\s]+/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -18,12 +19,14 @@ function toTitleCase(str: string) {
 
 export default function ExercisesClient({
   initialExercises,
-  coachDescriptions: initialCoachDescriptions,
-  isCoach,
+  coachNotes: initialCoachNotes,
+  userExerciseNotes: initialUserExerciseNotes,
+  isCoachPortal,
 }: {
   initialExercises: Exercise[];
-  coachDescriptions: Record<number, string>;
-  isCoach: boolean;
+  coachNotes: Record<number, ExerciseCoachNote>;
+  userExerciseNotes: Record<number, string>;
+  isCoachPortal: boolean;
 }) {
   useAppBar({ title: 'Exercises' });
   const router = useRouter();
@@ -32,7 +35,8 @@ export default function ExercisesClient({
   const [selectedEquipment, setSelectedEquipment] = useState<ExerciseEquipment[]>([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
-  const [coachDescriptions, setCoachDescriptions] = useState<Record<number, string>>(initialCoachDescriptions);
+  const [coachNotes, setCoachNotes] = useState<Record<number, ExerciseCoachNote>>(initialCoachNotes);
+  const [userExerciseNotes, setUserExerciseNotes] = useState<Record<number, string>>(initialUserExerciseNotes);
 
   const filtered = useMemo(() => {
     return initialExercises.filter(ex => {
@@ -48,15 +52,19 @@ export default function ExercisesClient({
     router.refresh();
   };
 
-  const handleCoachDescriptionSave = useCallback((exerciseId: number, description: string | null) => {
-    setCoachDescriptions(prev => {
-      if (description === null) {
+  const handleCoachNoteSave = useCallback((exerciseId: number, note: ExerciseCoachNote | null) => {
+    setCoachNotes(prev => {
+      if (note === null) {
         const next = {...prev};
         delete next[exerciseId];
         return next;
       }
-      return {...prev, [exerciseId]: description};
+      return {...prev, [exerciseId]: note};
     });
+  }, []);
+
+  const handleUserExerciseNoteSave = useCallback((exerciseId: number, note: string) => {
+    setUserExerciseNotes(prev => ({...prev, [exerciseId]: note}));
   }, []);
 
   return (
@@ -126,7 +134,7 @@ export default function ExercisesClient({
             >
               <ExerciseCard
                 exercise={exercise}
-                coachDescription={coachDescriptions[exercise.id]}
+                coachDescription={coachNotes[exercise.id]?.note}
               />
             </Box>
           ))}
@@ -145,9 +153,11 @@ export default function ExercisesClient({
       <ExerciseDetailDrawer
         exercise={selectedExercise}
         onClose={() => setSelectedExercise(null)}
-        coachDescription={selectedExercise ? coachDescriptions[selectedExercise.id] : undefined}
-        isCoach={isCoach}
-        onCoachDescriptionSave={handleCoachDescriptionSave}
+        coachNote={selectedExercise ? coachNotes[selectedExercise.id] : undefined}
+        userExerciseNote={selectedExercise ? (userExerciseNotes[selectedExercise.id] ?? '') : ''}
+        isCoachPortal={isCoachPortal}
+        onCoachNoteSave={handleCoachNoteSave}
+        onUserExerciseNoteSave={handleUserExerciseNoteSave}
       />
       </Box>
     </>
