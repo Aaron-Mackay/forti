@@ -35,7 +35,7 @@ import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext'
 import { savePlan } from '@lib/clientApi'
 import { useRouter } from 'next/navigation'
 import { Exercise, ExerciseCategory } from '@/generated/prisma/browser'
-import type { EnrichedExercise } from '@/app/api/exercises/enrich/route'
+import type { EnrichedExercise, MatchSuggestion } from '@/app/api/exercises/enrich/route'
 import PlanSheetView from '../PlanSheetView'
 import PlanWeekView from '../PlanWeekView'
 import PlanMultiWeekTable from '../PlanMultiWeekTable'
@@ -203,6 +203,7 @@ export const PlanEditorScreen = ({
   const [saveError, setSaveError] = useState<string | null>(null)
   const [enrichPhase, setEnrichPhase] = useState<'enriching' | 'review' | null>(null)
   const [enrichedExercises, setEnrichedExercises] = useState<EnrichedExercise[]>([])
+  const [matchSuggestions, setMatchSuggestions] = useState<Map<string, MatchSuggestion>>(new Map())
   const [editingExerciseName, setEditingExerciseName] = useState<string | null>(null)
   const {
     arrangeMode,
@@ -310,14 +311,17 @@ export const PlanEditorScreen = ({
         body: JSON.stringify({ exercises: newExercises }),
       })
       if (!res.ok) {
+        setMatchSuggestions(new Map())
         setEnrichPhase(null)
         return doSave(planToPersist)
       }
-      const data = await res.json()
+      const data = await res.json() as { exercises?: EnrichedExercise[]; matchSuggestions?: MatchSuggestion[] }
       setEnrichedExercises(data.exercises ?? [])
+      setMatchSuggestions(new Map((data.matchSuggestions ?? []).map((suggestion) => [suggestion.inputName, suggestion])))
       setEditingExerciseName(data.exercises?.[0]?.name ?? null)
       setEnrichPhase('review')
     } catch {
+      setMatchSuggestions(new Map())
       setEnrichPhase(null)
       doSave(planToPersist)
     }
@@ -354,6 +358,7 @@ export const PlanEditorScreen = ({
       })),
     }
     setEditingExerciseName(null)
+    setMatchSuggestions(new Map())
     setEnrichPhase(null)
     doSave(enrichedPlan)
   }
@@ -499,6 +504,7 @@ export const PlanEditorScreen = ({
         disableEscapeKeyDown={enrichPhase === 'enriching'}
         onClose={enrichPhase === 'review' ? () => {
           setEditingExerciseName(null)
+          setMatchSuggestions(new Map())
           setEnrichPhase(null)
         } : undefined}
         PaperProps={{
@@ -539,6 +545,7 @@ export const PlanEditorScreen = ({
 
               {enrichedExercises.map((exercise) => {
                 const isEditing = editingExerciseName === exercise.name
+                const suggestedMatch = matchSuggestions.get(exercise.name)
 
                 return (
                   <Box
@@ -559,6 +566,21 @@ export const PlanEditorScreen = ({
                         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                           {formatCategoryLabel(exercise.category)}
                         </Typography>
+                        {suggestedMatch && suggestedMatch.suggestedName !== exercise.name && (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            sx={{ mt: 1 }}
+                            onClick={() => updateReviewedExercise(exercise.name, {
+                              name: suggestedMatch.suggestedName,
+                              category: suggestedMatch.category,
+                              primaryMuscles: suggestedMatch.primaryMuscles,
+                              secondaryMuscles: suggestedMatch.secondaryMuscles,
+                            })}
+                          >
+                            Use existing: {suggestedMatch.suggestedName}
+                          </Button>
+                        )}
                       </Box>
                       <IconButton
                         size="small"

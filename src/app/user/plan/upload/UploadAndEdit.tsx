@@ -29,6 +29,7 @@ import MuscleHighlight from '@/components/MuscleHighlight'
 import { useAppBar } from '@lib/providers/AppBarProvider'
 import { ExerciseCategory } from '@/generated/prisma/browser'
 import type { AiImportResponse } from '@/app/api/plan/ai-import/route'
+import type { MatchSuggestion } from '@/app/api/exercises/enrich/route'
 import {
   calculateMuscleVolumes,
   applyReviewedExercisesToPlan,
@@ -345,15 +346,27 @@ export const UploadAndEdit = () => {
         return
       }
 
-      const enrichData = await enrichResponse.json() as { exercises?: Array<{ name: string; category: ExerciseCategory; primaryMuscles: string[]; secondaryMuscles: string[] }> }
+      const enrichData = await enrichResponse.json() as {
+        exercises?: Array<{ name: string; category: ExerciseCategory; primaryMuscles: string[]; secondaryMuscles: string[] }>
+        matchSuggestions?: MatchSuggestion[]
+      }
+      const suggestionsByInput = new Map((enrichData.matchSuggestions ?? []).map((s) => [s.inputName, s]))
       setReviewedExercises(
-        (enrichData.exercises ?? []).map((exercise) => ({
-          originalName: exercise.name,
-          name: exercise.name,
-          category: exercise.category,
-          primaryMuscles: exercise.primaryMuscles.filter(isExerciseMuscle),
-          secondaryMuscles: exercise.secondaryMuscles.filter(isExerciseMuscle),
-        })),
+        (enrichData.exercises ?? []).map((exercise) => {
+          const suggestion = suggestionsByInput.get(exercise.name)
+          return {
+            originalName: exercise.name,
+            name: exercise.name,
+            category: exercise.category,
+            primaryMuscles: exercise.primaryMuscles.filter(isExerciseMuscle),
+            secondaryMuscles: exercise.secondaryMuscles.filter(isExerciseMuscle),
+            suggestedMatchName: suggestion?.suggestedName,
+            suggestedMatchType: suggestion?.matchType,
+            suggestedCategory: suggestion?.category,
+            suggestedPrimaryMuscles: suggestion?.primaryMuscles.filter(isExerciseMuscle),
+            suggestedSecondaryMuscles: suggestion?.secondaryMuscles.filter(isExerciseMuscle),
+          }
+        }),
       )
       setPhase(0)
       setChunkProgress(null)
@@ -554,6 +567,22 @@ export const UploadAndEdit = () => {
                             autoComplete="off"
                             onChange={(event) => handleExerciseChange(exercise.originalName, { name: event.target.value })}
                           />
+
+                          {exercise.suggestedMatchName && exercise.suggestedMatchName !== exercise.name && (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={() => handleExerciseChange(exercise.originalName, {
+                                name: exercise.suggestedMatchName,
+                                category: exercise.suggestedCategory ?? exercise.category,
+                                primaryMuscles: exercise.suggestedPrimaryMuscles ?? exercise.primaryMuscles,
+                                secondaryMuscles: exercise.suggestedSecondaryMuscles ?? exercise.secondaryMuscles,
+                              })}
+                              sx={{ alignSelf: 'flex-start' }}
+                            >
+                              Use existing: {exercise.suggestedMatchName}
+                            </Button>
+                          )}
 
                           <Autocomplete
                             options={CATEGORY_OPTIONS}

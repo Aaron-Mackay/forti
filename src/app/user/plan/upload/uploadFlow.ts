@@ -8,6 +8,11 @@ export type ReviewedExercise = {
   category: ExerciseCategory
   primaryMuscles: ExerciseMuscle[]
   secondaryMuscles: ExerciseMuscle[]
+  suggestedMatchName?: string
+  suggestedMatchType?: 'exact' | 'whole_alias' | 'token_alias'
+  suggestedCategory?: ExerciseCategory
+  suggestedPrimaryMuscles?: ExerciseMuscle[]
+  suggestedSecondaryMuscles?: ExerciseMuscle[]
 }
 
 export type PendingUploadPlan = {

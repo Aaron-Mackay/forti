@@ -31,9 +31,27 @@ const EnrichToolResponseSchema = z.object({
 });
 
 export type EnrichedExercise = z.infer<typeof EnrichedExerciseSchema>;
+export type MatchSuggestion = {
+  inputName: string;
+  suggestedName: string;
+  category: EnrichedExercise['category'];
+  primaryMuscles: EnrichedExercise['primaryMuscles'];
+  secondaryMuscles: EnrichedExercise['secondaryMuscles'];
+  matchType: 'exact' | 'whole_alias' | 'token_alias';
+};
+
 export type EnrichResponse =
-  | { exercises: EnrichedExercise[] }
+  | { exercises: EnrichedExercise[]; matchSuggestions?: MatchSuggestion[] }
   | { error: string };
+
+
+function isExerciseMuscle(value: string): value is (typeof EXERCISE_MUSCLES)[number] {
+  return (EXERCISE_MUSCLES as readonly string[]).includes(value);
+}
+
+function toKnownMuscles(muscles: string[]): Array<(typeof EXERCISE_MUSCLES)[number]> {
+  return muscles.filter(isExerciseMuscle);
+}
 
 const ENRICH_TOOL: Anthropic.Tool = {
   name: 'enrich_exercises',
@@ -104,6 +122,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const { matched, unmatched } = matchExercisesByAlias(names, visibleExercises);
 
+  const matchSuggestions = matched.map((match) => ({
+    inputName: match.inputName,
+    suggestedName: match.canonicalName,
+    category: match.category,
+    primaryMuscles: toKnownMuscles(match.primaryMuscles),
+    secondaryMuscles: toKnownMuscles(match.secondaryMuscles),
+    matchType: match.matchType,
+  }));
+
   if (unmatched.length === 0) {
     return NextResponse.json({
       exercises: names.map((name) => {
@@ -112,10 +139,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         return {
           name,
           category: resolved.category,
-          primaryMuscles: resolved.primaryMuscles,
-          secondaryMuscles: resolved.secondaryMuscles,
+          primaryMuscles: toKnownMuscles(resolved.primaryMuscles),
+          secondaryMuscles: toKnownMuscles(resolved.secondaryMuscles),
         };
       }),
+      matchSuggestions,
     } satisfies EnrichResponse);
   }
 
@@ -179,8 +207,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           return {
             name,
             category: preMatched.category,
-            primaryMuscles: preMatched.primaryMuscles,
-            secondaryMuscles: preMatched.secondaryMuscles,
+            primaryMuscles: toKnownMuscles(preMatched.primaryMuscles),
+            secondaryMuscles: toKnownMuscles(preMatched.secondaryMuscles),
           };
         }
 
@@ -190,6 +218,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         }
         return aiEnriched;
       }),
+      matchSuggestions,
     } satisfies EnrichResponse);
   } catch (err) {
     if (err instanceof Anthropic.APIError) {
