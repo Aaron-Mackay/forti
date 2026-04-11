@@ -61,12 +61,12 @@ export default function ExerciseDetailView({
   const fetchPreviousSets = (workoutExerciseId: number, exerciseId: number) => {
     if (previousSetsMap.has(workoutExerciseId)) return;
     fetch(`/api/exercises/${exerciseId}/previous-sets?currentWorkoutId=${currentWorkoutId}&currentWorkoutExerciseId=${workoutExerciseId}`)
-      .then(res => res.ok ? res.json() : {completedAt: null, sets: []})
+      .then(res => res.ok ? res.json() : {workouts: []})
       .then((history: PreviousExerciseHistory) => {
         setPreviousSetsMap(prev => new Map(prev).set(workoutExerciseId, history));
       })
       .catch(() => {
-        setPreviousSetsMap(prev => new Map(prev).set(workoutExerciseId, {completedAt: null, sets: []}));
+        setPreviousSetsMap(prev => new Map(prev).set(workoutExerciseId, {workouts: []}));
       });
   };
 

@@ -61,7 +61,7 @@ test.describe('Workout page', () => {
     await page.getByRole('button', { name: 'Squat' }).click();
 
     // Exercise detail renders weight/reps inputs for each set
-    await expect(page.getByLabel('Reps').first()).toBeVisible();
+    await expect(page.getByLabel('Reps set 1').first()).toBeVisible();
   });
 
   test('exercise detail shows anatomy diagram for exercises with muscles', async ({ page }) => {
@@ -70,7 +70,7 @@ test.describe('Workout page', () => {
     await page.getByRole('button', { name: /Workout/i }).first().click();
     await page.getByRole('button', { name: 'Squat' }).click();
 
-    await expect(page.getByLabel('Reps').first()).toBeVisible();
+    await expect(page.getByLabel('Reps set 1').first()).toBeVisible();
     await expect(page.locator('[id^="anatomy-"]').first()).toBeVisible();
   });
 
@@ -177,15 +177,15 @@ test.describe('Workout page', () => {
       await page.getByRole('button', {name: /Week/i}).first().click();
       await page.getByRole('button', {name: /Workout/i}).first().click();
       await page.getByRole('button', {name: 'Squat'}).click();
-      await expect(page.getByLabel('Reps').first()).toBeVisible();
+      await expect(page.getByLabel('Reps set 1').first()).toBeVisible();
 
       // Scope to active slide — all slides render in DOM simultaneously
       const activeSlide = page.locator('.swiper-slide-active');
-      await activeSlide.getByRole('textbox', {name: 'kg'}).first().fill('100');
-      await activeSlide.getByLabel('Reps').first().fill('5');
+      await activeSlide.getByRole('textbox', {name: 'Weight set 1'}).first().fill('100');
+      await activeSlide.getByLabel('Reps set 1').first().fill('5');
 
       // Epley: 100 * (1 + 5/30) = 116.7 — shown in disabled Est. 1RM field
-      await expect(activeSlide.getByLabel('Est. 1RM').first()).toHaveValue('116.7');
+      await expect(activeSlide.getByLabel('Est. 1RM set 1').first()).toHaveValue('116.7');
     });
 
     test('shows e1rm sparkline when history exists', async ({page}) => {
@@ -205,12 +205,15 @@ test.describe('Workout page', () => {
       await page.getByRole('button', {name: /Week/i}).first().click();
       await page.getByRole('button', {name: /Workout/i}).first().click();
       await page.getByRole('button', {name: 'Squat'}).click();
-      await expect(page.getByLabel('Reps').first()).toBeVisible();
+      await expect(page.getByLabel('Reps set 1').first()).toBeVisible();
 
       // Scope to active slide — all slides render in DOM simultaneously
       const activeSlide = page.locator('.swiper-slide-active');
-      await expect(activeSlide.getByText('Est. 1RM history')).toBeVisible();
-      await expect(activeSlide.getByText(/Personal Best: 200\.0/)).toBeVisible();
+      const historyToggle = activeSlide.getByText('Est. 1RM history').first();
+      await expect(historyToggle).toBeVisible();
+      await expect(activeSlide.getByText(/Personal Best E1RM: 200\.0/)).toBeVisible();
+      await historyToggle.click();
+      await expect(activeSlide.getByText(/Personal Best E1RM: 200\.0/)).toBeVisible();
     });
   });
 
@@ -576,7 +579,7 @@ test.describe('Workout page', () => {
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();
       await page.getByRole('button', { name: 'Squat' }).click();
-      await expect(page.getByLabel('Reps').first()).toBeVisible();
+      await expect(page.getByLabel('Reps set 1').first()).toBeVisible();
     }
 
     test('no effort chips shown when effortMetric is none (default)', async ({ page }) => {
@@ -671,16 +674,26 @@ test.describe('Workout page', () => {
   });
 
   test.describe('previous set data in exercise detail', () => {
-    test('displays previous workout sets in a collapsible section', async ({ page }) => {
+    test('displays up to three previous workouts in an accordion below the set list', async ({ page }) => {
       await page.route('**/api/exercises/*/previous-sets**', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            completedAt: '2026-01-14T12:00:00.000Z',
-            sets: [
-              { order: 1, weight: 65, reps: 10, e1rm: 86.7 },
-              { order: 2, weight: 70, reps: 8, e1rm: 88.7 },
+            workouts: [
+              {
+                completedAt: '2026-01-14T12:00:00.000Z',
+                sets: [
+                  { order: 1, weight: 65, reps: 10, e1rm: 86.7 },
+                  { order: 2, weight: 70, reps: 8, e1rm: 88.7 },
+                ],
+              },
+              {
+                completedAt: '2026-01-07T12:00:00.000Z',
+                sets: [
+                  { order: 1, weight: 60, reps: 10, e1rm: 80 },
+                ],
+              },
             ],
           }),
         });
@@ -690,13 +703,16 @@ test.describe('Workout page', () => {
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();
       await page.getByRole('button', { name: 'Squat' }).click();
-      await expect(page.getByLabel('Reps').first()).toBeVisible();
+      await expect(page.getByLabel('Reps set 1').first()).toBeVisible();
 
       const activeSlide = page.locator('.swiper-slide-active');
-      await activeSlide.getByRole('button', {name: 'Previous workout'}).click();
+      await activeSlide.getByRole('button', {name: /Previous workouts/i}).click();
+      await expect(activeSlide.getByText('2 workouts')).toBeVisible();
       await expect(activeSlide.getByText('Jan 14, 2026')).toBeVisible();
-      await expect(activeSlide.getByRole('cell', {name: '65 kg'})).toBeVisible();
-      await expect(activeSlide.getByRole('cell', {name: '10'})).toBeVisible();
+      await expect(activeSlide.getByText('Jan 7, 2026')).toBeVisible();
+      const latestWorkoutTable = activeSlide.getByLabel('Previous workout table 1');
+      await expect(latestWorkoutTable.getByRole('cell', {name: '65 kg'})).toBeVisible();
+      await expect(latestWorkoutTable.getByRole('cell', {name: '10'})).toBeVisible();
     });
 
     test('shows em dash for null weight or reps in previous workout rows', async ({ page }) => {
@@ -705,10 +721,14 @@ test.describe('Workout page', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            completedAt: '2026-01-14T12:00:00.000Z',
-            sets: [
-              { order: 1, weight: null, reps: 10, e1rm: null },
-              { order: 2, weight: 65, reps: null, e1rm: null },
+            workouts: [
+              {
+                completedAt: '2026-01-14T12:00:00.000Z',
+                sets: [
+                  { order: 1, weight: null, reps: 10, e1rm: null },
+                  { order: 2, weight: 65, reps: null, e1rm: null },
+                ],
+              },
             ],
           }),
         });
@@ -718,10 +738,10 @@ test.describe('Workout page', () => {
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();
       await page.getByRole('button', { name: 'Squat' }).click();
-      await expect(page.getByLabel('Reps').first()).toBeVisible();
+      await expect(page.getByLabel('Reps set 1').first()).toBeVisible();
 
       const activeSlide = page.locator('.swiper-slide-active');
-      await activeSlide.getByRole('button', {name: 'Previous workout'}).click();
+      await activeSlide.getByRole('button', {name: /Previous workouts/i}).click();
       await expect(activeSlide.getByRole('cell', {name: '—'}).first()).toBeVisible();
       await expect(activeSlide.getByRole('cell', {name: '65 kg'})).toBeVisible();
     });
@@ -731,7 +751,7 @@ test.describe('Workout page', () => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ completedAt: null, sets: [] }),
+          body: JSON.stringify({ workouts: [] }),
         });
       });
 
@@ -739,9 +759,9 @@ test.describe('Workout page', () => {
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();
       await page.getByRole('button', { name: 'Squat' }).click();
-      await expect(page.getByLabel('Reps').first()).toBeVisible();
+      await expect(page.getByLabel('Reps set 1').first()).toBeVisible();
 
-      await expect(page.getByRole('button', {name: 'Previous workout'})).toHaveCount(0);
+      await expect(page.getByRole('button', {name: /Previous workouts/i})).toHaveCount(0);
     });
   });
 });

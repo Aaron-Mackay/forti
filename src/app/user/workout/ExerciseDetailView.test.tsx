@@ -94,7 +94,7 @@ beforeEach(() => {
     return Promise.resolve({
       ok: true,
       json: () => Promise.resolve(url.includes('/previous-sets')
-        ? {completedAt: null, sets: []}
+        ? {workouts: []}
         : []),
     });
   }));
@@ -103,8 +103,8 @@ beforeEach(() => {
 describe('ExerciseDetailView', () => {
   it('renders set weight and reps inputs', () => {
     renderView(defaultProps);
-    expect(screen.getAllByLabelText('kg')).toHaveLength(2);
-    expect(screen.getAllByLabelText(/reps/i)).toHaveLength(2);
+    expect(screen.getAllByLabelText(/Weight set/i)).toHaveLength(2);
+    expect(screen.getAllByLabelText(/Reps set/i)).toHaveLength(2);
   });
 
   it('fetches previous sets on mount for the active exercise', async () => {
@@ -123,10 +123,20 @@ describe('ExerciseDetailView', () => {
         ok: true,
         json: () => Promise.resolve(url.includes('/previous-sets')
           ? {
-            completedAt: '2026-01-14T12:00:00.000Z',
-            sets: [
-              {weight: 80, reps: 10, order: 1, e1rm: 106.7},
-              {weight: 80, reps: 9, order: 2, e1rm: 104},
+            workouts: [
+              {
+                completedAt: '2026-01-14T12:00:00.000Z',
+                sets: [
+                  {weight: 80, reps: 10, order: 1, e1rm: 106.7},
+                  {weight: 80, reps: 9, order: 2, e1rm: 104},
+                ],
+              },
+              {
+                completedAt: '2026-01-07T12:00:00.000Z',
+                sets: [
+                  {weight: 77.5, reps: 9, order: 1, e1rm: 100.8},
+                ],
+              },
             ],
           }
           : []),
@@ -136,13 +146,14 @@ describe('ExerciseDetailView', () => {
     renderView(defaultProps);
 
     await waitFor(() => {
-      expect(screen.getByRole('button', {name: /previous workout/i})).toBeInTheDocument();
+      expect(screen.getByRole('button', {name: /previous workouts/i})).toBeInTheDocument();
     });
 
-    screen.getByRole('button', {name: /previous workout/i}).click();
+    screen.getByRole('button', {name: /previous workouts/i}).click();
 
-    expect(screen.getByLabelText('Previous workout table')).toBeInTheDocument();
+    expect(screen.getByLabelText('Previous workout table 1')).toBeInTheDocument();
     expect(screen.getByText('Jan 14, 2026')).toBeInTheDocument();
+    expect(screen.getByText('Jan 7, 2026')).toBeInTheDocument();
     expect(screen.getByText('106.7')).toBeInTheDocument();
   });
 
@@ -153,9 +164,13 @@ describe('ExerciseDetailView', () => {
         ok: true,
         json: () => Promise.resolve(url.includes('/previous-sets')
           ? {
-            completedAt: '2026-01-14T12:00:00.000Z',
-            sets: [
-              {weight: null, reps: null, order: 1, e1rm: null},
+            workouts: [
+              {
+                completedAt: '2026-01-14T12:00:00.000Z',
+                sets: [
+                  {weight: null, reps: null, order: 1, e1rm: null},
+                ],
+              },
             ],
           }
           : []),
@@ -165,9 +180,9 @@ describe('ExerciseDetailView', () => {
     renderView(defaultProps);
 
     await waitFor(() => {
-      expect(screen.getByRole('button', {name: /previous workout/i})).toBeInTheDocument();
+      expect(screen.getByRole('button', {name: /previous workouts/i})).toBeInTheDocument();
     });
-    screen.getByRole('button', {name: /previous workout/i}).click();
+    screen.getByRole('button', {name: /previous workouts/i}).click();
     expect(screen.getAllByText('—')).toHaveLength(3);
   });
 
@@ -177,7 +192,7 @@ describe('ExerciseDetailView', () => {
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve(url.includes('/previous-sets')
-          ? {completedAt: null, sets: []}
+          ? {workouts: []}
           : []),
       });
     }));
@@ -187,7 +202,7 @@ describe('ExerciseDetailView', () => {
     await waitFor(() => {
       expect(fetch).toHaveBeenCalled();
     });
-    expect(screen.queryByRole('button', {name: /previous workout/i})).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: /previous workouts/i})).not.toBeInTheDocument();
   });
 
   it('does not show previous workout controls when fetch fails', async () => {
@@ -199,7 +214,7 @@ describe('ExerciseDetailView', () => {
     await waitFor(() => {
       expect(fetch).toHaveBeenCalled();
     });
-    expect(screen.queryByRole('button', {name: /previous workout/i})).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: /previous workouts/i})).not.toBeInTheDocument();
   });
 
   it('renders the anatomy diagram when the exercise has muscles', () => {

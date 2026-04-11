@@ -39,4 +39,19 @@ describe('WeightInput', () => {
 
     expect(screen.getByLabelText('Working Set')).toBeInTheDocument();
   });
+
+  it('uses aria-label when the visible label is hidden', () => {
+    render(
+      <WeightInput
+        valueKg={100}
+        unit="kg"
+        visibleLabel={false}
+        ariaLabel="Weight set 1"
+        onChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText('Weight set 1')).toBeInTheDocument();
+    expect(screen.getByText('kg')).toBeInTheDocument();
+  });
 });

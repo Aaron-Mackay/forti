@@ -15,20 +15,14 @@ export default function E1rmSparkline({
   exerciseId,
   history,
   todayE1RM,
-  isNewBest,
 }: {
   exerciseId: number;
   history: E1rmHistoryPoint[] | null;
   todayE1RM: number | null;
-  isNewBest: boolean;
 }) {
   if (history === null) {
     return (
       <Box sx={{width: '100%', mb: 1}}>
-        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', px: 0.5, mb: 0.5}}>
-          <Skeleton variant="text" width={100}/>
-          <Skeleton variant="text" width={80}/>
-        </Box>
         <Skeleton variant="rounded" height={80}/>
       </Box>
     );
@@ -38,11 +32,6 @@ export default function E1rmSparkline({
   if (valid.length === 0 && todayE1RM === null) {
     return (
       <Box sx={{width: '100%', mb: 1}}>
-        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', px: 0.5, mb: 0.5}}>
-          <Typography variant="caption" color="text.secondary">
-            Est. 1RM history
-          </Typography>
-        </Box>
         <Box
           sx={{
             height: 80,
@@ -61,9 +50,6 @@ export default function E1rmSparkline({
       </Box>
     );
   }
-
-  const historicalBest = valid.length > 0 ? valid[valid.length - 1].bestE1rm : null;
-  const displayBest = Math.max(todayE1RM || 0, (historicalBest || 0))
 
   // Build series: historical points + optional live "Now" point
   const historicalData = valid.map(p => parseFloat(p.bestE1rm.toFixed(1)));
@@ -87,22 +73,16 @@ export default function E1rmSparkline({
 
   return (
     <Box sx={{width: '100%', mb: 1}}>
-      <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', px: 0.5}}>
-        <Typography variant="caption" color="text.secondary">
-          Est. 1RM history
-        </Typography>
-        {displayBest !== null && (
-          <Typography
-            variant="caption"
-            color={isNewBest ? 'success.main' : 'primary'}
-            fontWeight={600}
-          >
-            {isNewBest ? 'New best' : 'Personal Best'}: {displayBest.toFixed(1)}
-          </Typography>
-        )}
-      </Box>
       {/* swiper-no-swiping prevents Swiper from intercepting touch events on this chart */}
-      <Box className="swiper-no-swiping">
+      <Box
+        className="swiper-no-swiping"
+        sx={{
+          border: '1px solid rgba(0, 0, 0, 0.23)',
+          borderRadius: 1,
+          px: 0.5,
+          py: 0.25,
+        }}
+      >
         <Chart
           type="line"
           height={80}

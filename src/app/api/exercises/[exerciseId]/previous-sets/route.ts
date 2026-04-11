@@ -5,7 +5,7 @@ import {extractErrorMessage} from "@lib/apiError";
 import {buildPreviousWorkoutFilter, resolveCurrentWorkoutCompletedAt} from '@lib/exerciseQueries';
 import {computeE1rm} from '@/lib/e1rm';
 
-export type PreviousExerciseHistory = {
+export type PreviousWorkoutSummary = {
   completedAt: string | null;
   sets: Array<{
     order: number;
@@ -13,6 +13,10 @@ export type PreviousExerciseHistory = {
     reps: number | null;
     e1rm: number | null;
   }>;
+};
+
+export type PreviousExerciseHistory = {
+  workouts: PreviousWorkoutSummary[];
 };
 
 export async function GET(req: NextRequest, props: { params: Promise<{ exerciseId: string }> }) {
@@ -32,7 +36,6 @@ export async function GET(req: NextRequest, props: { params: Promise<{ exerciseI
   try {
     const user = session.user;
     const completedAt = await resolveCurrentWorkoutCompletedAt(currentWorkoutId);
-    const emptyHistory: PreviousExerciseHistory = {completedAt: null, sets: []};
 
     const currentWorkout = await prisma.workout.findUnique({
       where: {id: currentWorkoutId},
@@ -50,7 +53,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ exerciseI
       return NextResponse.json({error: 'Current workout exercise not found'}, {status: 400});
     }
 
-    const previousWorkout = await prisma.workout.findFirst({
+    const previousWorkouts = await prisma.workout.findMany({
       where: {
         ...buildPreviousWorkoutFilter(user.id, currentWorkoutId, completedAt),
         exercises: {some: {exerciseId}},
@@ -70,21 +73,23 @@ export async function GET(req: NextRequest, props: { params: Promise<{ exerciseI
         },
       },
       orderBy: {dateCompleted: 'desc'},
+      take: 3,
     });
 
-    const matchedExercise = previousWorkout?.exercises[duplicateIndex];
-    if (!matchedExercise || !previousWorkout?.dateCompleted) {
-      return NextResponse.json(emptyHistory);
-    }
-
     const history: PreviousExerciseHistory = {
-      completedAt: previousWorkout.dateCompleted.toISOString(),
-      sets: matchedExercise.sets.map(set => ({
-        order: set.order,
-        weight: set.weight,
-        reps: set.reps,
-        e1rm: set.e1rm ?? computeE1rm(set.weight, set.reps),
-      })),
+      workouts: previousWorkouts.flatMap(workout => {
+        const matchedExercise = workout.exercises[duplicateIndex];
+        if (!matchedExercise || !workout.dateCompleted) return [];
+        return [{
+          completedAt: workout.dateCompleted.toISOString(),
+          sets: matchedExercise.sets.map(set => ({
+            order: set.order,
+            weight: set.weight,
+            reps: set.reps,
+            e1rm: set.e1rm ?? computeE1rm(set.weight, set.reps),
+          })),
+        }];
+      }),
     };
 
     return NextResponse.json(history);

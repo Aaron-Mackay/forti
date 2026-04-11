@@ -16,11 +16,17 @@ vi.mock('@lib/providers/SettingsProvider', () => ({
 }));
 
 vi.mock('@/components/MuscleHighlight', () => ({default: () => null}));
-vi.mock('./E1rmSparkline', () => ({default: () => null}));
+vi.mock('./E1rmSparkline', () => ({
+  default: ({history}: {history: Array<unknown> | null}) => (
+    <div data-testid="e1rm-sparkline">{history && history.length > 0 ? 'sparkline' : 'Log a weighted set to start tracking'}</div>
+  ),
+}));
 vi.mock('./PlateCalculatorSheet', () => ({default: () => null}));
 vi.mock('./WeightInput', () => ({
-  default: ({label, unit}: {label?: string; unit: 'kg' | 'lb' | 'none'}) => (
-    <div data-testid="weight-input">{label ?? (unit === 'none' ? 'Weight' : unit)}</div>
+  default: ({label, unit, ariaLabel, visibleLabel = true}: {label?: string; unit: 'kg' | 'lb' | 'none'; ariaLabel?: string; visibleLabel?: boolean}) => (
+    <div aria-label={ariaLabel ?? label ?? (unit === 'none' ? 'Weight' : unit)} data-testid="weight-input">
+      {visibleLabel ? (label ?? (unit === 'none' ? 'Weight' : unit)) : null}
+    </div>
   ),
 }));
 
@@ -66,15 +72,15 @@ describe('ExerciseSlide', () => {
         onFormCueBlur={vi.fn()}
         handleSetUpdate={vi.fn()}
         handleEffortUpdate={vi.fn()}
-        previousWorkout={{completedAt: null, sets: []}}
+        previousWorkout={{workouts: []}}
         history={[]}
       />,
     );
 
-    expect(screen.queryByRole('button', {name: /previous workout/i})).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: /previous workouts/i})).not.toBeInTheDocument();
   });
 
-  it('renders the shortened default weight label and unitless e1rm label', () => {
+  it('renders a shared header row with unit and e1rm columns', () => {
     render(
       <ExerciseSlide
         ex={buildExercise()}
@@ -82,16 +88,42 @@ describe('ExerciseSlide', () => {
         onFormCueBlur={vi.fn()}
         handleSetUpdate={vi.fn()}
         handleEffortUpdate={vi.fn()}
-        previousWorkout={{completedAt: null, sets: []}}
+        previousWorkout={{workouts: []}}
         history={[]}
       />,
     );
 
-    expect(screen.getByText('kg')).toBeInTheDocument();
-    expect(screen.getByLabelText('Est. 1RM')).toBeInTheDocument();
+    expect(screen.getByText('Weight')).toBeInTheDocument();
+    expect(screen.getByText('Est. 1RM')).toBeInTheDocument();
+    expect(screen.getByLabelText('Weight set 1')).toBeInTheDocument();
+    expect(screen.getByLabelText('Reps set 1')).toBeInTheDocument();
+    expect(screen.getByLabelText('Est. 1RM set 1')).toBeInTheDocument();
   });
 
-  it('shows a collapsible previous workout table when history exists', async () => {
+  it('toggles e1rm history behind a text trigger', async () => {
+    render(
+      <ExerciseSlide
+        ex={buildExercise()}
+        userExerciseNote={undefined}
+        onFormCueBlur={vi.fn()}
+        handleSetUpdate={vi.fn()}
+        handleEffortUpdate={vi.fn()}
+        previousWorkout={{workouts: []}}
+        history={[{date: '2025-02-10T00:00:00.000Z', bestE1rm: 200}]}
+      />,
+    );
+
+    expect(screen.getByText('Personal Best E1RM: 200.0')).toBeInTheDocument();
+    expect(screen.getByTestId('e1rm-sparkline')).not.toBeVisible();
+
+    fireEvent.click(screen.getByText('Est. 1RM history'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('e1rm-sparkline')).toBeVisible();
+    });
+  });
+
+  it('shows an accordion with up to three previous workout tables below the set list', async () => {
     render(
       <ExerciseSlide
         ex={buildExercise()}
@@ -100,22 +132,31 @@ describe('ExerciseSlide', () => {
         handleSetUpdate={vi.fn()}
         handleEffortUpdate={vi.fn()}
         previousWorkout={{
-          completedAt: '2026-01-14T12:00:00.000Z',
-          sets: [{order: 1, weight: 80, reps: 10, e1rm: 106.7}],
+          workouts: [
+            {
+              completedAt: '2026-01-14T12:00:00.000Z',
+              sets: [{order: 1, weight: 80, reps: 10, e1rm: 106.7}],
+            },
+            {
+              completedAt: '2026-01-07T12:00:00.000Z',
+              sets: [{order: 1, weight: 77.5, reps: 9, e1rm: 100.8}],
+            },
+          ],
         }}
         history={[]}
       />,
     );
 
-    expect(screen.getByRole('button', {name: /previous workout/i})).toBeInTheDocument();
-    expect(screen.getByLabelText('Previous workout table')).not.toBeVisible();
+    expect(screen.getByRole('button', {name: /previous workouts/i})).toBeInTheDocument();
+    expect(screen.getByLabelText('Previous workout table 1')).not.toBeVisible();
 
-    fireEvent.click(screen.getByRole('button', {name: /previous workout/i}));
+    fireEvent.click(screen.getByRole('button', {name: /previous workouts/i}));
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Previous workout table')).toBeVisible();
+      expect(screen.getByLabelText('Previous workout table 1')).toBeVisible();
     });
     expect(screen.getByText('Jan 14, 2026')).toBeInTheDocument();
+    expect(screen.getByText('Jan 7, 2026')).toBeInTheDocument();
     expect(screen.getByText('106.7')).toBeInTheDocument();
   });
 });

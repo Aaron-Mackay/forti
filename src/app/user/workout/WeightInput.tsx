@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import InputAdornment from '@mui/material/InputAdornment';
 import TextField from '@mui/material/TextField';
+import type {SxProps, Theme} from '@mui/material/styles';
 import type { WeightUnit } from '@/lib/units';
 import { kgToDisplay, displayToKg } from '@/lib/units';
 import type { ExerciseUnitOverride } from '@/types/settingsTypes';
@@ -31,6 +33,11 @@ interface WeightInputProps {
   /** Called after a long-press on the field — use to open a unit override menu. */
   onLongPress?: (anchorEl: HTMLElement) => void;
   label?: string;
+  ariaLabel?: string;
+  visibleLabel?: boolean;
+  placeholder?: string;
+  sx?: SxProps<Theme>;
+  variant?: 'filled' | 'outlined' | 'standard';
 }
 
 /**
@@ -38,7 +45,18 @@ interface WeightInputProps {
  * The parent stores values in kg; this component handles the conversion.
  * Long-pressing the field fires onLongPress for a unit override menu.
  */
-export default function WeightInput({ valueKg, unit, onChange, onLongPress, label }: WeightInputProps) {
+export default function WeightInput({
+  valueKg,
+  unit,
+  onChange,
+  onLongPress,
+  label,
+  ariaLabel,
+  visibleLabel = true,
+  placeholder,
+  sx,
+  variant = 'outlined',
+}: WeightInputProps) {
   const [inputStr, setInputStr] = useState(() => kgToStr(valueKg, unit));
   const isFocused = useRef(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -90,6 +108,9 @@ export default function WeightInput({ valueKg, unit, onChange, onLongPress, labe
   };
 
   const unitLabel = label ?? (unit === 'none' ? 'Weight' : unit);
+  const adornment = unit === 'none'
+    ? undefined
+    : <InputAdornment position="end">{unit}</InputAdornment>;
 
   return (
     <div ref={containerRef} style={{ display: 'contents' }}
@@ -99,15 +120,21 @@ export default function WeightInput({ valueKg, unit, onChange, onLongPress, labe
       onPointerCancel={clearLongPress}
     >
       <TextField
-        label={unitLabel}
+        label={visibleLabel ? unitLabel : undefined}
+        hiddenLabel={!visibleLabel}
+        placeholder={placeholder}
         size="small"
+        variant={variant}
         autoComplete="off"
         value={inputStr}
         onChange={handleChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        sx={{ minWidth: 90, '& input': { textAlign: 'center' } }}
-        slotProps={{ htmlInput: { inputMode: 'decimal' } }}
+        sx={[{ minWidth: 90, '& input': { textAlign: 'center' } }, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]}
+        slotProps={{
+          htmlInput: { inputMode: 'decimal', 'aria-label': ariaLabel ?? unitLabel },
+          input: { endAdornment: adornment },
+        }}
       />
     </div>
   );
