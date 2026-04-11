@@ -38,7 +38,7 @@ interface WeightInputProps {
  * The parent stores values in kg; this component handles the conversion.
  * Long-pressing the field fires onLongPress for a unit override menu.
  */
-export default function WeightInput({ valueKg, unit, onChange, onLongPress, label = 'Weight' }: WeightInputProps) {
+export default function WeightInput({ valueKg, unit, onChange, onLongPress, label }: WeightInputProps) {
   const [inputStr, setInputStr] = useState(() => kgToStr(valueKg, unit));
   const isFocused = useRef(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,7 +89,7 @@ export default function WeightInput({ valueKg, unit, onChange, onLongPress, labe
     }, LONG_PRESS_MS);
   };
 
-  const unitLabel = unit === 'none' ? label : `${label} (${unit})`;
+  const unitLabel = label ?? (unit === 'none' ? 'Weight' : unit);
 
   return (
     <div ref={containerRef} style={{ display: 'contents' }}

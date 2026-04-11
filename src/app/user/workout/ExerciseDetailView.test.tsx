@@ -89,16 +89,21 @@ function renderView(props: React.ComponentProps<typeof ExerciseDetailView>) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-    ok: true,
-    json: () => Promise.resolve([]),
+  vi.stubGlobal('fetch', vi.fn().mockImplementation((input: string | URL | Request) => {
+    const url = String(input);
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(url.includes('/previous-sets')
+        ? {completedAt: null, sets: []}
+        : []),
+    });
   }));
 });
 
 describe('ExerciseDetailView', () => {
   it('renders set weight and reps inputs', () => {
     renderView(defaultProps);
-    expect(screen.getAllByLabelText(/weight/i)).toHaveLength(2);
+    expect(screen.getAllByLabelText('kg')).toHaveLength(2);
     expect(screen.getAllByLabelText(/reps/i)).toHaveLength(2);
   });
 
@@ -106,49 +111,75 @@ describe('ExerciseDetailView', () => {
     renderView(defaultProps);
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/exercises/100/previous-sets?currentWorkoutId=1')
+        expect.stringContaining('/api/exercises/100/previous-sets?currentWorkoutId=1&currentWorkoutExerciseId=10')
       );
     });
   });
 
-  it('displays previous set data when fetch returns results', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve([
-        {weight: 80, reps: 10, order: 1},
-        {weight: 80, reps: 9, order: 2},
-      ]),
+  it('displays previous workout data when fetch returns results', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((input: string | URL | Request) => {
+      const url = String(input);
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(url.includes('/previous-sets')
+          ? {
+            completedAt: '2026-01-14T12:00:00.000Z',
+            sets: [
+              {weight: 80, reps: 10, order: 1, e1rm: 106.7},
+              {weight: 80, reps: 9, order: 2, e1rm: 104},
+            ],
+          }
+          : []),
+      });
     }));
 
     renderView(defaultProps);
 
     await waitFor(() => {
-      expect(screen.getAllByText(/prev:/i)).toHaveLength(2);
+      expect(screen.getByRole('button', {name: /previous workout/i})).toBeInTheDocument();
     });
-    expect(screen.getByText('Prev: 80 × 10')).toBeInTheDocument();
-    expect(screen.getByText('Prev: 80 × 9')).toBeInTheDocument();
+
+    screen.getByRole('button', {name: /previous workout/i}).click();
+
+    expect(screen.getByLabelText('Previous workout table')).toBeInTheDocument();
+    expect(screen.getByText('Jan 14, 2026')).toBeInTheDocument();
+    expect(screen.getByText('106.7')).toBeInTheDocument();
   });
 
   it('shows — for null previous weight or reps', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve([
-        {weight: null, reps: null, order: 1},
-      ]),
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((input: string | URL | Request) => {
+      const url = String(input);
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(url.includes('/previous-sets')
+          ? {
+            completedAt: '2026-01-14T12:00:00.000Z',
+            sets: [
+              {weight: null, reps: null, order: 1, e1rm: null},
+            ],
+          }
+          : []),
+      });
     }));
 
     renderView(defaultProps);
 
-    // aria-label is set only when a previous set exists; null weight/reps render as —
     await waitFor(() => {
-      expect(screen.getByLabelText('Previous: — × —')).toBeInTheDocument();
+      expect(screen.getByRole('button', {name: /previous workout/i})).toBeInTheDocument();
     });
+    screen.getByRole('button', {name: /previous workout/i}).click();
+    expect(screen.getAllByText('—')).toHaveLength(3);
   });
 
-  it('does not show previous set rows when fetch returns empty', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve([]),
+  it('does not show previous workout controls when fetch returns empty', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((input: string | URL | Request) => {
+      const url = String(input);
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(url.includes('/previous-sets')
+          ? {completedAt: null, sets: []}
+          : []),
+      });
     }));
 
     renderView(defaultProps);
@@ -156,11 +187,10 @@ describe('ExerciseDetailView', () => {
     await waitFor(() => {
       expect(fetch).toHaveBeenCalled();
     });
-    // Elements with visibility:hidden still exist in DOM; check no aria-label (only set when prev data exists)
-    expect(screen.queryByLabelText(/previous:/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: /previous workout/i})).not.toBeInTheDocument();
   });
 
-  it('does not show previous set rows when fetch fails', async () => {
+  it('does not show previous workout controls when fetch fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network error')));
 
     renderView(defaultProps);
@@ -169,7 +199,7 @@ describe('ExerciseDetailView', () => {
     await waitFor(() => {
       expect(fetch).toHaveBeenCalled();
     });
-    expect(screen.queryByLabelText(/previous:/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: /previous workout/i})).not.toBeInTheDocument();
   });
 
   it('renders the anatomy diagram when the exercise has muscles', () => {

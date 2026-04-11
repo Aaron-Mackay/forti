@@ -18,9 +18,10 @@ import {UserExerciseNote} from '@/generated/prisma/browser';
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
-import ExerciseSlide, {PreviousSet} from './ExerciseSlide';
+import ExerciseSlide from './ExerciseSlide';
 import CardioSlide, {PreviousCardio} from './CardioSlide';
 import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
+import type {PreviousExerciseHistory} from '@/app/api/exercises/[exerciseId]/previous-sets/route';
 
 export default function ExerciseDetailView({
   workout,
@@ -53,19 +54,19 @@ export default function ExerciseDetailView({
 }) {
   useAppBar({ title: 'Exercises', showBack: true, onBack });
   const paginationRef = useRef<HTMLDivElement | null>(null);
-  // Keyed by exerciseId (global Exercise table id)
-  const [previousSetsMap, setPreviousSetsMap] = useState<Map<number, PreviousSet[]>>(new Map());
+  const [previousSetsMap, setPreviousSetsMap] = useState<Map<number, PreviousExerciseHistory>>(new Map());
   const [e1rmHistoryMap, setE1rmHistoryMap] = useState<Map<number, E1rmHistoryPoint[] | null>>(new Map());
   const [previousCardioMap, setPreviousCardioMap] = useState<Map<number, PreviousCardio | null>>(new Map());
 
-  const fetchPreviousSets = (exerciseId: number) => {
-    if (previousSetsMap.has(exerciseId)) return;
-    fetch(`/api/exercises/${exerciseId}/previous-sets?currentWorkoutId=${currentWorkoutId}`)
-      .then(res => res.ok ? res.json() : [])
-      .then((sets: PreviousSet[]) => {
-        setPreviousSetsMap(prev => new Map(prev).set(exerciseId, sets));
+  const fetchPreviousSets = (workoutExerciseId: number, exerciseId: number) => {
+    if (previousSetsMap.has(workoutExerciseId)) return;
+    fetch(`/api/exercises/${exerciseId}/previous-sets?currentWorkoutId=${currentWorkoutId}&currentWorkoutExerciseId=${workoutExerciseId}`)
+      .then(res => res.ok ? res.json() : {completedAt: null, sets: []})
+      .then((history: PreviousExerciseHistory) => {
+        setPreviousSetsMap(prev => new Map(prev).set(workoutExerciseId, history));
       })
-      .catch(() => {/* ignore fetch errors — previous data is optional */
+      .catch(() => {
+        setPreviousSetsMap(prev => new Map(prev).set(workoutExerciseId, {completedAt: null, sets: []}));
       });
   };
 
@@ -98,7 +99,7 @@ export default function ExerciseDetailView({
       if (initial.exercise.category === 'cardio') {
         fetchPreviousCardio(initial.exerciseId);
       } else {
-        fetchPreviousSets(initial.exerciseId);
+        fetchPreviousSets(initial.id, initial.exerciseId);
         fetchE1rmHistory(initial.exerciseId);
       }
     }
@@ -112,7 +113,7 @@ export default function ExerciseDetailView({
       if (ex.exercise.category === 'cardio') {
         fetchPreviousCardio(ex.exerciseId);
       } else {
-        fetchPreviousSets(ex.exerciseId);
+        fetchPreviousSets(ex.id, ex.exerciseId);
         fetchE1rmHistory(ex.exerciseId);
       }
     }
@@ -173,7 +174,7 @@ export default function ExerciseDetailView({
                   onFormCueBlur={onFormCueBlur}
                   handleSetUpdate={handleSetUpdate}
                   handleEffortUpdate={handleEffortUpdate}
-                  previousSets={previousSetsMap.get(ex.exerciseId)}
+                  previousWorkout={previousSetsMap.get(ex.id)}
                   history={e1rmHistoryMap.get(ex.exerciseId) ?? null}
                   onSubstitute={() => onSubstituteExercise(ex.id)}
                 />

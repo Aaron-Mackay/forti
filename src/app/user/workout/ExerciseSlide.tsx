@@ -13,10 +13,10 @@ import {
   Menu,
   MenuItem,
   Paper,
-  Skeleton,
   Table,
   TableBody,
   TableCell,
+  TableHead,
   TableRow,
   TextField,
   Typography,
@@ -39,8 +39,12 @@ import {SetPrisma, WorkoutExercisePrisma} from '@/types/dataTypes';
 import {UserExerciseNote} from '@/generated/prisma/browser';
 import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
 import {useSettings} from '@lib/providers/SettingsProvider';
+import type {PreviousExerciseHistory} from '@/app/api/exercises/[exerciseId]/previous-sets/route';
 
-export type PreviousSet = { weight: number | null; reps: number | null; order: number };
+function formatCompletedDate(value: string | null): string | null {
+  if (!value) return null;
+  return new Date(value).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
+}
 
 const RPE_VALUES = [6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
 const RIR_VALUES = [0, 1, 2, 3, 4];
@@ -105,7 +109,7 @@ export default function ExerciseSlide({
                                         onFormCueBlur,
                                         handleSetUpdate,
                                         handleEffortUpdate,
-                                        previousSets,
+                                        previousWorkout,
                                         history,
                                         onSubstitute,
                                       }: {
@@ -114,7 +118,7 @@ export default function ExerciseSlide({
   onFormCueBlur: (exerciseId: number, note: string) => void;
   handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
   handleEffortUpdate: (setId: number, field: 'rpe' | 'rir', value: number | null) => void;
-  previousSets: PreviousSet[] | undefined;
+  previousWorkout: PreviousExerciseHistory | undefined;
   history: E1rmHistoryPoint[] | null;
   onSubstitute?: () => void;
 }) {
@@ -131,6 +135,7 @@ export default function ExerciseSlide({
   const [plateCalcOpen, setPlateCalcOpen] = useState(false);
   const [plateCalcSetIdx, setPlateCalcSetIdx] = useState<number | null>(null);
   const [unitMenuAnchor, setUnitMenuAnchor] = useState<HTMLElement | null>(null);
+  const [previousWorkoutOpen, setPreviousWorkoutOpen] = useState(false);
   const [hasScrollBelow, setHasScrollBelow] = useState(true);
   const [hasScrollAbove, setHasScrollAbove] = useState(false);
 
@@ -139,7 +144,7 @@ export default function ExerciseSlide({
   // Derive working weight: first entered set weight, else first previous set weight
   const workingWeight =
     ex.sets.find(s => s.weight != null)?.weight ??
-    previousSets?.find(s => s.weight != null)?.weight ??
+    previousWorkout?.sets.find(s => s.weight != null)?.weight ??
     null;
 
   const WARMUP_STEPS = [
@@ -164,8 +169,8 @@ export default function ExerciseSlide({
   };
 
   const hasFormCue = formCue.trim().length > 0;
-
-  const showPreviousSetRow = previousSets === undefined || previousSets.length > 0;
+  const hasPreviousWorkout = (previousWorkout?.sets.length ?? 0) > 0;
+  const previousWorkoutDate = formatCompletedDate(previousWorkout?.completedAt ?? null);
 
   const todayBestE1rm = ex.sets
     .filter(s => !s.isDropSet)
@@ -345,7 +350,6 @@ export default function ExerciseSlide({
             )}
             {groups.map((group, groupIdx) => {
               const parentSetIdx = ex.sets.findIndex(s => s.id === group.parent.id);
-              const prev = previousSets?.find(s => s.order === group.parent.order);
               const liveE1rm = computeE1rm(group.parent.weight, group.parent.reps);
 
               return (
@@ -378,18 +382,6 @@ export default function ExerciseSlide({
                             </IconButton>
                           )}
                         </Box>
-                        {previousSets === undefined ? (
-                          <Skeleton variant="text" width={70} height={21} sx={{mt: 0.25}}/>
-                        ) : showPreviousSetRow ? (
-                          <Typography
-                            variant="caption"
-                            color="text.disabled"
-                            sx={{mt: 0.25, visibility: prev ? 'visible' : 'hidden', width: 70}}
-                            aria-label={prev ? `Previous: ${formatWeight(prev.weight, effectiveUnit === 'none' ? 'kg' : effectiveUnit)} × ${prev.reps ?? '—'}` : undefined}
-                          >
-                            Prev: {prev ? kgToDisplay(prev.weight, effectiveUnit === 'none' ? 'kg' : effectiveUnit) ?? '—' : '—'} × {prev?.reps ?? '—'}
-                          </Typography>
-                        ) : null}
                       </Box>
                       <WeightInput
                         valueKg={group.parent.weight}
@@ -412,7 +404,7 @@ export default function ExerciseSlide({
                       />
                       <Box>
                         <TextField
-                          label={`Est. 1RM (${effectiveUnit === 'none' ? 'kg' : effectiveUnit})`}
+                          label="Est. 1RM"
                           size="small"
                           disabled
                           slotProps={{inputLabel: {shrink: true}}}
@@ -485,6 +477,59 @@ export default function ExerciseSlide({
               );
             })}
           </List>
+          {hasPreviousWorkout && (
+            <Box sx={{px: 1, pb: 1.5}}>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setPreviousWorkoutOpen(open => !open)}
+                sx={{mt: 0.5, mb: 1}}
+              >
+                {previousWorkoutOpen ? 'Hide previous workout' : 'Previous workout'}
+              </Button>
+              <Collapse in={previousWorkoutOpen}>
+                <Box
+                  sx={{
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1.5,
+                    px: 1,
+                    py: 1,
+                  }}
+                >
+                  {previousWorkoutDate && (
+                    <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 0.75}}>
+                      {previousWorkoutDate}
+                    </Typography>
+                  )}
+                  <Table size="small" aria-label="Previous workout table" sx={{'& td, & th': {py: 0.5, px: 0.75}}}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Set</TableCell>
+                        <TableCell>Weight</TableCell>
+                        <TableCell>Reps</TableCell>
+                        <TableCell>Est. 1RM</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {previousWorkout?.sets.map(set => (
+                        <TableRow key={set.order}>
+                          <TableCell>{set.order}</TableCell>
+                          <TableCell>{formatWeight(set.weight, effectiveUnit === 'none' ? 'kg' : effectiveUnit)}</TableCell>
+                          <TableCell>{set.reps ?? '—'}</TableCell>
+                          <TableCell>
+                            {set.e1rm == null
+                              ? '—'
+                              : (kgToDisplay(set.e1rm, effectiveUnit === 'none' ? 'kg' : effectiveUnit) ?? set.e1rm).toFixed(1)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Box>
+              </Collapse>
+            </Box>
+          )}
         </Box>
         {hasScrollAbove && (
           <Box

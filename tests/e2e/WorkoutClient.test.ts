@@ -181,7 +181,7 @@ test.describe('Workout page', () => {
 
       // Scope to active slide — all slides render in DOM simultaneously
       const activeSlide = page.locator('.swiper-slide-active');
-      await activeSlide.getByLabel('Weight').first().fill('100');
+      await activeSlide.getByRole('textbox', {name: 'kg'}).first().fill('100');
       await activeSlide.getByLabel('Reps').first().fill('5');
 
       // Epley: 100 * (1 + 5/30) = 116.7 — shown in disabled Est. 1RM field
@@ -671,15 +671,18 @@ test.describe('Workout page', () => {
   });
 
   test.describe('previous set data in exercise detail', () => {
-    test('displays previous weight and reps below each matching set', async ({ page }) => {
+    test('displays previous workout sets in a collapsible section', async ({ page }) => {
       await page.route('**/api/exercises/*/previous-sets**', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify([
-            { order: 1, weight: 65, reps: 10 },
-            { order: 2, weight: 70, reps: 8 },
-          ]),
+          body: JSON.stringify({
+            completedAt: '2026-01-14T12:00:00.000Z',
+            sets: [
+              { order: 1, weight: 65, reps: 10, e1rm: 86.7 },
+              { order: 2, weight: 70, reps: 8, e1rm: 88.7 },
+            ],
+          }),
         });
       });
 
@@ -690,19 +693,24 @@ test.describe('Workout page', () => {
       await expect(page.getByLabel('Reps').first()).toBeVisible();
 
       const activeSlide = page.locator('.swiper-slide-active');
-      await expect(activeSlide.getByText('Prev: 65 × 10')).toBeVisible();
-      await expect(activeSlide.getByText('Prev: 70 × 8')).toBeVisible();
+      await activeSlide.getByRole('button', {name: 'Previous workout'}).click();
+      await expect(activeSlide.getByText('Jan 14, 2026')).toBeVisible();
+      await expect(activeSlide.getByRole('cell', {name: '65 kg'})).toBeVisible();
+      await expect(activeSlide.getByRole('cell', {name: '10'})).toBeVisible();
     });
 
-    test('shows em dash for null weight or reps in previous set', async ({ page }) => {
+    test('shows em dash for null weight or reps in previous workout rows', async ({ page }) => {
       await page.route('**/api/exercises/*/previous-sets**', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify([
-            { order: 1, weight: null, reps: 10 },
-            { order: 2, weight: 65, reps: null },
-          ]),
+          body: JSON.stringify({
+            completedAt: '2026-01-14T12:00:00.000Z',
+            sets: [
+              { order: 1, weight: null, reps: 10, e1rm: null },
+              { order: 2, weight: 65, reps: null, e1rm: null },
+            ],
+          }),
         });
       });
 
@@ -713,16 +721,17 @@ test.describe('Workout page', () => {
       await expect(page.getByLabel('Reps').first()).toBeVisible();
 
       const activeSlide = page.locator('.swiper-slide-active');
-      await expect(activeSlide.getByText('Prev: — × 10')).toBeVisible();
-      await expect(activeSlide.getByText('Prev: 65 × —')).toBeVisible();
+      await activeSlide.getByRole('button', {name: 'Previous workout'}).click();
+      await expect(activeSlide.getByRole('cell', {name: '—'}).first()).toBeVisible();
+      await expect(activeSlide.getByRole('cell', {name: '65 kg'})).toBeVisible();
     });
 
-    test('shows no previous data when the API returns an empty array', async ({ page }) => {
+    test('shows no previous data when the API returns an empty history payload', async ({ page }) => {
       await page.route('**/api/exercises/*/previous-sets**', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify([]),
+          body: JSON.stringify({ completedAt: null, sets: [] }),
         });
       });
 
@@ -732,8 +741,7 @@ test.describe('Workout page', () => {
       await page.getByRole('button', { name: 'Squat' }).click();
       await expect(page.getByLabel('Reps').first()).toBeVisible();
 
-      // aria-label="Previous: ..." is only set when actual previous data exists — absent when API returns []
-      await expect(page.locator('[aria-label^="Previous:"]')).toHaveCount(0);
+      await expect(page.getByRole('button', {name: 'Previous workout'})).toHaveCount(0);
     });
   });
 });

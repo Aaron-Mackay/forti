@@ -1,4 +1,4 @@
-import {render, screen} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import type {WorkoutExercisePrisma} from '@/types/dataTypes';
 import type {ExerciseCategory} from '@/generated/prisma/browser';
@@ -19,7 +19,9 @@ vi.mock('@/components/MuscleHighlight', () => ({default: () => null}));
 vi.mock('./E1rmSparkline', () => ({default: () => null}));
 vi.mock('./PlateCalculatorSheet', () => ({default: () => null}));
 vi.mock('./WeightInput', () => ({
-  default: () => <div data-testid="weight-input" />,
+  default: ({label, unit}: {label?: string; unit: 'kg' | 'lb' | 'none'}) => (
+    <div data-testid="weight-input">{label ?? (unit === 'none' ? 'Weight' : unit)}</div>
+  ),
 }));
 
 function buildExercise(): WorkoutExercisePrisma {
@@ -56,7 +58,7 @@ function buildExercise(): WorkoutExercisePrisma {
 }
 
 describe('ExerciseSlide', () => {
-  it('hides previous-set row when no previous workout history exists', () => {
+  it('does not render previous workout controls when no previous workout history exists', () => {
     render(
       <ExerciseSlide
         ex={buildExercise()}
@@ -64,11 +66,56 @@ describe('ExerciseSlide', () => {
         onFormCueBlur={vi.fn()}
         handleSetUpdate={vi.fn()}
         handleEffortUpdate={vi.fn()}
-        previousSets={[]}
+        previousWorkout={{completedAt: null, sets: []}}
         history={[]}
       />,
     );
 
-    expect(screen.queryByText(/Prev:/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: /previous workout/i})).not.toBeInTheDocument();
+  });
+
+  it('renders the shortened default weight label and unitless e1rm label', () => {
+    render(
+      <ExerciseSlide
+        ex={buildExercise()}
+        userExerciseNote={undefined}
+        onFormCueBlur={vi.fn()}
+        handleSetUpdate={vi.fn()}
+        handleEffortUpdate={vi.fn()}
+        previousWorkout={{completedAt: null, sets: []}}
+        history={[]}
+      />,
+    );
+
+    expect(screen.getByText('kg')).toBeInTheDocument();
+    expect(screen.getByLabelText('Est. 1RM')).toBeInTheDocument();
+  });
+
+  it('shows a collapsible previous workout table when history exists', async () => {
+    render(
+      <ExerciseSlide
+        ex={buildExercise()}
+        userExerciseNote={undefined}
+        onFormCueBlur={vi.fn()}
+        handleSetUpdate={vi.fn()}
+        handleEffortUpdate={vi.fn()}
+        previousWorkout={{
+          completedAt: '2026-01-14T12:00:00.000Z',
+          sets: [{order: 1, weight: 80, reps: 10, e1rm: 106.7}],
+        }}
+        history={[]}
+      />,
+    );
+
+    expect(screen.getByRole('button', {name: /previous workout/i})).toBeInTheDocument();
+    expect(screen.getByLabelText('Previous workout table')).not.toBeVisible();
+
+    fireEvent.click(screen.getByRole('button', {name: /previous workout/i}));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Previous workout table')).toBeVisible();
+    });
+    expect(screen.getByText('Jan 14, 2026')).toBeInTheDocument();
+    expect(screen.getByText('106.7')).toBeInTheDocument();
   });
 });

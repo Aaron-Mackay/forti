@@ -6,8 +6,6 @@ vi.mock('@/lib/prisma', () => ({
   default: {
     workout: {
       findUnique: vi.fn(),
-    },
-    workoutExercise: {
       findFirst: vi.fn(),
     },
   },
@@ -23,159 +21,162 @@ import prisma from '@/lib/prisma';
 import {requireSession} from '@lib/requireSession';
 
 const mockFindUnique = prisma.workout.findUnique as ReturnType<typeof vi.fn>;
-const mockFindFirst = prisma.workoutExercise.findFirst as ReturnType<typeof vi.fn>;
+const mockFindFirst = prisma.workout.findFirst as ReturnType<typeof vi.fn>;
 const mockRequireSession = requireSession as ReturnType<typeof vi.fn>;
 
-function makeRequest(exerciseId: string, currentWorkoutId?: number): [NextRequest, { params: Promise<{ exerciseId: string }> }] {
+function makeRequest(
+  exerciseId: string,
+  currentWorkoutId = 99,
+  currentWorkoutExerciseId = 10,
+): [NextRequest, { params: Promise<{ exerciseId: string }> }] {
   const url = new URL(`http://localhost/api/exercises/${exerciseId}/previous-sets`);
-  if (currentWorkoutId !== undefined) {
-    url.searchParams.set('currentWorkoutId', String(currentWorkoutId));
-  }
+  url.searchParams.set('currentWorkoutId', String(currentWorkoutId));
+  url.searchParams.set('currentWorkoutExerciseId', String(currentWorkoutExerciseId));
   const req = new NextRequest(url.toString());
   const props = {params: Promise.resolve({exerciseId})};
   return [req, props];
 }
 
-const mockSets = [
-  {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100},
-  {id: 2, workoutExerciseId: 10, order: 2, reps: 8, weight: 100},
-];
+const currentWorkout = {
+  dateCompleted: null,
+  exercises: [
+    {id: 10},
+    {id: 11},
+  ],
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireSession.mockResolvedValue({user: {id: 'user-1'}});
-  mockFindUnique.mockResolvedValue({dateCompleted: null});
+  mockFindUnique.mockResolvedValue(currentWorkout);
 });
 
 describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
-  it('returns sets from the most recent completed workout for the exercise', async () => {
-    mockFindFirst.mockResolvedValue({id: 10, sets: mockSets});
-    const [req, props] = makeRequest('5', 99);
+  it('returns sets from the matching duplicate instance in the most recent completed workout', async () => {
+    mockFindFirst.mockResolvedValue({
+      dateCompleted: new Date('2026-01-14T12:00:00Z'),
+      exercises: [
+        {
+          sets: [{order: 1, reps: 8, weight: 100, e1rm: 126.7}],
+        },
+        {
+          sets: [{order: 1, reps: 12, weight: 80, e1rm: 112}],
+        },
+      ],
+    });
+
+    const [req, props] = makeRequest('5', 99, 11);
     const res = await GET(req, props);
+
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body).toEqual(mockSets);
+    await expect(res.json()).resolves.toEqual({
+      completedAt: '2026-01-14T12:00:00.000Z',
+      sets: [{order: 1, reps: 12, weight: 80, e1rm: 112}],
+    });
   });
 
-  it('returns an empty array when no previous completed workout exists', async () => {
+  it('returns an empty history payload when no previous completed workout exists', async () => {
     mockFindFirst.mockResolvedValue(null);
-    const [req, props] = makeRequest('5', 99);
+
+    const [req, props] = makeRequest('5', 99, 10);
     const res = await GET(req, props);
+
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body).toEqual([]);
+    await expect(res.json()).resolves.toEqual({completedAt: null, sets: []});
   });
 
-  it('excludes the current workout from results', async () => {
-    mockFindFirst.mockResolvedValue(null);
-    const [req, props] = makeRequest('5', 42);
-    await GET(req, props);
-    expect(mockFindFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          workout: expect.objectContaining({
-            id: {not: 42},
-          }),
-        }),
-      })
-    );
-  });
+  it('returns an empty history payload when the previous workout lacks the same duplicate slot', async () => {
+    mockFindFirst.mockResolvedValue({
+      dateCompleted: new Date('2026-01-14T12:00:00Z'),
+      exercises: [
+        {
+          sets: [{order: 1, reps: 8, weight: 100, e1rm: 126.7}],
+        },
+      ],
+    });
 
-  it('filters by the logged-in user', async () => {
-    mockFindFirst.mockResolvedValue(null);
-    const [req, props] = makeRequest('5', 42);
-    await GET(req, props);
-    expect(mockFindFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          exerciseId: 5,
-          workout: expect.objectContaining({
-            week: {plan: {userId: 'user-1'}},
-          }),
-        }),
-      })
-    );
-  });
-
-  it('only considers workouts where dateCompleted is set', async () => {
-    mockFindFirst.mockResolvedValue(null);
-    const [req, props] = makeRequest('5');
-    await GET(req, props);
-    expect(mockFindFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          workout: expect.objectContaining({
-            dateCompleted: {not: null},
-          }),
-        }),
-      })
-    );
-  });
-
-  it('returns 400 for a non-numeric exerciseId', async () => {
-    const [req, props] = makeRequest('abc');
+    const [req, props] = makeRequest('5', 99, 11);
     const res = await GET(req, props);
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({completedAt: null, sets: []});
+  });
+
+  it('computes e1rm when it is missing on the previous set row', async () => {
+    mockFindFirst.mockResolvedValue({
+      dateCompleted: new Date('2026-01-14T12:00:00Z'),
+      exercises: [
+        {
+          sets: [{order: 1, reps: 5, weight: 80, e1rm: null}],
+        },
+        {
+          sets: [],
+        },
+      ],
+    });
+
+    const [req, props] = makeRequest('5', 99, 10);
+    const res = await GET(req, props);
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      completedAt: '2026-01-14T12:00:00.000Z',
+      sets: [{order: 1, reps: 5, weight: 80, e1rm: 93.33333333333334}],
+    });
+  });
+
+  it('returns 400 when current workout context is missing', async () => {
+    const url = new URL('http://localhost/api/exercises/5/previous-sets');
+    url.searchParams.set('currentWorkoutId', '99');
+    const req = new NextRequest(url.toString());
+    const props = {params: Promise.resolve({exerciseId: '5'})};
+
+    const res = await GET(req, props);
+
     expect(res.status).toBe(400);
   });
 
-  it('returns 400 for a zero or negative exerciseId', async () => {
-    const [req, props] = makeRequest('0');
+  it('returns 400 when the current workout exercise does not match the workout duplicate list', async () => {
+    const [req, props] = makeRequest('5', 99, 999);
+
     const res = await GET(req, props);
+
     expect(res.status).toBe(400);
   });
 
-  it('orders results by dateCompleted descending to get the most recent', async () => {
-    mockFindFirst.mockResolvedValue({id: 10, sets: mockSets});
-    const [req, props] = makeRequest('5', 99);
-    await GET(req, props);
-    expect(mockFindFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        orderBy: {workout: {dateCompleted: 'desc'}},
-      })
-    );
-  });
+  it('filters by the logged-in user and completed workouts', async () => {
+    mockFindFirst.mockResolvedValue(null);
 
-  it('excludes workouts completed after the current workout when it is completed', async () => {
-    const currentDate = new Date('2026-01-15T12:00:00Z');
-    const setsFromA = [
-      {id: 3, workoutExerciseId: 20, order: 1, reps: 5, weight: 80},
-    ];
-    mockFindUnique.mockResolvedValue({dateCompleted: currentDate});
-    mockFindFirst.mockResolvedValue({id: 20, sets: setsFromA});
-
-    const [req, props] = makeRequest('5', 2); // workout B = id 2
-    const res = await GET(req, props);
-
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body).toEqual(setsFromA);
-
-    expect(mockFindFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          workout: expect.objectContaining({
-            dateCompleted: {not: null, lt: currentDate},
-          }),
-        }),
-      })
-    );
-  });
-
-  it('does not add a date upper-bound when the current workout is in-progress', async () => {
-    mockFindUnique.mockResolvedValue({dateCompleted: null});
-    mockFindFirst.mockResolvedValue({id: 10, sets: mockSets});
-
-    const [req, props] = makeRequest('5', 99);
+    const [req, props] = makeRequest('5', 42, 10);
     await GET(req, props);
 
     expect(mockFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          workout: expect.objectContaining({
-            dateCompleted: {not: null},
-          }),
+          dateCompleted: {not: null},
+          week: {plan: {userId: 'user-1'}},
+          exercises: {some: {exerciseId: 5}},
+          id: {not: 42},
         }),
-      })
+        orderBy: {dateCompleted: 'desc'},
+      }),
+    );
+  });
+
+  it('adds an upper date bound when the current workout is already completed', async () => {
+    mockFindUnique.mockResolvedValueOnce({dateCompleted: new Date('2026-01-15T12:00:00Z')});
+    mockFindUnique.mockResolvedValueOnce(currentWorkout);
+    mockFindFirst.mockResolvedValue(null);
+
+    const [req, props] = makeRequest('5', 42, 10);
+    await GET(req, props);
+
+    expect(mockFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          dateCompleted: {not: null, lt: new Date('2026-01-15T12:00:00Z')},
+        }),
+      }),
     );
   });
 });
