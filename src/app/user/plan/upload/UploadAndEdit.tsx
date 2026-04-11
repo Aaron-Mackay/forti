@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import React, {useEffect, useRef, useState} from 'react'
+import {useRouter} from 'next/navigation'
 import {
   Alert,
   Autocomplete,
@@ -24,25 +24,21 @@ import UploadFileIcon from '@mui/icons-material/UploadFile'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar'
+import {HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar'
 import MuscleHighlight from '@/components/MuscleHighlight'
-import { useAppBar } from '@lib/providers/AppBarProvider'
-import { ExerciseCategory } from '@/generated/prisma/browser'
-import type { AiImportResponse } from '@/app/api/plan/ai-import/route'
-import type { MatchSuggestion } from '@/app/api/exercises/enrich/route'
+import {useAppBar} from '@lib/providers/AppBarProvider'
+import {ExerciseCategory} from '@/generated/prisma/browser'
+import type {AiImportResponse} from '@/app/api/plan/ai-import/route'
+import type {MatchSuggestion} from '@/app/api/exercises/enrich/route'
 import {
-  calculateMuscleVolumes,
   applyReviewedExercisesToPlan,
+  calculateMuscleVolumes,
   countUniqueExercises,
   PendingUploadPlan,
   ReviewedExercise,
 } from '@/app/user/plan/upload/uploadFlow'
-import type { ParsedPlan } from '@/utils/aiPlanParser'
-import {
-  EXERCISE_MUSCLES,
-  ExerciseMuscle,
-  MUSCLE_NAMES,
-} from '@/types/dataTypes'
+import type {ParsedPlan} from '@/utils/aiPlanParser'
+import {EXERCISE_MUSCLES, ExerciseMuscle, MUSCLE_NAMES,} from '@/types/dataTypes'
 import MuscleVolumeDiagram from './MuscleVolumeDiagram'
 
 const WIZARD_STEPS = ['Upload or paste', 'Review new exercises', 'Summary']
@@ -116,8 +112,8 @@ function buildImportChunks(input: string): string[] {
 
 function mergeChunkPlans(plans: ParsedPlan[]): ParsedPlan {
   const first = plans[0]
-  const mergedWeeks = plans.flatMap((plan) => plan.weeks).map((week, i) => ({ ...week, order: i + 1 }))
-  return { ...first, weeks: mergedWeeks }
+  const mergedWeeks = plans.flatMap((plan) => plan.weeks).map((week, i) => ({...week, order: i + 1}))
+  return {...first, weeks: mergedWeeks}
 }
 
 function isExerciseMuscle(value: string): value is ExerciseMuscle {
@@ -197,7 +193,9 @@ export const UploadAndEdit = () => {
     }
 
     loadExercises()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const inputBytes = new TextEncoder().encode(text).length
@@ -242,11 +240,11 @@ export const UploadAndEdit = () => {
 
     try {
       const chunks = buildImportChunks(text)
-      setChunkProgress({ current: 1, total: chunks.length })
+      setChunkProgress({current: 1, total: chunks.length})
       const importedPlans: ParsedPlan[] = []
 
       for (let i = 0; i < chunks.length; i++) {
-        setChunkProgress({ current: i + 1, total: chunks.length })
+        setChunkProgress({current: i + 1, total: chunks.length})
         let lastError: string | null = null
 
         for (let attempt = 1; attempt <= MAX_CHUNK_ATTEMPTS; attempt++) {
@@ -259,11 +257,11 @@ export const UploadAndEdit = () => {
             while (true) {
               const res = await fetch('/api/plan/ai-import', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                   input: chunks[i],
                   type: 'spreadsheet',
-                  ...(clarificationAnswers.length > 0 ? { answers: clarificationAnswers } : {}),
+                  ...(clarificationAnswers.length > 0 ? {answers: clarificationAnswers} : {}),
                 }),
                 signal: controller.signal,
               })
@@ -366,15 +364,20 @@ export const UploadAndEdit = () => {
       setDetectedNewExerciseCount(newExerciseNames.length)
 
       const enrichResponses: Array<{
-        exercises?: Array<{ name: string; category: ExerciseCategory; primaryMuscles: string[]; secondaryMuscles: string[] }>
+        exercises?: Array<{
+          name: string;
+          category: ExerciseCategory;
+          primaryMuscles: string[];
+          secondaryMuscles: string[]
+        }>
         matchSuggestions?: MatchSuggestion[]
       }> = []
 
       for (const namesBatch of chunkArray(newExerciseNames, ENRICH_BATCH_SIZE)) {
         const enrichResponse = await fetch('/api/exercises/enrich', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ exercises: namesBatch.map((name) => ({ name })) }),
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({exercises: namesBatch.map((name) => ({name}))}),
         })
 
         if (!enrichResponse.ok) {
@@ -387,7 +390,12 @@ export const UploadAndEdit = () => {
         }
 
         enrichResponses.push(await enrichResponse.json() as {
-          exercises?: Array<{ name: string; category: ExerciseCategory; primaryMuscles: string[]; secondaryMuscles: string[] }>
+          exercises?: Array<{
+            name: string;
+            category: ExerciseCategory;
+            primaryMuscles: string[];
+            secondaryMuscles: string[]
+          }>
           matchSuggestions?: MatchSuggestion[]
         })
       }
@@ -429,7 +437,7 @@ export const UploadAndEdit = () => {
     setReviewedExercises((current) =>
       current.map((exercise) => (
         exercise.originalName === originalName
-          ? { ...exercise, ...updates }
+          ? {...exercise, ...updates}
           : exercise
       )),
     )
@@ -449,12 +457,12 @@ export const UploadAndEdit = () => {
     router.push('/user/plan/create')
   }
 
-  useAppBar({ title: 'Import from Spreadsheet', showBack: true })
+  useAppBar({title: 'Import from Spreadsheet', showBack: true})
 
   return (
-    <Box sx={{ height: HEIGHT_EXC_APPBAR, overflowY: 'auto', bgcolor: 'background.default' }}>
-      <Box sx={{ maxWidth: 960, mx: 'auto', px: { xs: 2, sm: 3 }, py: 3 }}>
-        <Stepper alternativeLabel activeStep={activeStep} sx={{ mb: 4 }}>
+    <Box sx={{height: HEIGHT_EXC_APPBAR, overflowY: 'auto', bgcolor: 'background.default'}}>
+      <Box sx={{maxWidth: 960, mx: 'auto', px: {xs: 2, sm: 3}, py: 3}}>
+        <Stepper alternativeLabel activeStep={activeStep} sx={{mb: 4}}>
           {WIZARD_STEPS.map((label, index) => (
             <Step
               key={label}
@@ -470,25 +478,27 @@ export const UploadAndEdit = () => {
         {activeStep === 0 && (
           <Stack spacing={3}>
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+              <Typography variant="h5" sx={{fontWeight: 700, mb: 1}}>
                 Upload or paste your training sheet
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Bring in a CSV or raw spreadsheet export. Forti will parse the weeks, sessions, and sets, then stop for review before opening the plan editor.
+                Bring in a CSV or raw spreadsheet export. Forti will parse the weeks, sessions, and sets, then stop for
+                review before opening the plan editor.
               </Typography>
             </Box>
 
             <Alert severity="warning">
-              AI imports can miss or misread values. Check names, rep schemes, and week-to-week changes before saving the finished plan.
+              AI imports can miss or misread values. Check names, rep schemes, and week-to-week changes before saving
+              the finished plan.
             </Alert>
 
-            <Card variant="outlined" sx={{ borderRadius: 3 }}>
-              <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+            <Card variant="outlined" sx={{borderRadius: 3}}>
+              <CardContent sx={{p: {xs: 2, sm: 3}}}>
                 <Stack spacing={2.5}>
                   <Box>
                     <Button
                       variant="outlined"
-                      startIcon={<UploadFileIcon />}
+                      startIcon={<UploadFileIcon/>}
                       onClick={() => fileInputRef.current?.click()}
                       disabled={loading}
                     >
@@ -498,10 +508,10 @@ export const UploadAndEdit = () => {
                       ref={fileInputRef}
                       type="file"
                       accept=".csv,text/csv,text/plain"
-                      style={{ display: 'none' }}
+                      style={{display: 'none'}}
                       onChange={handleFileChange}
                     />
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1}}>
                       {fileName ?? 'No file selected'}
                     </Typography>
                   </Box>
@@ -527,18 +537,18 @@ export const UploadAndEdit = () => {
                   />
 
                   {(loading || error || parseIssues.length > 0) && (
-                    <Box sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', p: 2 }}>
+                    <Box sx={{borderRadius: 2, border: '1px solid', borderColor: 'divider', p: 2}}>
                       {loading && (
                         <Stack spacing={1.25}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <CircularProgress size={18} />
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                            <CircularProgress size={18}/>
+                            <Typography variant="body2" sx={{fontWeight: 600}}>
                               {phase === 1 && 'Uploading spreadsheet…'}
                               {phase === 2 && 'Analysing your spreadsheet with AI…'}
                               {phase === 3 && 'Preparing review data…'}
                             </Typography>
                           </Box>
-                          <LinearProgress />
+                          <LinearProgress/>
                           <Typography variant="caption" color="text.secondary">
                             This may take a few minutes for larger sheets.
                             {chunkProgress && chunkProgress.total > 1
@@ -552,7 +562,7 @@ export const UploadAndEdit = () => {
                         <Alert severity="error">
                           {error}
                           {parseIssues.length > 0 && (
-                            <Box component="ul" sx={{ mt: 1, mb: 0, pl: 2 }}>
+                            <Box component="ul" sx={{mt: 1, mb: 0, pl: 2}}>
                               {parseIssues.map((issue, index) => (
                                 <li key={index}>
                                   <Typography variant="caption">{issue}</Typography>
@@ -565,12 +575,12 @@ export const UploadAndEdit = () => {
                     </Box>
                   )}
 
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <Box sx={{display: 'flex', justifyContent: 'flex-end'}}>
                     <Button
                       variant="contained"
                       onClick={handleSubmit}
                       disabled={loading || !text.trim()}
-                      endIcon={<ArrowForwardIcon />}
+                      endIcon={<ArrowForwardIcon/>}
                     >
                       Analyse import
                     </Button>
@@ -584,7 +594,7 @@ export const UploadAndEdit = () => {
         {activeStep === 1 && importedPlan && (
           <Stack spacing={3}>
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+              <Typography variant="h5" sx={{fontWeight: 700, mb: 1}}>
                 Review new exercises
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -601,50 +611,87 @@ export const UploadAndEdit = () => {
             ) : (
               <Stack spacing={2}>
                 {reviewedExercises.map((exercise) => (
-                  <Card key={exercise.originalName} variant="outlined" sx={{ borderRadius: 3 }}>
-                    <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Card key={exercise.originalName} variant="outlined" sx={{borderRadius: 3}}>
+                    <CardContent sx={{p: {xs: 2, sm: 3}}}>
                       <Box
                         sx={{
                           display: 'grid',
                           gap: 2,
-                          gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.2fr) minmax(280px, 0.8fr)' },
+                          gridTemplateColumns: {xs: '1fr', md: 'minmax(0, 3fr) minmax(240px, 1fr)'},
                           alignItems: 'stretch',
                         }}
                       >
                         <Stack spacing={2}>
-                          <TextField
-                            label="Exercise name"
-                            value={exercise.name}
-                            autoComplete="off"
-                            onChange={(event) => handleExerciseChange(exercise.originalName, { name: event.target.value })}
-                          />
+                          <Box
+                            sx={{
+                              display: 'grid',
+                              gap: 1.25,
+                              gridTemplateColumns: {
+                                xs: '1fr',
+                                lg: exercise.suggestedMatchName && exercise.suggestedMatchName !== exercise.name
+                                  ? 'minmax(0, 2fr) minmax(240px, 1fr)'
+                                  : '1fr',
+                              },
+                              alignItems: 'start',
+                            }}
+                          >
+                            <TextField
+                              label="Exercise name"
+                              value={exercise.name}
+                              autoComplete="off"
+                              onChange={(event) => handleExerciseChange(exercise.originalName, {name: event.target.value})}
+                            />
 
-                          {exercise.suggestedMatchName && exercise.suggestedMatchName !== exercise.name && (
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              onClick={() => handleExerciseChange(exercise.originalName, {
-                                name: exercise.suggestedMatchName,
-                                category: exercise.suggestedCategory ?? exercise.category,
-                                primaryMuscles: exercise.suggestedPrimaryMuscles ?? exercise.primaryMuscles,
-                                secondaryMuscles: exercise.suggestedSecondaryMuscles ?? exercise.secondaryMuscles,
-                              })}
-                              sx={{ alignSelf: 'flex-start' }}
-                            >
-                              Use existing: {exercise.suggestedMatchName}
-                            </Button>
-                          )}
+                            {exercise.suggestedMatchName && exercise.suggestedMatchName !== exercise.name && (
+                              <Box
+                                sx={{
+                                  display: 'grid',
+                                  gridTemplateColumns: 'minmax(0, 1fr) auto',
+                                  gap: 1,
+                                  alignItems: 'center',
+                                  border: '1px solid',
+                                  borderColor: 'divider',
+                                  borderRadius: 2,
+                                  px: 1.25,
+                                  py: 0.5,
+                                  bgcolor: 'background.default',
+                                  minHeight: 44,
+                                }}
+                              >
+                                <Box sx={{minWidth: 0}}>
+                                  <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', fontWeight: 700, lineHeight: 1}}>
+                                    Suggested match
+                                  </Typography>
+                                  <Typography variant="body2" sx={{fontWeight: 600, lineHeight: 1.2, mt: 0.125}}>
+                                    {exercise.suggestedMatchName}
+                                  </Typography>
+                                </Box>
+                                <Button
+                                  size="small"
+                                  sx={{minWidth: 0, px: 0}}
+                                  onClick={() => handleExerciseChange(exercise.originalName, {
+                                    name: exercise.suggestedMatchName,
+                                    category: exercise.suggestedCategory ?? exercise.category,
+                                    primaryMuscles: exercise.suggestedPrimaryMuscles ?? exercise.primaryMuscles,
+                                    secondaryMuscles: exercise.suggestedSecondaryMuscles ?? exercise.secondaryMuscles,
+                                  })}
+                                >
+                                  Use
+                                </Button>
+                              </Box>
+                            )}
+                          </Box>
 
                           <Autocomplete
                             options={CATEGORY_OPTIONS}
                             value={exercise.category}
                             onChange={(_, value) => {
                               if (!value) return
-                              handleExerciseChange(exercise.originalName, { category: value })
+                              handleExerciseChange(exercise.originalName, {category: value})
                             }}
                             disableClearable
                             getOptionLabel={formatCategoryLabel}
-                            renderInput={(params) => <TextField {...params} label="Training type" />}
+                            renderInput={(params) => <TextField {...params} label="Training type"/>}
                           />
 
                           <Autocomplete
@@ -652,7 +699,7 @@ export const UploadAndEdit = () => {
                             disableCloseOnSelect
                             options={[...EXERCISE_MUSCLES]}
                             value={exercise.primaryMuscles}
-                            onChange={(_, value) => handleExerciseChange(exercise.originalName, { primaryMuscles: value })}
+                            onChange={(_, value) => handleExerciseChange(exercise.originalName, {primaryMuscles: value})}
                             getOptionLabel={(option) => MUSCLE_NAMES[option]}
                             renderInput={(params) => (
                               <TextField
@@ -667,7 +714,7 @@ export const UploadAndEdit = () => {
                             disableCloseOnSelect
                             options={[...EXERCISE_MUSCLES]}
                             value={exercise.secondaryMuscles}
-                            onChange={(_, value) => handleExerciseChange(exercise.originalName, { secondaryMuscles: value })}
+                            onChange={(_, value) => handleExerciseChange(exercise.originalName, {secondaryMuscles: value})}
                             getOptionLabel={(option) => MUSCLE_NAMES[option]}
                             renderInput={(params) => (
                               <TextField
@@ -678,7 +725,7 @@ export const UploadAndEdit = () => {
                           />
                         </Stack>
 
-                        <Stack spacing={1.5} sx={{ height: '100%', display: { xs: 'none', md: 'flex' } }}>
+                        <Stack spacing={1.5} sx={{height: '100%', display: {xs: 'none', md: 'flex'}}}>
                           <Box
                             sx={{
                               height: '100%',
@@ -692,7 +739,14 @@ export const UploadAndEdit = () => {
                               p: 1.5,
                             }}
                           >
-                            <Box sx={{ height: 'calc(100% - 24px)', maxHeight: '100%', display: 'flex', alignItems: 'center' }}>
+                            <Box sx={{
+                              height: 'calc(100% - 56px)',
+                              maxHeight: 'calc(100% - 56px)',
+                              width: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}>
                               <MuscleHighlight
                                 primaryMuscles={exercise.primaryMuscles}
                                 secondaryMuscles={exercise.secondaryMuscles}
@@ -709,14 +763,14 @@ export const UploadAndEdit = () => {
               </Stack>
             )}
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
-              <Button onClick={() => setActiveStep(0)} startIcon={<ArrowBackIcon />}>
+            <Box sx={{display: 'flex', justifyContent: 'space-between', gap: 2}}>
+              <Button onClick={() => setActiveStep(0)} startIcon={<ArrowBackIcon/>}>
                 Back
               </Button>
               <Button
                 variant="contained"
                 onClick={handleContinueToSummary}
-                endIcon={<ArrowForwardIcon />}
+                endIcon={<ArrowForwardIcon/>}
               >
                 Continue to summary
               </Button>
@@ -727,7 +781,7 @@ export const UploadAndEdit = () => {
         {activeStep === 2 && reviewedPlan && (
           <Stack spacing={3}>
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+              <Typography variant="h5" sx={{fontWeight: 700, mb: 1}}>
                 Summary before the editor
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -739,42 +793,50 @@ export const UploadAndEdit = () => {
               sx={{
                 display: 'grid',
                 gap: 2,
-                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' },
+                gridTemplateColumns: {xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))'},
               }}
             >
               {[
-                { label: 'Weeks', value: reviewedPlan.weeks.length },
-                { label: 'Workouts', value: reviewedPlan.weeks.reduce((sum, week) => sum + week.workouts.length, 0) },
-                { label: 'Exercises', value: exerciseCount(reviewedPlan) },
-                { label: 'New exercises', value: detectedNewExerciseCount },
+                {label: 'Weeks', value: reviewedPlan.weeks.length},
+                {label: 'Workouts', value: reviewedPlan.weeks.reduce((sum, week) => sum + week.workouts.length, 0)},
+                {label: 'Exercises', value: exerciseCount(reviewedPlan)},
+                {label: 'New exercises', value: detectedNewExerciseCount},
               ].map((item) => (
-                <Card key={item.label} variant="outlined" sx={{ borderRadius: 3 }}>
+                <Card key={item.label} variant="outlined" sx={{borderRadius: 3}}>
                   <CardContent>
                     <Typography variant="caption" color="text.secondary">{item.label}</Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 700, mt: 1 }}>{item.value}</Typography>
+                    <Typography variant="h4" sx={{fontWeight: 700, mt: 1}}>{item.value}</Typography>
                   </CardContent>
                 </Card>
               ))}
             </Box>
 
-            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.1fr) minmax(320px, 0.9fr)' } }}>
-              <Card variant="outlined" sx={{ borderRadius: 3 }}>
-                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+            <Box sx={{
+              display: 'grid',
+              gap: 2,
+              gridTemplateColumns: {xs: '1fr', lg: 'minmax(0, 1.1fr) minmax(320px, 0.9fr)'}
+            }}>
+              <Card variant="outlined" sx={{borderRadius: 3}}>
+                <CardContent sx={{p: {xs: 2, sm: 3}}}>
+                  <Typography variant="h6" sx={{fontWeight: 700, mb: 1.5}}>
                     Plan structure
                   </Typography>
                   <Stack spacing={1.5}>
                     <Typography variant="body2" color="text.secondary">
-                      Plan name: <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{reviewedPlan.name}</Box>
+                      Plan name: <Box component="span"
+                                      sx={{color: 'text.primary', fontWeight: 600}}>{reviewedPlan.name}</Box>
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Unique exercises: <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{countUniqueExercises(reviewedPlan)}</Box>
+                      Unique exercises: <Box component="span" sx={{
+                      color: 'text.primary',
+                      fontWeight: 600
+                    }}>{countUniqueExercises(reviewedPlan)}</Box>
                     </Typography>
                     <Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }}>
+                      <Typography variant="body2" color="text.secondary" sx={{mb: 0.75}}>
                         Workouts per week
                       </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                      <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.75}}>
                         {reviewedPlan.weeks.map((week) => (
                           <Chip
                             key={week.order}
@@ -785,7 +847,7 @@ export const UploadAndEdit = () => {
                         ))}
                       </Box>
                     </Box>
-                    <Alert severity="info" icon={<CheckCircleIcon fontSize="inherit" />}>
+                    <Alert severity="info" icon={<CheckCircleIcon fontSize="inherit"/>}>
                       {detectedNewExerciseCount === 0
                         ? 'No new exercises were introduced by this import, so the editor can focus on plan structure and set details.'
                         : reviewedExercises.length > 0
@@ -796,16 +858,17 @@ export const UploadAndEdit = () => {
                 </CardContent>
               </Card>
 
-              <Card variant="outlined" sx={{ borderRadius: 3 }}>
-                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+              <Card variant="outlined" sx={{borderRadius: 3}}>
+                <CardContent sx={{p: {xs: 2, sm: 3}}}>
+                  <Typography variant="h6" sx={{fontWeight: 700, mb: 1.5}}>
                     Muscle balance
                   </Typography>
-                  <MuscleVolumeDiagram volumes={muscleVolumes} />
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5, mb: 1 }}>
-                    Estimated weekly volume uses working set count, with full credit for primary muscles and half credit for secondary muscles.
+                  <MuscleVolumeDiagram volumes={muscleVolumes}/>
+                  <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1.5, mb: 1}}>
+                    Estimated weekly volume uses working set count, with full credit for primary muscles and half credit
+                    for secondary muscles.
                   </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                  <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.75}}>
                     {sortedMuscleVolumes.length > 0 ? sortedMuscleVolumes.map(([muscle, volume]) => (
                       <Chip
                         key={muscle}
@@ -824,17 +887,17 @@ export const UploadAndEdit = () => {
               </Card>
             </Box>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+            <Box sx={{display: 'flex', justifyContent: 'space-between', gap: 2}}>
               <Button
                 onClick={() => setActiveStep(detectedNewExerciseCount > 0 ? 1 : 0)}
-                startIcon={<ArrowBackIcon />}
+                startIcon={<ArrowBackIcon/>}
               >
                 Back
               </Button>
               <Button
                 variant="contained"
                 onClick={handleContinueToEditor}
-                endIcon={<ArrowForwardIcon />}
+                endIcon={<ArrowForwardIcon/>}
               >
                 Continue to editor
               </Button>
