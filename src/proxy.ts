@@ -9,14 +9,23 @@ export async function proxy(req: NextRequest) {
   const isCoachDomain = host.includes('coach.')
     || (process.env.VERCEL_ENV === 'preview' && isVercelApp && devCoachCookie === '1');
 
-  // Allow public pages, assets, and login
+  // Allow public assets and auth routes
   if (
-    pathname.startsWith("/login") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon.ico") ||
     pathname.startsWith("/api/auth") ||
     pathname.includes(".") // allow all files with an extension
   ) {
+    return NextResponse.next();
+  }
+
+  // Redirect authenticated users away from the login page
+  if (pathname.startsWith("/login")) {
+    const token = req.cookies.get('next-auth.session-token')?.value
+      || req.cookies.get('__Secure-next-auth.session-token')?.value;
+    if (token) {
+      return NextResponse.redirect(new URL("/user/dashboard", req.url));
+    }
     return NextResponse.next();
   }
 
