@@ -14,6 +14,7 @@ vi.mock('./clientDb', async () => {
     ...actual,
     addRequest: vi.fn(),
     clearRequests: vi.fn(),
+    deleteRequest: vi.fn(),
     getAllRequests: vi.fn(),
     openDatabase: vi.fn(),
   };
@@ -21,6 +22,7 @@ vi.mock('./clientDb', async () => {
 
 const mockAddRequest = clientDb.addRequest as unknown as ReturnType<typeof vi.fn>;
 const mockClearRequests = clientDb.clearRequests as unknown as ReturnType<typeof vi.fn>;
+const mockDeleteRequest = clientDb.deleteRequest as unknown as ReturnType<typeof vi.fn>;
 const mockGetAllRequests = clientDb.getAllRequests as unknown as ReturnType<typeof vi.fn>;
 const mockOpenDatabase = clientDb.openDatabase as unknown as ReturnType<typeof vi.fn>;
 
@@ -38,7 +40,7 @@ describe('offlineSync', () => {
         }),
       },
     } as any
-    globalThis.window = { SyncManager: true } as any;
+    (globalThis as any).SyncManager = true;
   });
 
   afterEach(() => {
@@ -155,25 +157,59 @@ describe('offlineSync', () => {
       expect(mockGetAllRequests).not.toHaveBeenCalled();
     });
 
-    it('retries all queued requests and clears them', async () => {
+    it('retries all queued requests and deletes them individually', async () => {
       (globalThis.navigator as any).onLine = true;
       const requests = [
-        { url: '/api/1', method: 'POST', body: { a: 1 } },
-        { url: '/api/2', method: 'PUT', body: { b: 2 } },
+        { id: 1, url: '/api/1', method: 'POST', body: { a: 1 } },
+        { id: 2, url: '/api/2', method: 'PUT', body: { b: 2 } },
       ];
       mockGetAllRequests.mockResolvedValue(requests);
+      mockDeleteRequest.mockResolvedValue(undefined);
       globalThis.fetch = vi.fn().mockResolvedValue({ ok: true });
 
       await syncQueuedRequests();
 
       expect(globalThis.fetch).toHaveBeenCalledTimes(requests.length);
-      expect(mockClearRequests).toHaveBeenCalled();
+      expect(mockDeleteRequest).toHaveBeenCalledTimes(requests.length);
+      expect(mockDeleteRequest).toHaveBeenCalledWith(1);
+      expect(mockDeleteRequest).toHaveBeenCalledWith(2);
+      expect(mockClearRequests).not.toHaveBeenCalled();
+    });
+
+    it('keeps failed requests in queue and emits sync-failed event', async () => {
+      (globalThis.navigator as any).onLine = true;
+      const requests = [
+        { id: 1, url: '/api/1', method: 'POST', body: { a: 1 } },
+        { id: 2, url: '/api/2', method: 'POST', body: { b: 2 } },
+      ];
+      mockGetAllRequests.mockResolvedValue(requests);
+      mockDeleteRequest.mockResolvedValue(undefined);
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      // Request 1 fails with a 4xx (no retry), request 2 succeeds
+      globalThis.fetch = vi.fn((url: string) => {
+        if (url === '/api/1') return Promise.resolve({ ok: false, status: 400 } as Response);
+        return Promise.resolve({ ok: true } as Response);
+      });
+
+      const syncFailedHandler = vi.fn();
+      window.addEventListener('sync-failed', syncFailedHandler);
+
+      await syncQueuedRequests();
+
+      // Only the successful second request should be deleted
+      expect(mockDeleteRequest).toHaveBeenCalledTimes(1);
+      expect(mockDeleteRequest).toHaveBeenCalledWith(2);
+      expect(syncFailedHandler).toHaveBeenCalledTimes(1);
+
+      window.removeEventListener('sync-failed', syncFailedHandler);
+      consoleError.mockRestore();
     });
 
     it('logs error if a request fails', async () => {
       (globalThis.navigator as any).onLine = true;
       const requests = [
-        { url: '/api/1', method: 'POST', body: { a: 1 } },
+        { id: 1, url: '/api/1', method: 'POST', body: { a: 1 } },
       ];
       mockGetAllRequests.mockResolvedValue(requests);
       globalThis.fetch = vi.fn().mockRejectedValue(new Error('fail'));
@@ -199,9 +235,9 @@ describe('offlineSync', () => {
         return Promise.resolve({ ok: true } as Response);
       });
 
-      // Import retryFetch directly for this test
       const { retryFetch } = await import('./offlineSync');
-      await expect(retryFetch(req)).resolves.toBeUndefined();
+      const result = await retryFetch(req);
+      expect(result).toBeDefined();
       expect(globalThis.fetch).toHaveBeenCalledTimes(2);
     });
 
@@ -211,6 +247,30 @@ describe('offlineSync', () => {
 
       const { retryFetch } = await import('./offlineSync');
       await expect(retryFetch(req, 2)).rejects.toThrow('Max retries reached');
+      expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('throws immediately on 4xx without retrying', async () => {
+      const req = { url: '/api', method: 'POST', body: { reps: 1 } };
+      globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 409 } as Response);
+
+      const { retryFetch } = await import('./offlineSync');
+      await expect(retryFetch(req)).rejects.toThrow('HTTP 409');
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('retries on 5xx server errors', async () => {
+      const req = { url: '/api', method: 'POST', body: { reps: 1 } };
+      let callCount = 0;
+      globalThis.fetch = vi.fn(() => {
+        callCount++;
+        if (callCount < 2) return Promise.resolve({ ok: false, status: 503 } as Response);
+        return Promise.resolve({ ok: true } as Response);
+      });
+
+      const { retryFetch } = await import('./offlineSync');
+      const result = await retryFetch(req);
+      expect(result).toBeDefined();
       expect(globalThis.fetch).toHaveBeenCalledTimes(2);
     });
   });

@@ -102,20 +102,41 @@ async function syncRequests() {
   const allRequests = await getAll(tx.objectStore('requests'));
 
   for (const req of allRequests) {
-    await fetch(req.url, {
-      method: req.method,
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(req.body),
-    });
+    try {
+      const response = await fetch(req.url, {
+        method: req.method,
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(req.body),
+      });
+      // Only delete requests that the server accepted; leave failures for next sync
+      if (response.ok && req.id !== undefined) {
+        const delTx = db.transaction('requests', 'readwrite');
+        delTx.objectStore('requests').delete(req.id);
+      }
+    } catch {
+      // Network failure — leave in queue for next sync attempt
+    }
   }
-
-  const clearTx = db.transaction('requests', 'readwrite');
-  clearTx.objectStore('requests').clear();
 }
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('OfflineRequestsDB', 1);
+    const request = indexedDB.open('OfflineRequestsDB', 2);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains('requests')) {
+        db.createObjectStore('requests', {keyPath: 'id', autoIncrement: true});
+      }
+      if (!db.objectStoreNames.contains('userDataCache')) {
+        db.createObjectStore('userDataCache', {keyPath: 'userId'});
+      }
+      if (!db.objectStoreNames.contains('eventsCache')) {
+        db.createObjectStore('eventsCache', {keyPath: 'userId'});
+      }
+      if (!db.objectStoreNames.contains('dayMetricsCache')) {
+        db.createObjectStore('dayMetricsCache', {keyPath: 'userId'});
+      }
+    };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });

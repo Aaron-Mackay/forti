@@ -67,6 +67,16 @@ export async function getAllRequests(): Promise<OfflineRequest[]> {
   });
 }
 
+export async function deleteRequest(id: number): Promise<void> {
+  const db = await openDatabase();
+  const tx = db.transaction('requests', 'readwrite');
+  const store = tx.objectStore('requests');
+  const req = store.delete(id);
+  req.onsuccess = () => {
+    window.dispatchEvent(new CustomEvent('queue-updated'));
+  };
+}
+
 export async function clearRequests(): Promise<void> {
   const db = await openDatabase();
   const tx = db.transaction('requests', 'readwrite');
