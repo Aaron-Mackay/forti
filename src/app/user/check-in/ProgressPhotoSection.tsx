@@ -35,7 +35,6 @@ function PhotoSlot({
   angle,
   label,
   photoUrl,
-  previousUrl,
   uploading,
   deleting,
   onOpenCamera,
@@ -45,7 +44,6 @@ function PhotoSlot({
   angle: Angle;
   label: string;
   photoUrl: string | null;
-  previousUrl: string | null;
   uploading: boolean;
   deleting: boolean;
   onOpenCamera: (angle: Angle) => void;
@@ -80,7 +78,12 @@ function PhotoSlot({
               component="img"
               src={photoUrl}
               alt={`${label} photo`}
-              sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              sx={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                bgcolor: 'rgba(0,0,0,0.04)',
+              }}
             />
             <Box
               sx={{
@@ -137,7 +140,7 @@ function PhotoSlot({
                 '&:hover': { bgcolor: 'action.selected' },
               }}
             >
-              <CameraAltIcon sx={{ fontSize: 24, color: previousUrl ? 'primary.main' : 'text.disabled' }} />
+              <CameraAltIcon sx={{ fontSize: 24, color: 'text.disabled' }} />
             </Box>
 
             <Divider />
@@ -184,6 +187,7 @@ export default function ProgressPhotoSection({
   onPhotoRemoved,
 }: Props) {
   const [activeAngle, setActiveAngle] = useState<Angle | null>(null);
+  const [activeUploadFile, setActiveUploadFile] = useState<File | null>(null);
   const [uploadingAngle, setUploadingAngle] = useState<Angle | null>(null);
   const [deletingAngle, setDeletingAngle] = useState<Angle | null>(null);
 
@@ -191,19 +195,11 @@ export default function ProgressPhotoSection({
     ? (previousPhotos?.[`${activeAngle}PhotoUrl`] ?? null)
     : null;
 
-  async function handleFileSelected(angle: Angle, file: File) {
+  function handleFileSelected(angle: Angle, file: File) {
     setUploadingAngle(angle);
-    try {
-      const formData = new FormData();
-      formData.append('angle', angle);
-      formData.append('file', file);
-      const res = await fetch('/api/check-in/photos', { method: 'POST', body: formData });
-      if (!res.ok) return;
-      const { url } = await res.json() as { url: string };
-      onPhotoUploaded(angle, url);
-    } finally {
-      setUploadingAngle(null);
-    }
+    setActiveUploadFile(file);
+    setActiveAngle(angle);
+    setUploadingAngle(null);
   }
 
   async function handleRemovePhoto(angle: Angle) {
@@ -236,7 +232,6 @@ export default function ProgressPhotoSection({
             angle={key}
             label={label}
             photoUrl={currentPhotos[key]}
-            previousUrl={previousPhotos?.[`${key}PhotoUrl`] ?? null}
             uploading={uploadingAngle === key}
             deleting={deletingAngle === key}
             onOpenCamera={setActiveAngle}
@@ -250,10 +245,15 @@ export default function ProgressPhotoSection({
         <PhotoCaptureModal
           angle={activeAngle}
           ghostUrl={activeGhostUrl}
-          onClose={() => setActiveAngle(null)}
+          initialFile={activeUploadFile}
+          onClose={() => {
+            setActiveAngle(null);
+            setActiveUploadFile(null);
+          }}
           onUploaded={(url: string) => {
             onPhotoUploaded(activeAngle, url);
             setActiveAngle(null);
+            setActiveUploadFile(null);
           }}
         />
       )}

@@ -33,6 +33,7 @@ const GHOST_ALPHA = 0.3;
 interface Props {
   angle: Angle;
   ghostUrl: string | null;
+  initialFile?: File | null;
   onClose: () => void;
   onUploaded: (url: string) => void;
 }
@@ -98,6 +99,40 @@ function drawCoverImage(
   return true;
 }
 
+function drawContainImage(
+  ctx: CanvasRenderingContext2D,
+  image: CanvasImageSource,
+  sourceWidth: number,
+  sourceHeight: number,
+  destWidth: number,
+  destHeight: number,
+  destX = 0,
+  destY = 0,
+) {
+  if (sourceWidth <= 0 || sourceHeight <= 0 || destWidth <= 0 || destHeight <= 0) {
+    return false;
+  }
+
+  const sourceAspect = sourceWidth / sourceHeight;
+  const destAspect = destWidth / destHeight;
+
+  let drawWidth = destWidth;
+  let drawHeight = destHeight;
+  let offsetX = destX;
+  let offsetY = destY;
+
+  if (sourceAspect > destAspect) {
+    drawHeight = destWidth / sourceAspect;
+    offsetY += (destHeight - drawHeight) / 2;
+  } else {
+    drawWidth = destHeight * sourceAspect;
+    offsetX += (destWidth - drawWidth) / 2;
+  }
+
+  ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+  return true;
+}
+
 function MobileCloseButton({ onClose }: { onClose: () => void }) {
   return (
     <IconButton
@@ -157,11 +192,11 @@ function OverlayChip({
   );
 }
 
-export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded }: Props) {
+export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null, onClose, onUploaded }: Props) {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const [stage, setStage] = useState<Stage>('capture');
+  const [stage, setStage] = useState<Stage>(initialFile ? 'adjust' : 'capture');
   const [facingMode, setFacingMode] = useState<FacingMode>('user');
   const [delay, setDelay] = useState<number>(3);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -187,10 +222,13 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
     lastY: 0,
     pinching: false,
     lastDist: 0,
+    lastCenterX: 0,
+    lastCenterY: 0,
     dx: 0,
     dy: 0,
     scale: 1,
   });
+  const activePointersRef = useRef(new Map<number, { x: number; y: number }>());
 
   // ── Camera setup ──────────────────────────────────────────────────────────
 
@@ -272,6 +310,26 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
     img.onload = () => { ghostImgRef.current = img; };
   }, [ghostUrl]);
 
+  useEffect(() => {
+    if (!initialFile) return;
+    capturedBlobRef.current = initialFile;
+    activePointersRef.current.clear();
+    setStage('adjust');
+    setUploadError(null);
+    gestureRef.current = {
+      dragging: false,
+      lastX: 0,
+      lastY: 0,
+      pinching: false,
+      lastDist: 0,
+      lastCenterX: 0,
+      lastCenterY: 0,
+      dx: 0,
+      dy: 0,
+      scale: 1,
+    };
+  }, [initialFile]);
+
   // ── Countdown ─────────────────────────────────────────────────────────────
 
   function clearCountdown() {
@@ -314,7 +372,18 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
       stopStream();
       clearCountdown();
       setStage('adjust');
-      gestureRef.current = { ...gestureRef.current, dx: 0, dy: 0, scale: 1, dragging: false, pinching: false };
+      gestureRef.current = {
+        ...gestureRef.current,
+        dx: 0,
+        dy: 0,
+        scale: 1,
+        dragging: false,
+        pinching: false,
+        lastDist: 0,
+        lastCenterX: 0,
+        lastCenterY: 0,
+      };
+      activePointersRef.current.clear();
     }, 'image/jpeg', 0.92);
   }
 
@@ -385,7 +454,14 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
     // Ghost
     if (ghostImgRef.current) {
       ctx.globalAlpha = GHOST_ALPHA;
-      ctx.drawImage(ghostImgRef.current, 0, 0, w, h);
+      drawContainImage(
+        ctx,
+        ghostImgRef.current,
+        ghostImgRef.current.width,
+        ghostImgRef.current.height,
+        w,
+        h,
+      );
       ctx.globalAlpha = 1;
     }
 
@@ -400,18 +476,65 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
   }
 
   // Touch / pointer gesture handlers for adjust stage
+  function clampScale(scale: number) {
+    return Math.max(0.5, Math.min(4, scale));
+  }
+
   function onPointerDown(e: React.PointerEvent) {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
     const g = gestureRef.current;
-    if (e.isPrimary) {
+    const points = Array.from(activePointersRef.current.values());
+
+    if (points.length === 1) {
       g.dragging = true;
       g.lastX = e.clientX;
       g.lastY = e.clientY;
+      g.pinching = false;
+      g.lastDist = 0;
+      return;
+    }
+
+    if (points.length === 2) {
+      const [a, b] = points;
+      g.dragging = false;
+      g.pinching = true;
+      g.lastDist = Math.hypot(b.x - a.x, b.y - a.y);
+      g.lastCenterX = (a.x + b.x) / 2;
+      g.lastCenterY = (a.y + b.y) / 2;
     }
   }
 
   function onPointerMove(e: React.PointerEvent) {
+    if (!activePointersRef.current.has(e.pointerId)) return;
+    e.preventDefault();
+
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const g = gestureRef.current;
-    if (g.dragging && e.isPrimary) {
+    const points = Array.from(activePointersRef.current.values());
+
+    if (points.length >= 2) {
+      const [a, b] = points;
+      const dist = Math.hypot(b.x - a.x, b.y - a.y);
+      const centerX = (a.x + b.x) / 2;
+      const centerY = (a.y + b.y) / 2;
+      if (g.lastDist > 0) {
+        g.scale = clampScale(g.scale * (dist / g.lastDist));
+      }
+      g.dx += centerX - g.lastCenterX;
+      g.dy += centerY - g.lastCenterY;
+      g.lastDist = dist;
+      g.lastCenterX = centerX;
+      g.lastCenterY = centerY;
+      g.pinching = true;
+      g.dragging = false;
+      drawAdjust();
+      return;
+    }
+
+    if (g.dragging) {
       g.dx += e.clientX - g.lastX;
       g.dy += e.clientY - g.lastY;
       g.lastX = e.clientX;
@@ -421,14 +544,34 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
   }
 
   function onPointerUp(e: React.PointerEvent) {
-    if (e.isPrimary) gestureRef.current.dragging = false;
+    activePointersRef.current.delete(e.pointerId);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+
+    const g = gestureRef.current;
+    const points = Array.from(activePointersRef.current.values());
+
+    if (points.length === 1) {
+      const [point] = points;
+      g.dragging = true;
+      g.pinching = false;
+      g.lastX = point.x;
+      g.lastY = point.y;
+      g.lastDist = 0;
+      return;
+    }
+
+    g.dragging = false;
+    g.pinching = false;
+    g.lastDist = 0;
   }
 
   function onWheel(e: React.WheelEvent) {
-    // Desktop pinch-to-zoom via wheel
+    e.preventDefault();
     const g = gestureRef.current;
     const delta = e.deltaY < 0 ? 0.1 : -0.1;
-    g.scale = Math.max(0.5, Math.min(4, g.scale + delta));
+    g.scale = clampScale(g.scale + delta);
     drawAdjust();
   }
 
@@ -484,6 +627,7 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
   function handleRetake() {
     capturedBlobRef.current = null;
     adjustImgRef.current = null;
+    activePointersRef.current.clear();
     setStage('capture');
     setUploadError(null);
   }
@@ -585,7 +729,8 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
                       inset: 0,
                       width: '100%',
                       height: '100%',
-                      objectFit: 'cover',
+                      objectFit: 'contain',
+                      bgcolor: 'rgba(255,255,255,0.04)',
                       opacity: GHOST_ALPHA,
                       pointerEvents: 'none',
                     }}
@@ -625,13 +770,13 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-          pointerEvents: 'none',
-        }}
-      >
-        <Box sx={{ pointerEvents: 'auto' }}>
+            pointerEvents: 'none',
+          }}
+        >
+          <Box sx={{ pointerEvents: 'auto' }}>
             <OverlayChip label={title} clickable={false} />
+          </Box>
         </Box>
-      </Box>
 
         {stage === 'capture' && !cameraError && (
           <Box
@@ -699,7 +844,7 @@ export default function PhotoCaptureModal({ angle, ghostUrl, onClose, onUploaded
           )}
 
           {stage === 'adjust' && ghostUrl && (
-            <OverlayChip label="Pinch and drag to align" />
+            <OverlayChip label="Pinch to zoom and drag to align with last photo" clickable={false} />
           )}
 
           {uploadError && (

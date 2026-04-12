@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { get } from '@vercel/blob';
 import { requireSession, authenticationErrorResponse } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { notFoundResponse, forbiddenResponse, errorResponse } from '@lib/apiResponses';
-import { getBlobToken } from '@lib/vercelBlob';
+import { getBlobToken, getManagedBlobPathname } from '@lib/vercelBlob';
 
 const VALID_ANGLES = ['front', 'back', 'side'] as const;
 type Angle = (typeof VALID_ANGLES)[number];
@@ -51,8 +52,8 @@ export async function GET(
     return forbiddenResponse();
   }
 
-  const blobUrl = checkIn[ANGLE_FIELD[angle as Angle]];
-  if (!blobUrl) return notFoundResponse('Photo');
+  const blobReference = checkIn[ANGLE_FIELD[angle as Angle]];
+  if (!blobReference) return notFoundResponse('Photo');
 
   let token: string;
   try {
@@ -61,21 +62,30 @@ export async function GET(
     return errorResponse('Storage not configured', 500);
   }
 
-  let upstream: Response;
+  const pathname = getManagedBlobPathname(blobReference);
+  const source = pathname ?? blobReference;
+
+  let upstream;
   try {
-    upstream = await fetch(blobUrl, {
-      headers: { Authorization: `Bearer ${token}` },
+    upstream = await get(source, {
+      access: 'private',
+      token,
+      useCache: false,
     });
   } catch {
     return errorResponse('Failed to fetch photo', 502);
   }
 
-  if (!upstream.ok) {
-    return new NextResponse(null, { status: upstream.status });
+  if (!upstream) {
+    return notFoundResponse('Photo');
   }
 
-  const contentType = upstream.headers.get('Content-Type') ?? 'image/jpeg';
-  return new NextResponse(upstream.body, {
+  if (upstream.statusCode !== 200 || !upstream.stream) {
+    return errorResponse('Failed to fetch photo', 502);
+  }
+
+  const contentType = upstream.blob.contentType ?? 'image/jpeg';
+  return new NextResponse(upstream.stream, {
     status: 200,
     headers: {
       'Content-Type': contentType,

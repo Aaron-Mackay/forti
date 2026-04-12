@@ -11,12 +11,15 @@ import {
   Chip,
   CircularProgress,
   Divider,
+  Dialog,
+  IconButton,
   Link,
   Paper,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import type {CheckInWithUser} from '@/types/checkInTypes';
 
 interface Props {
@@ -84,7 +87,15 @@ function NoteBlock({label, value}: { label: string; value: string | null }) {
   );
 }
 
-function PhotoTile({src, alt}: { src: string | null; alt: string }) {
+function PhotoTile({
+  src,
+  alt,
+  onClick,
+}: {
+  src: string | null;
+  alt: string;
+  onClick?: (src: string, alt: string) => void;
+}) {
   if (!src) {
     return (
       <Box
@@ -104,6 +115,7 @@ function PhotoTile({src, alt}: { src: string | null; alt: string }) {
       component="img"
       src={src}
       alt={alt}
+      onClick={() => onClick?.(src, alt)}
       sx={{
         width: '100%',
         aspectRatio: '4 / 5',
@@ -111,6 +123,7 @@ function PhotoTile({src, alt}: { src: string | null; alt: string }) {
         borderRadius: 2,
         border: '1px solid',
         borderColor: 'divider',
+        cursor: 'zoom-in',
       }}
     />
   );
@@ -122,6 +135,7 @@ export default function CoachCheckInDetailClient({checkIn}: Props) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [reviewedAt, setReviewedAt] = useState(checkIn.coachReviewedAt);
+  const [activePhoto, setActivePhoto] = useState<{ src: string; alt: string } | null>(null);
 
   const weekLabel = new Date(checkIn.weekStartDate).toLocaleDateString('en-GB', {
     day: 'numeric',
@@ -290,9 +304,9 @@ export default function CoachCheckInDetailClient({checkIn}: Props) {
                     },
                   }}
                 >
-                  <PhotoTile src={checkIn.frontPhotoUrl} alt="Front progress photo"/>
-                  <PhotoTile src={checkIn.sidePhotoUrl} alt="Side progress photo"/>
-                  <PhotoTile src={checkIn.backPhotoUrl} alt="Back progress photo"/>
+                  <PhotoTile src={checkIn.frontPhotoUrl} alt="Front progress photo" onClick={(src, alt) => setActivePhoto({src, alt})}/>
+                  <PhotoTile src={checkIn.sidePhotoUrl} alt="Side progress photo" onClick={(src, alt) => setActivePhoto({src, alt})}/>
+                  <PhotoTile src={checkIn.backPhotoUrl} alt="Back progress photo" onClick={(src, alt) => setActivePhoto({src, alt})}/>
                 </Box>
               </Section>
             </Box>
@@ -343,6 +357,52 @@ export default function CoachCheckInDetailClient({checkIn}: Props) {
           </Button>
         </Stack>
       </Section>
+
+      <Dialog
+        open={activePhoto !== null}
+        onClose={() => setActivePhoto(null)}
+        fullWidth
+        maxWidth="md"
+        slotProps={{
+          paper: {
+            sx: {
+              bgcolor: 'black',
+              position: 'relative',
+              overflow: 'hidden',
+            },
+          },
+        }}
+      >
+        <IconButton
+          onClick={() => setActivePhoto(null)}
+          aria-label="Close photo viewer"
+          sx={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            zIndex: 1,
+            color: 'white',
+            bgcolor: 'rgba(0,0,0,0.5)',
+            '&:hover': { bgcolor: 'rgba(0,0,0,0.68)' },
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+        {activePhoto && (
+          <Box
+            component="img"
+            src={activePhoto.src}
+            alt={activePhoto.alt}
+            sx={{
+              display: 'block',
+              width: '100%',
+              maxHeight: '90dvh',
+              objectFit: 'contain',
+              bgcolor: 'black',
+            }}
+          />
+        )}
+      </Dialog>
     </Box>
   );
 }

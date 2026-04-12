@@ -69,10 +69,33 @@ function isManagedBlobUrl(url: string | null | undefined): boolean {
   }
 }
 
-export async function deleteBlobIfManaged(url: string | null | undefined) {
-  if (!isManagedBlobUrl(url)) return;
+function isBlobPathname(value: string | null | undefined): value is string {
+  return Boolean(value) && !String(value).startsWith('http://') && !String(value).startsWith('https://');
+}
 
-  const managedUrl = url as string;
+export function getManagedBlobPathname(reference: string | null | undefined): string | null {
+  if (!reference) return null;
+
+  if (isBlobPathname(reference)) {
+    return reference;
+  }
+
+  if (!isManagedBlobUrl(reference)) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(reference);
+    return parsed.pathname.replace(/^\/+/, '') || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteBlobIfManaged(url: string | null | undefined) {
+  const managedReference = getManagedBlobPathname(url) ?? (isManagedBlobUrl(url) ? url as string : null);
+  if (!managedReference) return;
+
   const possibleTokens = [
     process.env.BLOB_PUBLIC_READ_WRITE_TOKEN,
     process.env.BLOB_PRIVATE_READ_WRITE_TOKEN,
@@ -84,7 +107,7 @@ export async function deleteBlobIfManaged(url: string | null | undefined) {
   let lastError: unknown = null;
   for (const token of possibleTokens) {
     try {
-      await del(managedUrl, { token });
+      await del(managedReference, { token });
       return;
     } catch (error) {
       lastError = error;

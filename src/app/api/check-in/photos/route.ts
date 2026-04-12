@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
 
   await prisma.weeklyCheckIn.update({
     where: { id: checkIn.id },
-    data: { [field]: blob.url },
+    data: { [field]: blob.pathname },
   });
 
   const proxyUrl = `/api/check-in/photos/${checkIn.id}/${angle}`;
