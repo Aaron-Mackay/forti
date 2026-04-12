@@ -80,15 +80,14 @@ export async function GET(req: NextRequest, props: { params: Promise<{ exerciseI
       workouts: previousWorkouts.flatMap(workout => {
         const matchedExercise = workout.exercises[duplicateIndex];
         if (!matchedExercise || !workout.dateCompleted) return [];
-        return [{
-          completedAt: workout.dateCompleted.toISOString(),
-          sets: matchedExercise.sets.map(set => ({
-            order: set.order,
-            weight: set.weight,
-            reps: set.reps,
-            e1rm: set.e1rm ?? computeE1rm(set.weight, set.reps),
-          })),
-        }];
+        const sets = matchedExercise.sets.map(set => ({
+          order: set.order,
+          weight: set.weight,
+          reps: set.reps,
+          e1rm: set.e1rm ?? computeE1rm(set.weight, set.reps),
+        }));
+        if (sets.every(s => s.reps == null)) return [];
+        return [{completedAt: workout.dateCompleted.toISOString(), sets}];
       }),
     };
 

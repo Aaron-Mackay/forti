@@ -211,6 +211,40 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
     );
   });
 
+  it('excludes workouts where all sets have null reps', async () => {
+    mockFindMany.mockResolvedValue([
+      {
+        dateCompleted: new Date('2026-01-14T12:00:00Z'),
+        exercises: [
+          {
+            sets: [{order: 1, reps: null, weight: 100, e1rm: null}],
+          },
+        ],
+      },
+      {
+        dateCompleted: new Date('2026-01-07T12:00:00Z'),
+        exercises: [
+          {
+            sets: [{order: 1, reps: 8, weight: 100, e1rm: 126.7}],
+          },
+        ],
+      },
+    ]);
+
+    const [req, props] = makeRequest('5', 99, 10);
+    const res = await GET(req, props);
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      workouts: [
+        {
+          completedAt: '2026-01-07T12:00:00.000Z',
+          sets: [{order: 1, reps: 8, weight: 100, e1rm: 126.7}],
+        },
+      ],
+    });
+  });
+
   it('adds an upper date bound when the current workout is already completed', async () => {
     mockFindUnique.mockResolvedValueOnce({dateCompleted: new Date('2026-01-15T12:00:00Z')});
     mockFindUnique.mockResolvedValueOnce(currentWorkout);
