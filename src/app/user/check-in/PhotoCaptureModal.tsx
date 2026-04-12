@@ -203,6 +203,8 @@ export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null,
   const [cameraError, setCameraError] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [ghostLoaded, setGhostLoaded] = useState(false);
+  const [adjustImageLoaded, setAdjustImageLoaded] = useState(false);
 
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -303,11 +305,16 @@ export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null,
 
   // Load ghost image once
   useEffect(() => {
+    ghostImgRef.current = null;
+    setGhostLoaded(!ghostUrl);
     if (!ghostUrl) return;
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = ghostUrl;
-    img.onload = () => { ghostImgRef.current = img; };
+    img.onload = () => {
+      ghostImgRef.current = img;
+      setGhostLoaded(true);
+    };
   }, [ghostUrl]);
 
   useEffect(() => {
@@ -430,14 +437,25 @@ export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null,
 
   useEffect(() => {
     if (stage !== 'adjust') return;
+    setAdjustImageLoaded(false);
     const blob = capturedBlobRef.current;
     if (!blob) return;
     const url = URL.createObjectURL(blob);
     const img = new Image();
-    img.onload = () => { adjustImgRef.current = img; drawAdjust(); };
+    img.onload = () => {
+      adjustImgRef.current = img;
+      setAdjustImageLoaded(true);
+    };
     img.src = url;
     return () => URL.revokeObjectURL(url);
   }, [stage]);
+
+  useEffect(() => {
+    if (stage !== 'adjust') return;
+    if (!adjustImageLoaded) return;
+    if (!ghostLoaded) return;
+    drawAdjust();
+  }, [stage, adjustImageLoaded, ghostLoaded]);
 
   function drawAdjust() {
     const canvas = adjustCanvasRef.current;
@@ -451,9 +469,20 @@ export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null,
     const { dx, dy, scale } = gestureRef.current;
     ctx.clearRect(0, 0, w, h);
 
-    // Ghost
+    // Captured photo with transform
+    if (adjustImgRef.current) {
+      ctx.save();
+      ctx.translate(w / 2 + dx, h / 2 + dy);
+      ctx.scale(scale, scale);
+      drawCoverImage(ctx, adjustImgRef.current, adjustImgRef.current.width, adjustImgRef.current.height, w, h, -w / 2, -h / 2);
+      ctx.restore();
+    }
+
+    // Ghost reference sits above the movable image so alignment is easier.
     if (ghostImgRef.current) {
+      ctx.save();
       ctx.globalAlpha = GHOST_ALPHA;
+      ctx.globalCompositeOperation = 'multiply';
       drawContainImage(
         ctx,
         ghostImgRef.current,
@@ -462,15 +491,6 @@ export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null,
         w,
         h,
       );
-      ctx.globalAlpha = 1;
-    }
-
-    // Captured photo with transform
-    if (adjustImgRef.current) {
-      ctx.save();
-      ctx.translate(w / 2 + dx, h / 2 + dy);
-      ctx.scale(scale, scale);
-      drawCoverImage(ctx, adjustImgRef.current, adjustImgRef.current.width, adjustImgRef.current.height, w, h, -w / 2, -h / 2);
       ctx.restore();
     }
   }
@@ -646,6 +666,8 @@ export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null,
 
   const title = `${stage === 'adjust' ? 'Adjust - ' : ''}${ANGLE_LABELS[angle]}`;
   const delayLabel = delay === 0 ? 'Timer Off' : `Timer ${delay}s`;
+  const isUploadFlow = initialFile !== null;
+  const isAdjustCanvasReady = stage !== 'adjust' || (adjustImageLoaded && ghostLoaded);
 
   return (
     <Dialog
@@ -732,6 +754,7 @@ export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null,
                       objectFit: 'contain',
                       bgcolor: 'rgba(255,255,255,0.04)',
                       opacity: GHOST_ALPHA,
+                      mixBlendMode: 'multiply',
                       pointerEvents: 'none',
                     }}
                   />
@@ -756,8 +779,28 @@ export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null,
           >
             <canvas
               ref={adjustCanvasRef}
-              style={{ width: '100%', height: '100%', display: 'block' }}
+              style={{
+                width: '100%',
+                height: '100%',
+                display: 'block',
+                opacity: isAdjustCanvasReady ? 1 : 0,
+              }}
             />
+            {!isAdjustCanvasReady && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: 'rgba(0,0,0,0.18)',
+                  pointerEvents: 'none',
+                }}
+              >
+                <CircularProgress size={28} sx={{ color: 'white' }} />
+              </Box>
+            )}
           </Box>
         )}
 
@@ -777,36 +820,6 @@ export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null,
             <OverlayChip label={title} clickable={false} />
           </Box>
         </Box>
-
-        {stage === 'capture' && !cameraError && (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 'calc(env(safe-area-inset-top, 0px) + 10px)',
-              right: 12,
-              display: 'flex',
-              gap: 1,
-              alignItems: 'center',
-            }}
-          >
-            <OverlayChip label={delayLabel} onClick={handleCycleDelay} disabled={countdown !== null} />
-            <IconButton
-              onClick={(event) => {
-                event.stopPropagation();
-                handleFlip();
-              }}
-              sx={{
-                color: 'white',
-                bgcolor: 'rgba(0,0,0,0.55)',
-                backdropFilter: 'blur(8px)',
-                border: '1px solid rgba(255,255,255,0.14)',
-                '&:hover': { bgcolor: 'rgba(0,0,0,0.68)' },
-              }}
-            >
-              <FlipCameraIosIcon />
-            </IconButton>
-          </Box>
-        )}
 
         {countdown !== null && (
           <Box
@@ -852,46 +865,81 @@ export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null,
           )}
 
           {stage === 'capture' && !cameraError && (
-            <IconButton
-              onClick={(event) => {
-                event.stopPropagation();
-                handleCapture();
-              }}
+            <Box
               sx={{
-                bgcolor: countdown !== null ? 'rgba(255,255,255,0.82)' : 'white',
-                width: 72,
-                height: 72,
-                border: '4px solid rgba(0,0,0,0.18)',
-                '&:hover': { bgcolor: 'grey.200' },
+                width: '100%',
+                maxWidth: 360,
+                display: 'grid',
+                gridTemplateColumns: '1fr auto 1fr',
+                alignItems: 'center',
               }}
             >
-              {countdown !== null ? (
-                <CloseIcon sx={{ fontSize: 32, color: 'black' }} />
-              ) : (
-                <CameraAltIcon sx={{ fontSize: 34, color: 'black' }} />
-              )}
-            </IconButton>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <OverlayChip label={delayLabel} onClick={handleCycleDelay} disabled={countdown !== null} />
+              </Box>
+
+              <IconButton
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleCapture();
+                }}
+                sx={{
+                  justifySelf: 'center',
+                  bgcolor: countdown !== null ? 'rgba(255,255,255,0.82)' : 'white',
+                  width: 72,
+                  height: 72,
+                  border: '4px solid rgba(0,0,0,0.18)',
+                  '&:hover': { bgcolor: 'grey.200' },
+                }}
+              >
+                {countdown !== null ? (
+                  <CloseIcon sx={{ fontSize: 32, color: 'black' }} />
+                ) : (
+                  <CameraAltIcon sx={{ fontSize: 34, color: 'black' }} />
+                )}
+              </IconButton>
+
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <IconButton
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleFlip();
+                  }}
+                  sx={{
+                    color: 'white',
+                    bgcolor: 'rgba(0,0,0,0.55)',
+                    backdropFilter: 'blur(8px)',
+                    border: '1px solid rgba(255,255,255,0.14)',
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.68)' },
+                  }}
+                >
+                  <FlipCameraIosIcon />
+                </IconButton>
+              </Box>
+            </Box>
           )}
 
           {stage === 'adjust' && (
             <Box sx={{ display: 'flex', gap: 1.25, width: '100%', maxWidth: 320 }}>
-              <Button
-                variant="outlined"
-                fullWidth
-                onClick={(event) => {
-                  event.stopPropagation();
-                  handleRetake();
-                }}
-                disabled={uploading}
-                sx={{
-                  color: 'white',
-                  borderColor: 'rgba(255,255,255,0.25)',
-                  bgcolor: 'rgba(0,0,0,0.45)',
-                  backdropFilter: 'blur(8px)',
-                }}
-              >
-                Retake
-              </Button>
+              {!isUploadFlow && (
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleRetake();
+                  }}
+                  disabled={uploading}
+                  sx={{
+                    color: 'white',
+                    borderColor: 'rgba(255,255,255,0.25)',
+                    bgcolor: 'rgba(0,0,0,0.45)',
+                    backdropFilter: 'blur(8px)',
+                  }}
+                >
+                  Retake
+                </Button>
+              )}
               <Button
                 variant="contained"
                 fullWidth

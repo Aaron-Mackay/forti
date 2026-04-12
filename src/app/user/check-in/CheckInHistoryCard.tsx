@@ -8,12 +8,16 @@ import {
   Box,
   Chip,
   Divider,
+  Dialog,
+  IconButton,
   Link,
   Typography,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CloseIcon from '@mui/icons-material/Close';
 import type { WeeklyCheckIn } from '@/generated/prisma/browser';
+import { APPBAR_HEIGHT } from '@/components/CustomAppBar';
 
 interface Props {
   checkIn: WeeklyCheckIn;
@@ -44,7 +48,13 @@ function TextField({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-export function CheckInDetails({ checkIn }: { checkIn: WeeklyCheckIn }) {
+export function CheckInDetails({
+  checkIn,
+  onPhotoOpen,
+}: {
+  checkIn: WeeklyCheckIn;
+  onPhotoOpen?: (src: string, alt: string) => void;
+}) {
   const hasRatings = [
     checkIn.energyLevel,
     checkIn.moodRating,
@@ -108,7 +118,17 @@ export function CheckInDetails({ checkIn }: { checkIn: WeeklyCheckIn }) {
                   component="img"
                   src={url}
                   alt={field.replace('PhotoUrl', '')}
-                  sx={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}
+                  onClick={() => onPhotoOpen?.(url, field.replace('PhotoUrl', ' progress photo'))}
+                  sx={{
+                    width: 72,
+                    height: 72,
+                    objectFit: 'contain',
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: 'rgba(0,0,0,0.04)',
+                    cursor: onPhotoOpen ? 'zoom-in' : 'default',
+                  }}
                 />
               ) : (
                 <Box
@@ -145,6 +165,7 @@ export function CheckInDetails({ checkIn }: { checkIn: WeeklyCheckIn }) {
 
 export default function CheckInHistoryCard({ checkIn, defaultExpanded = false }: Props) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const [activePhoto, setActivePhoto] = useState<{ src: string; alt: string } | null>(null);
 
   const weekStart = new Date(checkIn.weekStartDate);
   const weekLabel = weekStart.toLocaleDateString('en-GB', {
@@ -179,8 +200,64 @@ export default function CheckInHistoryCard({ checkIn, defaultExpanded = false }:
       </AccordionSummary>
 
       <AccordionDetails>
-        <CheckInDetails checkIn={checkIn} />
+        <CheckInDetails
+          checkIn={checkIn}
+          onPhotoOpen={(src, alt) => setActivePhoto({ src, alt })}
+        />
       </AccordionDetails>
+
+      <Dialog
+        open={activePhoto !== null}
+        onClose={() => setActivePhoto(null)}
+        fullWidth
+        maxWidth="md"
+        sx={{
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+          },
+        }}
+        slotProps={{
+          paper: {
+            sx: {
+              bgcolor: 'black',
+              position: 'relative',
+              overflow: 'hidden',
+              mt: `${APPBAR_HEIGHT}px`,
+              maxHeight: `calc(100dvh - ${APPBAR_HEIGHT}px)`,
+            },
+          },
+        }}
+      >
+        <IconButton
+          onClick={() => setActivePhoto(null)}
+          aria-label="Close photo viewer"
+          sx={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            zIndex: 1,
+            color: 'white',
+            bgcolor: 'rgba(0,0,0,0.5)',
+            '&:hover': { bgcolor: 'rgba(0,0,0,0.68)' },
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+        {activePhoto && (
+          <Box
+            component="img"
+            src={activePhoto.src}
+            alt={activePhoto.alt}
+            sx={{
+              display: 'block',
+              width: '100%',
+              maxHeight: `calc(100dvh - ${APPBAR_HEIGHT}px)`,
+              objectFit: 'contain',
+              bgcolor: 'black',
+            }}
+          />
+        )}
+      </Dialog>
     </Accordion>
   );
 }

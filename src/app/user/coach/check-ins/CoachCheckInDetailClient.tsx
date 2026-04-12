@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import type {CheckInWithUser} from '@/types/checkInTypes';
+import { APPBAR_HEIGHT } from '@/components/CustomAppBar';
 
 interface Props {
   checkIn: CheckInWithUser;
@@ -363,12 +364,19 @@ export default function CoachCheckInDetailClient({checkIn}: Props) {
         onClose={() => setActivePhoto(null)}
         fullWidth
         maxWidth="md"
+        sx={{
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+          },
+        }}
         slotProps={{
           paper: {
             sx: {
               bgcolor: 'black',
               position: 'relative',
               overflow: 'hidden',
+              mt: `${APPBAR_HEIGHT}px`,
+              maxHeight: `calc(100dvh - ${APPBAR_HEIGHT}px)`,
             },
           },
         }}
@@ -396,7 +404,7 @@ export default function CoachCheckInDetailClient({checkIn}: Props) {
             sx={{
               display: 'block',
               width: '100%',
-              maxHeight: '90dvh',
+              maxHeight: `calc(100dvh - ${APPBAR_HEIGHT}px)`,
               objectFit: 'contain',
               bgcolor: 'black',
             }}
