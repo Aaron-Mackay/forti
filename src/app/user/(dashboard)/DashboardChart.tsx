@@ -28,7 +28,7 @@ type Selection = {
   xaxis: { min: number; max: number };
 }
 
-export default function DashboardChart({metrics, blocks}: { metrics: MetricPrisma[], blocks: EventPrisma[] }) {
+export default function DashboardChart({metrics = [], blocks = []}: { metrics: MetricPrisma[], blocks: EventPrisma[] }) {
   const [selectedMetrics, setSelectedMetrics] = useState<BuiltInMetricKey[]>(['weight']);
   const metricLabelify = (metricKey: BuiltInMetricKey): string => metricKey[0].toUpperCase() + metricKey.slice(1);
 
