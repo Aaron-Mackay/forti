@@ -56,6 +56,7 @@ function buildExercise(): WorkoutExercisePrisma {
       equipment: [],
       primaryMuscles: [],
       secondaryMuscles: [],
+      createdByUserId: null,
     },
     sets: [
       {id: 1, workoutExerciseId: 10, order: 1, reps: null, weight: null, e1rm: null, rpe: null, rir: null, isDropSet: false, parentSetId: null},
