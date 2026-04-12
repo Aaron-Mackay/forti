@@ -4,8 +4,8 @@ import dynamic from "next/dynamic";
 import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {Box, Button, ButtonGroup, Skeleton} from "@mui/material";
 import {addDays, subDays, subMonths} from "date-fns";
-import {DayMetricPrisma, EventPrisma} from "@/types/dataTypes";
-import {BuiltInMetricKey} from "@/app/user/calendar/DayMetricBar";
+import {MetricPrisma, EventPrisma} from "@/types/dataTypes";
+import {BuiltInMetricKey} from "@/app/user/calendar/MetricBar";
 import {getDefinedBlockColor} from "@/app/user/calendar/utils";
 import {DataPoint, Series} from "@/app/user/(dashboard)/utils";
 import {GestureHandlers, useGesture} from "@use-gesture/react";
@@ -28,22 +28,22 @@ type Selection = {
   xaxis: { min: number; max: number };
 }
 
-export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMetricPrisma[], blocks: EventPrisma[] }) {
+export default function DashboardChart({metrics, blocks}: { metrics: MetricPrisma[], blocks: EventPrisma[] }) {
   const [selectedMetrics, setSelectedMetrics] = useState<BuiltInMetricKey[]>(['weight']);
   const metricLabelify = (metricKey: BuiltInMetricKey): string => metricKey[0].toUpperCase() + metricKey.slice(1);
 
   const getData = useCallback(
     (metric: BuiltInMetricKey): DataPoint[] =>
-      dayMetrics
+      metrics
         .filter(dm => dm[metric] !== null)
         .map(dm => [new Date(dm.date).getTime(), dm[metric]]),
-    [dayMetrics]
+    [metrics]
   );
 
 
   const today: Date = useMemo(() => new Date(), [])
   const startDay =
-    dayMetrics[0]?.date
+    metrics[0]?.date
     ?? blocks[0]?.startDate
     ?? subMonths(today, 7);
   const ranges = [
@@ -60,7 +60,7 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
 
   // if user has no metrics recorded, add an invisible series or blocks don't show
   const series = useMemo<Series[]>(() => {
-    if (dayMetrics.length === 0 || selectedMetrics.length === 0) {
+    if (metrics.length === 0 || selectedMetrics.length === 0) {
       return [{
         name: "invisible",
         data: [[startDay.getTime(), null], [today.getTime(), null]],
@@ -72,7 +72,7 @@ export default function DashboardChart({dayMetrics, blocks}: { dayMetrics: DayMe
       data: getData(metricKey),
       yAxisIndex: i as 0 | 1,
     }));
-  }, [dayMetrics.length, getData, selectedMetrics, startDay, today]);
+  }, [metrics.length, getData, selectedMetrics, startDay, today]);
 
   const isActiveRange = (min: number, max: number) => {
     const tol = 1000 * 60 * 60 * 12;

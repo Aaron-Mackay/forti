@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import getLoggedInUser from '@lib/getLoggedInUser';
 import prisma from '@lib/prisma';
 import AppBarTitle from '@/components/AppBarTitle';
-import { getUserData, getUserDayMetrics, getUserEvents } from '@lib/api';
+import { getUserData, getUserMetrics, getUserEvents } from '@lib/api';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import DashboardCards from '@/app/user/(dashboard)/DashboardCards';
 import DashboardChart from '@/app/user/(dashboard)/DashboardChart';
@@ -29,9 +29,9 @@ const ClientOverviewPage = async ({ params }: Props) => {
     notFound();
   }
 
-  const [userData, dayMetrics, events] = await Promise.all([
+  const [userData, metrics, events] = await Promise.all([
     getUserData(clientId),
-    getUserDayMetrics(clientId),
+    getUserMetrics(clientId),
     getUserEvents(clientId),
   ]);
 
@@ -46,15 +46,15 @@ const ClientOverviewPage = async ({ params }: Props) => {
         <ClientQuickLinks clientId={clientId} />
         <DashboardCards
           userData={userData}
-          dayMetrics={dayMetrics}
+          metrics={metrics}
           events={events}
           today={new Date()}
           userId={clientId}
           settings={coachViewSettings}
         />
-        {dayMetrics.length > 0 && (
+        {metrics.length > 0 && (
           <DashboardChart
-            dayMetrics={dayMetrics}
+            metrics={metrics}
             blocks={events.filter((e: PrismaEvent) => e.eventType === EventType.BlockEvent)}
           />
         )}

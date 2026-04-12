@@ -1,4 +1,4 @@
-import type {DayMetricPrisma, EventPrisma, UserPrisma} from '@/types/dataTypes';
+import type {MetricPrisma, EventPrisma, UserPrisma} from '@/types/dataTypes';
 
 interface OfflineRequest {
   id?: number;
@@ -14,7 +14,7 @@ export interface CacheEntry<T> {
 }
 
 const DB_NAME = 'OfflineRequestsDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -31,8 +31,8 @@ export function openDatabase(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains('eventsCache')) {
         db.createObjectStore('eventsCache', {keyPath: 'userId'});
       }
-      if (!db.objectStoreNames.contains('dayMetricsCache')) {
-        db.createObjectStore('dayMetricsCache', {keyPath: 'userId'});
+      if (!db.objectStoreNames.contains('metricsCache')) {
+        db.createObjectStore('metricsCache', {keyPath: 'userId'});
       }
     };
 
@@ -129,10 +129,10 @@ export async function getEventsCache(userId: string): Promise<CacheEntry<EventPr
   return readFromCache<EventPrisma[]>('eventsCache', userId);
 }
 
-export async function saveDayMetricsCache(userId: string, data: DayMetricPrisma[]): Promise<void> {
-  return saveToCache('dayMetricsCache', {userId, data, savedAt: Date.now()});
+export async function saveMetricsCache(userId: string, data: MetricPrisma[]): Promise<void> {
+  return saveToCache('metricsCache', {userId, data, savedAt: Date.now()});
 }
 
-export async function getDayMetricsCache(userId: string): Promise<CacheEntry<DayMetricPrisma[]> | undefined> {
-  return readFromCache<DayMetricPrisma[]>('dayMetricsCache', userId);
+export async function getMetricsCache(userId: string): Promise<CacheEntry<MetricPrisma[]> | undefined> {
+  return readFromCache<MetricPrisma[]>('metricsCache', userId);
 }

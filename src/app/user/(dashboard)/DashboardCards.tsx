@@ -16,13 +16,13 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import UpcomingIcon from "@mui/icons-material/Upcoming";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import Link from "next/link";
-import {DayMetricPrisma, EventPrisma, UserPrisma} from "@/types/dataTypes";
+import {MetricPrisma, EventPrisma, UserPrisma} from "@/types/dataTypes";
 import {Settings} from "@/types/settingsTypes";
 import {EventType} from "@/generated/prisma/browser";
 import {convertDateToDateString} from "@lib/dateUtils";
 import {getDefinedBlockColor} from "@/app/user/calendar/utils";
-import {DayMetricsBar, MetricKey} from "@/app/user/calendar/DayMetricBar";
-import DayMetricDrawer from "@/app/user/(dashboard)/DayMetricDrawer";
+import {MetricsBar, MetricKey} from "@/app/user/calendar/MetricBar";
+import MetricDrawer from "@/app/user/(dashboard)/MetricDrawer";
 import WelcomeModal from "@/app/user/(dashboard)/WelcomeModal";
 import GettingStartedCard from "@/app/user/(dashboard)/GettingStartedCard";
 
@@ -43,7 +43,7 @@ function findNextWorkout(userData: UserPrisma | null) {
   return { workout: null, week: null, plan: activePlan };
 }
 
-function getTodayMetric(dayMetrics: DayMetricPrisma[], today: Date) {
+function getTodayMetric(dayMetrics: MetricPrisma[], today: Date) {
   const todayStr = convertDateToDateString(today);
   return dayMetrics.find(
     dm => convertDateToDateString(new Date(dm.date)) === todayStr
@@ -106,17 +106,17 @@ function daysRemaining(endDate: Date, today: Date): number {
 
 interface DashboardCardsProps {
   userData: UserPrisma | null;
-  dayMetrics: DayMetricPrisma[];
+  metrics: MetricPrisma[];
   events: EventPrisma[];
   today: Date;
   userId: string;
   settings: Settings;
 }
 
-export default function DashboardCards({userData, dayMetrics, events, today, userId, settings}: DashboardCardsProps) {
+export default function DashboardCards({userData, metrics, events, today, userId, settings}: DashboardCardsProps) {
   const nextWorkout = findNextWorkout(userData);
-  const [todayMetricState, setTodayMetricState] = useState<DayMetricPrisma | null>(
-    getTodayMetric(dayMetrics, today)
+  const [todayMetricState, setTodayMetricState] = useState<MetricPrisma | null>(
+    getTodayMetric(metrics, today)
   );
   const [selectedMetric, setSelectedMetric] = useState<MetricKey | null>(null);
   const [inputValue, setInputValue] = useState<string | number | null>(null);
@@ -125,14 +125,14 @@ export default function DashboardCards({userData, dayMetrics, events, today, use
   const activeBlock = getActiveBlock(events, today);
   const upcomingEvents = getUpcomingEvents(events, today);
 
-  const setDayMetricsStateCb = (_date: Date, metrics: DayMetricPrisma | null) => {
-    setTodayMetricState(metrics);
+  const setMetricStateCb = (_date: Date, metric: MetricPrisma | null) => {
+    setTodayMetricState(metric);
   };
 
   return (
     <>
       <WelcomeModal />
-      <GettingStartedCard userData={userData} dayMetrics={dayMetrics} today={today} />
+      <GettingStartedCard userData={userData} metrics={metrics} today={today} />
       <Grid container spacing={2} sx={{mb: 2}}>
 
         {/* Next Workout */}
@@ -193,8 +193,8 @@ export default function DashboardCards({userData, dayMetrics, events, today, use
                 <TodayIcon color="secondary" fontSize="small"/>
                 <Typography variant="overline" color="text.secondary">Today</Typography>
               </Box>
-              <DayMetricsBar
-                dateDayMetrics={todayMetricState}
+              <MetricsBar
+                dateMetric={todayMetricState}
                 setSelectedMetric={setSelectedMetric}
                 setInputValue={setInputValue}
                 customMetricDefs={settings.customMetrics}
@@ -301,17 +301,17 @@ export default function DashboardCards({userData, dayMetrics, events, today, use
 
       </Grid>
 
-      <DayMetricDrawer
+      <MetricDrawer
         open={selectedMetric !== null}
         onClose={() => setSelectedMetric(null)}
         selectedMetric={selectedMetric}
         setSelectedMetric={setSelectedMetric}
         inputValue={inputValue}
         setInputValue={setInputValue}
-        dateDayMetrics={todayMetricState}
+        dateMetric={todayMetricState}
         date={today}
         userId={userId}
-        setDayMetricsStateCb={setDayMetricsStateCb}
+        setMetricStateCb={setMetricStateCb}
         customMetricDefs={settings.customMetrics}
       />
     </>

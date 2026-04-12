@@ -25,7 +25,7 @@ model User {
   activePlan        Plan?    @relation("ActivePlan", fields: [activePlanId], references: [id], onDelete: SetNull)
   events            Event[]
   userExerciseNotes UserExerciseNote[]
-  dayMetrics        DayMetric[]
+  metrics           Metric[]
 
   settings Json?
 
@@ -133,7 +133,7 @@ model Event {
   @@index([userId, startDate, endDate])
 }
 
-model DayMetric {
+model Metric {
   id        Int      @id @default(autoincrement())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

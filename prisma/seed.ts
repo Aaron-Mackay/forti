@@ -43,7 +43,7 @@ function daysAgo(n: number): Date {
 async function main() {
   // Clear existing data
   await prisma.$executeRawUnsafe(`
-    TRUNCATE "ExerciseSet", "WorkoutExercise", "Exercise", "Workout", "Week", "Plan", "User", "Event", "UserExerciseNote", "DayMetric", "Account", "Session", "WeeklyCheckIn", "PushSubscription", "TargetTemplate", "TargetTemplateDay"
+    TRUNCATE "ExerciseSet", "WorkoutExercise", "Exercise", "Workout", "Week", "Plan", "User", "Event", "UserExerciseNote", "Metric", "Account", "Session", "WeeklyCheckIn", "PushSubscription", "TargetTemplate", "TargetTemplateDay"
     CASCADE
   `);
 
@@ -225,7 +225,7 @@ async function main() {
       fat: maybeNull(Math.floor(Math.random() * 100)),
     });
   }
-  await prisma.dayMetric.createMany({ data: dayMetricsData });
+  await prisma.metric.createMany({ data: dayMetricsData });
 
   // ── Seed WeeklyCheckIns for Todd ──────────────────────────────────────────
   // Create 6 completed check-ins over the last 6 weeks

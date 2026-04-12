@@ -30,7 +30,7 @@ export async function GET() {
   const fourteenDaysAgo = new Date(weekStart);
   fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
-  const dayMetrics = await prisma.dayMetric.findMany({
+  const dayMetrics = await prisma.metric.findMany({
     where: {
       userId,
       date: { gte: fourteenDaysAgo },

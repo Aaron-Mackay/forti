@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import {BlockSubtype, EventType} from '@/generated/prisma/browser';
 
-export const DayMetricSchema = z.object({
+export const MetricSchema = z.object({
   userId: z.string(),
   date: z.coerce.date(),
   weight: z.number().optional().nullable(),

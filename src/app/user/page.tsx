@@ -6,7 +6,7 @@ import {Paper, Typography} from "@mui/material";
 import DashboardChart from "@/app/user/(dashboard)/DashboardChart";
 import DashboardCards from "@/app/user/(dashboard)/DashboardCards";
 import E1rmProgressCard from "@/app/user/(dashboard)/E1rmProgressCard";
-import {getUserData, getUserDayMetrics, getUserEvents} from "@lib/api";
+import {getUserData, getUserMetrics, getUserEvents} from "@lib/api";
 import {Event as PrismaEvent, EventType} from "@/generated/prisma/browser";
 import prisma from "@lib/prisma";
 import {parseDashboardSettings} from "@/types/settingsTypes";
@@ -14,8 +14,8 @@ import {redirect} from "next/navigation";
 
 export default async function UserPage() {
   const user = await getLoggedInUser()
-  const [userDayMetrics, allEvents, userData, userRecord] = await Promise.all([
-    getUserDayMetrics(user.id),
+  const [userMetrics, allEvents, userData, userRecord] = await Promise.all([
+    getUserMetrics(user.id),
     getUserEvents(user.id),
     getUserData(user.id),
     prisma.user.findUnique({ where: { id: user.id }, select: { settings: true } }),
@@ -36,15 +36,15 @@ export default async function UserPage() {
         </Typography>
         <DashboardCards
           userData={userData}
-          dayMetrics={userDayMetrics}
+          metrics={userMetrics}
           events={allEvents}
           today={new Date()}
           userId={user.id}
           settings={settings}
         />
         {settings.showMetricsChart
-          && userDayMetrics.length > 0
-          && <DashboardChart dayMetrics={userDayMetrics} blocks={userBlocks}/>}
+          && userMetrics.length > 0
+          && <DashboardChart metrics={userMetrics} blocks={userBlocks}/>}
         {settings.showE1rmProgress
           && settings.trackedE1rmExercises.length > 0
           && <E1rmProgressCard exercises={settings.trackedE1rmExercises} weightUnit={settings.weightUnit}/>}

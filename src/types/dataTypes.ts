@@ -1,7 +1,7 @@
-import {Prisma, Event, DayMetric, ExerciseCategory} from "@/generated/prisma/browser";
+import {Prisma, Event, Metric, ExerciseCategory} from "@/generated/prisma/browser";
 
 export type EventPrisma = Event
-export type DayMetricPrisma = DayMetric
+export type MetricPrisma = Metric
 
 export type UserPrisma = Prisma.UserGetPayload<{
   include: {

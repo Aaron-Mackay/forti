@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {parseMetricInputValue} from './DayMetricInput';
+import {parseMetricInputValue} from './MetricInput';
 
 describe('parseMetricInputValue', () => {
   it('returns null for empty string', () => {

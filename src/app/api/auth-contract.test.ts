@@ -22,7 +22,7 @@ vi.mock('@lib/requireSession', () => ({
 vi.mock('@lib/api', () => ({
   getUserData: vi.fn(),
   getUserEvents: vi.fn(),
-  getUserDayMetrics: vi.fn(),
+  getUserMetrics: vi.fn(),
 }));
 
 vi.mock('@/lib/prisma', () => ({

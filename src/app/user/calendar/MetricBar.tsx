@@ -1,7 +1,7 @@
 import React from "react";
 import {Box, ButtonBase, Typography} from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
-import {DayMetricPrisma} from "@/types/dataTypes";
+import {MetricPrisma} from "@/types/dataTypes";
 import WeightIcon from '@mui/icons-material/Scale';
 import FoodIcon from '@mui/icons-material/RestaurantRounded';
 import StepsIcon from '@mui/icons-material/DirectionsWalkRounded';
@@ -36,7 +36,7 @@ export function getCustomMetricsData(raw: Prisma.JsonValue | null | undefined): 
   return result;
 }
 
-const DayMetricButton = ({
+const MetricButton = ({
                            icon,
                            value,
                            onClick,
@@ -71,21 +71,21 @@ const DayMetricButton = ({
 );
 
 
-export const DayMetricsBar: React.FC<{
-  dateDayMetrics: DayMetricPrisma | null | undefined,
+export const MetricsBar: React.FC<{
+  dateMetric: MetricPrisma | null | undefined,
   setSelectedMetric: (m: MetricKey) => void,
   setInputValue: (v: string | number | null) => void,
   customMetricDefs?: CustomMetricDef[],
   weightUnit?: WeightUnit,
 }> = ({
-        dateDayMetrics,
+        dateMetric,
         setSelectedMetric,
         setInputValue,
         customMetricDefs = [],
         weightUnit = 'kg',
       }) => {
-  const {weight = null, calories = null, steps = null, sleepMins = null} = dateDayMetrics || {};
-  const customData = getCustomMetricsData(dateDayMetrics?.customMetrics);
+  const {weight = null, calories = null, steps = null, sleepMins = null} = dateMetric || {};
+  const customData = getCustomMetricsData(dateMetric?.customMetrics);
 
   const weightDisplay = weight != null
     ? kgToDisplay(weight, weightUnit)
@@ -93,19 +93,19 @@ export const DayMetricsBar: React.FC<{
 
   return (
     <Box display="flex" gap={1} alignItems="center" mb={1} flexWrap="wrap">
-      <DayMetricButton value={weightDisplay} icon={<WeightIcon/>} onClick={() => {
+      <MetricButton value={weightDisplay} icon={<WeightIcon/>} onClick={() => {
         setSelectedMetric('weight')
         setInputValue(weight)
       }}/>
-      <DayMetricButton value={calories} icon={<FoodIcon/>} onClick={() => {
+      <MetricButton value={calories} icon={<FoodIcon/>} onClick={() => {
         setSelectedMetric('calories')
         setInputValue(calories)
       }}/>
-      <DayMetricButton value={steps} icon={<StepsIcon/>} onClick={() => {
+      <MetricButton value={steps} icon={<StepsIcon/>} onClick={() => {
         setSelectedMetric('steps')
         setInputValue(steps)
       }}/>
-      <DayMetricButton value={sleepMins && minToHhMm(sleepMins)} icon={<SleepIcon/>} onClick={() => {
+      <MetricButton value={sleepMins && minToHhMm(sleepMins)} icon={<SleepIcon/>} onClick={() => {
         setSelectedMetric('sleepMins')
         setInputValue(sleepMins)
       }}/>
@@ -113,7 +113,7 @@ export const DayMetricsBar: React.FC<{
         const entry = customData[def.id];
         const val = entry?.value ?? null;
         return (
-          <DayMetricButton
+          <MetricButton
             key={def.id}
             value={val}
             icon={<TuneIcon/>}

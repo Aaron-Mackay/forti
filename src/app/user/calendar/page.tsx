@@ -1,4 +1,4 @@
-import {getUserEvents, getUserDayMetrics} from "@lib/api";
+import {getUserEvents, getUserMetrics} from "@lib/api";
 import React from "react";
 import {notFound} from "next/navigation";
 import Calendar from "./Calendar";
@@ -13,13 +13,13 @@ const CalendarPage = async () => {
   }
 
   const userEvents = await getUserEvents(userId)
-  const userDayMetrics = await getUserDayMetrics(userId)
-  if (!(userEvents && userDayMetrics)) {
+  const userMetrics = await getUserMetrics(userId)
+  if (!(userEvents && userMetrics)) {
     return notFound()
   }
 
   return (
-    <Calendar events={userEvents} dayMetrics={userDayMetrics} userId={userId}/>
+    <Calendar events={userEvents} metrics={userMetrics} userId={userId}/>
   )
 };
 

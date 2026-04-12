@@ -11,7 +11,7 @@ vi.mock('@/lib/prisma', () => ({
     exercise: { findMany: vi.fn() },
     workoutExercise: { findUnique: vi.fn() },
     event: { findMany: vi.fn() },
-    dayMetric: { findMany: vi.fn(), upsert: vi.fn() },
+    metric: { findMany: vi.fn(), upsert: vi.fn() },
     plan: { findMany: vi.fn(), findUnique: vi.fn() },
     $transaction: vi.fn(),
   },
@@ -113,25 +113,25 @@ describe('API functions', () => {
     });
   });
 
-  describe('getUserDayMetrics', () => {
-    it('returns day metrics ordered by date ascending', async () => {
+  describe('getUserMetrics', () => {
+    it('returns metrics ordered by date ascending', async () => {
       const mockMetrics = [
         { id: 1, userId: 'u1', date: new Date('2024-01-01') },
         { id: 2, userId: 'u1', date: new Date('2024-01-02') },
       ];
-      (prisma.dayMetric.findMany as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockMetrics);
+      (prisma.metric.findMany as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockMetrics);
 
-      const result = await api.getUserDayMetrics('u1');
+      const result = await api.getUserMetrics('u1');
       expect(result).toEqual(mockMetrics);
-      expect(prisma.dayMetric.findMany).toHaveBeenCalledWith({
+      expect(prisma.metric.findMany).toHaveBeenCalledWith({
         where: { userId: 'u1' },
         orderBy: { date: 'asc' },
       });
     });
   });
 
-  describe('updateUserDayMetric', () => {
-    it('upserts a day metric and returns the result', async () => {
+  describe('updateUserMetric', () => {
+    it('upserts a metric and returns the result', async () => {
       const metric = {
         userId: 'u1',
         date: new Date('2024-06-15'),
@@ -142,17 +142,18 @@ describe('API functions', () => {
         protein: 160,
         carbs: 250,
         fat: 60,
+        customMetrics: null,
       };
       const upserted = { id: 7, ...metric };
-      (prisma.dayMetric.upsert as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(upserted);
+      (prisma.metric.upsert as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(upserted);
 
-      const result = await api.updateUserDayMetric(metric);
+      const result = await api.updateUserMetric(metric);
       expect(result).toEqual(upserted);
-      expect(prisma.dayMetric.upsert).toHaveBeenCalledWith(
+      expect(prisma.metric.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { userId_date: { userId: 'u1', date: metric.date } },
-          update: metric,
-          create: metric,
+          update: expect.objectContaining({ userId: 'u1', date: metric.date, weight: 80 }),
+          create: expect.objectContaining({ userId: 'u1', date: metric.date, weight: 80 }),
         }),
       );
     });

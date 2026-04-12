@@ -1,7 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
-import {updateUserDayMetric} from '@/lib/api';
+import {updateUserMetric} from '@/lib/api';
 import confirmPermission from "@lib/confirmPermission";
-import {DayMetricSchema} from "@lib/apiSchemas";
+import {MetricSchema} from "@lib/apiSchemas";
 import {errorResponse, validationErrorResponse} from "@lib/apiResponses";
 import {Prisma} from "@/generated/prisma/browser";
 import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSession";
@@ -9,7 +9,7 @@ import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSe
 export async function POST(req: NextRequest) {
   try {
     const json = await req.json();
-    const parsed = DayMetricSchema.safeParse(json);
+    const parsed = MetricSchema.safeParse(json);
 
     if (!parsed.success) {
       console.error(parsed.error);
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     await confirmPermission(parsed.data.userId);
 
     const {customMetrics, ...rest} = parsed.data;
-    const completeDayMetric = {
+    const completeMetric = {
       weight: null,
       steps: null,
       sleepMins: null,
@@ -31,11 +31,11 @@ export async function POST(req: NextRequest) {
       customMetrics: (customMetrics ?? null) as Prisma.InputJsonValue | null,
     };
 
-    const updated = await updateUserDayMetric(completeDayMetric);
+    const updated = await updateUserMetric(completeMetric);
     return NextResponse.json(updated);
   } catch (err: unknown) {
     if (isAuthenticationError(err)) return authenticationErrorResponse();
     console.error(err);
-    return errorResponse('Failed to update day metric', 500);
+    return errorResponse('Failed to update metric', 500);
   }
 }

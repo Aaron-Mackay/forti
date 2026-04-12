@@ -19,7 +19,7 @@ export default async function ClientNutritionPage({ params }: Props) {
   return (
     <NutritionClient
       userId={clientId}
-      initialDayMetrics={nutritionData.dayMetrics}
+      initialMetrics={nutritionData.metrics}
       initialEvents={nutritionData.events}
       initialTemplates={nutritionData.targetTemplates}
       canEditActuals={false}

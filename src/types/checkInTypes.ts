@@ -1,4 +1,4 @@
-import type { DayMetric, WeeklyCheckIn } from '@/generated/prisma/browser';
+import type { Metric, WeeklyCheckIn } from '@/generated/prisma/browser';
 
 export type { WeeklyCheckIn };
 
@@ -23,8 +23,8 @@ export interface WeekTargets {
 
 export interface CurrentCheckInResponse {
   checkIn: WeeklyCheckIn;
-  currentWeek: DayMetric[];
-  weekPrior: DayMetric[];
+  currentWeek: Metric[];
+  weekPrior: Metric[];
   previousPhotos: PreviousPhotos | null;
   weekTargets: WeekTargets | null;
   completedWorkoutsCount: number;
@@ -44,7 +44,7 @@ export interface MetricSummary {
 
 export const CHECK_IN_DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-export function computeMetricSummary(metrics: DayMetric[]): MetricSummary {
+export function computeMetricSummary(metrics: Metric[]): MetricSummary {
   function avg(vals: (number | null)[]): number | null {
     const valid = vals.filter((v): v is number => v !== null);
     return valid.length ? Math.round((valid.reduce((a, b) => a + b, 0) / valid.length) * 10) / 10 : null;

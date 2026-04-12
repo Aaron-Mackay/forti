@@ -1,6 +1,6 @@
 'use client'
 
-import {DayMetricPrisma, EventPrisma} from "@/types/dataTypes";
+import {MetricPrisma, EventPrisma} from "@/types/dataTypes";
 import FullCalendar from "@fullcalendar/react";
 import multiMonthPlugin from "@fullcalendar/multimonth";
 import interactionPlugin, {DateClickArg} from "@fullcalendar/interaction";
@@ -18,7 +18,7 @@ import {format, isAfter, isBefore, isSameDay} from 'date-fns';
 import {getEventsOnDate, parsedEvents} from "@/app/user/calendar/utils";
 import {EventType} from "@/generated/prisma/browser";
 import {CalendarRightDrawer} from "@/app/user/calendar/CalendarRightDrawer";
-import {getDayMetricsCache, getEventsCache, saveDayMetricsCache, saveEventsCache} from "@/utils/clientDb";
+import {getMetricsCache, getEventsCache, saveMetricsCache, saveEventsCache} from "@/utils/clientDb";
 import {useOfflineCache} from '@lib/hooks/useOfflineCache';
 import WeekListView from "@/app/user/calendar/WeekListView";
 import {useSettings} from '@lib/providers/SettingsProvider';
@@ -31,12 +31,12 @@ export type BottomDrawerView = 'list' | 'details' | 'event-form' | 'daymetric-fo
 
 type Props = {
   events: EventPrisma[];
-  dayMetrics: DayMetricPrisma[];
+  metrics: MetricPrisma[];
   userId: string
 };
 
 
-export default function Calendar({events, dayMetrics, userId}: Props) {
+export default function Calendar({events, metrics, userId}: Props) {
   useAppBar({ title: 'Calendar' });
   const calendarRef = useRef<FullCalendar | null>(null);
   const { settings } = useSettings();
@@ -54,14 +54,14 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventPrisma | null>(null);
-  const [dayMetricsState, setDayMetricsState] = useState<DayMetricPrisma[]>(dayMetrics);
+  const [dayMetricsState, setDayMetricsState] = useState<MetricPrisma[]>(metrics);
   const [calendarUpdatedBanner, setCalendarUpdatedBanner] = useState(false);
   const [prefilledDateRange, setPrefilledDateRange] =
     useState<{ start: Date | null, endExcl: Date | null }>({start: null, endExcl: null})
 
   // On mount: if offline, restore cached state; if online, prime the cache.
   useOfflineCache(userId, eventsInState, setEventsInState, getEventsCache, saveEventsCache);
-  useOfflineCache(userId, dayMetricsState, setDayMetricsState, getDayMetricsCache, saveDayMetricsCache);
+  useOfflineCache(userId, dayMetricsState, setDayMetricsState, getMetricsCache, saveMetricsCache);
 
   // On reconnect: re-fetch calendar data; show banner if events changed.
   useEffect(() => {
@@ -69,14 +69,14 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
       try {
         const response = await fetch('/api/calendar-data');
         if (!response.ok) return;
-        const {events: freshEvents, dayMetrics: freshDayMetrics} = await response.json();
+        const {events: freshEvents, metrics: freshMetrics} = await response.json();
         const eventsChanged = freshEvents.length !== eventsInState.length ||
           freshEvents.some((e: EventPrisma, i: number) => e.id !== eventsInState[i]?.id);
         setEventsInState(freshEvents);
-        setDayMetricsState(freshDayMetrics);
+        setDayMetricsState(freshMetrics);
         await Promise.all([
           saveEventsCache(userId, freshEvents),
-          saveDayMetricsCache(userId, freshDayMetrics),
+          saveMetricsCache(userId, freshMetrics),
         ]).catch(console.error);
         if (eventsChanged) setCalendarUpdatedBanner(true);
       } catch {
@@ -267,20 +267,20 @@ export default function Calendar({events, dayMetrics, userId}: Props) {
         setSelectedEvent={setSelectedEvent}
         eventsOnSelectedDate={eventsOnSelectedDate}
         setDrawerOpen={setBottomDrawerOpen}
-        dateDayMetrics={
+        dateMetric={
           selectedDate &&
           dayMetricsState.find(dm => isSameDay(dm.date, selectedDate))
         }
-        setDayMetricsStateCb={
-          (date, newMetrics: DayMetricPrisma | null) => {
-            setDayMetricsState((prev: DayMetricPrisma[]): DayMetricPrisma[] => {
-              if (!newMetrics) return prev;
+        setMetricStateCb={
+          (date, newMetric: MetricPrisma | null) => {
+            setDayMetricsState((prev: MetricPrisma[]): MetricPrisma[] => {
+              if (!newMetric) return prev;
               const index = prev.findIndex(m => isSameDay(m.date, date));
               if (index === -1) { // if no metrics for this date, add new metrics
-                return [...prev, {...newMetrics, date}];
+                return [...prev, {...newMetric, date}];
               }
               return prev.map(metric =>
-                isSameDay(metric.date, date) ? {...metric, ...newMetrics} : metric
+                isSameDay(metric.date, date) ? {...metric, ...newMetric} : metric
               );
             });
           }

@@ -1,6 +1,6 @@
 import {Exercise, ExerciseCategory, Prisma} from '@/generated/prisma/browser';
 import prisma from '@/lib/prisma';
-import {DayMetricPrisma, EventPrisma, PlanPrisma, UserPrisma} from "@/types/dataTypes";
+import {MetricPrisma, EventPrisma, PlanPrisma, UserPrisma} from "@/types/dataTypes";
 
 export async function getUsers() {
   return prisma.user.findMany();
@@ -64,8 +64,8 @@ export async function getUserEvents(userId: string) {
   })
 }
 
-export async function getUserDayMetrics(userId: string) {
-  return prisma.dayMetric.findMany({
+export async function getUserMetrics(userId: string) {
+  return prisma.metric.findMany({
     where: {userId: userId},
     orderBy: {date: 'asc'}
   })
@@ -78,15 +78,15 @@ export async function getUserCheckIns(userId: string) {
   });
 }
 
-export async function updateUserDayMetric(dayMetric: Omit<DayMetricPrisma, 'id' | 'customMetrics'> & { customMetrics: Prisma.InputJsonValue | null }) {
-  const {customMetrics, ...rest} = dayMetric;
+export async function updateUserMetric(metric: Omit<MetricPrisma, 'id' | 'customMetrics'> & { customMetrics: Prisma.InputJsonValue | null }) {
+  const {customMetrics, ...rest} = metric;
   // Prisma nullable JSON fields need Prisma.JsonNull (not null) to explicitly clear them
   const customMetricsValue = customMetrics === null ? Prisma.JsonNull : customMetrics;
-  return await prisma.dayMetric.upsert({
+  return await prisma.metric.upsert({
     where: {
       userId_date: {
-        userId: dayMetric.userId,
-        date: dayMetric.date,
+        userId: metric.userId,
+        date: metric.date,
       }
     },
     update: {...rest, customMetrics: customMetricsValue},

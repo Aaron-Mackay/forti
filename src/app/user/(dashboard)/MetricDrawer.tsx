@@ -1,9 +1,9 @@
 "use client";
 import React from "react";
 import {Box, Drawer} from "@mui/material";
-import {DayMetricInput} from "@/app/user/calendar/DayMetricInput";
-import {MetricKey} from "@/app/user/calendar/DayMetricBar";
-import {DayMetricPrisma} from "@/types/dataTypes";
+import {MetricInput} from "@/app/user/calendar/MetricInput";
+import {MetricKey} from "@/app/user/calendar/MetricBar";
+import {MetricPrisma} from "@/types/dataTypes";
 import {CustomMetricDef} from "@/types/settingsTypes";
 
 type Props = {
@@ -13,24 +13,24 @@ type Props = {
   setSelectedMetric: (m: MetricKey | null) => void;
   inputValue: string | number | null;
   setInputValue: (v: string | number | null) => void;
-  dateDayMetrics: DayMetricPrisma | null | undefined;
+  dateMetric: MetricPrisma | null | undefined;
   date: Date;
   userId: string;
-  setDayMetricsStateCb: (date: Date, metrics: DayMetricPrisma | null) => void;
+  setMetricStateCb: (date: Date, metric: MetricPrisma | null) => void;
   customMetricDefs?: CustomMetricDef[];
 };
 
-export default function DayMetricDrawer({
+export default function MetricDrawer({
   open,
   onClose,
   selectedMetric,
   setSelectedMetric,
   inputValue,
   setInputValue,
-  dateDayMetrics,
+  dateMetric,
   date,
   userId,
-  setDayMetricsStateCb,
+  setMetricStateCb,
   customMetricDefs = [],
 }: Props) {
   return (
@@ -49,15 +49,15 @@ export default function DayMetricDrawer({
       }}
     >
       <Box sx={{p: 2, position: "relative"}}>
-        <DayMetricInput
+        <MetricInput
           setSelectedMetric={setSelectedMetric}
           selectedMetric={selectedMetric}
           setInputValue={setInputValue}
           inputValue={inputValue}
-          dateDayMetrics={dateDayMetrics}
+          dateMetric={dateMetric}
           selectedDate={date}
           userId={userId}
-          setDayMetricsStateCb={setDayMetricsStateCb}
+          setMetricStateCb={setMetricStateCb}
           hideBack
           customMetricDefs={customMetricDefs}
         />

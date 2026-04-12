@@ -1,11 +1,11 @@
 import React, {useEffect, useRef} from "react";
-import {MetricKey, getCustomMetricsData} from "@/app/user/calendar/DayMetricBar";
+import {MetricKey, getCustomMetricsData} from "@/app/user/calendar/MetricBar";
 import {Box, IconButton, TextField, Typography} from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import {hhMmToMin, minToHhMm} from "@/app/user/calendar/utils";
 import Button from "@mui/material/Button";
-import {DayMetricPrisma} from "@/types/dataTypes";
-import {updateDayMetricClient} from "@lib/dayMetrics";
+import {MetricPrisma} from "@/types/dataTypes";
+import {updateMetricClient} from "@lib/metrics";
 import {CustomMetricDef, WeightUnit} from "@/types/settingsTypes";
 
 const BUILTIN_KEYS = new Set<MetricKey>(['weight', 'calories', 'steps', 'sleepMins']);
@@ -16,15 +16,15 @@ export const parseMetricInputValue = (value: string | number | null): number | n
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-export const DayMetricInput: React.FC<{
+export const MetricInput: React.FC<{
   setSelectedMetric: (metric: MetricKey | null) => void;
   selectedMetric: MetricKey | null;
   setInputValue: (value: string | number | null) => void;
   inputValue: string | number | null;
-  dateDayMetrics: DayMetricPrisma | null | undefined;
+  dateMetric: MetricPrisma | null | undefined;
   selectedDate: Date | null;
   userId: string;
-  setDayMetricsStateCb: (date: Date, metrics: DayMetricPrisma | null) => void;
+  setMetricStateCb: (date: Date, metric: MetricPrisma | null) => void;
   hideBack?: boolean;
   customMetricDefs?: CustomMetricDef[];
   weightUnit?: WeightUnit;
@@ -33,10 +33,10 @@ export const DayMetricInput: React.FC<{
         selectedMetric,
         setInputValue,
         inputValue,
-        dateDayMetrics,
+        dateMetric,
         selectedDate,
         userId,
-        setDayMetricsStateCb,
+        setMetricStateCb,
         hideBack = false,
         customMetricDefs = [],
         weightUnit = 'kg',
@@ -57,12 +57,12 @@ export const DayMetricInput: React.FC<{
       console.warn("handleSubmit called with null selectedDate or selectedMetric");
       return;
     }
-    const fallbackMetrics = dateDayMetrics ? {...dateDayMetrics} : null;
+    const fallbackMetric = dateMetric ? {...dateMetric} : null;
 
-    let updatedMetrics: DayMetricPrisma;
+    let updatedMetric: MetricPrisma;
 
     if (isCustom) {
-      const existingData = getCustomMetricsData(dateDayMetrics?.customMetrics);
+      const existingData = getCustomMetricsData(dateMetric?.customMetrics);
       const updatedData = {
         ...existingData,
         [selectedMetric]: {
@@ -70,28 +70,28 @@ export const DayMetricInput: React.FC<{
           target: customDef?.target ?? null,
         },
       };
-      updatedMetrics = {
-        ...(dateDayMetrics as DayMetricPrisma),
+      updatedMetric = {
+        ...(dateMetric as MetricPrisma),
         date: selectedDate,
         userId: userId,
-        customMetrics: updatedData as DayMetricPrisma['customMetrics'],
+        customMetrics: updatedData as MetricPrisma['customMetrics'],
       };
     } else {
-      updatedMetrics = {
-        ...(dateDayMetrics as DayMetricPrisma),
+      updatedMetric = {
+        ...(dateMetric as MetricPrisma),
         date: selectedDate,
         userId: userId,
         [selectedMetric]: parseMetricInputValue(inputValue),
       };
     }
 
-    setDayMetricsStateCb(selectedDate, updatedMetrics);
+    setMetricStateCb(selectedDate, updatedMetric);
 
-    updateDayMetricClient(updatedMetrics)
+    updateMetricClient(updatedMetric)
       .then(() => setSelectedMetric(null))
       .catch(() => {
         alert("Failed to update value");
-        setDayMetricsStateCb(selectedDate, fallbackMetrics || null);
+        setMetricStateCb(selectedDate, fallbackMetric || null);
       });
   };
 

@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@lib/auth';
 import { notFound } from 'next/navigation';
-import { getUserEvents, getUserDayMetrics } from '@lib/api';
+import { getUserEvents, getUserMetrics } from '@lib/api';
 import { getActiveTemplateForWeek } from '@lib/targetTemplates';
 import { getWeekStart } from '@lib/checkInUtils';
 import NutritionClient from './NutritionClient';
@@ -12,18 +12,18 @@ export default async function NutritionPage() {
   if (!userId) return notFound();
 
   const weekMonday = getWeekStart(new Date());
-  const [dayMetrics, events, initialTemplate] = await Promise.all([
-    getUserDayMetrics(userId),
+  const [metrics, events, initialTemplate] = await Promise.all([
+    getUserMetrics(userId),
     getUserEvents(userId),
     getActiveTemplateForWeek(userId, weekMonday),
   ]);
 
-  if (!dayMetrics || !events) return notFound();
+  if (!metrics || !events) return notFound();
 
   return (
     <NutritionClient
       userId={userId}
-      initialDayMetrics={dayMetrics}
+      initialMetrics={metrics}
       initialEvents={events}
       initialTemplate={initialTemplate}
     />

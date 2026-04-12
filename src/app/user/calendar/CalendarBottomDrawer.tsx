@@ -3,12 +3,12 @@
 import React, {useRef, useState} from "react";
 import {Box, Drawer, Typography} from "@mui/material";
 
-import {DayMetricPrisma, EventPrisma} from "@/types/dataTypes";
+import {MetricPrisma, EventPrisma} from "@/types/dataTypes";
 import {BottomDrawerView} from "@/app/user/calendar/Calendar";
-import {DayMetricsBar, MetricKey} from "@/app/user/calendar/DayMetricBar";
+import {MetricsBar, MetricKey} from "@/app/user/calendar/MetricBar";
 import {EventCreationForm} from "@/app/user/calendar/EventCreationForm";
 import {EventsList} from "@/app/user/calendar/EventsList";
-import {DayMetricInput} from "@/app/user/calendar/DayMetricInput";
+import {MetricInput} from "@/app/user/calendar/MetricInput";
 import {TRANSITION_MS, useAnimatedDrawerHeight} from "./useAnimatedDrawerHeight";
 import {EventDetails} from "@/app/user/calendar/EventDetails";
 import {CustomMetricDef} from "@/types/settingsTypes";
@@ -23,8 +23,8 @@ type CalendarDrawerProps = {
   setSelectedEvent: (event: EventPrisma | null) => void,
   eventsOnSelectedDate: EventPrisma[],
   setDrawerOpen: (open: boolean) => void,
-  dateDayMetrics: DayMetricPrisma | null | undefined,
-  setDayMetricsStateCb: (date: Date, metrics: DayMetricPrisma | null) => void,
+  dateMetric: MetricPrisma | null | undefined,
+  setMetricStateCb: (date: Date, metric: MetricPrisma | null) => void,
   userId: string,
   setEventsInState: (value: (prevEvents: EventPrisma[]) => EventPrisma[]) => void,
   prefilledDateRange: { start: Date | null; endExcl: Date | null },
@@ -41,8 +41,8 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
                                                                setSelectedEvent,
                                                                eventsOnSelectedDate,
                                                                setDrawerOpen,
-                                                               dateDayMetrics,
-                                                               setDayMetricsStateCb,
+                                                               dateMetric,
+                                                               setMetricStateCb,
                                                                userId,
                                                                setEventsInState,
                                                                prefilledDateRange,
@@ -101,8 +101,8 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
         {drawerView === 'list' && (
           <>
             <Box mb={2}>
-              <DayMetricsBar
-                dateDayMetrics={dateDayMetrics}
+              <MetricsBar
+                dateMetric={dateMetric}
                 setSelectedMetric={setSelectedMetric}
                 setInputValue={setInputValue}
                 customMetricDefs={customMetricDefs}
@@ -144,15 +144,15 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
         }}
       >
         {selectedMetric && (
-          <DayMetricInput
+          <MetricInput
             setSelectedMetric={setSelectedMetric}
             selectedMetric={selectedMetric}
             setInputValue={setInputValue}
             inputValue={inputValue}
-            setDayMetricsStateCb={setDayMetricsStateCb}
+            setMetricStateCb={setMetricStateCb}
             selectedDate={selectedDate}
             userId={userId}
-            dateDayMetrics={dateDayMetrics}
+            dateMetric={dateMetric}
             customMetricDefs={customMetricDefs}
             weightUnit={weightUnit}
           />

@@ -11,8 +11,8 @@ export async function getCoachClientNutritionData(coachId: string, clientId: str
     return null;
   }
 
-  const [dayMetrics, events, targetTemplates] = await Promise.all([
-    prisma.dayMetric.findMany({
+  const [metrics, events, targetTemplates] = await Promise.all([
+    prisma.metric.findMany({
       where: { userId: clientId },
       orderBy: { date: 'asc' },
     }),
@@ -23,5 +23,5 @@ export async function getCoachClientNutritionData(coachId: string, clientId: str
     getAllTemplatesForUser(clientId),
   ]);
 
-  return { dayMetrics, events, targetTemplates };
+  return { metrics, events, targetTemplates };
 }

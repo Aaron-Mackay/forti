@@ -28,17 +28,17 @@ import CloseIcon from '@mui/icons-material/Close';
 import CheckIcon from '@mui/icons-material/Check';
 import { addDays, format, getISOWeek, startOfWeek } from 'date-fns';
 import { useAppBar } from '@lib/providers/AppBarProvider';
-import { DayMetricPrisma, EventPrisma } from '@/types/dataTypes';
+import { MetricPrisma, EventPrisma } from '@/types/dataTypes';
 import { EventType } from '@/generated/prisma/browser';
 import { getDefinedBlockColor } from '@/app/user/calendar/utils';
-import { updateDayMetricClient } from '@lib/dayMetrics';
+import { updateMetricClient } from '@lib/metrics';
 import { convertDateToDateString } from '@lib/dateUtils';
 import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
 import { type TargetTemplateWithDays } from '@lib/targetTemplates';
 
 interface Props {
   userId: string;
-  initialDayMetrics: DayMetricPrisma[];
+  initialMetrics: MetricPrisma[];
   initialEvents: EventPrisma[];
   canEditActuals?: boolean;
   canEditTargets?: boolean;
@@ -107,11 +107,11 @@ function getNumericFieldError(value: string, max?: number): string | null {
   return null;
 }
 
-function hasAnyMacroActuals(metric: Pick<DayMetricPrisma, 'calories' | 'protein' | 'carbs' | 'fat'>): boolean {
+function hasAnyMacroActuals(metric: Pick<MetricPrisma, 'calories' | 'protein' | 'carbs' | 'fat'>): boolean {
   return metric.calories !== null || metric.protein !== null || metric.carbs !== null || metric.fat !== null;
 }
 
-function metricToEditValues(m: DayMetricPrisma | undefined): EditValues {
+function metricToEditValues(m: MetricPrisma | undefined): EditValues {
   const str = (v: number | null | undefined) => (v !== null && v !== undefined ? String(v) : '');
   return {
     calories: str(m?.calories),
@@ -167,7 +167,7 @@ function isoWeekday(date: Date): number {
 
 export default function NutritionClient({
   userId,
-  initialDayMetrics,
+  initialMetrics,
   initialEvents,
   canEditActuals = true,
   canEditTargets = true,
@@ -180,7 +180,7 @@ export default function NutritionClient({
   const [weekStart, setWeekStart] = useState<Date>(() =>
     startOfWeek(today, { weekStartsOn: 1 })
   );
-  const [dayMetrics, setDayMetrics] = useState<DayMetricPrisma[]>(initialDayMetrics);
+  const [dayMetrics, setDayMetrics] = useState<MetricPrisma[]>(initialMetrics);
   const [events] = useState<EventPrisma[]>(initialEvents);
 
   // activeTemplate: the carry-forward template whose effectiveFrom <= weekStart.
@@ -244,7 +244,7 @@ export default function NutritionClient({
   }, [weekStart, initialTemplates]);
 
   const metricsByDate = useMemo(() => {
-    const map = new Map<string, DayMetricPrisma>();
+    const map = new Map<string, MetricPrisma>();
     for (const dm of dayMetrics) {
       map.set(convertDateToDateString(new Date(dm.date)), dm);
     }
@@ -255,7 +255,7 @@ export default function NutritionClient({
   const weeklyAvgActuals = useMemo(() => {
     const weekMetrics = weekDays
       .map(d => metricsByDate.get(convertDateToDateString(d)))
-      .filter(Boolean) as DayMetricPrisma[];
+      .filter(Boolean) as MetricPrisma[];
     return MACROS.reduce(
       (acc, { key }) => {
         acc[key] = avgOf(weekMetrics.map(m => m[key]));
@@ -298,7 +298,7 @@ export default function NutritionClient({
       setSavingDay(true);
       try {
         const existing = metricsByDate.get(dateStr);
-        const merged: DayMetricPrisma = {
+        const merged: MetricPrisma = {
           id: existing?.id ?? 0,
           userId,
           date: new Date(dateStr),
@@ -311,7 +311,7 @@ export default function NutritionClient({
           fat: editValues.fat !== '' ? toIntOrNull(editValues.fat) : (existing?.fat ?? null),
           customMetrics: existing?.customMetrics ?? null,
         };
-        const updated = await updateDayMetricClient(merged);
+        const updated = await updateMetricClient(merged);
         setDayMetrics(prev => {
           const idx = prev.findIndex(m => convertDateToDateString(new Date(m.date)) === dateStr);
           if (idx >= 0) {

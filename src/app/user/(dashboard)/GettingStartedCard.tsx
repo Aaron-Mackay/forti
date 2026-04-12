@@ -20,7 +20,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import Link from 'next/link';
 import { useSettings } from '@lib/providers/SettingsProvider';
 import { useApiGet } from '@lib/hooks/api/useApiGet';
-import { DayMetricPrisma, PlanPrisma, WeekPrisma, WorkoutPrisma, UserPrisma } from '@/types/dataTypes';
+import { MetricPrisma, PlanPrisma, WeekPrisma, WorkoutPrisma, UserPrisma } from '@/types/dataTypes';
 import { convertDateToDateString } from '@lib/dateUtils';
 
 interface CheckInResponse {
@@ -30,11 +30,11 @@ interface CheckInResponse {
 
 interface Props {
   userData: UserPrisma | null;
-  dayMetrics: DayMetricPrisma[];
+  metrics: MetricPrisma[];
   today: Date;
 }
 
-export default function GettingStartedCard({ userData, dayMetrics, today }: Props) {
+export default function GettingStartedCard({ userData, metrics, today }: Props) {
   const { settings, loading, updateSetting } = useSettings();
 
   // Only fetch check-in data while the card is visible
@@ -52,7 +52,7 @@ export default function GettingStartedCard({ userData, dayMetrics, today }: Prop
     },
     {
       label: 'Log today\'s metrics',
-      done: dayMetrics.some(dm => convertDateToDateString(new Date(dm.date)) === todayStr),
+      done: metrics.some(m => convertDateToDateString(new Date(m.date)) === todayStr),
       href: '/user/calendar',
     },
     {

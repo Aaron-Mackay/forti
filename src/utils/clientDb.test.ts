@@ -5,11 +5,11 @@ import {
   clearRequests,
   deleteRequest,
   getAllRequests,
-  getDayMetricsCache,
+  getMetricsCache,
   getEventsCache,
   getUserDataCache,
   openDatabase,
-  saveDayMetricsCache,
+  saveMetricsCache,
   saveEventsCache,
   saveUserDataCache,
 } from './clientDb';
@@ -34,7 +34,7 @@ describe('clientDb (Vitest)', () => {
     const db = await openDatabase();
     expect(db.objectStoreNames.contains('userDataCache')).toBe(true);
     expect(db.objectStoreNames.contains('eventsCache')).toBe(true);
-    expect(db.objectStoreNames.contains('dayMetricsCache')).toBe(true);
+    expect(db.objectStoreNames.contains('metricsCache')).toBe(true);
   });
 
   it('adds a request and dispatches queue-updated event', async () => {
@@ -99,7 +99,7 @@ describe('clientDb cache helpers', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fakeEvents = [{id: 1, name: 'Bulk', userId}] as any[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const fakeDayMetrics = [{id: 1, userId, date: new Date(), weight: 80}] as any[];
+  const fakeMetrics = [{id: 1, userId, date: new Date(), weight: 80}] as any[];
 
   it('saves and retrieves userDataCache', async () => {
     await saveUserDataCache(userId, fakeUserData);
@@ -131,11 +131,11 @@ describe('clientDb cache helpers', () => {
     expect(entry!.data).toEqual(fakeEvents);
   });
 
-  it('saves and retrieves dayMetricsCache', async () => {
-    await saveDayMetricsCache(userId, fakeDayMetrics);
-    const entry = await getDayMetricsCache(userId);
+  it('saves and retrieves metricsCache', async () => {
+    await saveMetricsCache(userId, fakeMetrics);
+    const entry = await getMetricsCache(userId);
     expect(entry).toBeDefined();
-    expect(entry!.data).toEqual(fakeDayMetrics);
+    expect(entry!.data).toEqual(fakeMetrics);
   });
 
   it('returns undefined for missing eventsCache entry', async () => {
@@ -143,8 +143,8 @@ describe('clientDb cache helpers', () => {
     expect(entry).toBeUndefined();
   });
 
-  it('returns undefined for missing dayMetricsCache entry', async () => {
-    const entry = await getDayMetricsCache('nonexistent');
+  it('returns undefined for missing metricsCache entry', async () => {
+    const entry = await getMetricsCache('nonexistent');
     expect(entry).toBeUndefined();
   });
 

@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useRouter } from 'next/navigation';
-import type { DayMetric, WeeklyCheckIn } from '@/generated/prisma/browser';
+import type { Metric, WeeklyCheckIn } from '@/generated/prisma/browser';
 import MetricsSummaryTable from './MetricsSummaryTable';
 import RatingField from './RatingField';
 import ProgressPhotoSection from './ProgressPhotoSection';
@@ -20,8 +20,8 @@ import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
 import type { PreviousPhotos, WeekTargets } from '@/types/checkInTypes';
 
 interface Props {
-  currentWeek: DayMetric[];
-  weekPrior: DayMetric[];
+  currentWeek: Metric[];
+  weekPrior: Metric[];
   checkIn: WeeklyCheckIn;
   previousPhotos: PreviousPhotos | null;
   weekTargets: WeekTargets | null;

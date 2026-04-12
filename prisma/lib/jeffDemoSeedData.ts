@@ -263,9 +263,9 @@ export async function seedJeffDemoData(user: { id: string }, today: Date, coachI
   }
 
   // ── Day metrics ───────────────────────────────────────────────────────────
-  await prisma.dayMetric.deleteMany({ where: { userId: user.id } });
+  await prisma.metric.deleteMany({ where: { userId: user.id } });
 
-  await prisma.dayMetric.createMany({
+  await prisma.metric.createMany({
     data: Array.from({ length: 60 }, (_, i) => {
       const date = new Date(today);
       date.setDate(today.getDate() - i);

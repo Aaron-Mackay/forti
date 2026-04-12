@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
-import { getUserDayMetrics } from '@lib/api';
+import { getUserMetrics } from '@lib/api';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import prisma from '@lib/prisma';
 import { buildCsv } from '@/utils/csvExport';
@@ -16,7 +16,7 @@ export async function GET() {
     const userId = session.user.id;
 
     const [metrics, user] = await Promise.all([
-      getUserDayMetrics(userId),
+      getUserMetrics(userId),
       prisma.user.findUnique({ where: { id: userId }, select: { settings: true } }),
     ]);
 

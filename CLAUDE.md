@@ -133,7 +133,7 @@ All routes live under `src/app/api/` and follow Next.js App Router conventions:
 | `api/notifications/[id]/read` | PATCH mark a single notification read |
 | `api/notifications/read-all` | PATCH mark all notifications read |
 | `api/cron/check-in-reminders` | Cron job — sends weekly reminder emails (secured by `CRON_SECRET`) |
-| `api/dayMetric` | CRUD for daily health metrics |
+| `api/metric` | CRUD for daily health metrics |
 | `api/event`, `api/event/[id]` | Calendar event management |
 | `api/exerciseNote/[exerciseId]` | Exercise notes CRUD |
 | `api/exercises/[exerciseId]/previous-sets` | Fetch previous sets for an exercise |
@@ -229,7 +229,7 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 | `src/lib/firstWeekEvents.ts` | Client-side one-time first-week analytics event tracking (`trackFirstWeekEvent`) |
 | `src/lib/clientApi.ts` | Client-side typed API wrappers (`saveUserWorkoutData`, `savePlan`) |
 | `src/lib/dateUtils.ts` | Date manipulation helpers |
-| `src/lib/dayMetrics.ts` | Day metric business logic |
+| `src/lib/metrics.ts` | Day metric business logic |
 | `src/lib/events.ts` | Calendar event helpers |
 | `src/lib/theme.ts` | MUI theme configuration |
 | `src/lib/confirmPermission.ts` | Authorization checks for resource access |
