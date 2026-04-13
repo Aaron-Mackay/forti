@@ -6,8 +6,15 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
-    groups:
-      production-dependencies:
-        dependency-type: "production"
-      development-dependencies:
-        dependency-type: "development"
+    ignore:
+      - dependency-name: "eslint"
+        update-types:
+          - "version-update:semver-major"
+
+      - dependency-name: "eslint-*"
+        update-types:
+          - "version-update:semver-major"
+
+      - dependency-name: "@mui/*"
+        update-types:
+          - "version-update:semver-major"
