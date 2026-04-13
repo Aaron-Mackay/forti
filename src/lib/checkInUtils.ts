@@ -3,6 +3,27 @@
  * checkInDay convention: 0 = Monday … 6 = Sunday (matches the Settings field).
  */
 
+import type { WeeklyCheckIn } from '@/types/checkInTypes';
+
+type RatingFields = Pick<WeeklyCheckIn,
+  'energyLevel' | 'moodRating' | 'stressLevel' | 'sleepQuality' | 'recoveryRating' | 'adherenceRating'
+>;
+type ReflectionFields = Pick<WeeklyCheckIn, 'weekReview' | 'coachMessage' | 'goalsNextWeek'>;
+type PhotoFields = Pick<WeeklyCheckIn, 'frontPhotoUrl' | 'backPhotoUrl' | 'sidePhotoUrl'>;
+
+export function checkInHasRatings(c: RatingFields): boolean {
+  return [c.energyLevel, c.moodRating, c.stressLevel, c.sleepQuality, c.recoveryRating, c.adherenceRating]
+    .some(v => v !== null);
+}
+
+export function checkInHasReflection(c: ReflectionFields): boolean {
+  return Boolean(c.weekReview || c.coachMessage || c.goalsNextWeek);
+}
+
+export function checkInHasPhotos(c: PhotoFields): boolean {
+  return Boolean(c.frontPhotoUrl || c.backPhotoUrl || c.sidePhotoUrl);
+}
+
 /**
  * Returns the Monday (ISO week start) of the week containing `date`.
  * Used as the canonical `weekStartDate` key regardless of the user's chosen

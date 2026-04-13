@@ -2,38 +2,54 @@
 
 import type {ReactNode} from 'react';
 import {useState} from 'react';
+import type {TargetValues} from './CoachWeekTargetsCard';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import PendingIcon from '@mui/icons-material/PendingOutlined';
 import {
   Alert,
   Box,
   Button,
+  Card,
+  CardActionArea,
+  CardContent,
   Chip,
   CircularProgress,
   Divider,
-  Dialog,
-  IconButton,
   Link,
   Paper,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import type {CheckInWithUser} from '@/types/checkInTypes';
-import { APPBAR_HEIGHT } from '@/components/CustomAppBar';
+import type {Metric} from '@/generated/prisma/browser';
+import type {CheckInWithUser, WeekTargets} from '@/types/checkInTypes';
+import type {CustomMetricDef} from '@/types/settingsTypes';
+import type {TargetTemplateWithDays} from '@lib/targetTemplates';
+import {RATING_LABELS} from '@/types/checkInTypes';
+import MetricsSummaryTable from '@/components/MetricsSummaryTable';
+import {checkInHasRatings, checkInHasReflection, checkInHasPhotos} from '@/lib/checkInUtils';
+import CheckInPhotoTile from '@/components/CheckInPhotoTile';
+import PhotoViewerDialog from '@/components/PhotoViewerDialog';
+import CoachWeekTargetsCard from './CoachWeekTargetsCard';
+import SupplementsClient from '@/app/user/supplements/SupplementsClient';
+
+interface WeekWorkout {
+  id: number;
+  name: string;
+  dateCompleted: string;
+  week: { planId: number };
+}
 
 interface Props {
   checkIn: CheckInWithUser;
+  currentWeek: Metric[];
+  weekPrior: Metric[];
+  weekTargets: WeekTargets | null;
+  activeTemplate: TargetTemplateWithDays | null;
+  customMetricDefs: CustomMetricDef[];
+  weekWorkouts: WeekWorkout[];
 }
-
-const RATING_LABELS: Record<number, string> = {
-  1: 'Very Low',
-  2: 'Low',
-  3: 'Moderate',
-  4: 'High',
-  5: 'Very High',
-};
 
 function Section({children, fillHeight = false}: { children: ReactNode; fillHeight?: boolean }) {
   return (
@@ -88,51 +104,30 @@ function NoteBlock({label, value}: { label: string; value: string | null }) {
   );
 }
 
-function PhotoTile({
-  src,
-  alt,
-  onClick,
-}: {
-  src: string | null;
-  alt: string;
-  onClick?: (src: string, alt: string) => void;
-}) {
-  if (!src) {
-    return (
-      <Box
-        sx={{
-          aspectRatio: '4 / 5',
-          borderRadius: 2,
-          border: '1px dashed',
-          borderColor: 'divider',
-          bgcolor: 'action.hover',
-        }}
-      />
-    );
-  }
-
-  return (
-    <Box
-      component="img"
-      src={src}
-      alt={alt}
-      onClick={() => onClick?.(src, alt)}
-      sx={{
-        width: '100%',
-        aspectRatio: '4 / 5',
-        objectFit: 'cover',
-        borderRadius: 2,
-        border: '1px solid',
-        borderColor: 'divider',
-        cursor: 'zoom-in',
-      }}
-    />
-  );
+function toIntOrNull(s: string): number | null {
+  const n = parseInt(s, 10);
+  return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
-export default function CoachCheckInDetailClient({checkIn}: Props) {
+function initTargetValues(tpl: TargetTemplateWithDays | null): TargetValues {
+  const firstNonNull = (key: 'caloriesTarget' | 'proteinTarget' | 'carbsTarget' | 'fatTarget') => {
+    const day = tpl?.days.find(d => d[key] != null);
+    return day?.[key] != null ? String(day[key]) : '';
+  };
+  return {
+    steps:    tpl?.stepsTarget    != null ? String(tpl.stepsTarget)    : '',
+    sleep:    tpl?.sleepMinsTarget != null ? String(tpl.sleepMinsTarget) : '',
+    calories: firstNonNull('caloriesTarget'),
+    protein:  firstNonNull('proteinTarget'),
+    carbs:    firstNonNull('carbsTarget'),
+    fat:      firstNonNull('fatTarget'),
+  };
+}
+
+export default function CoachCheckInDetailClient({checkIn, currentWeek, weekPrior, weekTargets, activeTemplate, customMetricDefs, weekWorkouts}: Props) {
   const [notes, setNotes] = useState(checkIn.coachNotes ?? '');
   const [coachResponseUrl, setCoachResponseUrl] = useState(checkIn.coachResponseUrl ?? '');
+  const [targetValues, setTargetValues] = useState<TargetValues>(() => initTargetValues(activeTemplate));
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [reviewedAt, setReviewedAt] = useState(checkIn.coachReviewedAt);
@@ -155,30 +150,57 @@ export default function CoachCheckInDetailClient({checkIn}: Props) {
     setSaveError(null);
 
     try {
-      const res = await fetch(`/api/coach/check-ins/${checkIn.id}/notes`, {
-        method: 'PATCH',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          coachNotes: notes,
-          coachResponseUrl,
-        }),
-      });
+      const macro = {
+        caloriesTarget: toIntOrNull(targetValues.calories),
+        proteinTarget:  toIntOrNull(targetValues.protein),
+        carbsTarget:    toIntOrNull(targetValues.carbs),
+        fatTarget:      toIntOrNull(targetValues.fat),
+      };
+      const days: Record<number, typeof macro> = {};
+      for (let dow = 1; dow <= 7; dow++) days[dow] = macro;
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => null) as { error?: string } | null;
-        throw new Error(data?.error ?? 'Save failed');
-      }
+      const weekStartIso = new Date(checkIn.weekStartDate).toISOString().slice(0, 10);
+
+      await Promise.all([
+        fetch(`/api/coach/check-ins/${checkIn.id}/notes`, {
+          method: 'PATCH',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({coachNotes: notes, coachResponseUrl}),
+        }).then(async res => {
+          if (!res.ok) {
+            const data = await res.json().catch(() => null) as {error?: string} | null;
+            throw new Error(data?.error ?? 'Failed to save review');
+          }
+        }),
+        fetch('/api/target-templates', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            effectiveFrom: weekStartIso,
+            stepsTarget: toIntOrNull(targetValues.steps),
+            sleepMinsTarget: toIntOrNull(targetValues.sleep),
+            days,
+            targetUserId: checkIn.user.id,
+          }),
+        }).then(res => {
+          if (!res.ok) throw new Error('Failed to save targets');
+        }),
+      ]);
 
       setReviewedAt(new Date());
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'Failed to save review. Please try again.');
+      setSaveError(error instanceof Error ? error.message : 'Failed to save. Please try again.');
     } finally {
       setSaving(false);
     }
   }
 
+  const hasRatings = checkInHasRatings(checkIn);
+  const hasReflection = checkInHasReflection(checkIn);
+  const hasPhotos = checkInHasPhotos(checkIn);
+
   return (
-    <Box sx={{maxWidth: 1180, mx: 'auto', pb: {xs: 5, md: 7}}}>
+    <Box>
       <Paper
         elevation={0}
         sx={{
@@ -251,166 +273,196 @@ export default function CoachCheckInDetailClient({checkIn}: Props) {
             gridTemplateColumns: {xs: '1fr', lg: 'repeat(2, minmax(0, 1fr))'},
             alignItems: {xs: 'start', lg: 'stretch'},
             height: {lg: '100%'},
-            pb: 2
+            '& > :last-child:nth-child(2n+1)': {
+              gridColumn: { xs: '1 / -1', sm: 'span 2' },
+            },
           }}
         >
-          <Section>
-            <Typography variant="overline" color="text.secondary" sx={{display: 'block', mb: 1}}>
-              Subjective
-            </Typography>
-            <Box
-              sx={{
-                display: 'grid',
-                columnGap: {md: 2},
-                gridTemplateColumns: {xs: '1fr', md: 'repeat(2, minmax(0, 1fr))'},
-              }}
+          {hasPhotos && (
+            <Section>
+              <Typography variant="overline" color="text.secondary" sx={{display: 'block', mb: 1.5}}>
+                Progress photos
+              </Typography>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gap: 1.5,
+                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))'
+                }}
+              >
+                <CheckInPhotoTile
+                  src={checkIn.frontPhotoUrl}
+                  alt="Front progress photo"
+                  onClick={(src, alt) => setActivePhoto({src, alt})}
+                />
+                <CheckInPhotoTile
+                  src={checkIn.sidePhotoUrl}
+                  alt="Side progress photo"
+                  onClick={(src, alt) => setActivePhoto({src, alt})}
+                />
+                <CheckInPhotoTile
+                  src={checkIn.backPhotoUrl}
+                  alt="Back progress photo"
+                  onClick={(src, alt) => setActivePhoto({src, alt})}
+                />
+              </Box>
+            </Section>
+          )}
+
+          {hasRatings && (
+            <Section>
+              <Typography variant="overline" color="text.secondary" sx={{display: 'block', mb: 1}}>
+                Subjective
+              </Typography>
+              <Box
+                sx={{
+                  display: 'grid',
+                  columnGap: {md: 2},
+                  gridTemplateColumns: {xs: '1fr', md: 'repeat(2, minmax(0, 1fr))'},
+                }}
+              >
+                <RatingRow label="Energy" value={checkIn.energyLevel}/>
+                <RatingRow label="Mood" value={checkIn.moodRating}/>
+                <RatingRow label="Stress" value={checkIn.stressLevel}/>
+                <RatingRow label="Sleep quality" value={checkIn.sleepQuality}/>
+                <RatingRow label="Recovery" value={checkIn.recoveryRating}/>
+                <RatingRow label="Adherence" value={checkIn.adherenceRating}/>
+              </Box>
+            </Section>)}
+
+          {hasReflection && (
+            <Section>
+              <Typography variant="overline" color="text.secondary" sx={{display: 'block', mb: 1}}>
+                Client Notes
+              </Typography>
+              <Stack spacing={2}>
+                <NoteBlock label="Week review" value={checkIn.weekReview}/>
+                <NoteBlock label="Goals for next week" value={checkIn.goalsNextWeek}/>
+                <NoteBlock label="Message to coach" value={checkIn.coachMessage}/>
+              </Stack>
+            </Section>
+          )}
+
+          {(currentWeek.length > 0 || weekPrior.length > 0) && (
+            <Section>
+              <Typography variant="overline" color="text.secondary" sx={{display: 'block', mb: 1.5}}>
+                Metrics
+              </Typography>
+              <MetricsSummaryTable currentWeek={currentWeek} weekPrior={weekPrior} weekTargets={weekTargets} customMetricDefs={customMetricDefs} />
+            </Section>
+          )}
+
+
+
+          <Card variant="outlined" sx={{height: '100%', borderRadius: 3}}>
+            <CardActionArea
+              component="a"
+              href={weekWorkouts.length > 0
+                ? `/user/plan/${weekWorkouts[weekWorkouts.length - 1].week.planId}`
+                : `/user/coach/clients/${checkIn.user.id}/plans`}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{height: '100%'}}
             >
-              <RatingRow label="Energy" value={checkIn.energyLevel}/>
-              <RatingRow label="Mood" value={checkIn.moodRating}/>
-              <RatingRow label="Stress" value={checkIn.stressLevel}/>
-              <RatingRow label="Sleep quality" value={checkIn.sleepQuality}/>
-              <RatingRow label="Recovery" value={checkIn.recoveryRating}/>
-              <RatingRow label="Adherence" value={checkIn.adherenceRating}/>
-            </Box>
-          </Section>
-
-          {(checkIn.weekReview || checkIn.coachMessage || checkIn.goalsNextWeek) && (
-            <Box sx={{height: {lg: '100%'}}}>
-              <Section >
-                <Typography variant="overline" color="text.secondary" sx={{display: 'block', mb: 1}}>
-                  Client Notes
-                </Typography>
-                <Stack spacing={2}>
-                  <NoteBlock label="Week review" value={checkIn.weekReview}/>
-                  <NoteBlock label="Goals for next week" value={checkIn.goalsNextWeek}/>
-                  <NoteBlock label="Message to coach" value={checkIn.coachMessage}/>
-                </Stack>
-              </Section>
-            </Box>
-          )}
-
-          {(checkIn.frontPhotoUrl || checkIn.backPhotoUrl || checkIn.sidePhotoUrl) && (
-            <Box sx={{height: {lg: '100%'}}}>
-              <Section fillHeight>
-                <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 1.5}}>
-                  Progress photos
-                </Typography>
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gap: 1.5,
-                    gridTemplateColumns: {
-                      xs: 'repeat(2, minmax(0, 1fr))',
-                      sm: 'repeat(3, minmax(0, 1fr))',
-                    },
-                  }}
-                >
-                  <PhotoTile src={checkIn.frontPhotoUrl} alt="Front progress photo" onClick={(src, alt) => setActivePhoto({src, alt})}/>
-                  <PhotoTile src={checkIn.sidePhotoUrl} alt="Side progress photo" onClick={(src, alt) => setActivePhoto({src, alt})}/>
-                  <PhotoTile src={checkIn.backPhotoUrl} alt="Back progress photo" onClick={(src, alt) => setActivePhoto({src, alt})}/>
+              <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%', p: {xs: 2, sm: 2.5}}}>
+                <Box sx={{display: 'flex', alignItems: 'center', mb: 1.5}}>
+                  <Typography variant="overline" color="text.secondary" sx={{flexGrow: 1}}>
+                    Training
+                  </Typography>
+                  <ChevronRightIcon fontSize="small" color="action"/>
                 </Box>
-              </Section>
-            </Box>
-          )}
+                {weekWorkouts.length > 0 ? (
+                  <Stack spacing={0.5}>
+                    {weekWorkouts.map(w => (
+                      <Box key={w.id} sx={{display: 'flex', gap: 1.5, alignItems: 'baseline'}}>
+                        <Typography variant="caption" color="text.secondary" sx={{minWidth: 28}}>
+                          {new Date(w.dateCompleted).toLocaleDateString('en-GB', {weekday: 'short'})}
+                        </Typography>
+                        <Typography variant="body2">{w.name}</Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">No workouts logged in the last 7 days.</Typography>
+                )}
+              </CardContent>
+            </CardActionArea>
+          </Card>
         </Box>
 
       </Box>
-      <Section>
-        <Typography variant="overline" color="text.secondary" sx={{display: 'block', mb: 1.5}}>
-          Coach Review
-        </Typography>
-        <TextField
-          multiline
-          minRows={8}
-          fullWidth
-          placeholder="Leave feedback for your client…"
-          value={notes}
-          onChange={event => setNotes(event.target.value)}
-        />
-        <TextField
-          fullWidth
-          label="Review link (optional)"
-          placeholder="https://www.loom.com/share/..."
-          value={coachResponseUrl}
-          onChange={event => setCoachResponseUrl(event.target.value)}
-          sx={{mt: 2}}
-        />
-        {checkIn.coachResponseUrl && !coachResponseUrl && (
-          <Link
-            href={checkIn.coachResponseUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            variant="body2"
-            sx={{display: 'inline-block', mt: 1.5}}
-          >
-            Open current review link
-          </Link>
-        )}
-        {saveError && <Alert severity="error" sx={{mt: 2}}>{saveError}</Alert>}
-        <Stack direction={{xs: 'column', sm: 'row'}} spacing={1.5} sx={{mt: 2}} alignItems={{sm: 'center'}}>
-          <Button
-            variant="contained"
-            onClick={handleSaveNotes}
-            disabled={saving || (notes === (checkIn.coachNotes ?? '') && coachResponseUrl === (checkIn.coachResponseUrl ?? ''))}
-            startIcon={saving ? <CircularProgress size={16} color="inherit"/> : undefined}
-          >
-            Send Review
-          </Button>
-        </Stack>
-      </Section>
+      <Stack spacing={2} sx={{mt: 2}}>
+        <Section>
+          <Typography variant="overline" color="text.secondary" sx={{display: 'block', mb: 1.5}}>
+            Coach Comments
+          </Typography>
+          <TextField
+            multiline
+            minRows={8}
+            fullWidth
+            placeholder="Leave feedback for your client…"
+            value={notes}
+            onChange={event => setNotes(event.target.value)}
+          />
+          <TextField
+            fullWidth
+            label="Review link (optional)"
+            placeholder="https://www.loom.com/share/..."
+            value={coachResponseUrl}
+            onChange={event => setCoachResponseUrl(event.target.value)}
+            sx={{mt: 2}}
+          />
+          {checkIn.coachResponseUrl && !coachResponseUrl && (
+            <Link
+              href={checkIn.coachResponseUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="body2"
+              sx={{display: 'inline-block', mt: 1.5}}
+            >
+              Open current review link
+            </Link>
+          )}
+        </Section>
 
-      <Dialog
-        open={activePhoto !== null}
-        onClose={() => setActivePhoto(null)}
-        fullWidth
-        maxWidth="md"
-        sx={{
-          '& .MuiDialog-container': {
-            alignItems: 'flex-start',
-          },
-        }}
-        slotProps={{
-          paper: {
-            sx: {
-              bgcolor: 'black',
-              position: 'relative',
-              overflow: 'hidden',
-              mt: `${APPBAR_HEIGHT}px`,
-              maxHeight: `calc(100dvh - ${APPBAR_HEIGHT}px)`,
-            },
-          },
-        }}
-      >
-        <IconButton
-          onClick={() => setActivePhoto(null)}
-          aria-label="Close photo viewer"
+        <Box
           sx={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            zIndex: 1,
-            color: 'white',
-            bgcolor: 'rgba(0,0,0,0.5)',
-            '&:hover': { bgcolor: 'rgba(0,0,0,0.68)' },
+            display: 'grid',
+            gap: 2,
+            gridTemplateColumns: {xs: '1fr', lg: 'repeat(2, minmax(0, 1fr))'},
+            alignItems: {xs: 'start', lg: 'stretch'},
           }}
         >
-          <CloseIcon />
-        </IconButton>
-        {activePhoto && (
-          <Box
-            component="img"
-            src={activePhoto.src}
-            alt={activePhoto.alt}
-            sx={{
-              display: 'block',
-              width: '100%',
-              maxHeight: `calc(100dvh - ${APPBAR_HEIGHT}px)`,
-              objectFit: 'contain',
-              bgcolor: 'black',
-            }}
+          <CoachWeekTargetsCard
+            values={targetValues}
+            onChange={setTargetValues}
           />
-        )}
-      </Dialog>
+
+          <Section>
+            <Typography variant="overline" color="text.secondary" sx={{display: 'block', mb: 1}}>
+              Supplements
+            </Typography>
+            <SupplementsClient
+              embedded
+              apiBase={`/api/coach/clients/${checkIn.user.id}/supplements`}
+            />
+          </Section>
+        </Box>
+      </Stack>
+
+      {saveError && <Alert severity="error" sx={{mt: 2}}>{saveError}</Alert>}
+      <Stack direction={{xs: 'column', sm: 'row'}} spacing={1.5} sx={{mt: 2, mb: 4}} alignItems={{sm: 'center'}}>
+        <Button
+          variant="contained"
+          onClick={handleSaveNotes}
+          disabled={saving || (notes === (checkIn.coachNotes ?? '') && coachResponseUrl === (checkIn.coachResponseUrl ?? ''))}
+          startIcon={saving ? <CircularProgress size={16} color="inherit"/> : undefined}
+        >
+          Send Review
+        </Button>
+      </Stack>
+
+      <PhotoViewerDialog photo={activePhoto} onClose={() => setActivePhoto(null)} />
     </Box>
   );
 }

@@ -44,6 +44,14 @@ export interface MetricSummary {
 
 export const CHECK_IN_DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+export const RATING_LABELS: Record<number, string> = {
+  1: 'Very Low',
+  2: 'Low',
+  3: 'Moderate',
+  4: 'High',
+  5: 'Very High',
+};
+
 export function computeMetricSummary(metrics: Metric[]): MetricSummary {
   function avg(vals: (number | null)[]): number | null {
     const valid = vals.filter((v): v is number => v !== null);

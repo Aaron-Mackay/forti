@@ -246,7 +246,7 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 | `src/lib/apiError.ts` | `extractErrorMessage`, `isPrismaNotFound` helpers |
 | `src/lib/e1rm.ts` | Epley formula: `computeE1rm(weight, reps)` |
 | `src/lib/workoutProgress.ts` | `getWorkoutStatus`, `getWeekStatus`, `getPlanStatus` helpers |
-| `src/lib/checkInUtils.ts` | `getWeekStart`, `getCheckInDate`, `toDateOnly` — check-in date utilities |
+| `src/lib/checkInUtils.ts` | `getWeekStart`, `getCheckInDate`, `toDateOnly` — check-in date utilities; `checkInHasRatings`, `checkInHasReflection`, `checkInHasPhotos` — shared section-visibility helpers |
 | `src/lib/notifications.ts` | Email (MailerSend) + web push helpers for check-in reminders |
 | `src/lib/useWorkoutEditor.ts` | Custom hook managing workout editor state |
 | `src/lib/hooks/api/useApiGet.ts` | Generic GET hook — `{data, loading, error}`; pass `null` URL to defer |

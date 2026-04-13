@@ -250,16 +250,22 @@ function SupplementCard({ supplement, readOnly, onEdit, onDelete }: SupplementCa
 // Main client component
 // ---------------------------------------------------------------------------
 
+function AppBarSetter() {
+  useAppBar({ title: 'Supplements' });
+  return null;
+}
+
 export default function SupplementsClient({
   readOnly = false,
   initialSupplements,
   apiBase = '/api/supplements',
+  embedded = false,
 }: {
   readOnly?: boolean;
   initialSupplements?: Supplement[];
   apiBase?: string;
+  embedded?: boolean;
 }) {
-  useAppBar({ title: 'Supplements' });
   const [supplements, setSupplements] = useState<Supplement[]>(initialSupplements ?? []);
   const [loading, setLoading] = useState(!initialSupplements);
   const [error, setError] = useState<string | null>(null);
@@ -409,7 +415,8 @@ export default function SupplementsClient({
 
   return (
     <>
-      <Box sx={{ pt: 2, pb: 6, px: 2, maxWidth: 600, height: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
+      {!embedded && <AppBarSetter />}
+      <Box sx={embedded ? undefined : { pt: 2, pb: 6, px: 2, maxWidth: 600, height: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
             {error}
@@ -460,10 +467,28 @@ export default function SupplementsClient({
             )}
 
             {!readOnly && (
-              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
-                <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>
-                  Add Supplement
-                </Button>
+              <Box
+                component={ButtonBase}
+                onClick={openAdd}
+                aria-label="Add supplement"
+                sx={{
+                  mt: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '100%',
+                  border: '1px dashed',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  cursor: 'pointer',
+                  color: 'primary.main',
+                  opacity: 0.35,
+                  py: 0.75,
+                  '&:hover': {opacity: 0.9},
+                  transition: 'opacity 0.15s',
+                }}
+              >
+                <AddIcon sx={{fontSize: '1rem'}} />
               </Box>
             )}
           </>

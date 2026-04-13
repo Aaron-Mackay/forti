@@ -23,5 +23,5 @@ export async function GET(_req: Request, { params }: Props) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  return NextResponse.json({ checkIn: result.checkIn });
+  return NextResponse.json({ checkIn: result.checkIn, currentWeek: result.currentWeek, weekPrior: result.weekPrior, weekTargets: result.weekTargets, activeTemplate: result.activeTemplate, customMetricDefs: result.customMetricDefs, weekWorkouts: result.weekWorkouts });
 }

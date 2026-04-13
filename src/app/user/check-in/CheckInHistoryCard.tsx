@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Accordion,
   AccordionDetails,
@@ -8,25 +8,21 @@ import {
   Box,
   Chip,
   Divider,
-  Dialog,
-  IconButton,
   Link,
   Typography,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CloseIcon from '@mui/icons-material/Close';
 import type { WeeklyCheckIn } from '@/generated/prisma/browser';
-import { APPBAR_HEIGHT } from '@/components/CustomAppBar';
+import { RATING_LABELS } from '@/types/checkInTypes';
+import { checkInHasRatings, checkInHasReflection, checkInHasPhotos } from '@/lib/checkInUtils';
+import CheckInPhotoTile from '@/components/CheckInPhotoTile';
+import PhotoViewerDialog from '@/components/PhotoViewerDialog';
 
 interface Props {
   checkIn: WeeklyCheckIn;
   defaultExpanded?: boolean;
 }
-
-const RATING_LABELS: Record<number, string> = {
-  1: 'Very Low', 2: 'Low', 3: 'Moderate', 4: 'High', 5: 'Very High',
-};
 
 function RatingChip({ label, value }: { label: string; value: number | null }) {
   if (value === null) return null;
@@ -55,18 +51,10 @@ export function CheckInDetails({
   checkIn: WeeklyCheckIn;
   onPhotoOpen?: (src: string, alt: string) => void;
 }) {
-  const hasRatings = [
-    checkIn.energyLevel,
-    checkIn.moodRating,
-    checkIn.stressLevel,
-    checkIn.sleepQuality,
-    checkIn.recoveryRating,
-    checkIn.adherenceRating,
-  ].some(value => value !== null);
-
+  const hasRatings = checkInHasRatings(checkIn);
   const hasTraining = checkIn.completedWorkouts !== null || checkIn.plannedWorkouts !== null;
-  const hasReflection = Boolean(checkIn.weekReview || checkIn.coachMessage || checkIn.goalsNextWeek);
-  const hasPhotos = Boolean(checkIn.frontPhotoUrl || checkIn.backPhotoUrl || checkIn.sidePhotoUrl);
+  const hasReflection = checkInHasReflection(checkIn);
+  const hasPhotos = checkInHasPhotos(checkIn);
 
   return (
     <>
@@ -109,34 +97,29 @@ export function CheckInDetails({
         <>
           {(hasRatings || hasTraining || hasReflection) && <Divider sx={{ my: 1.5 }} />}
           <Typography variant="overline" color="text.secondary">Progress Photos</Typography>
-          <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-            {(['frontPhotoUrl', 'backPhotoUrl', 'sidePhotoUrl'] as const).map(field => {
-              const url = checkIn[field];
-              return url ? (
-                <Box
-                  key={field}
-                  component="img"
-                  src={url}
-                  alt={field.replace('PhotoUrl', '')}
-                  onClick={() => onPhotoOpen?.(url, field.replace('PhotoUrl', ' progress photo'))}
-                  sx={{
-                    width: 72,
-                    height: 72,
-                    objectFit: 'contain',
-                    borderRadius: 1,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    bgcolor: 'rgba(0,0,0,0.04)',
-                    cursor: onPhotoOpen ? 'zoom-in' : 'default',
-                  }}
-                />
-              ) : (
-                <Box
-                  key={field}
-                  sx={{ width: 72, height: 72, borderRadius: 1, border: '1px dashed', borderColor: 'divider', bgcolor: 'action.hover' }}
-                />
-              );
-            })}
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 1,
+              mt: 0.5,
+              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            }}
+          >
+            <CheckInPhotoTile
+              src={checkIn.frontPhotoUrl}
+              alt="Front progress photo"
+              onClick={onPhotoOpen}
+            />
+            <CheckInPhotoTile
+              src={checkIn.sidePhotoUrl}
+              alt="Side progress photo"
+              onClick={onPhotoOpen}
+            />
+            <CheckInPhotoTile
+              src={checkIn.backPhotoUrl}
+              alt="Back progress photo"
+              onClick={onPhotoOpen}
+            />
           </Box>
         </>
       )}
@@ -206,58 +189,7 @@ export default function CheckInHistoryCard({ checkIn, defaultExpanded = false }:
         />
       </AccordionDetails>
 
-      <Dialog
-        open={activePhoto !== null}
-        onClose={() => setActivePhoto(null)}
-        fullWidth
-        maxWidth="md"
-        sx={{
-          '& .MuiDialog-container': {
-            alignItems: 'flex-start',
-          },
-        }}
-        slotProps={{
-          paper: {
-            sx: {
-              bgcolor: 'black',
-              position: 'relative',
-              overflow: 'hidden',
-              mt: `${APPBAR_HEIGHT}px`,
-              maxHeight: `calc(100dvh - ${APPBAR_HEIGHT}px)`,
-            },
-          },
-        }}
-      >
-        <IconButton
-          onClick={() => setActivePhoto(null)}
-          aria-label="Close photo viewer"
-          sx={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            zIndex: 1,
-            color: 'white',
-            bgcolor: 'rgba(0,0,0,0.5)',
-            '&:hover': { bgcolor: 'rgba(0,0,0,0.68)' },
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-        {activePhoto && (
-          <Box
-            component="img"
-            src={activePhoto.src}
-            alt={activePhoto.alt}
-            sx={{
-              display: 'block',
-              width: '100%',
-              maxHeight: `calc(100dvh - ${APPBAR_HEIGHT}px)`,
-              objectFit: 'contain',
-              bgcolor: 'black',
-            }}
-          />
-        )}
-      </Dialog>
+      <PhotoViewerDialog photo={activePhoto} onClose={() => setActivePhoto(null)} />
     </Accordion>
   );
 }

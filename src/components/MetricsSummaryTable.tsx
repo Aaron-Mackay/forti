@@ -14,11 +14,13 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import type { Metric } from '@/generated/prisma/browser';
 import { computeMetricSummary, formatSleepMins } from '@/types/checkInTypes';
 import type { WeekTargets } from '@/types/checkInTypes';
+import type { CustomMetricDef } from '@/types/settingsTypes';
 
 interface Props {
   currentWeek: Metric[];
   weekPrior: Metric[];
   weekTargets: WeekTargets | null;
+  customMetricDefs?: CustomMetricDef[];
 }
 
 type DeltaDir = 'up' | 'down' | 'flat';
@@ -31,16 +33,29 @@ function delta(current: number | null, prior: number | null): DeltaDir {
 }
 
 function DeltaIcon({ dir }: { dir: DeltaDir }) {
-  if (dir === 'up') return <ArrowUpwardIcon sx={{ fontSize: 14, color: 'success.main', verticalAlign: 'middle' }} />;
-  if (dir === 'down') return <ArrowDownwardIcon sx={{ fontSize: 14, color: 'error.main', verticalAlign: 'middle' }} />;
+  if (dir === 'up') return <ArrowUpwardIcon sx={{ fontSize: 14, color: 'text.secondary', verticalAlign: 'middle' }} />;
+  if (dir === 'down') return <ArrowDownwardIcon sx={{ fontSize: 14, color: 'text.secondary', verticalAlign: 'middle' }} />;
   return <RemoveIcon sx={{ fontSize: 14, color: 'text.disabled', verticalAlign: 'middle' }} />;
 }
 
 function withTarget(value: string, target: string | null): string {
-  return target !== null ? `${value}/${target}` : value;
+  return target !== null ? `${value} / ${target}` : value;
 }
 
-export default function MetricsSummaryTable({ currentWeek, weekPrior, weekTargets }: Props) {
+function avgCustom(metrics: Metric[], id: string): number | null {
+  const vals: number[] = [];
+  for (const m of metrics) {
+    if (!m.customMetrics || typeof m.customMetrics !== 'object' || Array.isArray(m.customMetrics)) continue;
+    const entry = (m.customMetrics as Record<string, unknown>)[id];
+    if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+      const v = (entry as Record<string, unknown>).value;
+      if (typeof v === 'number') vals.push(v);
+    }
+  }
+  return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+}
+
+export default function MetricsSummaryTable({ currentWeek, weekPrior, weekTargets, customMetricDefs = [] }: Props) {
   const curr = computeMetricSummary(currentWeek);
   const prior = computeMetricSummary(weekPrior);
 
@@ -114,6 +129,20 @@ export default function MetricsSummaryTable({ currentWeek, weekPrior, weekTarget
       dir: delta(curr.avgFat, prior.avgFat),
       hasData: curr.avgFat !== null,
     },
+    ...customMetricDefs.map(def => {
+      const currVal = avgCustom(currentWeek, def.id);
+      const priorVal = avgCustom(weekPrior, def.id);
+      return {
+        label: def.name,
+        current: withTarget(
+          currVal !== null ? `${currVal}` : '—',
+          def.target != null ? `${def.target}` : null,
+        ),
+        prior: priorVal !== null ? `${priorVal}` : '—',
+        dir: delta(currVal, priorVal),
+        hasData: currVal !== null,
+      };
+    }),
   ];
 
   return (
@@ -123,7 +152,7 @@ export default function MetricsSummaryTable({ currentWeek, weekPrior, weekTarget
           <TableRow>
             <TableCell sx={{ fontWeight: 600 }}>Metric (avg)</TableCell>
             <TableCell align="right" sx={{ fontWeight: 600 }}>Prev</TableCell>
-            <TableCell align="right" sx={{ fontWeight: 600 }}>Current/tgt</TableCell>
+            <TableCell align="right" sx={{ fontWeight: 600 }}>Current / tgt</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

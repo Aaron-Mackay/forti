@@ -13,7 +13,8 @@ import {
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useRouter } from 'next/navigation';
 import type { Metric, WeeklyCheckIn } from '@/generated/prisma/browser';
-import MetricsSummaryTable from './MetricsSummaryTable';
+import MetricsSummaryTable from '@/components/MetricsSummaryTable';
+import { useSettings } from '@lib/providers/SettingsProvider';
 import RatingField from './RatingField';
 import ProgressPhotoSection from './ProgressPhotoSection';
 import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
@@ -45,6 +46,7 @@ interface FormState {
 
 export default function CheckInForm({ currentWeek, weekPrior, checkIn, previousPhotos, weekTargets, completedWorkoutsCount, plannedWorkoutsCount, activePlanId, onSubmitted }: Props) {
   const router = useRouter();
+  const { settings } = useSettings();
   const isEditing = Boolean(checkIn.completedAt);
   const [photoUrls, setPhotoUrls] = useState<{ front: string | null; back: string | null; side: string | null }>({
     front: checkIn.frontPhotoUrl ?? null,
@@ -126,7 +128,7 @@ export default function CheckInForm({ currentWeek, weekPrior, checkIn, previousP
 
       {/* Metrics summary + workout count */}
       <Typography variant="subtitle2" sx={{ mb: 1 }}>Last 2 weeks of metrics</Typography>
-      <MetricsSummaryTable currentWeek={currentWeek} weekPrior={weekPrior} weekTargets={weekTargets} />
+      <MetricsSummaryTable currentWeek={currentWeek} weekPrior={weekPrior} weekTargets={weekTargets} customMetricDefs={settings.customMetrics} />
 
       {/* Workout completed/planned row */}
       <Box
