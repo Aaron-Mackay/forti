@@ -3,7 +3,8 @@ import { put } from '@vercel/blob';
 import { requireSession, authenticationErrorResponse } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { errorResponse } from '@lib/apiResponses';
-import { getWeekStart, toDateOnly } from '@lib/checkInUtils';
+import { getCheckInWeekStart, toDateOnly } from '@lib/checkInUtils';
+import { parseDashboardSettings } from '@/types/settingsTypes';
 import { deleteBlobIfManaged, getBlobToken } from '@lib/vercelBlob';
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -45,7 +46,9 @@ export async function POST(req: NextRequest) {
   if (!ALLOWED_MIME.has(file.type)) return errorResponse('Unsupported file type', 400);
 
   // Find or create current week's check-in
-  const weekStart = toDateOnly(getWeekStart(new Date()));
+  const postUser = await prisma.user.findUnique({ where: { id: userId }, select: { settings: true } });
+  const { checkInDay: postCheckInDay } = parseDashboardSettings(postUser?.settings);
+  const weekStart = toDateOnly(getCheckInWeekStart(new Date(), postCheckInDay));
   let checkIn = await prisma.weeklyCheckIn.findUnique({
     where: { userId_weekStartDate: { userId, weekStartDate: weekStart } },
   });
@@ -114,7 +117,9 @@ export async function DELETE(req: NextRequest) {
     return errorResponse('angle must be front, back, or side', 400);
   }
 
-  const weekStart = toDateOnly(getWeekStart(new Date()));
+  const deleteUser = await prisma.user.findUnique({ where: { id: userId }, select: { settings: true } });
+  const { checkInDay: deleteCheckInDay } = parseDashboardSettings(deleteUser?.settings);
+  const weekStart = toDateOnly(getCheckInWeekStart(new Date(), deleteCheckInDay));
   const checkIn = await prisma.weeklyCheckIn.findUnique({
     where: { userId_weekStartDate: { userId, weekStartDate: weekStart } },
     select: {

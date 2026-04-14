@@ -19,6 +19,7 @@ export default function CoachCheckInListItem({ checkIn, href }: Props) {
     year: 'numeric',
   });
   const weekLabel = new Date(checkIn.weekStartDate).toLocaleDateString('en-GB', {
+    weekday: 'short',
     day: 'numeric',
     month: 'short',
   });

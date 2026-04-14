@@ -83,7 +83,7 @@ export default function CheckInClient() {
 
   const weekLabel = currentData
     ? new Date(currentData.checkIn.weekStartDate).toLocaleDateString('en-GB', {
-        day: 'numeric', month: 'long', year: 'numeric',
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       })
     : '';
 

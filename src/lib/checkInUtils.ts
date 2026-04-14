@@ -39,6 +39,27 @@ export function getWeekStart(date: Date): Date {
 }
 
 /**
+ * Returns the start of the 7-day check-in window for a given user.
+ * The window covers the 7 days prior to, but NOT including, the most recent
+ * occurrence of `checkInDay` (up to and including `today`).
+ *
+ * checkInDay convention: 0 = Monday … 6 = Sunday.
+ *
+ * Examples (checkInDay = 1 = Tuesday):
+ *   today = Tue 14 Apr  →  checkInDate = 14 Apr  →  weekStart =  7 Apr
+ *   today = Wed 15 Apr  →  checkInDate = 14 Apr  →  weekStart =  7 Apr
+ *   today = Mon 13 Apr  →  checkInDate =  7 Apr  →  weekStart = 31 Mar
+ */
+export function getCheckInWeekStart(today: Date, checkInDay: number): Date {
+  const d = new Date(today);
+  d.setHours(0, 0, 0, 0);
+  const dayOfWeek = (d.getDay() + 6) % 7; // convert JS Sun=0 → Mon=0 convention
+  const daysBack = (dayOfWeek - checkInDay + 7) % 7; // steps back to most-recent checkInDay
+  d.setDate(d.getDate() - daysBack - 7); // land on checkInDay, then go back 7 more days
+  return d;
+}
+
+/**
  * Given a week start (Monday) and a checkInDay (0=Mon…6=Sun),
  * returns the actual calendar date when the check-in falls that week.
  */

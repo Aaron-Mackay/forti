@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
-import { getWeekStart, toDateOnly } from '@lib/checkInUtils';
+import { getCheckInWeekStart, toDateOnly } from '@lib/checkInUtils';
 import { notifyCoachCheckInSubmitted } from '@lib/notifications';
 
 /** GET /api/check-in — fetch current user's check-in history (newest first) */
@@ -14,7 +14,13 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(parseInt(searchParams.get('limit') ?? '20'), 100);
   const offset = parseInt(searchParams.get('offset') ?? '0');
   const excludeCurrent = searchParams.get('excludeCurrent') === 'true';
-  const currentWeekStart = toDateOnly(getWeekStart(new Date()));
+
+  const userRecord = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { settings: true },
+  });
+  const { checkInDay } = parseDashboardSettings(userRecord?.settings);
+  const currentWeekStart = toDateOnly(getCheckInWeekStart(new Date(), checkInDay));
   const where = excludeCurrent
     ? { userId, NOT: { weekStartDate: currentWeekStart } }
     : { userId };
@@ -69,7 +75,17 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const weekStart = toDateOnly(getWeekStart(new Date()));
+  // Fetch user settings (and coach) up-front so checkInDay is available for weekStart
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      name: true,
+      settings: true,
+      coach: { select: { id: true, email: true, name: true } },
+    },
+  });
+  const { checkInDay } = parseDashboardSettings(user?.settings);
+  const weekStart = toDateOnly(getCheckInWeekStart(new Date(), checkInDay));
 
   const existing = await prisma.weeklyCheckIn.findUnique({
     where: { userId_weekStartDate: { userId, weekStartDate: weekStart } },
@@ -91,24 +107,13 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Notify coach if the user has one
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      name: true,
-      settings: true,
-      coach: { select: { id: true, email: true, name: true } },
-    },
-  });
-
   if (user?.coach && !isEditingCompletedCheckIn) {
-    const settings = parseDashboardSettings(user.settings);
     await notifyCoachCheckInSubmitted(
       user.coach.id,
       checkIn.id,
       user.name,
       weekStart,
-      settings.checkInDay,
+      checkInDay,
     ).catch(err => console.error('Failed to send coach notification:', err));
   }
 

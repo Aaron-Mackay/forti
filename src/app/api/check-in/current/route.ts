@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
-import { getWeekStart, toDateOnly } from '@lib/checkInUtils';
+import { getCheckInWeekStart, toDateOnly } from '@lib/checkInUtils';
 import { getActiveTemplateForWeek, getMacrosByDow } from '@lib/targetTemplates';
+import { parseDashboardSettings } from '@/types/settingsTypes';
 
 /**
  * GET /api/check-in/current
@@ -13,7 +14,12 @@ export async function GET() {
   const session = await requireSession();
   const userId = session.user.id;
 
-  const weekStart = toDateOnly(getWeekStart(new Date()));
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { settings: true },
+  });
+  const { checkInDay } = parseDashboardSettings(user?.settings);
+  const weekStart = toDateOnly(getCheckInWeekStart(new Date(), checkInDay));
 
   // Get or create the current week's check-in shell
   let checkIn = await prisma.weeklyCheckIn.findUnique({
