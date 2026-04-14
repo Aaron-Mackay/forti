@@ -67,6 +67,7 @@ function makeToolUseResponse(planInput: unknown) {
       },
     ],
     stop_reason: 'tool_use',
+    usage: { input_tokens: 100, output_tokens: 50 },
   };
 }
 
@@ -175,6 +176,7 @@ describe('POST /api/plan/ai-import', () => {
       mockMessagesStream.mockResolvedValue({
         content: [{ type: 'text', text: 'I cannot parse that.' }],
         stop_reason: 'end_turn',
+        usage: { input_tokens: 10, output_tokens: 5 },
       });
 
       const req = makeRequest({ input: 'gobbledygook' });
@@ -502,7 +504,12 @@ describe('POST /api/plan/ai-import', () => {
       const req = makeRequest({ input: 'some workout' });
       await POST(req);
       expect(mockAiUsageLog.create).toHaveBeenCalledWith({
-        data: { userId: 'user-1' },
+        data: {
+          userId: 'user-1',
+          route: 'api/plan/ai-import',
+          inputTokens: 100,
+          outputTokens: 50,
+        },
       });
     });
   });

@@ -160,8 +160,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  await prisma.aiUsageLog.create({ data: { userId } });
-
   const client = new Anthropic();
 
   try {
@@ -186,6 +184,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       ],
     });
     const message = await stream.finalMessage();
+
+    await prisma.aiUsageLog.create({
+      data: {
+        userId,
+        route: 'api/exercises/enrich',
+        inputTokens: message.usage.input_tokens,
+        outputTokens: message.usage.output_tokens,
+      },
+    });
 
     const toolUseBlock = message.content.find((b) => b.type === 'tool_use');
     if (!toolUseBlock || toolUseBlock.type !== 'tool_use') {

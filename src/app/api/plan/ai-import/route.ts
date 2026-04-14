@@ -184,9 +184,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // Record usage before calling the API
-  await prisma.aiUsageLog.create({ data: { userId } });
-
   const client = new Anthropic();
 
   try {
@@ -234,6 +231,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       messages: [{ role: 'user', content: userContent }],
     });
     const message = await stream.finalMessage();
+
+    await prisma.aiUsageLog.create({
+      data: {
+        userId,
+        route: 'api/plan/ai-import',
+        inputTokens: message.usage.input_tokens,
+        outputTokens: message.usage.output_tokens,
+      },
+    });
 
     if (message.stop_reason === 'max_tokens') {
       return NextResponse.json(

@@ -368,10 +368,13 @@ model PushSubscription {
 }
 
 model AiUsageLog {
-  id        Int      @id @default(autoincrement())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  createdAt DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  route        String
+  inputTokens  Int?
+  outputTokens Int?
+  createdAt    DateTime @default(now())
 
   @@index([userId, createdAt])
 }
