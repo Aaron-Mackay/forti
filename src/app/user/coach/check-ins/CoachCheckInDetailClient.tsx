@@ -115,17 +115,20 @@ function toIntOrNull(s: string): number | null {
 }
 
 function initTargetValues(tpl: TargetTemplateWithDays | null): TargetValues {
-  const firstNonNull = (key: 'caloriesTarget' | 'proteinTarget' | 'carbsTarget' | 'fatTarget') => {
-    const day = tpl?.days.find(d => d[key] != null);
-    return day?.[key] != null ? String(day[key]) : '';
+  const avgValue = (key: 'caloriesTarget' | 'proteinTarget' | 'carbsTarget' | 'fatTarget') => {
+    const values = tpl?.days
+      .map(day => day[key])
+      .filter((value): value is number => value != null) ?? [];
+    if (values.length === 0) return '';
+    return String(Math.round(values.reduce((sum, value) => sum + value, 0) / values.length));
   };
   return {
     steps: tpl?.stepsTarget != null ? String(tpl.stepsTarget) : '',
     sleep: tpl?.sleepMinsTarget != null ? String(tpl.sleepMinsTarget) : '',
-    calories: firstNonNull('caloriesTarget'),
-    protein: firstNonNull('proteinTarget'),
-    carbs: firstNonNull('carbsTarget'),
-    fat: firstNonNull('fatTarget'),
+    calories: avgValue('caloriesTarget'),
+    protein: avgValue('proteinTarget'),
+    carbs: avgValue('carbsTarget'),
+    fat: avgValue('fatTarget'),
   };
 }
 
