@@ -14,6 +14,7 @@ const SaveUserDataSchema = z.object({
   activePlanId: z.number().int().positive().nullable().optional(),
   plans: z.array(PlanInputSchema),
 });
+const SAVE_USER_WORKOUT_DATA_TRANSACTION_TIMEOUT_MS = 15_000;
 
 export async function POST(req: Request) {
   let body: z.infer<typeof SaveUserDataSchema>;
@@ -187,7 +188,7 @@ export async function POST(req: Request) {
         where: { id: userId },
         data: { activePlanId: remappedActivePlan?.id ?? null },
       });
-    });
+    }, { timeout: SAVE_USER_WORKOUT_DATA_TRANSACTION_TIMEOUT_MS });
 
     return NextResponse.json({success: true}, {status: 200});
   } catch (err: unknown) {
