@@ -38,10 +38,6 @@ function DeltaIcon({ dir }: { dir: DeltaDir }) {
   return <RemoveIcon sx={{ fontSize: 14, color: 'text.disabled', verticalAlign: 'middle' }} />;
 }
 
-function withTarget(value: string, target: string | null): string {
-  return target !== null ? `${value} / ${target}` : value;
-}
-
 function avgCustom(metrics: Metric[], id: string): number | null {
   const vals: number[] = [];
   for (const m of metrics) {
@@ -58,74 +54,62 @@ function avgCustom(metrics: Metric[], id: string): number | null {
 export default function MetricsSummaryTable({ currentWeek, weekPrior, weekTargets, customMetricDefs = [] }: Props) {
   const curr = computeMetricSummary(currentWeek);
   const prior = computeMetricSummary(weekPrior);
-
   const tgt = weekTargets;
 
-  const rows: { label: string; current: string; prior: string; dir: DeltaDir; hasData: boolean }[] = [
+  const rows: { label: string; current: string; target: string; prior: string; dir: DeltaDir; hasData: boolean }[] = [
     {
       label: 'Weight (kg)',
       current: curr.avgWeight !== null ? `${curr.avgWeight}` : '—',
-      prior:   prior.avgWeight !== null ? `${prior.avgWeight}` : '—',
+      target: '—',
+      prior:  prior.avgWeight !== null ? `${prior.avgWeight}` : '—',
       dir: delta(curr.avgWeight, prior.avgWeight),
       hasData: curr.avgWeight !== null,
     },
     {
       label: 'Steps',
-      current: withTarget(
-        curr.avgSteps !== null ? Math.round(curr.avgSteps).toLocaleString() : '—',
-        tgt?.stepsTarget != null ? tgt.stepsTarget.toLocaleString() : null,
-      ),
-      prior: prior.avgSteps !== null ? Math.round(prior.avgSteps).toLocaleString() : '—',
+      current: curr.avgSteps !== null ? Math.round(curr.avgSteps).toLocaleString() : '—',
+      target:  tgt?.stepsTarget != null ? tgt.stepsTarget.toLocaleString() : '—',
+      prior:   prior.avgSteps !== null ? Math.round(prior.avgSteps).toLocaleString() : '—',
       dir: delta(curr.avgSteps, prior.avgSteps),
       hasData: curr.avgSteps !== null,
     },
     {
       label: 'Sleep',
-      current: withTarget(
-        formatSleepMins(curr.avgSleepMins),
-        tgt?.sleepMinsTarget != null ? formatSleepMins(tgt.sleepMinsTarget) : null,
-      ),
-      prior: formatSleepMins(prior.avgSleepMins),
+      current: formatSleepMins(curr.avgSleepMins),
+      target:  tgt?.sleepMinsTarget != null ? formatSleepMins(tgt.sleepMinsTarget) : '—',
+      prior:   formatSleepMins(prior.avgSleepMins),
       dir: delta(curr.avgSleepMins, prior.avgSleepMins),
       hasData: curr.avgSleepMins !== null,
     },
     {
       label: 'Calories',
-      current: withTarget(
-        curr.avgCalories !== null ? Math.round(curr.avgCalories).toLocaleString() : '—',
-        tgt?.caloriesTarget != null ? tgt.caloriesTarget.toLocaleString() : null,
-      ),
-      prior: prior.avgCalories !== null ? Math.round(prior.avgCalories).toLocaleString() : '—',
+      current: curr.avgCalories !== null ? Math.round(curr.avgCalories).toLocaleString() : '—',
+      target:  tgt?.caloriesTarget != null ? tgt.caloriesTarget.toLocaleString() : '—',
+      prior:   prior.avgCalories !== null ? Math.round(prior.avgCalories).toLocaleString() : '—',
       dir: delta(curr.avgCalories, prior.avgCalories),
       hasData: curr.avgCalories !== null,
     },
     {
       label: 'Protein (g)',
-      current: withTarget(
-        curr.avgProtein !== null ? `${Math.round(curr.avgProtein)}` : '—',
-        tgt?.proteinTarget != null ? `${tgt.proteinTarget}` : null,
-      ),
-      prior: prior.avgProtein !== null ? `${Math.round(prior.avgProtein)}` : '—',
+      current: curr.avgProtein !== null ? `${Math.round(curr.avgProtein)}` : '—',
+      target:  tgt?.proteinTarget != null ? `${tgt.proteinTarget}` : '—',
+      prior:   prior.avgProtein !== null ? `${Math.round(prior.avgProtein)}` : '—',
       dir: delta(curr.avgProtein, prior.avgProtein),
       hasData: curr.avgProtein !== null,
     },
     {
       label: 'Carbs (g)',
-      current: withTarget(
-        curr.avgCarbs !== null ? `${Math.round(curr.avgCarbs)}` : '—',
-        tgt?.carbsTarget != null ? `${tgt.carbsTarget}` : null,
-      ),
-      prior: prior.avgCarbs !== null ? `${Math.round(prior.avgCarbs)}` : '—',
+      current: curr.avgCarbs !== null ? `${Math.round(curr.avgCarbs)}` : '—',
+      target:  tgt?.carbsTarget != null ? `${tgt.carbsTarget}` : '—',
+      prior:   prior.avgCarbs !== null ? `${Math.round(prior.avgCarbs)}` : '—',
       dir: delta(curr.avgCarbs, prior.avgCarbs),
       hasData: curr.avgCarbs !== null,
     },
     {
       label: 'Fat (g)',
-      current: withTarget(
-        curr.avgFat !== null ? `${Math.round(curr.avgFat)}` : '—',
-        tgt?.fatTarget != null ? `${tgt.fatTarget}` : null,
-      ),
-      prior: prior.avgFat !== null ? `${Math.round(prior.avgFat)}` : '—',
+      current: curr.avgFat !== null ? `${Math.round(curr.avgFat)}` : '—',
+      target:  tgt?.fatTarget != null ? `${tgt.fatTarget}` : '—',
+      prior:   prior.avgFat !== null ? `${Math.round(prior.avgFat)}` : '—',
       dir: delta(curr.avgFat, prior.avgFat),
       hasData: curr.avgFat !== null,
     },
@@ -134,33 +118,35 @@ export default function MetricsSummaryTable({ currentWeek, weekPrior, weekTarget
       const priorVal = avgCustom(weekPrior, def.id);
       return {
         label: def.name,
-        current: withTarget(
-          currVal !== null ? `${currVal}` : '—',
-          def.target != null ? `${def.target}` : null,
-        ),
-        prior: priorVal !== null ? `${priorVal}` : '—',
+        current: currVal !== null ? `${currVal}` : '—',
+        target:  def.target != null ? `${def.target}` : '—',
+        prior:   priorVal !== null ? `${priorVal}` : '—',
         dir: delta(currVal, priorVal),
         hasData: currVal !== null,
       };
     }),
   ];
 
+  const cellSx = { fontSize: { xs: '0.72rem', lg: '0.875rem' } };
+
   return (
-    <Box sx={{ overflowX: 'auto' }}>
+    <Box>
       <Table size="small">
         <TableHead>
           <TableRow>
-            <TableCell sx={{ fontWeight: 600 }}>Metric (avg)</TableCell>
-            <TableCell align="right" sx={{ fontWeight: 600 }}>Prev</TableCell>
-            <TableCell align="right" sx={{ fontWeight: 600 }}>Current / tgt</TableCell>
+            <TableCell sx={{ fontWeight: 600, ...cellSx }}>Metric</TableCell>
+            <TableCell align="right" sx={{ fontWeight: 600, color: 'text.secondary', ...cellSx }}>Prev</TableCell>
+            <TableCell align="right" sx={{ fontWeight: 600, color: 'text.secondary', ...cellSx }}>Target</TableCell>
+            <TableCell align="right" sx={{ fontWeight: 600, ...cellSx }}>Avg</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {rows.map(row => (
             <TableRow key={row.label}>
-              <TableCell>{row.label}</TableCell>
-              <TableCell align="right" sx={{ color: 'text.secondary' }}>{row.prior}</TableCell>
-              <TableCell align="right">
+              <TableCell sx={cellSx}>{row.label}</TableCell>
+              <TableCell align="right" sx={{ color: 'text.secondary', ...cellSx }}>{row.prior}</TableCell>
+              <TableCell align="right" sx={{ color: 'text.secondary', ...cellSx }}>{row.target}</TableCell>
+              <TableCell align="right" sx={cellSx}>
                 {row.current}{row.hasData && <> <DeltaIcon dir={row.dir} /></>}
               </TableCell>
             </TableRow>

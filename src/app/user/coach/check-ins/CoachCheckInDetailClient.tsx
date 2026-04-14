@@ -3,6 +3,7 @@
 import type {ReactNode} from 'react';
 import {useState} from 'react';
 import type {TargetValues} from './CoachWeekTargetsCard';
+import CoachWeekTargetsCard from './CoachWeekTargetsCard';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import PendingIcon from '@mui/icons-material/PendingOutlined';
@@ -15,24 +16,28 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Collapse,
   Divider,
+  IconButton,
   Link,
   Paper,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
+import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
+import UnfoldLessIcon from '@mui/icons-material/UnfoldLess';
 import type {Metric} from '@/generated/prisma/browser';
 import type {CheckInWithUser, WeekTargets} from '@/types/checkInTypes';
+import {RATING_LABELS} from '@/types/checkInTypes';
 import type {CustomMetricDef} from '@/types/settingsTypes';
 import type {TargetTemplateWithDays} from '@lib/targetTemplates';
-import {RATING_LABELS} from '@/types/checkInTypes';
 import MetricsSummaryTable from '@/components/MetricsSummaryTable';
-import {checkInHasRatings, checkInHasReflection, checkInHasPhotos} from '@/lib/checkInUtils';
+import {checkInHasPhotos, checkInHasRatings, checkInHasReflection} from '@/lib/checkInUtils';
 import CheckInPhotoTile from '@/components/CheckInPhotoTile';
 import PhotoViewerDialog from '@/components/PhotoViewerDialog';
-import CoachWeekTargetsCard from './CoachWeekTargetsCard';
 import SupplementsClient from '@/app/user/supplements/SupplementsClient';
+import MetricsDailyBreakdown from '@/components/MetricsDailyBreakdown';
 
 interface WeekWorkout {
   id: number;
@@ -115,16 +120,24 @@ function initTargetValues(tpl: TargetTemplateWithDays | null): TargetValues {
     return day?.[key] != null ? String(day[key]) : '';
   };
   return {
-    steps:    tpl?.stepsTarget    != null ? String(tpl.stepsTarget)    : '',
-    sleep:    tpl?.sleepMinsTarget != null ? String(tpl.sleepMinsTarget) : '',
+    steps: tpl?.stepsTarget != null ? String(tpl.stepsTarget) : '',
+    sleep: tpl?.sleepMinsTarget != null ? String(tpl.sleepMinsTarget) : '',
     calories: firstNonNull('caloriesTarget'),
-    protein:  firstNonNull('proteinTarget'),
-    carbs:    firstNonNull('carbsTarget'),
-    fat:      firstNonNull('fatTarget'),
+    protein: firstNonNull('proteinTarget'),
+    carbs: firstNonNull('carbsTarget'),
+    fat: firstNonNull('fatTarget'),
   };
 }
 
-export default function CoachCheckInDetailClient({checkIn, currentWeek, weekPrior, weekTargets, activeTemplate, customMetricDefs, weekWorkouts}: Props) {
+export default function CoachCheckInDetailClient({
+                                                   checkIn,
+                                                   currentWeek,
+                                                   weekPrior,
+                                                   weekTargets,
+                                                   activeTemplate,
+                                                   customMetricDefs,
+                                                   weekWorkouts
+                                                 }: Props) {
   const [notes, setNotes] = useState(checkIn.coachNotes ?? '');
   const [coachResponseUrl, setCoachResponseUrl] = useState(checkIn.coachResponseUrl ?? '');
   const [targetValues, setTargetValues] = useState<TargetValues>(() => initTargetValues(activeTemplate));
@@ -132,8 +145,10 @@ export default function CoachCheckInDetailClient({checkIn, currentWeek, weekPrio
   const [saveError, setSaveError] = useState<string | null>(null);
   const [reviewedAt, setReviewedAt] = useState(checkIn.coachReviewedAt);
   const [activePhoto, setActivePhoto] = useState<{ src: string; alt: string } | null>(null);
+  const [metricsExpanded, setMetricsExpanded] = useState(false);
 
   const weekLabel = new Date(checkIn.weekStartDate).toLocaleDateString('en-GB', {
+    weekday: 'long',
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -152,9 +167,9 @@ export default function CoachCheckInDetailClient({checkIn, currentWeek, weekPrio
     try {
       const macro = {
         caloriesTarget: toIntOrNull(targetValues.calories),
-        proteinTarget:  toIntOrNull(targetValues.protein),
-        carbsTarget:    toIntOrNull(targetValues.carbs),
-        fatTarget:      toIntOrNull(targetValues.fat),
+        proteinTarget: toIntOrNull(targetValues.protein),
+        carbsTarget: toIntOrNull(targetValues.carbs),
+        fatTarget: toIntOrNull(targetValues.fat),
       };
       const days: Record<number, typeof macro> = {};
       for (let dow = 1; dow <= 7; dow++) days[dow] = macro;
@@ -168,7 +183,7 @@ export default function CoachCheckInDetailClient({checkIn, currentWeek, weekPrio
           body: JSON.stringify({coachNotes: notes, coachResponseUrl}),
         }).then(async res => {
           if (!res.ok) {
-            const data = await res.json().catch(() => null) as {error?: string} | null;
+            const data = await res.json().catch(() => null) as { error?: string } | null;
             throw new Error(data?.error ?? 'Failed to save review');
           }
         }),
@@ -274,7 +289,7 @@ export default function CoachCheckInDetailClient({checkIn, currentWeek, weekPrio
             alignItems: {xs: 'start', lg: 'stretch'},
             height: {lg: '100%'},
             '& > :last-child:nth-child(2n+1)': {
-              gridColumn: { xs: '1 / -1', sm: 'span 2' },
+              gridColumn: {xs: '1 / -1', sm: 'span 2'},
             },
           }}
         >
@@ -344,14 +359,74 @@ export default function CoachCheckInDetailClient({checkIn, currentWeek, weekPrio
           )}
 
           {(currentWeek.length > 0 || weekPrior.length > 0) && (
-            <Section>
-              <Typography variant="overline" color="text.secondary" sx={{display: 'block', mb: 1.5}}>
-                Metrics
-              </Typography>
-              <MetricsSummaryTable currentWeek={currentWeek} weekPrior={weekPrior} weekTargets={weekTargets} customMetricDefs={customMetricDefs} />
-            </Section>
-          )}
+            <Box sx={{
+              gridColumn: {lg: metricsExpanded ? '1 / -1' : 'auto'},
+              width: {
+                xs: 'calc(100dvw - 32px)',
+                lg: 'auto'
+              }
+            }}>
+              <Section>
+                {/* Header with expand toggle */}
+                <Box sx={{display: 'flex', alignItems: 'center', mb: 1.5}}>
+                  <Typography variant="overline" color="text.secondary" sx={{flexGrow: 1}}>
+                    Metrics
+                  </Typography>
+                  <IconButton size="small" onClick={() => setMetricsExpanded(e => !e)}
+                              aria-label="Toggle daily breakdown">
+                    {/* Mobile: vertical unfold */}
+                    <Box sx={{display: {xs: 'flex', lg: 'none'}}}>
+                      {metricsExpanded ? <UnfoldLessIcon/> : <UnfoldMoreIcon/>}
+                    </Box>
+                    {/* Desktop: horizontal unfold (rotated 90°) */}
+                    <Box sx={{display: {xs: 'none', lg: 'flex'}}}>
+                      {metricsExpanded
+                        ? <UnfoldLessIcon sx={{transform: 'rotate(90deg)'}}/>
+                        : <UnfoldMoreIcon sx={{transform: 'rotate(90deg)'}}/>}
+                    </Box>
+                  </IconButton>
+                </Box>
 
+                {/* Desktop: CSS transition on the right half */}
+                <Box sx={{display: {xs: 'none', lg: 'flex'}, alignItems: 'flex-start', gap: 2}}>
+                  <Box sx={{flex: '1 1 0', minWidth: 0}}>
+                    <MetricsSummaryTable currentWeek={currentWeek} weekPrior={weekPrior} weekTargets={weekTargets}
+                                         customMetricDefs={customMetricDefs}/>
+                  </Box>
+                  <Box sx={{
+                    display: 'flex',
+                    flex: metricsExpanded ? '1 1 0' : '0 0 0',
+                    minWidth: 0,
+                    gap: 2,
+                    maxWidth: metricsExpanded ? '100dvw' : 0,
+                    height: metricsExpanded ? 'auto' : 0,
+                    opacity: metricsExpanded ? 1 : 0,
+                    transition: 'max-width 300ms ease, opacity 200ms ease',
+                    alignItems: 'flex-start',
+                  }}>
+                    <Divider orientation="vertical" flexItem/>
+                    <Box sx={{flex: 1, minWidth: 0}}>
+                      <MetricsDailyBreakdown metrics={currentWeek} weekStartDate={checkIn.weekStartDate}
+                                             customMetricDefs={customMetricDefs} showMetricColumn={false}/>
+                    </Box>
+                  </Box>
+                </Box>
+
+                {/* Mobile: vertical collapse */}
+                <Box sx={{display: {xs: 'block', lg: 'none'}}}>
+                  <MetricsSummaryTable currentWeek={currentWeek} weekPrior={weekPrior} weekTargets={weekTargets}
+                                       customMetricDefs={customMetricDefs}/>
+                  <Collapse in={metricsExpanded} unmountOnExit>
+                    <Divider sx={{py: 1}}/>
+                    <Box sx={{overflowX: 'scroll',}}>
+                      <MetricsDailyBreakdown metrics={currentWeek} weekStartDate={checkIn.weekStartDate}
+                                             customMetricDefs={customMetricDefs}/>
+                    </Box>
+                  </Collapse>
+                </Box>
+              </Section>
+            </Box>
+          )}
 
 
           <Card variant="outlined" sx={{height: '100%', borderRadius: 3}}>
@@ -462,7 +537,7 @@ export default function CoachCheckInDetailClient({checkIn, currentWeek, weekPrio
         </Button>
       </Stack>
 
-      <PhotoViewerDialog photo={activePhoto} onClose={() => setActivePhoto(null)} />
+      <PhotoViewerDialog photo={activePhoto} onClose={() => setActivePhoto(null)}/>
     </Box>
   );
 }
