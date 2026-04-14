@@ -10,6 +10,7 @@ interface Props {
   weekStartDate: string | Date;
   customMetricDefs: CustomMetricDef[];
   showMetricColumn?: boolean;
+  includeEmptyRows?: boolean;
 }
 
 function getCustomValue(metric: Metric, id: string): number | null {
@@ -22,7 +23,13 @@ function getCustomValue(metric: Metric, id: string): number | null {
   return null;
 }
 
-export default function MetricsDailyBreakdown({ metrics, weekStartDate, customMetricDefs, showMetricColumn = true }: Props) {
+export default function MetricsDailyBreakdown({
+  metrics,
+  weekStartDate,
+  customMetricDefs,
+  showMetricColumn = true,
+  includeEmptyRows = false,
+}: Props) {
   const weekStart = new Date(weekStartDate);
 
   // Map dayOffset (0–6) → Metric. Both weekStartDate and m.date are UTC midnight @db.Date values.
@@ -94,7 +101,7 @@ export default function MetricsDailyBreakdown({ metrics, weekStartDate, customMe
     hasData: Array.from(byOffset.values()).some(m => getCustomValue(m, def.id) != null),
   }));
 
-  const rows = [...stdRows, ...customRows].filter(r => r.hasData);
+  const rows = includeEmptyRows ? [...stdRows, ...customRows] : [...stdRows, ...customRows].filter(r => r.hasData);
 
   if (rows.length === 0) return null;
 

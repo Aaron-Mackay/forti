@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Box, Chip, IconButton, Menu, Stack, TextField, Typography } from '@mui/material';
+import { Box, Chip, IconButton, Menu, TextField, Typography } from '@mui/material';
 import { PlanPrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { getWeekStatus } from '@/lib/workoutProgress';
@@ -19,10 +19,9 @@ import ExerciseDetailsDialog from './ExerciseDetailsDialog';
 interface PlanMultiWeekTableProps {
   plan: PlanPrisma;
   planId: number;
-  creationMode?: boolean;
 }
 
-const PlanMultiWeekTable = ({ plan, planId, creationMode = false }: PlanMultiWeekTableProps) => {
+const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
   const { allExercises, dispatch, debouncedDispatch } = useWorkoutEditorContext();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState<'add' | 'change'>('add');
@@ -117,35 +116,11 @@ const PlanMultiWeekTable = ({ plan, planId, creationMode = false }: PlanMultiWee
   );
   const menuHasTrailingDrops = menuTargets.some((target) => hasTrailingDropSets(target.exercise));
   const menuDropEnabled = targetExerciseId != null ? (dropEnabledExerciseIds.has(targetExerciseId) || menuHasTrailingDrops) : false;
+  const lastWeek = sortedWeeks[sortedWeeks.length - 1] ?? null;
+  const canRemoveWeek = sortedWeeks.length > 1;
 
   return (
     <Box>
-      <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap" sx={{ mb: 1.5 }}>
-        {sortedWeeks.map((week) => (
-          <Chip
-            key={week.id}
-            label={`Week ${week.order}`}
-            onDelete={sortedWeeks.length > 1 ? () => dispatch({ type: 'REMOVE_WEEK', planId, weekId: week.id }) : undefined}
-            size="small"
-            variant={week.order === activeWeekOrder ? 'filled' : 'outlined'}
-            color={week.order === activeWeekOrder ? 'primary' : 'default'}
-          />
-        ))}
-        {!creationMode && (
-          <Chip
-            icon={<AddIcon />}
-            label="Week"
-            onClick={() => {
-              const lastWeek = sortedWeeks[sortedWeeks.length - 1];
-              if (lastWeek) dispatch({ type: 'DUPLICATE_WEEK', planId, weekId: lastWeek.id });
-            }}
-            variant="outlined"
-            size="small"
-            sx={{ borderStyle: 'dashed' }}
-          />
-        )}
-      </Stack>
-
       {/* Workout chips + add */}
       <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', pb: 1, mb: 1, alignItems: 'center' }}>
         {slotLabels.map((label, i) => (
@@ -218,46 +193,70 @@ const PlanMultiWeekTable = ({ plan, planId, creationMode = false }: PlanMultiWee
 
       {/* Scrollable table */}
       <Box ref={scrollRef} sx={{ overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-          <thead>
-            <tr>
-              <th
-                style={{
-                  minWidth: '9rem',
-                  maxWidth: '14rem',
-                  textAlign: 'left',
-                  padding: '4px 12px 4px 0',
-                  fontSize: '0.72rem',
-                  color: 'var(--mui-palette-text-secondary, #666)',
-                  fontWeight: 600,
-                  verticalAlign: 'bottom',
-                }}
-              >
-                Exercise
-              </th>
-              {sortedWeeks.map(week => (
+        <Box sx={{ display: 'flex', alignItems: 'stretch', width: 'max-content' }}>
+          <table style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
                 <th
-                  key={week.id}
-                  data-scroll-target={week.id === scrollTargetWeekId ? 'true' : undefined}
                   style={{
-                    padding: '4px 12px',
+                    minWidth: '9rem',
+                    maxWidth: '14rem',
+                    textAlign: 'left',
+                    padding: '4px 12px 4px 0',
                     fontSize: '0.72rem',
                     color: 'var(--mui-palette-text-secondary, #666)',
                     fontWeight: 600,
-                    textAlign: 'center',
-                    whiteSpace: 'nowrap',
                     verticalAlign: 'bottom',
                   }}
                 >
-                  Wk {week.order}
-                  {week.order === activeWeekOrder && (
-                    <span style={{ fontSize: '0.65rem', marginLeft: '0.25em', opacity: 0.7 }}>(now)</span>
-                  )}
+                  Exercise
                 </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
+                {sortedWeeks.map(week => (
+                  <th
+                    key={week.id}
+                    data-scroll-target={week.id === scrollTargetWeekId ? 'true' : undefined}
+                    style={{
+                      padding: '4px 12px',
+                      fontSize: '0.72rem',
+                      color: 'var(--mui-palette-text-secondary, #666)',
+                      fontWeight: 600,
+                      textAlign: 'center',
+                      whiteSpace: 'nowrap',
+                      verticalAlign: 'bottom',
+                    }}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <span>
+                        Wk {week.order}
+                        {week.order === activeWeekOrder && (
+                          <span style={{ fontSize: '0.65rem', marginLeft: '0.25em', opacity: 0.7 }}>(now)</span>
+                        )}
+                      </span>
+                      {canRemoveWeek && week.id === lastWeek?.id && (
+                        <button
+                          type="button"
+                          onClick={() => dispatch({ type: 'REMOVE_WEEK', planId, weekId: week.id })}
+                          aria-label={`Delete week ${week.order}`}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            color: 'inherit',
+                            cursor: 'pointer',
+                            padding: 0,
+                            fontSize: '0.8rem',
+                            lineHeight: 1,
+                            opacity: 0.55,
+                          }}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
             {exerciseList.map(({ exerciseId, name, category, repRange, restTime, targetRpe, targetRir }) => {
               // Find this exercise's WorkoutExercise entry per week
               const exByWeek = workoutsByWeek.map(({ week, workout }) => ({
@@ -493,8 +492,38 @@ const PlanMultiWeekTable = ({ plan, planId, creationMode = false }: PlanMultiWee
                 )}
               </td>
             </tr>
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+          <Box
+            component="button"
+            type="button"
+            onClick={() => {
+              if (lastWeek) dispatch({ type: 'DUPLICATE_WEEK', planId, weekId: lastWeek.id });
+            }}
+            aria-label="Add week"
+            sx={{
+              background: 'transparent',
+              mt: '28px',
+              ml: 2,
+              minWidth: '8rem',
+              alignSelf: 'stretch',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '2px dashed',
+              borderColor: 'divider',
+              borderRadius: 1,
+              cursor: 'pointer',
+              color: 'primary.main',
+              opacity: 0.35,
+              px: 1,
+              '&:hover': { opacity: 0.9 },
+              transition: 'opacity 0.15s',
+            }}
+          >
+            <AddIcon sx={{ fontSize: '1rem' }} />
+          </Box>
+        </Box>
       </Box>
 
       <ExercisePickerDialog

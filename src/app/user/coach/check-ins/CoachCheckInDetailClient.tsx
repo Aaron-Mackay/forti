@@ -407,7 +407,8 @@ export default function CoachCheckInDetailClient({
                     <Divider orientation="vertical" flexItem/>
                     <Box sx={{flex: 1, minWidth: 0}}>
                       <MetricsDailyBreakdown metrics={currentWeek} weekStartDate={checkIn.weekStartDate}
-                                             customMetricDefs={customMetricDefs} showMetricColumn={false}/>
+                                             customMetricDefs={customMetricDefs} showMetricColumn={false}
+                                             includeEmptyRows/>
                     </Box>
                   </Box>
                 </Box>

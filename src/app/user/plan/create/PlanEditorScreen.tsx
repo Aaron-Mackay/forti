@@ -467,7 +467,7 @@ export const PlanEditorScreen = ({
                 showProgress={false}
               />
             ) : (
-              <PlanMultiWeekTable plan={displayPlan} planId={statePlan.id} creationMode={usesSingleWeekTemplate} />
+              <PlanMultiWeekTable plan={displayPlan} planId={statePlan.id} />
             )}
           </Box>
         )}
