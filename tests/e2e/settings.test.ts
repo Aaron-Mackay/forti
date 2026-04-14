@@ -105,8 +105,8 @@ test.describe('Settings page — UI', () => {
 // State-dependent tests — chromium only to avoid parallel-run DB conflicts
 // ---------------------------------------------------------------------------
 test.describe('Settings page — state', () => {
-  test.skip(({ browserName }) => browserName !== 'chromium',
-    'State-dependent tests run on chromium only; parallel browser projects share a DB user');
+  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile,
+    'State-dependent tests run on desktop chromium only; parallel browser projects share a DB user');
 
   test.beforeEach(async ({ page }) => {
     await page.request.patch('/api/user/settings', { data: { settings: ALL_ON } });
@@ -118,10 +118,10 @@ test.describe('Settings page — state', () => {
     await page.request.patch('/api/user/settings', { data: { settings: ALL_ON } });
   });
 
-  test('shows 10 toggles; dashboard/workout switches are on and Enable coach features is off by default', async ({ page }) => {
+  test('shows 12 toggles; dashboard/workout switches are on and Enable coach features is off by default', async ({ page }) => {
     const switches = page.getByRole('switch');
     await expect(switches.first()).toBeVisible();
-    await expect(switches).toHaveCount(10);
+    await expect(switches).toHaveCount(12);
     // Dashboard card toggles and stopwatch are all on
     await expect(page.getByRole('switch', { name: 'Next Workout' })).toBeChecked();
     await expect(page.getByRole('switch', { name: "Today's Metrics" })).toBeChecked();
@@ -131,6 +131,8 @@ test.describe('Settings page — state', () => {
     await expect(page.getByRole('switch', { name: 'Metrics Chart' })).toBeChecked();
     await expect(page.getByRole('switch', { name: 'E1RM Progress' })).toBeChecked();
     await expect(page.getByRole('switch', { name: 'Stopwatch' })).toBeChecked();
+    await expect(page.getByRole('switch', { name: 'Warmup Suggestions' })).not.toBeChecked();
+    await expect(page.getByRole('switch', { name: 'Plate Calculator' })).not.toBeChecked();
     // Enable coach features toggle is off by default
     await expect(page.getByRole('switch', { name: 'Enable coach features' })).not.toBeChecked();
   });

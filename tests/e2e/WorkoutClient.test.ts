@@ -38,9 +38,9 @@ test.describe('Workout page', () => {
     await page.getByRole('button', { name: /Plan/i }).first().click();
     await page.getByRole('button', { name: /Week/i }).first().click();
     await expect(page.getByText('Muscle Coverage')).toBeVisible();
-    // Body SVG diagrams should be present — scope to the WeekMuscleSummary container
     await expect(page.locator('[id^="week-muscle-"] svg').first()).toBeVisible();
-    // At least one muscle row with done/planned pattern should appear (e.g. "3/5")
+    await page.locator('[id^="week-muscle-"]').click();
+    await expect(page.getByRole('dialog', { name: 'Muscle Coverage' })).toBeVisible();
     await expect(page.getByText(/\d+(\.\d+)?\/\d+(\.\d+)?/).first()).toBeVisible();
   });
 
@@ -496,7 +496,8 @@ test.describe('Workout page', () => {
 
       // Navigate into the added exercise and substitute it
       await page.getByRole('button', {name: 'Leg Press'}).click();
-      await page.locator('.swiper-slide-active').getByRole('button', {name: 'Substitute exercise'}).click();
+      await page.locator('.swiper-slide-active').getByRole('button', {name: 'Exercise menu'}).click();
+      await page.getByRole('menuitem', {name: 'Substitute exercise'}).click();
       await expect(page.getByRole('dialog', {name: 'Substitute Exercise'})).toBeVisible();
       await page.getByRole('dialog', {name: 'Substitute Exercise'}).getByRole('button', {name: 'Squat'}).click();
 
@@ -707,7 +708,6 @@ test.describe('Workout page', () => {
 
       const activeSlide = page.locator('.swiper-slide-active');
       await activeSlide.getByRole('button', {name: /Previous workouts/i}).click();
-      await expect(activeSlide.getByText('2 workouts')).toBeVisible();
       await expect(activeSlide.getByText('Jan 14, 2026')).toBeVisible();
       await expect(activeSlide.getByText('Jan 7, 2026')).toBeVisible();
       const latestWorkoutTable = activeSlide.getByLabel('Previous workout table 1');

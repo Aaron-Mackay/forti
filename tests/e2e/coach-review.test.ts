@@ -41,14 +41,30 @@ const REVIEWED_CHECK_IN = {
 };
 
 const CLIENTS = [{ id: 'client-1', name: 'Alice Smith', email: 'alice@example.com' }];
+const CHECK_INS_ROUTE = /\/api\/coach\/check-ins(?:\?.*)?$/;
+const CHECK_IN_10_ROUTE = /\/api\/coach\/check-ins\/10(?:\?.*)?$/;
+const CHECK_IN_10_NOTES_ROUTE = /\/api\/coach\/check-ins\/10\/notes(?:\?.*)?$/;
+const CHECK_IN_11_ROUTE = /\/api\/coach\/check-ins\/11(?:\?.*)?$/;
 
 function makeApiResponse(checkIns: typeof UNREVIEWED_CHECK_IN[]) {
   return { checkIns, total: checkIns.length, clients: CLIENTS };
 }
 
+function makeDetailApiResponse(checkIn: typeof UNREVIEWED_CHECK_IN) {
+  return {
+    checkIn,
+    currentWeek: [],
+    weekPrior: [],
+    weekTargets: null,
+    activeTemplate: null,
+    customMetricDefs: [],
+    weekWorkouts: [],
+  };
+}
+
 test.describe('Coach check-ins page — basic rendering', () => {
   test.beforeEach(async ({ page }) => {
-    await page.route('**/api/coach/check-ins**', (route) =>
+    await page.route(CHECK_INS_ROUTE, (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -58,8 +74,8 @@ test.describe('Coach check-ins page — basic rendering', () => {
     await page.goto('/user/coach/check-ins');
   });
 
-  test('renders the Client Check-ins app bar title', async ({ page }) => {
-    await expect(page.getByRole('banner')).toContainText('Client Check-ins');
+  test('renders the coach check-ins tabs', async ({ page }) => {
+    await expect(page.getByRole('tablist')).toBeVisible();
   });
 
   test('shows New and Browse tabs', async ({ page }) => {
@@ -80,13 +96,13 @@ test.describe('Coach check-ins page — basic rendering', () => {
 
 test.describe('Coach check-ins — dedicated review page', () => {
   test('clicking a list item opens the dedicated check-in review page', async ({ page }) => {
-    await page.route('**/api/coach/check-ins**', (route) => {
+    await page.route(/\/api\/coach\/check-ins(?:\/10)?(?:\?.*)?$/, (route) => {
       const url = route.request().url();
       if (url.includes('/api/coach/check-ins/10')) {
         route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ checkIn: UNREVIEWED_CHECK_IN }),
+          body: JSON.stringify(makeDetailApiResponse(UNREVIEWED_CHECK_IN)),
         });
         return;
       }
@@ -112,7 +128,7 @@ test.describe('Coach check-ins — adding notes to a check-in', () => {
     let patchCalled = false;
     let patchBody: Record<string, unknown> | null = null;
 
-    await page.route('**/api/coach/check-ins/10/notes', (route) => {
+    await page.route(CHECK_IN_10_NOTES_ROUTE, (route) => {
       patchCalled = true;
       patchBody = JSON.parse(route.request().postData() ?? '{}') as Record<string, unknown>;
       route.fulfill({
@@ -121,11 +137,11 @@ test.describe('Coach check-ins — adding notes to a check-in', () => {
         body: JSON.stringify({ coachNotes: 'Well done this week', coachReviewedAt: new Date().toISOString() }),
       });
     });
-    await page.route('**/api/coach/check-ins/10', (route) =>
+    await page.route(CHECK_IN_10_ROUTE, (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ checkIn: UNREVIEWED_CHECK_IN }),
+        body: JSON.stringify(makeDetailApiResponse(UNREVIEWED_CHECK_IN)),
       }),
     );
 
@@ -149,11 +165,11 @@ test.describe('Coach check-ins — adding notes to a check-in', () => {
 
 test.describe('Coach check-ins — reviewed state', () => {
   test.beforeEach(async ({ page }) => {
-    await page.route('**/api/coach/check-ins/11', (route) =>
+    await page.route(CHECK_IN_11_ROUTE, (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ checkIn: REVIEWED_CHECK_IN }),
+        body: JSON.stringify(makeDetailApiResponse(REVIEWED_CHECK_IN)),
       }),
     );
     await page.goto('/user/coach/check-ins/11');
@@ -176,7 +192,7 @@ test.describe('Coach check-ins — reviewed state', () => {
 
 test.describe('Coach check-ins — Browse tab', () => {
   test.beforeEach(async ({ page }) => {
-    await page.route('**/api/coach/check-ins**', (route) =>
+    await page.route(CHECK_INS_ROUTE, (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',

@@ -152,6 +152,8 @@ export async function seedTestUserData(user: { id: string }, today: Date): Promi
   // Cascade delete removes weeks → workouts → exercises → sets automatically.
   await prisma.plan.deleteMany({ where: { userId: user.id } });
 
+  let firstPlanId: number | null = null;
+
   for (let planIdx = 0; planIdx < PLAN_TEMPLATES.length; planIdx++) {
     const template = PLAN_TEMPLATES[planIdx];
 
@@ -163,6 +165,10 @@ export async function seedTestUserData(user: { id: string }, today: Date): Promi
         description: template.description,
       },
     });
+
+    if (firstPlanId === null) {
+      firstPlanId = plan.id;
+    }
 
     for (let weekIdx = 0; weekIdx < template.weekCount; weekIdx++) {
       const isFirstWeek = weekIdx === 0;
@@ -260,6 +266,13 @@ export async function seedTestUserData(user: { id: string }, today: Date): Promi
         }
       }
     }
+  }
+
+  if (firstPlanId !== null) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { activePlanId: firstPlanId },
+    });
   }
 
   // ── Weekly check-ins ─────────────────────────────────────────────────────

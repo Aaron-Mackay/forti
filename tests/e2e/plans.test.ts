@@ -318,7 +318,7 @@ test.describe('AI plan creation', () => {
 test.describe('Spreadsheet import', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/user/plan/create');
-    await page.getByTestId('entry-upload').click();
+    await page.getByTestId('entry-upload').first().click();
     await expect(page).toHaveURL('/user/plan/upload');
   });
 

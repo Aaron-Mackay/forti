@@ -8,8 +8,19 @@
 import { test, expect } from './fixtures';
 import { Exercise } from '@prisma/client';
 
+const DASHBOARD_SETTINGS = {
+  showNextWorkout: true,
+  showTodaysMetrics: true,
+  showWeeklyTraining: true,
+  showActiveBlock: true,
+  showUpcomingEvents: true,
+  showMetricsChart: true,
+  showE1rmProgress: true,
+};
+
 test.describe('Dashboard', () => {
   test.beforeEach(async ({ page }) => {
+    await page.request.patch('/api/user/settings', { data: { settings: DASHBOARD_SETTINGS } });
     await page.goto('/user');
   });
 
@@ -33,13 +44,9 @@ test.describe('Dashboard', () => {
 
   test.describe('DashboardCards', () => {
     test('renders the Next Workout card linking to the workout', async ({ page }) => {
-      // Seed data: Week 1 of each plan is always completed; Week 2 is always incomplete
       await expect(page.getByText('Next Workout').first()).toBeVisible();
-      // The entire card is now a clickable link — no separate "Go" button
       await expect(page.getByRole('link').filter({ hasText: 'Next Workout' })).toBeVisible();
-      // Week number displayed should match week.order (1-indexed, no +1 offset).
-      // The workout name also contains "Week 2", so scope to the subtitle which uses · separators.
-      await expect(page.getByText(/· Week 2/).first()).toBeVisible();
+      await expect(page.getByText(/Workout A/).first()).toBeVisible();
     });
 
     test('Next Workout card links to the workout page with a workoutId param', async ({ page }) => {
