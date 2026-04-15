@@ -261,7 +261,7 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
     queueOrSendRequest(`/api/workout/${selectedWorkoutId}`, 'PATCH', {notes: note});
   };
 
-  const handleCompleteWorkout = (completed: boolean) => {
+  const handleCompleteWorkout = (completed: boolean, date?: Date) => {
     if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
 
     if (completed && selectedWeek && selectedWorkout) {
@@ -270,7 +270,7 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
     }
 
     const prevUserData = userDataState;
-    const dateCompleted = completed ? new Date() : null;
+    const dateCompleted = completed ? (date ?? new Date()) : null;
 
     setUserData(prev =>
       updateWorkoutDateCompleted(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, dateCompleted)

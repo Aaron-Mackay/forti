@@ -1,6 +1,8 @@
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, screen, fireEvent, act} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {LocalizationProvider} from '@mui/x-date-pickers';
+import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
 
 vi.mock('next-auth/react', () => ({useSession: () => ({data: null, status: 'unauthenticated'})}));
 vi.mock('next/navigation', () => ({usePathname: () => '/user/workout', useRouter: () => ({push: vi.fn()})}));
@@ -47,9 +49,11 @@ function buildWorkout(overrides: Partial<WorkoutPrisma> = {}): WorkoutPrisma {
 
 function renderView(props: React.ComponentProps<typeof ExercisesListView>) {
   return render(
-    <StopwatchProvider>
-      <ExercisesListView {...props}/>
-    </StopwatchProvider>
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <StopwatchProvider>
+        <ExercisesListView {...props}/>
+      </StopwatchProvider>
+    </LocalizationProvider>
   );
 }
 
@@ -61,6 +65,10 @@ describe('ExercisesListView', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('renders exercise names', () => {
@@ -253,5 +261,38 @@ describe('ExercisesListView', () => {
     // PanoramaFishEye icon rendered as svg
     expect(screen.queryByText(/min/)).not.toBeInTheDocument();
     expect(screen.getByText('Treadmill')).toBeInTheDocument();
+  });
+
+  it('opens date picker dialog on long press of Mark as Complete', async () => {
+    vi.useFakeTimers();
+    renderView({
+      workout: buildWorkout({dateCompleted: null}),
+      onBack,
+      onSelectExercise,
+      onWorkoutNoteBlur,
+      onCompleteWorkout,
+    });
+    const btn = screen.getByRole('button', {name: /mark as complete/i});
+    fireEvent.pointerDown(btn);
+    act(() => { vi.advanceTimersByTime(650); });
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Complete Workout')).toBeInTheDocument();
+  });
+
+  it('calls onCompleteWorkout with true and a Date on dialog confirm', async () => {
+    vi.useFakeTimers();
+    renderView({
+      workout: buildWorkout({dateCompleted: null}),
+      onBack,
+      onSelectExercise,
+      onWorkoutNoteBlur,
+      onCompleteWorkout,
+    });
+    const btn = screen.getByRole('button', {name: /mark as complete/i});
+    fireEvent.pointerDown(btn);
+    act(() => { vi.advanceTimersByTime(650); });
+    // Confirm with the pre-filled date
+    fireEvent.click(screen.getByRole('button', {name: /^complete$/i}));
+    expect(onCompleteWorkout).toHaveBeenCalledWith(true, expect.any(Date));
   });
 });

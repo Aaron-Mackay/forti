@@ -1,12 +1,16 @@
 'use client';
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {alpha} from '@mui/material/styles';
 import {
   Box,
   Button,
   Collapse,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   List,
   ListItem,
@@ -15,6 +19,7 @@ import {
   TextField,
   Typography
 } from '@mui/material';
+import {DatePicker} from '@mui/x-date-pickers';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -43,7 +48,7 @@ export default function ExercisesListView({
   onBack: () => void;
   onSelectExercise: (exerciseId: number) => void;
   onWorkoutNoteBlur: (note: string) => void;
-  onCompleteWorkout: (completed: boolean) => void;
+  onCompleteWorkout: (completed: boolean, date?: Date) => void;
   onAddExercise: () => void;
   onRemoveExercise?: (workoutExerciseId: number) => void;
 }) {
@@ -58,6 +63,38 @@ export default function ExercisesListView({
     const el = e.currentTarget;
     setHasScrollAbove(el.scrollTop > 4);
     setHasScrollBelow(el.scrollTop + el.clientHeight < el.scrollHeight - 4);
+  };
+
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [pickedDate, setPickedDate] = useState<Date | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didLongPress = useRef(false);
+
+  const LONG_PRESS_MS = 600;
+
+  const clearLongPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleCompleteBtnPointerDown = () => {
+    clearLongPress();
+    didLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      didLongPress.current = true;
+      setPickedDate(workout.dateCompleted ? new Date(workout.dateCompleted) : new Date());
+      setDatePickerOpen(true);
+    }, LONG_PRESS_MS);
+  };
+
+  const handleCompleteBtnClick = () => {
+    if (didLongPress.current) {
+      didLongPress.current = false;
+      return;
+    }
+    onCompleteWorkout(!isCompleted);
   };
 
   const hasNote = noteValue.trim().length > 0;
@@ -239,16 +276,47 @@ export default function ExercisesListView({
         >
           Add Exercise
         </Button>
-        <Button
-          variant={isCompleted ? 'contained' : 'outlined'}
-          color="success"
-          fullWidth
-          onClick={() => onCompleteWorkout(!isCompleted)}
-          startIcon={isCompleted ? <CheckCircleIcon/> : <CheckCircleOutlineIcon/>}
-          sx={{mb: 1}}
+        <span
+          onPointerDown={handleCompleteBtnPointerDown}
+          onPointerUp={clearLongPress}
+          onPointerLeave={clearLongPress}
+          onPointerCancel={clearLongPress}
+          style={{display: 'block', marginBottom: 8}}
         >
-          {isCompleted ? `Completed ${completedDate}` : 'Mark as Complete'}
-        </Button>
+          <Button
+            variant={isCompleted ? 'contained' : 'outlined'}
+            color="success"
+            fullWidth
+            onClick={handleCompleteBtnClick}
+            startIcon={isCompleted ? <CheckCircleIcon/> : <CheckCircleOutlineIcon/>}
+          >
+            {isCompleted ? `Completed ${completedDate}` : 'Mark as Complete'}
+          </Button>
+        </span>
+        <Dialog open={datePickerOpen} onClose={() => setDatePickerOpen(false)}>
+          <DialogTitle>Complete Workout</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" sx={{mb: 2}}>Select a completion date:</Typography>
+            <DatePicker
+              value={pickedDate}
+              onChange={setPickedDate}
+              disableFuture
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDatePickerOpen(false)}>Cancel</Button>
+            <Button
+              variant="contained"
+              color="success"
+              onClick={() => {
+                setDatePickerOpen(false);
+                if (pickedDate) onCompleteWorkout(true, pickedDate);
+              }}
+            >
+              Complete
+            </Button>
+          </DialogActions>
+        </Dialog>
         <AppBarStopwatch/>
       </Container>
     </Box>
