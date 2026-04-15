@@ -22,6 +22,7 @@ import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import FlipCameraIosIcon from '@mui/icons-material/FlipCameraIos';
 
 import { getCoverDrawRect, getOrderedCameraDeviceIds } from './photoCaptureUtils';
+import { APPBAR_HEIGHT } from '@/components/CustomAppBar';
 
 type Angle = 'front' | 'back' | 'side';
 type FacingMode = 'user' | 'environment';
@@ -676,8 +677,19 @@ export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null,
       fullWidth
       maxWidth="sm"
       onClose={onClose}
-      sx={{ zIndex: 1500 }}
+      sx={{
+        zIndex: 1500,
+        '& .MuiDialog-container': {
+          alignItems: 'flex-start',
+          pt: `${fullScreen ? APPBAR_HEIGHT : APPBAR_HEIGHT + 8}px`,
+        },
+        '& .MuiDialog-paper': {
+          m: 0,
+          maxHeight: `calc(100dvh - ${APPBAR_HEIGHT}px - ${fullScreen ? 0 : 16}px)`,
+        },
+      }}
       slotProps={{
+        backdrop: { sx: { top: `${APPBAR_HEIGHT}px` } },
         paper: {
           sx: {
             bgcolor: 'black',
@@ -686,6 +698,7 @@ export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            ...(fullScreen && { height: `calc(100dvh - ${APPBAR_HEIGHT}px)` }),
           },
         },
       }}
@@ -695,8 +708,8 @@ export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null,
           position: 'relative',
           width: '100%',
           maxWidth: fullScreen ? '100%' : 520,
-          maxHeight: '100dvh',
-          height: fullScreen ? '100dvh' : 'min(100dvh, calc((100vw - 64px) * 4 / 3))',
+          maxHeight: `calc(100dvh - ${APPBAR_HEIGHT}px - ${fullScreen ? 0 : 16}px)`,
+          height: fullScreen ? `calc(100dvh - ${APPBAR_HEIGHT}px)` : `min(calc(100dvh - ${APPBAR_HEIGHT}px - 16px), calc((100vw - 64px) * 4 / 3))`,
           aspectRatio: fullScreen ? 'auto' : '3/4',
           bgcolor: '#111',
           cursor: countdown !== null ? 'pointer' : 'default',
