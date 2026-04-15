@@ -89,6 +89,9 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
   // Debounce timer for cache writes
   const cacheWriteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Per-set-field network timers to avoid race conditions and truncation during rapid typing
+  const networkTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
   // On mount: if offline restore cache; if online prime cache
   useOfflineCache(userDataState.id, userDataState, setUserData, getUserDataCache, saveUserDataCache);
 
@@ -102,6 +105,13 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
       if (cacheWriteTimer.current) clearTimeout(cacheWriteTimer.current);
     };
   }, [userDataState]);
+
+  useEffect(() => {
+    return () => {
+      for (const timer of networkTimers.current.values()) clearTimeout(timer);
+      networkTimers.current.clear();
+    };
+  }, []);
 
   // On reconnect: flush queue, re-fetch fresh data, show banner on structural change
   useEffect(() => {
@@ -185,8 +195,6 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
   const handleSetUpdate = (setIdx: number, field: Field, value: string) => {
     if (!(selectedPlanId && selectedWeekId && selectedWorkoutId && selectedExerciseId)) return;
 
-    const prevUserData = userDataState;
-
     const plan = userDataState.plans.find(p => p.id === selectedPlanId);
     const week = plan?.weeks.find(w => w.id === selectedWeekId);
     const workout = week?.workouts.find(w => w.id === selectedWorkoutId);
@@ -218,19 +226,32 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
       updateUserSets(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, selectedExerciseId, updatedSets)
     );
 
-    queueOrSendRequest(`/api/sets/${updatedSets[setIdx].id}`, 'PATCH', {[field]: parsedValue})
-      .then(() => setSnackbar({
-        open: true,
-        message: navigator.onLine ? 'Set updated' : 'Offline: update queued',
-        severity: navigator.onLine ? 'success' : 'info',
-      }))
-      .catch(() => {
-        setUserData(prevUserData);
-        setSnackbar({open: true, message: 'Failed to update set', severity: 'info'});
-      });
+    // Debounce the network request to avoid race conditions and truncation
+    const setId = updatedSets[setIdx].id;
+    const timerKey = `${setId}-${field}`;
+    if (networkTimers.current.has(timerKey)) {
+      clearTimeout(networkTimers.current.get(timerKey)!);
+    }
 
-    for (const [setId, weight] of autoFillMap) {
-      queueOrSendRequest(`/api/sets/${setId}`, 'PATCH', {weight});
+    const timer = setTimeout(() => {
+      queueOrSendRequest(`/api/sets/${setId}`, 'PATCH', {[field]: parsedValue})
+        .then(() => setSnackbar({
+          open: true,
+          message: navigator.onLine ? 'Set updated' : 'Offline: update queued',
+          severity: navigator.onLine ? 'success' : 'info',
+        }))
+        .catch(() => {
+          // We no longer roll back state here because it causes truncation during rapid typing.
+          // The failure is surfaced via snackbar, and the user can retry or rely on offline sync.
+          setSnackbar({open: true, message: 'Failed to update set', severity: 'info'});
+        });
+      networkTimers.current.delete(timerKey);
+    }, 500);
+
+    networkTimers.current.set(timerKey, timer);
+
+    for (const [fid, weight] of autoFillMap) {
+      queueOrSendRequest(`/api/sets/${fid}`, 'PATCH', {weight});
     }
   };
 
@@ -283,7 +304,19 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
     setUserData(prev =>
       updateCardioData(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, workoutExerciseId, field, value)
     );
-    queueOrSendRequest(`/api/workoutExercise/${workoutExerciseId}`, 'PATCH', {[field]: value});
+
+    // Debounce the network request to avoid race conditions and truncation
+    const timerKey = `${workoutExerciseId}-${field}`;
+    if (networkTimers.current.has(timerKey)) {
+      clearTimeout(networkTimers.current.get(timerKey)!);
+    }
+
+    const timer = setTimeout(() => {
+      queueOrSendRequest(`/api/workoutExercise/${workoutExerciseId}`, 'PATCH', {[field]: value});
+      networkTimers.current.delete(timerKey);
+    }, 500);
+
+    networkTimers.current.set(timerKey, timer);
   };
 
   const handleFormCueBlur = (exerciseId: number, note: string) => {
@@ -365,15 +398,13 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
   const handleEffortUpdate = (setId: number, field: 'rpe' | 'rir', value: number | null) => {
     if (!(selectedPlanId && selectedWeekId && selectedWorkoutId && selectedExerciseId)) return;
 
-    const prevUserData = userDataState;
     setUserData(prev =>
       updateSetEffort(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, selectedExerciseId, setId, field, value)
     );
 
     queueOrSendRequest(`/api/sets/${setId}`, 'PATCH', {[field]: value})
       .catch(() => {
-        setUserData(prevUserData);
-        setSnackbar({open: true, message: 'Failed to update set', severity: 'info'});
+        setSnackbar({open: true, message: 'Failed to update effort', severity: 'info'});
       });
   };
 

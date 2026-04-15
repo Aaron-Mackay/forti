@@ -34,12 +34,25 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ setId: 
   const {reps, weight, rpe, rir} = await req.json();
   const data: { [p: string]: number | null } = {};
 
-  if (typeof reps === 'number') data.reps = reps;
-  if (typeof weight === 'number') data.weight = weight;
-  if (typeof rpe === 'number') data.rpe = rpe;
-  if (rpe === null) data.rpe = null;
-  if (typeof rir === 'number') data.rir = rir;
-  if (rir === null) data.rir = null;
+  const isNumberOrNull = (value: unknown) => value === null || typeof value === 'number';
+
+  if (reps !== undefined && !isNumberOrNull(reps)) {
+    return NextResponse.json({error: 'reps must be a number or null'}, {status: 400});
+  }
+  if (weight !== undefined && !isNumberOrNull(weight)) {
+    return NextResponse.json({error: 'weight must be a number or null'}, {status: 400});
+  }
+  if (rpe !== undefined && !isNumberOrNull(rpe)) {
+    return NextResponse.json({error: 'rpe must be a number or null'}, {status: 400});
+  }
+  if (rir !== undefined && !isNumberOrNull(rir)) {
+    return NextResponse.json({error: 'rir must be a number or null'}, {status: 400});
+  }
+
+  if (reps !== undefined) data.reps = reps;
+  if (weight !== undefined) data.weight = weight;
+  if (rpe !== undefined) data.rpe = rpe;
+  if (rir !== undefined) data.rir = rir;
 
   if (!Object.keys(data).length) {
     return NextResponse.json({error: 'No valid fields provided'}, {status: 400});
@@ -55,8 +68,12 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ setId: 
     }
 
     // Merge incoming values with existing to compute e1rm even when only one field changes
-    const mergedWeight = typeof data.weight === 'number' ? data.weight : set.weight;
-    const mergedReps = typeof data.reps === 'number' ? data.reps : set.reps;
+    const mergedWeight = reps !== undefined || weight !== undefined
+      ? (data.weight !== undefined ? data.weight : set.weight)
+      : set.weight;
+    const mergedReps = reps !== undefined || weight !== undefined
+      ? (data.reps !== undefined ? data.reps : set.reps)
+      : set.reps;
     data.e1rm = computeE1rm(mergedWeight, mergedReps);
 
     const updated = await prisma.exerciseSet.update({
