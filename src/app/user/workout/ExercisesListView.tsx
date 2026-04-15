@@ -1,6 +1,6 @@
 'use client';
 
-import {useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {alpha} from '@mui/material/styles';
 import {
   Box,
@@ -15,7 +15,6 @@ import {
   List,
   ListItem,
   ListItemButton,
-  ListItemText,
   TextField,
   Typography
 } from '@mui/material';
@@ -56,13 +55,26 @@ export default function ExercisesListView({
   const [notesOpen, setNotesOpen] = useState(false);
   const [noteValue, setNoteValue] = useState(workout.notes ?? '');
 
+  const listRef = useRef<HTMLUListElement>(null);
   const [hasScrollAbove, setHasScrollAbove] = useState(false);
-  const [hasScrollBelow, setHasScrollBelow] = useState(true);
+  const [hasScrollBelow, setHasScrollBelow] = useState(false);
 
-  const handleListScroll = (e: React.UIEvent<HTMLUListElement>) => {
-    const el = e.currentTarget;
+  const checkScroll = (el: HTMLElement) => {
     setHasScrollAbove(el.scrollTop > 4);
     setHasScrollBelow(el.scrollTop + el.clientHeight < el.scrollHeight - 4);
+  };
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    checkScroll(el);
+    const ro = new ResizeObserver(() => checkScroll(el));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const handleListScroll = (e: React.UIEvent<HTMLUListElement>) => {
+    checkScroll(e.currentTarget);
   };
 
   const [datePickerOpen, setDatePickerOpen] = useState(false);
@@ -122,7 +134,7 @@ export default function ExercisesListView({
           flex: 1
         }}
       >
-        <Box sx={{display: 'flex', alignItems: 'center', mb: 1}}>
+        <Box sx={{display: 'flex', alignItems: 'center'}}>
           <Typography variant="subtitle1" sx={{flex: 1}}>
             Exercises
           </Typography>
@@ -130,16 +142,26 @@ export default function ExercisesListView({
             <AddIcon fontSize="small" />
           </IconButton>
         </Box>
-        <Box sx={{position: 'relative', flex: 1, minHeight: 0, mb: 2}}>
         <List
+          ref={listRef}
           className={"maskedOverflow"}
           onScroll={handleListScroll}
           sx={{
-            height: '100%',
-            overflowY: 'auto',
+            flex: 1,
             minHeight: 0,
+            py: 0,
+            overflowY: 'auto',
           }}
         >
+          {hasScrollAbove && (
+            <Box
+              sx={{
+                position: 'sticky', top: 0, left: 0, right: 0, height: 40, mb: '-40px', zIndex: 1,
+                background: theme => `linear-gradient(to top, ${alpha(theme.palette.background.default, 0)}, ${theme.palette.background.default})`,
+                pointerEvents: 'none',
+              }}
+            />
+          )}
           {workout.exercises.map((ex) => {
             const isSubstituted = ex.substitutedForId != null;
             const isAdded = ex.isAdded;
@@ -154,10 +176,13 @@ export default function ExercisesListView({
                   alignItems: 'center',
                 }}
               >
-                <ListItemButton onClick={() => onSelectExercise(ex.id)} sx={{display: 'flex', alignItems: 'center', flex: 1}}>
-                  <Box sx={{flex: 1}}>
+                <ListItemButton onClick={() => onSelectExercise(ex.id)} sx={{flex: 1}}>
+                  <Box sx={{flex: 1, minWidth: 0}}>
+                    {/* Line 1: name + chips */}
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap'}}>
-                      <ListItemText primary={ex.exercise.name} sx={{m: 0, flex: 'none'}} />
+                      <Typography variant="body2" sx={{fontWeight: 500}}>
+                        {ex.exercise.name}
+                      </Typography>
                       {ex.isBfr && (
                         <Chip
                           label="BFR"
@@ -186,31 +211,43 @@ export default function ExercisesListView({
                         />
                       )}
                     </Box>
+                    {/* Line 2: meta left, indicators right */}
+                    <Box sx={{display: 'flex', alignItems: 'center', mt: 0.25}}>
+                      {ex.exercise.category === 'cardio' ? (
+                        ex.cardioDuration != null || ex.cardioDistance != null ? (
+                          <Typography variant="caption" color="text.secondary">
+                            {[
+                              ex.cardioDuration != null ? `${ex.cardioDuration} min` : null,
+                              ex.cardioDistance != null ? `${ex.cardioDistance} km` : null,
+                            ].filter(Boolean).join(' · ')}
+                          </Typography>
+                        ) : (
+                          <PanoramaFishEyeIcon sx={{fontSize: '1.1rem', color: 'text.secondary'}} />
+                        )
+                      ) : (
+                        <>
+                          {(() => {
+                            const metaParts = [ex.repRange, ex.restTime].filter(Boolean).join(' · ');
+                            return metaParts ? (
+                              <Typography variant="caption" color="text.secondary">{metaParts}</Typography>
+                            ) : null;
+                          })()}
+                          <Box sx={{flex: 1}} />
+                          <Box sx={{display: 'flex', alignItems: 'center'}}>
+                            {ex.sets.map((set, idx) => {
+                              const iconSx = set.isDropSet ? {fontSize: '0.85rem'} : {fontSize: '1.1rem'};
+                              return set.reps
+                                ? <TaskAltIcon key={idx} sx={iconSx}/>
+                                : <PanoramaFishEyeIcon key={idx} sx={iconSx}/>;
+                            })}
+                          </Box>
+                        </>
+                      )}
+                    </Box>
                     {isSubstituted && ex.substitutedFor && (
-                      <Typography variant="caption" color="warning.main" sx={{display: 'block'}}>
+                      <Typography variant="caption" color="warning.main" sx={{display: 'block', mt: 0.25}}>
                         Originally: {ex.substitutedFor.name}
                       </Typography>
-                    )}
-                  </Box>
-                  <Box sx={{display: 'flex', alignItems: 'center', ml: 2}}>
-                    {ex.exercise.category === 'cardio' ? (
-                      ex.cardioDuration != null || ex.cardioDistance != null ? (
-                        <Typography variant="caption" color="text.secondary">
-                          {[
-                            ex.cardioDuration != null ? `${ex.cardioDuration} min` : null,
-                            ex.cardioDistance != null ? `${ex.cardioDistance} km` : null,
-                          ].filter(Boolean).join(' · ')}
-                        </Typography>
-                      ) : (
-                        <PanoramaFishEyeIcon />
-                      )
-                    ) : (
-                      ex.sets.map((set, idx) => {
-                        const iconSx = set.isDropSet ? {fontSize: '0.85rem'} : undefined;
-                        return set.reps
-                          ? <TaskAltIcon key={idx} sx={iconSx}/>
-                          : <PanoramaFishEyeIcon key={idx} sx={iconSx}/>;
-                      })
                     )}
                   </Box>
                 </ListItemButton>
@@ -228,26 +265,16 @@ export default function ExercisesListView({
               </ListItem>
             );
           })}
+          {hasScrollBelow && (
+            <Box
+              sx={{
+                position: 'sticky', bottom: -1, left: 0, right: 0, height: 40, mt: '-40px',
+                background: theme => `linear-gradient(to bottom, ${alpha(theme.palette.background.default, 0)}, ${theme.palette.background.default})`,
+                pointerEvents: 'none',
+              }}
+            />
+          )}
         </List>
-        {hasScrollAbove && (
-          <Box
-            sx={{
-              position: 'absolute', top: 0, left: 0, right: 0, height: 40,
-              background: theme => `linear-gradient(to top, ${alpha(theme.palette.background.default, 0)}, ${theme.palette.background.default})`,
-              pointerEvents: 'none',
-            }}
-          />
-        )}
-        {hasScrollBelow && (
-          <Box
-            sx={{
-              position: 'absolute', bottom: 0, left: 0, right: 0, height: 40,
-              background: theme => `linear-gradient(to bottom, ${alpha(theme.palette.background.default, 0)}, ${theme.palette.background.default})`,
-              pointerEvents: 'none',
-            }}
-          />
-        )}
-        </Box>
         <Box
           sx={{display: 'flex', alignItems: 'center', cursor: 'pointer', mb: 1}}
           onClick={() => setNotesOpen(o => !o)}
