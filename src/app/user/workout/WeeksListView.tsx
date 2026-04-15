@@ -1,6 +1,6 @@
 'use client';
 
-import {Box, Container, List, ListItem, ListItemButton, ListItemText, Typography} from '@mui/material';
+import {Box, Container, List, ListItem, ListItemButton, ListItemText} from '@mui/material';
 import {PlanPrisma} from '@/types/dataTypes';
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import ProgressIcon from '@/lib/ProgressIcon';
@@ -18,10 +18,7 @@ export default function WeeksListView({
   useAppBar({ title: 'Weeks', showBack: true, onBack });
   return (
     <Box sx={{minHeight: '100dvh', bgcolor: 'background.default', color: 'text.primary'}}>
-      <Container maxWidth="sm" sx={{py: 2}}>
-        <Typography variant="subtitle1" gutterBottom>
-          Weeks
-        </Typography>
+      <Container maxWidth="sm" sx={{py: 1}}>
         <List>
           {plan.weeks.map((week) => (
             <ListItem key={week.id} disablePadding secondaryAction={

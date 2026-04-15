@@ -115,7 +115,7 @@ describe('ExercisesListView', () => {
 
   it('shows rep range and rest time on the second line', () => {
     renderView({workout: buildWorkout(), onBack, onSelectExercise, onWorkoutNoteBlur, onCompleteWorkout, onAddExercise});
-    expect(screen.getByText('8-12 reps · 90s')).toBeInTheDocument();
+    expect(screen.getByText('8 - 12 reps · 90s rest')).toBeInTheDocument();
   });
 
   it('shows nothing on the second line when repRange and restTime are both null', () => {

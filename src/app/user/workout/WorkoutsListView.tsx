@@ -25,15 +25,23 @@ export default function WorkoutsListView({
           Workouts
         </Typography>
         <List>
-          {week.workouts.map((workout) => (
-            <ListItem key={workout.id} disablePadding secondaryAction={
-              <ProgressIcon status={getWorkoutStatus(workout)} />
-            }>
-              <ListItemButton onClick={() => onSelectWorkout(workout.id)}>
-                <ListItemText primary={workout.name} />
-              </ListItemButton>
-            </ListItem>
-          ))}
+          {week.workouts.map((workout) => {
+            const setCount = workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+            return (
+              <ListItem key={workout.id} disablePadding secondaryAction={
+                <ProgressIcon status={getWorkoutStatus(workout)} />
+              }>
+                <ListItemButton onClick={() => onSelectWorkout(workout.id)}>
+                  <Box>
+                    <ListItemText primary={workout.name} sx={{m: 0}} />
+                    <Typography variant="caption" color="text.secondary">
+                      {setCount} sets
+                    </Typography>
+                  </Box>
+                </ListItemButton>
+              </ListItem>
+            );
+          })}
         </List>
       </Container>
     </Box>
