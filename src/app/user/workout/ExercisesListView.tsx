@@ -5,6 +5,7 @@ import {alpha} from '@mui/material/styles';
 import {
   Box,
   Button,
+  Chip,
   Collapse,
   Container,
   Dialog,
@@ -27,11 +28,10 @@ import InfoIcon from '@mui/icons-material/Info';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import {Chip} from '@mui/material';
 import {WorkoutPrisma} from '@/types/dataTypes';
 import './exercisesListView.css'
-import { useAppBar } from '@lib/providers/AppBarProvider';
-import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import {useAppBar} from '@lib/providers/AppBarProvider';
+import {HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar';
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 
 export default function ExercisesListView({
@@ -51,7 +51,7 @@ export default function ExercisesListView({
   onAddExercise: () => void;
   onRemoveExercise?: (workoutExerciseId: number) => void;
 }) {
-  useAppBar({ title: workout.name, showBack: true, onBack });
+  useAppBar({title: workout.name, showBack: true, onBack});
   const [notesOpen, setNotesOpen] = useState(false);
   const [noteValue, setNoteValue] = useState(workout.notes ?? '');
 
@@ -139,7 +139,7 @@ export default function ExercisesListView({
             Exercises
           </Typography>
           <IconButton size="small" onClick={onAddExercise} aria-label="Add exercise">
-            <AddIcon fontSize="small" />
+            <AddIcon fontSize="small"/>
           </IconButton>
         </Box>
         <List
@@ -222,20 +222,22 @@ export default function ExercisesListView({
                             ].filter(Boolean).join(' · ')}
                           </Typography>
                         ) : (
-                          <PanoramaFishEyeIcon sx={{fontSize: '1.1rem', color: 'text.secondary'}} />
+                          <PanoramaFishEyeIcon sx={{fontSize: '1.1rem', color: 'text.secondary'}}/>
                         )
                       ) : (
                         <>
                           {(() => {
                             const metaParts = [
-                              ex.repRange ? `${ex.repRange} reps` : null,
-                              ex.restTime ?? null,
+                              ex.repRange ? `${ex.repRange.replaceAll('-', ' - ')} reps` : null,
+                              ex.restTime ?
+                                `${ex.restTime.endsWith('s') ? ex.restTime : `${ex.restTime}s`} rest`
+                                : null,
                             ].filter(Boolean).join(' · ');
                             return metaParts ? (
                               <Typography variant="caption" color="text.secondary">{metaParts}</Typography>
                             ) : null;
                           })()}
-                          <Box sx={{flex: 1}} />
+                          <Box sx={{flex: 1}}/>
                           <Box sx={{display: 'flex', alignItems: 'center'}}>
                             {ex.sets.map((set, idx) => {
                               const iconSx = set.isDropSet ? {fontSize: '0.85rem'} : {fontSize: '1.1rem'};
@@ -262,7 +264,7 @@ export default function ExercisesListView({
                     onClick={() => onRemoveExercise(ex.id)}
                     sx={{mr: 0.5}}
                   >
-                    <DeleteOutlineIcon fontSize="small" />
+                    <DeleteOutlineIcon fontSize="small"/>
                   </IconButton>
                 )}
               </ListItem>

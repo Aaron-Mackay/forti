@@ -6,6 +6,7 @@ import { useAppBar } from '@lib/providers/AppBarProvider';
 import ProgressIcon from '@/lib/ProgressIcon';
 import { getWorkoutStatus } from '@/lib/workoutProgress';
 import WeekMuscleSummary from './WeekMuscleSummary';
+import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
 
 export default function WorkoutsListView({
   week,
@@ -18,8 +19,8 @@ export default function WorkoutsListView({
 }) {
   useAppBar({ title: `Week ${week.order}`, showBack: true, onBack });
   return (
-    <Box sx={{ minHeight: '100dvh', bgcolor: 'background.default', color: 'text.primary' }}>
-      <Container maxWidth="sm" sx={{ py: 2 }}>
+    <Box sx={{ maxHeight: HEIGHT_EXC_APPBAR, bgcolor: 'background.default', color: 'text.primary' }}>
+      <Container sx={{ pt: 1 }}>
         <WeekMuscleSummary week={week} />
         <Typography variant="subtitle1" gutterBottom>
           Workouts
