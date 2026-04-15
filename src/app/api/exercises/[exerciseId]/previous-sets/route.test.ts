@@ -27,32 +27,22 @@ const mockRequireSession = requireSession as ReturnType<typeof vi.fn>;
 function makeRequest(
   exerciseId: string,
   currentWorkoutId = 99,
-  currentWorkoutExerciseId = 10,
 ): [NextRequest, { params: Promise<{ exerciseId: string }> }] {
   const url = new URL(`http://localhost/api/exercises/${exerciseId}/previous-sets`);
   url.searchParams.set('currentWorkoutId', String(currentWorkoutId));
-  url.searchParams.set('currentWorkoutExerciseId', String(currentWorkoutExerciseId));
   const req = new NextRequest(url.toString());
   const props = {params: Promise.resolve({exerciseId})};
   return [req, props];
 }
 
-const currentWorkout = {
-  dateCompleted: null,
-  exercises: [
-    {id: 10},
-    {id: 11},
-  ],
-};
-
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireSession.mockResolvedValue({user: {id: 'user-1'}});
-  mockFindUnique.mockResolvedValue(currentWorkout);
+  mockFindUnique.mockResolvedValue({dateCompleted: null});
 });
 
 describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
-  it('returns up to three matched duplicate instances in descending workout order', async () => {
+  it('combines sets from multiple exercise instances in descending workout order', async () => {
     mockFindMany.mockResolvedValue([
       {
         dateCompleted: new Date('2026-01-14T12:00:00Z'),
@@ -78,7 +68,7 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
       },
     ]);
 
-    const [req, props] = makeRequest('5', 99, 11);
+    const [req, props] = makeRequest('5', 99);
     const res = await GET(req, props);
 
     expect(res.status).toBe(200);
@@ -86,11 +76,17 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
       workouts: [
         {
           completedAt: '2026-01-14T12:00:00.000Z',
-          sets: [{order: 1, reps: 12, weight: 80, e1rm: 112}],
+          sets: [
+            {order: 1, reps: 8, weight: 100, e1rm: 126.7},
+            {order: 2, reps: 12, weight: 80, e1rm: 112},
+          ],
         },
         {
           completedAt: '2026-01-07T12:00:00.000Z',
-          sets: [{order: 1, reps: 10, weight: 77.5, e1rm: 103.3}],
+          sets: [
+            {order: 1, reps: 9, weight: 97.5, e1rm: 126.75},
+            {order: 2, reps: 10, weight: 77.5, e1rm: 103.3},
+          ],
         },
       ],
     });
@@ -99,14 +95,14 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
   it('returns an empty history payload when no previous completed workout exists', async () => {
     mockFindMany.mockResolvedValue([]);
 
-    const [req, props] = makeRequest('5', 99, 10);
+    const [req, props] = makeRequest('5', 99);
     const res = await GET(req, props);
 
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({workouts: []});
   });
 
-  it('skips workouts that lack the same duplicate slot', async () => {
+  it('includes workouts with any number of instances, combining all their sets', async () => {
     mockFindMany.mockResolvedValue([
       {
         dateCompleted: new Date('2026-01-14T12:00:00Z'),
@@ -129,15 +125,22 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
       },
     ]);
 
-    const [req, props] = makeRequest('5', 99, 11);
+    const [req, props] = makeRequest('5', 99);
     const res = await GET(req, props);
 
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({
       workouts: [
         {
+          completedAt: '2026-01-14T12:00:00.000Z',
+          sets: [{order: 1, reps: 8, weight: 100, e1rm: 126.7}],
+        },
+        {
           completedAt: '2026-01-07T12:00:00.000Z',
-          sets: [{order: 1, reps: 11, weight: 75, e1rm: 102.5}],
+          sets: [
+            {order: 1, reps: 8, weight: 100, e1rm: 126.7},
+            {order: 2, reps: 11, weight: 75, e1rm: 102.5},
+          ],
         },
       ],
     });
@@ -158,7 +161,7 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
       },
     ]);
 
-    const [req, props] = makeRequest('5', 99, 10);
+    const [req, props] = makeRequest('5', 99);
     const res = await GET(req, props);
 
     expect(res.status).toBe(200);
@@ -174,17 +177,8 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
 
   it('returns 400 when current workout context is missing', async () => {
     const url = new URL('http://localhost/api/exercises/5/previous-sets');
-    url.searchParams.set('currentWorkoutId', '99');
     const req = new NextRequest(url.toString());
     const props = {params: Promise.resolve({exerciseId: '5'})};
-
-    const res = await GET(req, props);
-
-    expect(res.status).toBe(400);
-  });
-
-  it('returns 400 when the current workout exercise does not match the workout duplicate list', async () => {
-    const [req, props] = makeRequest('5', 99, 999);
 
     const res = await GET(req, props);
 
@@ -194,7 +188,7 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
   it('filters by the logged-in user and completed workouts', async () => {
     mockFindMany.mockResolvedValue([]);
 
-    const [req, props] = makeRequest('5', 42, 10);
+    const [req, props] = makeRequest('5', 42);
     await GET(req, props);
 
     expect(mockFindMany).toHaveBeenCalledWith(
@@ -231,7 +225,7 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
       },
     ]);
 
-    const [req, props] = makeRequest('5', 99, 10);
+    const [req, props] = makeRequest('5', 99);
     const res = await GET(req, props);
 
     expect(res.status).toBe(200);
@@ -247,10 +241,9 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
 
   it('adds an upper date bound when the current workout is already completed', async () => {
     mockFindUnique.mockResolvedValueOnce({dateCompleted: new Date('2026-01-15T12:00:00Z')});
-    mockFindUnique.mockResolvedValueOnce(currentWorkout);
     mockFindMany.mockResolvedValue([]);
 
-    const [req, props] = makeRequest('5', 42, 10);
+    const [req, props] = makeRequest('5', 42);
     await GET(req, props);
 
     expect(mockFindMany).toHaveBeenCalledWith(

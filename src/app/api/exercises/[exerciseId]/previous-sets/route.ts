@@ -24,34 +24,17 @@ export async function GET(req: NextRequest, props: { params: Promise<{ exerciseI
   const session = await requireSession();
   const exerciseId = Number(params.exerciseId);
   const currentWorkoutId = Number(req.nextUrl.searchParams.get('currentWorkoutId')) || undefined;
-  const currentWorkoutExerciseId = Number(req.nextUrl.searchParams.get('currentWorkoutExerciseId')) || undefined;
 
   if (isNaN(exerciseId) || exerciseId <= 0) {
     return NextResponse.json({error: 'Invalid exerciseId'}, {status: 400});
   }
-  if (currentWorkoutId === undefined || currentWorkoutExerciseId === undefined) {
+  if (currentWorkoutId === undefined) {
     return NextResponse.json({error: 'Missing current workout context'}, {status: 400});
   }
 
   try {
     const user = session.user;
     const completedAt = await resolveCurrentWorkoutCompletedAt(currentWorkoutId);
-
-    const currentWorkout = await prisma.workout.findUnique({
-      where: {id: currentWorkoutId},
-      select: {
-        exercises: {
-          where: {exerciseId},
-          orderBy: {order: 'asc'},
-          select: {id: true},
-        },
-      },
-    });
-
-    const duplicateIndex = currentWorkout?.exercises.findIndex(ex => ex.id === currentWorkoutExerciseId) ?? -1;
-    if (duplicateIndex < 0) {
-      return NextResponse.json({error: 'Current workout exercise not found'}, {status: 400});
-    }
 
     const previousWorkouts = await prisma.workout.findMany({
       where: {
@@ -78,14 +61,15 @@ export async function GET(req: NextRequest, props: { params: Promise<{ exerciseI
 
     const history: PreviousExerciseHistory = {
       workouts: previousWorkouts.flatMap(workout => {
-        const matchedExercise = workout.exercises[duplicateIndex];
-        if (!matchedExercise || !workout.dateCompleted) return [];
-        const sets = matchedExercise.sets.map(set => ({
-          order: set.order,
-          weight: set.weight,
-          reps: set.reps,
-          e1rm: set.e1rm ?? computeE1rm(set.weight, set.reps),
-        }));
+        if (!workout.dateCompleted) return [];
+        const sets = workout.exercises
+          .flatMap(ex => ex.sets)
+          .map((set, i) => ({
+            order: i + 1,
+            weight: set.weight,
+            reps: set.reps,
+            e1rm: set.e1rm ?? computeE1rm(set.weight, set.reps),
+          }));
         if (sets.every(s => s.reps == null)) return [];
         return [{completedAt: workout.dateCompleted.toISOString(), sets}];
       }),
