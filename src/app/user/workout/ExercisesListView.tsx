@@ -24,8 +24,8 @@ import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import EditIcon from '@mui/icons-material/Edit';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import InfoIcon from '@mui/icons-material/Info';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {Chip} from '@mui/material';
@@ -126,29 +126,10 @@ export default function ExercisesListView({
           <Typography variant="subtitle1" sx={{flex: 1}}>
             Exercises
           </Typography>
-          <IconButton
-            size="small"
-            onClick={() => setNotesOpen(o => !o)}
-            color={hasNote ? 'primary' : 'default'}
-            aria-label="Toggle workout notes"
-          >
-            {notesOpen || hasNote ? <EditIcon fontSize="small"/> : <EditOutlinedIcon fontSize="small"/>}
+          <IconButton size="small" onClick={onAddExercise} aria-label="Add exercise">
+            <AddIcon fontSize="small" />
           </IconButton>
         </Box>
-        <Collapse in={notesOpen}>
-          <TextField
-            multiline
-            fullWidth
-            minRows={2}
-            maxRows={5}
-            placeholder="Workout notes..."
-            value={noteValue}
-            onChange={e => setNoteValue(e.target.value)}
-            onBlur={() => onWorkoutNoteBlur(noteValue)}
-            size="small"
-            sx={{mb: 1}}
-          />
-        </Collapse>
         <Box sx={{position: 'relative', flex: 1, minHeight: 0, mb: 2}}>
         <List
           className={"maskedOverflow"}
@@ -267,15 +248,31 @@ export default function ExercisesListView({
           />
         )}
         </Box>
-        <Button
-          variant="outlined"
-          fullWidth
-          onClick={onAddExercise}
-          startIcon={<AddIcon />}
-          sx={{mb: 1}}
+        <Box
+          sx={{display: 'flex', alignItems: 'center', cursor: 'pointer', mb: 1}}
+          onClick={() => setNotesOpen(o => !o)}
         >
-          Add Exercise
-        </Button>
+          <IconButton size="small" color={notesOpen || hasNote ? 'primary' : 'default'} sx={{mr: 0.5}}>
+            {notesOpen || hasNote ? <InfoIcon fontSize="small"/> : <InfoOutlinedIcon fontSize="small"/>}
+          </IconButton>
+          <Typography variant="caption" color={notesOpen || hasNote ? 'primary' : 'text.secondary'}>
+            Workout notes
+          </Typography>
+        </Box>
+        <Collapse in={notesOpen}>
+          <TextField
+            multiline
+            fullWidth
+            minRows={2}
+            maxRows={5}
+            placeholder="Workout notes..."
+            value={noteValue}
+            onChange={e => setNoteValue(e.target.value)}
+            onBlur={() => onWorkoutNoteBlur(noteValue)}
+            size="small"
+            sx={{mb: 1}}
+          />
+        </Collapse>
         <span
           onPointerDown={handleCompleteBtnPointerDown}
           onPointerUp={clearLongPress}
