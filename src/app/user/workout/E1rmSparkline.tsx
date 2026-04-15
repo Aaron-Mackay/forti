@@ -6,6 +6,9 @@ import {format} from 'date-fns';
 import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
 import {PRIMARY_COLOUR, SUCCESS_COLOUR} from '@lib/theme';
 
+// Captured at module load time so it isn't re-evaluated during renders
+const MODULE_LOAD_TIMESTAMP = Date.now();
+
 const Chart = dynamic(
   () => import('react-apexcharts').catch(() => ({default: () => null})),
   {ssr: false, loading: () => <Skeleton variant="rounded" height={80}/>},
@@ -20,6 +23,8 @@ export default function E1rmSparkline({
   history: E1rmHistoryPoint[] | null;
   todayE1RM: number | null;
 }) {
+  const nowTimestamp = MODULE_LOAD_TIMESTAMP;
+
   if (history === null) {
     return (
       <Box sx={{width: '100%', mb: 1}}>
@@ -51,22 +56,21 @@ export default function E1rmSparkline({
     );
   }
 
-  // Build series: historical points + optional live "Now" point
-  const historicalData = valid.map(p => parseFloat(p.bestE1rm.toFixed(1)));
-  const historicalCategories = valid.map(p => format(new Date(p.date), 'dd MMM'));
-
+  // Build series: historical points + optional live "Now" point, using timestamps for a proportional x-axis
+  const historicalData = valid.map(p => ({
+    x: new Date(p.date).getTime(),
+    y: parseFloat(p.bestE1rm.toFixed(1)),
+  }));
   const seriesData = todayE1RM !== null
-    ? [...historicalData, parseFloat(todayE1RM.toFixed(1))]
+    ? [...historicalData, {x: nowTimestamp, y: parseFloat(todayE1RM.toFixed(1))}]
     : historicalData;
-  const categories = todayE1RM !== null
-    ? [...historicalCategories, 'Now']
-    : historicalCategories;
+  const nowIndex = todayE1RM !== null ? seriesData.length - 1 : -1;
 
   if (seriesData.length === 0) return null;
 
   // Discrete marker override: colour only the live "Now" point green
   const discreteMarkers = todayE1RM !== null
-    ? [{seriesIndex: 0, dataPointIndex: seriesData.length - 1, fillColor: SUCCESS_COLOUR, strokeColor: SUCCESS_COLOUR, size: 5}]
+    ? [{seriesIndex: 0, dataPointIndex: nowIndex, fillColor: SUCCESS_COLOUR, strokeColor: SUCCESS_COLOUR, size: 5}]
     : [];
 
   const series = [{name: 'Best e1RM', data: seriesData}];
@@ -100,12 +104,19 @@ export default function E1rmSparkline({
               size: 4,
               discrete: discreteMarkers,
             },
-          tooltip: {
-            x: {formatter: (_v, opts?: {dataPointIndex?: number}) => categories[opts?.dataPointIndex ?? 0] ?? ''},
-          },
+            tooltip: {
+              x: {
+                formatter: (_val, opts?: {dataPointIndex?: number}) => {
+                  const idx = opts?.dataPointIndex ?? 0;
+                  if (idx === nowIndex) return 'Now';
+                  const point = seriesData[idx];
+                  return point ? format(new Date(point.x), 'dd MMM yyyy') : '';
+                },
+              },
+            },
             colors: [PRIMARY_COLOUR],
             xaxis: {
-              categories,
+              type: 'datetime',
               labels: {show: false},
               axisBorder: {show: false},
               axisTicks: {show: false},
