@@ -227,7 +227,10 @@ export default function ExercisesListView({
                       ) : (
                         <>
                           {(() => {
-                            const metaParts = [ex.repRange, ex.restTime].filter(Boolean).join(' · ');
+                            const metaParts = [
+                              ex.repRange ? `${ex.repRange} reps` : null,
+                              ex.restTime ?? null,
+                            ].filter(Boolean).join(' · ');
                             return metaParts ? (
                               <Typography variant="caption" color="text.secondary">{metaParts}</Typography>
                             ) : null;
