@@ -57,6 +57,20 @@ describe('GET /api/exercises/[exerciseId]/e1rm-history', () => {
     ]);
   });
 
+  it('combines duplicate exercise instances on the same date, keeping the highest e1rm', async () => {
+    const date = new Date('2025-01-10T00:00:00Z');
+    mockFindMany.mockResolvedValue([
+      {workout: {dateCompleted: date}, sets: [{e1rm: 80}, {e1rm: 85}]},
+      {workout: {dateCompleted: date}, sets: [{e1rm: 90}, {e1rm: 88}]},
+    ]);
+
+    const [req, props] = makeRequest('5');
+    const res = await GET(req, props);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual([{date: date.toISOString(), bestE1rm: 90}]);
+  });
+
   it('excludes sessions where all sets have null e1rm', async () => {
     mockFindMany.mockResolvedValue([
       {workout: {dateCompleted: new Date('2025-01-10')}, sets: [{e1rm: null}, {e1rm: null}]},

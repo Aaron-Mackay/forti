@@ -32,15 +32,17 @@ export async function GET(req: NextRequest, props: {params: Promise<{exerciseId:
       orderBy: {workout: {dateCompleted: 'asc'}},
     });
 
-    const history: E1rmHistoryPoint[] = workoutExercises
-      .map(we => {
-        const bestE1rm = we.sets.reduce<number | null>((max, s) => {
-          if (s.e1rm === null) return max;
-          return max === null ? s.e1rm : Math.max(max, s.e1rm);
-        }, null);
-        return {date: we.workout.dateCompleted!.toISOString(), bestE1rm};
-      })
-      .filter((p): p is E1rmHistoryPoint => p.bestE1rm !== null);
+    const byDate = new Map<string, number>();
+    for (const we of workoutExercises) {
+      const date = we.workout.dateCompleted!.toISOString();
+      for (const s of we.sets) {
+        if (s.e1rm === null) continue;
+        const current = byDate.get(date);
+        byDate.set(date, current === undefined ? s.e1rm : Math.max(current, s.e1rm));
+      }
+    }
+
+    const history: E1rmHistoryPoint[] = Array.from(byDate.entries()).map(([date, bestE1rm]) => ({date, bestE1rm}));
 
     return NextResponse.json(history);
   } catch (err: unknown) {
