@@ -18,7 +18,7 @@ async function openNav(page: import('@playwright/test').Page) {
     await page.getByRole('button', { name: /menu/i }).first().click({ timeout: 10_000 });
     await expect(homeLink).toBeVisible({ timeout: 15_000 });
   }
-  return page.locator('body');
+  return page.locator('.MuiDrawer-paper:visible').last();
 }
 
 // ---------------------------------------------------------------------------

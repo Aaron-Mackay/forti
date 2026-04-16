@@ -10,8 +10,16 @@
  */
 import { test, expect } from './fixtures';
 
+async function clearActivePlan(page: import('@playwright/test').Page) {
+  const response = await page.request.patch('/api/plan/active', {
+    data: { planId: null },
+  });
+  expect(response.ok()).toBe(true);
+}
+
 test.describe('Workout page', () => {
   test.beforeEach(async ({ page }) => {
+    await clearActivePlan(page);
     await page.goto('/user/workout');
   });
 
