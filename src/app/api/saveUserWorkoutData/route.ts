@@ -4,10 +4,12 @@ import confirmPermission from "@lib/confirmPermission";
 import {z} from "zod";
 import {extractErrorMessage} from "@lib/apiError";
 import {PlanInputSchema} from "@lib/planSchemas";
-import {ExerciseCategory} from "@/generated/prisma/browser";
+import {AuditEventType, ExerciseCategory} from "@/generated/prisma/browser";
+import { recordAuditEvent } from '@lib/auditEvents';
 import {computeE1rm} from "@lib/e1rm";
 import {findOrCreateExercise} from "@lib/exerciseQueries";
 import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSession";
+import { getSessionActorUserId } from '@lib/sessionActor';
 
 const SaveUserDataSchema = z.object({
   id: z.string(),
@@ -32,6 +34,8 @@ export async function POST(req: Request) {
     if (isAuthenticationError(err)) return authenticationErrorResponse();
     throw err;
   }
+
+  const actorUserId = await getSessionActorUserId();
 
 
   try {
@@ -189,6 +193,25 @@ export async function POST(req: Request) {
         data: { activePlanId: remappedActivePlan?.id ?? null },
       });
     }, { timeout: SAVE_USER_WORKOUT_DATA_TRANSACTION_TIMEOUT_MS });
+
+    if (actorUserId) {
+      await recordAuditEvent({
+        actorUserId,
+        eventType: AuditEventType.PlanSaved,
+        analyticsEvent: 'plan_saved',
+        analyticsData: {
+          planCount: body.plans.length,
+          target: actorUserId === userId ? 'self' : 'client',
+        },
+        subjectType: 'user_plan',
+        subjectId: userId,
+        metadata: {
+          targetUserId: userId,
+          planCount: body.plans.length,
+          activePlanId: body.activePlanId ?? null,
+        },
+      });
+    }
 
     return NextResponse.json({success: true}, {status: 200});
   } catch (err: unknown) {

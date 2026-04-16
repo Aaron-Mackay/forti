@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
+import { AuditEventType } from '@/generated/prisma/browser';
+import { recordAuditEvent } from '@lib/auditEvents';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import { getCheckInWeekStart, toDateOnly } from '@lib/checkInUtils';
 import { notifyCoachCheckInSubmitted } from '@lib/notifications';
@@ -116,6 +118,24 @@ export async function POST(req: NextRequest) {
       checkInDay,
     ).catch(err => console.error('Failed to send coach notification:', err));
   }
+
+  await recordAuditEvent({
+    actorUserId: userId,
+    eventType: AuditEventType.CheckInSubmitted,
+    analyticsEvent: 'checkin_submitted',
+    analyticsData: {
+      hasCoach: Boolean(user?.coach),
+      isEdit: isEditingCompletedCheckIn,
+    },
+    subjectType: 'weekly_check_in',
+    subjectId: checkIn.id,
+    metadata: {
+      checkInId: checkIn.id,
+      weekStartDate: weekStart.toISOString(),
+      hasCoach: Boolean(user?.coach),
+      isEdit: isEditingCompletedCheckIn,
+    },
+  });
 
   const mappedCheckIn = {
     ...checkIn,

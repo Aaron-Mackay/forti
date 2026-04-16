@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
+import { AuditEventType } from '@/generated/prisma/browser';
+import { recordAuditEvent } from '@lib/auditEvents';
 import prisma from '@lib/prisma';
 import { notifyClientCoachFeedback } from '@lib/notifications';
 import { getCoachCheckInById } from '@lib/coachCheckIns';
@@ -64,6 +66,22 @@ export async function PATCH(
   const coachName = (await prisma.user.findUnique({ where: { id: coachId }, select: { name: true } }))?.name ?? 'Your coach';
   await notifyClientCoachFeedback(checkIn.userId, coachName)
     .catch(err => console.error('Failed to send client notification:', err));
+
+  await recordAuditEvent({
+    actorUserId: coachId,
+    eventType: AuditEventType.CheckInReviewed,
+    analyticsEvent: 'checkin_reviewed',
+    analyticsData: {
+      hasResponseUrl: Boolean(trimmedCoachResponseUrl),
+    },
+    subjectType: 'weekly_check_in',
+    subjectId: checkInId,
+    metadata: {
+      checkInId,
+      clientUserId: checkIn.userId,
+      hasResponseUrl: Boolean(trimmedCoachResponseUrl),
+    },
+  });
 
   return NextResponse.json({ checkIn: updated });
 }

@@ -51,6 +51,7 @@ model User {
   learningPlans             LearningPlan[]             @relation("CoachLearningPlans")
   learningAssignments       LearningPlanAssignment[]   @relation("ClientAssignments")
   targetTemplates           TargetTemplate[]
+  auditEvents               AuditEvent[]               @relation("AuditEventActor")
 
   @@index([coachId])
   @@index([activePlanId])
@@ -377,6 +378,29 @@ model AiUsageLog {
   createdAt    DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+enum AuditEventType {
+  LoginSucceeded
+  PlanCreated
+  PlanSaved
+  CheckInSubmitted
+  CheckInReviewed
+}
+
+model AuditEvent {
+  id          Int            @id @default(autoincrement())
+  actorUserId String
+  actor       User           @relation("AuditEventActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+  eventType   AuditEventType
+  subjectType String?
+  subjectId   String?
+  metadata    Json?
+  occurredAt  DateTime       @default(now())
+
+  @@index([actorUserId, occurredAt(sort: Desc)])
+  @@index([eventType, occurredAt(sort: Desc)])
+  @@index([subjectType, subjectId, occurredAt(sort: Desc)])
 }
 
 model Supplement {
