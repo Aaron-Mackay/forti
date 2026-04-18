@@ -33,9 +33,11 @@ import {RATING_LABELS} from '@/types/checkInTypes';
 import type {CustomMetricDef} from '@/types/settingsTypes';
 import type {TargetTemplateWithDays} from '@lib/targetTemplates';
 import MetricsSummaryTable from '@/components/MetricsSummaryTable';
-import {checkInHasPhotos, checkInHasRatings, checkInHasReflection} from '@/lib/checkInUtils';
+import {checkInHasPhotos, checkInHasRatings, checkInHasReflection, checkInHasCustomResponses} from '@/lib/checkInUtils';
+import {parseCheckInTemplate} from '@/types/checkInTemplateTypes';
 import CheckInPhotoTile from '@/components/CheckInPhotoTile';
 import PhotoViewerDialog from '@/components/PhotoViewerDialog';
+import CustomCheckInResponseDisplay from '@/components/CustomCheckInResponseDisplay';
 import SupplementsClient from '@/app/user/supplements/SupplementsClient';
 import MetricsDailyBreakdown from '@/components/MetricsDailyBreakdown';
 
@@ -213,8 +215,10 @@ export default function CoachCheckInDetailClient({
     }
   }
 
-  const hasRatings = checkInHasRatings(checkIn);
-  const hasReflection = checkInHasReflection(checkIn);
+  const isCustomMode = checkInHasCustomResponses(checkIn);
+  const templateSnapshot = isCustomMode ? parseCheckInTemplate(checkIn.templateSnapshot) : null;
+  const hasRatings = !isCustomMode && checkInHasRatings(checkIn);
+  const hasReflection = !isCustomMode && checkInHasReflection(checkIn);
   const hasPhotos = checkInHasPhotos(checkIn);
 
   return (
@@ -325,6 +329,15 @@ export default function CoachCheckInDetailClient({
                 />
               </Box>
             </Section>
+          )}
+
+          {isCustomMode && templateSnapshot && (
+            <Box sx={{ gridColumn: '1 / -1' }}>
+              <CustomCheckInResponseDisplay
+                responses={checkIn.customResponses}
+                template={templateSnapshot}
+              />
+            </Box>
           )}
 
           {hasRatings && (

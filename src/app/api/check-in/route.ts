@@ -6,6 +6,12 @@ import { recordAuditEvent } from '@lib/auditEvents';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import { getCheckInWeekStart, toDateOnly } from '@lib/checkInUtils';
 import { notifyCoachCheckInSubmitted } from '@lib/notifications';
+import { getTemplateForClient } from '@lib/checkInTemplate';
+import { parseCustomResponses } from '@/types/checkInTemplateTypes';
+import type { CheckInTemplate, CheckInRatingField, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
+import { getAllInputFields } from '@/types/checkInTemplateTypes';
+import { Prisma } from '@/generated/prisma/browser';
+import { errorResponse } from '@lib/apiResponses';
 
 /** GET /api/check-in — fetch current user's check-in history (newest first) */
 export async function GET(req: NextRequest) {
@@ -47,7 +53,9 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ checkIns: mappedCheckIns, total });
 }
 
-interface CheckInBody {
+// ─── Legacy mode (no template) ───────────────────────────────────────────────
+
+interface LegacyCheckInBody {
   energyLevel?: number;
   moodRating?: number;
   stressLevel?: number;
@@ -61,23 +69,47 @@ interface CheckInBody {
   goalsNextWeek?: string;
 }
 
+// ─── Template mode ───────────────────────────────────────────────────────────
+
+interface TemplateCheckInBody {
+  customResponses: CustomCheckInResponses;
+  completedWorkouts?: number;
+  plannedWorkouts?: number;
+}
+
+/**
+ * Validate customResponses against a template.
+ * Returns an error string, or null if valid.
+ */
+function validateCustomResponses(
+  responses: CustomCheckInResponses,
+  template: CheckInTemplate,
+): string | null {
+  for (const field of getAllInputFields(template)) {
+    const val = responses[field.id];
+    if (field.type === 'rating') {
+      const ratingField = field as CheckInRatingField;
+      if (val === undefined || val === null) continue; // optional
+      if (typeof val !== 'number' || !Number.isInteger(val) || val < ratingField.minScale || val > ratingField.maxScale) {
+        return `"${field.label}" must be an integer between ${ratingField.minScale} and ${ratingField.maxScale}`;
+      }
+    } else if (field.type === 'text' || field.type === 'textarea') {
+      if (val !== undefined && val !== null && typeof val !== 'string') {
+        return `"${field.label}" must be a string`;
+      }
+    }
+  }
+  return null;
+}
+
 /** POST /api/check-in — submit (complete) this week's check-in */
 export async function POST(req: NextRequest) {
   const session = await requireSession();
   const userId = session.user.id;
 
-  const body = await req.json() as CheckInBody;
+  const body = await req.json() as LegacyCheckInBody | TemplateCheckInBody;
 
-  // Validate ratings are 1–5 when provided
-  const ratingFields = ['energyLevel', 'moodRating', 'stressLevel', 'sleepQuality', 'recoveryRating', 'adherenceRating'] as const;
-  for (const field of ratingFields) {
-    const val = body[field];
-    if (val !== undefined && (typeof val !== 'number' || val < 1 || val > 5)) {
-      return NextResponse.json({ error: `${field} must be between 1 and 5` }, { status: 400 });
-    }
-  }
-
-  // Fetch user settings (and coach) up-front so checkInDay is available for weekStart
+  // Fetch user settings and coach up-front
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -93,21 +125,94 @@ export async function POST(req: NextRequest) {
     where: { userId_weekStartDate: { userId, weekStartDate: weekStart } },
   });
   const isEditingCompletedCheckIn = Boolean(existing?.completedAt);
-  const completedAt = isEditingCompletedCheckIn ? new Date() : new Date();
+  const completedAt = new Date();
 
-  const checkIn = await prisma.weeklyCheckIn.upsert({
-    where: { userId_weekStartDate: { userId, weekStartDate: weekStart } },
-    create: {
-      userId,
-      weekStartDate: weekStart,
-      completedAt,
-      ...body,
-    },
-    update: {
-      completedAt,
-      ...body,
-    },
-  });
+  // Detect submission mode: template vs. legacy
+  const isTemplateMode = 'customResponses' in body && body.customResponses !== undefined;
+
+  let checkIn;
+
+  if (isTemplateMode) {
+    // ── Template mode ──────────────────────────────────────────────────────
+    const templateBody = body as TemplateCheckInBody;
+    const template = await getTemplateForClient(userId);
+
+    if (!template) {
+      return errorResponse('No check-in template found for this user\'s coach', 400);
+    }
+
+    const responses = parseCustomResponses(templateBody.customResponses);
+    const validationError = validateCustomResponses(responses, template);
+    if (validationError) {
+      return errorResponse(validationError, 400);
+    }
+
+    checkIn = await prisma.weeklyCheckIn.upsert({
+      where: { userId_weekStartDate: { userId, weekStartDate: weekStart } },
+      create: {
+        userId,
+        weekStartDate: weekStart,
+        completedAt,
+        customResponses: responses as unknown as Prisma.InputJsonValue,
+        templateSnapshot: template as unknown as Prisma.InputJsonValue,
+        completedWorkouts: typeof templateBody.completedWorkouts === 'number' ? templateBody.completedWorkouts : undefined,
+        plannedWorkouts: typeof templateBody.plannedWorkouts === 'number' ? templateBody.plannedWorkouts : undefined,
+        // Clear legacy columns
+        energyLevel: null,
+        moodRating: null,
+        stressLevel: null,
+        sleepQuality: null,
+        recoveryRating: null,
+        adherenceRating: null,
+        weekReview: null,
+        coachMessage: null,
+        goalsNextWeek: null,
+      },
+      update: {
+        completedAt,
+        customResponses: responses as unknown as Prisma.InputJsonValue,
+        templateSnapshot: template as unknown as Prisma.InputJsonValue,
+        completedWorkouts: typeof templateBody.completedWorkouts === 'number' ? templateBody.completedWorkouts : undefined,
+        plannedWorkouts: typeof templateBody.plannedWorkouts === 'number' ? templateBody.plannedWorkouts : undefined,
+        // Clear legacy columns
+        energyLevel: null,
+        moodRating: null,
+        stressLevel: null,
+        sleepQuality: null,
+        recoveryRating: null,
+        adherenceRating: null,
+        weekReview: null,
+        coachMessage: null,
+        goalsNextWeek: null,
+      },
+    });
+  } else {
+    // ── Legacy mode ────────────────────────────────────────────────────────
+    const legacyBody = body as LegacyCheckInBody;
+
+    // Validate ratings are 1–5 when provided
+    const ratingFields = ['energyLevel', 'moodRating', 'stressLevel', 'sleepQuality', 'recoveryRating', 'adherenceRating'] as const;
+    for (const field of ratingFields) {
+      const val = legacyBody[field];
+      if (val !== undefined && (typeof val !== 'number' || val < 1 || val > 5)) {
+        return NextResponse.json({ error: `${field} must be between 1 and 5` }, { status: 400 });
+      }
+    }
+
+    checkIn = await prisma.weeklyCheckIn.upsert({
+      where: { userId_weekStartDate: { userId, weekStartDate: weekStart } },
+      create: {
+        userId,
+        weekStartDate: weekStart,
+        completedAt,
+        ...legacyBody,
+      },
+      update: {
+        completedAt,
+        ...legacyBody,
+      },
+    });
+  }
 
   if (user?.coach && !isEditingCompletedCheckIn) {
     await notifyCoachCheckInSubmitted(

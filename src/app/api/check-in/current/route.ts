@@ -4,6 +4,7 @@ import prisma from '@lib/prisma';
 import { getCheckInWeekStart, toDateOnly } from '@lib/checkInUtils';
 import { getActiveTemplateForWeek, getMacrosByDow } from '@lib/targetTemplates';
 import { parseDashboardSettings } from '@/types/settingsTypes';
+import { getTemplateForClient } from '@lib/checkInTemplate';
 
 /**
  * GET /api/check-in/current
@@ -82,7 +83,7 @@ export async function GET() {
   // Count workouts completed during the current week, and total planned in those weeks
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 7);
-  const [completedWorkoutsCount, plannedWorkoutsCount, lastCompletedWorkout] = await Promise.all([
+  const [completedWorkoutsCount, plannedWorkoutsCount, lastCompletedWorkout, coachTemplate] = await Promise.all([
     prisma.workout.count({
       where: {
         week: { plan: { userId } },
@@ -105,6 +106,7 @@ export async function GET() {
       orderBy: { dateCompleted: 'desc' },
       select: { week: { select: { planId: true } } },
     }),
+    getTemplateForClient(userId),
   ]);
   const activePlanId = lastCompletedWorkout?.week.planId ?? null;
 
@@ -126,5 +128,5 @@ export async function GET() {
     fatTarget:      avgNullable([1,2,3,4,5,6,7].map(d => macrosByDow[d].fatTarget)),
   } : null;
 
-  return NextResponse.json({ checkIn: mappedCheckIn, currentWeek, weekPrior, previousPhotos, weekTargets, completedWorkoutsCount, plannedWorkoutsCount, activePlanId });
+  return NextResponse.json({ checkIn: mappedCheckIn, currentWeek, weekPrior, previousPhotos, weekTargets, completedWorkoutsCount, plannedWorkoutsCount, activePlanId, template: coachTemplate });
 }

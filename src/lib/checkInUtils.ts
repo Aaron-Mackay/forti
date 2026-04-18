@@ -10,6 +10,7 @@ type RatingFields = Pick<WeeklyCheckIn,
 >;
 type ReflectionFields = Pick<WeeklyCheckIn, 'weekReview' | 'coachMessage' | 'goalsNextWeek'>;
 type PhotoFields = Pick<WeeklyCheckIn, 'frontPhotoUrl' | 'backPhotoUrl' | 'sidePhotoUrl'>;
+type CustomResponseFields = Pick<WeeklyCheckIn, 'customResponses'>;
 
 export function checkInHasRatings(c: RatingFields): boolean {
   return [c.energyLevel, c.moodRating, c.stressLevel, c.sleepQuality, c.recoveryRating, c.adherenceRating]
@@ -22,6 +23,10 @@ export function checkInHasReflection(c: ReflectionFields): boolean {
 
 export function checkInHasPhotos(c: PhotoFields): boolean {
   return Boolean(c.frontPhotoUrl || c.backPhotoUrl || c.sidePhotoUrl);
+}
+
+export function checkInHasCustomResponses(c: CustomResponseFields): boolean {
+  return c.customResponses !== null && c.customResponses !== undefined;
 }
 
 /**

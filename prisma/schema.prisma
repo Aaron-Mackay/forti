@@ -27,7 +27,8 @@ model User {
   userExerciseNotes UserExerciseNote[]
   metrics           Metric[]
 
-  settings Json?
+  settings        Json?
+  checkInTemplate Json? // CheckInTemplate | null — stored on the coach's User row
 
   // self relation (coach <-> clients)
   coachId String?
@@ -342,6 +343,10 @@ model WeeklyCheckIn {
   weekReview    String?
   coachMessage  String?
   goalsNextWeek String?
+
+  // Custom template responses (populated when submitted with a coach template)
+  customResponses  Json? // Record<fieldId, string | number | null>
+  templateSnapshot Json? // CheckInTemplate — snapshot of coach's template at submission time
 
   // Coach feedback (written by coach)
   coachNotes      String?
