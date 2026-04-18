@@ -59,6 +59,7 @@ export default function CheckInForm({
   const router = useRouter();
   const { settings } = useSettings();
   const isEditing = Boolean(checkIn.completedAt);
+  const activeTemplate = template ?? null;
 
   const [photoUrls, setPhotoUrls] = useState<{ front: string | null; back: string | null; side: string | null }>({
     front: checkIn.frontPhotoUrl ?? null,
@@ -100,7 +101,7 @@ export default function CheckInForm({
     try {
       let body: Record<string, unknown>;
 
-      if (template !== null) {
+      if (activeTemplate !== null) {
         // Template mode: send customResponses
         body = {
           customResponses,
@@ -148,16 +149,16 @@ export default function CheckInForm({
   const workoutClickable = completedWorkoutsCount > 0 && activePlanId !== null;
 
   // ── Determine which system blocks the template positions ───────────────────
-  const templateHasMetrics  = template?.cards.some(c => c.kind === 'system' && c.systemType === 'metrics')  ?? false;
-  const templateHasWorkouts = template?.cards.some(c => c.kind === 'system' && c.systemType === 'workouts') ?? false;
+  const templateHasMetrics  = activeTemplate?.cards.some(c => c.kind === 'system' && c.systemType === 'metrics')  ?? false;
+  const templateHasWorkouts = activeTemplate?.cards.some(c => c.kind === 'system' && c.systemType === 'workouts') ?? false;
 
   // In legacy mode, photos always appear above. In template mode, shown at card position.
-  const showPhotosAbove = template === null;
+  const showPhotosAbove = activeTemplate === null;
 
   // Clear responses for input fields hidden by conditions
   useEffect(() => {
-    if (!template) return;
-    const allInputFields = getAllInputFields(template);
+    if (!activeTemplate) return;
+    const allInputFields = getAllInputFields(activeTemplate);
     const hidden = allInputFields.filter(f => !isFieldVisible(f, customResponses));
     if (hidden.some(f => customResponses[f.id] !== undefined)) {
       setCustomResponses(prev => {
@@ -166,7 +167,7 @@ export default function CheckInForm({
         return next;
       });
     }
-  }, [customResponses, template]);
+  }, [activeTemplate, customResponses]);
 
   // ── Helper: render the workouts row ───────────────────────────────────────
   function WorkoutsRow() {
@@ -231,10 +232,10 @@ export default function CheckInForm({
 
       {(!templateHasMetrics || !templateHasWorkouts) && <Divider sx={{ my: 3 }} />}
 
-      {template !== null ? (
+      {activeTemplate !== null ? (
         // ── Template mode: render cards in a 2-column responsive grid ─────────
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-          {template.cards.map(card => {
+          {activeTemplate.cards.map(card => {
             const gridColumn = { xs: '1 / -1', sm: `span ${card.columnSpan}` };
 
             if (card.kind === 'system') {
