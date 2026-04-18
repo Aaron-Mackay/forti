@@ -493,8 +493,8 @@ describe('reducer', () => {
       .addPlan(plan)
       .build();
     const exercises = [
-      {id: 1, name: 'Bench Press', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
-      {id: 2, name: 'Pull Up', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+      {id: 1, name: 'Bench Press', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [], createdByUserId: null},
+      {id: 2, name: 'Pull Up', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [], createdByUserId: null},
     ];
     const action: WorkoutEditorAction = {
       type: 'UPDATE_EXERCISE',

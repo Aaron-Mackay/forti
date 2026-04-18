@@ -1,5 +1,6 @@
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {ExerciseCategory} from '@/generated/prisma/browser';
 import ExerciseDetailDrawer from './ExerciseDetailDrawer';
 
 vi.mock('@/components/MuscleHighlight', () => ({
@@ -9,13 +10,13 @@ vi.mock('@/components/MuscleHighlight', () => ({
 const exercise = {
   id: 1,
   name: 'Bench Press',
-  category: 'resistance',
+  category: 'resistance' as ExerciseCategory,
   description: 'Base description',
   equipment: ['barbell'],
   primaryMuscles: ['chest'],
   secondaryMuscles: ['triceps'],
   createdByUserId: null,
-} as const;
+};
 
 describe('ExerciseDetailDrawer', () => {
   const fetchMock = vi.fn();

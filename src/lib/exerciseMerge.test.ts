@@ -30,7 +30,8 @@ function makeDb() {
 
   return {
     ...tx,
-    $transaction: vi.fn(async (callback: (value: typeof tx) => Promise<unknown>) => callback(tx)),
+    // Cast needed: vi.fn() wrapper loses the generic, but the runtime behaviour is correct
+    $transaction: vi.fn(async (callback: (value: typeof tx) => Promise<unknown>) => callback(tx)) as unknown as <T>(fn: (arg: typeof tx) => Promise<T>) => Promise<T>,
   }
 }
 
