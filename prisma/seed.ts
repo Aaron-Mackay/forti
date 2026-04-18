@@ -278,7 +278,7 @@ async function main() {
     data: {
       name: 'TestUser',
       email: 'testuser@example.com',
-      settings: { onboardingSeenWelcome: true, onboardingDismissed: true },
+      settings: { registrationComplete: true, onboardingSeenWelcome: true, onboardingDismissed: true },
     },
   });
   await seedTestUserData(testuser, new Date('2024-06-01'));

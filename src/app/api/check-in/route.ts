@@ -206,13 +206,15 @@ export async function POST(req: NextRequest) {
         weekStartDate: weekStart,
         completedAt,
         ...legacyBody,
+        customResponses: Prisma.JsonNull,
+        templateSnapshot: Prisma.JsonNull,
       },
       update: {
         completedAt,
         ...legacyBody,
         // Clear template-mode payload so legacy resubmissions render correctly.
-        customResponses: null,
-        templateSnapshot: null,
+        customResponses: Prisma.JsonNull,
+        templateSnapshot: Prisma.JsonNull,
       },
     });
   }

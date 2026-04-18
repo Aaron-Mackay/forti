@@ -34,6 +34,12 @@ function makeCurrentResponse(completed: boolean) {
     },
     currentWeek: [],
     weekPrior: [],
+    previousPhotos: null,
+    weekTargets: null,
+    completedWorkoutsCount: completed ? 3 : 0,
+    plannedWorkoutsCount: completed ? 4 : 0,
+    activePlanId: null,
+    template: null,
   };
 }
 

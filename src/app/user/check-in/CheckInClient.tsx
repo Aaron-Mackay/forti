@@ -23,6 +23,18 @@ import type { CurrentCheckInResponse } from '@/types/checkInTypes';
 
 type CurrentData = CurrentCheckInResponse;
 
+function normalizeCurrentCheckInResponse(data: CurrentCheckInResponse): CurrentData {
+  return {
+    ...data,
+    previousPhotos: data.previousPhotos ?? null,
+    weekTargets: data.weekTargets ?? null,
+    completedWorkoutsCount: data.completedWorkoutsCount ?? data.checkIn.completedWorkouts ?? 0,
+    plannedWorkoutsCount: data.plannedWorkoutsCount ?? data.checkIn.plannedWorkouts ?? 0,
+    activePlanId: data.activePlanId ?? null,
+    template: data.template ?? null,
+  };
+}
+
 export default function CheckInClient() {
   const [currentData, setCurrentData] = useState<CurrentData | null>(null);
   const [history, setHistory] = useState<WeeklyCheckIn[]>([]);
@@ -38,7 +50,8 @@ export default function CheckInClient() {
   const loadCurrent = useCallback(async () => {
     const res = await fetch('/api/check-in/current');
     if (!res.ok) throw new Error('Failed to load check-in');
-    return res.json() as Promise<CurrentCheckInResponse>;
+    const data = await res.json() as CurrentCheckInResponse;
+    return normalizeCurrentCheckInResponse(data);
   }, []);
 
   const loadHistory = useCallback(async (offset: number) => {
