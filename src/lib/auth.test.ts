@@ -18,6 +18,7 @@ describe('auth redirect callback', () => {
   afterEach(() => {
     delete process.env.AUTH_COOKIE_DOMAIN;
     delete process.env.NODE_ENV;
+    vi.unstubAllEnvs();
     vi.clearAllMocks();
   });
 
@@ -44,7 +45,7 @@ describe('auth redirect callback', () => {
   });
 
   it('keeps trycloudflare callback hosts in development', async () => {
-    process.env.NODE_ENV = 'development';
+    vi.stubEnv('NODE_ENV', 'development');
 
     const result = await authOptions.callbacks!.redirect!({
       url: 'https://abc123.trycloudflare.com/user',

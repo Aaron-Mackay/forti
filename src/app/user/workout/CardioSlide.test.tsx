@@ -22,11 +22,18 @@ function buildCardioExercise(overrides: Partial<WorkoutExercisePrisma> = {}): Wo
       equipment: [],
       primaryMuscles: [],
       secondaryMuscles: [],
+      createdByUserId: null,
     },
+    targetRpe: null,
+    targetRir: null,
     sets: [],
     cardioDuration: null,
     cardioDistance: null,
     cardioResistance: null,
+    substitutedForId: null,
+    substitutedFor: null,
+    isAdded: false,
+    isBfr: false,
     ...overrides,
   };
 }

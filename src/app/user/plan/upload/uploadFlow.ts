@@ -20,7 +20,7 @@ export type PendingUploadPlan = {
   reviewedExercises: ReviewedExercise[]
 }
 
-type ExerciseMuscleMetadata = {
+export type ExerciseMuscleMetadata = {
   primaryMuscles: ExerciseMuscle[]
   secondaryMuscles: ExerciseMuscle[]
 }

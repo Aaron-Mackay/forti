@@ -187,7 +187,7 @@ describe('offlineSync', () => {
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // Request 1 fails with a network error (retryable), request 2 succeeds
-      globalThis.fetch = vi.fn((url: string) => {
+      globalThis.fetch = vi.fn((url: string | URL | Request) => {
         if (url === '/api/1') return Promise.reject(new Error('network fail'));
         return Promise.resolve({ ok: true } as Response);
       });
@@ -217,7 +217,7 @@ describe('offlineSync', () => {
       const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       // Request 1 returns 4xx (permanently invalid), request 2 succeeds
-      globalThis.fetch = vi.fn((url: string) => {
+      globalThis.fetch = vi.fn((url: string | URL | Request) => {
         if (url === '/api/1') return Promise.resolve({ ok: false, status: 409 } as Response);
         return Promise.resolve({ ok: true } as Response);
       });

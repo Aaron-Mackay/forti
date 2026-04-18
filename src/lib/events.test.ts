@@ -19,6 +19,8 @@ const baseEvent: Omit<EventPrisma, 'id'> = {
   customColor: null,
   eventType: 'BlockEvent',
   blockSubtype: 'Bulk',
+  recurrenceFrequency: null,
+  recurrenceEnd: null,
 };
 
 describe('createEvent', () => {

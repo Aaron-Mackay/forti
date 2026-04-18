@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { applyReviewedExercisesToPlan, calculateMuscleVolumes, countUniqueExercises, type ReviewedExercise } from './uploadFlow'
 import type { ParsedPlan } from '@/utils/aiPlanParser'
+import type { ExerciseMuscleMetadata } from './uploadFlow'
 
 const parsedPlan: ParsedPlan = {
   name: 'Imported Plan',
@@ -90,7 +91,7 @@ describe('uploadFlow helpers', () => {
   })
 
   it('falls back to existing exercise metadata when no new exercises are reviewed', () => {
-    const existingExerciseMuscles = new Map([
+    const existingExerciseMuscles: Map<string, ExerciseMuscleMetadata> = new Map([
       ['mystery squat', { primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['hamstrings'] }],
     ])
 

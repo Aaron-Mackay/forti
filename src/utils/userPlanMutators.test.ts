@@ -555,8 +555,8 @@ describe('updateCategory', () => {
 
 describe('updateExerciseInUser', () => {
   const allExercises: Exercise[] = [
-    { id: 1, name: 'Squat', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [] },
-    { id: 2, name: 'Bench Press', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [] },
+    { id: 1, name: 'Squat', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [], createdByUserId: null },
+    { id: 2, name: 'Bench Press', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [], createdByUserId: null },
   ];
 
   it('sets exercise to an existing one from the list', () => {
@@ -693,6 +693,7 @@ describe('substituteExercise', () => {
       equipment: [],
       primaryMuscles: [],
       secondaryMuscles: [],
+      createdByUserId: null,
     };
 
     const result = substituteExercise(user, 1, 101, 201, 301, newExercise, -1);
@@ -719,6 +720,7 @@ describe('substituteExercise', () => {
       equipment: [],
       primaryMuscles: [],
       secondaryMuscles: [],
+      createdByUserId: null,
     };
 
     const result = substituteExercise(user, 1, 101, 201, 301, anotherExercise, -1);
@@ -775,6 +777,7 @@ describe('substituteExercise', () => {
       equipment: [],
       primaryMuscles: [],
       secondaryMuscles: [],
+      createdByUserId: null,
     };
 
     const result = substituteExercise(user, 1, 101, 201, 301, newExercise, -1);
