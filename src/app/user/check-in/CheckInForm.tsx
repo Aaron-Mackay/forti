@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Alert,
   Box,
   Button,
   CircularProgress,
   Divider,
+  Paper,
   TextField,
   Typography,
 } from '@mui/material';
@@ -17,8 +18,11 @@ import MetricsSummaryTable from '@/components/MetricsSummaryTable';
 import { useSettings } from '@lib/providers/SettingsProvider';
 import RatingField from './RatingField';
 import ProgressPhotoSection from './ProgressPhotoSection';
+import CheckInCustomCard from '@/components/CheckInCustomCard';
 import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
 import type { PreviousPhotos, WeekTargets } from '@/types/checkInTypes';
+import type { CheckInTemplate, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
+import { parseCustomResponses, isFieldVisible, getAllInputFields } from '@/types/checkInTemplateTypes';
 
 interface Props {
   currentWeek: Metric[];
@@ -29,10 +33,13 @@ interface Props {
   completedWorkoutsCount: number;
   plannedWorkoutsCount: number;
   activePlanId: number | null;
+  template: CheckInTemplate | null;
   onSubmitted: () => void;
 }
 
-interface FormState {
+// ─── Legacy mode state ───────────────────────────────────────────────────────
+
+interface LegacyFormState {
   energyLevel: number | null;
   moodRating: number | null;
   stressLevel: number | null;
@@ -44,16 +51,30 @@ interface FormState {
   goalsNextWeek: string;
 }
 
-export default function CheckInForm({ currentWeek, weekPrior, checkIn, previousPhotos, weekTargets, completedWorkoutsCount, plannedWorkoutsCount, activePlanId, onSubmitted }: Props) {
+export default function CheckInForm({
+  currentWeek, weekPrior, checkIn, previousPhotos, weekTargets,
+  completedWorkoutsCount, plannedWorkoutsCount, activePlanId,
+  template, onSubmitted,
+}: Props) {
   const router = useRouter();
   const { settings } = useSettings();
   const isEditing = Boolean(checkIn.completedAt);
+
   const [photoUrls, setPhotoUrls] = useState<{ front: string | null; back: string | null; side: string | null }>({
     front: checkIn.frontPhotoUrl ?? null,
     back: checkIn.backPhotoUrl ?? null,
     side: checkIn.sidePhotoUrl ?? null,
   });
-  const [form, setForm] = useState<FormState>({
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // ── Template mode state ────────────────────────────────────────────────────
+  const [customResponses, setCustomResponses] = useState<CustomCheckInResponses>(() =>
+    parseCustomResponses(checkIn.customResponses)
+  );
+
+  // ── Legacy mode state ──────────────────────────────────────────────────────
+  const [legacyForm, setLegacyForm] = useState<LegacyFormState>({
     energyLevel: checkIn.energyLevel,
     moodRating: checkIn.moodRating,
     stressLevel: checkIn.stressLevel,
@@ -64,31 +85,46 @@ export default function CheckInForm({ currentWeek, weekPrior, checkIn, previousP
     coachMessage: checkIn.coachMessage ?? '',
     goalsNextWeek: checkIn.goalsNextWeek ?? '',
   });
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  function setRating(key: keyof FormState) {
-    return (val: number) => setForm(f => ({ ...f, [key]: val }));
+  function setLegacyRating(key: keyof LegacyFormState) {
+    return (val: number) => setLegacyForm(f => ({ ...f, [key]: val }));
+  }
+
+  function setCustomField(fieldId: string, value: string | number | null) {
+    setCustomResponses(r => ({ ...r, [fieldId]: value }));
   }
 
   async function handleSubmit() {
     setSubmitting(true);
     setError(null);
     try {
-      const body = {
-        ...form,
-        completedWorkouts: completedWorkoutsCount,
-        plannedWorkouts: plannedWorkoutsCount,
-        energyLevel: form.energyLevel ?? undefined,
-        moodRating: form.moodRating ?? undefined,
-        stressLevel: form.stressLevel ?? undefined,
-        sleepQuality: form.sleepQuality ?? undefined,
-        recoveryRating: form.recoveryRating ?? undefined,
-        adherenceRating: form.adherenceRating ?? undefined,
-        weekReview: form.weekReview || undefined,
-        coachMessage: form.coachMessage || undefined,
-        goalsNextWeek: form.goalsNextWeek || undefined,
-      };
+      let body: Record<string, unknown>;
+
+      if (template !== null) {
+        // Template mode: send customResponses
+        body = {
+          customResponses,
+          completedWorkouts: completedWorkoutsCount,
+          plannedWorkouts: plannedWorkoutsCount,
+        };
+      } else {
+        // Legacy mode: send fixed fields
+        body = {
+          ...legacyForm,
+          completedWorkouts: completedWorkoutsCount,
+          plannedWorkouts: plannedWorkoutsCount,
+          energyLevel: legacyForm.energyLevel ?? undefined,
+          moodRating: legacyForm.moodRating ?? undefined,
+          stressLevel: legacyForm.stressLevel ?? undefined,
+          sleepQuality: legacyForm.sleepQuality ?? undefined,
+          recoveryRating: legacyForm.recoveryRating ?? undefined,
+          adherenceRating: legacyForm.adherenceRating ?? undefined,
+          weekReview: legacyForm.weekReview || undefined,
+          coachMessage: legacyForm.coachMessage || undefined,
+          goalsNextWeek: legacyForm.goalsNextWeek || undefined,
+        };
+      }
+
       const res = await fetch('/api/check-in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -111,33 +147,36 @@ export default function CheckInForm({ currentWeek, weekPrior, checkIn, previousP
 
   const workoutClickable = completedWorkoutsCount > 0 && activePlanId !== null;
 
-  return (
-    <Box>
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
+  // ── Determine which system blocks the template positions ───────────────────
+  const templateHasMetrics  = template?.cards.some(c => c.kind === 'system' && c.systemType === 'metrics')  ?? false;
+  const templateHasWorkouts = template?.cards.some(c => c.kind === 'system' && c.systemType === 'workouts') ?? false;
 
-      {/* Progress photos — first section */}
-      <ProgressPhotoSection
-        currentPhotos={photoUrls}
-        previousPhotos={previousPhotos}
-        weekStart={new Date(checkIn.weekStartDate).toISOString()}
-        onPhotoUploaded={(angle, url) => setPhotoUrls(p => ({ ...p, [angle]: url }))}
-        onPhotoRemoved={(angle) => setPhotoUrls(p => ({ ...p, [angle]: null }))}
-      />
+  // In legacy mode, photos always appear above. In template mode, shown at card position.
+  const showPhotosAbove = template === null;
 
-      <Divider sx={{ my: 3 }} />
+  // Clear responses for input fields hidden by conditions
+  useEffect(() => {
+    if (!template) return;
+    const allInputFields = getAllInputFields(template);
+    const hidden = allInputFields.filter(f => !isFieldVisible(f, customResponses));
+    if (hidden.some(f => customResponses[f.id] !== undefined)) {
+      setCustomResponses(prev => {
+        const next = { ...prev };
+        hidden.forEach(f => { delete next[f.id]; });
+        return next;
+      });
+    }
+  }, [customResponses, template]);
 
-      {/* Metrics summary + workout count */}
-      <Typography variant="subtitle2" sx={{ mb: 1 }}>Last 2 weeks of metrics</Typography>
-      <MetricsSummaryTable currentWeek={currentWeek} weekPrior={weekPrior} weekTargets={weekTargets} customMetricDefs={settings.customMetrics} />
-
-      {/* Workout completed/planned row */}
+  // ── Helper: render the workouts row ───────────────────────────────────────
+  function WorkoutsRow() {
+    return (
       <Box
         onClick={workoutClickable ? () => router.push(`/user/plan/${activePlanId}`) : undefined}
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          mt: 1.5,
           px: 1,
           py: 0.75,
           borderRadius: 1,
@@ -154,49 +193,128 @@ export default function CheckInForm({ currentWeek, weekPrior, checkIn, previousP
           {workoutClickable && <ChevronRightIcon sx={{ fontSize: 16, color: 'text.disabled' }} />}
         </Box>
       </Box>
+    );
+  }
 
-      <Divider sx={{ my: 3 }} />
+  return (
+    <Box>
+      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
-      {/* Subjective ratings */}
-      <Typography variant="subtitle2" sx={{ mb: 2 }}>How was your week?</Typography>
-      <RatingField label="Energy level" value={form.energyLevel} onChange={setRating('energyLevel')} />
-      <RatingField label="Mood / Motivation" value={form.moodRating} onChange={setRating('moodRating')} />
-      <RatingField label="Stress level" value={form.stressLevel} onChange={setRating('stressLevel')} />
-      <RatingField label="Sleep quality (subjective)" value={form.sleepQuality} onChange={setRating('sleepQuality')} />
-      <RatingField label="Recovery between sessions" value={form.recoveryRating} onChange={setRating('recoveryRating')} />
-      <RatingField label="Adherence to plan" value={form.adherenceRating} onChange={setRating('adherenceRating')} />
+      {/* Progress photos — in legacy mode only; template mode renders at card position */}
+      {showPhotosAbove && (
+        <>
+          <ProgressPhotoSection
+            currentPhotos={photoUrls}
+            previousPhotos={previousPhotos}
+            weekStart={new Date(checkIn.weekStartDate).toISOString()}
+            onPhotoUploaded={(angle, url) => setPhotoUrls(p => ({ ...p, [angle]: url }))}
+            onPhotoRemoved={(angle) => setPhotoUrls(p => ({ ...p, [angle]: null }))}
+          />
+          <Divider sx={{ my: 3 }} />
+        </>
+      )}
 
-      <Divider sx={{ my: 3 }} />
+      {/* Metrics summary — shown above only in legacy mode or when template doesn't include a metrics card */}
+      {!templateHasMetrics && (
+        <>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>Last 2 weeks of metrics</Typography>
+          <MetricsSummaryTable currentWeek={currentWeek} weekPrior={weekPrior} weekTargets={weekTargets} customMetricDefs={settings.customMetrics} />
+        </>
+      )}
 
-      {/* Free text */}
-      <Typography variant="subtitle2" sx={{ mb: 2 }}>Reflection</Typography>
-      <TextField
-        label="How did your week go overall?"
-        multiline
-        minRows={3}
-        fullWidth
-        value={form.weekReview}
-        onChange={e => setForm(f => ({ ...f, weekReview: e.target.value }))}
-        sx={{ mb: 2 }}
-      />
-      <TextField
-        label="Goals / focus for next week"
-        multiline
-        minRows={2}
-        fullWidth
-        value={form.goalsNextWeek}
-        onChange={e => setForm(f => ({ ...f, goalsNextWeek: e.target.value }))}
-        sx={{ mb: 2 }}
-      />
-      <TextField
-        label="Message to your coach (optional)"
-        multiline
-        minRows={2}
-        fullWidth
-        value={form.coachMessage}
-        onChange={e => setForm(f => ({ ...f, coachMessage: e.target.value }))}
-        sx={{ mb: 3 }}
-      />
+      {/* Workout row — shown above only in legacy mode or when template doesn't include a workouts card */}
+      {!templateHasWorkouts && (
+        <Box sx={{ mt: templateHasMetrics ? 0 : 1.5 }}>
+          <WorkoutsRow />
+        </Box>
+      )}
+
+      {(!templateHasMetrics || !templateHasWorkouts) && <Divider sx={{ my: 3 }} />}
+
+      {template !== null ? (
+        // ── Template mode: render cards in a 2-column responsive grid ─────────
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+          {template.cards.map(card => {
+            const gridColumn = { xs: '1 / -1', sm: `span ${card.columnSpan}` };
+
+            if (card.kind === 'system') {
+              return (
+                <Paper key={card.id} variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2 }}>
+                  {card.systemType === 'photos' && (
+                    <ProgressPhotoSection
+                      currentPhotos={photoUrls}
+                      previousPhotos={previousPhotos}
+                      weekStart={new Date(checkIn.weekStartDate).toISOString()}
+                      onPhotoUploaded={(angle, url) => setPhotoUrls(p => ({ ...p, [angle]: url }))}
+                      onPhotoRemoved={(angle) => setPhotoUrls(p => ({ ...p, [angle]: null }))}
+                    />
+                  )}
+                  {card.systemType === 'metrics' && (
+                    <>
+                      <Typography variant="subtitle2" sx={{ mb: 1 }}>Last 2 weeks of metrics</Typography>
+                      <MetricsSummaryTable currentWeek={currentWeek} weekPrior={weekPrior} weekTargets={weekTargets} customMetricDefs={settings.customMetrics} />
+                    </>
+                  )}
+                  {card.systemType === 'workouts' && <WorkoutsRow />}
+                </Paper>
+              );
+            }
+
+            // Custom card
+            return (
+              <CheckInCustomCard
+                key={card.id}
+                card={card}
+                gridColumn={gridColumn}
+                responses={customResponses}
+                onChange={setCustomField}
+              />
+            );
+          })}
+        </Box>
+      ) : (
+        // ── Legacy mode: hardcoded ratings + text areas ────────────────────
+        <>
+          <Typography variant="subtitle2" sx={{ mb: 2 }}>How was your week?</Typography>
+          <RatingField label="Energy level" value={legacyForm.energyLevel} onChange={setLegacyRating('energyLevel')} />
+          <RatingField label="Mood / Motivation" value={legacyForm.moodRating} onChange={setLegacyRating('moodRating')} />
+          <RatingField label="Stress level" value={legacyForm.stressLevel} onChange={setLegacyRating('stressLevel')} />
+          <RatingField label="Sleep quality (subjective)" value={legacyForm.sleepQuality} onChange={setLegacyRating('sleepQuality')} />
+          <RatingField label="Recovery between sessions" value={legacyForm.recoveryRating} onChange={setLegacyRating('recoveryRating')} />
+          <RatingField label="Adherence to plan" value={legacyForm.adherenceRating} onChange={setLegacyRating('adherenceRating')} />
+
+          <Divider sx={{ my: 3 }} />
+
+          <Typography variant="subtitle2" sx={{ mb: 2 }}>Reflection</Typography>
+          <TextField
+            label="How did your week go overall?"
+            multiline
+            minRows={3}
+            fullWidth
+            value={legacyForm.weekReview}
+            onChange={e => setLegacyForm(f => ({ ...f, weekReview: e.target.value }))}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            label="Goals / focus for next week"
+            multiline
+            minRows={2}
+            fullWidth
+            value={legacyForm.goalsNextWeek}
+            onChange={e => setLegacyForm(f => ({ ...f, goalsNextWeek: e.target.value }))}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            label="Message to your coach (optional)"
+            multiline
+            minRows={2}
+            fullWidth
+            value={legacyForm.coachMessage}
+            onChange={e => setLegacyForm(f => ({ ...f, coachMessage: e.target.value }))}
+            sx={{ mb: 3 }}
+          />
+        </>
+      )}
 
       <Button
         variant="contained"

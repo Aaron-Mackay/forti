@@ -1,4 +1,6 @@
 import type { Metric, WeeklyCheckIn } from '@/generated/prisma/browser';
+import type { CheckInTemplate } from '@/types/checkInTemplateTypes';
+export type { CheckInTemplate };
 
 export type { WeeklyCheckIn };
 
@@ -30,6 +32,8 @@ export interface CurrentCheckInResponse {
   completedWorkoutsCount: number;
   plannedWorkoutsCount: number;
   activePlanId: number | null;
+  /** Coach's check-in template, if the client has a coach with a configured template. */
+  template: CheckInTemplate | null;
 }
 
 export interface MetricSummary {

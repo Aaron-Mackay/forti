@@ -73,12 +73,27 @@ async function main() {
   ];
 
   // ── Seed Todd (Jeff's coach) ──────────────────────────────────────────────
+  // Todd has a custom check-in template that Jeff sees when submitting check-ins.
+  const toddCheckInTemplate = {
+    version: 1,
+    fields: [
+      { id: crypto.randomUUID(), type: 'photos', label: 'Progress photos' },
+      { id: crypto.randomUUID(), type: 'rating', label: 'Energy', minScale: 1, maxScale: 10, minLabel: 'Exhausted', maxLabel: 'Thriving' },
+      { id: crypto.randomUUID(), type: 'rating', label: 'Recovery', minScale: 1, maxScale: 10, minLabel: 'Still sore', maxLabel: 'Fresh' },
+      { id: crypto.randomUUID(), type: 'rating', label: 'Adherence to plan', minScale: 1, maxScale: 5, minLabel: 'Off plan', maxLabel: 'Perfect' },
+      { id: crypto.randomUUID(), type: 'textarea', label: 'How did training feel this week?' },
+      { id: crypto.randomUUID(), type: 'text', label: 'Any pain or niggles to flag?' },
+      { id: crypto.randomUUID(), type: 'textarea', label: 'Message to your coach' },
+    ],
+  };
   const todd = await prisma.user.create({
     data: {
       name: 'Todd',
       email: 'todd@example.com',
       coachCode: '123456',
       settings: { registrationComplete: true, onboardingSeenWelcome: true, onboardingDismissed: true, coachModeActive: true },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      checkInTemplate: toddCheckInTemplate as any,
     },
   });
 

@@ -15,9 +15,11 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { WeeklyCheckIn } from '@/generated/prisma/browser';
 import { RATING_LABELS } from '@/types/checkInTypes';
-import { checkInHasRatings, checkInHasReflection, checkInHasPhotos } from '@/lib/checkInUtils';
+import { checkInHasRatings, checkInHasReflection, checkInHasPhotos, checkInHasCustomResponses } from '@/lib/checkInUtils';
 import CheckInPhotoTile from '@/components/CheckInPhotoTile';
 import PhotoViewerDialog from '@/components/PhotoViewerDialog';
+import CustomCheckInResponseDisplay from '@/components/CustomCheckInResponseDisplay';
+import { parseCheckInTemplate } from '@/types/checkInTemplateTypes';
 
 interface Props {
   checkIn: WeeklyCheckIn;
@@ -51,13 +53,31 @@ export function CheckInDetails({
   checkIn: WeeklyCheckIn;
   onPhotoOpen?: (src: string, alt: string) => void;
 }) {
-  const hasRatings = checkInHasRatings(checkIn);
   const hasTraining = checkIn.completedWorkouts !== null || checkIn.plannedWorkouts !== null;
-  const hasReflection = checkInHasReflection(checkIn);
   const hasPhotos = checkInHasPhotos(checkIn);
+  const isCustomMode = checkInHasCustomResponses(checkIn);
+
+  // Parse template snapshot for custom-mode check-ins
+  const templateSnapshot = isCustomMode ? parseCheckInTemplate(checkIn.templateSnapshot) : null;
+
+  // Legacy mode predicates (only evaluated when not in custom mode)
+  const hasRatings = !isCustomMode && checkInHasRatings(checkIn);
+  const hasReflection = !isCustomMode && checkInHasReflection(checkIn);
+
+  const hasCustomContent = isCustomMode && templateSnapshot !== null;
+  const hasSomeLegacyContent = hasRatings || hasReflection;
 
   return (
     <>
+      {/* Custom mode: render stored responses using the snapshot */}
+      {hasCustomContent && (
+        <CustomCheckInResponseDisplay
+          responses={checkIn.customResponses}
+          template={templateSnapshot!}
+        />
+      )}
+
+      {/* Legacy mode: hardcoded ratings */}
       {hasRatings && (
         <>
           <Typography variant="overline" color="text.secondary">Ratings</Typography>
@@ -72,7 +92,7 @@ export function CheckInDetails({
 
       {hasTraining && (
         <>
-          {hasRatings && <Divider sx={{ my: 1.5 }} />}
+          {(hasCustomContent || hasSomeLegacyContent) && <Divider sx={{ my: 1.5 }} />}
           <Typography variant="overline" color="text.secondary">Training</Typography>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
             <Typography variant="body2" color="text.secondary">Workouts</Typography>
@@ -83,6 +103,7 @@ export function CheckInDetails({
         </>
       )}
 
+      {/* Legacy mode: reflection text */}
       {hasReflection && (
         <>
           {(hasRatings || hasTraining) && <Divider sx={{ my: 1.5 }} />}
@@ -95,7 +116,7 @@ export function CheckInDetails({
 
       {hasPhotos && (
         <>
-          {(hasRatings || hasTraining || hasReflection) && <Divider sx={{ my: 1.5 }} />}
+          {(hasCustomContent || hasSomeLegacyContent || hasTraining) && <Divider sx={{ my: 1.5 }} />}
           <Typography variant="overline" color="text.secondary">Progress Photos</Typography>
           <Box
             sx={{
@@ -126,7 +147,7 @@ export function CheckInDetails({
 
       {checkIn.coachNotes && (
         <>
-          {(hasRatings || hasTraining || hasReflection || hasPhotos) && <Divider sx={{ my: 1.5 }} />}
+          {(hasCustomContent || hasSomeLegacyContent || hasTraining || hasPhotos) && <Divider sx={{ my: 1.5 }} />}
           <Typography variant="overline" color="text.secondary">Coach Feedback</Typography>
           <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>{checkIn.coachNotes}</Typography>
           {checkIn.coachResponseUrl && (

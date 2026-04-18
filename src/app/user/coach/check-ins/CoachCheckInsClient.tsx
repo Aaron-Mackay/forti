@@ -18,6 +18,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import EditNoteIcon from '@mui/icons-material/EditNote';
+import { useRouter } from 'next/navigation';
 import type { CheckInWithUser } from '@/types/checkInTypes';
 import CoachCheckInListItem from './CoachCheckInListItem';
 
@@ -34,6 +36,7 @@ interface ApiResponse {
 }
 
 export default function CoachCheckInsClient({ lockedClientId }: { lockedClientId?: string }) {
+  const router = useRouter();
   const [tab, setTab] = useState<0 | 1>(lockedClientId ? 1 : 0); // default Browse when locked to a client
   const [clients, setClients] = useState<Client[]>([]);
   const [newCheckIns, setNewCheckIns] = useState<CheckInWithUser[]>([]);
@@ -111,19 +114,31 @@ export default function CoachCheckInsClient({ lockedClientId }: { lockedClientId
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>
       )}
 
-      <Tabs value={tab} onChange={(_e, v) => setTab(v as 0 | 1)} sx={{ mb: 2 }}>
-        <Tab
-          label={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              New
-              {!loading && newCheckIns.length > 0 && (
-                <Chip label={newCheckIns.length} size="small" color="warning" />
-              )}
-            </Box>
-          }
-        />
-        <Tab label="Browse" />
-      </Tabs>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+        <Tabs value={tab} onChange={(_e, v) => setTab(v as 0 | 1)} sx={{ flex: 1 }}>
+          <Tab
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                New
+                {!loading && newCheckIns.length > 0 && (
+                  <Chip label={newCheckIns.length} size="small" color="warning" />
+                )}
+              </Box>
+            }
+          />
+          <Tab label="Browse" />
+        </Tabs>
+        {!lockedClientId && (
+          <Button
+            size="small"
+            startIcon={<EditNoteIcon />}
+            onClick={() => router.push('/user/coach/check-in-template')}
+            sx={{ ml: 1, flexShrink: 0 }}
+          >
+            Configure
+          </Button>
+        )}
+      </Box>
 
       {/* ── New tab ── */}
       {tab === 0 && (

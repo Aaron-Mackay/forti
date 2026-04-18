@@ -88,7 +88,7 @@ export default function CheckInClient() {
     : '';
 
   return (
-    <Box sx={{ pt: 2, pb: 6, maxWidth: 600 }}>
+    <Box sx={{ pt: 2, pb: 6 }}>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>
       )}
@@ -116,56 +116,40 @@ export default function CheckInClient() {
 
       {/* This week's check-in */}
       <Typography variant="overline" color="text.secondary">This Week</Typography>
-      <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-        {loading ? (
-          <Skeleton variant="rounded" height={120} />
-        ) : editingCurrent && currentData ? (
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="body1" fontWeight={600}>
-                Edit submitted check-in
-              </Typography>
-              <Button size="small" onClick={() => setEditingCurrent(false)}>
-                Cancel
-              </Button>
-            </Box>
-            <CheckInForm
-              currentWeek={currentData.currentWeek}
-              weekPrior={currentData.weekPrior}
-              checkIn={currentData.checkIn}
-              previousPhotos={currentData.previousPhotos}
-              weekTargets={currentData.weekTargets}
-              completedWorkoutsCount={currentData.completedWorkoutsCount}
-              plannedWorkoutsCount={currentData.plannedWorkoutsCount}
-              activePlanId={currentData.activePlanId}
-              onSubmitted={() => setSubmitted(s => !s)}
-            />
-          </Box>
-        ) : isCompleted ? (
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-              <CheckCircleIcon color="success" />
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="body1" fontWeight={600}>Check-in complete</Typography>
-                <Typography variant="body2" color="text.secondary">Week of {weekLabel}</Typography>
+
+      {/* Template mode active form — no outer Paper; cards render their own surfaces */}
+      {!loading && !editingCurrent && !isCompleted && currentData?.template != null ? (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="body1" fontWeight={600} sx={{ mb: 2 }}>
+            Week of {weekLabel}
+          </Typography>
+          <CheckInForm
+            currentWeek={currentData.currentWeek}
+            weekPrior={currentData.weekPrior}
+            checkIn={currentData.checkIn}
+            previousPhotos={currentData.previousPhotos}
+            weekTargets={currentData.weekTargets}
+            completedWorkoutsCount={currentData.completedWorkoutsCount}
+            plannedWorkoutsCount={currentData.plannedWorkoutsCount}
+            activePlanId={currentData.activePlanId}
+            template={currentData.template}
+            onSubmitted={() => setSubmitted(s => !s)}
+          />
+        </Box>
+      ) : (
+        <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+          {loading ? (
+            <Skeleton variant="rounded" height={120} />
+          ) : editingCurrent && currentData ? (
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="body1" fontWeight={600}>
+                  Edit submitted check-in
+                </Typography>
+                <Button size="small" onClick={() => setEditingCurrent(false)}>
+                  Cancel
+                </Button>
               </Box>
-              <IconButton
-                size="small"
-                aria-label="Edit current check-in"
-                onClick={() => setEditingCurrent(true)}
-                sx={{ color: 'text.secondary' }}
-              >
-                <EditOutlinedIcon fontSize="small" />
-              </IconButton>
-            </Box>
-            {currentData && <CheckInDetails checkIn={currentData.checkIn} />}
-          </Box>
-        ) : (
-          <Box>
-            <Typography variant="body1" fontWeight={600} sx={{ mb: 2 }}>
-              Week of {weekLabel}
-            </Typography>
-            {currentData && (
               <CheckInForm
                 currentWeek={currentData.currentWeek}
                 weekPrior={currentData.weekPrior}
@@ -175,12 +159,53 @@ export default function CheckInClient() {
                 completedWorkoutsCount={currentData.completedWorkoutsCount}
                 plannedWorkoutsCount={currentData.plannedWorkoutsCount}
                 activePlanId={currentData.activePlanId}
+                template={currentData.template}
                 onSubmitted={() => setSubmitted(s => !s)}
               />
-            )}
-          </Box>
-        )}
-      </Paper>
+            </Box>
+          ) : isCompleted ? (
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <CheckCircleIcon color="success" />
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body1" fontWeight={600}>Check-in complete</Typography>
+                  <Typography variant="body2" color="text.secondary">Week of {weekLabel}</Typography>
+                </Box>
+                <IconButton
+                  size="small"
+                  aria-label="Edit current check-in"
+                  onClick={() => setEditingCurrent(true)}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <EditOutlinedIcon fontSize="small" />
+                </IconButton>
+              </Box>
+              {currentData && <CheckInDetails checkIn={currentData.checkIn} />}
+            </Box>
+          ) : (
+            // Legacy mode (no template) — form inside the Paper
+            <Box>
+              <Typography variant="body1" fontWeight={600} sx={{ mb: 2 }}>
+                Week of {weekLabel}
+              </Typography>
+              {currentData && (
+                <CheckInForm
+                  currentWeek={currentData.currentWeek}
+                  weekPrior={currentData.weekPrior}
+                  checkIn={currentData.checkIn}
+                  previousPhotos={currentData.previousPhotos}
+                  weekTargets={currentData.weekTargets}
+                  completedWorkoutsCount={currentData.completedWorkoutsCount}
+                  plannedWorkoutsCount={currentData.plannedWorkoutsCount}
+                  activePlanId={currentData.activePlanId}
+                  template={currentData.template}
+                  onSubmitted={() => setSubmitted(s => !s)}
+                />
+              )}
+            </Box>
+          )}
+        </Paper>
+      )}
 
       <Divider sx={{ mb: 3 }} />
 
