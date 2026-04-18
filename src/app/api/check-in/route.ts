@@ -210,6 +210,9 @@ export async function POST(req: NextRequest) {
       update: {
         completedAt,
         ...legacyBody,
+        // Clear template-mode payload so legacy resubmissions render correctly.
+        customResponses: null,
+        templateSnapshot: null,
       },
     });
   }
