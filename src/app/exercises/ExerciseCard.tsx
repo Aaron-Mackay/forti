@@ -52,6 +52,7 @@ export default function ExerciseCard({
               primaryMuscles={exercise.primaryMuscles}
               secondaryMuscles={exercise.secondaryMuscles}
               exerciseId={exercise.id}
+              filterByQuadrants
             />
           </Box>
         )}
