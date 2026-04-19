@@ -223,6 +223,7 @@ export default function ExerciseDetailDrawer({
                 primaryMuscles={exercise.primaryMuscles}
                 secondaryMuscles={exercise.secondaryMuscles}
                 exerciseId={exercise.id}
+                filterByQuadrants
               />
             </Box>
           )}

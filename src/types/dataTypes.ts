@@ -103,6 +103,31 @@ export const EXERCISE_MUSCLES = [
 
 export type ExerciseMuscle = typeof EXERCISE_MUSCLES[number];
 
+export const MUSCLE_QUADRANTS = {
+  'upper-traps': 'front-top',
+  'ant-delts': 'front-top',
+  'lat-delts': 'front-top',
+  'post-delts': 'back-top',
+  'clav-pec': 'front-top',
+  'sternal-pec': 'front-top',
+  'biceps': 'front-top',
+  'triceps': 'back-top',
+  'forearms': 'front-top',
+  'abs': 'front-top',
+  'obliques': 'front-top',
+  'mid-traps': 'back-top',
+  'lower-traps': 'back-top',
+  'lower-back': 'back-bottom',
+  'lats': 'back-top',
+  'adductors': 'front-bottom',
+  'quads': 'front-bottom',
+  'glutes': 'back-bottom',
+  'hamstrings': 'back-bottom',
+  'calves': 'back-bottom',
+} as const satisfies Record<ExerciseMuscle, MuscleQuadrant>;
+
+export type MuscleQuadrant = 'front-top' | 'front-bottom' | 'back-top' | 'back-bottom';
+
 export const MUSCLE_NAMES: Record<ExerciseMuscle, string> = {
   'upper-traps': 'Upper Traps',
   'ant-delts': 'Front Delt',

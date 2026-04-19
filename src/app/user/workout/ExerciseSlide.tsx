@@ -284,8 +284,12 @@ export default function ExerciseSlide({
             </Typography>
           </Box>
         </Box>
-        <MuscleHighlight primaryMuscles={ex.exercise.primaryMuscles} secondaryMuscles={ex.exercise.secondaryMuscles}
-                         exerciseId={ex.exerciseId}/>
+        <MuscleHighlight
+          primaryMuscles={ex.exercise.primaryMuscles}
+          secondaryMuscles={ex.exercise.secondaryMuscles}
+          exerciseId={ex.exerciseId}
+          filterByQuadrants
+        />
       </Box>
 
       {/* Form cue textarea */}
