@@ -1,49 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { z } from 'zod';
 import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { EXERCISE_MUSCLES } from '@/types/dataTypes';
 import { matchExercisesByAlias } from '@lib/exerciseAliasMatcher';
+import {
+  EnrichResponse,
+  EnrichToolResponseSchema,
+  ExerciseEnrichRequestSchema,
+} from '@lib/contracts/exerciseEnrich';
 
 export const maxDuration = 30;
 
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour — shared with ai-import
 const MAX_EXERCISES = 30;
-
-const RequestSchema = z.object({
-  exercises: z
-    .array(z.object({ name: z.string().max(100) }))
-    .min(1)
-    .max(MAX_EXERCISES),
-});
-
-const EnrichedExerciseSchema = z.object({
-  name: z.string(),
-  category: z.enum(['resistance', 'cardio']),
-  primaryMuscles: z.array(z.enum(EXERCISE_MUSCLES)),
-  secondaryMuscles: z.array(z.enum(EXERCISE_MUSCLES)),
-});
-
-const EnrichToolResponseSchema = z.object({
-  exercises: z.array(EnrichedExerciseSchema),
-});
-
-export type EnrichedExercise = z.infer<typeof EnrichedExerciseSchema>;
-export type MatchSuggestion = {
-  inputName: string;
-  suggestedName: string;
-  category: EnrichedExercise['category'];
-  primaryMuscles: EnrichedExercise['primaryMuscles'];
-  secondaryMuscles: EnrichedExercise['secondaryMuscles'];
-  matchType: 'exact' | 'whole_alias' | 'token_alias';
-};
-
-export type EnrichResponse =
-  | { exercises: EnrichedExercise[]; matchSuggestions?: MatchSuggestion[] }
-  | { error: string };
-
 
 function isExerciseMuscle(value: string): value is (typeof EXERCISE_MUSCLES)[number] {
   return (EXERCISE_MUSCLES as readonly string[]).includes(value);
@@ -99,7 +70,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const parsed = RequestSchema.safeParse(body);
+  const parsed = ExerciseEnrichRequestSchema.extend({
+    exercises: ExerciseEnrichRequestSchema.shape.exercises.min(1).max(MAX_EXERCISES),
+  }).safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: 'Invalid request', issues: parsed.error.flatten() },

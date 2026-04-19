@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import {Box, Skeleton, Typography} from '@mui/material';
 import {format} from 'date-fns';
-import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
+import type {E1rmHistoryPoint} from '@lib/contracts/exerciseHistory';
 import {PRIMARY_COLOUR, SUCCESS_COLOUR} from '@lib/theme';
 
 // Captured at module load time so it isn't re-evaluated during renders

@@ -28,8 +28,8 @@ import {HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar'
 import MuscleHighlight from '@/components/MuscleHighlight'
 import {useAppBar} from '@lib/providers/AppBarProvider'
 import {ExerciseCategory} from '@/generated/prisma/browser'
-import type {AiImportResponse} from '@/app/api/plan/ai-import/route'
-import type {MatchSuggestion} from '@/app/api/exercises/enrich/route'
+import type {AiImportResponse} from '@lib/contracts/aiImport'
+import type {MatchSuggestion} from '@lib/contracts/exerciseEnrich'
 import {
   applyReviewedExercisesToPlan,
   calculateMuscleVolumes,

@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
 import prisma from '@lib/prisma';
 import { requireSession } from '@lib/requireSession';
 import { errorResponse, forbiddenResponse, notFoundResponse, validationErrorResponse } from '@lib/apiResponses';
 import { withRouteAuth } from '@lib/routeAuth';
-
-const ActivePlanSchema = z.object({
-  planId: z.number().int().positive().nullable(),
-  targetUserId: z.string().optional(),
-});
+import { ActivePlanRequestSchema, type ActivePlanSuccess } from '@lib/contracts/activePlan';
 
 export const PATCH = withRouteAuth(async function PATCH(req: NextRequest) {
   const session = await requireSession();
-  const parsed = ActivePlanSchema.safeParse(await req.json());
+  const json = await req.json().catch(() => null);
+  if (json == null) {
+    return errorResponse('Invalid JSON body', 400);
+  }
+
+  const parsed = ActivePlanRequestSchema.safeParse(json);
 
   if (!parsed.success) {
     return validationErrorResponse(parsed.error);
@@ -39,7 +39,7 @@ export const PATCH = withRouteAuth(async function PATCH(req: NextRequest) {
       data: { activePlanId: null },
     });
 
-    return NextResponse.json({ success: true, activePlanId: null });
+    return NextResponse.json({ success: true, activePlanId: null } satisfies ActivePlanSuccess);
   }
 
   const plan = await prisma.plan.findUnique({
@@ -62,7 +62,7 @@ export const PATCH = withRouteAuth(async function PATCH(req: NextRequest) {
       select: { activePlanId: true },
     });
 
-    return NextResponse.json({ success: true, activePlanId: updatedUser.activePlanId });
+    return NextResponse.json({ success: true, activePlanId: updatedUser.activePlanId } satisfies ActivePlanSuccess);
   } catch (error) {
     console.error(error);
     return errorResponse('Failed to update active plan', 500);

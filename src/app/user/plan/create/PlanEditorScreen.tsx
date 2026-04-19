@@ -35,7 +35,7 @@ import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext'
 import { savePlan } from '@lib/clientApi'
 import { useRouter } from 'next/navigation'
 import { Exercise, ExerciseCategory } from '@/generated/prisma/browser'
-import type { EnrichedExercise, MatchSuggestion } from '@/app/api/exercises/enrich/route'
+import type { EnrichedExercise, MatchSuggestion } from '@lib/contracts/exerciseEnrich'
 import PlanSheetView from '../PlanSheetView'
 import PlanWeekView from '../PlanWeekView'
 import PlanMultiWeekTable from '../PlanMultiWeekTable'
@@ -248,11 +248,7 @@ export const PlanEditorScreen = ({
     setSaveError(null)
     try {
       const response = await savePlan(planToSave)
-      if (response.success) {
-        router.push(clientId ? `/user/coach/clients/${clientId}/plans` : `/user/plan/${response.planId}`)
-      } else {
-        setSaveError(buildSaveErrorMessage(response.error ?? 'The server returned an unknown error'))
-      }
+      router.push(clientId ? `/user/coach/clients/${clientId}/plans` : `/user/plan/${response.planId}`)
     } catch (error) {
       setSaveError(buildSaveErrorMessage(error))
     } finally {

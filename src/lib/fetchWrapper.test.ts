@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchJson, postJson, putJson, patchJson, deleteJson } from './fetchWrapper';
+import { z } from 'zod';
+import { fetchJson, fetchJsonWithSchema, postJson, putJson, patchJson, deleteJson } from './fetchWrapper';
 
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
@@ -43,6 +44,51 @@ describe('fetchJson', () => {
     mockFetch.mockRejectedValue(new Error('Network failure'));
 
     await expect(fetchJson('/api/timeout')).rejects.toThrow('Network failure');
+  });
+
+  it('includes validation detail messages from the shared error envelope', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        error: 'Invalid request',
+        code: 'BAD_REQUEST',
+        details: {
+          fieldErrors: {
+            name: ['Required'],
+          },
+        },
+      }),
+    });
+
+    await expect(fetchJson('/api/plan')).rejects.toThrow('Invalid request · name: Required');
+  });
+});
+
+describe('fetchJsonWithSchema', () => {
+  it('returns parsed JSON when the response matches the schema', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, planId: 1 }),
+    });
+
+    const result = await fetchJsonWithSchema('/api/plan', z.object({
+      success: z.literal(true),
+      planId: z.number(),
+    }));
+
+    expect(result).toEqual({ success: true, planId: 1 });
+  });
+
+  it('throws when the response does not match the schema', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, planId: 'wrong' }),
+    });
+
+    await expect(fetchJsonWithSchema('/api/plan', z.object({
+      success: z.literal(true),
+      planId: z.number(),
+    }))).rejects.toThrow('Invalid response from /api/plan');
   });
 });
 

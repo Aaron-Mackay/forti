@@ -16,7 +16,7 @@ import LinkIcon from '@mui/icons-material/Link';
 import {Exercise} from '@/generated/prisma/browser';
 import {format} from 'date-fns';
 import MuscleHighlight from '@/components/MuscleHighlight';
-import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
+import type {E1rmHistoryPoint} from '@lib/contracts/exerciseHistory';
 import {PRIMARY_COLOUR} from '@lib/theme';
 import type {ExerciseCoachNote} from './types';
 

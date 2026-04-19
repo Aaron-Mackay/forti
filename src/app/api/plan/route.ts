@@ -4,23 +4,20 @@ import {PlanPrisma} from "@/types/dataTypes";
 import { AuditEventType } from '@/generated/prisma/browser';
 import { recordAuditEvent } from '@lib/auditEvents';
 import confirmPermission from "@lib/confirmPermission";
-import {PlanPostSchema} from "@lib/planSchemas";
+import { PlanUploadRequestSchema, type PlanUploadSuccess } from '@lib/contracts/plan';
+import { errorResponse, validationErrorResponse } from '@lib/apiResponses';
 import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSession";
 import { getSessionActorUserId } from '@lib/sessionActor';
 
-export type PlanUploadResponse = {
-  success: boolean;
-  planId?: number;
-  error?: string;
-}
 export async function POST(req: NextRequest) {
-  const json = await req.json();
-  const parsed = PlanPostSchema.safeParse(json);
+  const json = await req.json().catch(() => null);
+  if (json == null) {
+    return errorResponse('Invalid JSON body', 400);
+  }
+
+  const parsed = PlanUploadRequestSchema.safeParse(json);
   if (!parsed.success) {
-    return NextResponse.json(
-      {success: false, error: 'Invalid request', issues: parsed.error.flatten()} as PlanUploadResponse,
-      {status: 400}
-    );
+    return validationErrorResponse(parsed.error);
   }
 
   try {
@@ -50,10 +47,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ success: true, planId: uploadedPlanId } as PlanUploadResponse, { status: 200 });
+    return NextResponse.json({ success: true, planId: uploadedPlanId } satisfies PlanUploadSuccess, { status: 200 });
   } catch (error) {
     if (isAuthenticationError(error)) return authenticationErrorResponse();
     console.error(error);
-    return NextResponse.json({ success: false, error: 'Failed to create plan' } as PlanUploadResponse, { status: 500 })
+    return errorResponse('Failed to create plan', 500);
   }
 }

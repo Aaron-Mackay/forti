@@ -14,8 +14,6 @@ const CreateExerciseSchema = z.object({
   secondaryMuscles: z.array(z.enum(EXERCISE_MUSCLES)).default([]),
 });
 
-export type CreateExerciseRequest = z.infer<typeof CreateExerciseSchema>;
-
 export async function GET(_req: NextRequest) {
   try {
     const session = await requireSession();

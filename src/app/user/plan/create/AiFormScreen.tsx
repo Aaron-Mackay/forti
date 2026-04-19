@@ -15,7 +15,7 @@ import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext'
 import { useNewPlan } from './useNewPlan'
 import { PLACEHOLDER_ID } from './PlanBuilderWithContext'
 import { parsedPlanToPlanPrisma } from './planConverter'
-import type { AiImportResponse } from '@/app/api/plan/ai-import/route'
+import type { AiImportResponse } from '@lib/contracts/aiImport'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 

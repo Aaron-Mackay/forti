@@ -20,8 +20,7 @@ import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 import ExerciseSlide from './ExerciseSlide';
 import CardioSlide, {PreviousCardio} from './CardioSlide';
-import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
-import type {PreviousExerciseHistory} from '@/app/api/exercises/[exerciseId]/previous-sets/route';
+import type { E1rmHistoryPoint, PreviousExerciseHistory } from '@lib/contracts/exerciseHistory';
 
 export default function ExerciseDetailView({
   workout,

@@ -3,8 +3,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from '@lib/apiError';
 import {buildPreviousWorkoutFilter, resolveCurrentWorkoutCompletedAt} from '@lib/exerciseQueries';
-
-export type E1rmHistoryPoint = {date: string; bestE1rm: number};
+import type { E1rmHistoryPoint } from '@lib/contracts/exerciseHistory';
 
 export async function GET(req: NextRequest, props: {params: Promise<{exerciseId: string}>}) {
   const params = await props.params;

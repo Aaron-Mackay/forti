@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Box, Card, CardContent, Divider, IconButton, Skeleton, Typography } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { format } from 'date-fns';
-import type { E1rmHistoryPoint } from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
+import type { E1rmHistoryPoint } from '@lib/contracts/exerciseHistory';
 import type { TrackedE1rmExercise } from '@/types/settingsTypes';
 import type { WeightUnit } from '@/lib/units';
 import { formatWeight } from '@/lib/units';

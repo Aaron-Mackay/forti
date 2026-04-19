@@ -161,6 +161,18 @@ All routes live under `src/app/api/` and follow Next.js App Router conventions:
 
 All API routes that require authentication must call `requireSession()` from `src/lib/requireSession.ts`.
 
+### API Contract Rules
+
+- Treat the JSON contract for any reusable endpoint as a first-class module in `src/lib/contracts/`, not as an implementation detail inside `src/app/api/**/route.ts`.
+- Do not export reusable request or response types from route files. If client code, tests, or another route needs the type, move it to a shared contract module first.
+- Client code must not import from route files. Shared API types and schemas must be imported from `src/lib/contracts/`.
+- Any route that accepts JSON input should define a shared `zod` request schema. Avoid route-local inline schemas unless the endpoint is truly one-off and has no shared consumer.
+- Any route consumed by frontend code should define a shared response schema and inferred TypeScript type. Avoid `fetchJson<T>` with hand-written generics when a shared response schema can be reused.
+- Prefer API DTOs at the boundary over exporting raw Prisma payload types directly to clients. Prisma types are persistence types, not automatically transport contracts.
+- Use the shared API error helpers for JSON error responses. Do not introduce new ad hoc `{ error: string }`, `{ ok: true }`, or `{ success: true }` shapes when an existing shared envelope already covers the case.
+- When changing an endpoint contract, update the shared contract module, the route implementation, and the client helper in the same change.
+- For high-value or high-risk endpoints, parse responses with `zod` in the client helper instead of trusting a TypeScript generic alone.
+
 ---
 
 ## Authentication

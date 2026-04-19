@@ -41,9 +41,9 @@ import {formatWeight, kgToDisplay} from '@/lib/units';
 import type {ExerciseUnitOverride} from '@/types/settingsTypes';
 import {SetPrisma, WorkoutExercisePrisma} from '@/types/dataTypes';
 import {UserExerciseNote} from '@/generated/prisma/browser';
-import type {E1rmHistoryPoint} from '@/app/api/exercises/[exerciseId]/e1rm-history/route';
+import type {E1rmHistoryPoint} from '@lib/contracts/exerciseHistory';
 import {useSettings} from '@lib/providers/SettingsProvider';
-import type {PreviousExerciseHistory} from '@/app/api/exercises/[exerciseId]/previous-sets/route';
+import type {PreviousExerciseHistory} from '@lib/contracts/exerciseHistory';
 
 function formatCompletedDate(value: string | null): string | null {
   if (!value) return null;

@@ -4,20 +4,7 @@ import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from "@lib/apiError";
 import {buildPreviousWorkoutFilter, resolveCurrentWorkoutCompletedAt} from '@lib/exerciseQueries';
 import {computeE1rm} from '@/lib/e1rm';
-
-export type PreviousWorkoutSummary = {
-  completedAt: string | null;
-  sets: Array<{
-    order: number;
-    weight: number | null;
-    reps: number | null;
-    e1rm: number | null;
-  }>;
-};
-
-export type PreviousExerciseHistory = {
-  workouts: PreviousWorkoutSummary[];
-};
+import type { PreviousExerciseHistory } from '@lib/contracts/exerciseHistory';
 
 export async function GET(req: NextRequest, props: { params: Promise<{ exerciseId: string }> }) {
   const params = await props.params;

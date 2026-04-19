@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import { AI_CLARIFY_TOOL, AI_PLAN_TOOL, AiParseError, parseAiPlanResponse } from '@/utils/aiPlanParser';
 import prisma from '@lib/prisma';
+import type { AiImportResponse } from '@lib/contracts/aiImport';
 
 export const maxDuration = 300; // 5 minutes — large spreadsheet imports can take a while
 
@@ -12,11 +13,6 @@ const MAX_INPUT_BYTES_SPREADSHEET = 225_000; // 225 KB — cap for CSV/spreadshe
 
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-
-export type AiImportResponse =
-  | { plan: ReturnType<typeof parseAiPlanResponse> }
-  | { questions: string[] }
-  | { error: string; parseIssues?: string[] };
 
 function formatAiIssuePath(path: PropertyKey[]): string {
   if (path.length === 0) return '';

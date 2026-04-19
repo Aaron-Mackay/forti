@@ -1,30 +1,34 @@
 import prisma from '@/lib/prisma';
 import {NextResponse} from "next/server";
 import confirmPermission from "@lib/confirmPermission";
-import {z} from "zod";
 import {extractErrorMessage} from "@lib/apiError";
-import {PlanInputSchema} from "@lib/planSchemas";
 import {AuditEventType, ExerciseCategory} from "@/generated/prisma/browser";
 import { recordAuditEvent } from '@lib/auditEvents';
 import {computeE1rm} from "@lib/e1rm";
 import {findOrCreateExercise} from "@lib/exerciseQueries";
 import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSession";
 import { getSessionActorUserId } from '@lib/sessionActor';
+import {
+  SaveUserWorkoutDataRequestSchema,
+  type SaveUserWorkoutDataRequest,
+  type SaveUserWorkoutDataSuccess,
+} from '@lib/contracts/saveUserWorkoutData';
+import { errorResponse, validationErrorResponse } from '@lib/apiResponses';
 
-const SaveUserDataSchema = z.object({
-  id: z.string(),
-  activePlanId: z.number().int().positive().nullable().optional(),
-  plans: z.array(PlanInputSchema),
-});
 const SAVE_USER_WORKOUT_DATA_TRANSACTION_TIMEOUT_MS = 15_000;
 
 export async function POST(req: Request) {
-  let body: z.infer<typeof SaveUserDataSchema>;
-  try {
-    body = SaveUserDataSchema.parse(await req.json());
-  } catch {
-    return NextResponse.json({error: "Invalid request body"}, {status: 400});
+  const json = await req.json().catch(() => null);
+  if (json == null) {
+    return errorResponse('Invalid JSON body', 400);
   }
+
+  const parsed = SaveUserWorkoutDataRequestSchema.safeParse(json);
+  if (!parsed.success) {
+    return validationErrorResponse(parsed.error);
+  }
+
+  const body: SaveUserWorkoutDataRequest = parsed.data;
 
   const userId = body.id;
 
@@ -213,9 +217,9 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({success: true}, {status: 200});
+    return NextResponse.json({success: true} satisfies SaveUserWorkoutDataSuccess, {status: 200});
   } catch (err: unknown) {
     console.error("Save error:", err);
-    return NextResponse.json({error: extractErrorMessage(err)}, {status: 500});
+    return errorResponse(extractErrorMessage(err), 500);
   }
 }
