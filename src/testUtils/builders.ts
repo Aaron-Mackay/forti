@@ -24,6 +24,7 @@ export class UserBuilder {
       image: null,
       emailVerified: null,
       settings: null,
+      checkInTemplate: null,
       coachId: null,
       coachCode: null,
       coachLogoUrl: null,
