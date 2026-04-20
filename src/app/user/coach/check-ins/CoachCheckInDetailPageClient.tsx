@@ -6,6 +6,7 @@ import type { Metric } from '@/generated/prisma/browser';
 import type { CheckInWithUser, WeekTargets } from '@/types/checkInTypes';
 import type { CustomMetricDef } from '@/types/settingsTypes';
 import type { TargetTemplateWithDays } from '@lib/targetTemplates';
+import type { CheckInTemplate } from '@/types/checkInTemplateTypes';
 import CoachCheckInDetailClient from './CoachCheckInDetailClient';
 
 interface Props {
@@ -30,6 +31,10 @@ interface ApiResponse {
   weekWorkouts: WeekWorkout[];
 }
 
+interface CoachTemplateApiResponse {
+  template: CheckInTemplate | null;
+}
+
 export default function CoachCheckInDetailPageClient({ checkInId, lockedClientId }: Props) {
   const [checkIn, setCheckIn] = useState<CheckInWithUser | null>(null);
   const [currentWeek, setCurrentWeek] = useState<Metric[]>([]);
@@ -38,6 +43,7 @@ export default function CoachCheckInDetailPageClient({ checkInId, lockedClientId
   const [activeTemplate, setActiveTemplate] = useState<TargetTemplateWithDays | null>(null);
   const [customMetricDefs, setCustomMetricDefs] = useState<CustomMetricDef[]>([]);
   const [weekWorkouts, setWeekWorkouts] = useState<WeekWorkout[]>([]);
+  const [coachTemplate, setCoachTemplate] = useState<CheckInTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,15 +55,23 @@ export default function CoachCheckInDetailPageClient({ checkInId, lockedClientId
       setError(null);
 
       try {
-        const res = await fetch(`/api/coach/check-ins/${checkInId}`);
-        if (!res.ok) {
+        const [checkInRes, templateRes] = await Promise.all([
+          fetch(`/api/coach/check-ins/${checkInId}`),
+          fetch('/api/coach/check-in-template'),
+        ]);
+
+        if (!checkInRes.ok) {
           throw new Error('Failed to load check-in');
         }
 
-        const data = await res.json() as ApiResponse;
+        const data = await checkInRes.json() as ApiResponse;
         if (lockedClientId && data.checkIn.user.id !== lockedClientId) {
           throw new Error('Check-in does not belong to this client');
         }
+
+        const templateData = templateRes.ok
+          ? await templateRes.json() as CoachTemplateApiResponse
+          : { template: null };
 
         if (!cancelled) {
           setCheckIn(data.checkIn);
@@ -67,6 +81,7 @@ export default function CoachCheckInDetailPageClient({ checkInId, lockedClientId
           setActiveTemplate(data.activeTemplate);
           setCustomMetricDefs(data.customMetricDefs);
           setWeekWorkouts(data.weekWorkouts);
+          setCoachTemplate(templateData.template);
         }
       } catch {
         if (!cancelled) {
@@ -107,5 +122,5 @@ export default function CoachCheckInDetailPageClient({ checkInId, lockedClientId
     );
   }
 
-  return <CoachCheckInDetailClient checkIn={checkIn} currentWeek={currentWeek} weekPrior={weekPrior} weekTargets={weekTargets} activeTemplate={activeTemplate} customMetricDefs={customMetricDefs} weekWorkouts={weekWorkouts} />;
+  return <CoachCheckInDetailClient checkIn={checkIn} currentWeek={currentWeek} weekPrior={weekPrior} weekTargets={weekTargets} activeTemplate={activeTemplate} customMetricDefs={customMetricDefs} weekWorkouts={weekWorkouts} coachTemplate={coachTemplate} />;
 }

@@ -35,6 +35,9 @@ import type {TargetTemplateWithDays} from '@lib/targetTemplates';
 import MetricsSummaryTable from '@/components/MetricsSummaryTable';
 import {checkInHasPhotos, checkInHasRatings, checkInHasReflection, checkInHasCustomResponses} from '@/lib/checkInUtils';
 import {parseCheckInTemplate} from '@/types/checkInTemplateTypes';
+import type {CheckInTemplate} from '@/types/checkInTemplateTypes';
+import type {DataVizCard} from '@/types/datavizTypes';
+import DataVizChartCard from '@/components/DataVizChartCard';
 import CheckInPhotoTile from '@/components/CheckInPhotoTile';
 import PhotoViewerDialog from '@/components/PhotoViewerDialog';
 import CustomCheckInResponseDisplay from '@/components/CustomCheckInResponseDisplay';
@@ -56,6 +59,7 @@ interface Props {
   activeTemplate: TargetTemplateWithDays | null;
   customMetricDefs: CustomMetricDef[];
   weekWorkouts: WeekWorkout[];
+  coachTemplate: CheckInTemplate | null;
 }
 
 function Section({children, fillHeight = false}: { children: ReactNode; fillHeight?: boolean }) {
@@ -141,7 +145,8 @@ export default function CoachCheckInDetailClient({
                                                    weekTargets,
                                                    activeTemplate,
                                                    customMetricDefs,
-                                                   weekWorkouts
+                                                   weekWorkouts,
+                                                   coachTemplate,
                                                  }: Props) {
   const [notes, setNotes] = useState(checkIn.coachNotes ?? '');
   const [coachResponseUrl, setCoachResponseUrl] = useState(checkIn.coachResponseUrl ?? '');
@@ -339,6 +344,19 @@ export default function CoachCheckInDetailClient({
               />
             </Box>
           )}
+
+          {coachTemplate?.cards
+            .filter((c): c is DataVizCard => c.kind === 'dataviz')
+            .map(card => (
+              <DataVizChartCard
+                key={card.id}
+                card={card}
+                gridColumn={{ xs: '1 / -1', lg: `span ${card.columnSpan}` }}
+                clientId={checkIn.user.id}
+                mode="use"
+              />
+            ))
+          }
 
           {hasRatings && (
             <Section>

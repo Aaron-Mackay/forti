@@ -12,9 +12,8 @@ import {CustomMetricDef, WeightUnit} from "@/types/settingsTypes";
 import {kgToDisplay} from "@/lib/units";
 import {Prisma} from "@/generated/prisma/browser";
 
-export type BuiltInMetricKey = 'weight' | 'calories' | 'steps' | 'sleepMins';
-// Custom metric keys are the UUID strings of the custom metric definitions
-export type MetricKey = BuiltInMetricKey | string;
+import type { BuiltInMetricKey, MetricKey } from '@/types/metricTypes';
+export type { BuiltInMetricKey, MetricKey };
 
 interface CustomMetricEntry {
   value: number | null;

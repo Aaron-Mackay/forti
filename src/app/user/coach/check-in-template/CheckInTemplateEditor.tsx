@@ -78,8 +78,14 @@ import type {
   TextOperator,
   CustomCheckInResponses,
 } from '@/types/checkInTemplateTypes';
+import type { DataVizCard, RelativeWeeks } from '@/types/datavizTypes';
+import { RELATIVE_WEEK_OPTIONS } from '@/types/datavizTypes';
+import { BUILTIN_METRIC_KEYS, BUILTIN_METRIC_LABELS } from '@/types/metricTypes';
+import type { BuiltInMetricKey } from '@/types/metricTypes';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import TemplateCardRenderer from '@/components/TemplateCardRenderer';
+import DataVizChartCard from '@/components/DataVizChartCard';
 import CustomCheckInField from '@/app/user/check-in/CustomCheckInField';
-import CheckInCustomCard from '@/components/CheckInCustomCard';
 import {HEIGHT_EXC_APPBAR} from "@/components/CustomAppBar";
 
 // Motion-wrapped MUI Box — accepts both `sx` and Framer Motion props
@@ -577,6 +583,140 @@ function SortableCustomCard({ card, allInputFields, atFieldLimit, onUpdate, onRe
   );
 }
 
+// ─── Sortable dataviz card ────────────────────────────────────────────────────
+
+interface SortableDataVizCardProps {
+  card: DataVizCard;
+  onUpdate: (updated: DataVizCard) => void;
+  onRemove: () => void;
+}
+
+function SortableDataVizCard({ card, onUpdate, onRemove }: SortableDataVizCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
+
+  return (
+    <Box
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, height: '100%' }}
+      sx={{ display: 'grid' }}
+    >
+      <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+          <Box {...attributes} {...listeners} sx={{ cursor: 'grab', color: 'text.disabled', flexShrink: 0, touchAction: 'none' }}>
+            <DragHandleIcon fontSize="small" />
+          </Box>
+          <ShowChartIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+          <Typography variant="body2" fontWeight={500} sx={{ flex: 1 }} color="text.secondary">
+            Data Visualisation
+          </Typography>
+          <ColumnSpanToggle value={card.columnSpan} onChange={v => onUpdate({ ...card, columnSpan: v })} />
+          <IconButton size="small" onClick={onRemove} aria-label="Remove chart card">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <Stack spacing={1.5}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <TextField
+              label="Title (optional)"
+              size="small"
+              value={card.title ?? ''}
+              onChange={e => onUpdate({ ...card, title: e.target.value || undefined })}
+              sx={{ flex: '1 1 260px' }}
+            />
+
+            <FormControl size="small" sx={{ flex: '1 1 210px', minWidth: 180 }}>
+              <InputLabel>Metric</InputLabel>
+              <Select
+                label="Metric"
+                value={card.metric}
+                onChange={e => onUpdate({ ...card, metric: e.target.value as BuiltInMetricKey })}
+              >
+                {BUILTIN_METRIC_KEYS.map(k => (
+                  <MenuItem key={k} value={k}>{BUILTIN_METRIC_LABELS[k]}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={card.timeRange.mode}
+            fullWidth
+            onChange={(_e, mode: string | null) => {
+              if (!mode) return;
+              if (mode === 'relative') {
+                onUpdate({ ...card, timeRange: { mode: 'relative', weeks: 4 } });
+              } else {
+                const today = new Date().toISOString().slice(0, 10);
+                const sixWeeksAgo = new Date(Date.now() - 42 * 86_400_000).toISOString().slice(0, 10);
+                onUpdate({ ...card, timeRange: { mode: 'absolute', startDate: sixWeeksAgo, endDate: today } });
+              }
+            }}
+          >
+            <ToggleButton value="relative" size="small">Last N weeks</ToggleButton>
+            <ToggleButton value="absolute" size="small">Date range</ToggleButton>
+          </ToggleButtonGroup>
+
+          {card.timeRange.mode === 'relative' && (
+            <FormControl size="small" fullWidth>
+              <InputLabel>Weeks</InputLabel>
+              <Select
+                label="Weeks"
+                value={card.timeRange.weeks}
+                onChange={e => onUpdate({ ...card, timeRange: { mode: 'relative', weeks: Number(e.target.value) as RelativeWeeks } })}
+              >
+                {RELATIVE_WEEK_OPTIONS.map(n => (
+                  <MenuItem key={n} value={n}>Last {n} week{n > 1 ? 's' : ''}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+
+          {card.timeRange.mode === 'absolute' && (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <TextField
+                label="Start date"
+                type="date"
+                size="small"
+                sx={{ flex: 1 }}
+                value={card.timeRange.startDate}
+                onChange={e => {
+                  if (card.timeRange.mode === 'absolute') {
+                    onUpdate({ ...card, timeRange: { ...card.timeRange, startDate: e.target.value } });
+                  }
+                }}
+                slotProps={{ htmlInput: { max: card.timeRange.endDate } }}
+              />
+              <TextField
+                label="End date"
+                type="date"
+                size="small"
+                sx={{ flex: 1 }}
+                value={card.timeRange.endDate}
+                onChange={e => {
+                  if (card.timeRange.mode === 'absolute') {
+                    onUpdate({ ...card, timeRange: { ...card.timeRange, endDate: e.target.value } });
+                  }
+                }}
+                slotProps={{ htmlInput: { min: card.timeRange.startDate } }}
+              />
+            </Box>
+          )}
+
+          <DataVizChartCard
+            card={card}
+            gridColumn="1 / -1"
+            mode="editor-preview"
+            withPaper={false}
+          />
+        </Stack>
+      </Paper>
+    </Box>
+  );
+}
+
 // ─── Add card menu ────────────────────────────────────────────────────────────
 
 interface AddCardMenuProps {
@@ -586,9 +726,10 @@ interface AddCardMenuProps {
   atCardLimit: boolean;
   onAddCustom: () => void;
   onAddSystem: (systemType: SystemCard['systemType']) => void;
+  onAddDataViz: () => void;
 }
 
-function AddCardMenu({ hasPhotos, hasMetrics, hasWorkouts, atCardLimit, onAddCustom, onAddSystem }: AddCardMenuProps) {
+function AddCardMenu({ hasPhotos, hasMetrics, hasWorkouts, atCardLimit, onAddCustom, onAddSystem, onAddDataViz }: AddCardMenuProps) {
   const [anchor, setAnchor] = useState<null | HTMLElement>(null);
 
   const systemTypes: { type: SystemCard['systemType']; label: string; has: boolean }[] = [
@@ -611,6 +752,9 @@ function AddCardMenu({ hasPhotos, hasMetrics, hasWorkouts, atCardLimit, onAddCus
       <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}>
         <MenuItem onClick={() => { onAddCustom(); setAnchor(null); }}>
           Custom card
+        </MenuItem>
+        <MenuItem onClick={() => { onAddDataViz(); setAnchor(null); }}>
+          Data Visualisation
         </MenuItem>
         <Divider />
         {systemTypes.map(({ type, label, has }) => (
@@ -704,37 +848,30 @@ function TemplatePreview({ cards, onClose }: TemplatePreviewProps) {
               {cards.map(card => {
                 const gridColumn = isMobile ? '1 / -1' : `span ${card.columnSpan}`;
 
-                if (card.kind === 'system') {
-                  return (
-                    <Paper key={card.id} variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2 }}>
-                      <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>
-                        {SYSTEM_CARD_META[card.systemType].label}
-                      </Typography>
-                      <SystemCardPreview systemType={card.systemType} />
-                    </Paper>
-                  );
-                }
-
-                // All fields hidden by conditions — show placeholder (preview-only UX)
-                const visibleFields = card.fields.filter(f => isFieldVisible(f, previewResponses));
-                if (visibleFields.length === 0 && card.fields.length > 0) {
-                  return (
-                    <Paper key={card.id} variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2, opacity: 0.4 }}>
-                      {card.title && <Typography variant="subtitle2" sx={{ mb: 1 }}>{card.title}</Typography>}
-                      <Typography variant="caption" color="text.disabled">
-                        All fields hidden by conditions
-                      </Typography>
-                    </Paper>
-                  );
+                // Custom cards with all fields hidden — show placeholder (preview-only UX)
+                if (card.kind === 'custom' && card.fields.length > 0) {
+                  const visibleFields = card.fields.filter(f => isFieldVisible(f, previewResponses));
+                  if (visibleFields.length === 0) {
+                    return (
+                      <Paper key={card.id} variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2, opacity: 0.4 }}>
+                        {card.title && <Typography variant="subtitle2" sx={{ mb: 1 }}>{card.title}</Typography>}
+                        <Typography variant="caption" color="text.disabled">
+                          All fields hidden by conditions
+                        </Typography>
+                      </Paper>
+                    );
+                  }
                 }
 
                 return (
-                  <CheckInCustomCard
+                  <TemplateCardRenderer
                     key={card.id}
                     card={card}
                     gridColumn={gridColumn}
+                    // No systemData — renders placeholder for system cards
                     responses={previewResponses}
-                    onChange={(fieldId, value) => setPreviewResponses(r => ({ ...r, [fieldId]: value }))}
+                    onResponseChange={(fieldId, value) => setPreviewResponses(r => ({ ...r, [fieldId]: value }))}
+                    // No clientId — preview shows coach's own data for dataviz cards
                   />
                 );
               })}
@@ -800,6 +937,17 @@ export default function CheckInTemplateEditor() {
 
   function addSystemCard(systemType: SystemCard['systemType']) {
     setCards(cs => [...cs, { kind: 'system', id: crypto.randomUUID(), systemType, columnSpan: systemType === 'photos' ? 2 : 1 }]);
+  }
+
+  function addDataVizCard() {
+    const card: DataVizCard = {
+      kind: 'dataviz',
+      id: crypto.randomUUID(),
+      metric: 'weight',
+      timeRange: { mode: 'relative', weeks: 4 },
+      columnSpan: 1,
+    };
+    setCards(cs => [...cs, card]);
   }
 
   function updateCard(id: string, updated: CheckInCard) {
@@ -904,6 +1052,12 @@ export default function CheckInTemplateEditor() {
                         onUpdate={updated => updateCard(card.id, updated)}
                         onRemove={() => removeCard(card.id)}
                       />
+                    ) : card.kind === 'dataviz' ? (
+                      <SortableDataVizCard
+                        card={card}
+                        onUpdate={updated => updateCard(card.id, updated)}
+                        onRemove={() => removeCard(card.id)}
+                      />
                     ) : (
                       <SortableCustomCard
                         card={card}
@@ -929,6 +1083,7 @@ export default function CheckInTemplateEditor() {
           atCardLimit={atCardLimit}
           onAddCustom={addCustomCard}
           onAddSystem={addSystemCard}
+          onAddDataViz={addDataVizCard}
         />
         {atCardLimit && (
           <Typography variant="caption" color="text.secondary">

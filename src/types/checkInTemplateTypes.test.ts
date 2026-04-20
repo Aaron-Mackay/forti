@@ -705,3 +705,91 @@ describe('isFieldVisible', () => {
     )).toBe(false);
   });
 });
+
+// ─── DataVizCard — parseCheckInTemplate ───────────────────────────────────────
+
+describe('parseCheckInTemplate — dataviz cards', () => {
+  it('parses a valid dataviz card with relative time range', () => {
+    const result = parseCheckInTemplate({
+      version: 2,
+      cards: [{ kind: 'dataviz', id: 'dv-1', metric: 'weight', timeRange: { mode: 'relative', weeks: 4 }, columnSpan: 1 }],
+    });
+    expect(result!.cards).toHaveLength(1);
+    expect(result!.cards[0]).toMatchObject({ kind: 'dataviz', metric: 'weight', timeRange: { mode: 'relative', weeks: 4 } });
+  });
+
+  it('parses a valid dataviz card with absolute time range', () => {
+    const result = parseCheckInTemplate({
+      version: 2,
+      cards: [{ kind: 'dataviz', id: 'dv-2', metric: 'steps', timeRange: { mode: 'absolute', startDate: '2025-01-01', endDate: '2025-03-01' }, title: 'My Steps', columnSpan: 2 }],
+    });
+    expect(result!.cards[0]).toMatchObject({ kind: 'dataviz', metric: 'steps', title: 'My Steps', columnSpan: 2 });
+  });
+
+  it('skips dataviz card with invalid metric', () => {
+    const result = parseCheckInTemplate({
+      version: 2,
+      cards: [
+        { kind: 'dataviz', id: 'dv-bad', metric: 'bodyFat', timeRange: { mode: 'relative', weeks: 4 }, columnSpan: 1 },
+        { kind: 'system', id: 's1', systemType: 'metrics', columnSpan: 1 },
+      ],
+    });
+    expect(result!.cards).toHaveLength(1);
+    expect(result!.cards[0].kind).toBe('system');
+  });
+
+  it('skips dataviz card with invalid relative weeks', () => {
+    const result = parseCheckInTemplate({
+      version: 2,
+      cards: [{ kind: 'dataviz', id: 'dv-bad', metric: 'weight', timeRange: { mode: 'relative', weeks: 99 }, columnSpan: 1 }],
+    });
+    expect(result!.cards).toHaveLength(0);
+  });
+
+  it('skips dataviz card when startDate >= endDate', () => {
+    const result = parseCheckInTemplate({
+      version: 2,
+      cards: [{ kind: 'dataviz', id: 'dv-bad', metric: 'weight', timeRange: { mode: 'absolute', startDate: '2025-03-01', endDate: '2025-01-01' }, columnSpan: 1 }],
+    });
+    expect(result!.cards).toHaveLength(0);
+  });
+
+  it('allows multiple dataviz cards for the same metric', () => {
+    const result = parseCheckInTemplate({
+      version: 2,
+      cards: [
+        { kind: 'dataviz', id: 'dv-1', metric: 'weight', timeRange: { mode: 'relative', weeks: 4 }, columnSpan: 1 },
+        { kind: 'dataviz', id: 'dv-2', metric: 'weight', timeRange: { mode: 'relative', weeks: 12 }, columnSpan: 1 },
+      ],
+    });
+    expect(result!.cards).toHaveLength(2);
+  });
+});
+
+// ─── DataVizCard — validateTemplate ──────────────────────────────────────────
+
+describe('validateTemplate — dataviz cards', () => {
+  it('accepts a valid dataviz card with relative range', () => {
+    const template: CheckInTemplate = {
+      version: 2,
+      cards: [{ kind: 'dataviz', id: 'dv-1', metric: 'steps', timeRange: { mode: 'relative', weeks: 8 }, columnSpan: 2 }],
+    };
+    expect(validateTemplate(template)).toBeNull();
+  });
+
+  it('accepts a valid dataviz card with absolute range', () => {
+    const template: CheckInTemplate = {
+      version: 2,
+      cards: [{ kind: 'dataviz', id: 'dv-1', metric: 'calories', timeRange: { mode: 'absolute', startDate: '2025-01-01', endDate: '2025-04-01' }, columnSpan: 1 }],
+    };
+    expect(validateTemplate(template)).toBeNull();
+  });
+
+  it('rejects dataviz card with startDate >= endDate', () => {
+    const template: CheckInTemplate = {
+      version: 2,
+      cards: [{ kind: 'dataviz', id: 'dv-1', metric: 'weight', timeRange: { mode: 'absolute', startDate: '2025-06-01', endDate: '2025-01-01' }, columnSpan: 1 }],
+    };
+    expect(validateTemplate(template)).toMatch(/startDate/i);
+  });
+});

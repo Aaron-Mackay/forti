@@ -1,3 +1,8 @@
+import type { DataVizCard, DataVizTimeRange, RelativeWeeks } from './datavizTypes';
+import { RELATIVE_WEEK_OPTIONS } from './datavizTypes';
+import { BUILTIN_METRIC_KEYS } from './metricTypes';
+export type { DataVizCard };
+
 // Types for coach-customisable check-in templates.
 // A template replaces the default hardcoded check-in form.
 // null template → legacy form is shown.
@@ -99,7 +104,7 @@ export interface CustomCard {
   fields: CheckInInputField[];  // always stack vertically within the card
 }
 
-export type CheckInCard = SystemCard | CustomCard;
+export type CheckInCard = SystemCard | CustomCard | DataVizCard;
 
 // ─── Template ─────────────────────────────────────────────────────────────────
 
@@ -159,15 +164,16 @@ export const DEFAULT_TEMPLATE: CheckInTemplate = {
 
 /** Return a copy of the default template with fresh UUIDs (safe for multiple coaches). */
 export function makeDefaultCards(): CheckInCard[] {
-  return DEFAULT_TEMPLATE.cards.map(card =>
-    card.kind === 'system'
-      ? { ...card, id: crypto.randomUUID() }
-      : {
-          ...card,
-          id: crypto.randomUUID(),
-          fields: card.fields.map(f => ({ ...f, id: crypto.randomUUID() })),
-        },
-  );
+  return DEFAULT_TEMPLATE.cards.map(card => {
+    if (card.kind === 'system' || card.kind === 'dataviz') {
+      return { ...card, id: crypto.randomUUID() };
+    }
+    return {
+      ...card,
+      id: crypto.randomUUID(),
+      fields: card.fields.map(f => ({ ...f, id: crypto.randomUUID() })),
+    };
+  });
 }
 
 // ─── Parse helpers ────────────────────────────────────────────────────────────
@@ -263,6 +269,38 @@ function parseCustomCard(raw: Record<string, unknown>): CustomCard | null {
   return card;
 }
 
+function parseDataVizTimeRange(raw: unknown): DataVizTimeRange | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const tr = raw as Record<string, unknown>;
+  if (tr.mode === 'relative') {
+    if (!RELATIVE_WEEK_OPTIONS.includes(tr.weeks as never)) return null;
+    return { mode: 'relative', weeks: tr.weeks as RelativeWeeks };
+  }
+  if (tr.mode === 'absolute') {
+    if (typeof tr.startDate !== 'string' || typeof tr.endDate !== 'string') return null;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(tr.startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(tr.endDate)) return null;
+    if (tr.startDate >= tr.endDate) return null;
+    return { mode: 'absolute', startDate: tr.startDate, endDate: tr.endDate };
+  }
+  return null;
+}
+
+function parseDataVizCard(raw: Record<string, unknown>): DataVizCard | null {
+  if (typeof raw.id !== 'string' || !raw.id) return null;
+  if (!BUILTIN_METRIC_KEYS.includes(raw.metric as never)) return null;
+  const timeRange = parseDataVizTimeRange(raw.timeRange);
+  if (!timeRange) return null;
+  const card: DataVizCard = {
+    kind: 'dataviz',
+    id: raw.id as string,
+    metric: raw.metric as DataVizCard['metric'],
+    timeRange,
+    columnSpan: parseColumnSpan(raw.columnSpan),
+  };
+  if (typeof raw.title === 'string' && raw.title) card.title = raw.title;
+  return card;
+}
+
 function parseSystemCard(raw: Record<string, unknown>): SystemCard | null {
   if (typeof raw.id !== 'string' || !raw.id) return null;
   if (raw.systemType !== 'photos' && raw.systemType !== 'metrics' && raw.systemType !== 'workouts') return null;
@@ -349,6 +387,10 @@ export function parseCheckInTemplate(raw: unknown): CheckInTemplate | null {
         card.fields = card.fields.slice(0, allowed);
       }
       totalFields += card.fields.length;
+      cards.push(card);
+    } else if (c.kind === 'dataviz') {
+      const card = parseDataVizCard(c);
+      if (!card) continue;
       cards.push(card);
     }
     // Unknown kind — skip
@@ -466,6 +508,25 @@ export function validateTemplate(template: CheckInTemplate): string | null {
             return `Field "${field.label}" uses an answered/not_answered operator but references a non-text field`;
           }
         }
+      }
+    } else if (card.kind === 'dataviz') {
+      if (!BUILTIN_METRIC_KEYS.includes(card.metric)) {
+        return `DataViz card "${card.id}" has unknown metric: ${card.metric}`;
+      }
+      const tr = card.timeRange;
+      if (tr.mode === 'relative') {
+        if (!RELATIVE_WEEK_OPTIONS.includes(tr.weeks)) {
+          return `DataViz card "${card.id}" has invalid weeks value: ${String(tr.weeks)}`;
+        }
+      } else if (tr.mode === 'absolute') {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(tr.startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(tr.endDate)) {
+          return `DataViz card "${card.id}" has invalid date format`;
+        }
+        if (tr.startDate >= tr.endDate) {
+          return `DataViz card "${card.id}" startDate must be before endDate`;
+        }
+      } else {
+        return `DataViz card "${card.id}" has unknown timeRange mode`;
       }
     } else {
       return `Unknown card kind: ${String((card as CheckInCard & { kind: string }).kind)}`;
