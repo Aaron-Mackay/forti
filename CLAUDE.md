@@ -251,6 +251,7 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 | `src/lib/coachNutrition.ts` | Shared coach-client nutrition access/query helper (`getCoachClientNutritionData`) |
 | `src/lib/targetTemplates.ts` | Backwards-lookup helpers for `TargetTemplate`: `getActiveTemplateForWeek`, `upsertTargetTemplate`, `getMacrosByDow`, `getAllTemplatesForUser` |
 | `src/lib/supplementVersions.ts` | Backwards-lookup helper for `SupplementVersion`: `SupplementWithVersions` type, `supplementWithVersions` include const, `getActiveVersion` |
+| `src/lib/hooks/useScrollEdgeFades.ts` | Shared hook for scroll-edge affordances; computes start/end fade visibility for horizontal or vertical scroll containers |
 | `src/lib/requireSession.ts` | Server-side session guard for API routes |
 | `src/lib/getLoggedInUser.ts` | Retrieve full User record from session |
 | `src/lib/queries.ts` | Ownership-chain DB helpers: `getWorkoutWithOwner`, `getWorkoutExerciseWithOwner`, `getSetWithOwner` |
@@ -448,6 +449,7 @@ Type declarations for this pattern are in `svgr.d.ts`.
 - **Coach-client:** A `User` can have a `coachId` pointing to another user. Invitation flow: coach generates a code (`/api/coach/activate`), client visits `/coach/[code]`, `CoachRequest` is created, coach accepts. Coaches can view client plans and check-ins.
 - **Weekly check-in:** Users submit a weekly `WeeklyCheckIn` (subjective ratings + review). Coaches receive an email alert and can add notes. A Vercel cron job (`0 7 * * *`) sends reminder emails via MailerSend. Push notifications are also supported via the VAPID/web-push stack.
 - **Mobile-first UI:** Uses `dvh` (dynamic viewport height) units for mobile compatibility. Calendar and some pages use bottom drawers on mobile.
+- **Scrollable container affordance:** For scrollable content that needs edge-fade affordances, use `useScrollEdgeFades` (`src/lib/hooks/useScrollEdgeFades.ts`) with `<ScrollEdgeFades />` (`src/components/ScrollEdgeFades.tsx`) instead of re-implementing scroll math/gradient overlays locally.
 - **Vercel cron jobs:** Configured in `vercel.json`. Secured by `CRON_SECRET` header check in each cron route handler.
 - **Vercel Analytics:** `@vercel/analytics` and `@vercel/speed-insights` are integrated in the app layout.
 - **Table column contract:** `Workout.tsx` uses `table-layout: fixed` with an explicit `<colgroup>`. Whenever you add or remove a `<TableCell>` from the row component (`ExerciseRow`), you must update the `<colgroup>`, `baseColumns` counter, and all header `<TableRow>`s in the same commit. Mismatches collapse cell widths silently and can make interactive elements unclickable.

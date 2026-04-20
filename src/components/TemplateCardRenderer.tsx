@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Paper, Typography } from '@mui/material';
+import { Box, Paper, Stack, Typography } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import type { Metric } from '@/generated/prisma/browser';
 import type { CheckInCard, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
@@ -8,8 +8,9 @@ import type { PreviousPhotos, WeekTargets } from '@/types/checkInTypes';
 import type { CustomMetricDef } from '@/types/settingsTypes';
 import CheckInCustomCard from './CheckInCustomCard';
 import DataVizChartCard from './DataVizChartCard';
-import MetricsSummaryTable from './MetricsSummaryTable';
+import MetricsSystemCard from './MetricsSystemCard';
 import ProgressPhotoSection from '@/app/user/check-in/ProgressPhotoSection';
+import { DEFAULT_CHECK_IN_TEMPLATE_PREVIEW_DATA } from './checkInTemplatePreviewData';
 
 // ─── System card data bundle ──────────────────────────────────────────────────
 
@@ -30,7 +31,23 @@ export interface SystemCardData {
 
 // ─── System card placeholder (preview / editor context) ───────────────────────
 
-function SystemCardPlaceholder({ systemType }: { systemType: 'photos' | 'metrics' | 'workouts' }) {
+function SystemCardPlaceholder({
+  systemType,
+  defaultExpanded,
+  interactive,
+  forceMobileLayout,
+  expanded,
+  onExpandedChange,
+}: {
+  systemType: 'photos' | 'metrics' | 'workouts';
+  defaultExpanded: boolean;
+  interactive: boolean;
+  forceMobileLayout: boolean;
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
+}) {
+  const previewData = DEFAULT_CHECK_IN_TEMPLATE_PREVIEW_DATA;
+
   if (systemType === 'photos') {
     return (
       <Box sx={{ display: 'flex', gap: 1 }}>
@@ -46,22 +63,38 @@ function SystemCardPlaceholder({ systemType }: { systemType: 'photos' | 'metrics
 
   if (systemType === 'metrics') {
     return (
-      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-        {['Weight', 'Steps', 'Sleep', 'Calories', 'Protein'].map(m => (
-          <Box key={m} sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-            <Typography variant="caption" color="text.disabled">{m}</Typography>
-            <Typography variant="body2" fontWeight={500} color="text.disabled">—</Typography>
-          </Box>
-        ))}
-      </Box>
+      <MetricsSystemCard
+        currentWeek={previewData.currentWeek}
+        weekPrior={previewData.priorWeek}
+        weekTargets={previewData.weekTargets}
+        customMetricDefs={previewData.customMetricDefs}
+        weekStartDate={previewData.weekStart}
+        defaultExpanded={defaultExpanded}
+        interactive={interactive}
+        expanded={expanded}
+        onExpandedChange={onExpandedChange}
+        layoutMode={forceMobileLayout ? 'force-mobile' : 'auto'}
+      />
     );
   }
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1, py: 0.75, borderRadius: 1, bgcolor: 'action.hover' }}>
-      <Typography variant="body2" color="text.disabled">Workouts</Typography>
-      <Typography variant="body2" fontWeight={600} color="text.disabled">0 / 0</Typography>
-    </Box>
+    <Stack spacing={1}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1, py: 0.75, borderRadius: 1, bgcolor: 'action.hover' }}>
+        <Typography variant="body2" color="text.secondary">Training</Typography>
+        <Typography variant="body2" fontWeight={600} color="text.secondary">
+          {previewData.trainingCounts.completed}/{previewData.trainingCounts.planned}
+        </Typography>
+      </Box>
+      <Stack spacing={0.5}>
+        {previewData.trainingSessions.map(session => (
+          <Box key={`${session.day}-${session.name}`} sx={{ display: 'flex', gap: 1.25, alignItems: 'baseline' }}>
+            <Typography variant="caption" color="text.disabled" sx={{ minWidth: 28 }}>{session.day}</Typography>
+            <Typography variant="body2" color="text.secondary">{session.name}</Typography>
+          </Box>
+        ))}
+      </Stack>
+    </Stack>
   );
 }
 
@@ -77,6 +110,16 @@ interface Props {
   onResponseChange?: (fieldId: string, value: string | number | null) => void;
   /** Pass the client's userId when rendering dataviz cards on the coach review page. */
   clientId?: string;
+  /** Preview-only: allow system card interactions (e.g. metrics expand/collapse). */
+  systemPreviewInteractive?: boolean;
+  /** Preview-only: force mobile layout regardless of viewport breakpoint. */
+  forceMobileLayout?: boolean;
+  /** Preview-only: render dataviz in use mode so runtime date controls are available. */
+  datavizPreviewInteractive?: boolean;
+  /** Optional controlled expansion state for metrics system cards. */
+  metricsExpanded?: boolean;
+  /** Optional expansion callback for metrics system cards. */
+  onMetricsExpandedChange?: (expanded: boolean) => void;
 }
 
 // ─── Renderer ─────────────────────────────────────────────────────────────────
@@ -88,6 +131,11 @@ export default function TemplateCardRenderer({
   responses = {},
   onResponseChange,
   clientId,
+  systemPreviewInteractive = false,
+  forceMobileLayout = false,
+  datavizPreviewInteractive = false,
+  metricsExpanded,
+  onMetricsExpandedChange,
 }: Props) {
   if (card.kind === 'dataviz') {
     return (
@@ -96,6 +144,7 @@ export default function TemplateCardRenderer({
         gridColumn={gridColumn}
         clientId={clientId}
         mode={systemData ? 'use' : 'editor-preview'}
+        interactivePreview={datavizPreviewInteractive}
       />
     );
   }
@@ -116,25 +165,30 @@ export default function TemplateCardRenderer({
   const label =
     systemType === 'photos'   ? 'Progress photos' :
     systemType === 'metrics'  ? 'Weekly metrics' :
-                                'Workouts completed';
+                                'Training';
 
   if (!systemData) {
     // Preview mode — show placeholder
     return (
-      <Paper variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2, bgcolor: 'action.hover' }}>
+      <Paper variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2, minWidth: 0 }}>
         <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }} color="text.secondary">
           {label}
         </Typography>
-        <Box sx={{ opacity: 0.6 }}>
-          <SystemCardPlaceholder systemType={systemType} />
-        </Box>
+        <SystemCardPlaceholder
+          systemType={systemType}
+          defaultExpanded={card.columnSpan === 2}
+          interactive={systemPreviewInteractive}
+          forceMobileLayout={forceMobileLayout}
+          expanded={metricsExpanded}
+          onExpandedChange={onMetricsExpandedChange}
+        />
       </Paper>
     );
   }
 
   if (systemType === 'photos') {
     return (
-      <Paper variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2 }}>
+      <Paper variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2, minWidth: 0 }}>
         <ProgressPhotoSection
           currentPhotos={systemData.photoUrls}
           previousPhotos={systemData.previousPhotos}
@@ -148,22 +202,27 @@ export default function TemplateCardRenderer({
 
   if (systemType === 'metrics') {
     return (
-      <Paper variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2 }}>
-        <Typography variant="subtitle2" sx={{ mb: 1 }}>Last 2 weeks of metrics</Typography>
-        <MetricsSummaryTable
+      <Paper variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2, minWidth: 0 }}>
+        <MetricsSystemCard
           currentWeek={systemData.currentWeek}
           weekPrior={systemData.weekPrior}
           weekTargets={systemData.weekTargets}
           customMetricDefs={systemData.customMetricDefs}
+          weekStartDate={systemData.weekStart}
+          defaultExpanded={card.columnSpan === 2}
+          interactive
+          expanded={metricsExpanded}
+          onExpandedChange={onMetricsExpandedChange}
+          layoutMode={forceMobileLayout ? 'force-mobile' : 'auto'}
         />
       </Paper>
     );
   }
 
-  // workouts
+  // training
   const { completedWorkoutsCount, plannedWorkoutsCount, onWorkoutsClick } = systemData;
   return (
-    <Paper variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2 }}>
+    <Paper variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2, minWidth: 0 }}>
       <Box
         onClick={onWorkoutsClick}
         sx={{
@@ -178,7 +237,7 @@ export default function TemplateCardRenderer({
           ...(onWorkoutsClick && { '&:hover': { bgcolor: 'action.selected' } }),
         }}
       >
-        <Typography variant="body2" color="text.secondary">Workouts</Typography>
+        <Typography variant="body2" color="text.secondary">Training</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <Typography variant="body2" fontWeight={600}>
             {completedWorkoutsCount}/{plannedWorkoutsCount}

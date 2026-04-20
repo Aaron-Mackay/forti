@@ -1,9 +1,12 @@
 'use client';
 
+import { useEffect } from 'react';
 import { Box, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
 import type { Metric } from '@/generated/prisma/browser';
 import { formatSleepMins } from '@/types/checkInTypes';
 import type { CustomMetricDef } from '@/types/settingsTypes';
+import ScrollEdgeFades from './ScrollEdgeFades';
+import { useScrollEdgeFades } from '@lib/hooks/useScrollEdgeFades';
 
 interface Props {
   metrics: Metric[];
@@ -11,6 +14,8 @@ interface Props {
   customMetricDefs: CustomMetricDef[];
   showMetricColumn?: boolean;
   includeEmptyRows?: boolean;
+  forceCompactFont?: boolean;
+  showRightFade?: boolean;
 }
 
 function getCustomValue(metric: Metric, id: string): number | null {
@@ -29,7 +34,17 @@ export default function MetricsDailyBreakdown({
   customMetricDefs,
   showMetricColumn = true,
   includeEmptyRows = false,
+  forceCompactFont = false,
+  showRightFade = false,
 }: Props) {
+  const {
+    scrollRef,
+    handleScroll,
+    showStartFade,
+    showEndFade,
+    updateFades,
+  } = useScrollEdgeFades<HTMLDivElement>({ axis: 'x', enabled: showRightFade });
+
   const weekStart = new Date(weekStartDate);
 
   // Map dayOffset (0–6) → Metric. Both weekStartDate and m.date are UTC midnight @db.Date values.
@@ -102,35 +117,43 @@ export default function MetricsDailyBreakdown({
   }));
 
   const rows = includeEmptyRows ? [...stdRows, ...customRows] : [...stdRows, ...customRows].filter(r => r.hasData);
+  useEffect(() => {
+    updateFades();
+  }, [rows.length, showMetricColumn, updateFades]);
 
   if (rows.length === 0) return null;
 
-  const cellSx = { fontSize: { xs: '0.72rem', lg: '0.875rem' } };
+  const cellSx = forceCompactFont
+    ? { fontSize: '0.72rem' }
+    : { fontSize: { xs: '0.72rem', lg: '0.875rem' } };
 
   return (
-    <Box sx={{ overflowX: 'auto' }}>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            {showMetricColumn && <TableCell sx={{ fontWeight: 600, ...cellSx }}>Metric</TableCell>}
-            {dayLabels.map(label => (
-              <TableCell key={label} align="center" sx={{ fontWeight: 600, ...cellSx }}>{label}</TableCell>
-            ))}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rows.map(row => (
-            <TableRow key={row.label}>
-              {showMetricColumn && <TableCell sx={cellSx}>{row.label}</TableCell>}
-              {row.values.map((v, i) => (
-                <TableCell key={i} align="center" sx={{ color: v === '—' ? 'text.disabled' : 'inherit', ...cellSx }}>
-                  {v}
-                </TableCell>
+    <Box sx={{ position: 'relative', minWidth: 0 }}>
+      <Box ref={scrollRef} sx={{ overflowX: 'auto' }} onScroll={handleScroll}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              {showMetricColumn && <TableCell sx={{ fontWeight: 600, ...cellSx }}>Metric</TableCell>}
+              {dayLabels.map(label => (
+                <TableCell key={label} align="center" sx={{ fontWeight: 600, ...cellSx }}>{label}</TableCell>
               ))}
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {rows.map(row => (
+              <TableRow key={row.label}>
+                {showMetricColumn && <TableCell sx={cellSx}>{row.label}</TableCell>}
+                {row.values.map((v, i) => (
+                  <TableCell key={i} align="center" sx={{ color: v === '—' ? 'text.disabled' : 'inherit', ...cellSx }}>
+                    {v}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Box>
+      {showRightFade && <ScrollEdgeFades axis="x" showStart={showStartFade} showEnd={showEndFade} size={18} background="paper" />}
     </Box>
   );
 }

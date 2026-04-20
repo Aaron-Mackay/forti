@@ -16,23 +16,19 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  Collapse,
   Divider,
-  IconButton,
   Link,
   Paper,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
-import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
-import UnfoldLessIcon from '@mui/icons-material/UnfoldLess';
 import type {Metric} from '@/generated/prisma/browser';
 import type {CheckInWithUser, WeekTargets} from '@/types/checkInTypes';
 import {RATING_LABELS} from '@/types/checkInTypes';
 import type {CustomMetricDef} from '@/types/settingsTypes';
 import type {TargetTemplateWithDays} from '@lib/targetTemplates';
-import MetricsSummaryTable from '@/components/MetricsSummaryTable';
+import MetricsSystemCard from '@/components/MetricsSystemCard';
 import {checkInHasPhotos, checkInHasRatings, checkInHasReflection, checkInHasCustomResponses} from '@/lib/checkInUtils';
 import {parseCheckInTemplate} from '@/types/checkInTemplateTypes';
 import type {CheckInTemplate} from '@/types/checkInTemplateTypes';
@@ -42,7 +38,6 @@ import CheckInPhotoTile from '@/components/CheckInPhotoTile';
 import PhotoViewerDialog from '@/components/PhotoViewerDialog';
 import CustomCheckInResponseDisplay from '@/components/CustomCheckInResponseDisplay';
 import SupplementsClient from '@/app/user/supplements/SupplementsClient';
-import MetricsDailyBreakdown from '@/components/MetricsDailyBreakdown';
 
 interface WeekWorkout {
   id: number;
@@ -279,7 +274,7 @@ export default function CoachCheckInDetailClient({
                 Training
               </Typography>
               <Typography variant="body2">
-                {checkIn.completedWorkouts ?? '?'} / {checkIn.plannedWorkouts ?? '?'} workouts completed
+                {checkIn.completedWorkouts ?? '?'} / {checkIn.plannedWorkouts ?? '?'} sessions completed
               </Typography>
             </Box>
           </Stack>
@@ -393,72 +388,21 @@ export default function CoachCheckInDetailClient({
           )}
 
           {(currentWeek.length > 0 || weekPrior.length > 0) && (
-            <Box sx={{
-              gridColumn: {lg: metricsExpanded ? '1 / -1' : 'auto'},
-              width: {
-                xs: 'calc(100dvw - 32px)',
-                lg: 'auto'
-              }
-            }}>
+            <Box sx={{ gridColumn: {lg: metricsExpanded ? '1 / -1' : 'auto'} }}>
               <Section>
-                {/* Header with expand toggle */}
-                <Box sx={{display: 'flex', alignItems: 'center', mb: 1.5}}>
-                  <Typography variant="overline" color="text.secondary" sx={{flexGrow: 1}}>
-                    Metrics
-                  </Typography>
-                  <IconButton size="small" onClick={() => setMetricsExpanded(e => !e)}
-                              aria-label="Toggle daily breakdown">
-                    {/* Mobile: vertical unfold */}
-                    <Box sx={{display: {xs: 'flex', lg: 'none'}}}>
-                      {metricsExpanded ? <UnfoldLessIcon/> : <UnfoldMoreIcon/>}
-                    </Box>
-                    {/* Desktop: horizontal unfold (rotated 90°) */}
-                    <Box sx={{display: {xs: 'none', lg: 'flex'}}}>
-                      {metricsExpanded
-                        ? <UnfoldLessIcon sx={{transform: 'rotate(90deg)'}}/>
-                        : <UnfoldMoreIcon sx={{transform: 'rotate(90deg)'}}/>}
-                    </Box>
-                  </IconButton>
-                </Box>
-
-                {/* Desktop: CSS transition on the right half */}
-                <Box sx={{display: {xs: 'none', lg: 'flex'}, alignItems: 'flex-start', gap: 2}}>
-                  <Box sx={{flex: '1 1 0', minWidth: 0}}>
-                    <MetricsSummaryTable currentWeek={currentWeek} weekPrior={weekPrior} weekTargets={weekTargets}
-                                         customMetricDefs={customMetricDefs}/>
-                  </Box>
-                  <Box sx={{
-                    display: 'flex',
-                    flex: metricsExpanded ? '1 1 0' : '0 0 0',
-                    minWidth: 0,
-                    gap: 2,
-                    maxWidth: metricsExpanded ? '100dvw' : 0,
-                    height: metricsExpanded ? 'auto' : 0,
-                    opacity: metricsExpanded ? 1 : 0,
-                    transition: 'max-width 300ms ease, opacity 200ms ease',
-                    alignItems: 'flex-start',
-                  }}>
-                    <Divider orientation="vertical" flexItem/>
-                    <Box sx={{flex: 1, minWidth: 0}}>
-                      <MetricsDailyBreakdown metrics={currentWeek} weekStartDate={checkIn.weekStartDate}
-                                             customMetricDefs={customMetricDefs} showMetricColumn={false}
-                                             includeEmptyRows/>
-                    </Box>
-                  </Box>
-                </Box>
-
-                {/* Mobile: vertical collapse */}
-                <Box sx={{display: {xs: 'block', lg: 'none'}}}>
-                  <MetricsSummaryTable currentWeek={currentWeek} weekPrior={weekPrior} weekTargets={weekTargets}
-                                       customMetricDefs={customMetricDefs}/>
-                  <Collapse in={metricsExpanded} unmountOnExit>
-                    <Divider sx={{py: 1}}/>
-                    <Box sx={{overflowX: 'scroll',}}>
-                      <MetricsDailyBreakdown metrics={currentWeek} weekStartDate={checkIn.weekStartDate}
-                                             customMetricDefs={customMetricDefs}/>
-                    </Box>
-                  </Collapse>
-                </Box>
+                <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  Metrics
+                </Typography>
+                <MetricsSystemCard
+                  currentWeek={currentWeek}
+                  weekPrior={weekPrior}
+                  weekTargets={weekTargets}
+                  customMetricDefs={customMetricDefs}
+                  weekStartDate={checkIn.weekStartDate}
+                  expanded={metricsExpanded}
+                  onExpandedChange={setMetricsExpanded}
+                  interactive
+                />
               </Section>
             </Box>
           )}

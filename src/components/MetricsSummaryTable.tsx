@@ -21,6 +21,7 @@ interface Props {
   weekPrior: Metric[];
   weekTargets: WeekTargets | null;
   customMetricDefs?: CustomMetricDef[];
+  forceCompactFont?: boolean;
 }
 
 type DeltaDir = 'up' | 'down' | 'flat';
@@ -51,7 +52,13 @@ function avgCustom(metrics: Metric[], id: string): number | null {
   return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
 }
 
-export default function MetricsSummaryTable({ currentWeek, weekPrior, weekTargets, customMetricDefs = [] }: Props) {
+export default function MetricsSummaryTable({
+  currentWeek,
+  weekPrior,
+  weekTargets,
+  customMetricDefs = [],
+  forceCompactFont = false,
+}: Props) {
   const curr = computeMetricSummary(currentWeek);
   const prior = computeMetricSummary(weekPrior);
   const tgt = weekTargets;
@@ -127,7 +134,9 @@ export default function MetricsSummaryTable({ currentWeek, weekPrior, weekTarget
     }),
   ];
 
-  const cellSx = { fontSize: { xs: '0.72rem', lg: '0.875rem' } };
+  const cellSx = forceCompactFont
+    ? { fontSize: '0.72rem' }
+    : { fontSize: { xs: '0.72rem', lg: '0.875rem' } };
 
   return (
     <Box>

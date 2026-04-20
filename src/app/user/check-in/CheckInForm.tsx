@@ -51,6 +51,16 @@ interface LegacyFormState {
   goalsNextWeek: string;
 }
 
+function getInitialMetricsExpansion(template: CheckInTemplate | null): Record<string, boolean> {
+  if (!template) return {};
+  return template.cards.reduce<Record<string, boolean>>((acc, card) => {
+    if (card.kind === 'system' && card.systemType === 'metrics') {
+      acc[card.id] = card.columnSpan === 2;
+    }
+    return acc;
+  }, {});
+}
+
 export default function CheckInForm({
   currentWeek, weekPrior, checkIn, previousPhotos, weekTargets,
   completedWorkoutsCount, plannedWorkoutsCount, activePlanId,
@@ -72,6 +82,9 @@ export default function CheckInForm({
   // ── Template mode state ────────────────────────────────────────────────────
   const [customResponses, setCustomResponses] = useState<CustomCheckInResponses>(() =>
     parseCustomResponses(checkIn.customResponses)
+  );
+  const [metricsExpandedByCardId, setMetricsExpandedByCardId] = useState<Record<string, boolean>>(
+    () => getInitialMetricsExpansion(activeTemplate)
   );
 
   // ── Legacy mode state ──────────────────────────────────────────────────────
@@ -169,6 +182,10 @@ export default function CheckInForm({
     }
   }, [activeTemplate, customResponses]);
 
+  useEffect(() => {
+    setMetricsExpandedByCardId(getInitialMetricsExpansion(activeTemplate));
+  }, [activeTemplate]);
+
   const systemData: SystemCardData = {
     photoUrls,
     previousPhotos,
@@ -227,7 +244,7 @@ export default function CheckInForm({
             ...(workoutClickable && { '&:hover': { bgcolor: 'action.selected' } }),
           }}
         >
-          <Typography variant="body2" color="text.secondary">Workouts</Typography>
+          <Typography variant="body2" color="text.secondary">Training</Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Typography variant="body2" fontWeight={600}>
               {completedWorkoutsCount}/{plannedWorkoutsCount}
@@ -241,17 +258,30 @@ export default function CheckInForm({
 
       {activeTemplate !== null ? (
         // ── Template mode: render cards in a 2-column responsive grid ─────────
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-          {activeTemplate.cards.map(card => (
-            <TemplateCardRenderer
-              key={card.id}
-              card={card}
-              gridColumn={{ xs: '1 / -1', sm: `span ${card.columnSpan}` }}
-              systemData={systemData}
-              responses={customResponses}
-              onResponseChange={setCustomField}
-            />
-          ))}
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'minmax(0, 1fr) minmax(0, 1fr)' }, gap: 2 }}>
+          {activeTemplate.cards.map(card => {
+            const metricsExpanded = card.kind === 'system' && card.systemType === 'metrics'
+              ? (metricsExpandedByCardId[card.id] ?? card.columnSpan === 2)
+              : undefined;
+            const smSpan = card.kind === 'system' && card.systemType === 'metrics'
+              ? (metricsExpanded ? 2 : 1)
+              : card.columnSpan;
+
+            return (
+              <TemplateCardRenderer
+                key={card.id}
+                card={card}
+                gridColumn={{ xs: '1 / -1', sm: `span ${smSpan}` }}
+                systemData={systemData}
+                responses={customResponses}
+                onResponseChange={setCustomField}
+                metricsExpanded={metricsExpanded}
+                onMetricsExpandedChange={next =>
+                  setMetricsExpandedByCardId(prev => ({ ...prev, [card.id]: next }))
+                }
+              />
+            );
+          })}
         </Box>
       ) : (
         // ── Legacy mode: hardcoded ratings + text areas ────────────────────
@@ -304,6 +334,7 @@ export default function CheckInForm({
         disabled={submitting}
         startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : undefined}
         size="large"
+        sx={{ mt: 2 }}
       >
         {isEditing ? 'Resubmit Check-in' : 'Submit Check-in'}
       </Button>

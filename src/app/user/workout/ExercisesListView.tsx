@@ -1,7 +1,6 @@
 'use client';
 
-import {useEffect, useRef, useState} from 'react';
-import {alpha} from '@mui/material/styles';
+import { useRef, useState } from 'react';
 import {
   Box,
   Button,
@@ -33,6 +32,8 @@ import './exercisesListView.css'
 import {useAppBar} from '@lib/providers/AppBarProvider';
 import {HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar';
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
+import ScrollEdgeFades from '@/components/ScrollEdgeFades';
+import { useScrollEdgeFades } from '@lib/hooks/useScrollEdgeFades';
 
 export default function ExercisesListView({
                                             workout,
@@ -55,27 +56,8 @@ export default function ExercisesListView({
   const [notesOpen, setNotesOpen] = useState(false);
   const [noteValue, setNoteValue] = useState(workout.notes ?? '');
 
-  const listRef = useRef<HTMLUListElement>(null);
-  const [hasScrollAbove, setHasScrollAbove] = useState(false);
-  const [hasScrollBelow, setHasScrollBelow] = useState(false);
-
-  const checkScroll = (el: HTMLElement) => {
-    setHasScrollAbove(el.scrollTop > 4);
-    setHasScrollBelow(el.scrollTop + el.clientHeight < el.scrollHeight - 4);
-  };
-
-  useEffect(() => {
-    const el = listRef.current;
-    if (!el) return;
-    checkScroll(el);
-    const ro = new ResizeObserver(() => checkScroll(el));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const handleListScroll = (e: React.UIEvent<HTMLUListElement>) => {
-    checkScroll(e.currentTarget);
-  };
+  const { scrollRef: listRef, handleScroll: handleListScroll, showStartFade, showEndFade } =
+    useScrollEdgeFades<HTMLUListElement>({ axis: 'y', threshold: 4 });
 
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [pickedDate, setPickedDate] = useState<Date | null>(null);
@@ -142,26 +124,19 @@ export default function ExercisesListView({
             <AddIcon fontSize="small"/>
           </IconButton>
         </Box>
-        <List
-          ref={listRef}
-          className={"maskedOverflow"}
-          onScroll={handleListScroll}
-          sx={{
-            flex: 1,
-            minHeight: 0,
-            py: 0,
-            overflowY: 'auto',
-          }}
-        >
-          {hasScrollAbove && (
-            <Box
-              sx={{
-                position: 'sticky', top: 0, left: 0, right: 0, height: 40, mb: '-40px', zIndex: 1,
-                background: theme => `linear-gradient(to top, ${alpha(theme.palette.background.default, 0)}, ${theme.palette.background.default})`,
-                pointerEvents: 'none',
-              }}
-            />
-          )}
+        <Box sx={{ position: 'relative', flex: 1, minHeight: 0 }}>
+          <List
+            ref={listRef}
+            className={"maskedOverflow"}
+            onScroll={() => handleListScroll()}
+            sx={{
+              flex: 1,
+              height: '100%',
+              minHeight: 0,
+              py: 0,
+              overflowY: 'auto',
+            }}
+          >
           {workout.exercises.map((ex) => {
             const isSubstituted = ex.substitutedForId != null;
             const isAdded = ex.isAdded;
@@ -270,16 +245,9 @@ export default function ExercisesListView({
               </ListItem>
             );
           })}
-          {hasScrollBelow && (
-            <Box
-              sx={{
-                position: 'sticky', bottom: -1, left: 0, right: 0, height: 40, mt: '-40px',
-                background: theme => `linear-gradient(to bottom, ${alpha(theme.palette.background.default, 0)}, ${theme.palette.background.default})`,
-                pointerEvents: 'none',
-              }}
-            />
-          )}
-        </List>
+          </List>
+          <ScrollEdgeFades axis="y" showStart={showStartFade} showEnd={showEndFade} size={40} background="default" />
+        </Box>
         <Box
           sx={{display: 'flex', alignItems: 'center', cursor: 'pointer', mb: 1}}
           onClick={() => setNotesOpen(o => !o)}

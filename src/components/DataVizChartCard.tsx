@@ -39,6 +39,8 @@ interface Props {
   clientId?: string;
   /** Use runtime controls + live data in use mode; dummy chart in editor-preview mode. */
   mode?: 'use' | 'editor-preview';
+  /** Allow runtime date controls while still using dummy preview data. */
+  interactivePreview?: boolean;
   /** Render without an outer Paper when embedding inside editor card chrome. */
   withPaper?: boolean;
 }
@@ -73,17 +75,21 @@ export default function DataVizChartCard({
   gridColumn,
   clientId,
   mode = 'use',
+  interactivePreview = false,
   withPaper = true,
 }: Props) {
   const [runtimeRange, setRuntimeRange] = useState<DataVizTimeRange>(card.timeRange);
   const isUseMode = mode === 'use';
+  const hasRuntimeControls = isUseMode || interactivePreview;
 
   useEffect(() => {
     setRuntimeRange(card.timeRange);
   }, [card.id, card.timeRange]);
 
-  const activeRange = isUseMode ? runtimeRange : card.timeRange;
+  const activeRange = hasRuntimeControls ? runtimeRange : card.timeRange;
   const { startDate, endDate } = useMemo(() => resolveRange(activeRange), [activeRange]);
+  const rangeStartTs = useMemo(() => new Date(`${startDate}T00:00:00`).getTime(), [startDate]);
+  const rangeEndTs = useMemo(() => new Date(`${endDate}T23:59:59`).getTime(), [endDate]);
   const rangeInvalid = isInvalidRange(activeRange);
 
   const url = useMemo(() => {
@@ -135,6 +141,8 @@ export default function DataVizChartCard({
     colors: [PRIMARY_COLOUR],
     xaxis: {
       type: 'datetime' as const,
+      min: rangeStartTs,
+      max: rangeEndTs,
       labels: { datetimeUTC: false, format: 'dd MMM' },
     },
     yaxis: {
@@ -146,7 +154,7 @@ export default function DataVizChartCard({
     tooltip: { x: { format: 'dd MMM yyyy' } },
     legend: { show: false },
     grid: { borderColor: 'rgba(0,0,0,0.06)' },
-  }), [card.metric]);
+  }), [card.metric, rangeStartTs, rangeEndTs]);
 
   const hasPoints = series[0].data.length > 0;
 
@@ -154,7 +162,7 @@ export default function DataVizChartCard({
     <>
       <Typography variant="subtitle2" sx={{ mb: 1 }}>{title}</Typography>
 
-      {isUseMode && (
+      {hasRuntimeControls && (
         <Stack spacing={1.25} sx={{ mb: 1.25 }}>
           <ToggleButtonGroup
             exclusive

@@ -5,7 +5,6 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
-  alpha,
   Box,
   Button,
   Chip,
@@ -44,6 +43,8 @@ import {UserExerciseNote} from '@/generated/prisma/browser';
 import type {E1rmHistoryPoint} from '@lib/contracts/exerciseHistory';
 import {useSettings} from '@lib/providers/SettingsProvider';
 import type {PreviousExerciseHistory} from '@lib/contracts/exerciseHistory';
+import ScrollEdgeFades from '@/components/ScrollEdgeFades';
+import { useScrollEdgeFades } from '@lib/hooks/useScrollEdgeFades';
 
 function formatCompletedDate(value: string | null): string | null {
   if (!value) return null;
@@ -141,8 +142,8 @@ export default function ExerciseSlide({
   const [plateCalcSetIdx, setPlateCalcSetIdx] = useState<number | null>(null);
   const [unitMenuAnchor, setUnitMenuAnchor] = useState<HTMLElement | null>(null);
   const [exerciseMenuAnchor, setExerciseMenuAnchor] = useState<HTMLElement | null>(null);
-  const [hasScrollBelow, setHasScrollBelow] = useState(true);
-  const [hasScrollAbove, setHasScrollAbove] = useState(false);
+  const { scrollRef, handleScroll: handleListScroll, showStartFade, showEndFade } =
+    useScrollEdgeFades<HTMLDivElement>({ axis: 'y', threshold: 4 });
 
   const isBarbell = ex.exercise.equipment?.includes('barbell') ?? false;
 
@@ -166,12 +167,6 @@ export default function ExerciseSlide({
       pct: Math.round(pct * 100),
     }))
     : null;
-
-  const handleListScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const el = e.currentTarget;
-    setHasScrollAbove(el.scrollTop > 4);
-    setHasScrollBelow(el.scrollTop + el.clientHeight < el.scrollHeight - 4);
-  };
 
   const hasFormCue = formCue.trim().length > 0;
   const previousWorkouts = previousWorkout?.workouts ?? [];
@@ -347,7 +342,7 @@ export default function ExerciseSlide({
       </Box>
 
       <Box sx={{position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column'}}>
-        <Box onScroll={handleListScroll} sx={{flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', width: '100%'}}>
+        <Box ref={scrollRef} onScroll={() => handleListScroll()} sx={{flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', width: '100%'}}>
           {ex.sets.length > 0 && (
             <Box
               sx={{
@@ -605,32 +600,7 @@ export default function ExerciseSlide({
             </Accordion>
           )}
         </Box>
-        {hasScrollAbove && (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 48,
-              background: theme => `linear-gradient(to top, ${alpha(theme.palette.background.paper, 0)}, ${theme.palette.background.paper})`,
-              pointerEvents: 'none',
-            }}
-          />
-        )}
-        {hasScrollBelow && (
-          <Box
-            sx={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: 48,
-              background: theme => `linear-gradient(to bottom, ${alpha(theme.palette.background.paper, 0)}, ${theme.palette.background.paper})`,
-              pointerEvents: 'none',
-            }}
-          />
-        )}
+        <ScrollEdgeFades axis="y" showStart={showStartFade} showEnd={showEndFade} size={48} background="paper" />
       </Box>
 
       {/* Unit override context menu — opened by long-pressing a weight field */}
