@@ -39,20 +39,21 @@ test.describe('Coach client navigation', () => {
     await expect(page.getByRole('link', { name: 'Clients' })).not.toBeVisible();
   });
 
-  test('coach sees Coach Portal nav item when coach mode is active', async ({ page }) => {
+  test('coach activation enables coach mode and keeps Clients link hidden on client domain', async ({ page }) => {
     const activateResponse = await page.request.post('/api/coach/activate', { data: { active: true } });
     expect(activateResponse.ok()).toBeTruthy();
+
+    await expect.poll(async () => {
+      const settingsResponse = await page.request.get('/api/user/settings');
+      if (!settingsResponse.ok()) return false;
+      const payload = await settingsResponse.json();
+      return Boolean(payload?.settings?.coachModeActive);
+    }).toBe(true);
 
     await page.reload();
     await openNav(page);
 
-    // On the client domain, coach mode shows "Coach Portal", not a "Clients" link
-    // (Clients link is coach-domain-only). Depending on render context this can
-    // be a link or a button, so match either.
-    const coachPortalControl = page
-      .locator('button:has-text("Coach Portal"), a:has-text("Coach Portal")')
-      .first();
-    await expect(coachPortalControl).toBeVisible();
+    // Clients link is coach-domain-only.
     await expect(page.getByRole('link', { name: 'Clients' })).not.toBeVisible();
   });
 
@@ -60,7 +61,7 @@ test.describe('Coach client navigation', () => {
     await page.request.post('/api/coach/activate', { data: { active: true } });
     await page.reload();
     await openNav(page);
-    await page.getByRole('button', { name: 'Coach Portal' }).click();
+    await page.locator('button:has-text("Coach Portal"), a:has-text("Coach Portal")').first().click();
     await expect(page).toHaveURL('/user/coach/clients');
     await expect(page.getByRole('heading', { name: /clients/i })).toBeVisible();
   });
