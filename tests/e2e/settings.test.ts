@@ -63,10 +63,20 @@ test.describe('Settings page — UI', () => {
     const feedbackLink = drawer.getByRole('link', { name: 'Feedback' });
     const settingsLink = drawer.getByRole('link', { name: 'Settings' });
     const logoutButton = drawer.getByRole('button', { name: 'Log Out' });
+    await expect(feedbackLink).toBeVisible();
     await expect(settingsLink).toBeVisible();
+    await expect(logoutButton).toBeVisible();
+
+    await feedbackLink.scrollIntoViewIfNeeded();
+    await settingsLink.scrollIntoViewIfNeeded();
+    await logoutButton.scrollIntoViewIfNeeded();
+
     const feedbackBox = await feedbackLink.boundingBox();
     const settingsBox = await settingsLink.boundingBox();
     const logoutBox = await logoutButton.boundingBox();
+    expect(feedbackBox).not.toBeNull();
+    expect(settingsBox).not.toBeNull();
+    expect(logoutBox).not.toBeNull();
     expect(settingsBox!.y).toBeGreaterThan(feedbackBox!.y);
     expect(logoutBox!.y).toBeGreaterThan(settingsBox!.y);
   });

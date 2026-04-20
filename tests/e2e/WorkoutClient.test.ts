@@ -417,7 +417,7 @@ test.describe('Workout page', () => {
             body: JSON.stringify({
               id: 9999,
               workoutId: 1,
-              exerciseId: 1,
+              exerciseId: 999,
               order: 99,
               isAdded: true,
               repRange: '8-12',
@@ -466,7 +466,7 @@ test.describe('Workout page', () => {
             body: JSON.stringify({
               id: 9999,
               workoutId: 1,
-              exerciseId: 1,
+              exerciseId: 999,
               order: 99,
               isAdded: true,
               repRange: '8-12',
@@ -478,7 +478,7 @@ test.describe('Workout page', () => {
               substitutedForId: null,
               substitutedFor: null,
               sets: [],
-              exercise: {id: 1, name: 'Leg Press', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+              exercise: {id: 999, name: 'Leg Press', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
             }),
           });
         } else {
@@ -525,7 +525,7 @@ test.describe('Workout page', () => {
             body: JSON.stringify({
               id: 9999,
               workoutId: 1,
-              exerciseId: 1,
+              exerciseId: 999,
               order: 99,
               isAdded: true,
               repRange: '8-12',
@@ -537,7 +537,7 @@ test.describe('Workout page', () => {
               substitutedForId: null,
               substitutedFor: null,
               sets: [],
-              exercise: {id: 1, name: 'Leg Press', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+              exercise: {id: 999, name: 'Leg Press', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
             }),
           });
         } else {
