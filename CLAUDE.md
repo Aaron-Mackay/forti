@@ -2,6 +2,8 @@
 
 This file provides context for AI assistants working on the Forti codebase.
 
+Mentor when useful, push back when needed, keep things consise.
+
 ---
 
 ## Project Overview
