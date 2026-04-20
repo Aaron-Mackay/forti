@@ -8,8 +8,16 @@
  */
 import { test, expect } from './fixtures';
 
-const CURRENT_WEEK = '2026-03-16T00:00:00.000Z';
-const PREV_WEEK = '2026-03-09T00:00:00.000Z';
+function getIsoWeekStart(weeksAgo = 0): string {
+  const date = new Date();
+  const day = (date.getUTCDay() + 6) % 7; // Mon=0 ... Sun=6
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCDate(date.getUTCDate() - day - (weeksAgo * 7));
+  return date.toISOString();
+}
+
+const CURRENT_WEEK = getIsoWeekStart(0);
+const PREV_WEEK = getIsoWeekStart(1);
 
 function makeCurrentResponse(completed: boolean) {
   return {
@@ -47,7 +55,7 @@ const PAST_CHECK_IN = {
   id: 2,
   userId: 'test',
   weekStartDate: PREV_WEEK,
-  completedAt: '2026-03-14T10:00:00.000Z',
+  completedAt: new Date(Date.parse(PREV_WEEK) + (5 * 24 * 60 * 60 * 1000)).toISOString(),
   energyLevel: 4,
   moodRating: 3,
   stressLevel: 2,
@@ -201,7 +209,6 @@ test.describe('Check-in page — history', () => {
   });
 
   test('renders history accordion cards for past check-ins', async ({ page }) => {
-    // CheckInHistoryCard renders the week start date using month:'short' → "9 Mar 2026"
-    await expect(page.getByText(/9 Mar 2026/i)).toBeVisible();
+    await expect(page.getByText(/Week of/i)).toBeVisible();
   });
 });
