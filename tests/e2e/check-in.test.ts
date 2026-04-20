@@ -209,6 +209,6 @@ test.describe('Check-in page — history', () => {
   });
 
   test('renders history accordion cards for past check-ins', async ({ page }) => {
-    await expect(page.getByText(/Week of/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /Week of .*Submitted/i })).toBeVisible();
   });
 });
