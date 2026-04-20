@@ -474,6 +474,22 @@ For ambiguous tasks, prefer 1-2 targeted clarifying questions over broad assumpt
 
 Keep questions short and specific. One good question is better than several vague ones. If the intent is reasonably clear from context, proceed and note any assumptions made.
 
+## Post-Implementation Debrief (Required)
+
+After implementing work, include a concise debrief section:
+
+### Key Decisions & Rationale
+- Decision: <what was chosen>
+  Rationale: <why this approach over alternatives>
+- Decision: <...>
+  Rationale: <...>
+
+Rules:
+- 3-6 bullets max
+- Focus on non-obvious technical/product trade-offs
+- Keep it concise and specific to this change
+- Skip trivial implementation details
+
 ## UI Planning Rule
 
 Before implementing any UI that is more than a simple, self-contained component
