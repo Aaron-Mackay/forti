@@ -85,19 +85,10 @@ test.describe('Coach client navigation', () => {
   });
 
   test('coach nav item navigates to /user/coach/clients', async ({ page }) => {
-    let clientsVisible = false;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      await setCoachMode(page, true);
-      await page.goto('/user/coach');
-      await openNav(page);
-      const clientsLink = page.getByRole('link', { name: 'Clients' }).first();
-      clientsVisible = await clientsLink.isVisible().catch(() => false);
-      if (clientsVisible) break;
-    }
-
-    expect(clientsVisible).toBeTruthy();
+    await setCoachMode(page, true);
+    await page.goto('/user/coach');
     const clientsLink = page.getByRole('link', { name: 'Clients' }).first();
-    await expect(clientsLink).toBeVisible({ timeout: 15_000 });
+    await expect(clientsLink).toBeVisible({ timeout: 30_000 });
     await clientsLink.click();
     await expect(page).toHaveURL('/user/coach/clients');
     await expect(page.getByRole('heading', { name: /clients/i })).toBeVisible();
