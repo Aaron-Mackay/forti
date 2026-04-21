@@ -61,9 +61,17 @@ test.describe('Learning Plans', () => {
 
   test('coach can add a step to a learning plan', async ({ page }) => {
     // Activate coach mode and create a plan via API
-    await page.request.patch('/api/user/settings', {
+    const enableCoachMode = await page.request.patch('/api/user/settings', {
       data: { settings: { coachModeActive: true } },
     });
+    expect(enableCoachMode.ok()).toBeTruthy();
+    await expect.poll(async () => {
+      const settingsResponse = await page.request.get('/api/user/settings');
+      if (!settingsResponse.ok()) return false;
+      const payload = await settingsResponse.json();
+      return Boolean(payload?.settings?.coachModeActive);
+    }).toBe(true);
+
     const res = await page.request.post('/api/coach/learning-plans', {
       data: { title: 'Step Test Plan', description: null },
     });
@@ -73,7 +81,9 @@ test.describe('Learning Plans', () => {
     await page.goto(`/user/coach/learning-plans/${createdPlanId}`);
 
     // Add a step
-    await page.getByRole('button', { name: 'Add Step' }).click();
+    const addStepButton = page.getByRole('button', { name: 'Add Step' });
+    await expect(addStepButton).toBeVisible({ timeout: 15_000 });
+    await addStepButton.click();
     await page.getByLabel('Title').fill('Welcome Message');
     await page.getByLabel('Body').fill('Welcome to the programme!');
     await page.getByRole('button', { name: 'Save' }).click();
