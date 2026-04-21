@@ -79,10 +79,20 @@ test.describe('Coach client navigation', () => {
   });
 
   test('Coach Portal nav item navigates to /user/coach/clients', async ({ page }) => {
-    await page.request.post('/api/coach/activate', { data: { active: true } });
+    const activateResponse = await page.request.post('/api/coach/activate', { data: { active: true } });
+    expect(activateResponse.ok()).toBeTruthy();
+    await expect.poll(async () => {
+      const settingsResponse = await page.request.get('/api/user/settings');
+      if (!settingsResponse.ok()) return false;
+      const payload = await settingsResponse.json();
+      return Boolean(payload?.settings?.coachModeActive);
+    }).toBe(true);
+
     await page.reload();
     await openNav(page);
-    await page.locator('button:has-text("Coach Portal"), a:has-text("Coach Portal")').first().click();
+    const coachPortalCta = page.locator('button:has-text("Coach Portal"), a:has-text("Coach Portal")').first();
+    await expect(coachPortalCta).toBeVisible({ timeout: 15_000 });
+    await coachPortalCta.click();
     await expect(page).toHaveURL('/user/coach/clients');
     await expect(page.getByRole('heading', { name: /clients/i })).toBeVisible();
   });
