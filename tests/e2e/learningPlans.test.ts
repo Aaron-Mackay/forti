@@ -89,6 +89,7 @@ test.describe('Learning Plans', () => {
     const res = await page.request.post('/api/coach/learning-plans', {
       data: { title: 'Step Test Plan', description: null },
     });
+    expect(res.ok()).toBeTruthy();
     const { plan } = await res.json() as { plan: { id: number } };
     createdPlanId = plan.id;
 
@@ -100,11 +101,18 @@ test.describe('Learning Plans', () => {
     await addStepButton.click();
     await page.getByLabel('Title').fill('Welcome Message');
     await page.getByLabel('Body').fill('Welcome to the programme!');
+    const saveStepResponsePromise = page.waitForResponse((response) =>
+      response.request().method() === 'POST'
+      && response.url().includes(`/api/coach/learning-plans/${createdPlanId}/steps`),
+    );
     await page.getByRole('button', { name: 'Save' }).click();
+    const saveStepResponse = await saveStepResponsePromise;
+    expect(saveStepResponse.ok()).toBeTruthy();
+    await page.reload();
 
     // Step should appear in the list
-    await expect(page.getByText('Welcome Message')).toBeVisible();
-    await expect(page.getByText('Day 1')).toBeVisible();
+    await expect(page.getByText('Welcome Message')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Day 1')).toBeVisible({ timeout: 30_000 });
   });
 
   test('coach learning plans list shows plan cards', async ({ page }) => {

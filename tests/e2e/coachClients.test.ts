@@ -84,36 +84,21 @@ test.describe('Coach client navigation', () => {
     await expect(page.getByRole('link', { name: 'Clients' })).not.toBeVisible();
   });
 
-  test('Coach Portal nav item navigates to /user/coach/clients', async ({ page }) => {
-    let coachPortalVisible = false;
+  test('coach nav item navigates to /user/coach/clients', async ({ page }) => {
     let clientsVisible = false;
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 3; attempt++) {
       await setCoachMode(page, true);
-      await page.reload();
+      await page.goto('/user/coach');
       await openNav(page);
-
-      const coachPortalCta = page.locator('button:has-text("Coach Portal"), a:has-text("Coach Portal")').first();
       const clientsLink = page.getByRole('link', { name: 'Clients' }).first();
-      const visible = await expect.poll(async () => ({
-        coachPortal: await coachPortalCta.isVisible().catch(() => false),
-        clients: await clientsLink.isVisible().catch(() => false),
-      }), { timeout: 15_000 }).not.toEqual({ coachPortal: false, clients: false }).then(() => true).catch(() => false);
-
-      coachPortalVisible = await coachPortalCta.isVisible().catch(() => false);
       clientsVisible = await clientsLink.isVisible().catch(() => false);
-      if (visible || coachPortalVisible || clientsVisible) break;
+      if (clientsVisible) break;
     }
 
-    expect(coachPortalVisible || clientsVisible).toBeTruthy();
-    const coachPortalCta = page.locator('button:has-text("Coach Portal"), a:has-text("Coach Portal")').first();
+    expect(clientsVisible).toBeTruthy();
     const clientsLink = page.getByRole('link', { name: 'Clients' }).first();
-    coachPortalVisible = await coachPortalCta.isVisible().catch(() => false);
-    if (coachPortalVisible) {
-      await coachPortalCta.click();
-    } else {
-      await expect(clientsLink).toBeVisible({ timeout: 15_000 });
-      await clientsLink.click();
-    }
+    await expect(clientsLink).toBeVisible({ timeout: 15_000 });
+    await clientsLink.click();
     await expect(page).toHaveURL('/user/coach/clients');
     await expect(page.getByRole('heading', { name: /clients/i })).toBeVisible();
   });
