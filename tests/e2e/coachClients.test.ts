@@ -10,6 +10,20 @@ import { test, expect } from './fixtures';
 
 test.describe.configure({ mode: 'serial' });
 
+async function setCoachMode(page: import('@playwright/test').Page, active: boolean) {
+  const response = await page.request.patch('/api/user/settings', {
+    data: { settings: { coachModeActive: active } },
+  });
+  expect(response.ok()).toBeTruthy();
+
+  await expect.poll(async () => {
+    const settingsResponse = await page.request.get('/api/user/settings');
+    if (!settingsResponse.ok()) return null;
+    const payload = await settingsResponse.json();
+    return payload?.settings?.coachModeActive;
+  }).toBe(active);
+}
+
 async function openNav(page: import('@playwright/test').Page) {
   const drawer = page.locator('.MuiDrawer-paper').last();
   const drawerVisible = await drawer.isVisible().catch(() => false);
@@ -52,7 +66,7 @@ test.describe('Coach client navigation', () => {
 
   test.afterEach(async ({ page }) => {
     // Reset coach mode
-    await page.request.post('/api/coach/activate', { data: { active: false } });
+    await setCoachMode(page, false);
   });
 
   test('non-coach does not see Clients nav item', async ({ page }) => {
@@ -61,15 +75,7 @@ test.describe('Coach client navigation', () => {
   });
 
   test('coach activation enables coach mode and keeps Clients link hidden on client domain', async ({ page }) => {
-    const activateResponse = await page.request.post('/api/coach/activate', { data: { active: true } });
-    expect(activateResponse.ok()).toBeTruthy();
-
-    await expect.poll(async () => {
-      const settingsResponse = await page.request.get('/api/user/settings');
-      if (!settingsResponse.ok()) return false;
-      const payload = await settingsResponse.json();
-      return Boolean(payload?.settings?.coachModeActive);
-    }).toBe(true);
+    await setCoachMode(page, true);
 
     await page.reload();
     await openNav(page);
@@ -79,14 +85,7 @@ test.describe('Coach client navigation', () => {
   });
 
   test('Coach Portal nav item navigates to /user/coach/clients', async ({ page }) => {
-    const activateResponse = await page.request.post('/api/coach/activate', { data: { active: true } });
-    expect(activateResponse.ok()).toBeTruthy();
-    await expect.poll(async () => {
-      const settingsResponse = await page.request.get('/api/user/settings');
-      if (!settingsResponse.ok()) return false;
-      const payload = await settingsResponse.json();
-      return Boolean(payload?.settings?.coachModeActive);
-    }).toBe(true);
+    await setCoachMode(page, true);
 
     await page.reload();
     await openNav(page);
@@ -109,7 +108,7 @@ test.describe('Coach client navigation', () => {
   });
 
   test('clients page shows empty state when coach has no clients', async ({ page }) => {
-    await page.request.post('/api/coach/activate', { data: { active: true } });
+    await setCoachMode(page, true);
     await page.goto('/user/coach/clients');
     await expect(page.getByText(/no clients yet/i).first()).toBeVisible();
   });
@@ -122,7 +121,7 @@ test.describe('Coach client navigation', () => {
   });
 
   test('plan page does not show Client Plans section', async ({ page }) => {
-    await page.request.post('/api/coach/activate', { data: { active: true } });
+    await setCoachMode(page, true);
     await page.goto('/user/plan');
     await expect(page.getByText('Client Plans')).not.toBeVisible();
   });
