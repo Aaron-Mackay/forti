@@ -87,7 +87,7 @@ test.describe('Coach client navigation', () => {
   test('coach nav item navigates to /user/coach/clients', async ({ page }) => {
     await setCoachMode(page, true);
     await page.goto('/user/coach');
-    const clientsLink = page.getByRole('link', { name: 'Clients' }).first();
+    const clientsLink = page.locator('a[href="/user/coach/clients"]').first();
     await expect(clientsLink).toBeVisible({ timeout: 30_000 });
     await clientsLink.click();
     await expect(page).toHaveURL('/user/coach/clients');
