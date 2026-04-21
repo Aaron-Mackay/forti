@@ -73,7 +73,7 @@ export default function MetricsDailyBreakdown({
     return m ? (fn(m) ?? '—') : '—';
   }
 
-  const stdRows: { label: string; key: string; values: string[]; hasData: boolean }[] = [
+  const stdRows: { label: string; key: MetricBreakdownKey; values: string[]; hasData: boolean }[] = [
     {
       label: 'Weight (kg)',
       key: 'weight',
@@ -121,7 +121,7 @@ export default function MetricsDailyBreakdown({
     },
   ];
 
-  const customRows = customMetricDefs.map(def => ({
+  const customRows: { label: string; key: MetricBreakdownKey; values: string[]; hasData: boolean }[] = customMetricDefs.map(def => ({
     label: def.name,
     key: `custom:${def.id}`,
     values: Array.from({ length: 7 }, (_, i) => val(i, m => {
