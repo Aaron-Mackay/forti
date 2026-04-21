@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
-import { Box, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import { useEffect, useMemo, useState } from 'react';
+import { Box, Table, TableBody, TableCell, TableHead, TableRow, TextField } from '@mui/material';
 import type { Metric } from '@/generated/prisma/browser';
 import { formatSleepMins } from '@/types/checkInTypes';
 import type { CustomMetricDef } from '@/types/settingsTypes';
@@ -16,7 +16,12 @@ interface Props {
   includeEmptyRows?: boolean;
   forceCompactFont?: boolean;
   showRightFade?: boolean;
+  editable?: boolean;
+  onMetricChange?: (dayOffset: number, key: MetricBreakdownKey, value: number | null) => void;
 }
+
+type BuiltInMetricKey = 'weight' | 'steps' | 'sleepMins' | 'calories' | 'protein' | 'carbs' | 'fat';
+export type MetricBreakdownKey = BuiltInMetricKey | `custom:${string}`;
 
 function getCustomValue(metric: Metric, id: string): number | null {
   if (!metric.customMetrics || typeof metric.customMetrics !== 'object' || Array.isArray(metric.customMetrics)) return null;
@@ -36,6 +41,8 @@ export default function MetricsDailyBreakdown({
   includeEmptyRows = false,
   forceCompactFont = false,
   showRightFade = false,
+  editable = false,
+  onMetricChange,
 }: Props) {
   const {
     scrollRef,
@@ -66,19 +73,22 @@ export default function MetricsDailyBreakdown({
     return m ? (fn(m) ?? '—') : '—';
   }
 
-  const stdRows: { label: string; values: string[]; hasData: boolean }[] = [
+  const stdRows: { label: string; key: string; values: string[]; hasData: boolean }[] = [
     {
       label: 'Weight (kg)',
+      key: 'weight',
       values: Array.from({ length: 7 }, (_, i) => val(i, m => m.weight != null ? `${m.weight}` : null)),
       hasData: Array.from(byOffset.values()).some(m => m.weight != null),
     },
     {
       label: 'Steps',
+      key: 'steps',
       values: Array.from({ length: 7 }, (_, i) => val(i, m => m.steps != null ? m.steps.toLocaleString() : null)),
       hasData: Array.from(byOffset.values()).some(m => m.steps != null),
     },
     {
       label: 'Sleep',
+      key: 'sleepMins',
       values: Array.from({ length: 7 }, (_, i) => {
         const m = byOffset.get(i);
         return m?.sleepMins != null ? formatSleepMins(m.sleepMins) : '—';
@@ -87,21 +97,25 @@ export default function MetricsDailyBreakdown({
     },
     {
       label: 'Calories',
+      key: 'calories',
       values: Array.from({ length: 7 }, (_, i) => val(i, m => m.calories != null ? m.calories.toLocaleString() : null)),
       hasData: Array.from(byOffset.values()).some(m => m.calories != null),
     },
     {
       label: 'Protein (g)',
+      key: 'protein',
       values: Array.from({ length: 7 }, (_, i) => val(i, m => m.protein != null ? `${m.protein}` : null)),
       hasData: Array.from(byOffset.values()).some(m => m.protein != null),
     },
     {
       label: 'Carbs (g)',
+      key: 'carbs',
       values: Array.from({ length: 7 }, (_, i) => val(i, m => m.carbs != null ? `${m.carbs}` : null)),
       hasData: Array.from(byOffset.values()).some(m => m.carbs != null),
     },
     {
       label: 'Fat (g)',
+      key: 'fat',
       values: Array.from({ length: 7 }, (_, i) => val(i, m => m.fat != null ? `${m.fat}` : null)),
       hasData: Array.from(byOffset.values()).some(m => m.fat != null),
     },
@@ -109,6 +123,7 @@ export default function MetricsDailyBreakdown({
 
   const customRows = customMetricDefs.map(def => ({
     label: def.name,
+    key: `custom:${def.id}`,
     values: Array.from({ length: 7 }, (_, i) => val(i, m => {
       const v = getCustomValue(m, def.id);
       return v != null ? `${v}` : null;
@@ -117,9 +132,23 @@ export default function MetricsDailyBreakdown({
   }));
 
   const rows = includeEmptyRows ? [...stdRows, ...customRows] : [...stdRows, ...customRows].filter(r => r.hasData);
+  const initialDraftValues = useMemo(() => {
+    const map = new Map<string, string>();
+    rows.forEach(row => {
+      row.values.forEach((value, dayOffset) => {
+        map.set(`${row.key}:${dayOffset}`, value === '—' ? '' : value);
+      });
+    });
+    return map;
+  }, [rows]);
+  const [draftValues, setDraftValues] = useState<Map<string, string>>(initialDraftValues);
+
   useEffect(() => {
     updateFades();
   }, [rows.length, showMetricColumn, updateFades]);
+  useEffect(() => {
+    setDraftValues(initialDraftValues);
+  }, [initialDraftValues]);
 
   if (rows.length === 0) return null;
 
@@ -145,7 +174,53 @@ export default function MetricsDailyBreakdown({
                 {showMetricColumn && <TableCell sx={cellSx}>{row.label}</TableCell>}
                 {row.values.map((v, i) => (
                   <TableCell key={i} align="center" sx={{ color: v === '—' ? 'text.disabled' : 'inherit', ...cellSx }}>
-                    {v}
+                    {editable ? (
+                      <TextField
+                        variant="standard"
+                        type="number"
+                        value={draftValues.get(`${row.key}:${i}`) ?? ''}
+                        onChange={e => {
+                          const raw = e.target.value;
+                          setDraftValues(prev => {
+                            const next = new Map(prev);
+                            next.set(`${row.key}:${i}`, raw);
+                            return next;
+                          });
+                          const trimmed = raw.trim();
+                          if (trimmed === '' || trimmed === '-' || trimmed === '.' || trimmed === '-.') return;
+                          const next = Number(trimmed);
+                          if (Number.isFinite(next)) {
+                            onMetricChange?.(i, row.key, next);
+                          }
+                        }}
+                        onBlur={e => {
+                          const raw = e.target.value;
+                          const trimmed = raw.trim();
+                          if (trimmed === '' || trimmed === '-' || trimmed === '.' || trimmed === '-.') {
+                            setDraftValues(prev => {
+                              const next = new Map(prev);
+                              next.set(`${row.key}:${i}`, '');
+                              return next;
+                            });
+                            onMetricChange?.(i, row.key, null);
+                            return;
+                          }
+                          const next = raw === '' ? null : Number(raw);
+                          if (next === null || Number.isFinite(next)) {
+                            onMetricChange?.(i, row.key, next);
+                          }
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            (e.target as HTMLInputElement).blur();
+                          }
+                        }}
+                        inputProps={{ inputMode: 'decimal' }}
+                        fullWidth
+                      />
+                    ) : (
+                      v
+                    )}
                   </TableCell>
                 ))}
               </TableRow>
