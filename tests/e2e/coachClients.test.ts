@@ -85,11 +85,10 @@ test.describe('Coach client navigation', () => {
   });
 
   test('Coach Portal nav item navigates to /user/coach/clients', async ({ page }) => {
-    await setCoachMode(page, true);
-
     let coachPortalVisible = false;
     let clientsVisible = false;
     for (let attempt = 0; attempt < 2; attempt++) {
+      await setCoachMode(page, true);
       await page.reload();
       await openNav(page);
 

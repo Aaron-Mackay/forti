@@ -11,6 +11,20 @@ import { test, expect } from './fixtures';
 
 test.describe.configure({ mode: 'serial' });
 
+async function setCoachMode(page: import('@playwright/test').Page, active: boolean) {
+  const response = await page.request.patch('/api/user/settings', {
+    data: { settings: { coachModeActive: active } },
+  });
+  expect(response.ok()).toBeTruthy();
+
+  await expect.poll(async () => {
+    const settingsResponse = await page.request.get('/api/user/settings');
+    if (!settingsResponse.ok()) return null;
+    const payload = await settingsResponse.json();
+    return payload?.settings?.coachModeActive;
+  }).toBe(active);
+}
+
 test.describe('Learning Plans', () => {
   test.skip(({ browserName }) => browserName !== 'chromium',
     'State-dependent tests run on chromium only; parallel browser projects share a DB user');
@@ -24,9 +38,7 @@ test.describe('Learning Plans', () => {
       createdPlanId = 0;
     }
     // Deactivate coach mode
-    await page.request.patch('/api/user/settings', {
-      data: { settings: { coachModeActive: false } },
-    });
+    await setCoachMode(page, false);
   });
 
   test('client learning plans page shows empty state when no plans are assigned', async ({ page }) => {
@@ -35,20 +47,31 @@ test.describe('Learning Plans', () => {
   });
 
   test('coach can create a learning plan', async ({ page }) => {
+    const createPlan = async () => {
+      await expect(page.getByRole('button', { name: 'New Plan' })).toBeVisible({ timeout: 15_000 });
+      await page.getByRole('button', { name: 'New Plan' }).click();
+      await page.getByLabel('Title').fill('Test Learning Plan');
+      await page.getByLabel('Description (optional)').fill('A plan for E2E testing');
+      const createResponsePromise = page.waitForResponse((response) =>
+        response.url().includes('/api/coach/learning-plans')
+        && response.request().method() === 'POST',
+      );
+      await page.getByRole('button', { name: 'Create' }).click();
+      return createResponsePromise;
+    };
+
     // Activate coach mode
-    await page.request.patch('/api/user/settings', {
-      data: { settings: { coachModeActive: true } },
-    });
+    await setCoachMode(page, true);
 
     await page.goto('/user/coach/learning-plans');
 
-    // Empty state — click the New Plan button
-    await page.getByRole('button', { name: 'New Plan' }).click();
-
-    // Fill in the dialog
-    await page.getByLabel('Title').fill('Test Learning Plan');
-    await page.getByLabel('Description (optional)').fill('A plan for E2E testing');
-    await page.getByRole('button', { name: 'Create' }).click();
+    let createResponse = await createPlan();
+    if (!createResponse.ok()) {
+      await setCoachMode(page, true);
+      await page.reload();
+      createResponse = await createPlan();
+    }
+    expect(createResponse.ok()).toBeTruthy();
 
     // Should navigate to the plan editor
     await expect(page).toHaveURL(/\/user\/coach\/learning-plans\/\d+/);
@@ -61,16 +84,7 @@ test.describe('Learning Plans', () => {
 
   test('coach can add a step to a learning plan', async ({ page }) => {
     // Activate coach mode and create a plan via API
-    const enableCoachMode = await page.request.patch('/api/user/settings', {
-      data: { settings: { coachModeActive: true } },
-    });
-    expect(enableCoachMode.ok()).toBeTruthy();
-    await expect.poll(async () => {
-      const settingsResponse = await page.request.get('/api/user/settings');
-      if (!settingsResponse.ok()) return false;
-      const payload = await settingsResponse.json();
-      return Boolean(payload?.settings?.coachModeActive);
-    }).toBe(true);
+    await setCoachMode(page, true);
 
     const res = await page.request.post('/api/coach/learning-plans', {
       data: { title: 'Step Test Plan', description: null },
@@ -95,9 +109,7 @@ test.describe('Learning Plans', () => {
 
   test('coach learning plans list shows plan cards', async ({ page }) => {
     // Activate coach mode and create a plan via API
-    await page.request.patch('/api/user/settings', {
-      data: { settings: { coachModeActive: true } },
-    });
+    await setCoachMode(page, true);
     const res = await page.request.post('/api/coach/learning-plans', {
       data: { title: 'Listed Plan', description: 'visible in list' },
     });
