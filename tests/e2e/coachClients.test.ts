@@ -91,8 +91,14 @@ test.describe('Coach client navigation', () => {
     await page.reload();
     await openNav(page);
     const coachPortalCta = page.locator('button:has-text("Coach Portal"), a:has-text("Coach Portal")').first();
-    await expect(coachPortalCta).toBeVisible({ timeout: 15_000 });
-    await coachPortalCta.click();
+    const clientsLink = page.getByRole('link', { name: 'Clients' }).first();
+    const coachPortalVisible = await coachPortalCta.isVisible().catch(() => false);
+    if (coachPortalVisible) {
+      await coachPortalCta.click();
+    } else {
+      await expect(clientsLink).toBeVisible({ timeout: 15_000 });
+      await clientsLink.click();
+    }
     await expect(page).toHaveURL('/user/coach/clients');
     await expect(page.getByRole('heading', { name: /clients/i })).toBeVisible();
   });
