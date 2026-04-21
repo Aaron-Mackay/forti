@@ -7,6 +7,7 @@ import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import type { Metric } from '@/generated/prisma/browser';
 import type { WeekTargets } from '@/types/checkInTypes';
 import type { CustomMetricDef } from '@/types/settingsTypes';
+import type { MetricBreakdownKey } from './MetricsDailyBreakdown';
 import MetricsSummaryTable from './MetricsSummaryTable';
 import MetricsDailyBreakdown from './MetricsDailyBreakdown';
 
@@ -21,6 +22,8 @@ interface Props {
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
   layoutMode?: 'auto' | 'force-mobile';
+  editableBreakdown?: boolean;
+  onBreakdownMetricChange?: (dayOffset: number, key: MetricBreakdownKey, value: number | null) => void;
 }
 
 export default function MetricsSystemCard({
@@ -34,6 +37,8 @@ export default function MetricsSystemCard({
   expanded,
   onExpandedChange,
   layoutMode = 'auto',
+  editableBreakdown = false,
+  onBreakdownMetricChange,
 }: Props) {
   const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
   const isControlled = typeof expanded === 'boolean';
@@ -108,6 +113,8 @@ export default function MetricsSystemCard({
               includeEmptyRows
               forceCompactFont={forceCompactFont}
               showRightFade
+              editable={editableBreakdown}
+              onMetricChange={onBreakdownMetricChange}
             />
           </Box>
         </Box>
@@ -131,6 +138,8 @@ export default function MetricsSystemCard({
               includeEmptyRows
               forceCompactFont={forceCompactFont}
               showRightFade
+              editable={editableBreakdown}
+              onMetricChange={onBreakdownMetricChange}
             />
           </Box>
         </Collapse>

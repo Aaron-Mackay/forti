@@ -6,6 +6,7 @@ import type { Metric } from '@/generated/prisma/browser';
 import type { CheckInCard, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
 import type { PreviousPhotos, WeekTargets } from '@/types/checkInTypes';
 import type { CustomMetricDef } from '@/types/settingsTypes';
+import type { MetricBreakdownKey } from './MetricsDailyBreakdown';
 import CheckInCustomCard from './CheckInCustomCard';
 import DataVizChartCard from './DataVizChartCard';
 import MetricsSystemCard from './MetricsSystemCard';
@@ -27,6 +28,8 @@ export interface SystemCardData {
   completedWorkoutsCount: number;
   plannedWorkoutsCount: number;
   onWorkoutsClick?: () => void;
+  canEditMetrics?: boolean;
+  onMetricChange?: (dayOffset: number, key: MetricBreakdownKey, value: number | null) => void;
 }
 
 // ─── System card placeholder (preview / editor context) ───────────────────────
@@ -214,6 +217,8 @@ export default function TemplateCardRenderer({
           expanded={metricsExpanded}
           onExpandedChange={onMetricsExpandedChange}
           layoutMode={forceMobileLayout ? 'force-mobile' : 'auto'}
+          editableBreakdown={Boolean(systemData.canEditMetrics)}
+          onBreakdownMetricChange={systemData.onMetricChange}
         />
       </Paper>
     );
