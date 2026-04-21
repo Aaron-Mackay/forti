@@ -2,10 +2,10 @@ import {MetricPrisma} from "@/types/dataTypes";
 import {convertDateToDateString} from "@lib/dateUtils";
 
 export async function updateMetricClient(metric: MetricPrisma) {
-  const date =
-    typeof metric.date === "string"
-      ? metric.date.slice(0, 10)
-      : convertDateToDateString(metric.date);
+  const rawDate = metric.date as unknown;
+  const date = rawDate instanceof Date
+    ? convertDateToDateString(rawDate)
+    : String(rawDate).slice(0, 10);
 
   const res = await fetch("/api/metric", {
     method: "POST",
