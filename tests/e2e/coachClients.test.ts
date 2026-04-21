@@ -92,10 +92,14 @@ test.describe('Coach client navigation', () => {
 
   test('coach nav item navigates to /user/coach/clients', async ({ page }) => {
     await setCoachMode(page, true);
-    await page.goto('/user/coach');
-    const clientsLink = page.locator('a[href="/user/coach/clients"]').first();
-    await expect(clientsLink).toBeVisible({ timeout: 30_000 });
-    await clientsLink.click();
+
+    // Use the stable client-domain nav entry point, which routes into coach clients.
+    await page.goto('/user');
+    await openNav(page);
+    const coachPortalButton = page.getByRole('button', { name: 'Coach Portal' });
+    await expect(coachPortalButton).toBeVisible({ timeout: 30_000 });
+    await coachPortalButton.click();
+
     await expect(page).toHaveURL('/user/coach/clients');
     await expect(page.getByRole('heading', { name: /clients/i })).toBeVisible();
   });

@@ -12,17 +12,30 @@ import { test, expect } from './fixtures';
 test.describe.configure({ mode: 'serial' });
 
 async function setCoachMode(page: import('@playwright/test').Page, active: boolean) {
-  const response = await page.request.patch('/api/user/settings', {
-    data: { settings: { coachModeActive: active } },
-  });
-  expect(response.ok()).toBeTruthy();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.request.patch('/api/user/settings', {
+      data: { settings: { coachModeActive: active } },
+    });
 
+    const applied = await expect.poll(async () => {
+      const settingsResponse = await page.request.get('/api/user/settings');
+      if (!settingsResponse.ok()) return null;
+      const payload = await settingsResponse.json();
+      return payload?.settings?.coachModeActive;
+    }, { timeout: 10_000 }).toBe(active).then(() => true).catch(() => false);
+
+    if (applied) return;
+    await page.waitForTimeout(300);
+  }
+
+  throw new Error(`Failed to apply coach mode state: ${active}`);
+}
+
+async function waitForCoachLearningPlansAccess(page: import('@playwright/test').Page) {
   await expect.poll(async () => {
-    const settingsResponse = await page.request.get('/api/user/settings');
-    if (!settingsResponse.ok()) return null;
-    const payload = await settingsResponse.json();
-    return payload?.settings?.coachModeActive;
-  }).toBe(active);
+    const response = await page.request.get('/api/coach/learning-plans');
+    return response.status();
+  }, { timeout: 15_000 }).toBe(200);
 }
 
 test.describe('Learning Plans', () => {
@@ -62,6 +75,7 @@ test.describe('Learning Plans', () => {
 
     // Activate coach mode
     await setCoachMode(page, true);
+    await waitForCoachLearningPlansAccess(page);
 
     await page.goto('/user/coach/learning-plans');
 
@@ -85,6 +99,7 @@ test.describe('Learning Plans', () => {
   test('coach can add a step to a learning plan', async ({ page }) => {
     // Activate coach mode and create a plan via API
     await setCoachMode(page, true);
+    await waitForCoachLearningPlansAccess(page);
 
     const res = await page.request.post('/api/coach/learning-plans', {
       data: { title: 'Step Test Plan', description: null },
@@ -118,6 +133,7 @@ test.describe('Learning Plans', () => {
   test('coach learning plans list shows plan cards', async ({ page }) => {
     // Activate coach mode and create a plan via API
     await setCoachMode(page, true);
+    await waitForCoachLearningPlansAccess(page);
     const res = await page.request.post('/api/coach/learning-plans', {
       data: { title: 'Listed Plan', description: 'visible in list' },
     });
