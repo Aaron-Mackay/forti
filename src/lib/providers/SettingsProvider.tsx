@@ -39,7 +39,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => { settingsRef.current = settings; }, [settings]);
 
   useEffect(() => {
-    fetch('/api/user/settings')
+    fetch('/api/user/settings', { cache: 'no-store' })
       .then(res => res.ok ? res.json() : Promise.reject(res))
       .then(data => {
         setSettings(parseDashboardSettings(data.settings));
