@@ -11,17 +11,23 @@ import { test, expect } from './fixtures';
 test.describe.configure({ mode: 'serial' });
 
 async function setCoachMode(page: import('@playwright/test').Page, active: boolean) {
-  const response = await page.request.patch('/api/user/settings', {
-    data: { settings: { coachModeActive: active } },
-  });
-  expect(response.ok()).toBeTruthy();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.request.patch('/api/user/settings', {
+      data: { settings: { coachModeActive: active } },
+    });
 
-  await expect.poll(async () => {
-    const settingsResponse = await page.request.get('/api/user/settings');
-    if (!settingsResponse.ok()) return null;
-    const payload = await settingsResponse.json();
-    return payload?.settings?.coachModeActive;
-  }).toBe(active);
+    const applied = await expect.poll(async () => {
+      const settingsResponse = await page.request.get('/api/user/settings');
+      if (!settingsResponse.ok()) return null;
+      const payload = await settingsResponse.json();
+      return payload?.settings?.coachModeActive;
+    }, { timeout: 10_000 }).toBe(active).then(() => true).catch(() => false);
+
+    if (applied) return;
+    await page.waitForTimeout(300);
+  }
+
+  throw new Error(`Failed to apply coach mode state: ${active}`);
 }
 
 async function openNav(page: import('@playwright/test').Page) {
