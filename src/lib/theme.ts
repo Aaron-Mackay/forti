@@ -21,6 +21,16 @@ const theme = createTheme({
       defaultProps: {
         disableInjectingGlobalStyles: true,
       },
+      styleOverrides: {
+        input: {
+          '&[type=number]::-webkit-outer-spin-button, &[type=number]::-webkit-inner-spin-button': {
+            display: 'none',
+          },
+          '&[type=number]': {
+            MozAppearance: 'textfield',
+          },
+        },
+      },
     },
   },
 });

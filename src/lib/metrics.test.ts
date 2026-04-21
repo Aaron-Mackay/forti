@@ -44,6 +44,19 @@ describe('updateMetricClient', () => {
     expect(result).toEqual(responsePayload);
   });
 
+  it('accepts metrics with a JSON-deserialised string date', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ ...metric, date: '2024-06-15' }),
+    });
+
+    await updateMetricClient({ ...metric, date: '2024-06-15T00:00:00.000Z' } as MetricPrisma);
+
+    const [[, options]] = mockFetch.mock.calls;
+    const body = JSON.parse(options.body as string);
+    expect(body.date).toBe('2024-06-15');
+  });
+
   it('throws when the server returns a non-ok response', async () => {
     mockFetch.mockResolvedValue({ ok: false });
 

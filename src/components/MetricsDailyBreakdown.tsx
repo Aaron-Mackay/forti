@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Box, Table, TableBody, TableCell, TableHead, TableRow, TextField } from '@mui/material';
+import { Box, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import type { Metric } from '@/generated/prisma/browser';
 import { formatSleepMins } from '@/types/checkInTypes';
 import type { CustomMetricDef } from '@/types/settingsTypes';
@@ -31,6 +31,66 @@ function getCustomValue(metric: Metric, id: string): number | null {
     if (typeof v === 'number') return v;
   }
   return null;
+}
+
+function parseSleepMins(value: string): { h: string; m: string } {
+  const total = value === '' ? null : Number(value);
+  if (total === null || !Number.isFinite(total) || total < 0) return { h: '', m: '' };
+  return { h: String(Math.floor(total / 60)), m: String(total % 60) };
+}
+
+function SleepCellInput({
+  value,
+  cellSx,
+  onChange,
+}: {
+  value: string;
+  cellSx: object;
+  onChange: (total: number | null) => void;
+}) {
+  // editState overrides derived h/m while the user is actively editing a field.
+  // When null, h/m derive directly from the value prop so external resets are reflected.
+  const [editState, setEditState] = useState<{ h: string; m: string } | null>(null);
+  const derived = parseSleepMins(value);
+  const h = editState?.h ?? derived.h;
+  const m = editState?.m ?? derived.m;
+
+  function commit(newH: string, newM: string) {
+    const hNum = newH.trim() === '' ? null : Number(newH);
+    const mNum = newM.trim() === '' ? null : Number(newM);
+    const total = hNum === null && mNum === null ? null : (hNum ?? 0) * 60 + (mNum ?? 0);
+    onChange(total);
+  }
+
+  const inputSx = {
+    '& .MuiInput-root': { pb: 0 },
+    '& .MuiInputBase-input': { py: 0, textAlign: 'right', ...cellSx },
+  };
+
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '1px' }}>
+      <TextField
+        variant="standard"
+        type="number"
+        value={h}
+        onChange={e => { const v = e.target.value; setEditState({ h: v, m }); commit(v, m); }}
+        onBlur={() => setEditState(null)}
+        sx={{ width: 20, ...inputSx }}
+        slotProps={{ htmlInput: { inputMode: 'numeric', autoComplete: 'off' } }}
+      />
+      <Typography component="span" sx={{ ...cellSx, color: 'text.secondary' }}>h</Typography>
+      <TextField
+        variant="standard"
+        type="number"
+        value={m}
+        onChange={e => { const v = e.target.value; setEditState({ h, m: v }); commit(h, v); }}
+        onBlur={() => setEditState(null)}
+        sx={{ width: 20, ...inputSx }}
+        slotProps={{ htmlInput: { inputMode: 'numeric', autoComplete: 'off' } }}
+      />
+      <Typography component="span" sx={{ ...cellSx, color: 'text.secondary' }}>m</Typography>
+    </Box>
+  );
 }
 
 export default function MetricsDailyBreakdown({
@@ -134,51 +194,103 @@ export default function MetricsDailyBreakdown({
   const rows = includeEmptyRows ? [...stdRows, ...customRows] : [...stdRows, ...customRows].filter(r => r.hasData);
   const initialDraftValues = useMemo(() => {
     const map = new Map<string, string>();
+    const start = new Date(weekStartDate);
     rows.forEach(row => {
       row.values.forEach((value, dayOffset) => {
+        if (row.key === 'sleepMins') {
+          const metric = metrics.find(m => {
+            const offset = Math.round((new Date(m.date).getTime() - start.getTime()) / 86400000);
+            return offset === dayOffset;
+          });
+          map.set(`sleepMins:${dayOffset}`, metric?.sleepMins != null ? String(metric.sleepMins) : '');
+          return;
+        }
         map.set(`${row.key}:${dayOffset}`, value === '—' ? '' : value);
       });
     });
     return map;
-  }, [rows]);
+  }, [metrics, rows, weekStartDate]);
   const [draftValues, setDraftValues] = useState<Map<string, string>>(initialDraftValues);
 
   useEffect(() => {
     updateFades();
   }, [rows.length, showMetricColumn, updateFades]);
-  useEffect(() => {
-    setDraftValues(initialDraftValues);
-  }, [initialDraftValues]);
+  // Sync draft values when source data changes. Intentionally depends on the source
+  // props rather than the derived initialDraftValues Map, which has a new reference
+  // on every render (rows is computed inline) and would cause an infinite loop.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setDraftValues(initialDraftValues); }, [metrics, customMetricDefs, weekStartDate, includeEmptyRows]);
 
   if (rows.length === 0) return null;
 
   const cellSx = forceCompactFont
     ? { fontSize: '0.72rem' }
     : { fontSize: { xs: '0.72rem', lg: '0.875rem' } };
+  const dayColumnWidth = showMetricColumn ? `${100 / (dayLabels.length + 1)}%` : `${100 / dayLabels.length}%`;
+  const stickyMetricCellSx = showMetricColumn
+    ? {
+      ...cellSx,
+      width: 'max-content',
+      minWidth: 'max-content',
+      whiteSpace: 'nowrap',
+      position: 'sticky' as const,
+      left: 0,
+      zIndex: 2,
+      bgcolor: 'background.paper',
+      '&::after': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        right: -12,
+        width: 12,
+        height: '100%',
+        pointerEvents: 'none',
+        background: (theme: { palette: { background: { paper: string } } }) =>
+          `linear-gradient(to right, ${theme.palette.background.paper}, rgba(0,0,0,0))`,
+      },
+    }
+    : cellSx;
+  const stickyMetricHeaderSx = showMetricColumn
+    ? { ...stickyMetricCellSx, zIndex: 3, fontWeight: 600 }
+    : { fontWeight: 600, ...cellSx };
 
   return (
     <Box sx={{ position: 'relative', minWidth: 0 }}>
       <Box ref={scrollRef} sx={{ overflowX: 'auto' }} onScroll={handleScroll}>
-        <Table size="small">
+        <Table size="small" sx={{ width: '100%', '& .MuiTableCell-root': { px: 1 } }}>
           <TableHead>
             <TableRow>
-              {showMetricColumn && <TableCell sx={{ fontWeight: 600, ...cellSx }}>Metric</TableCell>}
+              {showMetricColumn && <TableCell sx={stickyMetricHeaderSx}>Metric</TableCell>}
               {dayLabels.map(label => (
-                <TableCell key={label} align="center" sx={{ fontWeight: 600, ...cellSx }}>{label}</TableCell>
+                <TableCell key={label} align="center" sx={{ width: dayColumnWidth, fontWeight: 600, ...cellSx }}>{label}</TableCell>
               ))}
             </TableRow>
           </TableHead>
           <TableBody>
             {rows.map(row => (
               <TableRow key={row.label}>
-                {showMetricColumn && <TableCell sx={cellSx}>{row.label}</TableCell>}
+                {showMetricColumn && <TableCell sx={stickyMetricCellSx}>{row.label}</TableCell>}
                 {row.values.map((v, i) => (
-                  <TableCell key={i} align="center" sx={{ color: v === '—' ? 'text.disabled' : 'inherit', ...cellSx }}>
-                    {editable ? (
+                  <TableCell key={i} align="center" sx={{ width: dayColumnWidth, color: v === '—' ? 'text.disabled' : 'inherit', ...cellSx }}>
+                    {editable && row.key === 'sleepMins' ? (
+                      <SleepCellInput
+                        value={draftValues.get(`sleepMins:${i}`) ?? ''}
+                        cellSx={cellSx}
+                        onChange={total => {
+                          setDraftValues(prev => {
+                            const next = new Map(prev);
+                            next.set(`sleepMins:${i}`, total !== null ? String(total) : '');
+                            return next;
+                          });
+                          onMetricChange?.(i, 'sleepMins', total);
+                        }}
+                      />
+                    ) : editable ? (
                       <TextField
                         variant="standard"
                         type="number"
                         value={draftValues.get(`${row.key}:${i}`) ?? ''}
+                        sx={{ '& .MuiInput-root': { pb: 0 }, '& .MuiInputBase-input': { py: 0, textAlign: 'center', ...cellSx } }}
                         onChange={e => {
                           const raw = e.target.value;
                           setDraftValues(prev => {

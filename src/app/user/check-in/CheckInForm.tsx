@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -90,6 +90,8 @@ export default function CheckInForm({
   );
   const [currentWeekMetrics, setCurrentWeekMetrics] = useState<Metric[]>(currentWeek);
   const metricSaveTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const checkInSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasInitialAutoSaveRunRef = useRef(false);
 
   // ── Legacy mode state ──────────────────────────────────────────────────────
   const [legacyForm, setLegacyForm] = useState<LegacyFormState>({
@@ -112,46 +114,48 @@ export default function CheckInForm({
     setCustomResponses(r => ({ ...r, [fieldId]: value }));
   }
 
+  const checkInPayload = useMemo(() => {
+    if (activeTemplate !== null) {
+      return {
+        customResponses,
+        completedWorkouts: completedWorkoutsCount,
+        plannedWorkouts: plannedWorkoutsCount,
+      } as Record<string, unknown>;
+    }
+
+    return {
+      ...legacyForm,
+      completedWorkouts: completedWorkoutsCount,
+      plannedWorkouts: plannedWorkoutsCount,
+      energyLevel: legacyForm.energyLevel ?? undefined,
+      moodRating: legacyForm.moodRating ?? undefined,
+      stressLevel: legacyForm.stressLevel ?? undefined,
+      sleepQuality: legacyForm.sleepQuality ?? undefined,
+      recoveryRating: legacyForm.recoveryRating ?? undefined,
+      adherenceRating: legacyForm.adherenceRating ?? undefined,
+      weekReview: legacyForm.weekReview || undefined,
+      coachMessage: legacyForm.coachMessage || undefined,
+      goalsNextWeek: legacyForm.goalsNextWeek || undefined,
+    } as Record<string, unknown>;
+  }, [activeTemplate, customResponses, completedWorkoutsCount, plannedWorkoutsCount, legacyForm]);
+
+  async function persistCheckIn(payload: Record<string, unknown>) {
+    const res = await fetch('/api/check-in', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const data = await res.json() as { error?: string };
+      throw new Error(data.error ?? 'Submission failed');
+    }
+  }
+
   async function handleSubmit() {
     setSubmitting(true);
     setError(null);
     try {
-      let body: Record<string, unknown>;
-
-      if (activeTemplate !== null) {
-        // Template mode: send customResponses
-        body = {
-          customResponses,
-          completedWorkouts: completedWorkoutsCount,
-          plannedWorkouts: plannedWorkoutsCount,
-        };
-      } else {
-        // Legacy mode: send fixed fields
-        body = {
-          ...legacyForm,
-          completedWorkouts: completedWorkoutsCount,
-          plannedWorkouts: plannedWorkoutsCount,
-          energyLevel: legacyForm.energyLevel ?? undefined,
-          moodRating: legacyForm.moodRating ?? undefined,
-          stressLevel: legacyForm.stressLevel ?? undefined,
-          sleepQuality: legacyForm.sleepQuality ?? undefined,
-          recoveryRating: legacyForm.recoveryRating ?? undefined,
-          adherenceRating: legacyForm.adherenceRating ?? undefined,
-          weekReview: legacyForm.weekReview || undefined,
-          coachMessage: legacyForm.coachMessage || undefined,
-          goalsNextWeek: legacyForm.goalsNextWeek || undefined,
-        };
-      }
-
-      const res = await fetch('/api/check-in', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const data = await res.json() as { error?: string };
-        throw new Error(data.error ?? 'Submission failed');
-      }
+      await persistCheckIn(checkInPayload);
       if (!isEditing) {
         trackFirstWeekEvent('first_checkin_submitted', { source: 'check-in' });
       }
@@ -192,12 +196,36 @@ export default function CheckInForm({
   useEffect(() => {
     setCurrentWeekMetrics(currentWeek);
   }, [currentWeek]);
+
   useEffect(() => {
     return () => {
       metricSaveTimeoutsRef.current.forEach(timeoutId => clearTimeout(timeoutId));
       metricSaveTimeoutsRef.current.clear();
+      if (checkInSaveTimeoutRef.current) {
+        clearTimeout(checkInSaveTimeoutRef.current);
+        checkInSaveTimeoutRef.current = null;
+      }
     };
   }, []);
+
+  useEffect(() => {
+    if (!isEditing) return;
+    if (!hasInitialAutoSaveRunRef.current) {
+      hasInitialAutoSaveRunRef.current = true;
+      return;
+    }
+
+    if (checkInSaveTimeoutRef.current) clearTimeout(checkInSaveTimeoutRef.current);
+    checkInSaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await persistCheckIn(checkInPayload);
+      } catch {
+        setError('Failed to auto-save check-in');
+      } finally {
+        checkInSaveTimeoutRef.current = null;
+      }
+    }, 500);
+  }, [isEditing, checkInPayload]);
 
   const handleMetricChange = useCallback((dayOffset: number, key: MetricBreakdownKey, value: number | null) => {
     const d = new Date(checkIn.weekStartDate);
@@ -402,17 +430,19 @@ export default function CheckInForm({
         </>
       )}
 
-      <Button
-        variant="contained"
-        fullWidth
-        onClick={handleSubmit}
-        disabled={submitting}
-        startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : undefined}
-        size="large"
-        sx={{ mt: 2 }}
-      >
-        {isEditing ? 'Resubmit Check-in' : 'Submit Check-in'}
-      </Button>
+      {!isEditing && (
+        <Button
+          variant="contained"
+          fullWidth
+          onClick={handleSubmit}
+          disabled={submitting}
+          startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : undefined}
+          size="large"
+          sx={{ mt: 2 }}
+        >
+          Submit Check-in
+        </Button>
+      )}
     </Box>
   );
 }

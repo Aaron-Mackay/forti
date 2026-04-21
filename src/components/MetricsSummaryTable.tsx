@@ -140,22 +140,22 @@ export default function MetricsSummaryTable({
 
   return (
     <Box>
-      <Table size="small">
+      <Table size="small" sx={{ '& .MuiTableCell-root': { px: 1 } }}>
         <TableHead>
           <TableRow>
-            <TableCell sx={{ fontWeight: 600, ...cellSx }}>Metric</TableCell>
-            <TableCell align="right" sx={{ fontWeight: 600, color: 'text.secondary', ...cellSx }}>Prev</TableCell>
-            <TableCell align="right" sx={{ fontWeight: 600, color: 'text.secondary', ...cellSx }}>Target</TableCell>
-            <TableCell align="right" sx={{ fontWeight: 600, ...cellSx }}>Avg</TableCell>
+            <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, ...cellSx }}>Metric</TableCell>
+            <TableCell align="right" sx={{ whiteSpace: 'nowrap', fontWeight: 600, color: 'text.secondary', ...cellSx }}>Prev</TableCell>
+            <TableCell align="right" sx={{ whiteSpace: 'nowrap', fontWeight: 600, color: 'text.secondary', ...cellSx }}>Target</TableCell>
+            <TableCell align="right" sx={{ whiteSpace: 'nowrap', fontWeight: 600, ...cellSx }}>Avg</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {rows.map(row => (
             <TableRow key={row.label}>
-              <TableCell sx={cellSx}>{row.label}</TableCell>
-              <TableCell align="right" sx={{ color: 'text.secondary', ...cellSx }}>{row.prior}</TableCell>
-              <TableCell align="right" sx={{ color: 'text.secondary', ...cellSx }}>{row.target}</TableCell>
-              <TableCell align="right" sx={cellSx}>
+              <TableCell sx={{ whiteSpace: 'nowrap', ...cellSx }}>{row.label}</TableCell>
+              <TableCell align="right" sx={{ whiteSpace: 'nowrap', color: 'text.secondary', ...cellSx }}>{row.prior}</TableCell>
+              <TableCell align="right" sx={{ whiteSpace: 'nowrap', color: 'text.secondary', ...cellSx }}>{row.target}</TableCell>
+              <TableCell align="right" sx={{ whiteSpace: 'nowrap', ...cellSx }}>
                 {row.current}{row.hasData && <> <DeltaIcon dir={row.dir} /></>}
               </TableCell>
             </TableRow>

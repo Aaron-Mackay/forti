@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Box,
@@ -15,11 +15,14 @@ import {
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import CloseIcon from '@mui/icons-material/Close';
 import type { WeeklyCheckIn } from '@/generated/prisma/browser';
 import CheckInForm from './CheckInForm';
 import CheckInHistoryCard, { CheckInDetails } from './CheckInHistoryCard';
 import { usePushSubscription } from '@lib/usePushSubscription';
 import type { CurrentCheckInResponse } from '@/types/checkInTypes';
+import { useSettings } from '@lib/providers/SettingsProvider';
+import MetricsSystemCard from '@/components/MetricsSystemCard';
 
 type CurrentData = CurrentCheckInResponse;
 
@@ -36,6 +39,7 @@ function normalizeCurrentCheckInResponse(data: CurrentCheckInResponse): CurrentD
 }
 
 export default function CheckInClient() {
+  const { settings } = useSettings();
   const [currentData, setCurrentData] = useState<CurrentData | null>(null);
   const [history, setHistory] = useState<WeeklyCheckIn[]>([]);
   const [historyTotal, setHistoryTotal] = useState(0);
@@ -47,19 +51,19 @@ export default function CheckInClient() {
 
   const { permission, subscribing, subscribe } = usePushSubscription();
 
-  const loadCurrent = useCallback(async () => {
+  const loadCurrent = async () => {
     const res = await fetch('/api/check-in/current');
     if (!res.ok) throw new Error('Failed to load check-in');
     const data = await res.json() as CurrentCheckInResponse;
     return normalizeCurrentCheckInResponse(data);
-  }, []);
+  };
 
-  const loadHistory = useCallback(async (offset: number) => {
+  const loadHistory = async (offset: number) => {
     // Fetch past check-ins only; current week is excluded server-side
     const res = await fetch(`/api/check-in?limit=10&offset=${offset}&excludeCurrent=true`);
     if (!res.ok) throw new Error('Failed to load history');
     return res.json() as Promise<{ checkIns: WeeklyCheckIn[]; total: number }>;
-  }, []);
+  };
 
   useEffect(() => {
     async function init() {
@@ -79,7 +83,7 @@ export default function CheckInClient() {
       }
     }
     init();
-  }, [loadCurrent, loadHistory, submitted]);
+  }, [submitted]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadMoreHistory() {
     const newOffset = historyOffset + 10;
@@ -159,9 +163,16 @@ export default function CheckInClient() {
                 <Typography variant="body1" fontWeight={600}>
                   Edit submitted check-in
                 </Typography>
-                <Button size="small" onClick={() => setEditingCurrent(false)}>
-                  Cancel
-                </Button>
+                <IconButton
+                  size="small"
+                  aria-label="Close edit mode"
+                  onClick={() => {
+                    setEditingCurrent(false);
+                    setSubmitted(s => !s);
+                  }}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
               </Box>
               <CheckInForm
                 currentWeek={currentData.currentWeek}
@@ -193,7 +204,20 @@ export default function CheckInClient() {
                   <EditOutlinedIcon fontSize="small" />
                 </IconButton>
               </Box>
-              {currentData && <CheckInDetails checkIn={currentData.checkIn} />}
+              {currentData && (
+                <>
+                  <CheckInDetails checkIn={currentData.checkIn} />
+                  <Divider sx={{ my: 1.5 }} />
+                  <MetricsSystemCard
+                    currentWeek={currentData.currentWeek}
+                    weekPrior={currentData.weekPrior}
+                    weekTargets={currentData.weekTargets}
+                    customMetricDefs={settings.customMetrics ?? []}
+                    weekStartDate={currentData.checkIn.weekStartDate}
+                    defaultExpanded={false}
+                  />
+                </>
+              )}
             </Box>
           ) : (
             // Legacy mode (no template) — form inside the Paper
