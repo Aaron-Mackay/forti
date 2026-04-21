@@ -11,11 +11,32 @@ import { test, expect } from './fixtures';
 test.describe.configure({ mode: 'serial' });
 
 async function openNav(page: import('@playwright/test').Page) {
-  const drawer = page.locator('.MuiDrawer-paper:visible').last();
+  const drawer = page.locator('.MuiDrawer-paper').last();
   const drawerVisible = await drawer.isVisible().catch(() => false);
-  if (drawerVisible) return;
+  if (!drawerVisible) {
+    const becameVisible = await drawer.waitFor({ state: 'visible', timeout: 5_000 })
+      .then(() => true)
+      .catch(() => false);
 
-  await page.getByRole('button', { name: /menu/i }).first().click({ timeout: 10_000 });
+    if (!becameVisible) {
+      const menuButton = page.getByRole('button', { name: /menu/i }).first();
+      await menuButton.waitFor({ state: 'visible', timeout: 10_000 });
+
+      let opened = false;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          await menuButton.click({ timeout: 10_000 });
+          opened = true;
+          break;
+        } catch {
+          if (attempt === 2) throw new Error('Failed to open navigation drawer from menu button');
+          await menuButton.waitFor({ state: 'visible', timeout: 1_000 });
+        }
+      }
+      if (!opened) throw new Error('Failed to open navigation drawer');
+    }
+  }
+
   await expect(drawer).toBeVisible({ timeout: 15_000 });
   await expect(drawer.getByRole('link', { name: 'Home' })).toBeVisible({ timeout: 15_000 });
 }
