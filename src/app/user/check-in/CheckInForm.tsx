@@ -20,7 +20,7 @@ import { updateMetricClient } from '@lib/metrics';
 import TemplateCardRenderer from '@/components/TemplateCardRenderer';
 import type { SystemCardData } from '@/components/TemplateCardRenderer';
 import type { MetricBreakdownKey } from '@/components/MetricsDailyBreakdown';
-import MetricsSummaryTable from '@/components/MetricsSummaryTable';
+import MetricsSystemCard from '@/components/MetricsSystemCard';
 import ProgressPhotoSection from './ProgressPhotoSection';
 import type { PreviousPhotos, WeekTargets } from '@/types/checkInTypes';
 import type { CheckInTemplate, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
@@ -285,8 +285,6 @@ export default function CheckInForm({
     metricSaveTimeoutsRef.current.set(saveKey, timeoutId);
   }, [checkIn.userId, checkIn.weekStartDate]);
 
-  const summaryCurrentWeek = templateHasMetrics ? currentWeekMetrics : currentWeek;
-
   const systemData: SystemCardData = {
     photoUrls,
     previousPhotos,
@@ -325,8 +323,15 @@ export default function CheckInForm({
       {/* Metrics summary — shown above only in legacy mode or when template doesn't include a metrics card */}
       {!templateHasMetrics && (
         <>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>Last 2 weeks of metrics</Typography>
-          <MetricsSummaryTable currentWeek={summaryCurrentWeek} weekPrior={weekPrior} weekTargets={weekTargets} customMetricDefs={settings.customMetrics} />
+          <MetricsSystemCard
+            currentWeek={currentWeekMetrics}
+            weekPrior={weekPrior}
+            weekTargets={weekTargets}
+            customMetricDefs={settings.customMetrics ?? []}
+            weekStartDate={checkIn.weekStartDate}
+            editableBreakdown
+            onBreakdownMetricChange={handleMetricChange}
+          />
         </>
       )}
 
