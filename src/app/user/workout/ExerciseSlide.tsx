@@ -564,6 +564,7 @@ export default function ExerciseSlide({
                     {formatCompletedDate(workout.completedAt) && (
                       <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 0.75}}>
                         {formatCompletedDate(workout.completedAt)}
+                        {workout.workoutName && ` · ${workout.workoutName}`}
                       </Typography>
                     )}
                     <Table

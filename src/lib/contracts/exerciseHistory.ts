@@ -8,6 +8,7 @@ export type E1rmHistoryPoint = z.infer<typeof E1rmHistoryPointSchema>;
 
 export const PreviousWorkoutSummarySchema = z.object({
   completedAt: z.string().nullable(),
+  workoutName: z.string(),
   sets: z.array(z.object({
     order: z.number().int(),
     weight: z.number().nullable(),

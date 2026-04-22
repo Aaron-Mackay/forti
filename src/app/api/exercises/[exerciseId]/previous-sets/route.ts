@@ -30,6 +30,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ exerciseI
       },
       select: {
         dateCompleted: true,
+        name: true,
         exercises: {
           where: {exerciseId},
           orderBy: {order: 'asc'},
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ exerciseI
             e1rm: set.e1rm ?? computeE1rm(set.weight, set.reps),
           }));
         if (sets.every(s => s.reps == null)) return [];
-        return [{completedAt: workout.dateCompleted.toISOString(), sets}];
+        return [{completedAt: workout.dateCompleted.toISOString(), workoutName: workout.name, sets}];
       }),
     };
 

@@ -46,6 +46,7 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
     mockFindMany.mockResolvedValue([
       {
         dateCompleted: new Date('2026-01-14T12:00:00Z'),
+        name: 'Push A',
         exercises: [
           {
             sets: [{order: 1, reps: 8, weight: 100, e1rm: 126.7}],
@@ -57,6 +58,7 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
       },
       {
         dateCompleted: new Date('2026-01-07T12:00:00Z'),
+        name: 'Push A',
         exercises: [
           {
             sets: [{order: 1, reps: 9, weight: 97.5, e1rm: 126.75}],
@@ -76,6 +78,7 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
       workouts: [
         {
           completedAt: '2026-01-14T12:00:00.000Z',
+          workoutName: 'Push A',
           sets: [
             {order: 1, reps: 8, weight: 100, e1rm: 126.7},
             {order: 2, reps: 12, weight: 80, e1rm: 112},
@@ -83,6 +86,7 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
         },
         {
           completedAt: '2026-01-07T12:00:00.000Z',
+          workoutName: 'Push A',
           sets: [
             {order: 1, reps: 9, weight: 97.5, e1rm: 126.75},
             {order: 2, reps: 10, weight: 77.5, e1rm: 103.3},
@@ -106,6 +110,7 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
     mockFindMany.mockResolvedValue([
       {
         dateCompleted: new Date('2026-01-14T12:00:00Z'),
+        name: 'Pull A',
         exercises: [
           {
             sets: [{order: 1, reps: 8, weight: 100, e1rm: 126.7}],
@@ -114,6 +119,7 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
       },
       {
         dateCompleted: new Date('2026-01-07T12:00:00Z'),
+        name: 'Pull A',
         exercises: [
           {
             sets: [{order: 1, reps: 8, weight: 100, e1rm: 126.7}],
@@ -133,10 +139,12 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
       workouts: [
         {
           completedAt: '2026-01-14T12:00:00.000Z',
+          workoutName: 'Pull A',
           sets: [{order: 1, reps: 8, weight: 100, e1rm: 126.7}],
         },
         {
           completedAt: '2026-01-07T12:00:00.000Z',
+          workoutName: 'Pull A',
           sets: [
             {order: 1, reps: 8, weight: 100, e1rm: 126.7},
             {order: 2, reps: 11, weight: 75, e1rm: 102.5},
@@ -150,6 +158,7 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
     mockFindMany.mockResolvedValue([
       {
         dateCompleted: new Date('2026-01-14T12:00:00Z'),
+        name: 'Legs',
         exercises: [
           {
             sets: [{order: 1, reps: 5, weight: 80, e1rm: null}],
@@ -169,6 +178,7 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
       workouts: [
         {
           completedAt: '2026-01-14T12:00:00.000Z',
+          workoutName: 'Legs',
           sets: [{order: 1, reps: 5, weight: 80, e1rm: 93.33333333333334}],
         },
       ],
@@ -209,6 +219,7 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
     mockFindMany.mockResolvedValue([
       {
         dateCompleted: new Date('2026-01-14T12:00:00Z'),
+        name: 'Upper',
         exercises: [
           {
             sets: [{order: 1, reps: null, weight: 100, e1rm: null}],
@@ -217,6 +228,7 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
       },
       {
         dateCompleted: new Date('2026-01-07T12:00:00Z'),
+        name: 'Upper',
         exercises: [
           {
             sets: [{order: 1, reps: 8, weight: 100, e1rm: 126.7}],
@@ -233,6 +245,7 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
       workouts: [
         {
           completedAt: '2026-01-07T12:00:00.000Z',
+          workoutName: 'Upper',
           sets: [{order: 1, reps: 8, weight: 100, e1rm: 126.7}],
         },
       ],
