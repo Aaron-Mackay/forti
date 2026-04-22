@@ -7,6 +7,7 @@ interface CoachClient {
   id: string;
   name: string | null;
   email?: string | null;
+  activePlanId?: number | null;
 }
 
 interface CoachClientsContextValue {

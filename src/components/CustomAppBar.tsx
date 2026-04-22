@@ -102,6 +102,9 @@ export default function CustomAppBar(
   const clientMatch = pathname?.match(/^\/user\/coach\/clients\/([^/]+)/);
   const activeClientId = clientMatch?.[1];
   const activeClient = activeClientId ? clients.find(c => c.id === activeClientId) : undefined;
+  const activeClientTrainingLogsHref = activeClient
+    ? (activeClient.activePlanId ? `/user/plan/${activeClient.activePlanId}` : `/user/coach/clients/${activeClient.id}/plans`)
+    : '/user/coach/clients';
 
   const router = useRouter();
   if (showBack && typeof onBack === 'undefined') {
@@ -325,6 +328,12 @@ export default function CustomAppBar(
                 text="Plans"
                 href={`/user/coach/clients/${activeClientId}/plans`}
                 isActive={pathname.startsWith(`/user/coach/clients/${activeClientId}/plans`)}
+              />
+              <ListLink
+                icon={<WorkoutIcon/>}
+                text="Training"
+                href={activeClientTrainingLogsHref}
+                isActive={pathname.startsWith('/user/plan/') || pathname.startsWith(`/user/coach/clients/${activeClientId}/plans`)}
               />
               <ListLink
                 icon={<RestaurantRoundedIcon/>}

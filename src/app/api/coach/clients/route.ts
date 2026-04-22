@@ -16,7 +16,7 @@ export async function GET() {
     where: { id: userId },
     select: {
       settings: true,
-      clients: { select: { id: true, name: true, email: true }, orderBy: { name: 'asc' } },
+      clients: { select: { id: true, name: true, email: true, activePlanId: true }, orderBy: { name: 'asc' } },
     },
   });
 
