@@ -2,6 +2,7 @@
 
 import {Box, Divider, Paper, Stack, TextField, Typography, useMediaQuery, useTheme} from '@mui/material';
 import {computeMacroGramsFromPercents, isMacroPercentSplitValid, sumMacroPercents} from '@lib/macroTargets';
+import SleepHmInput from '@/components/SleepHmInput';
 
 export interface TargetValues {
   steps: string;
@@ -28,20 +29,6 @@ export default function CoachWeekTargetsCard({values, onChange}: Props) {
   function set(field: keyof TargetValues) {
     return (e: React.ChangeEvent<HTMLInputElement>) =>
       onChange({...values, [field]: e.target.value});
-  }
-
-  const sleepTotalMins = toNumberOrZero(values.sleep);
-  const sleepHours = Math.floor(sleepTotalMins / 60);
-  const sleepMins = sleepTotalMins % 60;
-
-  function setSleepHours(e: React.ChangeEvent<HTMLInputElement>) {
-    const h = Math.max(0, toNumberOrZero(e.target.value));
-    onChange({...values, sleep: String(h * 60 + sleepMins)});
-  }
-
-  function setSleepMins(e: React.ChangeEvent<HTMLInputElement>) {
-    const m = Math.min(59, Math.max(0, toNumberOrZero(e.target.value)));
-    onChange({...values, sleep: String(sleepHours * 60 + m)});
   }
 
   const calories = toNumberOrZero(values.calories);
@@ -80,27 +67,11 @@ export default function CoachWeekTargetsCard({values, onChange}: Props) {
             sx={{flex: isMobile ? null : 1}}
           />
           <Divider orientation="vertical" flexItem sx={{alignSelf: 'stretch', my: 0.5}}/>
-          <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, flex: isMobile ? null : 1}}>
-            <TextField
-              label="Sleep"
-              size="small"
-              type="number"
-              value={sleepHours}
-              onChange={setSleepHours}
-              slotProps={{htmlInput: {min: 0}}}
-              sx={{flex: 1, minWidth: 0}}
-            />
-            <Typography variant="body2" color="text.secondary">h</Typography>
-            <TextField
-              size="small"
-              type="number"
-              value={sleepMins}
-              onChange={setSleepMins}
-              slotProps={{htmlInput: {min: 0, max: 59}}}
-              sx={{flex: 1, minWidth: 0, ml: 1}}
-            />
-            <Typography variant="body2" color="text.secondary">m</Typography>
-          </Box>
+          <SleepHmInput
+            valueMins={values.sleep}
+            onChange={sleep => onChange({...values, sleep})}
+            sx={{flex: isMobile ? null : 1}}
+          />
         </Box>
 
         <Divider/>

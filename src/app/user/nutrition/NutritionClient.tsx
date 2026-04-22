@@ -35,6 +35,7 @@ import { updateMetricClient } from '@lib/metrics';
 import { convertDateToDateString } from '@lib/dateUtils';
 import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
 import { type TargetTemplateWithDays } from '@lib/targetTemplates';
+import SleepHmInput from '@/components/SleepHmInput';
 import {
   computeMacroGramsFromPercents,
   deriveMacroPercentsFromTargets,
@@ -732,17 +733,11 @@ export default function NutritionClient({
               error={!!getNumericFieldError(tmplSteps, 100000)}
               helperText={getNumericFieldError(tmplSteps, 100000)}
             />
-            <TextField
-              label="Sleep target (mins)"
-              size="small"
-              type="number"
-              value={tmplSleep}
-              onChange={e => setTmplSleep(e.target.value)}
+            <SleepHmInput
+              valueMins={tmplSleep}
+              onChange={setTmplSleep}
               disabled={isPastWeek}
-              inputProps={{ min: 0 }}
               sx={{ flex: 1 }}
-              error={!!getNumericFieldError(tmplSleep, 1440)}
-              helperText={getNumericFieldError(tmplSleep, 1440)}
             />
           </Stack>
 
