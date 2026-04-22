@@ -20,6 +20,7 @@ import CheckInPhotoTile from '@/components/CheckInPhotoTile';
 import PhotoViewerDialog from '@/components/PhotoViewerDialog';
 import CustomCheckInResponseDisplay from '@/components/CustomCheckInResponseDisplay';
 import { parseCheckInTemplate } from '@/types/checkInTemplateTypes';
+import { getLoomEmbedUrl } from '@lib/loom';
 
 interface Props {
   checkIn: WeeklyCheckIn;
@@ -66,6 +67,7 @@ export function CheckInDetails({
 
   const hasCustomContent = isCustomMode && templateSnapshot !== null;
   const hasSomeLegacyContent = hasRatings || hasReflection;
+  const coachLoomEmbedUrl = getLoomEmbedUrl(checkIn.coachResponseUrl);
 
   return (
     <>
@@ -150,7 +152,34 @@ export function CheckInDetails({
           {(hasCustomContent || hasSomeLegacyContent || hasTraining || hasPhotos) && <Divider sx={{ my: 1.5 }} />}
           <Typography variant="overline" color="text.secondary">Coach Feedback</Typography>
           <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>{checkIn.coachNotes}</Typography>
-          {checkIn.coachResponseUrl && (
+          {coachLoomEmbedUrl ? (
+            <Box
+              sx={{
+                mt: 1,
+                position: 'relative',
+                width: '100%',
+                borderRadius: 2,
+                overflow: 'hidden',
+                bgcolor: 'common.black',
+                '&::before': { content: '""', display: 'block', pt: '56.25%' },
+              }}
+            >
+              <Box
+                component="iframe"
+                src={coachLoomEmbedUrl}
+                title="Coach Loom response"
+                allow="fullscreen; picture-in-picture; encrypted-media"
+                allowFullScreen
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  border: 0,
+                }}
+              />
+            </Box>
+          ) : checkIn.coachResponseUrl ? (
             <Link
               href={checkIn.coachResponseUrl}
               target="_blank"
@@ -160,7 +189,7 @@ export function CheckInDetails({
             >
               Open coach response
             </Link>
-          )}
+          ) : null}
         </>
       )}
     </>

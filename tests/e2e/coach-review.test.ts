@@ -161,6 +161,45 @@ test.describe('Coach check-ins — adding notes to a check-in', () => {
       coachResponseUrl: 'https://www.loom.com/share/test-review',
     });
   });
+
+  test('shows Loom embed preview immediately from the review link input', async ({ page }) => {
+    await page.route(CHECK_IN_10_ROUTE, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(makeDetailApiResponse(UNREVIEWED_CHECK_IN)),
+      }),
+    );
+    await page.route(CHECK_IN_10_NOTES_ROUTE, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ checkIn: { id: 10 } }),
+      }),
+    );
+
+    await page.goto('/user/coach/check-ins/10');
+    await page.getByLabel(/Review link/i).fill('https://www.loom.com/share/abc123DEF');
+
+    const loomFrame = page.locator('iframe[title="Coach Loom review"]');
+    await expect(loomFrame).toBeVisible();
+    await expect(loomFrame).toHaveAttribute('src', 'https://www.loom.com/embed/abc123DEF');
+  });
+
+  test('does not show Loom embed preview for non-Loom links', async ({ page }) => {
+    await page.route(CHECK_IN_10_ROUTE, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(makeDetailApiResponse(UNREVIEWED_CHECK_IN)),
+      }),
+    );
+
+    await page.goto('/user/coach/check-ins/10');
+    await page.getByLabel(/Review link/i).fill('https://example.com/review');
+
+    await expect(page.locator('iframe[title="Coach Loom review"]')).toHaveCount(0);
+  });
 });
 
 test.describe('Coach check-ins — reviewed state', () => {

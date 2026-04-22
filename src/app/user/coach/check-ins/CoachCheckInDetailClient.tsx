@@ -44,6 +44,7 @@ import CheckInPhotoTile from '@/components/CheckInPhotoTile';
 import PhotoViewerDialog from '@/components/PhotoViewerDialog';
 import CustomCheckInResponseDisplay from '@/components/CustomCheckInResponseDisplay';
 import SupplementsClient from '@/app/user/supplements/SupplementsClient';
+import {getLoomEmbedUrl} from '@lib/loom';
 
 interface WeekWorkout {
   id: number;
@@ -198,6 +199,8 @@ export default function CoachCheckInDetailClient({
     year: 'numeric',
   });
   const isReviewed = Boolean(reviewedAt);
+  const activeCoachResponseUrl = coachResponseUrl.trim() || checkIn.coachResponseUrl || null;
+  const coachLoomEmbedUrl = getLoomEmbedUrl(activeCoachResponseUrl);
 
   async function handleSaveNotes() {
     setSaving(true);
@@ -504,7 +507,34 @@ export default function CoachCheckInDetailClient({
             onChange={event => setCoachResponseUrl(event.target.value)}
             sx={{mt: 2}}
           />
-          {checkIn.coachResponseUrl && !coachResponseUrl && (
+          {coachLoomEmbedUrl ? (
+            <Box
+              sx={{
+                mt: 1.5,
+                position: 'relative',
+                width: '100%',
+                borderRadius: 2,
+                overflow: 'hidden',
+                bgcolor: 'common.black',
+                '&::before': {content: '""', display: 'block', pt: '56.25%'},
+              }}
+            >
+              <Box
+                component="iframe"
+                src={coachLoomEmbedUrl}
+                title="Coach Loom review"
+                allow="fullscreen; picture-in-picture; encrypted-media"
+                allowFullScreen
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  border: 0,
+                }}
+              />
+            </Box>
+          ) : checkIn.coachResponseUrl && !coachResponseUrl ? (
             <Link
               href={checkIn.coachResponseUrl}
               target="_blank"
@@ -514,7 +544,7 @@ export default function CoachCheckInDetailClient({
             >
               Open current review link
             </Link>
-          )}
+          ) : null}
         </Section>
 
         <Box
