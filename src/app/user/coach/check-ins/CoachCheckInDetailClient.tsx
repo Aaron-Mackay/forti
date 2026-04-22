@@ -1,7 +1,7 @@
 'use client';
 
 import type {ReactNode} from 'react';
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 import type {TargetValues} from './CoachWeekTargetsCard';
 import CoachWeekTargetsCard from './CoachWeekTargetsCard';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -28,6 +28,12 @@ import type {CheckInWithUser, WeekTargets} from '@/types/checkInTypes';
 import {RATING_LABELS} from '@/types/checkInTypes';
 import type {CustomMetricDef} from '@/types/settingsTypes';
 import type {TargetTemplateWithDays} from '@lib/targetTemplates';
+import {
+  computeMacroGramsFromPercents,
+  deriveMacroPercentsFromTargets,
+  isMacroPercentSplitValid,
+  sumMacroPercents,
+} from '@lib/macroTargets';
 import MetricsSystemCard from '@/components/MetricsSystemCard';
 import {checkInHasPhotos, checkInHasRatings, checkInHasReflection, checkInHasCustomResponses} from '@/lib/checkInUtils';
 import {parseCheckInTemplate} from '@/types/checkInTemplateTypes';
@@ -123,13 +129,21 @@ function initTargetValues(tpl: TargetTemplateWithDays | null): TargetValues {
     if (values.length === 0) return '';
     return String(Math.round(values.reduce((sum, value) => sum + value, 0) / values.length));
   };
+  const caloriesTarget = avgValue('caloriesTarget');
+  const caloriesNum = toIntOrNull(caloriesTarget);
+  const percents = deriveMacroPercentsFromTargets(caloriesNum, {
+    protein: toIntOrNull(avgValue('proteinTarget')) ?? 0,
+    carbs: toIntOrNull(avgValue('carbsTarget')) ?? 0,
+    fat: toIntOrNull(avgValue('fatTarget')) ?? 0,
+  });
+
   return {
     steps: tpl?.stepsTarget != null ? String(tpl.stepsTarget) : '',
     sleep: tpl?.sleepMinsTarget != null ? String(tpl.sleepMinsTarget) : '',
-    calories: avgValue('caloriesTarget'),
-    protein: avgValue('proteinTarget'),
-    carbs: avgValue('carbsTarget'),
-    fat: avgValue('fatTarget'),
+    calories: caloriesTarget,
+    proteinPct: String(percents.proteinPct),
+    carbsPct: String(percents.carbsPct),
+    fatPct: String(percents.fatPct),
   };
 }
 
@@ -151,6 +165,26 @@ export default function CoachCheckInDetailClient({
   const [reviewedAt, setReviewedAt] = useState(checkIn.coachReviewedAt);
   const [activePhoto, setActivePhoto] = useState<{ src: string; alt: string } | null>(null);
   const [metricsExpanded, setMetricsExpanded] = useState(false);
+  const baselineTargetValues = useMemo(() => initTargetValues(activeTemplate), [activeTemplate]);
+
+  const caloriesTarget = toIntOrNull(targetValues.calories);
+  const macroPercents = {
+    proteinPct: toIntOrNull(targetValues.proteinPct) ?? 0,
+    carbsPct: toIntOrNull(targetValues.carbsPct) ?? 0,
+    fatPct: toIntOrNull(targetValues.fatPct) ?? 0,
+  };
+  const macroSplitValid = isMacroPercentSplitValid(caloriesTarget, macroPercents);
+  const macroSplitError = macroSplitValid
+    ? null
+    : `Protein + Carbs + Fat must equal 100% (currently ${sumMacroPercents(macroPercents)}%).`;
+  const targetsChanged = (
+    targetValues.steps !== baselineTargetValues.steps ||
+    targetValues.sleep !== baselineTargetValues.sleep ||
+    targetValues.calories !== baselineTargetValues.calories ||
+    targetValues.proteinPct !== baselineTargetValues.proteinPct ||
+    targetValues.carbsPct !== baselineTargetValues.carbsPct ||
+    targetValues.fatPct !== baselineTargetValues.fatPct
+  );
 
   const weekLabel = new Date(checkIn.weekStartDate).toLocaleDateString('en-GB', {
     weekday: 'long',
@@ -170,11 +204,15 @@ export default function CoachCheckInDetailClient({
     setSaveError(null);
 
     try {
+      if (!macroSplitValid) {
+        throw new Error(macroSplitError ?? 'Macro split must equal 100%.');
+      }
+      const grams = computeMacroGramsFromPercents(caloriesTarget, macroPercents);
       const macro = {
-        caloriesTarget: toIntOrNull(targetValues.calories),
-        proteinTarget: toIntOrNull(targetValues.protein),
-        carbsTarget: toIntOrNull(targetValues.carbs),
-        fatTarget: toIntOrNull(targetValues.fat),
+        caloriesTarget,
+        proteinTarget: grams.protein,
+        carbsTarget: grams.carbs,
+        fatTarget: grams.fat,
       };
       const days: Record<number, typeof macro> = {};
       for (let dow = 1; dow <= 7; dow++) days[dow] = macro;
@@ -508,8 +546,9 @@ export default function CoachCheckInDetailClient({
       <Stack direction={{xs: 'column', sm: 'row'}} spacing={1.5} sx={{mt: 2, mb: 4}} alignItems={{sm: 'center'}}>
         <Button
           variant="contained"
+          fullWidth
           onClick={handleSaveNotes}
-          disabled={saving || (notes === (checkIn.coachNotes ?? '') && coachResponseUrl === (checkIn.coachResponseUrl ?? ''))}
+          disabled={saving || !macroSplitValid || (!targetsChanged && notes === (checkIn.coachNotes ?? '') && coachResponseUrl === (checkIn.coachResponseUrl ?? ''))}
           startIcon={saving ? <CircularProgress size={16} color="inherit"/> : undefined}
         >
           Send Review
