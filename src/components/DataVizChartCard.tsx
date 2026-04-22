@@ -23,6 +23,8 @@ import { BUILTIN_METRIC_LABELS } from '@/types/metricTypes';
 import { useApiGet } from '@lib/hooks/api/useApiGet';
 import type { MetricHistoryResponse } from '@lib/contracts/metricHistory';
 import { PRIMARY_COLOUR } from '@lib/theme';
+import { getCheckInWeekStart } from '@lib/checkInUtils';
+import { useSettings } from '@lib/providers/SettingsProvider';
 import { generateDataVizDummySeries } from './dataVizDummySeries';
 
 const Chart = dynamic(
@@ -56,14 +58,16 @@ function defaultAbsoluteRange(): { startDate: string; endDate: string } {
   return { startDate: formatDateISO(start), endDate: formatDateISO(end) };
 }
 
-function resolveRange(timeRange: DataVizTimeRange): { startDate: string; endDate: string } {
-  const today = new Date();
+function resolveRange(timeRange: DataVizTimeRange, checkInDay: number): { startDate: string; endDate: string } {
   if (timeRange.mode === 'absolute') {
     return { startDate: timeRange.startDate, endDate: timeRange.endDate };
   }
-  const start = new Date(today);
-  start.setDate(today.getDate() - timeRange.weeks * 7);
-  return { startDate: formatDateISO(start), endDate: formatDateISO(today) };
+  const windowStart = getCheckInWeekStart(new Date(), checkInDay);
+  const end = new Date(windowStart);
+  end.setDate(windowStart.getDate() + 6); // last day before check-in day
+  const start = new Date(end);
+  start.setDate(end.getDate() - timeRange.weeks * 7);
+  return { startDate: formatDateISO(start), endDate: formatDateISO(end) };
 }
 
 function isInvalidRange(timeRange: DataVizTimeRange): boolean {
@@ -78,6 +82,9 @@ export default function DataVizChartCard({
   interactivePreview = false,
   withPaper = true,
 }: Props) {
+  const { settings } = useSettings();
+  const checkInDay = settings.checkInDay ?? 0;
+
   const [runtimeRange, setRuntimeRange] = useState<DataVizTimeRange>(card.timeRange);
   const isUseMode = mode === 'use';
   const hasRuntimeControls = isUseMode || interactivePreview;
@@ -87,7 +94,7 @@ export default function DataVizChartCard({
   }, [card.id, card.timeRange]);
 
   const activeRange = hasRuntimeControls ? runtimeRange : card.timeRange;
-  const { startDate, endDate } = useMemo(() => resolveRange(activeRange), [activeRange]);
+  const { startDate, endDate } = useMemo(() => resolveRange(activeRange, checkInDay), [activeRange, checkInDay]);
   const rangeStartTs = useMemo(() => new Date(`${startDate}T00:00:00`).getTime(), [startDate]);
   const rangeEndTs = useMemo(() => new Date(`${endDate}T23:59:59`).getTime(), [endDate]);
   const rangeInvalid = isInvalidRange(activeRange);
