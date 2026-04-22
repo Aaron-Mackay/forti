@@ -239,7 +239,7 @@ export default function ExerciseSlide({
         )}
       </Box>
       <Box sx={{display: 'flex', alignItems: 'stretch', width: '100%', mb: 1}}>
-        <Box sx={{flex: 1}}>
+        <Box sx={{flex: '0 1 max-content', width: 'max-content', maxWidth: '100%'}}>
           <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
             {ex.isBfr && (
               <Chip
@@ -251,19 +251,19 @@ export default function ExerciseSlide({
             )}
 
           </Box>
-          <Typography variant="subtitle1" gutterBottom>
+          <Typography variant="subtitle1" gutterBottom noWrap>
             Rest: {ex.restTime}
           </Typography>
-          <Typography variant="subtitle1" gutterBottom>
+          <Typography variant="subtitle1" gutterBottom noWrap>
             Reps: {ex.repRange}
           </Typography>
           {ex.targetRpe != null && (
-            <Typography variant="subtitle1" gutterBottom>
+            <Typography variant="subtitle1" gutterBottom noWrap>
               Target: RPE {ex.targetRpe}
             </Typography>
           )}
           {ex.targetRir != null && (
-            <Typography variant="subtitle1" gutterBottom>
+            <Typography variant="subtitle1" gutterBottom noWrap>
               Target: {ex.targetRir} RIR
             </Typography>
           )}
@@ -274,17 +274,19 @@ export default function ExerciseSlide({
             <IconButton size="small" color={formCueOpen ? 'primary' : 'default'} sx={{mr: 0.5}}>
               {formCueOpen ? <InfoIcon fontSize="small"/> : <InfoOutlinedIcon fontSize="small"/>}
             </IconButton>
-            <Typography variant="caption" color={formCueOpen || hasFormCue ? 'primary' : 'text.secondary'}>
-              Your exercise notes
+            <Typography variant="caption" color={formCueOpen || hasFormCue ? 'primary' : 'text.secondary'} noWrap>
+              Notes
             </Typography>
           </Box>
         </Box>
-        <MuscleHighlight
-          primaryMuscles={ex.exercise.primaryMuscles}
-          secondaryMuscles={ex.exercise.secondaryMuscles}
-          exerciseId={ex.exerciseId}
-          filterByQuadrants
-        />
+        <Box sx={{flex: '1 1 0%', minWidth: 0}}>
+          <MuscleHighlight
+            primaryMuscles={ex.exercise.primaryMuscles}
+            secondaryMuscles={ex.exercise.secondaryMuscles}
+            exerciseId={ex.exerciseId}
+            filterByQuadrants
+          />
+        </Box>
       </Box>
 
       {/* Form cue textarea */}
