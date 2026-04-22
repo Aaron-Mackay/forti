@@ -23,6 +23,18 @@ interface Props {
 type BuiltInMetricKey = 'weight' | 'steps' | 'sleepMins' | 'calories' | 'protein' | 'carbs' | 'fat';
 export type MetricBreakdownKey = BuiltInMetricKey | `custom:${string}`;
 
+function getMetricValueForKey(metric: Metric | undefined, key: MetricBreakdownKey): number | null {
+  if (!metric) return null;
+  if (key.startsWith('custom:')) {
+    return getCustomValue(metric, key.replace('custom:', ''));
+  }
+  return metric[key as BuiltInMetricKey];
+}
+
+function sanitizeNumericDraft(value: string): string {
+  return value.replaceAll(',', '');
+}
+
 function getCustomValue(metric: Metric, id: string): number | null {
   if (!metric.customMetrics || typeof metric.customMetrics !== 'object' || Array.isArray(metric.customMetrics)) return null;
   const entry = (metric.customMetrics as Record<string, unknown>)[id];
@@ -196,16 +208,17 @@ export default function MetricsDailyBreakdown({
     const map = new Map<string, string>();
     const start = new Date(weekStartDate);
     rows.forEach(row => {
-      row.values.forEach((value, dayOffset) => {
+      row.values.forEach((_value, dayOffset) => {
+        const metric = metrics.find(m => {
+          const offset = Math.round((new Date(m.date).getTime() - start.getTime()) / 86400000);
+          return offset === dayOffset;
+        });
         if (row.key === 'sleepMins') {
-          const metric = metrics.find(m => {
-            const offset = Math.round((new Date(m.date).getTime() - start.getTime()) / 86400000);
-            return offset === dayOffset;
-          });
           map.set(`sleepMins:${dayOffset}`, metric?.sleepMins != null ? String(metric.sleepMins) : '');
           return;
         }
-        map.set(`${row.key}:${dayOffset}`, value === '—' ? '' : value);
+        const raw = getMetricValueForKey(metric, row.key);
+        map.set(`${row.key}:${dayOffset}`, raw != null ? String(raw) : '');
       });
     });
     return map;
@@ -292,7 +305,7 @@ export default function MetricsDailyBreakdown({
                         value={draftValues.get(`${row.key}:${i}`) ?? ''}
                         sx={{ '& .MuiInput-root': { pb: 0 }, '& .MuiInputBase-input': { py: 0, textAlign: 'center', ...cellSx } }}
                         onChange={e => {
-                          const raw = e.target.value;
+                          const raw = sanitizeNumericDraft(e.target.value);
                           setDraftValues(prev => {
                             const next = new Map(prev);
                             next.set(`${row.key}:${i}`, raw);
@@ -306,7 +319,7 @@ export default function MetricsDailyBreakdown({
                           }
                         }}
                         onBlur={e => {
-                          const raw = e.target.value;
+                          const raw = sanitizeNumericDraft(e.target.value);
                           const trimmed = raw.trim();
                           if (trimmed === '' || trimmed === '-' || trimmed === '.' || trimmed === '-.') {
                             setDraftValues(prev => {
