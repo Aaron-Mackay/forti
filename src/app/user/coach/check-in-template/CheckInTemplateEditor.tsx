@@ -522,7 +522,7 @@ function makeNewField(type: 'rating' | 'text' | 'textarea' | 'yesno'): CheckInIn
   const id = crypto.randomUUID();
   switch (type) {
     case 'rating':
-      return { id, type: 'rating', label: 'New rating', minScale: 1, maxScale: 5 } satisfies CheckInRatingField;
+      return { id, type: 'rating', label: 'New rating', minScale: 1, maxScale: 10 } satisfies CheckInRatingField;
     case 'text':
       return { id, type: 'text', label: 'New question' } satisfies CheckInTextField;
     case 'textarea':

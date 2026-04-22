@@ -26,11 +26,14 @@ interface Props {
 
 type DeltaDir = 'up' | 'down' | 'flat';
 
-function delta(current: number | null, prior: number | null): DeltaDir {
+function delta(current: number | null, prior: number | null, minPctChange = 0.01): DeltaDir {
   if (current === null || prior === null) return 'flat';
-  const pct = Math.abs((current - prior) / prior);
-  if (pct < 0.01) return 'flat';
-  return current > prior ? 'up' : 'down';
+  const deltaValue = current - prior;
+  if (deltaValue === 0) return 'flat';
+  const scale = Math.abs(prior) > Number.EPSILON ? Math.abs(prior) : 1;
+  const pct = Math.abs(deltaValue) / scale;
+  if (pct < minPctChange) return 'flat';
+  return deltaValue > 0 ? 'up' : 'down';
 }
 
 function DeltaIcon({ dir }: { dir: DeltaDir }) {
@@ -69,7 +72,7 @@ export default function MetricsSummaryTable({
       current: curr.avgWeight !== null ? `${curr.avgWeight}` : '—',
       target: '—',
       prior:  prior.avgWeight !== null ? `${prior.avgWeight}` : '—',
-      dir: delta(curr.avgWeight, prior.avgWeight),
+      dir: delta(curr.avgWeight, prior.avgWeight, 0),
       hasData: curr.avgWeight !== null,
     },
     {
