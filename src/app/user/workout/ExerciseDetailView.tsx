@@ -53,6 +53,13 @@ export default function ExerciseDetailView({
 }) {
   useAppBar({ title: 'Exercises', showBack: true, onBack });
   const paginationRef = useRef<HTMLDivElement | null>(null);
+  // Frozen on mount — activeExerciseId only changes here via user swipes, never via
+  // external navigation, so useRef is safe. Passing a live value causes Swiper v12's
+  // React wrapper to call update() mid-animation, which is the root cause of the
+  // halfway-stuck bug.
+  const initialSlide = useRef(
+    workout.exercises.findIndex((e) => e.id === activeExerciseId)
+  ).current;
   const [previousSetsMap, setPreviousSetsMap] = useState<Map<number, PreviousExerciseHistory>>(new Map());
   const [e1rmHistoryMap, setE1rmHistoryMap] = useState<Map<number, E1rmHistoryPoint[] | null>>(new Map());
   const [previousCardioMap, setPreviousCardioMap] = useState<Map<number, PreviousCardio | null>>(new Map());
@@ -138,7 +145,7 @@ export default function ExerciseDetailView({
         }}
       >
         <Swiper
-          initialSlide={workout.exercises.findIndex((e) => e.id === activeExerciseId)}
+          initialSlide={initialSlide}
           onSlideChange={handleSlideChange}
           modules={[Pagination]}
           pagination={{

@@ -201,7 +201,7 @@ export default function ExerciseSlide({
         flexDirection: 'column',
         flex: 1,
         minHeight: 0,
-        maxWidth: '100',
+        maxWidth: '100%',
         mx: 1,
         boxSizing: 'border-box',
         p: 2,
