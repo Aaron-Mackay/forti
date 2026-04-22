@@ -230,7 +230,7 @@ function ConditionBuilder({ fieldId: _fieldId, showIf, eligibleFields, wide = fa
         >
           <MenuItem value="">No condition</MenuItem>
           {inputEligible.map(f => (
-            <MenuItem key={f.id} value={f.id}>{f.label}</MenuItem>
+            <MenuItem key={f.id} value={f.id}>{f.label || getFieldLabelPlaceholder(f)}</MenuItem>
           ))}
         </Select>
       </FormControl>
@@ -287,6 +287,10 @@ function FieldPreview({ field }: { field: CheckInInputField }) {
   return <CustomCheckInField field={field} responses={{}} onChange={() => {}} hideLabel />;
 }
 
+function getFieldLabelPlaceholder(field: CheckInInputField): string {
+  return field.type === 'rating' ? 'New rating' : 'New question';
+}
+
 // ─── Sortable field item ──────────────────────────────────────────────────────
 
 interface SortableFieldProps {
@@ -332,12 +336,18 @@ function SortableField({ field, allInputFields, wide = false, initialExpanded = 
               size="small"
               value={field.label}
               onChange={e => onUpdate({ ...field, label: e.target.value })}
+              placeholder={getFieldLabelPlaceholder(field)}
               sx={{ flex: 1 }}
               slotProps={{ htmlInput: { 'aria-label': 'Field label' } }}
             />
           ) : (
-            <Typography variant="body2" fontWeight={500} sx={{ flex: 1 }}>
-              {field.label}
+            <Typography
+              variant="body2"
+              fontWeight={500}
+              sx={{ flex: 1 }}
+              color={field.label ? 'text.primary' : 'text.secondary'}
+            >
+              {field.label || getFieldLabelPlaceholder(field)}
             </Typography>
           )}
 
@@ -522,13 +532,13 @@ function makeNewField(type: 'rating' | 'text' | 'textarea' | 'yesno'): CheckInIn
   const id = crypto.randomUUID();
   switch (type) {
     case 'rating':
-      return { id, type: 'rating', label: 'New rating', minScale: 1, maxScale: 10 } satisfies CheckInRatingField;
+      return { id, type: 'rating', label: '', minScale: 1, maxScale: 10 } satisfies CheckInRatingField;
     case 'text':
-      return { id, type: 'text', label: 'New question' } satisfies CheckInTextField;
+      return { id, type: 'text', label: '' } satisfies CheckInTextField;
     case 'textarea':
-      return { id, type: 'textarea', label: 'New question' } satisfies CheckInTextareaField;
+      return { id, type: 'textarea', label: '' } satisfies CheckInTextareaField;
     case 'yesno':
-      return { id, type: 'yesno', label: 'New question' } satisfies CheckInYesNoField;
+      return { id, type: 'yesno', label: '' } satisfies CheckInYesNoField;
   }
 }
 
