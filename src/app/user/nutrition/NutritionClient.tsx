@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   Alert,
   Box,
@@ -40,8 +40,8 @@ import {
   computeMacroGramsFromPercents,
   deriveMacroPercentsFromTargets,
   isMacroPercentSplitValid,
-  sumMacroPercents,
 } from '@lib/macroTargets';
+import MacroPercentRow, {type MacroPercentValues} from '@/components/MacroPercentRow';
 
 interface Props {
   userId: string;
@@ -64,13 +64,6 @@ type EditValues = {
   weight: string;
 };
 
-/** Per-day macro values for the template dialog grid */
-type TemplateDayMacroValues = {
-  calories: string;
-  proteinPct: string;
-  carbsPct: string;
-  fatPct: string;
-};
 
 function getActiveBlock(events: EventPrisma[], today: Date) {
   return (
@@ -163,8 +156,6 @@ const TARGET_MACRO_KEY: Record<MacroKey, 'caloriesTarget' | 'proteinTarget' | 'c
 };
 
 const TOUCH_TARGET_SX = { width: 44, height: 44 };
-const DOW_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const PCT_KEYS = ['proteinPct', 'carbsPct', 'fatPct'] as const;
 
 /** ISO weekday from a JS Date: 1=Mon … 7=Sun */
 function isoWeekday(date: Date): number {
@@ -172,21 +163,6 @@ function isoWeekday(date: Date): number {
   return d === 0 ? 7 : d;
 }
 
-function getDayMacroComputation(value: TemplateDayMacroValues) {
-  const calories = toIntOrNull(value.calories);
-  const percents = {
-    proteinPct: toIntOrNull(value.proteinPct) ?? 0,
-    carbsPct: toIntOrNull(value.carbsPct) ?? 0,
-    fatPct: toIntOrNull(value.fatPct) ?? 0,
-  };
-  return {
-    calories,
-    percents,
-    grams: computeMacroGramsFromPercents(calories, percents),
-    splitValid: isMacroPercentSplitValid(calories, percents),
-    splitTotal: sumMacroPercents(percents),
-  };
-}
 
 export default function NutritionClient({
   userId,
@@ -230,10 +206,9 @@ export default function NutritionClient({
   const [daySaveNotice, setDaySaveNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const [targetsDialogOpen, setTargetsDialogOpen] = useState(false);
-  // Template dialog state
   const [tmplSteps, setTmplSteps] = useState('');
   const [tmplSleep, setTmplSleep] = useState('');
-  const [tmplDays, setTmplDays] = useState<Record<number, TemplateDayMacroValues>>({});
+  const [tmplMacros, setTmplMacros] = useState<MacroPercentValues>({calories: '', proteinPct: '0', carbsPct: '0', fatPct: '0'});
   const [savingTargets, setSavingTargets] = useState(false);
 
   const activeBlock = useMemo(() => getActiveBlock(events, today), [events, today]);
@@ -361,49 +336,48 @@ export default function NutritionClient({
   const openTargetsDialog = useCallback(() => {
     setTmplSteps(activeTemplate?.stepsTarget != null ? String(activeTemplate.stepsTarget) : '');
     setTmplSleep(activeTemplate?.sleepMinsTarget != null ? String(activeTemplate.sleepMinsTarget) : '');
-    const grid: Record<number, TemplateDayMacroValues> = {};
-    for (let dow = 1; dow <= 7; dow++) {
-      const day = activeTemplate?.days.find(d => d.dayOfWeek === dow);
-      const calories = day?.caloriesTarget ?? null;
-      const percents = deriveMacroPercentsFromTargets(calories, {
-        protein: day?.proteinTarget ?? 0,
-        carbs: day?.carbsTarget ?? 0,
-        fat: day?.fatTarget ?? 0,
-      });
-      grid[dow] = {
-        calories: calories != null ? String(calories) : '',
-        proteinPct: String(percents.proteinPct),
-        carbsPct: String(percents.carbsPct),
-        fatPct: String(percents.fatPct),
-      };
-    }
-    setTmplDays(grid);
+    // Average per-day calorie/macro targets into a single uniform value
+    const avgInt = (key: 'caloriesTarget' | 'proteinTarget' | 'carbsTarget' | 'fatTarget') => {
+      const vals = activeTemplate?.days.map(d => d[key]).filter((v): v is number => v != null) ?? [];
+      return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+    };
+    const avgCalories = avgInt('caloriesTarget');
+    const percents = deriveMacroPercentsFromTargets(avgCalories, {
+      protein: avgInt('proteinTarget') ?? 0,
+      carbs: avgInt('carbsTarget') ?? 0,
+      fat: avgInt('fatTarget') ?? 0,
+    });
+    setTmplMacros({
+      calories: avgCalories != null ? String(avgCalories) : '',
+      proteinPct: String(percents.proteinPct),
+      carbsPct: String(percents.carbsPct),
+      fatPct: String(percents.fatPct),
+    });
     setTargetsDialogOpen(true);
   }, [activeTemplate]);
 
   const saveWeekTargets = useCallback(async () => {
     setSavingTargets(true);
     try {
-      const weekMonday = convertDateToDateString(weekStart);
-      const days: Record<number, { caloriesTarget: number | null; proteinTarget: number | null; carbsTarget: number | null; fatTarget: number | null }> = {};
-      for (let dow = 1; dow <= 7; dow++) {
-        const v = tmplDays[dow] ?? { calories: '', proteinPct: '0', carbsPct: '0', fatPct: '0' };
-        const { calories, grams, splitValid } = getDayMacroComputation(v);
-        if (!splitValid) {
-          throw new Error(`Invalid macro split for ${DOW_LABELS[dow - 1]}.`);
-        }
-        days[dow] = {
-          caloriesTarget: calories,
-          proteinTarget: grams.protein,
-          carbsTarget: grams.carbs,
-          fatTarget: grams.fat,
-        };
+      const calories = toIntOrNull(tmplMacros.calories);
+      const percents = {
+        proteinPct: toIntOrNull(tmplMacros.proteinPct) ?? 0,
+        carbsPct: toIntOrNull(tmplMacros.carbsPct) ?? 0,
+        fatPct: toIntOrNull(tmplMacros.fatPct) ?? 0,
+      };
+      if (!isMacroPercentSplitValid(calories, percents)) {
+        throw new Error('Protein + Carbs + Fat must equal 100%.');
       }
+      const g = computeMacroGramsFromPercents(calories, percents);
+      const macro = {caloriesTarget: calories, proteinTarget: g.protein, carbsTarget: g.carbs, fatTarget: g.fat};
+      const days: Record<number, typeof macro> = {};
+      for (let dow = 1; dow <= 7; dow++) days[dow] = macro;
+
       const res = await fetch('/api/target-templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          effectiveFrom: weekMonday,
+          effectiveFrom: convertDateToDateString(weekStart),
           stepsTarget: toIntOrNull(tmplSteps),
           sleepMinsTarget: toIntOrNull(tmplSleep),
           days,
@@ -417,22 +391,21 @@ export default function NutritionClient({
       setTargetsDialogOpen(false);
       setDaySaveNotice({ type: 'success', message: 'Week targets saved.' });
     } catch (error) {
-      const message = error instanceof Error && error.message.startsWith('Invalid macro split')
-        ? error.message
-        : 'Failed to save week targets. Please try again.';
-      setDaySaveNotice({ type: 'error', message });
+      setDaySaveNotice({ type: 'error', message: error instanceof Error ? error.message : 'Failed to save week targets. Please try again.' });
     } finally {
       setSavingTargets(false);
     }
-  }, [weekStart, tmplSteps, tmplSleep, tmplDays, userId]);
+  }, [weekStart, tmplSteps, tmplSleep, tmplMacros, userId]);
 
   const hasInvalidMacroSplit = useMemo(() => {
-    for (let dow = 1; dow <= 7; dow++) {
-      const value = tmplDays[dow] ?? { calories: '', proteinPct: '0', carbsPct: '0', fatPct: '0' };
-      if (!getDayMacroComputation(value).splitValid) return true;
-    }
-    return false;
-  }, [tmplDays]);
+    const calories = toIntOrNull(tmplMacros.calories);
+    const percents = {
+      proteinPct: toIntOrNull(tmplMacros.proteinPct) ?? 0,
+      carbsPct: toIntOrNull(tmplMacros.carbsPct) ?? 0,
+      fatPct: toIntOrNull(tmplMacros.fatPct) ?? 0,
+    };
+    return !isMacroPercentSplitValid(calories, percents);
+  }, [tmplMacros]);
 
   const weekLabel = `${format(weekStart, 'MMM yyyy')} · Week ${getISOWeek(weekStart)}`;
 
@@ -741,118 +714,10 @@ export default function NutritionClient({
             />
           </Stack>
 
-          {/* Per-day macro grid */}
-          <Box sx={{ overflowX: 'auto' }}>
-            <Box sx={{ minWidth: 860 }}>
-              {/* Column headers */}
-              <Stack direction="row" alignItems="center" sx={{ mb: 0.5 }}>
-                <Box sx={{ width: 40, flexShrink: 0 }} />
-                {['Cal', 'Pro %', 'Pro g', 'Carb %', 'Carb g', 'Fat %', 'Fat g', 'Total %'].map((h, index) => (
-                  <Typography
-                    key={h}
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{
-                      flex: 1,
-                      textAlign: 'center',
-                      ...((index === 1 || index === 7) ? { borderLeft: '1px solid', borderColor: 'divider', ml: 0.5, pl: 0.5 } : {}),
-                    }}
-                  >
-                    {h}
-                  </Typography>
-                ))}
-              </Stack>
-              {/* Day rows */}
-              {[1, 2, 3, 4, 5, 6, 7].map(dow => (
-                (() => {
-                  const dayValues = tmplDays[dow] ?? { calories: '', proteinPct: '0', carbsPct: '0', fatPct: '0' };
-                  const computed = getDayMacroComputation(dayValues);
-                  return (
-                    <Stack key={dow} direction="row" alignItems="center" spacing={0.5} sx={{ mb: 0.5 }}>
-                      <Typography variant="caption" sx={{ width: 40, flexShrink: 0 }}>
-                        {DOW_LABELS[dow - 1]}
-                      </Typography>
-
-                      <TextField
-                        size="small"
-                        type="number"
-                        value={dayValues.calories}
-                        onChange={e =>
-                          setTmplDays(prev => ({
-                            ...prev,
-                            [dow]: {
-                              ...(prev[dow] ?? { calories: '', proteinPct: '0', carbsPct: '0', fatPct: '0' }),
-                              calories: e.target.value,
-                            },
-                          }))
-                        }
-                        disabled={isPastWeek}
-                        inputProps={{ min: 0 }}
-                        sx={{ flex: 1, '& input': { px: 0.75, textAlign: 'center' } }}
-                      />
-
-                      {PCT_KEYS.map((key, index) => {
-                        const gramField = key === 'proteinPct'
-                          ? computed.grams.protein
-                          : key === 'carbsPct'
-                            ? computed.grams.carbs
-                            : computed.grams.fat;
-                        return (
-                          <React.Fragment key={key}>
-                            <TextField
-                              size="small"
-                              type="number"
-                              value={dayValues[key]}
-                              onChange={e =>
-                                setTmplDays(prev => ({
-                                  ...prev,
-                                  [dow]: {
-                                    ...(prev[dow] ?? { calories: '', proteinPct: '0', carbsPct: '0', fatPct: '0' }),
-                                    [key]: e.target.value,
-                                  },
-                                }))
-                              }
-                              disabled={isPastWeek}
-                              inputProps={{ min: 0, max: 100 }}
-                              error={!computed.splitValid}
-                              sx={{
-                                flex: 1,
-                                ...(index === 0 ? { borderLeft: '1px solid', borderColor: 'divider', ml: 0.5, pl: 0.5 } : {}),
-                                '& input': { px: 0.75, textAlign: 'center' },
-                              }}
-                            />
-                            <Box sx={{ flex: 1, minHeight: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <Typography variant="body2" color="text.secondary">{gramField} g</Typography>
-                            </Box>
-                          </React.Fragment>
-                        );
-                      })}
-                      <Box
-                        sx={{
-                          flex: 1,
-                          borderLeft: '1px solid',
-                          borderColor: 'divider',
-                          ml: 0.5,
-                          pl: 0.5,
-                          minHeight: 40,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Typography variant="body2" color={computed.splitValid ? 'text.secondary' : 'error.main'} fontWeight={600}>
-                          {computed.splitTotal}%
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  );
-                })()
-              ))}
-            </Box>
-          </Box>
+          <MacroPercentRow values={tmplMacros} onChange={setTmplMacros} disabled={isPastWeek} />
           {hasInvalidMacroSplit && (
             <Typography variant="caption" color="error.main" sx={{ mt: 1, display: 'block' }}>
-              Each day with calories above 0 must have Protein + Carbs + Fat equal to 100%.
+              Protein + Carbs + Fat must equal 100%.
             </Typography>
           )}
         </DialogContent>
