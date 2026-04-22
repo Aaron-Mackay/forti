@@ -222,13 +222,13 @@ function ConditionBuilder({ fieldId: _fieldId, showIf, eligibleFields, wide = fa
         Show only if…
       </Typography>
       <FormControl size="small" fullWidth>
-        <InputLabel>Field</InputLabel>
+        <InputLabel>Condition</InputLabel>
         <Select
-          label="Field"
+          label="Condition"
           value={showIf?.fieldId ?? ''}
           onChange={e => handleSourceChange(e.target.value)}
         >
-          <MenuItem value="">No condition</MenuItem>
+          <MenuItem value="">Unconditional</MenuItem>
           {inputEligible.map(f => (
             <MenuItem key={f.id} value={f.id}>{f.label || getFieldLabelPlaceholder(f)}</MenuItem>
           ))}
@@ -308,6 +308,7 @@ function SortableField({ field, allInputFields, wide = false, initialExpanded = 
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
   const ratingField = field.type === 'rating' ? field as CheckInRatingField : null;
+  const isTextLikeField = field.type === 'text' || field.type === 'textarea';
 
   // Cross-card eligible sources: all input fields except self
   const eligibleSources = allInputFields.filter(f => f.id !== field.id);
@@ -318,10 +319,20 @@ function SortableField({ field, allInputFields, wide = false, initialExpanded = 
     onUpdate({ ...field, showIf: rule } as CheckInInputField);
   }
 
+  function toggleTextLength() {
+    if (field.type === 'text') {
+      onUpdate({ ...field, type: 'textarea' } as CheckInTextareaField);
+      return;
+    }
+    if (field.type === 'textarea') {
+      onUpdate({ ...field, type: 'text' } as CheckInTextField);
+    }
+  }
+
   return (
     <Box ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}>
       <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
-        {/* Header row: drag handle + label (text or input) + ⋮ menu */}
+        {/* Header row: drag handle + label (text or input) + menu */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
           <Box
             {...attributes}
@@ -459,6 +470,11 @@ function SortableField({ field, allInputFields, wide = false, initialExpanded = 
           <MenuItem onClick={() => { setMenuAnchor(null); setExpanded(e => !e); }}>
             {expanded ? 'Collapse' : 'Edit'}
           </MenuItem>
+          {isTextLikeField && (
+            <MenuItem onClick={() => { setMenuAnchor(null); toggleTextLength(); }}>
+              {field.type === 'text' ? 'Switch to long text' : 'Switch to short text'}
+            </MenuItem>
+          )}
           <MenuItem onClick={() => { setMenuAnchor(null); onRemove(); }} sx={{ color: 'error.main' }}>
             Remove
           </MenuItem>
