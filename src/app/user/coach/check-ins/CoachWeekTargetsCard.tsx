@@ -1,6 +1,6 @@
 'use client';
 
-import {Box, Divider, Paper, Stack, TextField, Typography} from '@mui/material';
+import {Box, Divider, Paper, Stack, TextField, Typography, useMediaQuery, useTheme} from '@mui/material';
 import {computeMacroGramsFromPercents, isMacroPercentSplitValid, sumMacroPercents} from '@lib/macroTargets';
 
 export interface TargetValues {
@@ -23,6 +23,8 @@ function toNumberOrZero(value: string): number {
 }
 
 export default function CoachWeekTargetsCard({values, onChange}: Props) {
+  const isMobile = useMediaQuery(useTheme().breakpoints.down('sm'));
+
   function set(field: keyof TargetValues) {
     return (e: React.ChangeEvent<HTMLInputElement>) =>
       onChange({...values, [field]: e.target.value});
@@ -36,6 +38,7 @@ export default function CoachWeekTargetsCard({values, onChange}: Props) {
     const h = Math.max(0, toNumberOrZero(e.target.value));
     onChange({...values, sleep: String(h * 60 + sleepMins)});
   }
+
   function setSleepMins(e: React.ChangeEvent<HTMLInputElement>) {
     const m = Math.min(59, Math.max(0, toNumberOrZero(e.target.value)));
     onChange({...values, sleep: String(sleepHours * 60 + m)});
@@ -66,7 +69,7 @@ export default function CoachWeekTargetsCard({values, onChange}: Props) {
       </Typography>
 
       <Stack spacing={1.5}>
-        <Box sx={{display: 'flex', flexDirection: 'row', gap: 1.5}}>
+        <Box sx={{display: 'flex', flexDirection: 'row', gap: 1.5, width: '100%'}}>
           <TextField
             label="Steps"
             size="small"
@@ -74,9 +77,10 @@ export default function CoachWeekTargetsCard({values, onChange}: Props) {
             value={values.steps}
             onChange={set('steps')}
             slotProps={{htmlInput: {min: 0}}}
+            sx={{flex: isMobile ? null : 1}}
           />
-          <Divider orientation="vertical" flexItem sx={{alignSelf: 'stretch', my: 0.5}}  />
-          <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+          <Divider orientation="vertical" flexItem sx={{alignSelf: 'stretch', my: 0.5}}/>
+          <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, flex: isMobile ? null : 1}}>
             <TextField
               label="Sleep"
               size="small"
@@ -99,50 +103,90 @@ export default function CoachWeekTargetsCard({values, onChange}: Props) {
           </Box>
         </Box>
 
-        <Divider />
+        <Divider/>
 
-        <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 1.5}}>
-          <TextField
-            label="Calories"
-            size="small"
-            type="number"
-            value={values.calories}
-            onChange={set('calories')}
-            slotProps={{htmlInput: {min: 0}}}
-            sx={{flex: '1 1 0', minWidth: '8ch', mr: 1}}
-          />
-
-          <Divider orientation="vertical" flexItem sx={{alignSelf: 'stretch', my: 0.5}} />
-
-          {([
-            {label: 'Protein %', field: 'proteinPct', g: grams.protein},
-            {label: 'Carbs %',   field: 'carbsPct',   g: grams.carbs},
-            {label: 'Fat %',     field: 'fatPct',     g: grams.fat},
-          ] as const).map(({label, field, g}) => (
-            <Box key={field} sx={{display: 'flex', alignItems: 'center', gap: 2, flex: '1 1 0', minWidth: '14ch',}}>
+        {isMobile ? (
+          <Stack spacing={1.5}>
+            <Box sx={{display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 1.5, alignItems: 'center'}}>
               <TextField
-                label={label}
+                label="Calories"
                 size="small"
                 type="number"
-                value={values[field]}
-                onChange={set(field)}
-                slotProps={{htmlInput: {min: 0, max: 100}}}
-                sx={{minWidth: 0, flex: 1, ml: 1}}
+                value={values.calories}
+                onChange={set('calories')}
+                slotProps={{htmlInput: {min: 0}}}
               />
-              <Typography variant="body2" color="text.secondary" sx={{whiteSpace: 'nowrap'}}>
-                {g} g
+              <Typography variant="caption" color={splitValid ? 'text.secondary' : 'error.main'} fontWeight={600}
+                          sx={{textAlign: 'center'}}>
+                {pctTotal}%
               </Typography>
             </Box>
-          ))}
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+              {([
+                {label: 'P%', field: 'proteinPct', g: grams.protein},
+                {label: 'C%', field: 'carbsPct', g: grams.carbs},
+                {label: 'F%', field: 'fatPct', g: grams.fat},
+              ] as const).map(({label, field, g}) => (
+                <Box key={field} sx={{display: 'flex', alignItems: 'center', gap: 0.5, flex: '0 0 33%'}}>
+                  <TextField
+                    label={label}
+                    size="small"
+                    type="number"
+                    value={values[field]}
+                    onChange={set(field)}
+                    slotProps={{htmlInput: {min: 0}}}
+                    sx={{width: '7ch'}}
+                  />
+                  <Typography variant="body2" color="text.secondary"
+                              sx={{whiteSpace: 'nowrap', ml: 'auto'}}>{g} g</Typography>
+                </Box>
+              ))}
+            </Box>
+          </Stack>
+        ) : (
+          <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 1.5}}>
+            <TextField
+              label="Calories"
+              size="small"
+              type="number"
+              value={values.calories}
+              onChange={set('calories')}
+              slotProps={{htmlInput: {min: 0}}}
+              sx={{flex: '1 1 0', minWidth: '8ch', mr: 1}}
+            />
 
-          <Divider orientation="vertical" flexItem sx={{alignSelf: 'stretch', my: 0.5}} />
+            <Divider orientation="vertical" flexItem sx={{alignSelf: 'stretch', my: 0.5}}/>
 
-          <Box sx={{display: 'flex', alignItems: 'center', minHeight: 40, flexShrink: 0}}>
-            <Typography variant="caption" color={splitValid ? 'text.secondary' : 'error.main'} fontWeight={600}>
-              {pctTotal}%
-            </Typography>
+            {([
+              {label: 'Protein %', field: 'proteinPct', g: grams.protein},
+              {label: 'Carbs %', field: 'carbsPct', g: grams.carbs},
+              {label: 'Fat %', field: 'fatPct', g: grams.fat},
+            ] as const).map(({label, field, g}) => (
+              <Box key={field} sx={{display: 'flex', alignItems: 'center', gap: 2, flex: '1 1 0', minWidth: '14ch',}}>
+                <TextField
+                  label={label}
+                  size="small"
+                  type="number"
+                  value={values[field]}
+                  onChange={set(field)}
+                  slotProps={{htmlInput: {min: 0, max: 100}}}
+                  sx={{minWidth: 0, flex: 1, ml: 1}}
+                />
+                <Typography variant="body2" color="text.secondary" sx={{whiteSpace: 'nowrap'}}>
+                  {g} g
+                </Typography>
+              </Box>
+            ))}
+
+            <Divider orientation="vertical" flexItem sx={{alignSelf: 'stretch', my: 0.5}}/>
+
+            <Box sx={{display: 'flex', alignItems: 'center', minHeight: 40, flexShrink: 0}}>
+              <Typography variant="caption" color={splitValid ? 'text.secondary' : 'error.main'} fontWeight={600}>
+                {pctTotal}%
+              </Typography>
+            </Box>
           </Box>
-        </Box>
+        )}
       </Stack>
     </Paper>
   );
