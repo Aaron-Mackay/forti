@@ -105,19 +105,20 @@ test.describe('Nutrition page', () => {
     }
   });
 
-  test('Week targets dialog shows column headers Cal, Pro, Carb, Fat', async ({ page }) => {
+  test('Week targets dialog shows macro target fields and labels', async ({ page }) => {
     await page.getByRole('button', { name: 'Set week targets' }).click();
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
-    for (const col of ['Cal', 'Pro', 'Carb', 'Fat']) {
-      await expect(page.getByText(col, { exact: true }).first()).toBeVisible();
+    for (const label of ['Energy target', 'Protein', 'Carbs', 'Fat']) {
+      await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
     }
   });
 
-  test('Week targets dialog has Steps target and Sleep target inputs', async ({ page }) => {
+  test('Week targets dialog has Steps and Sleep inputs', async ({ page }) => {
     await page.getByRole('button', { name: 'Set week targets' }).click();
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByLabel('Steps target')).toBeVisible();
-    await expect(page.getByLabel('Sleep target (mins)')).toBeVisible();
+    await expect(page.getByLabel('Steps')).toBeVisible();
+    await expect(page.getByLabel('Sleep hours')).toBeVisible();
+    await expect(page.getByLabel('Sleep minutes')).toBeVisible();
   });
 
   test('cancelling the dialog closes it', async ({ page }) => {
@@ -192,13 +193,13 @@ test.describe('Nutrition — target template behaviour', () => {
 
     await page.getByRole('button', { name: 'Set week targets' }).click();
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
-    await page.getByLabel('Steps target').fill('8500');
+    await page.getByLabel('Steps').fill('8500');
     await page.getByRole('button', { name: 'Save Targets' }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 5_000 });
 
     // Reopen and confirm value was saved
     await page.getByRole('button', { name: 'Set week targets' }).click();
-    await expect(page.getByLabel('Steps target')).toHaveValue('8500', { timeout: 5_000 });
+    await expect(page.getByLabel('Steps')).toHaveValue('8500', { timeout: 5_000 });
   });
 
   test('targets carry forward to future weeks (backwards lookup)', async ({ page, browserName, isMobile }) => {
@@ -221,7 +222,8 @@ test.describe('Nutrition — target template behaviour', () => {
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
 
     // Backwards lookup should surface the current-week template
-    await expect(page.getByLabel('Steps target')).toHaveValue('12000', { timeout: 5_000 });
-    await expect(page.getByLabel('Sleep target (mins)')).toHaveValue('450', { timeout: 5_000 });
+    await expect(page.getByLabel('Steps')).toHaveValue('12000', { timeout: 5_000 });
+    await expect(page.getByLabel('Sleep hours')).toHaveValue('7', { timeout: 5_000 });
+    await expect(page.getByLabel('Sleep minutes')).toHaveValue('30', { timeout: 5_000 });
   });
 });

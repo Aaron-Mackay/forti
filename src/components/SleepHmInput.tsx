@@ -30,7 +30,7 @@ export default function SleepHmInput({valueMins, onChange, disabled, sx}: Props)
         value={hours}
         onChange={e => onChange(String(toSafeInt(e.target.value) * 60 + mins))}
         disabled={disabled}
-        slotProps={{htmlInput: {min: 0}}}
+        slotProps={{htmlInput: {'aria-label': 'Sleep hours', min: 0}}}
         sx={{flex: 1, minWidth: 0}}
       />
       <Typography variant="body2" color="text.secondary">h</Typography>
@@ -40,7 +40,7 @@ export default function SleepHmInput({valueMins, onChange, disabled, sx}: Props)
         value={mins}
         onChange={e => onChange(String(hours * 60 + toSafeInt(e.target.value, 59)))}
         disabled={disabled}
-        slotProps={{htmlInput: {min: 0, max: 59}}}
+        slotProps={{htmlInput: {'aria-label': 'Sleep minutes', min: 0, max: 59}}}
         sx={{flex: 1, minWidth: 0}}
       />
       <Typography variant="body2" color="text.secondary">m</Typography>

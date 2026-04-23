@@ -41,7 +41,7 @@ import {
   deriveMacroPercentsFromTargets,
   isMacroPercentSplitValid,
 } from '@lib/macroTargets';
-import MacroPercentRow, {type MacroPercentValues} from '@/components/MacroPercentRow';
+import MacroTargetsPanel, {type MacroPercentValues} from '@/components/MacroTargetsPanel';
 
 interface Props {
   userId: string;
@@ -692,17 +692,26 @@ export default function NutritionClient({
               : `Targets apply from ${format(weekStart, 'EEE d MMM')} until changed.`}
           </Typography>
 
-          {/* Uniform daily targets */}
-          <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+          <MacroTargetsPanel values={tmplMacros} onChange={setTmplMacros} disabled={isPastWeek} />
+          {hasInvalidMacroSplit && (
+            <Typography variant="caption" color="error.main" sx={{ mt: 1, display: 'block' }}>
+              Protein + Carbs + Fat must equal 100%.
+            </Typography>
+          )}
+
+          <Divider sx={{my: 2}}/>
+
+          <Stack direction={{xs: 'column', sm: 'row'}} spacing={2}>
             <TextField
-              label="Steps target"
+              label="Steps"
+              placeholder="Target steps"
               size="small"
               type="number"
               value={tmplSteps}
               onChange={e => setTmplSteps(e.target.value)}
               disabled={isPastWeek}
-              inputProps={{ min: 0 }}
-              sx={{ flex: 1 }}
+              inputProps={{min: 0}}
+              sx={{flex: 1}}
               error={!!getNumericFieldError(tmplSteps, 100000)}
               helperText={getNumericFieldError(tmplSteps, 100000)}
             />
@@ -710,16 +719,9 @@ export default function NutritionClient({
               valueMins={tmplSleep}
               onChange={setTmplSleep}
               disabled={isPastWeek}
-              sx={{ flex: 1 }}
+              sx={{flex: 1}}
             />
           </Stack>
-
-          <MacroPercentRow values={tmplMacros} onChange={setTmplMacros} disabled={isPastWeek} />
-          {hasInvalidMacroSplit && (
-            <Typography variant="caption" color="error.main" sx={{ mt: 1, display: 'block' }}>
-              Protein + Carbs + Fat must equal 100%.
-            </Typography>
-          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setTargetsDialogOpen(false)}>

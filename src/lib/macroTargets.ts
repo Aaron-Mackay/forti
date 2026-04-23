@@ -68,8 +68,9 @@ export function isMacroPercentSplitValid(
   values: Partial<MacroPercentValues>,
 ): boolean {
   const safeCalories = sanitizeNumber(calories);
-  if (safeCalories <= 0) return true;
-  return sumMacroPercents(values) === 100;
+  const totalPct = sumMacroPercents(values);
+  if (safeCalories <= 0) return totalPct === 0 || totalPct === 100;
+  return totalPct === 100;
 }
 
 export function computeMacroGramsFromPercents(

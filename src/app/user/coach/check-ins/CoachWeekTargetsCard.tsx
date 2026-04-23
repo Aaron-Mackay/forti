@@ -2,7 +2,7 @@
 
 import {Box, Divider, Paper, Stack, TextField, Typography, useMediaQuery, useTheme} from '@mui/material';
 import SleepHmInput from '@/components/SleepHmInput';
-import MacroPercentRow from '@/components/MacroPercentRow';
+import MacroTargetsPanel from '@/components/MacroTargetsPanel';
 
 export interface TargetValues {
   steps: string;
@@ -36,9 +36,17 @@ export default function CoachWeekTargetsCard({values, onChange}: Props) {
       </Typography>
 
       <Stack spacing={1.5}>
-        <Box sx={{display: 'flex', flexDirection: 'row', gap: 1.5, width: '100%'}}>
+        <MacroTargetsPanel
+          values={{calories: values.calories, proteinPct: values.proteinPct, carbsPct: values.carbsPct, fatPct: values.fatPct}}
+          onChange={macro => onChange({...values, ...macro})}
+        />
+
+        <Divider/>
+
+        <Box sx={{display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 1.5, width: '100%'}}>
           <TextField
             label="Steps"
+            placeholder="Target steps"
             size="small"
             type="number"
             value={values.steps}
@@ -46,20 +54,12 @@ export default function CoachWeekTargetsCard({values, onChange}: Props) {
             slotProps={{htmlInput: {min: 0}}}
             sx={{flex: isMobile ? null : 1}}
           />
-          <Divider orientation="vertical" flexItem sx={{alignSelf: 'stretch', my: 0.5}}/>
           <SleepHmInput
             valueMins={values.sleep}
             onChange={sleep => onChange({...values, sleep})}
             sx={{flex: isMobile ? null : 1}}
           />
         </Box>
-
-        <Divider/>
-
-        <MacroPercentRow
-          values={{calories: values.calories, proteinPct: values.proteinPct, carbsPct: values.carbsPct, fatPct: values.fatPct}}
-          onChange={macro => onChange({...values, ...macro})}
-        />
       </Stack>
     </Paper>
   );

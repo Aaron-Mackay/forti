@@ -60,8 +60,9 @@ describe('isMacroPercentSplitValid', () => {
     expect(isMacroPercentSplitValid(2200, { proteinPct: 35, carbsPct: 30, fatPct: 30 })).toBe(false);
   });
 
-  it('allows any split when calories are zero or missing', () => {
+  it('requires either 0% or 100% split when calories are zero or missing', () => {
     expect(isMacroPercentSplitValid(0, { proteinPct: 0, carbsPct: 0, fatPct: 0 })).toBe(true);
-    expect(isMacroPercentSplitValid(null, { proteinPct: 10, carbsPct: 10, fatPct: 10 })).toBe(true);
+    expect(isMacroPercentSplitValid(0, { proteinPct: 40, carbsPct: 30, fatPct: 30 })).toBe(true);
+    expect(isMacroPercentSplitValid(null, { proteinPct: 10, carbsPct: 10, fatPct: 10 })).toBe(false);
   });
 });
