@@ -11,6 +11,10 @@ function isAllowedDevTunnelHost(hostname: string) {
   return hostname.endsWith('.trycloudflare.com');
 }
 
+function isProductionAuthEnvironment() {
+  return process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+}
+
 export const authOptions: AuthOptions = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   adapter: PrismaAdapter(prisma as any),
@@ -66,28 +70,30 @@ export const authOptions: AuthOptions = {
       },
     }),
 
-    // TestUser login — used exclusively by E2E tests via direct API call
-    CredentialsProvider({
-      id: "testuser",
-      name: "TestUser",
-      credentials: {},
-      async authorize() {
-        const testEmail = "testuser@example.com";
+    ...(!isProductionAuthEnvironment() ? [
+      // TestUser login — used exclusively by E2E tests via direct API call
+      CredentialsProvider({
+        id: "testuser",
+        name: "TestUser",
+        credentials: {},
+        async authorize() {
+          const testEmail = "testuser@example.com";
 
-        let user = await prisma.user.findUnique({where: {email: testEmail}});
+          let user = await prisma.user.findUnique({where: {email: testEmail}});
 
-        if (!user) {
-          console.error('TestUser not found')
-          user = await prisma.user.create({
-            data: {
-              name: "TestUser",
-              email: testEmail,
-            },
-          });
-        }
-        return user;
-      },
-    }),
+          if (!user) {
+            console.error('TestUser not found')
+            user = await prisma.user.create({
+              data: {
+                name: "TestUser",
+                email: testEmail,
+              },
+            });
+          }
+          return user;
+        },
+      }),
+    ] : []),
   ],
 
   session: {
