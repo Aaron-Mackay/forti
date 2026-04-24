@@ -17,8 +17,14 @@ import {
 import {DatePicker} from '@mui/x-date-pickers';
 import {getISOWeek, subDays} from 'date-fns';
 import {EventPrisma} from "@/types/dataTypes";
-import {createEvent} from "@lib/events";
+import {
+  BlockOverlapConflictError,
+  BlockOverlapResolution,
+  createEvent,
+  reconcileEventMutation
+} from "@lib/events";
 import {RecurrenceFrequency} from "@lib/apiSchemas";
+import {BlockOverlapConfirmationDialog} from "@/app/user/calendar/BlockOverlapConfirmationDialog";
 
 const TIMEOUT = 300
 
@@ -37,6 +43,9 @@ export const EventCreationForm = (props: {
     = useState<Date | null>(props.prefilledDateRange.endExcl && subDays(props.prefilledDateRange.endExcl, 1))
   const [recurrenceFrequency, setRecurrenceFrequency] = useState<RecurrenceFrequency | null>(null)
   const [recurrenceEnd, setRecurrenceEnd] = useState<Date | null>(null)
+  const [pendingEvent, setPendingEvent] = useState<Omit<EventPrisma, 'id'> | null>(null)
+  const [overlapResolution, setOverlapResolution] = useState<BlockOverlapResolution[]>([])
+  const [confirmingOverlap, setConfirmingOverlap] = useState(false)
 
   const handleEventTypeChange = (
     _event: React.MouseEvent<HTMLElement>,
@@ -46,6 +55,8 @@ export const EventCreationForm = (props: {
     setCustomBlockName("")
     setCustomEventName("")
     setBlockSubtype(null)
+    setRecurrenceFrequency(null)
+    setRecurrenceEnd(null)
   }
 
   const isFormFilled = () => {
@@ -61,9 +72,29 @@ export const EventCreationForm = (props: {
     return false;
   };
 
+  const submitEvent = (newEvent: Omit<EventPrisma, 'id'>, resolveBlockOverlaps = false) => {
+    setConfirmingOverlap(resolveBlockOverlaps);
+    createEvent(newEvent, {resolveBlockOverlaps})
+      .then((response) => {
+        props.setEventsInState((prevEvents) => reconcileEventMutation(prevEvents, response));
+        setPendingEvent(null);
+        setOverlapResolution([]);
+        props.setDrawerOpen(false);
+      })
+      .catch((error) => {
+        if (error instanceof BlockOverlapConflictError) {
+          setPendingEvent(newEvent);
+          setOverlapResolution(error.overlapResolution);
+          return;
+        }
+        console.error(error);
+        alert(error instanceof Error ? error.message : 'Failed to create event');
+      })
+      .finally(() => setConfirmingOverlap(false));
+  }
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    props.setDrawerOpen(false);
 
     if (!eventType || !startDate) {
       alert("Please fill out dates.")
@@ -75,6 +106,7 @@ export const EventCreationForm = (props: {
       return
     }
 
+    const isBlock = eventType === EventType.BlockEvent;
     const newEvent: Omit<EventPrisma, 'id'> = {
       userId: props.userId,
       eventType,
@@ -84,20 +116,11 @@ export const EventCreationForm = (props: {
       blockSubtype,
       customColor: null,
       description: null,
-      recurrenceFrequency: recurrenceFrequency ?? null,
-      recurrenceEnd: recurrenceEnd ?? null,
+      recurrenceFrequency: isBlock ? null : recurrenceFrequency,
+      recurrenceEnd: isBlock ? null : recurrenceEnd,
     }
 
-    createEvent(newEvent)
-      .then((addedEvent) => {
-        props.setEventsInState((prevEvents) => {
-          return [...prevEvents, addedEvent]
-        })
-      })
-      .catch((e) => {
-        console.error(e.message)
-        alert(JSON.parse(e.message).error)
-      })
+    submitEvent(newEvent);
   }
 
   const showDateSection = !!(startDate || endDate) ||
@@ -207,32 +230,36 @@ export const EventCreationForm = (props: {
               sx={{minWidth: 0, flexGrow: 1}}
             />
           </Box>
-          <Divider sx={{my: 1}}/>
-          <Typography variant={'subtitle2'} fontSize="0.75rem">Repeat</Typography>
-          <FormControl fullWidth sx={{mt: 1}}>
-            <InputLabel id="recurrence-label">Frequency</InputLabel>
-            <Select
-              labelId="recurrence-label"
-              label="Frequency"
-              value={recurrenceFrequency ?? ''}
-              onChange={(e) => setRecurrenceFrequency((e.target.value as RecurrenceFrequency) || null)}
-            >
-              <MenuItem value="">None</MenuItem>
-              <MenuItem value="DAILY">Daily</MenuItem>
-              <MenuItem value="WEEKLY">Weekly</MenuItem>
-              <MenuItem value="MONTHLY">Monthly</MenuItem>
-              <MenuItem value="YEARLY">Yearly</MenuItem>
-            </Select>
-          </FormControl>
-          <Collapse in={!!recurrenceFrequency} timeout={TIMEOUT} unmountOnExit>
-            <DatePicker
-              label="Ends on (optional)"
-              value={recurrenceEnd}
-              onChange={(date) => setRecurrenceEnd(date)}
-              sx={{width: '100%', mt: 1}}
-              slotProps={{field: {clearable: true}}}
-            />
-          </Collapse>
+          {eventType === EventType.CustomEvent && (
+            <>
+              <Divider sx={{my: 1}}/>
+              <Typography variant={'subtitle2'} fontSize="0.75rem">Repeat</Typography>
+              <FormControl fullWidth sx={{mt: 1}}>
+                <InputLabel id="recurrence-label">Frequency</InputLabel>
+                <Select
+                  labelId="recurrence-label"
+                  label="Frequency"
+                  value={recurrenceFrequency ?? ''}
+                  onChange={(e) => setRecurrenceFrequency((e.target.value as RecurrenceFrequency) || null)}
+                >
+                  <MenuItem value="">None</MenuItem>
+                  <MenuItem value="DAILY">Daily</MenuItem>
+                  <MenuItem value="WEEKLY">Weekly</MenuItem>
+                  <MenuItem value="MONTHLY">Monthly</MenuItem>
+                  <MenuItem value="YEARLY">Yearly</MenuItem>
+                </Select>
+              </FormControl>
+              <Collapse in={!!recurrenceFrequency} timeout={TIMEOUT} unmountOnExit>
+                <DatePicker
+                  label="Ends on (optional)"
+                  value={recurrenceEnd}
+                  onChange={(date) => setRecurrenceEnd(date)}
+                  sx={{width: '100%', mt: 1}}
+                  slotProps={{field: {clearable: true}}}
+                />
+              </Collapse>
+            </>
+          )}
         </Collapse>
 
         <Collapse in={isFormFilled()} timeout={TIMEOUT} unmountOnExit>
@@ -243,5 +270,17 @@ export const EventCreationForm = (props: {
         </Collapse>
       </>
     }
+    <BlockOverlapConfirmationDialog
+      open={overlapResolution.length > 0}
+      resolutions={overlapResolution}
+      loading={confirmingOverlap}
+      onCancel={() => {
+        setPendingEvent(null);
+        setOverlapResolution([]);
+      }}
+      onConfirm={() => {
+        if (pendingEvent) submitEvent(pendingEvent, true);
+      }}
+    />
   </Box>
 }

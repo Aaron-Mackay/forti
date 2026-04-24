@@ -27,8 +27,16 @@ import RepeatIcon from '@mui/icons-material/Repeat';
 import {dateAndWeek} from "@/app/user/calendar/utils";
 import {DatePicker} from "@mui/x-date-pickers";
 import {EventPrisma} from "@/types/dataTypes";
-import {deleteEvent, updateEvent} from "@lib/events";
+import {
+  BlockOverlapConflictError,
+  BlockOverlapResolution,
+  deleteEvent,
+  reconcileEventMutation,
+  updateEvent
+} from "@lib/events";
 import {RecurrenceFrequency} from "@lib/apiSchemas";
+import {EventType} from "@/generated/prisma/browser";
+import {BlockOverlapConfirmationDialog} from "@/app/user/calendar/BlockOverlapConfirmationDialog";
 
 const RECURRENCE_LABELS: Record<RecurrenceFrequency, string> = {
   DAILY: 'daily',
@@ -43,15 +51,20 @@ export const EventDetails = (
   {
     event,
     setDrawerOpen,
-    setEventsInState
+    setEventsInState,
+    setSelectedEvent,
   }: {
     event: EventPrisma,
     setDrawerOpen: (open: boolean) => void
     setEventsInState: (value: (prevEvents: EventPrisma[]) => EventPrisma[]) => void
+    setSelectedEvent: (event: EventPrisma | null) => void
   },
 ) => {
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [pendingPatch, setPendingPatch] = useState<Partial<EventPrisma> | null>(null);
+  const [overlapResolution, setOverlapResolution] = useState<BlockOverlapResolution[]>([]);
+  const [confirmingOverlap, setConfirmingOverlap] = useState(false);
 
   const [title, setTitle] = useState<string>(event.name ?? '')
   const [startDate, setStartDate] = useState<Date>(event.startDate!)
@@ -81,25 +94,38 @@ export const EventDetails = (
       })
   }
 
-  const handleSave = async () => {
-    updateEvent(Number(event.id), {
-      name: title,
-      startDate: addDays(startDate, 1),
-      endDate: addDays(endDate, 1),
-      recurrenceFrequency: recurrenceFrequency ?? null,
-      recurrenceEnd: recurrenceEnd ?? null,
-    })
-      .then((updated) => {
-        setEventsInState((prev) =>
-          prev.map((e) => (e.id === updated.id ? {...e, ...updated} : e))
-        );
+  const submitPatch = (patch: Partial<EventPrisma>, resolveBlockOverlaps = false) => {
+    setConfirmingOverlap(resolveBlockOverlaps);
+    updateEvent(Number(event.id), patch, {resolveBlockOverlaps})
+      .then((response) => {
+        setEventsInState((prev) => reconcileEventMutation(prev, response));
+        setSelectedEvent(response.event);
+        setPendingPatch(null);
+        setOverlapResolution([]);
         setMode('view');
         alert("Event updated");
       })
-      .catch((err) => {
-        console.error(err)
-        alert("Failed to update event")
+      .catch((error) => {
+        if (error instanceof BlockOverlapConflictError) {
+          setPendingPatch(patch);
+          setOverlapResolution(error.overlapResolution);
+          return;
+        }
+        console.error(error)
+        alert(error instanceof Error ? error.message : "Failed to update event")
       })
+      .finally(() => setConfirmingOverlap(false));
+  }
+
+  const handleSave = async () => {
+    const isBlock = event.eventType === EventType.BlockEvent;
+    submitPatch({
+      name: title,
+      startDate: addDays(startDate, 1),
+      endDate: addDays(endDate, 1),
+      recurrenceFrequency: isBlock ? null : recurrenceFrequency,
+      recurrenceEnd: isBlock ? null : recurrenceEnd,
+    });
   }
 
   const handleExport = () => {
@@ -155,32 +181,34 @@ export const EventDetails = (
           &nbsp;-&nbsp;
           {<CustomDatePicker date={endDate} onChange={(date) => setEndDate(date)}/>}
         </span>
-        <Box sx={{mt: 2}}>
-          <FormControl fullWidth size="small">
-            <InputLabel id="edit-recurrence-label">Repeat</InputLabel>
-            <Select
-              labelId="edit-recurrence-label"
-              label="Repeat"
-              value={recurrenceFrequency ?? ''}
-              onChange={(e) => setRecurrenceFrequency((e.target.value as RecurrenceFrequency) || null)}
-            >
-              <MenuItem value="">None</MenuItem>
-              <MenuItem value="DAILY">Daily</MenuItem>
-              <MenuItem value="WEEKLY">Weekly</MenuItem>
-              <MenuItem value="MONTHLY">Monthly</MenuItem>
-              <MenuItem value="YEARLY">Yearly</MenuItem>
-            </Select>
-          </FormControl>
-          <Collapse in={!!recurrenceFrequency} timeout={TIMEOUT} unmountOnExit>
-            <DatePicker
-              label="Ends on (optional)"
-              value={recurrenceEnd}
-              onChange={(date) => setRecurrenceEnd(date)}
-              sx={{width: '100%', mt: 1}}
-              slotProps={{field: {clearable: true}}}
-            />
-          </Collapse>
-        </Box>
+        {event.eventType === EventType.CustomEvent && (
+          <Box sx={{mt: 2}}>
+            <FormControl fullWidth size="small">
+              <InputLabel id="edit-recurrence-label">Repeat</InputLabel>
+              <Select
+                labelId="edit-recurrence-label"
+                label="Repeat"
+                value={recurrenceFrequency ?? ''}
+                onChange={(e) => setRecurrenceFrequency((e.target.value as RecurrenceFrequency) || null)}
+              >
+                <MenuItem value="">None</MenuItem>
+                <MenuItem value="DAILY">Daily</MenuItem>
+                <MenuItem value="WEEKLY">Weekly</MenuItem>
+                <MenuItem value="MONTHLY">Monthly</MenuItem>
+                <MenuItem value="YEARLY">Yearly</MenuItem>
+              </Select>
+            </FormControl>
+            <Collapse in={!!recurrenceFrequency} timeout={TIMEOUT} unmountOnExit>
+              <DatePicker
+                label="Ends on (optional)"
+                value={recurrenceEnd}
+                onChange={(date) => setRecurrenceEnd(date)}
+                sx={{width: '100%', mt: 1}}
+                slotProps={{field: {clearable: true}}}
+              />
+            </Collapse>
+          </Box>
+        )}
         <Divider sx={{my: 1}}/>
         <Box sx={{p: 1, display: 'flex', justifyContent: 'space-evenly'}}>
           <RoundIconButton onClick={handleSave} icon={<SaveIcon/>}/>
@@ -202,6 +230,18 @@ export const EventDetails = (
         <Button color="error" onClick={handleDelete}>Delete</Button>
       </DialogActions>
     </Dialog>
+    <BlockOverlapConfirmationDialog
+      open={overlapResolution.length > 0}
+      resolutions={overlapResolution}
+      loading={confirmingOverlap}
+      onCancel={() => {
+        setPendingPatch(null);
+        setOverlapResolution([]);
+      }}
+      onConfirm={() => {
+        if (pendingPatch) submitPatch(pendingPatch, true);
+      }}
+    />
   </>)
 };
 

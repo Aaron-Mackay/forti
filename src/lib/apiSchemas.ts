@@ -48,4 +48,5 @@ export const EventSchema = z.object({
   blockSubtype: z.enum(BlockSubtype).optional().nullable(),
   recurrenceFrequency: z.enum(RecurrenceFrequency).optional().nullable(),
   recurrenceEnd: z.coerce.date().optional().nullable(),
+  resolveBlockOverlaps: z.boolean().optional(),
 });

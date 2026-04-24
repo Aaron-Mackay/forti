@@ -118,7 +118,12 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
         )}
 
         {drawerView === 'details' && selectedEvent && (
-          <EventDetails event={selectedEvent} setDrawerOpen={setDrawerOpen} setEventsInState={setEventsInState}/>
+          <EventDetails
+            event={selectedEvent}
+            setDrawerOpen={setDrawerOpen}
+            setEventsInState={setEventsInState}
+            setSelectedEvent={setSelectedEvent}
+          />
         )}
 
         {drawerView === 'event-form' && (
