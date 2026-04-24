@@ -9,10 +9,6 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   IconButton,
   LinearProgress,
@@ -35,7 +31,6 @@ import { updateMetricClient } from '@lib/metrics';
 import { convertDateToDateString } from '@lib/dateUtils';
 import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
 import { type TargetTemplateWithDays } from '@lib/targetTemplates';
-import SleepHmInput from '@/components/SleepHmInput';
 import {
   computeMacroGramsFromPercents,
   deriveMacroPercentsFromTargets,
@@ -59,8 +54,6 @@ type EditValues = {
   protein: string;
   carbs: string;
   fat: string;
-  steps: string;
-  sleepMins: string;
   weight: string;
 };
 
@@ -118,8 +111,6 @@ function metricToEditValues(m: MetricPrisma | undefined): EditValues {
     protein: str(m?.protein),
     carbs: str(m?.carbs),
     fat: str(m?.fat),
-    steps: str(m?.steps),
-    sleepMins: str(m?.sleepMins),
     weight: str(m?.weight),
   };
 }
@@ -200,14 +191,12 @@ export default function NutritionClient({
 
   const [editingDate, setEditingDate] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<EditValues>({
-    calories: '', protein: '', carbs: '', fat: '', steps: '', sleepMins: '', weight: '',
+    calories: '', protein: '', carbs: '', fat: '', weight: '',
   });
   const [savingDay, setSavingDay] = useState(false);
   const [daySaveNotice, setDaySaveNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const [targetsDialogOpen, setTargetsDialogOpen] = useState(false);
-  const [tmplSteps, setTmplSteps] = useState('');
-  const [tmplSleep, setTmplSleep] = useState('');
+  const [targetsPanelOpen, setTargetsPanelOpen] = useState(false);
   const [tmplMacros, setTmplMacros] = useState<MacroPercentValues>({calories: '', proteinPct: '0', carbsPct: '0', fatPct: '0'});
   const [savingTargets, setSavingTargets] = useState(false);
 
@@ -301,8 +290,8 @@ export default function NutritionClient({
           userId,
           date: new Date(dateStr),
           weight: editValues.weight !== '' ? toFloatOrNull(editValues.weight) : (existing?.weight ?? null),
-          steps: editValues.steps !== '' ? toIntOrNull(editValues.steps) : (existing?.steps ?? null),
-          sleepMins: editValues.sleepMins !== '' ? toIntOrNull(editValues.sleepMins) : (existing?.sleepMins ?? null),
+          steps: existing?.steps ?? null,
+          sleepMins: existing?.sleepMins ?? null,
           calories: editValues.calories !== '' ? toIntOrNull(editValues.calories) : (existing?.calories ?? null),
           protein: editValues.protein !== '' ? toIntOrNull(editValues.protein) : (existing?.protein ?? null),
           carbs: editValues.carbs !== '' ? toIntOrNull(editValues.carbs) : (existing?.carbs ?? null),
@@ -333,9 +322,7 @@ export default function NutritionClient({
     [userId, metricsByDate, editValues],
   );
 
-  const openTargetsDialog = useCallback(() => {
-    setTmplSteps(activeTemplate?.stepsTarget != null ? String(activeTemplate.stepsTarget) : '');
-    setTmplSleep(activeTemplate?.sleepMinsTarget != null ? String(activeTemplate.sleepMinsTarget) : '');
+  const openTargetsPanel = useCallback(() => {
     // Average per-day calorie/macro targets into a single uniform value
     const avgInt = (key: 'caloriesTarget' | 'proteinTarget' | 'carbsTarget' | 'fatTarget') => {
       const vals = activeTemplate?.days.map(d => d[key]).filter((v): v is number => v != null) ?? [];
@@ -353,7 +340,7 @@ export default function NutritionClient({
       carbsPct: String(percents.carbsPct),
       fatPct: String(percents.fatPct),
     });
-    setTargetsDialogOpen(true);
+    setTargetsPanelOpen(true);
   }, [activeTemplate]);
 
   const saveWeekTargets = useCallback(async () => {
@@ -378,8 +365,8 @@ export default function NutritionClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           effectiveFrom: convertDateToDateString(weekStart),
-          stepsTarget: toIntOrNull(tmplSteps),
-          sleepMinsTarget: toIntOrNull(tmplSleep),
+          stepsTarget: activeTemplate?.stepsTarget ?? null,
+          sleepMinsTarget: activeTemplate?.sleepMinsTarget ?? null,
           days,
           targetUserId: userId,
         }),
@@ -388,14 +375,14 @@ export default function NutritionClient({
       const updated: TargetTemplateWithDays = await res.json();
       setActiveTemplate(updated);
       trackFirstWeekEvent('first_nutrition_target_set', { source: 'nutrition_week_targets' });
-      setTargetsDialogOpen(false);
+      setTargetsPanelOpen(false);
       setDaySaveNotice({ type: 'success', message: 'Week targets saved.' });
     } catch (error) {
       setDaySaveNotice({ type: 'error', message: error instanceof Error ? error.message : 'Failed to save week targets. Please try again.' });
     } finally {
       setSavingTargets(false);
     }
-  }, [weekStart, tmplSteps, tmplSleep, tmplMacros, userId]);
+  }, [weekStart, tmplMacros, userId, activeTemplate]);
 
   const hasInvalidMacroSplit = useMemo(() => {
     const calories = toIntOrNull(tmplMacros.calories);
@@ -503,12 +490,50 @@ export default function NutritionClient({
               <Button
                 size="small"
                 variant="outlined"
-                onClick={openTargetsDialog}
+                onClick={openTargetsPanel}
                 disabled={templateLoading}
               >
                 {isPastWeek ? 'View week targets' : 'Set week targets'}
               </Button>
             </Box>
+          )}
+
+          {canEditTargets && targetsPanelOpen && (
+            <Card variant="outlined" sx={{ mb: 2 }}>
+              <CardContent>
+                <Typography variant="h6" sx={{mb: 1.5}}>Week Targets</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  {isPastWeek
+                    ? 'This week has passed — targets are read-only.'
+                    : `Targets apply from ${format(weekStart, 'EEE d MMM')} until changed.`}
+                </Typography>
+
+                <MacroTargetsPanel values={tmplMacros} onChange={setTmplMacros} disabled={isPastWeek} />
+                {hasInvalidMacroSplit && (
+                  <Typography variant="caption" color="error.main" sx={{ mt: 1, display: 'block' }}>
+                    Protein + Carbs + Fat must equal 100%.
+                  </Typography>
+                )}
+
+                <Divider sx={{my: 2}}/>
+
+                <Stack direction="row" spacing={1.5} justifyContent="flex-end" sx={{mt: 2}}>
+                  <Button onClick={() => setTargetsPanelOpen(false)}>
+                    {isPastWeek ? 'Close' : 'Cancel'}
+                  </Button>
+                  {!isPastWeek && (
+                    <Button
+                      variant="contained"
+                      onClick={saveWeekTargets}
+                      disabled={savingTargets || hasInvalidMacroSplit}
+                      startIcon={savingTargets ? <CircularProgress size={16} /> : undefined}
+                    >
+                      Save Targets
+                    </Button>
+                  )}
+                </Stack>
+              </CardContent>
+            </Card>
           )}
 
           {/* Daily log */}
@@ -611,7 +636,14 @@ export default function NutritionClient({
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
                           NUTRITION
                         </Typography>
-                        <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}>
+                        <Box
+                          sx={{
+                            mt: 1,
+                            display: 'grid',
+                            gridTemplateColumns: {xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))'},
+                            gap: 1,
+                          }}
+                        >
                           {MACROS.map(({ key, label, unit }) => (
                             (() => {
                               const errorText = getNumericFieldError(editValues[key], key === 'calories' ? 10000 : 1000);
@@ -623,7 +655,7 @@ export default function NutritionClient({
                                   type="number"
                                   value={editValues[key]}
                                   onChange={e => setEditValues(v => ({ ...v, [key]: e.target.value }))}
-                                  sx={{ width: 130 }}
+                                  fullWidth
                                   inputProps={{ min: 0 }}
                                   error={!!errorText}
                                   helperText={errorText}
@@ -631,47 +663,29 @@ export default function NutritionClient({
                               );
                             })()
                           ))}
-                        </Stack>
+                        </Box>
 
                         <Divider sx={{ my: 1.5 }} />
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                          OTHER METRICS
-                        </Typography>
-                        <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}>
+                        <Box
+                          sx={{
+                            mt: 1,
+                            display: 'grid',
+                            gridTemplateColumns: {xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))'},
+                            gap: 1,
+                          }}
+                        >
                           <TextField
                             label="Weight (kg)"
                             size="small"
                             type="number"
                             value={editValues.weight}
                             onChange={e => setEditValues(v => ({ ...v, weight: e.target.value }))}
-                            sx={{ width: 130 }}
+                            fullWidth
                             inputProps={{ min: 0, step: 0.1 }}
                             error={!!getNumericFieldError(editValues.weight, 500)}
                             helperText={getNumericFieldError(editValues.weight, 500)}
                           />
-                          <TextField
-                            label="Steps"
-                            size="small"
-                            type="number"
-                            value={editValues.steps}
-                            onChange={e => setEditValues(v => ({ ...v, steps: e.target.value }))}
-                            sx={{ width: 130 }}
-                            inputProps={{ min: 0 }}
-                            error={!!getNumericFieldError(editValues.steps, 100000)}
-                            helperText={getNumericFieldError(editValues.steps, 100000)}
-                          />
-                          <TextField
-                            label="Sleep (mins)"
-                            size="small"
-                            type="number"
-                            value={editValues.sleepMins}
-                            onChange={e => setEditValues(v => ({ ...v, sleepMins: e.target.value }))}
-                            sx={{ width: 130 }}
-                            inputProps={{ min: 0 }}
-                            error={!!getNumericFieldError(editValues.sleepMins, 1440)}
-                            helperText={getNumericFieldError(editValues.sleepMins, 1440)}
-                          />
-                        </Stack>
+                        </Box>
                       </Box>
                     )}
                   </CardContent>
@@ -681,64 +695,6 @@ export default function NutritionClient({
           </Stack>
         </>
       </Box>
-
-      {/* Week targets dialog */}
-      <Dialog open={targetsDialogOpen} onClose={() => setTargetsDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Week Targets</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {isPastWeek
-              ? 'This week has passed — targets are read-only.'
-              : `Targets apply from ${format(weekStart, 'EEE d MMM')} until changed.`}
-          </Typography>
-
-          <MacroTargetsPanel values={tmplMacros} onChange={setTmplMacros} disabled={isPastWeek} />
-          {hasInvalidMacroSplit && (
-            <Typography variant="caption" color="error.main" sx={{ mt: 1, display: 'block' }}>
-              Protein + Carbs + Fat must equal 100%.
-            </Typography>
-          )}
-
-          <Divider sx={{my: 2}}/>
-
-          <Stack direction={{xs: 'column', sm: 'row'}} spacing={2}>
-            <TextField
-              label="Steps"
-              placeholder="Target steps"
-              size="small"
-              type="number"
-              value={tmplSteps}
-              onChange={e => setTmplSteps(e.target.value)}
-              disabled={isPastWeek}
-              inputProps={{min: 0}}
-              sx={{flex: 1}}
-              error={!!getNumericFieldError(tmplSteps, 100000)}
-              helperText={getNumericFieldError(tmplSteps, 100000)}
-            />
-            <SleepHmInput
-              valueMins={tmplSleep}
-              onChange={setTmplSleep}
-              disabled={isPastWeek}
-              sx={{flex: 1}}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setTargetsDialogOpen(false)}>
-            {isPastWeek ? 'Close' : 'Cancel'}
-          </Button>
-          {!isPastWeek && (
-            <Button
-              variant="contained"
-              onClick={saveWeekTargets}
-              disabled={savingTargets || hasInvalidMacroSplit}
-              startIcon={savingTargets ? <CircularProgress size={16} /> : undefined}
-            >
-              Save Targets
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
 
       <Snackbar
         open={daySaveNotice !== null}

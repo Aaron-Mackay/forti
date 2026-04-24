@@ -2,7 +2,7 @@
  * Nutrition page tests (/user/nutrition).
  *
  * Covers: page load, week navigation, weekly summary, daily log,
- * inline editing a day, the "Set week targets" dialog (7-day template grid),
+ * inline editing a day, the "Set week targets" inline panel,
  * and target template persistence / backwards lookup behaviour.
  */
 import { expect, test } from './fixtures';
@@ -91,40 +91,34 @@ test.describe('Nutrition page', () => {
     await expect(page.getByRole('button', { name: 'Set week targets' })).toBeVisible();
   });
 
-  test('clicking Set week targets opens the dialog with correct heading', async ({ page }) => {
+  test('clicking Set week targets opens the inline panel with correct heading', async ({ page }) => {
     await page.getByRole('button', { name: 'Set week targets' }).click();
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
     await expect(page.getByRole('heading', { name: 'Week Targets' })).toBeVisible();
   });
 
-  test('Week targets dialog shows 7 day rows (Mon–Sun)', async ({ page }) => {
+  test('Week targets panel shows target applicability copy', async ({ page }) => {
     await page.getByRole('button', { name: 'Set week targets' }).click();
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
-    for (const day of ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']) {
-      await expect(page.getByText(day, { exact: true }).first()).toBeVisible();
-    }
+    await expect(page.getByText('Targets apply from', { exact: false }).first()).toBeVisible();
   });
 
-  test('Week targets dialog shows macro target fields and labels', async ({ page }) => {
+  test('Week targets panel shows macro target fields and labels', async ({ page }) => {
     await page.getByRole('button', { name: 'Set week targets' }).click();
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
     for (const label of ['Energy target', 'Protein', 'Carbs', 'Fat']) {
       await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
     }
   });
 
-  test('Week targets dialog has Steps and Sleep inputs', async ({ page }) => {
+  test('Week targets panel does not show Steps and Sleep inputs', async ({ page }) => {
     await page.getByRole('button', { name: 'Set week targets' }).click();
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByLabel('Steps')).toBeVisible();
-    await expect(page.getByLabel('Sleep hours')).toBeVisible();
-    await expect(page.getByLabel('Sleep minutes')).toBeVisible();
+    await expect(page.getByLabel('Steps')).not.toBeVisible();
+    await expect(page.getByLabel('Sleep hours')).not.toBeVisible();
+    await expect(page.getByLabel('Sleep minutes')).not.toBeVisible();
   });
 
-  test('cancelling the dialog closes it', async ({ page }) => {
+  test('cancelling the panel closes it', async ({ page }) => {
     await page.getByRole('button', { name: 'Set week targets' }).click();
     await page.getByRole('button', { name: 'Cancel' }).click();
-    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.getByRole('heading', { name: 'Week Targets' })).not.toBeVisible({ timeout: 3_000 });
   });
 
   test('each day card has an edit button', async ({ page }) => {
@@ -176,30 +170,36 @@ test.describe('Nutrition — target template behaviour', () => {
     await page.request.post('/api/target-templates', { data: blankTemplate() });
   });
 
-  test('past week shows "View week targets" button and read-only dialog', async ({ page, browserName, isMobile }) => {
+  test('past week shows "View week targets" button and read-only panel', async ({ page, browserName, isMobile }) => {
     test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
 
     await page.getByRole('button', { name: 'Previous week' }).click();
     await expect(page.getByRole('button', { name: 'View week targets' })).toBeVisible();
     await page.getByRole('button', { name: 'View week targets' }).click();
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole('heading', { name: 'Week Targets' })).toBeVisible({ timeout: 5_000 });
     // Only "Close" — no Save Targets
     await expect(page.getByRole('button', { name: 'Close' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Save Targets' })).not.toBeVisible();
   });
 
-  test('saving targets persists when dialog is reopened', async ({ page, browserName, isMobile }) => {
+  test('saving targets persists when panel is reopened', async ({ page, browserName, isMobile }) => {
     test.skip(browserName !== 'chromium' || isMobile, 'serial: desktop chromium only');
 
     await page.getByRole('button', { name: 'Set week targets' }).click();
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
-    await page.getByLabel('Steps').fill('8500');
+    await expect(page.getByRole('heading', { name: 'Week Targets' })).toBeVisible({ timeout: 5_000 });
+    await page.getByLabel('Energy target').fill('2200');
+    await page.getByLabel('Protein percent').fill('40');
+    await page.getByLabel('Carbs percent').fill('30');
+    await page.getByLabel('Fat percent').fill('30');
     await page.getByRole('button', { name: 'Save Targets' }).click();
-    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole('heading', { name: 'Week Targets' })).not.toBeVisible({ timeout: 5_000 });
 
     // Reopen and confirm value was saved
     await page.getByRole('button', { name: 'Set week targets' }).click();
-    await expect(page.getByLabel('Steps')).toHaveValue('8500', { timeout: 5_000 });
+    await expect(page.getByLabel('Energy target')).toHaveValue('2200', { timeout: 5_000 });
+    await expect(page.getByLabel('Protein percent')).toHaveValue('40');
+    await expect(page.getByLabel('Carbs percent')).toHaveValue('30');
+    await expect(page.getByLabel('Fat percent')).toHaveValue('30');
   });
 
   test('targets carry forward to future weeks (backwards lookup)', async ({ page, browserName, isMobile }) => {
@@ -209,9 +209,17 @@ test.describe('Nutrition — target template behaviour', () => {
     const res = await page.request.post('/api/target-templates', {
       data: {
         effectiveFrom: getCurrentMonday(),
-        stepsTarget: 12000,
-        sleepMinsTarget: 450,
-        days: { '1': {}, '2': {}, '3': {}, '4': {}, '5': {}, '6': {}, '7': {} },
+        stepsTarget: null,
+        sleepMinsTarget: null,
+        days: {
+          '1': { caloriesTarget: 2400, proteinTarget: 180, carbsTarget: 240, fatTarget: 80 },
+          '2': { caloriesTarget: 2400, proteinTarget: 180, carbsTarget: 240, fatTarget: 80 },
+          '3': { caloriesTarget: 2400, proteinTarget: 180, carbsTarget: 240, fatTarget: 80 },
+          '4': { caloriesTarget: 2400, proteinTarget: 180, carbsTarget: 240, fatTarget: 80 },
+          '5': { caloriesTarget: 2400, proteinTarget: 180, carbsTarget: 240, fatTarget: 80 },
+          '6': { caloriesTarget: 2400, proteinTarget: 180, carbsTarget: 240, fatTarget: 80 },
+          '7': { caloriesTarget: 2400, proteinTarget: 180, carbsTarget: 240, fatTarget: 80 },
+        },
       },
     });
     expect(res.ok()).toBeTruthy();
@@ -219,11 +227,12 @@ test.describe('Nutrition — target template behaviour', () => {
     // Navigate to next week and open its dialog
     await page.getByRole('button', { name: 'Next week' }).click();
     await page.getByRole('button', { name: 'Set week targets' }).click();
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole('heading', { name: 'Week Targets' })).toBeVisible({ timeout: 5_000 });
 
-    // Backwards lookup should surface the current-week template
-    await expect(page.getByLabel('Steps')).toHaveValue('12000', { timeout: 5_000 });
-    await expect(page.getByLabel('Sleep hours')).toHaveValue('7', { timeout: 5_000 });
-    await expect(page.getByLabel('Sleep minutes')).toHaveValue('30', { timeout: 5_000 });
+    // Backwards lookup should surface the current-week macro template
+    await expect(page.getByLabel('Energy target')).toHaveValue('2400', { timeout: 5_000 });
+    await expect(page.getByLabel('Protein percent')).toHaveValue('30');
+    await expect(page.getByLabel('Carbs percent')).toHaveValue('40');
+    await expect(page.getByLabel('Fat percent')).toHaveValue('30');
   });
 });
