@@ -1,4 +1,5 @@
-import {getUserEvents, getUserMetrics} from "@lib/api";
+import {getUserEvents} from "@lib/eventService";
+import {getUserMetrics} from "@lib/metricService";
 import React from "react";
 import {notFound} from "next/navigation";
 import Calendar from "./Calendar";

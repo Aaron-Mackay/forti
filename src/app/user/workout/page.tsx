@@ -1,4 +1,4 @@
-import {getUserData} from '@lib/api'; // Server-side data fetching
+import {getUserData} from '@lib/userService'; // Server-side data fetching
 import WorkoutClient from './WorkoutClient';
 import {notFound} from "next/navigation";
 import NetworkStatusBanner from "@/components/NetworkStatusBanner";

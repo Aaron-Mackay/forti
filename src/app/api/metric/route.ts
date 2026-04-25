@@ -1,5 +1,5 @@
 import {NextRequest, NextResponse} from 'next/server';
-import {updateUserMetric} from '@/lib/api';
+import {updateUserMetric} from '@/lib/metricService';
 import confirmPermission from "@lib/confirmPermission";
 import {MetricSchema} from "@lib/apiSchemas";
 import {errorResponse, validationErrorResponse} from "@lib/apiResponses";

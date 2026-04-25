@@ -1,5 +1,6 @@
 import {requireSession} from '@lib/requireSession';
-import {getUserMetrics, getUserEvents} from '@lib/api';
+import {getUserEvents} from '@lib/eventService';
+import {getUserMetrics} from '@lib/metricService';
 import {NextResponse} from 'next/server';
 import {withRouteAuth} from '@lib/routeAuth';
 

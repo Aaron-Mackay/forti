@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import {updateUserEvent} from "@/lib/api";
+import {updateUserEvent} from "@/lib/eventService";
 import {requireSession} from "@lib/requireSession";
 import prisma from "@/lib/prisma";
 import {isPrismaNotFound} from "@lib/apiError";

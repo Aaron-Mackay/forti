@@ -8,7 +8,7 @@ const { mockSaveUserPlan, mockConfirmPermission, mockRecordAuditEvent, mockGetSe
   mockGetSessionActorUserId: vi.fn(),
 }));
 
-vi.mock('@lib/api', () => ({
+vi.mock('@lib/planService', () => ({
   saveUserPlan: mockSaveUserPlan,
 }));
 

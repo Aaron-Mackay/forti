@@ -239,8 +239,13 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 |---|---|
 | `src/lib/auth.ts` | NextAuth config, export `authOptions` |
 | `src/lib/prisma.ts` | Prisma client singleton |
-| `src/lib/api.ts` | Fetch wrapper + API utility functions |
-| `src/lib/fetchWrapper.ts` | HTTP client wrapper used in lib/api.ts |
+| `src/lib/fetchWrapper.ts` | HTTP client wrapper used in lib/clientApi.ts |
+| `src/lib/userService.ts` | User-domain data access helpers (`getUserData`, `getUserCheckIns`, `getUsers`) |
+| `src/lib/eventService.ts` | Event-domain data access helpers (`getUserEvents`, `saveUserEvent`, overlap helpers) |
+| `src/lib/metricService.ts` | Metric/check-in helpers (`getUserMetrics`, `updateUserMetric`) |
+| `src/lib/planService.ts` | Plan-domain data access helpers (`saveUserPlan`, `getAllLinkedPlans`, `getUserFromPlan`) |
+| `src/lib/coachService.ts` | Coach-domain helpers (`getCoachClients`, `getCoachFromUser`) |
+| `src/lib/exerciseService.ts` | Exercise-domain read helpers (`getExercises`, `getExercisesAndCategories`) |
 | `src/lib/firstWeekEvents.ts` | Client-side one-time first-week analytics event tracking (`trackFirstWeekEvent`) |
 | `src/lib/clientApi.ts` | Client-side typed API wrappers (`saveUserWorkoutData`, `savePlan`) |
 | `src/lib/dateUtils.ts` | Date manipulation helpers |

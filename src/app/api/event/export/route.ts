@@ -1,6 +1,6 @@
 import {NextResponse} from "next/server";
 import { requireSession, authenticationErrorResponse, isAuthenticationError } from "@lib/requireSession";
-import {getUserEvents} from "@lib/api";
+import {getUserEvents} from "@lib/eventService";
 import {buildIcalString} from "@/app/api/event/icalBuilder";
 import {errorResponse} from "@lib/apiResponses";
 
