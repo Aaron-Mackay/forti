@@ -233,6 +233,7 @@ model Workout {
   name          String
   notes         String?
   exercises     WorkoutExercise[]
+  trainingSession TrainingSession?
   dateCompleted DateTime?
 
   @@unique([weekId, order])
