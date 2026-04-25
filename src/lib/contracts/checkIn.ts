@@ -1,6 +1,8 @@
 import { z } from 'zod';
+import type { Prisma } from '@/generated/prisma/browser';
 
 const NullableRatingSchema = z.number().int().min(1).max(5).nullable();
+const JsonValueSchema = z.custom<Prisma.JsonValue>((value) => value !== undefined);
 
 export const CheckInPhotoUrlsSchema = z.object({
   frontPhotoUrl: z.string().nullable(),
@@ -53,8 +55,8 @@ export const WeeklyCheckInSchema = z.object({
   coachNotes: z.string().nullable(),
   coachReviewedAt: z.coerce.date().nullable(),
   coachResponseUrl: z.string().nullable(),
-  customResponses: z.unknown().nullable(),
-  templateSnapshot: z.unknown().nullable(),
+  customResponses: JsonValueSchema.nullable(),
+  templateSnapshot: JsonValueSchema.nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   ...CheckInPhotoUrlsSchema.shape,
