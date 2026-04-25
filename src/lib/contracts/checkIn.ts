@@ -51,6 +51,7 @@ export const WeeklyCheckInSchema = z.object({
   coachMessage: z.string().nullable(),
   goalsNextWeek: z.string().nullable(),
   coachNotes: z.string().nullable(),
+  coachReviewedAt: z.coerce.date().nullable(),
   coachResponseUrl: z.string().nullable(),
   customResponses: z.unknown().nullable(),
   templateSnapshot: z.unknown().nullable(),
