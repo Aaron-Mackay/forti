@@ -6,6 +6,16 @@ Mentor when useful, push back when needed, keep things consise.
 
 ---
 
+## Agent file-targeting (check first)
+
+Before planning edits or running broad searches, check the targeted index:
+
+- [`docs/agent/index.md`](./docs/agent/index.md)
+
+Keep this index updated when major feature areas or top-level domains are added.
+
+---
+
 ## Project Overview
 
 **Forti** is a full-stack fitness tracking web application. Users can plan and execute weekly workouts, log daily health metrics, manage training blocks (Bulk, Cut, Deload, etc.), and view historical trends. It also supports a coach-client relationship model.
