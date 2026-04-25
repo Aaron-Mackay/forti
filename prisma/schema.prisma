@@ -53,9 +53,20 @@ model User {
   learningAssignments       LearningPlanAssignment[]   @relation("ClientAssignments")
   targetTemplates           TargetTemplate[]
   auditEvents               AuditEvent[]               @relation("AuditEventActor")
+  trainingSessions          TrainingSession[]
 
   @@index([coachId])
   @@index([activePlanId])
+}
+
+enum SessionType {
+  workout
+  cardio
+}
+
+enum SessionStatus {
+  planned
+  completed
 }
 
 enum CoachRequestStatus {
@@ -226,6 +237,33 @@ model Workout {
 
   @@unique([weekId, order])
   @@index([weekId])
+}
+
+model TrainingSession {
+  id          Int           @id @default(autoincrement())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionType SessionType
+  status      SessionStatus @default(completed)
+  performedAt DateTime      @db.Date
+  workoutId   Int?          @unique
+  workout     Workout?      @relation(fields: [workoutId], references: [id], onDelete: SetNull)
+
+  // Cardio details (required for cardio sessions)
+  activityType String?
+  durationSec  Int?
+  distanceM    Int?
+  avgPace      Float?
+  avgHr        Int?
+  calories     Int?
+  notes        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, performedAt(sort: Desc)])
+  @@index([userId, sessionType, performedAt(sort: Desc)])
+  @@index([userId, status, performedAt(sort: Desc)])
 }
 
 model Exercise {
