@@ -411,7 +411,7 @@ export default function NutritionClient({
                   backgroundColor: activeBlock.blockSubtype
                     ? getDefinedBlockColor(activeBlock.blockSubtype)
                     : (activeBlock.customColor ?? 'grey.500'),
-                  color: 'white',
+                  color: 'common.white',
                   fontWeight: 600,
                 }}
               />
