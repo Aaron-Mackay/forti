@@ -8,6 +8,10 @@ on:
         required: true
         default: 'bf94b24cf0a8343c0e809917c9307f8c0a28169a ccdec8d843f630fad604eefa086cc24a4797c908'
 
+permissions:
+  contents: write
+  pull-requests: read
+
 jobs:
   cherry-pick:
     runs-on: ubuntu-latest
