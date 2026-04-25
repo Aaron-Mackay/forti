@@ -134,10 +134,13 @@ export default function MetricsDailyBreakdown({
   }
 
   // Day header labels derived from weekStart using UTC to avoid timezone-day mismatch
-  const dayLabels = Array.from({ length: 7 }, (_, i) => {
+  const dayHeaders = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
     d.setUTCDate(d.getUTCDate() + i);
-    return d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' });
+    return {
+      weekday: d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' }),
+      date: d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', timeZone: 'UTC' }),
+    };
   });
 
   function val(i: number, fn: (m: Metric) => string | null): string {
@@ -239,7 +242,7 @@ export default function MetricsDailyBreakdown({
   const cellSx = forceCompactFont
     ? { fontSize: '0.72rem' }
     : { fontSize: { xs: '0.72rem', lg: '0.875rem' } };
-  const dayColumnWidth = showMetricColumn ? `${100 / (dayLabels.length + 1)}%` : `${100 / dayLabels.length}%`;
+  const dayColumnWidth = showMetricColumn ? `${100 / (dayHeaders.length + 1)}%` : `${100 / dayHeaders.length}%`;
   const stickyMetricCellSx = showMetricColumn
     ? {
       ...cellSx,
@@ -274,8 +277,31 @@ export default function MetricsDailyBreakdown({
           <TableHead>
             <TableRow>
               {showMetricColumn && <TableCell sx={stickyMetricHeaderSx}>Metric</TableCell>}
-              {dayLabels.map(label => (
-                <TableCell key={label} align="center" sx={{ width: dayColumnWidth, fontWeight: 600, ...cellSx }}>{label}</TableCell>
+              {dayHeaders.map(({ weekday, date }) => (
+                <TableCell key={`${weekday}-${date}`} align="center" sx={{ width: dayColumnWidth, fontWeight: 600, ...cellSx }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: { xs: 'column', lg: 'row' },
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: { xs: 0, lg: 0.5 },
+                      lineHeight: 1.15,
+                      whiteSpace: { xs: 'normal', lg: 'nowrap' },
+                    }}
+                  >
+                    <Typography component="span" sx={{ fontWeight: 600, ...cellSx }}>
+                      {weekday}
+                    </Typography>
+                    <Typography
+                      component="span"
+                      color="text.secondary"
+                      sx={{ fontSize: '0.68rem', lineHeight: 1.1 }}
+                    >
+                      {date}
+                    </Typography>
+                  </Box>
+                </TableCell>
               ))}
             </TableRow>
           </TableHead>
