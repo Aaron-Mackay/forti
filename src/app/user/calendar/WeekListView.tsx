@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Box, Typography } from '@mui/material';
 import {
   addDays,
@@ -26,6 +26,11 @@ type WeekGroup = {
   monthKey: string;
   monthLabel: string;
   weeks: Date[];
+};
+
+type WeekEventGroups = {
+  blockEvents: EventPrisma[];
+  customEvents: EventPrisma[];
 };
 
 function getWeeksInRange(start: Date, end: Date): Date[] {
@@ -56,20 +61,6 @@ function groupWeeksByMonth(weeks: Date[]): WeekGroup[] {
   return groups;
 }
 
-function getBlockEventsForWeek(events: EventPrisma[], weekStart: Date, weekEnd: Date): EventPrisma[] {
-  return events.filter(e => {
-    if (e.eventType !== EventType.BlockEvent) return false;
-    return new Date(e.startDate) < weekEnd && new Date(e.endDate) >= weekStart;
-  });
-}
-
-function getCustomEventsForWeek(events: EventPrisma[], weekStart: Date, weekEnd: Date): EventPrisma[] {
-  return events.filter(e => {
-    if (e.eventType !== EventType.CustomEvent) return false;
-    return new Date(e.startDate) < weekEnd && new Date(e.endDate) >= weekStart;
-  });
-}
-
 export default function WeekListView({ events, onWeekClick, height, active }: Props) {
   const today = startOfDay(new Date());
   const currentWeekStart = startOfISOWeek(today);
@@ -78,8 +69,58 @@ export default function WeekListView({ events, onWeekClick, height, active }: Pr
   const rangeStart = addWeeks(currentWeekStart, -26);
   const rangeEnd = addWeeks(currentWeekStart, 52);
 
-  const weeks = getWeeksInRange(rangeStart, rangeEnd);
-  const groups = groupWeeksByMonth(weeks);
+  const rangeStartTime = rangeStart.getTime();
+  const rangeEndTime = rangeEnd.getTime();
+
+  const { weeks, groups } = useMemo(() => {
+    const computedWeeks = getWeeksInRange(rangeStart, rangeEnd);
+    return {
+      weeks: computedWeeks,
+      groups: groupWeeksByMonth(computedWeeks),
+    };
+  }, [rangeStartTime, rangeEndTime]);
+
+  const eventsByWeekStart = useMemo(() => {
+    const weekMap = new Map<string, WeekEventGroups>();
+
+    for (const weekStart of weeks) {
+      weekMap.set(weekStart.toISOString(), { blockEvents: [], customEvents: [] });
+    }
+
+    if (weeks.length === 0) return weekMap;
+
+    const earliestWeekStart = weeks[0];
+    const latestWeekEnd = addDays(weeks[weeks.length - 1], 7);
+
+    for (const event of events) {
+      const eventStart = new Date(event.startDate);
+      const eventEnd = new Date(event.endDate);
+
+      if (eventStart >= latestWeekEnd || eventEnd < earliestWeekStart) {
+        continue;
+      }
+
+      const overlapStart = startOfISOWeek(eventStart > earliestWeekStart ? eventStart : earliestWeekStart);
+      const overlapEnd = startOfISOWeek(eventEnd < latestWeekEnd ? eventEnd : addDays(latestWeekEnd, -1));
+
+      for (let weekStart = overlapStart; weekStart <= overlapEnd; weekStart = addWeeks(weekStart, 1)) {
+        const weekKey = weekStart.toISOString();
+        const weekGroup = weekMap.get(weekKey);
+
+        if (!weekGroup) {
+          continue;
+        }
+
+        if (event.eventType === EventType.BlockEvent) {
+          weekGroup.blockEvents.push(event);
+        } else if (event.eventType === EventType.CustomEvent) {
+          weekGroup.customEvents.push(event);
+        }
+      }
+    }
+
+    return weekMap;
+  }, [events, weeks]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const currentWeekRef = useRef<HTMLDivElement>(null);
@@ -127,8 +168,9 @@ export default function WeekListView({ events, onWeekClick, height, active }: Pr
           {monthWeeks.map(weekStart => {
             const weekEnd = addDays(weekStart, 7);
             const isCurrentWeek = isSameDay(weekStart, currentWeekStart);
-            const blockEvents = getBlockEventsForWeek(events, weekStart, weekEnd);
-            const customEvents = getCustomEventsForWeek(events, weekStart, weekEnd);
+            const weekEvents = eventsByWeekStart.get(weekStart.toISOString());
+            const blockEvents = weekEvents?.blockEvents ?? [];
+            const customEvents = weekEvents?.customEvents ?? [];
             const primaryBlock = blockEvents[0] ?? null;
             const blockColor = primaryBlock ? getEventColor(primaryBlock) : undefined;
             const weekNum = getISOWeek(weekStart);
