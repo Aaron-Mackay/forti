@@ -7,6 +7,11 @@ interface OfflineRequest {
   body: Record<string, unknown>;
 }
 
+export type QueueOrSendResult = {
+  queued: boolean;
+  response?: Response;
+};
+
 const MAX_RETRIES = 3;
 
 // Prevent concurrent sync runs (multiple online/visibilitychange/pageshow triggers
@@ -54,7 +59,7 @@ export async function getQueuedRequests(): Promise<number> {
 }
 
 
-export async function queueOrSendRequest(url: string, method: string, body: Record<string, unknown>): Promise<void> {
+export async function queueOrSendRequest(url: string, method: string, body: Record<string, unknown>): Promise<QueueOrSendResult> {
   const req: OfflineRequest = {url, method, body};
 
 
@@ -71,9 +76,22 @@ export async function queueOrSendRequest(url: string, method: string, body: Reco
         console.warn('Background sync registration failed:', err);
       }
     }
+    return {queued: true};
   } else {
-    await retryFetch(req);
+    const response = await retryFetch(req);
+    return {queued: false, response};
   }
+}
+
+export async function queueOrSendRequestJson<T>(
+  url: string,
+  method: string,
+  body: Record<string, unknown>,
+): Promise<{queued: boolean; data: T | null}> {
+  const {queued, response} = await queueOrSendRequest(url, method, body);
+  if (queued || !response) return {queued: true, data: null};
+  const data = await response.json() as T;
+  return {queued: false, data};
 }
 
 

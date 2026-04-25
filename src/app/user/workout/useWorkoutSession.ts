@@ -1,7 +1,7 @@
 'use client';
 
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {queueOrSendRequest, syncQueuedRequests} from '@/utils/offlineSync';
+import {queueOrSendRequest, queueOrSendRequestJson, syncQueuedRequests} from '@/utils/offlineSync';
 import {getUserDataCache, saveUserDataCache} from '@/utils/clientDb';
 import {useOfflineCache} from '@lib/hooks/useOfflineCache';
 import {UserPrisma, WorkoutExercisePrisma, WorkoutPrisma} from '@/types/dataTypes';
@@ -91,6 +91,7 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
 
   // Per-set-field network timers to avoid race conditions and truncation during rapid typing
   const networkTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const pendingWorkoutExerciseId = useRef(-1);
 
   // On mount: if offline restore cache; if online prime cache
   useOfflineCache(userDataState.id, userDataState, setUserData, getUserDataCache, saveUserDataCache);
@@ -320,12 +321,20 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
   };
 
   const handleFormCueBlur = (exerciseId: number, note: string) => {
+    const prevUserData = userDataState;
     setUserData(prev => updateUserExerciseNote(prev, exerciseId, note));
-    fetch(`/api/exerciseNote/${exerciseId}`, {
-      method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({note}),
-    });
+    queueOrSendRequest(`/api/exerciseNote/${exerciseId}`, 'PUT', {note})
+      .then(({queued}) => {
+        setSnackbar({
+          open: true,
+          message: queued ? 'Offline: note update queued' : 'Form cue updated',
+          severity: queued ? 'info' : 'success',
+        });
+      })
+      .catch(() => {
+        setUserData(prevUserData);
+        setSnackbar({open: true, message: 'Failed to update form cue', severity: 'info'});
+      });
   };
 
   const handleSnackbarClose = () => setSnackbar(s => ({...s, open: false}));
@@ -372,27 +381,64 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
     if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
 
     const order = (selectedWorkout?.exercises.length ?? 0) + 1;
+    const prevUserData = userDataState;
+    const optimisticId = pendingWorkoutExerciseId.current--;
+    const optimisticExercise: WorkoutExercisePrisma = {
+      id: optimisticId,
+      workoutId: selectedWorkoutId,
+      exerciseId: exercise.id,
+      order,
+      repRange: config.repRange,
+      restTime: config.restTime,
+      targetRpe: null,
+      targetRir: null,
+      exercise,
+      sets: [],
+      notes: '',
+      cardioDuration: null,
+      cardioDistance: null,
+      cardioResistance: null,
+      substitutedForId: null,
+      substitutedFor: null,
+      isAdded: true,
+      isBfr: false,
+    };
 
-    fetch('/api/workoutExercise', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
+    setUserData(prev =>
+      addExerciseToWorkout(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, optimisticExercise)
+    );
+
+    queueOrSendRequestJson<WorkoutExercisePrisma>('/api/workoutExercise', 'POST', {
         workoutId: selectedWorkoutId,
         exerciseId: exercise.id,
         order,
         repRange: config.repRange,
         restTime: config.restTime,
         setCount: config.setCount,
-      }),
     })
-      .then(r => r.ok ? r.json() : Promise.reject(r))
-      .then((newWorkoutExercise: WorkoutExercisePrisma) => {
-        setUserData(prev =>
-          addExerciseToWorkout(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, newWorkoutExercise)
-        );
-        setSnackbar({open: true, message: 'Exercise added', severity: 'success'});
+      .then(({queued, data}) => {
+        if (!queued && data) {
+          setUserData(prev => {
+            const withoutOptimistic = removeExercise(
+              prev,
+              selectedPlanId,
+              selectedWeekId,
+              selectedWorkoutId,
+              optimisticId,
+            );
+            return addExerciseToWorkout(withoutOptimistic, selectedPlanId, selectedWeekId, selectedWorkoutId, data);
+          });
+        }
+        setSnackbar({
+          open: true,
+          message: queued ? 'Offline: exercise addition queued' : 'Exercise added',
+          severity: queued ? 'info' : 'success',
+        });
       })
-      .catch(() => setSnackbar({open: true, message: 'Failed to add exercise', severity: 'info'}));
+      .catch(() => {
+        setUserData(prevUserData);
+        setSnackbar({open: true, message: 'Failed to add exercise', severity: 'info'});
+      });
   };
 
   const handleEffortUpdate = (setId: number, field: 'rpe' | 'rir', value: number | null) => {
@@ -412,7 +458,16 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
     if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
     const prevUserData = userDataState;
     setUserData(prev => removeExercise(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, workoutExerciseId));
-    fetch(`/api/workoutExercise/${workoutExerciseId}`, {method: 'DELETE'})
+    if (workoutExerciseId < 0) {
+      setSnackbar({open: true, message: 'Offline: pending exercise removed locally', severity: 'info'});
+      return;
+    }
+    queueOrSendRequest(`/api/workoutExercise/${workoutExerciseId}`, 'DELETE', {})
+      .then(({queued}) => setSnackbar({
+        open: true,
+        message: queued ? 'Offline: exercise removal queued' : 'Exercise removed',
+        severity: queued ? 'info' : 'success',
+      }))
       .catch(() => {
         setUserData(prevUserData);
         setSnackbar({open: true, message: 'Failed to remove exercise', severity: 'info'});
