@@ -163,6 +163,7 @@ export default function CoachCheckInDetailClient({
   const [targetValues, setTargetValues] = useState<TargetValues>(() => initTargetValues(activeTemplate));
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   const [reviewedAt, setReviewedAt] = useState(checkIn.coachReviewedAt);
   const [activePhoto, setActivePhoto] = useState<{ src: string; alt: string } | null>(null);
   const [metricsExpanded, setMetricsExpanded] = useState(false);
@@ -205,6 +206,7 @@ export default function CoachCheckInDetailClient({
   async function handleSaveNotes() {
     setSaving(true);
     setSaveError(null);
+    setSaveSuccessMessage(null);
 
     try {
       if (!macroSplitValid) {
@@ -248,7 +250,9 @@ export default function CoachCheckInDetailClient({
         }),
       ]);
 
-      setReviewedAt(new Date());
+      const savedAt = new Date();
+      setReviewedAt(savedAt);
+      setSaveSuccessMessage(`Review sent to ${checkIn.user.name} at ${savedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}.`);
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'Failed to save. Please try again.');
     } finally {
@@ -497,14 +501,20 @@ export default function CoachCheckInDetailClient({
             fullWidth
             placeholder="Leave feedback for your client…"
             value={notes}
-            onChange={event => setNotes(event.target.value)}
+            onChange={event => {
+              setNotes(event.target.value);
+              setSaveSuccessMessage(null);
+            }}
           />
           <TextField
             fullWidth
             label="Review link (optional)"
             placeholder="https://www.loom.com/share/..."
             value={coachResponseUrl}
-            onChange={event => setCoachResponseUrl(event.target.value)}
+            onChange={event => {
+              setCoachResponseUrl(event.target.value);
+              setSaveSuccessMessage(null);
+            }}
             sx={{mt: 2}}
           />
           {coachLoomEmbedUrl ? (
@@ -572,6 +582,7 @@ export default function CoachCheckInDetailClient({
         </Box>
       </Stack>
 
+      {saveSuccessMessage && <Alert severity="success" sx={{mt: 2}}>{saveSuccessMessage}</Alert>}
       {saveError && <Alert severity="error" sx={{mt: 2}}>{saveError}</Alert>}
       <Stack direction={{xs: 'column', sm: 'row'}} spacing={1.5} sx={{mt: 2, mb: 4}} alignItems={{sm: 'center'}}>
         <Button
