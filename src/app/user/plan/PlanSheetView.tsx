@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import { PlanPrisma } from '@/types/dataTypes'
@@ -124,29 +124,43 @@ const PlanSheetView = ({
     }
   }, [onZoomChange])
 
-  const sortedWeeks = [...plan.weeks].sort((a, b) => a.order - b.order)
-  const maxWorkoutCount = Math.max(0, ...sortedWeeks.map((week) => week.workouts.length))
-  const slotMaxSets: number[] = Array.from({ length: maxWorkoutCount }, (_, slotIdx) => {
-    let max = 0
-    for (const week of sortedWeeks) {
-      const workout = week.workouts.find((entry) => entry.order === slotIdx + 1)
-      if (!workout) continue
-      for (const exercise of workout.exercises) {
-        if (exercise.exercise?.category === 'cardio') continue
-        const topLevelSetCount = exercise.sets.filter((set) => !set.isDropSet).length
-        if (topLevelSetCount > max) max = topLevelSetCount
-      }
-    }
-    return max
-  })
+  const sortedWeeks = useMemo(() => [...plan.weeks].sort((a, b) => a.order - b.order), [plan.weeks])
+  const maxWorkoutCount = useMemo(() => Math.max(0, ...sortedWeeks.map((week) => week.workouts.length)), [sortedWeeks])
+  const slotMaxSets = useMemo<number[]>(
+    () =>
+      Array.from({ length: maxWorkoutCount }, (_, slotIdx) => {
+        let max = 0
+        for (const week of sortedWeeks) {
+          const workout = week.workouts.find((entry) => entry.order === slotIdx + 1)
+          if (!workout) continue
+          for (const exercise of workout.exercises) {
+            if (exercise.exercise?.category === 'cardio') continue
+            const topLevelSetCount = exercise.sets.filter((set) => !set.isDropSet).length
+            if (topLevelSetCount > max) max = topLevelSetCount
+          }
+        }
+        return max
+      }),
+    [maxWorkoutCount, sortedWeeks],
+  )
 
-  const menuEx = menuState
-    ? plan.weeks.find((week) => week.id === menuState.weekId)
-      ?.workouts.find((workout) => workout.id === menuState.workoutId)
-      ?.exercises.find((exercise) => exercise.id === menuState.exerciseId) ?? null
-    : null
-  const menuTopLevelSets = menuEx?.sets.filter((set) => !set.isDropSet).sort((a, b) => a.order - b.order) ?? []
-  const menuDropSets = menuEx?.sets.filter((set) => set.isDropSet).sort((a, b) => a.order - b.order) ?? []
+  const menuEx = useMemo(
+    () =>
+      menuState
+        ? plan.weeks.find((week) => week.id === menuState.weekId)
+          ?.workouts.find((workout) => workout.id === menuState.workoutId)
+          ?.exercises.find((exercise) => exercise.id === menuState.exerciseId) ?? null
+        : null,
+    [menuState, plan.weeks],
+  )
+  const menuTopLevelSets = useMemo(
+    () => menuEx?.sets.filter((set) => !set.isDropSet).sort((a, b) => a.order - b.order) ?? [],
+    [menuEx],
+  )
+  const menuDropSets = useMemo(
+    () => menuEx?.sets.filter((set) => set.isDropSet).sort((a, b) => a.order - b.order) ?? [],
+    [menuEx],
+  )
 
   const closeMenu = () => setMenuState(null)
   const openPicker = (weekId: number, workoutId: number) => {
