@@ -1,5 +1,5 @@
 import {NextRequest, NextResponse} from "next/server";
-import {saveUserPlan} from "@lib/api";
+import {saveUserPlan} from "@lib/planService";
 import {PlanPrisma} from "@/types/dataTypes";
 import { AuditEventType } from '@/generated/prisma/browser';
 import { recordAuditEvent } from '@lib/auditEvents';

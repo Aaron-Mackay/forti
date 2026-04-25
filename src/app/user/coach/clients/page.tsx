@@ -1,4 +1,4 @@
-import { getCoachClients } from '@lib/api';
+import { getCoachClients } from '@lib/coachService';
 import getLoggedInUser from '@lib/getLoggedInUser';
 import AppBarTitle from '@/components/AppBarTitle';
 import {
