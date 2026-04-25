@@ -136,7 +136,6 @@ export const eventOccursInYear = (event: EventPrisma, year: number): boolean => 
     yearEnd,
   );
 }
-
 const eventDateKey = (date: Date | null): string => date ? format(date, 'yyyy-MM-dd') : '';
 
 const eventContentKey = (event: EventPrisma): string => [
