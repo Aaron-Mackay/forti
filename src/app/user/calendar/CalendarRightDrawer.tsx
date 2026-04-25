@@ -5,6 +5,7 @@ import {EventListItem} from "@/app/user/calendar/EventListItem";
 import React from "react";
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import {BottomDrawerView} from "@/app/user/calendar/Calendar";
+import {eventOccursInYear} from "@/app/user/calendar/utils";
 
 const sortByStartDateAsc = (a: EventPrisma, b: EventPrisma) => {
   const dateA = new Date(a.startDate).getTime();
@@ -45,8 +46,8 @@ export const CalendarRightDrawer = ({
         <Stack spacing={1}>
           {eventsInState
             .filter(event => {
-              return (event.eventType === rightDrawerView)
-                && (event.startDate.getFullYear() === year || event.endDate.getFullYear() === year)
+              if (year === undefined) return event.eventType === rightDrawerView;
+              return event.eventType === rightDrawerView && eventOccursInYear(event, year);
             })
             .sort(sortByStartDateAsc)
             .map(event => {
