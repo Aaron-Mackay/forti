@@ -100,6 +100,8 @@ export default function Calendar({events, metrics, userId}: Props) {
     });
   }, [selectedDate, eventsInState]);
 
+  const fullCalendarEvents = useMemo(() => parsedEvents(eventsInState), [eventsInState]);
+
   const handleFabCreateClick = () => {
     setBottomDrawerView('event-form');
     setBottomDrawerOpen(true);
@@ -204,7 +206,7 @@ export default function Calendar({events, metrics, userId}: Props) {
             el.innerText = "•";
             info.el.querySelector('.fc-daygrid-day-top')?.appendChild(el);
           }}
-          events={parsedEvents(eventsInState)}
+          events={fullCalendarEvents}
           headerToolbar={{
             left: 'title',
             center: '',
