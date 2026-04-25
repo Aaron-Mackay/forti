@@ -101,11 +101,12 @@ test.describe('Nutrition page', () => {
     await expect(page.getByText('Targets apply from', { exact: false }).first()).toBeVisible();
   });
 
-  test('Week targets panel shows macro target fields and labels', async ({ page }) => {
+  test('Week targets panel shows macro target inputs', async ({ page }) => {
     await page.getByRole('button', { name: 'Set week targets' }).click();
-    for (const label of ['Energy target', 'Protein', 'Carbs', 'Fat']) {
-      await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
-    }
+    await expect(page.getByLabel('Energy target')).toBeVisible();
+    await expect(page.getByLabel('Protein percent')).toBeVisible();
+    await expect(page.getByLabel('Carbs percent')).toBeVisible();
+    await expect(page.getByLabel('Fat percent')).toBeVisible();
   });
 
   test('Week targets panel does not show Steps and Sleep inputs', async ({ page }) => {
