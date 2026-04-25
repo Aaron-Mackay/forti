@@ -33,8 +33,8 @@ function buildBlockOverlapWhere({userId, startDate, endDate, excludedEventId}: B
     userId,
     eventType: EventType.BlockEvent,
     ...(excludedEventId ? {id: {not: excludedEventId}} : {}),
-    startDate: {lte: endDate},
-    endDate: {gte: startDate},
+    startDate: {lt: endDate},
+    endDate: {gt: startDate},
   };
 }
 
