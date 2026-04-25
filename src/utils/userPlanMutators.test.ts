@@ -19,6 +19,7 @@ import {
   removeWeek,
   removeWorkout,
   substituteExercise,
+  parseExerciseCategory,
   updateCategory,
   updateExerciseInUser,
   updatePlanName,
@@ -544,7 +545,7 @@ describe('updateRestTime', () => {
 describe('updateCategory', () => {
   it('updates category and resets exercise name', () => {
     const user = buildBaseUser();
-    const result = updateCategory(user, 1, 101, 201, 301, 'resistance');
+    const result = updateCategory(user, 1, 101, 201, 301, ExerciseCategory.resistance);
     const ex = result.plans[0].weeks[0].workouts[0].exercises[0].exercise;
     expect(ex.category).toBe('resistance');
     expect(ex.name).toBe('');
@@ -561,7 +562,7 @@ describe('updateExerciseInUser', () => {
 
   it('sets exercise to an existing one from the list', () => {
     const user = buildBaseUser();
-    const result = updateExerciseInUser(user, 1, 101, 201, 301, 'Squat', allExercises, 'resistance', mockUuid);
+    const result = updateExerciseInUser(user, 1, 101, 201, 301, 'Squat', allExercises, ExerciseCategory.resistance, mockUuid);
     const ex = result.plans[0].weeks[0].workouts[0].exercises[0].exercise;
     expect(ex.name).toBe('Squat');
     expect(ex.id).toBe(1);
@@ -569,11 +570,25 @@ describe('updateExerciseInUser', () => {
 
   it('creates a new exercise object when name is not in the list', () => {
     const user = buildBaseUser();
-    const result = updateExerciseInUser(user, 1, 101, 201, 301, 'New Move', [], 'resistance', mockUuid);
+    const result = updateExerciseInUser(user, 1, 101, 201, 301, 'New Move', [], ExerciseCategory.resistance, mockUuid);
     const ex = result.plans[0].weeks[0].workouts[0].exercises[0].exercise;
     expect(ex.name).toBe('New Move');
     expect(ex.category).toBe('resistance');
     expect(ex.id).toBe(100); // assigned via mockUuid
+  });
+});
+
+describe('parseExerciseCategory', () => {
+  it('normalizes valid values from UI input', () => {
+    expect(parseExerciseCategory(' Resistance ')).toBe(ExerciseCategory.resistance);
+  });
+
+  it('returns fallback for unknown categories', () => {
+    expect(parseExerciseCategory('made-up-category', ExerciseCategory.cardio)).toBe(ExerciseCategory.cardio);
+  });
+
+  it('returns null by default for unknown categories', () => {
+    expect(parseExerciseCategory('made-up-category')).toBeNull();
   });
 });
 
