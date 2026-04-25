@@ -15,6 +15,11 @@ function isProductionAuthEnvironment() {
   return process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
 }
 
+function shouldEnableTestUserProvider() {
+  if (process.env.ENABLE_TEST_AUTH === 'true') return true;
+  return !isProductionAuthEnvironment();
+}
+
 export const authOptions: AuthOptions = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   adapter: PrismaAdapter(prisma as any),
@@ -70,7 +75,7 @@ export const authOptions: AuthOptions = {
       },
     }),
 
-    ...(!isProductionAuthEnvironment() ? [
+    ...(shouldEnableTestUserProvider() ? [
       // TestUser login — used exclusively by E2E tests via direct API call
       CredentialsProvider({
         id: "testuser",
