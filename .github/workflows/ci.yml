@@ -34,6 +34,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate API index
+        run: npm run api:index
+
+      - name: Verify API index is up to date
+        run: git diff --exit-code docs/agent/api-index.md
+
       - name: Run unit tests
         run: npm run test
 

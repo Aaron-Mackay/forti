@@ -17,6 +17,7 @@
     "lint": "eslint src tests",
     "seed": "ts-node -r dotenv/config prisma/seed.ts",
     "recalculate-e1rm": "ts-node -r dotenv/config scripts/recalculate-e1rm.ts",
+    "api:index": "node scripts/generate-api-index.mjs",
     "merge-exercises": "ts-node -r dotenv/config scripts/merge-exercises.ts",
     "seed:demo": "ts-node -r dotenv/config prisma/seed-demo.ts",
     "local-db": "psql -h localhost -U postgres -d postgres",
