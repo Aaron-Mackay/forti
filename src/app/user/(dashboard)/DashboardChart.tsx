@@ -30,7 +30,7 @@ type Selection = {
 
 export default function DashboardChart({metrics = [], blocks = []}: { metrics: MetricPrisma[], blocks: EventPrisma[] }) {
   const [selectedMetrics, setSelectedMetrics] = useState<BuiltInMetricKey[]>(['weight']);
-  const metricLabelify = (metricKey: BuiltInMetricKey): string => metricKey[0].toUpperCase() + metricKey.slice(1);
+  const metricLabelify = useCallback((metricKey: BuiltInMetricKey): string => metricKey[0].toUpperCase() + metricKey.slice(1), []);
 
   const getData = useCallback(
     (metric: BuiltInMetricKey): DataPoint[] =>
@@ -88,7 +88,7 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
     }))
   ), [blocks]);
 
-  const formatLabel = (val: number, metricKey: BuiltInMetricKey): string => {
+  const formatLabel = useCallback((val: number, metricKey: BuiltInMetricKey): string => {
     switch (metricKey) {
       case 'weight':
         return val.toPrecision(3);  // 3 significant figures
@@ -98,10 +98,63 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
       default:
         return val.toString();
     }
-  }
+  }, [])
 
 
-  const mainOptions: ApexCharts.ApexOptions = {
+  const chartRef = useRef<HTMLDivElement>(null);
+  const pinchRef = useRef<{ startWidth?: number, centerMs?: number }>({});
+  const selectionRef = useRef(selection);
+  const frameRequestRef = useRef<number | null>(null);
+  const pendingXaxisRef = useRef<{ min: number; max: number } | null>(null);
+
+  useEffect(() => {
+    selectionRef.current = selection;
+  }, [selection]);
+
+  const chartMetrics = useCallback(() => {
+    if (!chartRef.current) return {chartWidthPx: 1, msPerPixel: 1, pxPerMs: 1, visibleMs: 1};
+    const chartWidthPx = chartRef.current.offsetWidth;
+    const visibleMs = selection.xaxis.max - selection.xaxis.min;
+    return {
+      chartWidthPx,
+      visibleMs,
+      msPerPixel: visibleMs / chartWidthPx,
+      pxPerMs: chartWidthPx / visibleMs
+    };
+  }, [selection]);
+
+  const updateXaxis = useCallback((newMin: number, newMax: number): void => {
+    const totalRange = today.getTime() - startDay.getTime();
+    let width = newMax - newMin;
+
+    const minZoomMs = 1000 * 60 * 60 * 24 * 7; // 1 week
+    width = Math.max(minZoomMs, Math.min(width, totalRange));
+
+    newMin = Math.max(startDay.getTime(), Math.min(newMin, today.getTime() - width));
+    newMax = newMin + width;
+
+    setSelection({xaxis: {min: newMin, max: newMax}});
+  }, [today, startDay]);
+
+  const updateXaxisThrottled = useCallback((newMin: number, newMax: number): void => {
+    pendingXaxisRef.current = {min: newMin, max: newMax};
+    if (frameRequestRef.current !== null) return;
+    frameRequestRef.current = requestAnimationFrame(() => {
+      frameRequestRef.current = null;
+      const pending = pendingXaxisRef.current;
+      if (!pending) return;
+      updateXaxis(pending.min, pending.max);
+      pendingXaxisRef.current = null;
+    });
+  }, [updateXaxis]);
+
+  useEffect(() => () => {
+    if (frameRequestRef.current !== null) {
+      cancelAnimationFrame(frameRequestRef.current);
+    }
+  }, []);
+
+  const mainOptions: ApexCharts.ApexOptions = useMemo(() => ({
     chart: {
       id: "main-chart",
       type: "line",
@@ -109,7 +162,7 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
       zoom: {enabled: false},
       animations: {enabled: false},
       events: {
-        zoomed: (_, ctx) => ctx && setSelection({xaxis: ctx.xaxis})
+        zoomed: (_, ctx) => ctx && updateXaxisThrottled(ctx.xaxis.min, ctx.xaxis.max)
       },
       toolbar: {
         show: false
@@ -153,36 +206,7 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
         }
       }))
     }
-  };
-
-  const chartRef = useRef<HTMLDivElement>(null);
-  const pinchRef = useRef<{ startWidth?: number, centerMs?: number }>({});
-
-  const chartMetrics = useCallback(() => {
-    if (!chartRef.current) return {chartWidthPx: 1, msPerPixel: 1, pxPerMs: 1, visibleMs: 1};
-    const chartWidthPx = chartRef.current.offsetWidth;
-    const visibleMs = selection.xaxis.max - selection.xaxis.min;
-    return {
-      chartWidthPx,
-      visibleMs,
-      msPerPixel: visibleMs / chartWidthPx,
-      pxPerMs: chartWidthPx / visibleMs
-    };
-  }, [selection]);
-
-  const updateXaxis = useCallback((newMin: number, newMax: number): void => {
-    const totalRange = today.getTime() - startDay.getTime();
-    let width = newMax - newMin;
-
-    const minZoomMs = 1000 * 60 * 60 * 24 * 7; // 1 week
-    width = Math.max(minZoomMs, Math.min(width, totalRange));
-
-    newMin = Math.max(startDay.getTime(), Math.min(newMin, today.getTime() - width));
-    newMax = newMin + width;
-
-    setSelection({xaxis: {min: newMin, max: newMax}});
-  }, [today, startDay]);
-
+  }), [chartBlocks, formatLabel, metricLabelify, selectedMetrics, selection.xaxis.max, selection.xaxis.min, updateXaxisThrottled]);
 
   // --- Wheel zoom (desktop) ---
   useEffect(() => {
@@ -203,25 +227,24 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
       const newMin = centerMs - (centerMs - selection.xaxis.min) / visibleMs * newWidth;
       const newMax = newMin + newWidth;
 
-      updateXaxis(newMin, newMax);
+      updateXaxisThrottled(newMin, newMax);
     };
 
     el.addEventListener('wheel', onWheelZoom, {passive: false});
     return () => el.removeEventListener('wheel', onWheelZoom);
-  }, [chartMetrics, selection, updateXaxis]);
+  }, [chartMetrics, selection, updateXaxisThrottled]);
 
   const onDrag: GestureHandlers['onDrag'] = ({delta: [dx]}) => {
     const {msPerPixel} = chartMetrics()
 
     const deltaMs = -dx * msPerPixel;
-    setSelection(prev => {
-      const totalRange = today.getTime() - startDay.getTime();
-      const width = prev.xaxis.max - prev.xaxis.min;
-      if (width >= totalRange) return prev; // don’t allow drag
-      const newMin = Math.max(startDay.getTime(), Math.min(prev.xaxis.min + deltaMs, today.getTime() - width));
-      const newMax = newMin + width;
-      return {xaxis: {min: newMin, max: newMax}};
-    });
+    const currentSelection = selectionRef.current;
+    const totalRange = today.getTime() - startDay.getTime();
+    const width = currentSelection.xaxis.max - currentSelection.xaxis.min;
+    if (width >= totalRange) return; // don’t allow drag
+    const newMin = Math.max(startDay.getTime(), Math.min(currentSelection.xaxis.min + deltaMs, today.getTime() - width));
+    const newMax = newMin + width;
+    updateXaxisThrottled(newMin, newMax);
   }
 
 // --- Pinch handler ---
@@ -257,7 +280,7 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
       newMin = newMax - newWidth;
     }
 
-    setSelection({xaxis: {min: newMin, max: newMax}});
+    updateXaxisThrottled(newMin, newMax);
   };
 
   const bindGestures = useGesture(
