@@ -77,6 +77,7 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
   const [completionModal, setCompletionModal] = useState<CompletionModal | null>(null);
   const [snackbar, setSnackbar] = useState<SnackbarState>({open: false, message: '', severity: 'success'});
   const [userDataState, setUserData] = useState(userData);
+  const latestUserDataRef = useRef<UserPrisma>(userDataState);
   const [planUpdatedBanner, setPlanUpdatedBanner] = useState(false);
 
   // Substitute dialog state
@@ -108,6 +109,10 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
   }, [userDataState]);
 
   useEffect(() => {
+    latestUserDataRef.current = userDataState;
+  }, [userDataState]);
+
+  useEffect(() => {
     return () => {
       for (const timer of networkTimers.current.values()) clearTimeout(timer);
       networkTimers.current.clear();
@@ -122,7 +127,7 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
         const response = await fetch('/api/user-data');
         if (!response.ok) return;
         const freshData: UserPrisma = await response.json();
-        const hadStructuralChange = detectStructuralChange(userDataState, freshData);
+        const hadStructuralChange = detectStructuralChange(latestUserDataRef.current, freshData);
         setUserData(freshData);
         await saveUserDataCache(freshData.id, freshData).catch(console.error);
         if (hadStructuralChange) setPlanUpdatedBanner(true);
