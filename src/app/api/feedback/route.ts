@@ -3,24 +3,42 @@ import {EmailParams, MailerSend, Recipient, Sender} from "mailersend";
 import {getServerSession} from "next-auth/next";
 import {authOptions} from "@lib/auth";
 
+const MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
+const ALLOWED_MIME_TYPE_SET = new Set<string>(ALLOWED_MIME_TYPES);
+const ALLOWED_FEEDBACK_TYPES = ["Bug Report", "Feature Request", "General Feedback"] as const;
+const MAX_DESCRIPTION_LENGTH = 4_000;
+
+function sanitizeFilename(filename: string): string {
+  // Prevent email header/path tricks by collapsing to a safe basename-like value.
+  return filename
+    .replace(/[^\w.-]/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 120) || "attachment";
+}
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
-    const type = formData.get("type")?.toString() || "Bug Report";
-    const description = formData.get("description")?.toString() || "No description provided";
+    const providedType = formData.get("type")?.toString().trim() || "Bug Report";
+    const type = (ALLOWED_FEEDBACK_TYPES as readonly string[]).includes(providedType)
+      ? providedType
+      : "Bug Report";
+    const rawDescription = formData.get("description")?.toString() ?? "";
+    const description = rawDescription.trim().slice(0, MAX_DESCRIPTION_LENGTH) || "No description provided";
     const screenshot = formData.get("screenshot") as File | null;
 
     const session = await getServerSession(authOptions);
-    const userEmail = session?.user?.email ?? "unknown";
-
-    const MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024; // 5 MB
-    const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!session?.user?.id || !session.user.email) {
+      return NextResponse.json({error: "Authentication required"}, {status: 401});
+    }
+    const userEmail = session.user.email;
 
     if (screenshot) {
       if (screenshot.size > MAX_SCREENSHOT_BYTES) {
         return NextResponse.json({error: "Screenshot must be under 5 MB"}, {status: 400});
       }
-      if (!ALLOWED_MIME_TYPES.includes(screenshot.type)) {
+      if (!ALLOWED_MIME_TYPE_SET.has(screenshot.type)) {
         return NextResponse.json({error: "Screenshot must be a JPEG, PNG, GIF, or WebP image"}, {status: 400});
       }
     }
@@ -33,7 +51,7 @@ export async function POST(req: Request) {
 
       attachments.push({
         content: base64,
-        filename: screenshot.name,
+        filename: sanitizeFilename(screenshot.name),
         type: screenshot.type,
         disposition: "attachment"
       });
