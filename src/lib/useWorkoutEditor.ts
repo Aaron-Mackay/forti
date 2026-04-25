@@ -1,5 +1,5 @@
 import {useReducer} from 'react';
-import {Exercise} from "@/generated/prisma/browser";
+import {Exercise, ExerciseCategory} from "@/generated/prisma/browser";
 
 import {PlanPrisma, SetPrisma, UserPrisma, WeekPrisma, WorkoutExercisePrisma, WorkoutPrisma} from "@/types/dataTypes";
 import * as userPlanMutators from "@/utils/userPlanMutators";
@@ -85,7 +85,7 @@ export type WorkoutEditorAction =
   weekId: number;
   workoutId: number;
   workoutExerciseId: number;
-  category: string;
+  category: string | ExerciseCategory | null;
 }
   | {
   type: "UPDATE_EXERCISE";
@@ -95,7 +95,7 @@ export type WorkoutEditorAction =
   workoutExerciseId: number;
   exerciseName: string;
   exercises: Exercise[];
-  category: string
+  category: string | ExerciseCategory | null
 }
   | { type: 'REPLACE_PLAN'; planId: number; plan: PlanPrisma }
   | {
@@ -371,14 +371,16 @@ export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, 
       const { planId, weekId, workoutId, workoutExerciseId, category } = action;
       const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId: workoutExerciseId});
       if (!exercise) return userDataState;
-      return userPlanMutators.updateCategory(userDataState, planId, weekId, workoutId, workoutExerciseId, category);
+      const typedCategory = userPlanMutators.parseExerciseCategory(category, null);
+      return userPlanMutators.updateCategory(userDataState, planId, weekId, workoutId, workoutExerciseId, typedCategory);
     }
 
     case "UPDATE_EXERCISE": {
       const { planId, weekId, workoutId, workoutExerciseId, exerciseName, exercises, category } = action;
       const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId: workoutExerciseId});
       if (!exercise) return userDataState;
-      return userPlanMutators.updateExerciseInUser(userDataState, planId, weekId, workoutId, workoutExerciseId, exerciseName, exercises, category, createUuid)
+      const typedCategory = userPlanMutators.parseExerciseCategory(category, null);
+      return userPlanMutators.updateExerciseInUser(userDataState, planId, weekId, workoutId, workoutExerciseId, exerciseName, exercises, typedCategory, createUuid)
     }
 
     case 'REPLACE_PLAN': {
