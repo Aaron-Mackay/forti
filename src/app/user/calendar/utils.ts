@@ -1,4 +1,4 @@
-import {addDays, differenceInDays, format, getISOWeek, subDays} from "date-fns";
+import {addDays, differenceInDays, format, getISOWeek} from "date-fns";
 import {BlockSubtype, EventType} from "@/generated/prisma/browser";
 import {EventPrisma} from "@/types/dataTypes";
 import {DateClickArg} from "@fullcalendar/interaction";
@@ -80,14 +80,14 @@ export const parsedEvents = (events: EventPrisma[]): FullCalendarIngestableEvent
       return {
         ...base,
         rrule,
-        duration: { days: differenceInDays(event.endDate, event.startDate) },
+        duration: { days: differenceInDays(event.endDate, event.startDate) + 1 },
       };
     }
 
     return {
       ...base,
       start: event.startDate,
-      end: event.endDate,
+      end: addDays(event.endDate, 1), // FullCalendar uses exclusive end
     };
   });
 }
@@ -96,46 +96,32 @@ export const getEventsOnDate = (dateInfo: DateClickArg, eventsInState: EventPris
   const clickedDate = dateInfo.date;
   return eventsInState.filter(event => {
     const start = event.startDate;
-    const end = event.endDate ?? addDays(start, 1);
+    const end = event.endDate ?? start;
     return start && end && start <= clickedDate && clickedDate < end;
   });
 }
 
-export const dateRangesOverlap = (
-  rangeAStart: Date,
-  rangeAEnd: Date | null,
-  rangeBStart: Date,
-  rangeBEnd: Date | null,
-): boolean => {
-  const rangeAEndTime = rangeAEnd ? rangeAEnd.getTime() : Number.POSITIVE_INFINITY;
-  const rangeBEndTime = rangeBEnd ? rangeBEnd.getTime() : Number.POSITIVE_INFINITY;
-  return rangeAStart.getTime() < rangeBEndTime && rangeBStart.getTime() < rangeAEndTime;
-}
+const eventDateKey = (date: Date | null): string => date ? format(date, 'yyyy-MM-dd') : '';
 
-export const eventOccursInYear = (event: EventPrisma, year: number): boolean => {
-  const yearStart = new Date(year, 0, 1);
-  const yearEnd = new Date(year + 1, 0, 1);
+const eventContentKey = (event: EventPrisma): string => [
+  event.id,
+  eventDateKey(event.startDate),
+  eventDateKey(event.endDate),
+  event.name,
+  event.recurrenceFrequency ?? '',
+  eventDateKey(event.recurrenceEnd),
+  event.blockSubtype ?? '',
+  event.eventType,
+].join('|');
 
-  if (event.recurrenceFrequency) {
-    return dateRangesOverlap(
-      event.startDate,
-      event.recurrenceEnd,
-      yearStart,
-      yearEnd,
-    );
-  }
+export const hasMeaningfulEventChanges = (currentEvents: EventPrisma[], freshEvents: EventPrisma[]): boolean => {
+  if (currentEvents.length !== freshEvents.length) return true;
 
-  return dateRangesOverlap(
-    event.startDate,
-    event.endDate,
-    yearStart,
-    yearEnd,
-  );
-}
+  const currentKeys = currentEvents.map(eventContentKey).sort();
+  const freshKeys = freshEvents.map(eventContentKey).sort();
 
-export const toInclusiveEndDate = (exclusiveEndDate: Date): Date => subDays(exclusiveEndDate, 1);
-
-export const toExclusiveEndDate = (inclusiveEndDate: Date): Date => addDays(inclusiveEndDate, 1);
+  return currentKeys.some((key, index) => key !== freshKeys[index]);
+};
 
 const colorCache = new Map<string, string>();
 
