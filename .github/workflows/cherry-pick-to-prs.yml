@@ -1,0 +1,93 @@
+name: Cherry-pick commits to open PRs
+
+on:
+  workflow_dispatch:
+    inputs:
+      commits:
+        description: 'Space-separated commit SHAs to cherry-pick'
+        required: true
+        default: 'bf94b24cf0a8343c0e809917c9307f8c0a28169a ccdec8d843f630fad604eefa086cc24a4797c908'
+
+jobs:
+  cherry-pick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get open PR branches
+        id: get-prs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            
+            const branches = prs.data.map(pr => ({
+              number: pr.number,
+              branch: pr.head.ref
+            }));
+            
+            console.log('Open PR branches:', branches);
+            return branches;
+
+      - name: Cherry-pick commits to each PR branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            const commits = '${{ github.event.inputs.commits }}'.split(/\s+/).filter(c => c);
+            
+            console.log('Commits to cherry-pick:', commits);
+            
+            // Get all open PRs
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            
+            for (const pr of prs.data) {
+              const branch = pr.head.ref;
+              const prNumber = pr.number;
+              
+              console.log(`\n--- Processing PR #${prNumber} (${branch}) ---`);
+              
+              try {
+                // Fetch the PR branch
+                execSync(`git fetch origin ${branch}`, { stdio: 'inherit' });
+                
+                // Checkout the PR branch
+                execSync(`git checkout ${branch}`, { stdio: 'inherit' });
+                
+                // Cherry-pick the commits
+                for (const commit of commits) {
+                  console.log(`Cherry-picking ${commit}...`);
+                  execSync(`git cherry-pick ${commit}`, { stdio: 'inherit' });
+                }
+                
+                // Push the changes
+                execSync(`git push origin ${branch}`, { stdio: 'inherit' });
+                console.log(`✅ Successfully cherry-picked to PR #${prNumber}`);
+              } catch (error) {
+                console.error(`❌ Failed for PR #${prNumber} (${branch}):`, error.message);
+              }
+            }
+
+      - name: Summary
+        run: |
+          echo "## Cherry-pick Complete" >> $GITHUB_STEP_SUMMARY
+          echo "Cherry-picked commits: ${{ github.event.inputs.commits }}" >> $GITHUB_STEP_SUMMARY
+          echo "Target: All open PR branches" >> $GITHUB_STEP_SUMMARY
