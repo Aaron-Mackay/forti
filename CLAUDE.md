@@ -237,6 +237,7 @@ npm run rebuild-prisma   # prisma db push && prisma generate
 | `src/lib/checkInUtils.ts` | `getWeekStart`, `getCheckInDate`, `toDateOnly` — check-in date utilities; `checkInHasRatings`, `checkInHasReflection`, `checkInHasPhotos`, `checkInHasCustomResponses` — shared section-visibility helpers |
 | `src/lib/checkInTemplate.ts` | `getCoachTemplate`, `saveCoachTemplate`, `deleteCoachTemplate`, `getTemplateForClient` — Prisma helpers for coach check-in template persistence |
 | `src/lib/notifications.ts` | Email (MailerSend) + web push helpers for check-in reminders |
+| `src/lib/eventBlockMutation.ts` | Shared block-event mutation workflow: overlap pre-check query, conflict payload builder, and transaction-based overlap resolution + create/update callback |
 | `src/lib/useWorkoutEditor.ts` | Custom hook managing workout editor state |
 | `src/lib/hooks/api/useApiGet.ts` | Generic GET hook — `{data, loading, error}`; pass `null` URL to defer |
 | `src/lib/hooks/api/useExerciseList.ts` | Lazy-loads exercise list; exposes `{exercises, loading, addExercise}` |
