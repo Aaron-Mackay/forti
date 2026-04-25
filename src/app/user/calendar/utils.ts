@@ -1,4 +1,4 @@
-import {addDays, differenceInDays, format, getISOWeek} from "date-fns";
+import {addDays, differenceInDays, format, getISOWeek, subDays} from "date-fns";
 import {BlockSubtype, EventType} from "@/generated/prisma/browser";
 import {EventPrisma} from "@/types/dataTypes";
 import {DateClickArg} from "@fullcalendar/interaction";
@@ -80,14 +80,14 @@ export const parsedEvents = (events: EventPrisma[]): FullCalendarIngestableEvent
       return {
         ...base,
         rrule,
-        duration: { days: differenceInDays(event.endDate, event.startDate) + 1 },
+        duration: { days: differenceInDays(event.endDate, event.startDate) },
       };
     }
 
     return {
       ...base,
       start: event.startDate,
-      end: addDays(event.endDate, 1), // FullCalendar uses exclusive end
+      end: event.endDate,
     };
   });
 }
@@ -96,7 +96,7 @@ export const getEventsOnDate = (dateInfo: DateClickArg, eventsInState: EventPris
   const clickedDate = dateInfo.date;
   return eventsInState.filter(event => {
     const start = event.startDate;
-    const end = event.endDate ?? start;
+    const end = event.endDate ?? addDays(start, 1);
     return start && end && start <= clickedDate && clickedDate < end;
   });
 }
@@ -109,12 +109,12 @@ export const dateRangesOverlap = (
 ): boolean => {
   const rangeAEndTime = rangeAEnd ? rangeAEnd.getTime() : Number.POSITIVE_INFINITY;
   const rangeBEndTime = rangeBEnd ? rangeBEnd.getTime() : Number.POSITIVE_INFINITY;
-  return rangeAStart.getTime() <= rangeBEndTime && rangeBStart.getTime() <= rangeAEndTime;
+  return rangeAStart.getTime() < rangeBEndTime && rangeBStart.getTime() < rangeAEndTime;
 }
 
 export const eventOccursInYear = (event: EventPrisma, year: number): boolean => {
   const yearStart = new Date(year, 0, 1);
-  const yearEnd = new Date(year, 11, 31, 23, 59, 59, 999);
+  const yearEnd = new Date(year + 1, 0, 1);
 
   if (event.recurrenceFrequency) {
     return dateRangesOverlap(
@@ -132,6 +132,10 @@ export const eventOccursInYear = (event: EventPrisma, year: number): boolean => 
     yearEnd,
   );
 }
+
+export const toInclusiveEndDate = (exclusiveEndDate: Date): Date => subDays(exclusiveEndDate, 1);
+
+export const toExclusiveEndDate = (inclusiveEndDate: Date): Date => addDays(inclusiveEndDate, 1);
 
 const colorCache = new Map<string, string>();
 
