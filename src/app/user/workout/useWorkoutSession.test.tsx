@@ -5,16 +5,19 @@ import {ExerciseBuilder, PlanBuilder, SetBuilder, UserBuilder, WeekBuilder, Work
 
 const {
   queueOrSendRequest,
+  queueOrSendRequestJson,
   syncQueuedRequests,
   saveUserDataCache,
 } = vi.hoisted(() => ({
   queueOrSendRequest: vi.fn(),
+  queueOrSendRequestJson: vi.fn(),
   syncQueuedRequests: vi.fn(),
   saveUserDataCache: vi.fn(),
 }));
 
 vi.mock('@/utils/offlineSync', () => ({
   queueOrSendRequest,
+  queueOrSendRequestJson,
   syncQueuedRequests,
 }));
 
@@ -48,6 +51,7 @@ describe('useWorkoutSession', () => {
     vi.useFakeTimers();
     vi.clearAllMocks();
     queueOrSendRequest.mockResolvedValue(undefined);
+    queueOrSendRequestJson.mockResolvedValue({queued: false, data: null});
     syncQueuedRequests.mockResolvedValue(undefined);
     saveUserDataCache.mockResolvedValue(undefined);
   });
@@ -104,5 +108,62 @@ describe('useWorkoutSession', () => {
 
     expect(queueOrSendRequest).toHaveBeenCalledTimes(1);
     expect(queueOrSendRequest).toHaveBeenCalledWith('/api/sets/5001', 'PATCH', {weight: 16});
+  });
+
+  it('queues form cue writes when offline', async () => {
+    const userData = buildUserData();
+    queueOrSendRequest.mockResolvedValue({queued: true});
+    const {result} = renderHook(() => useWorkoutSession(userData, 301));
+
+    await act(async () => {
+      result.current.handleFormCueBlur(-1, 'Drive knees out');
+    });
+
+    expect(queueOrSendRequest).toHaveBeenCalledWith('/api/exerciseNote/-1', 'PUT', {note: 'Drive knees out'});
+    expect(result.current.snackbar.message).toBe('Offline: note update queued');
+  });
+
+  it('adds an optimistic exercise and queues creation when offline', async () => {
+    const userData = buildUserData();
+    queueOrSendRequestJson.mockResolvedValue({queued: true, data: null});
+    const {result} = renderHook(() => useWorkoutSession(userData, 301));
+
+    await act(async () => {
+      result.current.handleAddExercise(
+        {
+          id: 2002,
+          name: 'Lat Pulldown',
+          category: 'resistance',
+          description: null,
+          equipment: [],
+          primaryMuscles: [],
+          secondaryMuscles: [],
+          createdByUserId: null,
+        },
+        {repRange: '8-12', restTime: '90', setCount: 3},
+      );
+    });
+
+    expect(queueOrSendRequestJson).toHaveBeenCalledWith('/api/workoutExercise', 'POST', expect.objectContaining({
+      workoutId: 301,
+      exerciseId: 2002,
+    }));
+    expect(result.current.selectedWorkout?.exercises).toHaveLength(2);
+    expect(result.current.selectedWorkout?.exercises.at(-1)?.id).toBeLessThan(0);
+    expect(result.current.snackbar.message).toBe('Offline: exercise addition queued');
+  });
+
+  it('queues exercise removal when offline', async () => {
+    const userData = buildUserData();
+    queueOrSendRequest.mockResolvedValue({queued: true});
+    const {result} = renderHook(() => useWorkoutSession(userData, 301));
+
+    await act(async () => {
+      result.current.handleRemoveExercise(1001);
+    });
+
+    expect(queueOrSendRequest).toHaveBeenCalledWith('/api/workoutExercise/1001', 'DELETE', {});
+    expect(result.current.selectedWorkout?.exercises).toHaveLength(0);
+    expect(result.current.snackbar.message).toBe('Offline: exercise removal queued');
   });
 });
