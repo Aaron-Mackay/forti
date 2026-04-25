@@ -63,6 +63,7 @@ describe('useWorkoutSession', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllGlobals();
     vi.useRealTimers();
     global.fetch = originalFetch;
   });
@@ -194,5 +195,31 @@ describe('useWorkoutSession', () => {
     );
 
     consoleErrorSpy.mockRestore();
+  });
+
+  it('rolls back removal when delete request fails', async () => {
+    queueOrSendRequest.mockRejectedValueOnce(new Error('Failed to remove exercise'));
+
+    const userData = buildUserData();
+    const {result} = renderHook(() => useWorkoutSession(userData, 301));
+
+    act(() => {
+      result.current.handleRemoveExercise(1001);
+    });
+
+    expect(result.current.selectedWorkout?.exercises).toHaveLength(0);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(queueOrSendRequest).toHaveBeenCalledWith('/api/workoutExercise/1001', 'DELETE', {});
+    expect(result.current.selectedWorkout?.exercises).toHaveLength(1);
+    expect(result.current.selectedWorkout?.exercises[0]?.id).toBe(1001);
+    expect(result.current.snackbar).toMatchObject({
+      open: true,
+      message: 'Failed to remove exercise',
+      severity: 'info',
+    });
   });
 });
