@@ -12,6 +12,7 @@ import type { CheckInTemplate, CheckInRatingField, CustomCheckInResponses } from
 import { getAllInputFields } from '@/types/checkInTemplateTypes';
 import { Prisma } from '@/generated/prisma/browser';
 import { errorResponse } from '@lib/apiResponses';
+import { CheckInHistoryResponseSchema, SubmitCheckInRequestSchema, SubmitCheckInResponseSchema } from '@lib/contracts/checkIn';
 
 /** GET /api/check-in — fetch current user's check-in history (newest first) */
 export async function GET(req: NextRequest) {
@@ -50,31 +51,7 @@ export async function GET(req: NextRequest) {
     sidePhotoUrl: c.sidePhotoUrl ? `/api/check-in/photos/${c.id}/side` : null,
   }));
 
-  return NextResponse.json({ checkIns: mappedCheckIns, total });
-}
-
-// ─── Legacy mode (no template) ───────────────────────────────────────────────
-
-interface LegacyCheckInBody {
-  energyLevel?: number;
-  moodRating?: number;
-  stressLevel?: number;
-  sleepQuality?: number;
-  recoveryRating?: number;
-  adherenceRating?: number;
-  completedWorkouts?: number;
-  plannedWorkouts?: number;
-  weekReview?: string;
-  coachMessage?: string;
-  goalsNextWeek?: string;
-}
-
-// ─── Template mode ───────────────────────────────────────────────────────────
-
-interface TemplateCheckInBody {
-  customResponses: CustomCheckInResponses;
-  completedWorkouts?: number;
-  plannedWorkouts?: number;
+  return NextResponse.json(CheckInHistoryResponseSchema.parse({ checkIns: mappedCheckIns, total }));
 }
 
 /**
@@ -107,7 +84,11 @@ export async function POST(req: NextRequest) {
   const session = await requireSession();
   const userId = session.user.id;
 
-  const body = await req.json() as LegacyCheckInBody | TemplateCheckInBody;
+  const bodyParse = SubmitCheckInRequestSchema.safeParse(await req.json());
+  if (!bodyParse.success) {
+    return errorResponse('Invalid check-in payload', 400);
+  }
+  const body = bodyParse.data;
 
   // Fetch user settings and coach up-front
   const user = await prisma.user.findUnique({
@@ -134,7 +115,7 @@ export async function POST(req: NextRequest) {
 
   if (isTemplateMode) {
     // ── Template mode ──────────────────────────────────────────────────────
-    const templateBody = body as TemplateCheckInBody;
+    const templateBody = body;
     const template = await getTemplateForClient(userId);
 
     if (!template) {
@@ -188,7 +169,7 @@ export async function POST(req: NextRequest) {
     });
   } else {
     // ── Legacy mode ────────────────────────────────────────────────────────
-    const legacyBody = body as LegacyCheckInBody;
+    const legacyBody = body;
 
     // Validate ratings are 1–5 when provided
     const ratingFields = ['energyLevel', 'moodRating', 'stressLevel', 'sleepQuality', 'recoveryRating', 'adherenceRating'] as const;
@@ -253,5 +234,5 @@ export async function POST(req: NextRequest) {
     backPhotoUrl: checkIn.backPhotoUrl ? `/api/check-in/photos/${checkIn.id}/back` : null,
     sidePhotoUrl: checkIn.sidePhotoUrl ? `/api/check-in/photos/${checkIn.id}/side` : null,
   };
-  return NextResponse.json({ checkIn: mappedCheckIn }, { status: isEditingCompletedCheckIn ? 200 : 201 });
+  return NextResponse.json(SubmitCheckInResponseSchema.parse({ checkIn: mappedCheckIn }), { status: isEditingCompletedCheckIn ? 200 : 201 });
 }

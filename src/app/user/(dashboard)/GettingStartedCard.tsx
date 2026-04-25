@@ -20,13 +20,9 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import Link from 'next/link';
 import { useSettings } from '@lib/providers/SettingsProvider';
 import { useApiGet } from '@lib/hooks/api/useApiGet';
+import type { CheckInHistoryResponse } from '@lib/contracts/checkIn';
 import { MetricPrisma, PlanPrisma, WeekPrisma, WorkoutPrisma, UserPrisma } from '@/types/dataTypes';
 import { convertDateToDateString } from '@lib/dateUtils';
-
-interface CheckInResponse {
-  checkIns: { completedAt: string | null }[];
-  total: number;
-}
 
 interface Props {
   userData: UserPrisma | null;
@@ -38,7 +34,7 @@ export default function GettingStartedCard({ userData, metrics, today }: Props) 
   const { settings, loading, updateSetting } = useSettings();
 
   // Only fetch check-in data while the card is visible
-  const { data: checkInData } = useApiGet<CheckInResponse>(
+  const { data: checkInData } = useApiGet<CheckInHistoryResponse>(
     !settings.onboardingDismissed ? '/api/check-in?limit=1' : null
   );
 

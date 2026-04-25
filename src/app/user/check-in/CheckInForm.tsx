@@ -25,6 +25,7 @@ import ProgressPhotoSection from './ProgressPhotoSection';
 import type { PreviousPhotos, WeekTargets } from '@/types/checkInTypes';
 import type { CheckInTemplate, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
 import { parseCustomResponses, isFieldVisible, getAllInputFields } from '@/types/checkInTemplateTypes';
+import { SubmitCheckInResponseSchema } from '@lib/contracts/checkIn';
 
 interface Props {
   currentWeek: Metric[];
@@ -149,6 +150,7 @@ export default function CheckInForm({
       const data = await res.json() as { error?: string };
       throw new Error(data.error ?? 'Submission failed');
     }
+    SubmitCheckInResponseSchema.parse(await res.json());
   }
 
   async function handleSubmit() {

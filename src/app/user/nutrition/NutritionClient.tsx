@@ -37,6 +37,8 @@ import {
   isMacroPercentSplitValid,
 } from '@lib/macroTargets';
 import MacroTargetsPanel, {type MacroPercentValues} from '@/components/MacroTargetsPanel';
+import { fetchJsonWithSchema } from '@lib/fetchWrapper';
+import { GetTargetTemplateResponseSchema, TargetTemplateRequestSchema, TargetTemplateResponseSchema } from '@lib/contracts/targetTemplates';
 
 interface Props {
   userId: string;
@@ -221,9 +223,8 @@ export default function NutritionClient({
 
     setTemplateLoading(true);
     const weekMonday = convertDateToDateString(weekStart);
-    fetch(`/api/target-templates?weekStart=${weekMonday}`)
-      .then(r => r.json())
-      .then(({ template }: { template: TargetTemplateWithDays | null }) =>
+    fetchJsonWithSchema(`/api/target-templates?weekStart=${weekMonday}`, GetTargetTemplateResponseSchema)
+      .then(({ template }) =>
         setActiveTemplate(template ?? null),
       )
       .catch(() => setActiveTemplate(null))
@@ -360,19 +361,21 @@ export default function NutritionClient({
       const days: Record<number, typeof macro> = {};
       for (let dow = 1; dow <= 7; dow++) days[dow] = macro;
 
+      const payload = TargetTemplateRequestSchema.parse({
+        effectiveFrom: convertDateToDateString(weekStart),
+        stepsTarget: activeTemplate?.stepsTarget ?? null,
+        sleepMinsTarget: activeTemplate?.sleepMinsTarget ?? null,
+        days,
+        targetUserId: userId,
+      });
+
       const res = await fetch('/api/target-templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          effectiveFrom: convertDateToDateString(weekStart),
-          stepsTarget: activeTemplate?.stepsTarget ?? null,
-          sleepMinsTarget: activeTemplate?.sleepMinsTarget ?? null,
-          days,
-          targetUserId: userId,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Failed to save targets');
-      const updated: TargetTemplateWithDays = await res.json();
+      const updated = TargetTemplateResponseSchema.parse(await res.json());
       setActiveTemplate(updated);
       trackFirstWeekEvent('first_nutrition_target_set', { source: 'nutrition_week_targets' });
       setTargetsPanelOpen(false);
