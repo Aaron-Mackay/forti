@@ -47,6 +47,8 @@ function buildUserData() {
 }
 
 describe('useWorkoutSession', () => {
+  const originalFetch = global.fetch;
+
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
@@ -54,10 +56,15 @@ describe('useWorkoutSession', () => {
     queueOrSendRequestJson.mockResolvedValue({queued: false, data: null});
     syncQueuedRequests.mockResolvedValue(undefined);
     saveUserDataCache.mockResolvedValue(undefined);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue(buildUserData()),
+    } as Response);
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    global.fetch = originalFetch;
   });
 
   it('debounces rapid reps updates so only the final value is sent', async () => {
@@ -165,5 +172,27 @@ describe('useWorkoutSession', () => {
     expect(queueOrSendRequest).toHaveBeenCalledWith('/api/workoutExercise/1001', 'DELETE', {});
     expect(result.current.selectedWorkout?.exercises).toHaveLength(0);
     expect(result.current.snackbar.message).toBe('Offline: exercise removal queued');
+  });
+
+  it('continues to fetch latest user data when queued request sync fails', async () => {
+    const userData = buildUserData();
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    syncQueuedRequests.mockRejectedValueOnce(new Error('sync failed'));
+
+    renderHook(() => useWorkoutSession(userData, 301));
+
+    await act(async () => {
+      window.dispatchEvent(new Event('online'));
+      await Promise.resolve();
+    });
+
+    expect(syncQueuedRequests).toHaveBeenCalledTimes(1);
+    expect(global.fetch).toHaveBeenCalledWith('/api/user-data');
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Failed to sync queued workout requests on reconnect',
+      expect.any(Error)
+    );
+
+    consoleErrorSpy.mockRestore();
   });
 });

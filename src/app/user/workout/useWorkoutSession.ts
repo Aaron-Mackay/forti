@@ -122,7 +122,12 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
   // On reconnect: flush queue, re-fetch fresh data, show banner on structural change
   useEffect(() => {
     const handleOnline = async () => {
-      await syncQueuedRequests();
+      try {
+        await syncQueuedRequests();
+      } catch (error) {
+        console.error('Failed to sync queued workout requests on reconnect', error);
+      }
+
       try {
         const response = await fetch('/api/user-data');
         if (!response.ok) return;
