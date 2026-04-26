@@ -34,7 +34,7 @@ export const CheckInMetricSchema = z.object({
   protein: z.number().int().nullable(),
   carbs: z.number().int().nullable(),
   fat: z.number().int().nullable(),
-  customMetrics: z.unknown().nullable(),
+  customMetrics: JsonValueSchema.nullable(),
 });
 export type CheckInMetric = z.infer<typeof CheckInMetricSchema>;
 
