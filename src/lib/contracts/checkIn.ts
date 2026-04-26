@@ -59,8 +59,6 @@ export const WeeklyCheckInSchema = z.object({
   coachResponseUrl: z.string().nullable(),
   customResponses: JsonValueSchema.nullable(),
   templateSnapshot: JsonValueSchema.nullable(),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
   ...CheckInPhotoUrlsSchema.shape,
 }).passthrough();
 export type WeeklyCheckInDto = z.infer<typeof WeeklyCheckInSchema>;
