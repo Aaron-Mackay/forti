@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { TargetTemplateWithDays } from '@lib/targetTemplates';
 
 export const TargetTemplateDaySchema = z.object({
   caloriesTarget: z.number().int().nullable(),
@@ -16,24 +17,25 @@ export const TargetTemplateRequestSchema = z.object({
 });
 export type TargetTemplateRequest = z.infer<typeof TargetTemplateRequestSchema>;
 
-export const TargetTemplateResponseSchema = z.object({
+const TargetTemplateWithDaysSchema = z.custom<TargetTemplateWithDays>((value) => value !== undefined);
+
+export const TargetTemplateResponseSchema = TargetTemplateWithDaysSchema.pipe(z.object({
   id: z.number().int(),
   userId: z.string(),
   effectiveFrom: z.coerce.date(),
   stepsTarget: z.number().int().nullable(),
   sleepMinsTarget: z.number().int().nullable(),
   createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
   days: z.array(z.object({
     id: z.number().int(),
-    targetTemplateId: z.number().int(),
+    templateId: z.number().int(),
     dayOfWeek: z.number().int().min(1).max(7),
     caloriesTarget: z.number().int().nullable(),
     proteinTarget: z.number().int().nullable(),
     carbsTarget: z.number().int().nullable(),
     fatTarget: z.number().int().nullable(),
   })),
-});
+}).passthrough());
 export type TargetTemplateResponse = z.infer<typeof TargetTemplateResponseSchema>;
 
 export const GetTargetTemplateResponseSchema = z.object({
