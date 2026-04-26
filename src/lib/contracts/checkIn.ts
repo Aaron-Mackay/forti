@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import type { Prisma } from '@/generated/prisma/browser';
+import type { CheckInTemplate } from '@/types/checkInTemplateTypes';
 
 const NullableRatingSchema = z.number().int().min(1).max(5).nullable();
 const JsonValueSchema = z.custom<Prisma.JsonValue>((value) => value !== undefined);
+const CheckInTemplateSchema = z.custom<CheckInTemplate>((value) => value !== undefined);
 
 export const CheckInPhotoUrlsSchema = z.object({
   frontPhotoUrl: z.string().nullable(),
@@ -78,7 +80,7 @@ export const CurrentCheckInResponseSchema = z.object({
   completedWorkoutsCount: z.number().int().nonnegative(),
   plannedWorkoutsCount: z.number().int().nonnegative(),
   activePlanId: z.number().int().nullable(),
-  template: z.unknown().nullable(),
+  template: CheckInTemplateSchema.nullable(),
 });
 export type CurrentCheckInResponse = z.infer<typeof CurrentCheckInResponseSchema>;
 
