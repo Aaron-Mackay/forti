@@ -8,7 +8,7 @@ import {
 } from '@lib/blockOverlapResolution';
 
 type BlockOverlapQueryParams = {
-  userId: number;
+  userId: string;
   startDate: Date;
   endDate: Date;
   excludedEventId?: number;
@@ -60,7 +60,7 @@ export function buildBlockOverlapConflictPayload(
 }
 
 export async function executeEventBlockMutation(params: {
-  userId: number;
+  userId: string;
   startDate: Date;
   endDate: Date;
   resolveBlockOverlaps: boolean;
