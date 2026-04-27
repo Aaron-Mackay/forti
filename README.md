@@ -84,6 +84,7 @@ npm run lint          # ESLint
 ### API contracts
 
 - Error envelope and canonical auth error codes: `docs/api-error-contract.md`
+- Demo identities and seeded scenarios: `docs/demo-logins.md`
 
 ### Updating schema
 There is a github action to update the schema. First, update the `schema.prisma` file. 
