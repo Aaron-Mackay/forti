@@ -1,9 +1,23 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import * as api from './api';
+import * as userService from './userService';
+import * as exerciseService from './exerciseService';
+import * as eventService from './eventService';
+import * as metricService from './metricService';
+import * as planService from './planService';
+import * as coachService from './coachService';
 import * as clientApi from './clientApi';
 import prisma from '@/lib/prisma';
 import * as fetchWrapper from './fetchWrapper';
 import {EventPrisma, UserPrisma} from "@/types/dataTypes";
+
+const api = {
+  ...userService,
+  ...exerciseService,
+  ...eventService,
+  ...metricService,
+  ...planService,
+  ...coachService,
+};
 
 vi.mock('@/lib/prisma', () => ({
   default: {
