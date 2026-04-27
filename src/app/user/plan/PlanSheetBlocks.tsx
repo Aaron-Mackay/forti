@@ -136,8 +136,8 @@ const SortableExerciseTbody = ({
           if (!set) {
             return (
               <React.Fragment key={setIndex}>
-                <td style={{ ...cellSx, textAlign: 'center', color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
-                <td style={{ ...cellSx, textAlign: 'center', color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
+                <td style={{ ...cellSx,  color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
+                <td style={{ ...cellSx,  color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
               </React.Fragment>
             )
           }
@@ -176,7 +176,7 @@ const SortableExerciseTbody = ({
         <td style={{ ...cellSx, textAlign: 'right', color: 'var(--mui-palette-text-disabled, #bbb)', fontSize: '0.68rem' }}>
           {bestE1rm != null ? `~${Math.round(bestE1rm)}` : '—'}
         </td>
-        <td style={{ ...cellSx, textAlign: 'center', padding: '0 2px' }}>
+        <td style={{ ...cellSx,  padding: '0 2px' }}>
           {!arrangeMode && (
             <IconButton
               size="small"
@@ -211,8 +211,8 @@ const SortableExerciseTbody = ({
               if (columnIndex !== 0) {
                 return (
                   <React.Fragment key={columnIndex}>
-                    <td style={{ ...cellSx, textAlign: 'center', color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
-                    <td style={{ ...cellSx, textAlign: 'center', color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
+                    <td style={{ ...cellSx,  color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
+                    <td style={{ ...cellSx,  color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
                   </React.Fragment>
                 )
               }
@@ -480,7 +480,7 @@ const SortableWorkoutSlot = ({
                       />
                     </td>
                   ))}
-                  <td style={{ ...cellSx, textAlign: 'center', padding: '0 2px' }}>
+                  <td style={{ ...cellSx,  padding: '0 2px' }}>
                     {!arrangeMode && (
                       <IconButton
                         size="small"
