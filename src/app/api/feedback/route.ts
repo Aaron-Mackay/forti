@@ -6,7 +6,7 @@ import {authOptions} from "@lib/auth";
 const MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
 const ALLOWED_MIME_TYPE_SET = new Set<string>(ALLOWED_MIME_TYPES);
-const ALLOWED_FEEDBACK_TYPES = ["Bug Report", "Feature Request", "General Feedback"] as const;
+const ALLOWED_FEEDBACK_TYPES = ["Bug Report", "Feature Request", "Improvement Suggestion"] as const;
 const MAX_DESCRIPTION_LENGTH = 4_000;
 
 function sanitizeFilename(filename: string): string {
