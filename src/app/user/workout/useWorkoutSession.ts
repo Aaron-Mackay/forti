@@ -1,7 +1,7 @@
 'use client';
 
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {queueOrSendRequest, queueOrSendRequestJson, syncQueuedRequests} from '@/utils/offlineSync';
+import {cancelQueuedRequest, queueOrSendRequest, queueOrSendRequestJson, syncQueuedRequests} from '@/utils/offlineSync';
 import {getUserDataCache, saveUserDataCache} from '@/utils/clientDb';
 import {useOfflineCache} from '@lib/hooks/useOfflineCache';
 import {UserPrisma, WorkoutExercisePrisma, WorkoutPrisma} from '@/types/dataTypes';
@@ -93,6 +93,8 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
   // Per-set-field network timers to avoid race conditions and truncation during rapid typing
   const networkTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const pendingWorkoutExerciseId = useRef(-1);
+  const queuedOptimisticExerciseCreates = useRef<Map<number, number>>(new Map());
+  const removedBeforeQueueIdResolved = useRef<Set<number>>(new Set());
 
   // On mount: if offline restore cache; if online prime cache
   useOfflineCache(userDataState.id, userDataState, setUserData, getUserDataCache, saveUserDataCache);
@@ -421,7 +423,14 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
         restTime: config.restTime,
         setCount: config.setCount,
     })
-      .then(({queued, data}) => {
+      .then(({queued, data, queueId}) => {
+        if (queued && queueId !== undefined) {
+          if (removedBeforeQueueIdResolved.current.delete(optimisticId)) {
+            void cancelQueuedRequest(queueId);
+          } else {
+            queuedOptimisticExerciseCreates.current.set(optimisticId, queueId);
+          }
+        }
         if (!queued && data) {
           setUserData(prev => {
             const withoutOptimistic = removeExercise(
@@ -464,6 +473,13 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
     const prevUserData = userDataState;
     setUserData(prev => removeExercise(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, workoutExerciseId));
     if (workoutExerciseId < 0) {
+      const queueId = queuedOptimisticExerciseCreates.current.get(workoutExerciseId);
+      if (queueId !== undefined) {
+        queuedOptimisticExerciseCreates.current.delete(workoutExerciseId);
+        void cancelQueuedRequest(queueId);
+      } else {
+        removedBeforeQueueIdResolved.current.add(workoutExerciseId);
+      }
       setSnackbar({open: true, message: 'Offline: pending exercise removed locally', severity: 'info'});
       return;
     }
