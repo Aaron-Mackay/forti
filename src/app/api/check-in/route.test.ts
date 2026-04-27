@@ -57,6 +57,35 @@ function makeRequest(body: unknown) {
   });
 }
 
+function makeWeeklyCheckIn(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 99,
+    userId: 'user-1',
+    weekStartDate: new Date('2026-04-20T00:00:00.000Z'),
+    completedAt: new Date('2026-04-22T10:00:00.000Z'),
+    energyLevel: 4,
+    moodRating: null,
+    stressLevel: null,
+    sleepQuality: null,
+    recoveryRating: null,
+    adherenceRating: null,
+    completedWorkouts: null,
+    plannedWorkouts: null,
+    weekReview: 'Solid week',
+    coachMessage: null,
+    goalsNextWeek: null,
+    customResponses: null,
+    templateSnapshot: null,
+    coachNotes: null,
+    coachResponseUrl: null,
+    coachReviewedAt: null,
+    frontPhotoUrl: null,
+    backPhotoUrl: null,
+    sidePhotoUrl: null,
+    ...overrides,
+  };
+}
+
 describe('POST /api/check-in', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -67,12 +96,7 @@ describe('POST /api/check-in', () => {
       coach: { id: 'coach-1', email: 'coach@example.com', name: 'Coach' },
     });
     mockWeeklyCheckInFindUnique.mockResolvedValue(null);
-    mockWeeklyCheckInUpsert.mockResolvedValue({
-      id: 99,
-      frontPhotoUrl: null,
-      backPhotoUrl: null,
-      sidePhotoUrl: null,
-    });
+    mockWeeklyCheckInUpsert.mockResolvedValue(makeWeeklyCheckIn());
     mockNotifyCoachCheckInSubmitted.mockResolvedValue(undefined);
   });
 
