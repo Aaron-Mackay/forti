@@ -47,7 +47,7 @@
 - /api/export/check-ins | methods=GET | auth=session | contracts=-
 - /api/export/metrics | methods=GET | auth=session | contracts=-
 - /api/export/training-data | methods=GET | auth=session | contracts=-
-- /api/feedback | methods=POST | auth=none | contracts=-
+- /api/feedback | methods=POST | auth=session | contracts=-
 - /api/learning-plan-assignments | methods=GET | auth=session | contracts=-
 - /api/learning-plan-assignments/[assignmentId]/steps/[stepId]/complete | methods=PATCH | auth=session | contracts=-
 - /api/library | methods=GET,POST | auth=session | contracts=-
