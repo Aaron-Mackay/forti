@@ -19,10 +19,10 @@ export type TargetTemplateRequest = z.infer<typeof TargetTemplateRequestSchema>;
 export const TargetTemplateResponseSchema = z.object({
   id: z.number().int(),
   userId: z.string(),
-  effectiveFrom: z.string(),
+  effectiveFrom: z.coerce.date(),
   stepsTarget: z.number().int().nullable(),
   sleepMinsTarget: z.number().int().nullable(),
-  createdAt: z.string(),
+  createdAt: z.coerce.date(),
   days: z.array(z.object({
     id: z.number().int(),
     templateId: z.number().int(),
