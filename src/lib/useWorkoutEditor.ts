@@ -30,6 +30,7 @@ export type WorkoutEditorAction =
   | { type: 'REMOVE_DROP_SET'; planId: number; weekId: number; workoutId: number; exerciseId: number; setId: number }
   | { type: 'SET_DROPS_PER_SET'; planId: number; weekId: number; workoutId: number; exerciseId: number; dropCount: number }
   | { type: 'UPDATE_WORKOUT_NAME'; planId: number, weekId: number; workoutId: number; name: string }
+  | { type: 'UPDATE_WORKOUT_NOTES'; planId: number, weekId: number; workoutId: number; notes: string }
   | {
   type: 'UPDATE_SET_WEIGHT';
   planId: number,
@@ -323,6 +324,13 @@ export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, 
       const workout = getNestedOrWarn({planId, weekId, workoutId});
       if (!workout) return userDataState;
       return userPlanMutators.updateWorkoutName(userDataState, planId, weekId, workoutId, name)
+    }
+
+    case 'UPDATE_WORKOUT_NOTES': {
+      const { planId, weekId, workoutId, notes } = action;
+      const workout = getNestedOrWarn({planId, weekId, workoutId});
+      if (!workout) return userDataState;
+      return userPlanMutators.updateWorkoutNotes(userDataState, planId, weekId, workoutId, notes)
     }
 
     case 'UPDATE_SET_WEIGHT': {

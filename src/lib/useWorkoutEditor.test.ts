@@ -355,6 +355,22 @@ describe('reducer', () => {
     expect(newState.plans[0].weeks[0].workouts[0].name).toBe('New Name');
   });
 
+  it('UPDATE_WORKOUT_NOTES updates workout notes', () => {
+    const workout = new WorkoutBuilder(2).build();
+    const week = new WeekBuilder(1)
+      .addWorkout(workout)
+      .build();
+    const plan = new PlanBuilder(1)
+      .addWeek(week)
+      .build();
+    const state = new UserBuilder(1)
+      .addPlan(plan)
+      .build();
+    const action: WorkoutEditorAction = {type: 'UPDATE_WORKOUT_NOTES', planId: 1, weekId: 1, workoutId: 2, notes: 'Keep rest strict'};
+    const newState = reducer(state, action, mockUuid);
+    expect(newState.plans[0].weeks[0].workouts[0].notes).toBe('Keep rest strict');
+  });
+
   it('UPDATE_SET_WEIGHT updates the set weight', () => {
     const exercise = new ExerciseBuilder(3)
       .addSet(new SetBuilder(10).build())

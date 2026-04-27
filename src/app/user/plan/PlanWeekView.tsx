@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Box, Chip, IconButton, LinearProgress, TextField, Typography } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Box, Chip, Collapse, IconButton, LinearProgress, TextField, Tooltip, Typography } from '@mui/material';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import NotesOutlinedIcon from '@mui/icons-material/NotesOutlined';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { PlanPrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { getWorkoutStatus } from '@/lib/workoutProgress';
@@ -36,6 +39,7 @@ const PlanWeekView = ({
 
   const [weekIdx, setWeekIdx] = useState(defaultWeekIdx);
   const [selectedWorkoutIdx, setSelectedWorkoutIdx] = useState(0);
+  const [notesExpanded, setNotesExpanded] = useState(false);
 
   const week = sortedWeeks[weekIdx];
   if (!week) {
@@ -55,6 +59,10 @@ const PlanWeekView = ({
   const sortedExercises = workout
     ? [...workout.exercises].sort((a, b) => a.order - b.order)
     : [];
+
+  useEffect(() => {
+    setNotesExpanded(false);
+  }, [workout?.id]);
 
   return (
     <Box sx={{ pb: 8 }}>
@@ -150,34 +158,93 @@ const PlanWeekView = ({
 
       {/* Editable workout name */}
       {workout && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <TextField
-            size="small"
-            label="Workout name"
-            value={workout.name ?? ''}
-            onChange={(e) =>
-              debouncedDispatch({
-                type: 'UPDATE_WORKOUT_NAME',
-                planId,
-                weekId: week.id,
-                workoutId: workout.id,
-                name: e.target.value,
-              })
-            }
-            sx={{ width: '100%', maxWidth: 320 }}
-            autoComplete="off"
-          />
-          <IconButton
-            size="small"
-            disabled={sortedWorkouts.length <= 1}
-            onClick={() => {
-              dispatch({ type: 'REMOVE_WORKOUT', planId, weekId: week.id, workoutId: workout.id });
-              setSelectedWorkoutIdx((prev) => Math.max(0, Math.min(prev, sortedWorkouts.length - 2)));
-            }}
-            aria-label="Delete workout"
-          >
-            <DeleteOutlineIcon fontSize="small" />
-          </IconButton>
+        <Box sx={{ mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TextField
+              size="small"
+              label="Workout name"
+              value={workout.name ?? ''}
+              onChange={(e) =>
+                debouncedDispatch({
+                  type: 'UPDATE_WORKOUT_NAME',
+                  planId,
+                  weekId: week.id,
+                  workoutId: workout.id,
+                  name: e.target.value,
+                })
+              }
+              sx={{ width: '100%', maxWidth: 320 }}
+              autoComplete="off"
+            />
+            <IconButton
+              size="small"
+              disabled={sortedWorkouts.length <= 1}
+              onClick={() => {
+                dispatch({ type: 'REMOVE_WORKOUT', planId, weekId: week.id, workoutId: workout.id });
+                setSelectedWorkoutIdx((prev) => Math.max(0, Math.min(prev, sortedWorkouts.length - 2)));
+              }}
+              aria-label="Delete workout"
+            >
+              <DeleteOutlineIcon fontSize="small" />
+            </IconButton>
+          </Box>
+
+          <Box sx={{ mt: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <NotesOutlinedIcon sx={{ fontSize: '0.95rem', color: 'text.secondary' }} />
+              <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
+                Workout notes
+              </Typography>
+              <Tooltip title={notesExpanded ? 'Collapse notes' : 'Expand notes'}>
+                <IconButton
+                  size="small"
+                  onClick={() => setNotesExpanded((prev) => !prev)}
+                  aria-label={notesExpanded ? 'Collapse workout notes' : 'Expand workout notes'}
+                >
+                  {notesExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                </IconButton>
+              </Tooltip>
+            </Box>
+
+            {!notesExpanded && Boolean(workout.notes?.trim()) && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  mt: 0.5,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setNotesExpanded(true)}
+              >
+                {workout.notes}
+              </Typography>
+            )}
+
+            <Collapse in={notesExpanded || !workout.notes?.trim()} unmountOnExit={false}>
+              <TextField
+                size="small"
+                placeholder="Add workout notes..."
+                value={workout.notes ?? ''}
+                onChange={(event) =>
+                  debouncedDispatch({
+                    type: 'UPDATE_WORKOUT_NOTES',
+                    planId,
+                    weekId: week.id,
+                    workoutId: workout.id,
+                    notes: event.target.value,
+                  })
+                }
+                multiline
+                minRows={2}
+                fullWidth
+                sx={{ mt: 0.5 }}
+              />
+            </Collapse>
+          </Box>
         </Box>
       )}
 

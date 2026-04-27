@@ -1,11 +1,12 @@
 'use client'
 
 import React from 'react'
-import { Box, IconButton, Typography } from '@mui/material'
+import { Box, Dialog, DialogContent, DialogTitle, IconButton, TextField, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import CloseIcon from '@mui/icons-material/Close'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
+import NotesOutlinedIcon from '@mui/icons-material/NotesOutlined'
 import {
   DndContext,
   closestCenter,
@@ -295,6 +296,7 @@ const SortableWorkoutSlot = ({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `wo-${workout.id}`,
   })
+  const [notesOpen, setNotesOpen] = React.useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -334,6 +336,44 @@ const SortableWorkoutSlot = ({
         <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.72rem', color: 'text.primary', flex: 1 }}>
           {stripWorkoutSuffix(workout.name ?? `Workout ${slotIdx + 1}`)}
         </Typography>
+        {!arrangeMode && (
+          <>
+            <IconButton
+              size="small"
+              sx={{ p: 0.25, ml: 0.5, opacity: workout.notes?.trim() ? 0.8 : 0.35, '&:hover': { opacity: 1 } }}
+              onClick={() => setNotesOpen(true)}
+              aria-label="Open workout notes"
+            >
+              <NotesOutlinedIcon sx={{ fontSize: '0.8rem' }} />
+            </IconButton>
+            <Dialog
+              open={notesOpen}
+              onClose={() => setNotesOpen(false)}
+              fullWidth
+              maxWidth="sm"
+            >
+              <DialogTitle sx={{ pb: 1 }}>{stripWorkoutSuffix(workout.name ?? `Workout ${slotIdx + 1}`)} notes</DialogTitle>
+              <DialogContent sx={{ pt: '8px !important' }}>
+                <TextField
+                  value={workout.notes ?? ''}
+                  onChange={(event) =>
+                    dispatch({
+                      type: 'UPDATE_WORKOUT_NOTES',
+                      planId,
+                      weekId,
+                      workoutId: workout.id,
+                      notes: event.target.value,
+                    })
+                  }
+                  placeholder="Add workout notes..."
+                  multiline
+                  minRows={4}
+                  fullWidth
+                />
+              </DialogContent>
+            </Dialog>
+          </>
+        )}
         {!arrangeMode && (
           <IconButton
             size="small"

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Box, Chip, IconButton, Menu, TextField, Typography } from '@mui/material';
+import { Box, Chip, Collapse, IconButton, Menu, TextField, Tooltip, Typography } from '@mui/material';
 import { PlanPrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { getWeekStatus } from '@/lib/workoutProgress';
@@ -14,6 +14,9 @@ import { hasTrailingDropSets, removeExercises, removeTrailingDropSets, setBfrEna
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import NotesOutlinedIcon from '@mui/icons-material/NotesOutlined';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExerciseDetailsDialog from './ExerciseDetailsDialog';
 
 interface PlanMultiWeekTableProps {
@@ -29,6 +32,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
   const [changeExerciseId, setChangeExerciseId] = useState<number | null>(null);
   const [detailsExerciseId, setDetailsExerciseId] = useState<number | null>(null);
   const [dropEnabledExerciseIds, setDropEnabledExerciseIds] = useState<Set<number>>(new Set());
+  const [notesExpanded, setNotesExpanded] = useState(false);
   const sortedWeeks = [...plan.weeks].sort((a, b) => a.order - b.order);
 
   const maxWorkoutCount = Math.max(0, ...plan.weeks.map(w => w.workouts.length));
@@ -119,6 +123,10 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
   const lastWeek = sortedWeeks[sortedWeeks.length - 1] ?? null;
   const canRemoveWeek = sortedWeeks.length > 1;
 
+  useEffect(() => {
+    setNotesExpanded(false);
+  }, [selectedWorkoutOrder, activeWorkout?.id]);
+
   return (
     <Box>
       {/* Workout chips + add */}
@@ -153,41 +161,104 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
 
       {/* Editable workout name */}
       {activeWorkout && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <TextField
-            size="small"
-            label="Workout name"
-            value={activeWorkout.name ?? ''}
-            onChange={(e) => {
-              workoutsByWeek.forEach(({ week, workout: wo }) => {
-                if (wo) {
-                  debouncedDispatch({
-                    type: 'UPDATE_WORKOUT_NAME',
-                    planId,
-                    weekId: week.id,
-                    workoutId: wo.id,
-                    name: e.target.value,
+        <Box sx={{ mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TextField
+              size="small"
+              label="Workout name"
+              value={activeWorkout.name ?? ''}
+              onChange={(e) => {
+                workoutsByWeek.forEach(({ week, workout: wo }) => {
+                  if (wo) {
+                    debouncedDispatch({
+                      type: 'UPDATE_WORKOUT_NAME',
+                      planId,
+                      weekId: week.id,
+                      workoutId: wo.id,
+                      name: e.target.value,
+                    });
+                  }
+                });
+              }}
+              sx={{ width: '100%', maxWidth: 320 }}
+              autoComplete="off"
+            />
+            <IconButton
+              size="small"
+              disabled={maxWorkoutCount <= 1}
+              onClick={() => {
+                workoutsByWeek.forEach(({ week, workout }) => {
+                  if (workout) {
+                    dispatch({ type: 'REMOVE_WORKOUT', planId, weekId: week.id, workoutId: workout.id });
+                  }
+                });
+              }}
+              aria-label="Delete workout"
+            >
+              <DeleteOutlineIcon fontSize="small" />
+            </IconButton>
+          </Box>
+
+          <Box sx={{ mt: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <NotesOutlinedIcon sx={{ fontSize: '0.95rem', color: 'text.secondary' }} />
+              <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
+                Workout notes (applies to this workout across weeks)
+              </Typography>
+              <Tooltip title={notesExpanded ? 'Collapse notes' : 'Expand notes'}>
+                <IconButton
+                  size="small"
+                  onClick={() => setNotesExpanded((prev) => !prev)}
+                  aria-label={notesExpanded ? 'Collapse workout notes' : 'Expand workout notes'}
+                >
+                  {notesExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                </IconButton>
+              </Tooltip>
+            </Box>
+
+            {!notesExpanded && Boolean(activeWorkout.notes?.trim()) && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  mt: 0.5,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setNotesExpanded(true)}
+              >
+                {activeWorkout.notes}
+              </Typography>
+            )}
+
+            <Collapse in={notesExpanded || !activeWorkout.notes?.trim()} unmountOnExit={false}>
+              <TextField
+                size="small"
+                placeholder="Add workout notes..."
+                value={activeWorkout.notes ?? ''}
+                onChange={(event) => {
+                  workoutsByWeek.forEach(({ week, workout: wo }) => {
+                    if (wo) {
+                      debouncedDispatch({
+                        type: 'UPDATE_WORKOUT_NOTES',
+                        planId,
+                        weekId: week.id,
+                        workoutId: wo.id,
+                        notes: event.target.value,
+                      });
+                    }
                   });
-                }
-              });
-            }}
-            sx={{ width: '100%', maxWidth: 320 }}
-            autoComplete="off"
-          />
-          <IconButton
-            size="small"
-            disabled={maxWorkoutCount <= 1}
-            onClick={() => {
-              workoutsByWeek.forEach(({ week, workout }) => {
-                if (workout) {
-                  dispatch({ type: 'REMOVE_WORKOUT', planId, weekId: week.id, workoutId: workout.id });
-                }
-              });
-            }}
-            aria-label="Delete workout"
-          >
-            <DeleteOutlineIcon fontSize="small" />
-          </IconButton>
+                }}
+                multiline
+                minRows={2}
+                fullWidth
+                sx={{ mt: 0.5, maxWidth: 600 }}
+              />
+            </Collapse>
+          </Box>
         </Box>
       )}
 
