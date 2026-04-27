@@ -105,6 +105,38 @@ export const getEventsOnDate = (dateInfo: DateClickArg, eventsInState: EventPris
   });
 }
 
+export const dateRangesOverlap = (
+  rangeAStart: Date,
+  rangeAEnd: Date | null,
+  rangeBStart: Date,
+  rangeBEnd: Date | null,
+): boolean => {
+  const rangeAEndTime = rangeAEnd ? rangeAEnd.getTime() : Number.POSITIVE_INFINITY;
+  const rangeBEndTime = rangeBEnd ? rangeBEnd.getTime() : Number.POSITIVE_INFINITY;
+  return rangeAStart.getTime() < rangeBEndTime && rangeBStart.getTime() < rangeAEndTime;
+}
+
+export const eventOccursInYear = (event: EventPrisma, year: number): boolean => {
+  const yearStart = new Date(year, 0, 1);
+  const yearEnd = new Date(year + 1, 0, 1);
+
+  if (event.recurrenceFrequency) {
+    return dateRangesOverlap(
+      event.startDate,
+      event.recurrenceEnd,
+      yearStart,
+      yearEnd,
+    );
+  }
+
+  return dateRangesOverlap(
+    event.startDate,
+    event.endDate,
+    yearStart,
+    yearEnd,
+  );
+}
+
 const eventDateKey = (date: Date | null): string => date ? format(date, 'yyyy-MM-dd') : '';
 
 const eventContentKey = (event: EventPrisma): string => [
