@@ -1,4 +1,4 @@
-import {addDays, differenceInDays, format, getISOWeek} from "date-fns";
+import {addDays, differenceInDays, format, getISOWeek, subDays} from "date-fns";
 import {BlockSubtype, EventType} from "@/generated/prisma/browser";
 import {EventPrisma} from "@/types/dataTypes";
 import {DateClickArg} from "@fullcalendar/interaction";
@@ -37,6 +37,10 @@ export const getEventColor = (event: EventPrisma): string | undefined => {
   if (event.blockSubtype) return getDefinedBlockColor(event.blockSubtype);
   return undefined;
 };
+
+export const toInclusiveEndDate = (exclusiveEndDate: Date): Date => subDays(exclusiveEndDate, 1);
+
+export const toExclusiveEndDate = (inclusiveEndDate: Date): Date => addDays(inclusiveEndDate, 1);
 
 type FullCalendarBaseProps = {
   id: string,
