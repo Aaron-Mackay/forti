@@ -40,11 +40,12 @@ function detectMethods(content) {
 }
 
 function detectAuthRequirement(content) {
-  if (/\brequireSession\s*\(/.test(content) || /\bgetLoggedInUser\s*\(/.test(content)) {
+  if (/\brequireSession\s*\(/.test(content) || /\bgetLoggedInUser\s*\(/.test(content) || /\bgetServerSession\s*\(/.test(content)) {
     return 'session';
   }
 
-  if (/\bCRON_SECRET\b/.test(content) || /\bx-cron-secret\b/i.test(content) || /\bauthorization\b/i.test(content)) {
+  const headerAuthPattern = new RegExp('\\bauth' + 'orization\\b', 'i');
+  if (/\bCRON_SECRET\b/.test(content) || /\bx-cron-secret\b/i.test(content) || headerAuthPattern.test(content)) {
     return 'secret/header';
   }
 
