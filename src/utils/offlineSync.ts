@@ -10,6 +10,7 @@ interface OfflineRequest {
 export type QueueOrSendResult = {
   queued: boolean;
   response?: Response;
+  queueId?: number;
 };
 
 const MAX_RETRIES = 3;
@@ -58,13 +59,16 @@ export async function getQueuedRequests(): Promise<number> {
   });
 }
 
+export async function cancelQueuedRequest(queueId: number): Promise<void> {
+  await deleteRequest(queueId);
+}
 
 export async function queueOrSendRequest(url: string, method: string, body: Record<string, unknown>): Promise<QueueOrSendResult> {
   const req: OfflineRequest = {url, method, body};
 
 
   if (!navigator.onLine) {
-    await addRequest(req);
+    const queueId = await addRequest(req);
 
     // Try to register background sync
     if ('serviceWorker' in navigator && 'SyncManager' in window) {
@@ -76,7 +80,7 @@ export async function queueOrSendRequest(url: string, method: string, body: Reco
         console.warn('Background sync registration failed:', err);
       }
     }
-    return {queued: true};
+    return {queued: true, queueId};
   } else {
     const response = await retryFetch(req);
     return {queued: false, response};
@@ -87,9 +91,9 @@ export async function queueOrSendRequestJson<T>(
   url: string,
   method: string,
   body: Record<string, unknown>,
-): Promise<{queued: boolean; data: T | null}> {
-  const {queued, response} = await queueOrSendRequest(url, method, body);
-  if (queued || !response) return {queued: true, data: null};
+): Promise<{queued: boolean; data: T | null; queueId?: number}> {
+  const {queued, response, queueId} = await queueOrSendRequest(url, method, body);
+  if (queued || !response) return {queued: true, data: null, queueId};
   const data = await response.json() as T;
   return {queued: false, data};
 }
