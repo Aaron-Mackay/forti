@@ -47,7 +47,7 @@
 - /api/export/check-ins | methods=GET | auth=session | contracts=-
 - /api/export/metrics | methods=GET | auth=session | contracts=-
 - /api/export/training-data | methods=GET | auth=session | contracts=-
-- /api/feedback | methods=POST | auth=none | contracts=-
+- /api/feedback | methods=POST | auth=session | contracts=-
 - /api/learning-plan-assignments | methods=GET | auth=session | contracts=-
 - /api/learning-plan-assignments/[assignmentId]/steps/[stepId]/complete | methods=PATCH | auth=session | contracts=-
 - /api/library | methods=GET,POST | auth=session | contracts=-
@@ -64,6 +64,7 @@
 - /api/plans/count | methods=GET | auth=session | contracts=-
 - /api/push/subscribe | methods=POST,DELETE | auth=session | contracts=-
 - /api/saveUserWorkoutData | methods=POST | auth=none | contracts=@lib/contracts/saveUserWorkoutData
+- /api/sessions | methods=GET,POST | auth=session | contracts=@lib/contracts/sessions
 - /api/sets | methods=POST | auth=session | contracts=-
 - /api/sets/[setId] | methods=PATCH,DELETE | auth=session | contracts=-
 - /api/supplements | methods=GET,POST | auth=session | contracts=-
