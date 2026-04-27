@@ -130,7 +130,7 @@ export async function saveEventsCache(userId: string, data: EventPrisma[]): Prom
 }
 
 export async function getEventsCache(userId: string): Promise<CacheEntry<EventPrisma[]> | undefined> {
-  return readFromCache<EventPrisma[]>(userId, userId);
+  return readFromCache<EventPrisma[]>('eventsCache', userId);
 }
 
 export async function saveMetricsCache(userId: string, data: MetricPrisma[]): Promise<void> {
