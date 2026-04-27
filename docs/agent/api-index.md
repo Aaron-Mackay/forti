@@ -64,6 +64,7 @@
 - /api/plans/count | methods=GET | auth=session | contracts=-
 - /api/push/subscribe | methods=POST,DELETE | auth=session | contracts=-
 - /api/saveUserWorkoutData | methods=POST | auth=none | contracts=@lib/contracts/saveUserWorkoutData
+- /api/sessions | methods=GET,POST | auth=session | contracts=@lib/contracts/sessions
 - /api/sets | methods=POST | auth=session | contracts=-
 - /api/sets/[setId] | methods=PATCH,DELETE | auth=session | contracts=-
 - /api/supplements | methods=GET,POST | auth=session | contracts=-
