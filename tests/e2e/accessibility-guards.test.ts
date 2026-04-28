@@ -100,7 +100,7 @@ test.describe('Accessibility must-not-regress guardrails', () => {
     await completeButton.focus();
     await expectFocusVisible(completeButton);
     await expectMinTarget(completeButton);
-    await expect(await contrastRatio(completeButton)).toBeGreaterThanOrEqual(3);
+    expect(await contrastRatio(completeButton)).toBeGreaterThanOrEqual(3);
   });
 
   test('nutrition target save action remains keyboard operable and clearly visible', async ({ page }) => {
@@ -113,7 +113,7 @@ test.describe('Accessibility must-not-regress guardrails', () => {
     await saveTargets.focus();
     await expectFocusVisible(saveTargets);
     await expectMinTarget(saveTargets);
-    await expect(await contrastRatio(saveTargets)).toBeGreaterThanOrEqual(3);
+    expect(await contrastRatio(saveTargets)).toBeGreaterThanOrEqual(3);
   });
 
   test('check-in submit action remains keyboard reachable with explicit save label', async ({ page }) => {

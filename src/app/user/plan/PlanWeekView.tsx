@@ -40,6 +40,9 @@ const PlanWeekView = ({
   const [weekIdx, setWeekIdx] = useState(defaultWeekIdx);
   const [selectedWorkoutIdx, setSelectedWorkoutIdx] = useState(0);
   const [notesExpanded, setNotesExpanded] = useState(false);
+  useEffect(() => {
+    setNotesExpanded(false);
+  }, [weekIdx, selectedWorkoutIdx, planId]);
 
   const week = sortedWeeks[weekIdx];
   if (!week) {
@@ -59,10 +62,6 @@ const PlanWeekView = ({
   const sortedExercises = workout
     ? [...workout.exercises].sort((a, b) => a.order - b.order)
     : [];
-
-  useEffect(() => {
-    setNotesExpanded(false);
-  }, [workout?.id]);
 
   return (
     <Box sx={{ pb: 8 }}>

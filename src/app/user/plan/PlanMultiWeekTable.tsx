@@ -37,6 +37,9 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
 
   const maxWorkoutCount = Math.max(0, ...plan.weeks.map(w => w.workouts.length));
   const [selectedWorkoutOrder, setSelectedWorkoutOrder] = useState(1);
+  useEffect(() => {
+    setNotesExpanded(false);
+  }, [selectedWorkoutOrder, planId]);
 
   // Find the id of the latest week that has any weight/reps entered
   const scrollTargetWeekId = getLatestTrackedWeekId(plan);
@@ -122,10 +125,6 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
   const menuDropEnabled = targetExerciseId != null ? (dropEnabledExerciseIds.has(targetExerciseId) || menuHasTrailingDrops) : false;
   const lastWeek = sortedWeeks[sortedWeeks.length - 1] ?? null;
   const canRemoveWeek = sortedWeeks.length > 1;
-
-  useEffect(() => {
-    setNotesExpanded(false);
-  }, [selectedWorkoutOrder, activeWorkout?.id]);
 
   return (
     <Box>
