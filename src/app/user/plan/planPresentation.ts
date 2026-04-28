@@ -1,6 +1,7 @@
 'use client'
 
 import { PlanPrisma, WorkoutExercisePrisma } from '@/types/dataTypes'
+import { selectPreviousWorkoutCandidate } from '@lib/previousWorkoutSelector'
 
 export function stripWorkoutSuffix(name: string): string {
   return name.replace(/\s*\([^)]*\)\s*$/, '').trim()
@@ -49,36 +50,40 @@ export function getLatestTrackedWeekId(plan: PlanPrisma): number | null {
   return lastTrackedWeekId ?? sortedWeeks[sortedWeeks.length - 1]?.id ?? null
 }
 
-export type E1rmDeltaDirection = 'up' | 'down' | 'flat' | 'none'
-
-export function getE1rmDeltaDirection(
-  currentE1rm: number | null,
-  previousE1rm: number | null,
-): E1rmDeltaDirection {
-  if (currentE1rm == null || previousE1rm == null) return 'none'
-  if (currentE1rm > previousE1rm) return 'up'
-  if (currentE1rm < previousE1rm) return 'down'
-  return 'flat'
-}
-
 export function getPreviousTrackedExercise(
   plan: PlanPrisma,
   currentWeekOrder: number,
   workoutOrder: number,
   exerciseId: number,
 ): WorkoutExercisePrisma | null {
-  const sortedWeeks = [...plan.weeks].sort((a, b) => b.order - a.order)
+  const candidates = plan.weeks.flatMap((week) =>
+    week.workouts.flatMap((workout) =>
+      workout.exercises.map((exercise) => ({
+        sortValue: week.order,
+        workoutId: workout.id,
+        workoutOrder: workout.order,
+        exerciseId: exercise.exercise?.id ?? null,
+        hasTrackedData: hasTrackedExerciseSetData(exercise),
+        value: exercise,
+      })),
+    ),
+  )
 
-  for (const week of sortedWeeks) {
-    if (week.order >= currentWeekOrder) continue
+  return selectPreviousWorkoutCandidate(candidates, {
+    currentSortValue: currentWeekOrder,
+    targetWorkoutOrder: workoutOrder,
+    targetExerciseId: exerciseId,
+    requireTrackedData: true,
+    excludeCurrentWorkout: false,
+  })
+}
 
-    const workout = week.workouts.find((entry) => entry.order === workoutOrder)
-    const exercise = workout?.exercises.find((entry) => entry.exercise?.id === exerciseId) ?? null
-
-    if (hasTrackedExerciseSetData(exercise)) {
-      return exercise
-    }
-  }
-
-  return null
+export function getE1rmDeltaDirection(
+  currentE1rm: number | null,
+  previousE1rm: number | null,
+): 'up' | 'down' | 'flat' | 'none' {
+  if (currentE1rm == null || previousE1rm == null) return 'none'
+  if (currentE1rm > previousE1rm) return 'up'
+  if (currentE1rm < previousE1rm) return 'down'
+  return 'flat'
 }

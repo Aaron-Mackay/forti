@@ -62,11 +62,10 @@ const cardioValueSx = {
   justifyContent: 'center',
   border: '1px solid transparent',
 };
-
 const e1rmDeltaMeta = {
-  up: { icon: '↑', color: 'success.main', ariaLabel: 'e1RM increased from previous week' },
-  down: { icon: '↓', color: 'error.main', ariaLabel: 'e1RM decreased from previous week' },
-  flat: { icon: '→', color: 'text.disabled', ariaLabel: 'e1RM unchanged from previous week' },
+  up: { symbol: '↑', color: 'success.main', label: 'e1RM increased from previous workout' },
+  down: { symbol: '↓', color: 'error.main', label: 'e1RM decreased from previous workout' },
+  flat: { symbol: '→', color: 'text.disabled', label: 'e1RM unchanged from previous workout' },
 } as const;
 
 const ExerciseProgressCard = ({
@@ -241,7 +240,8 @@ const ExerciseProgressCard = ({
 
             const prevE1rm = computeE1rm(prev?.weight, prev?.reps);
             const setE1rm = set ? computeE1rm(set.weight, set.reps) : null;
-            const delta = getE1rmDeltaDirection(setE1rm, prevE1rm);
+            const deltaDirection = getE1rmDeltaDirection(setE1rm, prevE1rm);
+            const deltaMeta = deltaDirection !== 'none' ? e1rmDeltaMeta[deltaDirection] : null;
 
             return (
               <Box
@@ -299,20 +299,16 @@ const ExerciseProgressCard = ({
                 )}
 
                 <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.72rem' }}>
-                  {setE1rm != null ? (
-                    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4 }}>
-                      <Box component="span">{Math.round(setE1rm)}</Box>
-                      {delta !== 'none' ? (
-                        <Box
-                          component="span"
-                          sx={{ color: e1rmDeltaMeta[delta].color, fontSize: '0.68rem', lineHeight: 1 }}
-                          aria-label={e1rmDeltaMeta[delta].ariaLabel}
-                        >
-                          {e1rmDeltaMeta[delta].icon}
-                        </Box>
-                      ) : null}
+                  {setE1rm != null ? Math.round(setE1rm) : '—'}
+                  {deltaMeta && (
+                    <Box
+                      component="span"
+                      aria-label={deltaMeta.label}
+                      sx={{ ml: 0.35, color: deltaMeta.color, fontWeight: 700, fontSize: '0.72rem', lineHeight: 1 }}
+                    >
+                      {deltaMeta.symbol}
                     </Box>
-                  ) : '—'}
+                  )}
                 </Typography>
               </Box>
             );

@@ -5,6 +5,7 @@ import {extractErrorMessage} from "@lib/apiError";
 import {buildPreviousWorkoutFilter, resolveCurrentWorkoutCompletedAt} from '@lib/exerciseQueries';
 import {computeE1rm} from '@/lib/e1rm';
 import type { PreviousExerciseHistory } from '@lib/contracts/exerciseHistory';
+import { selectPreviousWorkoutCandidates } from '@lib/previousWorkoutSelector';
 
 export async function GET(req: NextRequest, props: { params: Promise<{ exerciseId: string }> }) {
   const params = await props.params;
@@ -44,11 +45,23 @@ export async function GET(req: NextRequest, props: { params: Promise<{ exerciseI
         },
       },
       orderBy: {dateCompleted: 'desc'},
-      take: 3,
     });
 
+    const selectedWorkouts = selectPreviousWorkoutCandidates(
+      previousWorkouts.map((workout) => ({
+        sortValue: workout.dateCompleted?.getTime() ?? Number.NEGATIVE_INFINITY,
+        workoutId: undefined,
+        value: workout,
+      })),
+      {
+        currentSortValue: completedAt?.getTime() ?? Number.POSITIVE_INFINITY,
+        excludeCurrentWorkout: false,
+        limit: 3,
+      },
+    )
+
     const history: PreviousExerciseHistory = {
-      workouts: previousWorkouts.flatMap(workout => {
+      workouts: selectedWorkouts.flatMap(workout => {
         if (!workout.dateCompleted) return [];
         const sets = workout.exercises
           .flatMap(ex => ex.sets)
