@@ -132,7 +132,12 @@ test.describe('Accessibility must-not-regress guardrails', () => {
     await markAsComplete.focus();
     await expectFocusVisible(markAsComplete);
     await expectMinTarget(markAsComplete);
-    expect(await contrastRatio(markAsComplete)).toBeGreaterThanOrEqual(3);
+
+    // Small delay to ensure any focus transitions/animations are settled
+    await page.waitForTimeout(100);
+    const ratio = await contrastRatio(markAsComplete);
+    console.log(`Workout completion button contrast ratio: ${ratio}`);
+    expect(ratio).toBeGreaterThanOrEqual(3);
   });
 
   test('nutrition target save action remains keyboard operable and clearly visible', async ({ page }) => {

@@ -64,11 +64,12 @@ test('client completes a workout from the workout flow', async ({ page }) => {
 
   await page.route('**/api/workout/**', async (route) => {
     if (route.request().method() === 'PATCH') {
-      markedComplete = true;
+      const body = route.request().postDataJSON();
+      markedComplete = !!body.dateCompleted;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ id: 1, dateCompleted: new Date().toISOString() }),
+        body: JSON.stringify({ id: 1, dateCompleted: body.dateCompleted || null }),
       });
       return;
     }
