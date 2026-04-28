@@ -7,6 +7,7 @@ import { WorkoutExercisePrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { Dir } from '@/lib/useWorkoutEditor';
 import { computeE1rm } from '@/lib/e1rm';
+import { getE1rmDeltaDirection } from './planPresentation';
 import { ExerciseMenuActionItem, ExerciseMenuDropAndBfrItems, ExerciseMenuMoveItems } from './ExerciseMenuItems';
 import { buildExerciseMetaParts, CompactSetEditor, EditableExerciseNameWithMeta, SetCountControls } from './PlanExercisePrimitives';
 import { confirmRemoveLastSetWithDrops, getExerciseSetModel } from './exerciseSetModel';
@@ -61,6 +62,12 @@ const cardioValueSx = {
   justifyContent: 'center',
   border: '1px solid transparent',
 };
+
+const e1rmDeltaMeta = {
+  up: { icon: '↑', color: 'success.main', ariaLabel: 'e1RM increased from previous week' },
+  down: { icon: '↓', color: 'error.main', ariaLabel: 'e1RM decreased from previous week' },
+  flat: { icon: '→', color: 'text.disabled', ariaLabel: 'e1RM unchanged from previous week' },
+} as const;
 
 const ExerciseProgressCard = ({
   exerciseLink,
@@ -234,6 +241,7 @@ const ExerciseProgressCard = ({
 
             const prevE1rm = computeE1rm(prev?.weight, prev?.reps);
             const setE1rm = set ? computeE1rm(set.weight, set.reps) : null;
+            const delta = getE1rmDeltaDirection(setE1rm, prevE1rm);
 
             return (
               <Box
@@ -291,7 +299,20 @@ const ExerciseProgressCard = ({
                 )}
 
                 <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.72rem' }}>
-                  {setE1rm != null ? Math.round(setE1rm) : '—'}
+                  {setE1rm != null ? (
+                    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4 }}>
+                      <Box component="span">{Math.round(setE1rm)}</Box>
+                      {delta !== 'none' ? (
+                        <Box
+                          component="span"
+                          sx={{ color: e1rmDeltaMeta[delta].color, fontSize: '0.68rem', lineHeight: 1 }}
+                          aria-label={e1rmDeltaMeta[delta].ariaLabel}
+                        >
+                          {e1rmDeltaMeta[delta].icon}
+                        </Box>
+                      ) : null}
+                    </Box>
+                  ) : '—'}
                 </Typography>
               </Box>
             );
