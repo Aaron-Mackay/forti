@@ -20,9 +20,10 @@ import type { WeeklyCheckIn } from '@/generated/prisma/browser';
 import CheckInForm from './CheckInForm';
 import CheckInHistoryCard, { CheckInDetails } from './CheckInHistoryCard';
 import { usePushSubscription } from '@lib/usePushSubscription';
-import type { CurrentCheckInResponse } from '@/types/checkInTypes';
+import { CheckInHistoryResponseSchema, CurrentCheckInResponseSchema, type CurrentCheckInResponse } from '@lib/contracts/checkIn';
 import { useSettings } from '@lib/providers/SettingsProvider';
 import MetricsSystemCard from '@/components/MetricsSystemCard';
+import { fetchJsonWithSchema } from '@lib/fetchWrapper';
 
 type CurrentData = CurrentCheckInResponse;
 
@@ -52,17 +53,16 @@ export default function CheckInClient() {
   const { permission, subscribing, subscribe } = usePushSubscription();
 
   const loadCurrent = async () => {
-    const res = await fetch('/api/check-in/current');
-    if (!res.ok) throw new Error('Failed to load check-in');
-    const data = await res.json() as CurrentCheckInResponse;
+    const data = await fetchJsonWithSchema('/api/check-in/current', CurrentCheckInResponseSchema);
     return normalizeCurrentCheckInResponse(data);
   };
 
   const loadHistory = async (offset: number) => {
     // Fetch past check-ins only; current week is excluded server-side
-    const res = await fetch(`/api/check-in?limit=10&offset=${offset}&excludeCurrent=true`);
-    if (!res.ok) throw new Error('Failed to load history');
-    return res.json() as Promise<{ checkIns: WeeklyCheckIn[]; total: number }>;
+    return fetchJsonWithSchema(
+      `/api/check-in?limit=10&offset=${offset}&excludeCurrent=true`,
+      CheckInHistoryResponseSchema,
+    );
   };
 
   useEffect(() => {

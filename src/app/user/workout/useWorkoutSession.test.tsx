@@ -4,17 +4,23 @@ import {useWorkoutSession} from './useWorkoutSession';
 import {ExerciseBuilder, PlanBuilder, SetBuilder, UserBuilder, WeekBuilder, WorkoutBuilder} from '@/testUtils/builders';
 
 const {
+  cancelQueuedRequest,
   queueOrSendRequest,
+  queueOrSendRequestJson,
   syncQueuedRequests,
   saveUserDataCache,
 } = vi.hoisted(() => ({
+  cancelQueuedRequest: vi.fn(),
   queueOrSendRequest: vi.fn(),
+  queueOrSendRequestJson: vi.fn(),
   syncQueuedRequests: vi.fn(),
   saveUserDataCache: vi.fn(),
 }));
 
 vi.mock('@/utils/offlineSync', () => ({
+  cancelQueuedRequest,
   queueOrSendRequest,
+  queueOrSendRequestJson,
   syncQueuedRequests,
 }));
 
@@ -44,16 +50,26 @@ function buildUserData() {
 }
 
 describe('useWorkoutSession', () => {
+  const originalFetch = global.fetch;
+
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
+    cancelQueuedRequest.mockResolvedValue(undefined);
     queueOrSendRequest.mockResolvedValue(undefined);
+    queueOrSendRequestJson.mockResolvedValue({queued: false, data: null});
     syncQueuedRequests.mockResolvedValue(undefined);
     saveUserDataCache.mockResolvedValue(undefined);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue(buildUserData()),
+    } as Response);
   });
 
   afterEach(() => {
+    vi.unstubAllGlobals();
     vi.useRealTimers();
+    global.fetch = originalFetch;
   });
 
   it('debounces rapid reps updates so only the final value is sent', async () => {
@@ -104,5 +120,144 @@ describe('useWorkoutSession', () => {
 
     expect(queueOrSendRequest).toHaveBeenCalledTimes(1);
     expect(queueOrSendRequest).toHaveBeenCalledWith('/api/sets/5001', 'PATCH', {weight: 16});
+  });
+
+  it('queues form cue writes when offline', async () => {
+    const userData = buildUserData();
+    queueOrSendRequest.mockResolvedValue({queued: true});
+    const {result} = renderHook(() => useWorkoutSession(userData, 301));
+
+    await act(async () => {
+      result.current.handleFormCueBlur(-1, 'Drive knees out');
+    });
+
+    expect(queueOrSendRequest).toHaveBeenCalledWith('/api/exerciseNote/-1', 'PUT', {note: 'Drive knees out'});
+    expect(result.current.snackbar.message).toBe('Offline: note update queued');
+  });
+
+  it('adds an optimistic exercise and queues creation when offline', async () => {
+    const userData = buildUserData();
+    queueOrSendRequestJson.mockResolvedValue({queued: true, data: null, queueId: 42});
+    const {result} = renderHook(() => useWorkoutSession(userData, 301));
+
+    await act(async () => {
+      result.current.handleAddExercise(
+        {
+          id: 2002,
+          name: 'Lat Pulldown',
+          category: 'resistance',
+          description: null,
+          equipment: [],
+          primaryMuscles: [],
+          secondaryMuscles: [],
+          createdByUserId: null,
+        },
+        {repRange: '8-12', restTime: '90', setCount: 3},
+      );
+    });
+
+    expect(queueOrSendRequestJson).toHaveBeenCalledWith('/api/workoutExercise', 'POST', expect.objectContaining({
+      workoutId: 301,
+      exerciseId: 2002,
+    }));
+    expect(result.current.selectedWorkout?.exercises).toHaveLength(2);
+    expect(result.current.selectedWorkout?.exercises.at(-1)?.id).toBeLessThan(0);
+    expect(result.current.snackbar.message).toBe('Offline: exercise addition queued');
+  });
+
+  it('cancels the queued create when an optimistic exercise is removed before reconnect', async () => {
+    const userData = buildUserData();
+    queueOrSendRequestJson.mockResolvedValue({queued: true, data: null, queueId: 42});
+    const {result} = renderHook(() => useWorkoutSession(userData, 301));
+
+    await act(async () => {
+      result.current.handleAddExercise(
+        {
+          id: 2002,
+          name: 'Lat Pulldown',
+          category: 'resistance',
+          description: null,
+          equipment: [],
+          primaryMuscles: [],
+          secondaryMuscles: [],
+          createdByUserId: null,
+        },
+        {repRange: '8-12', restTime: '90', setCount: 3},
+      );
+    });
+
+    const optimisticId = result.current.selectedWorkout?.exercises.at(-1)?.id;
+    expect(optimisticId).toBeLessThan(0);
+
+    await act(async () => {
+      result.current.handleRemoveExercise(optimisticId!);
+    });
+
+    expect(cancelQueuedRequest).toHaveBeenCalledWith(42);
+    expect(queueOrSendRequest).not.toHaveBeenCalledWith(expect.stringMatching('/api/workoutExercise/'), 'DELETE', expect.anything());
+    expect(result.current.selectedWorkout?.exercises).toHaveLength(1);
+    expect(result.current.snackbar.message).toBe('Offline: pending exercise removed locally');
+  });
+
+  it('queues exercise removal when offline', async () => {
+    const userData = buildUserData();
+    queueOrSendRequest.mockResolvedValue({queued: true});
+    const {result} = renderHook(() => useWorkoutSession(userData, 301));
+
+    await act(async () => {
+      result.current.handleRemoveExercise(1001);
+    });
+
+    expect(queueOrSendRequest).toHaveBeenCalledWith('/api/workoutExercise/1001', 'DELETE', {});
+    expect(result.current.selectedWorkout?.exercises).toHaveLength(0);
+    expect(result.current.snackbar.message).toBe('Offline: exercise removal queued');
+  });
+
+  it('continues to fetch latest user data when queued request sync fails', async () => {
+    const userData = buildUserData();
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    syncQueuedRequests.mockRejectedValueOnce(new Error('sync failed'));
+
+    renderHook(() => useWorkoutSession(userData, 301));
+
+    await act(async () => {
+      window.dispatchEvent(new Event('online'));
+      await Promise.resolve();
+    });
+
+    expect(syncQueuedRequests).toHaveBeenCalledTimes(1);
+    expect(global.fetch).toHaveBeenCalledWith('/api/user-data');
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Failed to sync queued workout requests on reconnect',
+      expect.any(Error)
+    );
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('rolls back removal when delete request fails', async () => {
+    queueOrSendRequest.mockRejectedValueOnce(new Error('Failed to remove exercise'));
+
+    const userData = buildUserData();
+    const {result} = renderHook(() => useWorkoutSession(userData, 301));
+
+    act(() => {
+      result.current.handleRemoveExercise(1001);
+    });
+
+    expect(result.current.selectedWorkout?.exercises).toHaveLength(0);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(queueOrSendRequest).toHaveBeenCalledWith('/api/workoutExercise/1001', 'DELETE', {});
+    expect(result.current.selectedWorkout?.exercises).toHaveLength(1);
+    expect(result.current.selectedWorkout?.exercises[0]?.id).toBe(1001);
+    expect(result.current.snackbar).toMatchObject({
+      open: true,
+      message: 'Failed to remove exercise',
+      severity: 'info',
+    });
   });
 });

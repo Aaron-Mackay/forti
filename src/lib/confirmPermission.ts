@@ -1,7 +1,7 @@
-import {getServerSession} from "next-auth/next";
-import {authOptions} from "@lib/auth";
+import {getServerSession} from 'next-auth/next';
+import {authOptions} from '@lib/auth';
 import {forbiddenResponse, unauthenticatedResponse} from '@lib/apiResponses';
-import {getCoachFromUser} from "@lib/api";
+import {getCoachFromUser} from '@lib/coachService';
 
 /**
  * Throws a NextResponse (401/403) if the current session does not match userId

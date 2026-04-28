@@ -1,0 +1,35 @@
+surface_type,route_or_scope,primary_components,complexity,business_criticality,mobile_density,test_coverage_status,proposed_wave
+page,/user,UserPage; DashboardCards; DashboardChart; E1rmProgressCard,High,High,Medium,"E2E: dashboard.test.ts, AppBar.test.ts",Wave 2 - Dashboard
+page,/user/calendar,CalendarPage; Calendar; CalendarBottomDrawer; CalendarRightDrawer,High,High,High,"E2E: calendar.test.ts, AppBar.test.ts; Unit: MetricInput.test.ts",Wave 3 - Workout & Scheduling
+page,/user/workout,WorkoutClient; PlansListView; ExercisesListView; ExerciseDetailView,Very High,High,High,"E2E: WorkoutClient.test.ts, AppBar.test.ts; Unit: multiple workout *.test.tsx",Wave 3 - Workout & Scheduling
+page,/user/plan,PlanPage; PlansListCard,Medium,High,Medium,"E2E: plans.test.ts, AppBar.test.ts",Wave 3 - Workout & Scheduling
+page,/user/plan/[planId],PlanPage; PlanTable; PlanWeekView; PlanSheetView,Very High,High,Low,"E2E: plans.test.ts, AppBar.test.ts; Unit: plan create/upload tests",Wave 3 - Workout & Scheduling
+page,/user/plan/create,PlanCreatePage; PlanBuilderWithContext; PlanEditorScreen; AiFormScreen,Very High,High,Medium,"E2E: plans.test.ts; Unit: AiFormScreen.test.tsx, planTemplates.test.ts",Wave 3 - Workout & Scheduling
+page,/user/plan/upload,UploadAndEditPage; UploadAndEdit,High,Medium,Low,"E2E: plans.test.ts; Unit: uploadFlow.test.ts",Wave 3 - Workout & Scheduling
+page,/user/nutrition,NutritionPage; NutritionClient; MacroTargetsPanel; MetricsDailyBreakdown,High,High,High,"E2E: nutrition.test.ts, AppBar.test.ts",Wave 4 - Nutrition
+page,/user/check-in,CheckInPage; CheckInClient; CheckInForm; CheckInHistoryCard,High,High,High,"E2E: check-in.test.ts; Unit: CheckInHistoryCard.test.tsx",Wave 5 - Check-in
+page,/user/settings,SettingsPage; SettingsClient; CoachingSettings,High,High,Medium,"E2E: settings.test.ts, coachClients.test.ts",Wave 1 - Navigation Shell
+page,/user/supplements,SupplementsPage; SupplementsClient,Medium,Medium,Medium,"E2E: supplements.test.ts",Wave 4 - Nutrition
+page,/user/notifications,NotificationsPage,Medium,Medium,High,"No dedicated e2e/unit spec found",Wave 1 - Navigation Shell
+page,/user/feedback,FeedbackPage,Low,Medium,Medium,"Indirect E2E via AppBar.test.ts navigation check",Wave 1 - Navigation Shell
+page,/user/onboarding,OnboardingPage; OnboardingWizard,Medium,High,High,"No dedicated e2e/unit spec found",Wave 2 - Dashboard
+page,/user/learning-plans,LearningPlansPage; LearningPlansClient,Medium,Medium,Medium,"E2E: learningPlans.test.ts",Wave 6 - Coach & Learning
+page,/user/coach/clients,CoachClientsPage,Medium,High,Medium,"E2E: coachClients.test.ts",Wave 6 - Coach & Learning
+page,/user/coach/clients/[clientId],ClientOverviewPage; DashboardCards; DashboardChart,High,High,Medium,"No dedicated e2e for client overview",Wave 6 - Coach & Learning
+page,/user/coach/clients/[clientId]/plans,ClientPlansPage; PlansListCard,Medium,High,Low,"No dedicated e2e for coach client plans",Wave 6 - Coach & Learning
+page,/user/coach/clients/[clientId]/nutrition,ClientNutritionPage; NutritionClient,High,High,Medium,"No dedicated e2e for coach client nutrition",Wave 6 - Coach & Learning
+page,/user/coach/clients/[clientId]/supplements,ClientSupplementsPage; SupplementsClient,Medium,Medium,Medium,"No dedicated e2e for coach client supplements",Wave 6 - Coach & Learning
+page,/user/coach/clients/[clientId]/check-ins,ClientCheckInsPage; CoachCheckInsClient,High,High,Medium,"Partial E2E via coach-review.test.ts (non-client-scoped)",Wave 6 - Coach & Learning
+page,/user/coach/clients/[clientId]/check-ins/[id],ClientCheckInDetailPage; CoachCheckInDetailPageClient,High,High,Medium,"Partial E2E via coach-review.test.ts (coach global route)",Wave 6 - Coach & Learning
+page,/user/coach/check-ins,CoachCheckInsPage; CoachCheckInsClient,High,High,Medium,"E2E: coach-review.test.ts",Wave 6 - Coach & Learning
+page,/user/coach/check-ins/[id],CoachCheckInDetailPage; CoachCheckInDetailPageClient,High,High,Medium,"E2E: coach-review.test.ts",Wave 6 - Coach & Learning
+page,/user/coach/check-in-template,CheckInTemplatePage; CheckInTemplateEditor,Medium,Medium,Medium,"No dedicated e2e/unit spec found",Wave 6 - Coach & Learning
+page,/user/coach/learning-plans,CoachLearningPlansPage; CoachLearningPlansClient,Medium,Medium,Medium,"No dedicated coach e2e; related user coverage in learningPlans.test.ts",Wave 6 - Coach & Learning
+page,/user/coach/learning-plans/[planId],CoachPlanEditorPage; PlanEditorClient,High,Medium,Low,"No dedicated e2e/unit spec found",Wave 6 - Coach & Learning
+shared_component,shared nav shell,CustomAppBar; AppBarTitle,High,High,High,"E2E: AppBar.test.ts + route smoke across most specs",Wave 1 - Navigation Shell
+shared_component,shared loading/infra,Loading; ServiceWorkerRegistrar; NetworkStatusBanner,Low,Medium,High,"Indirect coverage only; no dedicated e2e",Wave 1 - Navigation Shell
+shared_component,/user/check-in + coach check-in views,CheckInCustomCard; CustomCheckInResponseDisplay; CheckInPhotoTile,Medium,High,High,"E2E: check-in.test.ts, coach-review.test.ts",Wave 5 - Check-in
+shared_component,/user/nutrition + /user/calendar,MacroTargetsPanel; MetricsDailyBreakdown; MetricsSummaryTable; MetricsSystemCard; SleepHmInput,High,High,High,"E2E: nutrition.test.ts, calendar.test.ts; Unit: MetricsDailyBreakdown.test.tsx",Wave 4 - Nutrition
+shared_component,/user + /user/coach/clients/[clientId],DataVizChartCard,Medium,Medium,Medium,"Indirect via dashboard and coach overview flows",Wave 2 - Dashboard
+shared_component,/user/workout + /user/plan,MuscleHighlight; TemplateCardRenderer; ScrollEdgeFades,Medium,Medium,Medium,"Unit: MuscleHighlight.test.tsx; E2E indirect via workout/plans specs",Wave 3 - Workout & Scheduling
+shared_component,shared media viewer,PhotoViewerDialog,Medium,Low,Medium,"No dedicated spec in scoped routes; covered elsewhere via /library tests",Wave 1 - Navigation Shell

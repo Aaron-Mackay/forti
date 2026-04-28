@@ -5,6 +5,7 @@ import { getCheckInWeekStart, toDateOnly } from '@lib/checkInUtils';
 import { getActiveTemplateForWeek, getMacrosByDow } from '@lib/targetTemplates';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import { getTemplateForClient } from '@lib/checkInTemplate';
+import { CurrentCheckInResponseSchema } from '@lib/contracts/checkIn';
 
 /**
  * GET /api/check-in/current
@@ -128,5 +129,17 @@ export async function GET() {
     fatTarget:      avgNullable([1,2,3,4,5,6,7].map(d => macrosByDow[d].fatTarget)),
   } : null;
 
-  return NextResponse.json({ checkIn: mappedCheckIn, currentWeek, weekPrior, previousPhotos, weekTargets, completedWorkoutsCount, plannedWorkoutsCount, activePlanId, template: coachTemplate });
+  return NextResponse.json(
+    CurrentCheckInResponseSchema.parse({
+      checkIn: mappedCheckIn,
+      currentWeek,
+      weekPrior,
+      previousPhotos,
+      weekTargets,
+      completedWorkoutsCount,
+      plannedWorkoutsCount,
+      activePlanId,
+      template: coachTemplate,
+    }),
+  );
 }

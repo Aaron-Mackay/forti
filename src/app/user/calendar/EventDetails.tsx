@@ -16,7 +16,6 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import {addDays, subDays} from "date-fns";
 import React, {useState} from "react";
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditCalendarIcon from '@mui/icons-material/EditCalendar';
@@ -24,7 +23,7 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import Button from "@mui/material/Button";
 import SaveIcon from '@mui/icons-material/Save';
 import RepeatIcon from '@mui/icons-material/Repeat';
-import {dateAndWeek} from "@/app/user/calendar/utils";
+import {dateAndWeek, toExclusiveEndDate, toInclusiveEndDate} from "@/app/user/calendar/utils";
 import {DatePicker} from "@mui/x-date-pickers";
 import {EventPrisma} from "@/types/dataTypes";
 import {
@@ -68,7 +67,7 @@ export const EventDetails = (
 
   const [title, setTitle] = useState<string>(event.name ?? '')
   const [startDate, setStartDate] = useState<Date>(event.startDate!)
-  const [endDate, setEndDate] = useState<Date>(subDays(event.endDate!, 1))
+  const [endDate, setEndDate] = useState<Date>(toInclusiveEndDate(event.endDate!))
   const [recurrenceFrequency, setRecurrenceFrequency] =
     useState<RecurrenceFrequency | null>((event.recurrenceFrequency as RecurrenceFrequency) ?? null)
   const [recurrenceEnd, setRecurrenceEnd] = useState<Date | null>(event.recurrenceEnd ?? null)
@@ -121,8 +120,8 @@ export const EventDetails = (
     const isBlock = event.eventType === EventType.BlockEvent;
     submitPatch({
       name: title,
-      startDate: addDays(startDate, 1),
-      endDate: addDays(endDate, 1),
+      startDate,
+      endDate: toExclusiveEndDate(endDate),
       recurrenceFrequency: isBlock ? null : recurrenceFrequency,
       recurrenceEnd: isBlock ? null : recurrenceEnd,
     });
@@ -138,7 +137,7 @@ export const EventDetails = (
         <Typography variant="h5" gutterBottom sx={{paddingBottom: 1}}>{title}</Typography>
         <Typography variant="subtitle2" sx={{textAlign: 'center', py: 1}}>
           <span style={{textAlign: 'center'}}>
-            {dateAndWeek(startDate)} - {dateAndWeek(subDays(endDate, 1))}
+            {dateAndWeek(startDate)} - {dateAndWeek(endDate)}
           </span>
         </Typography>
         {event.recurrenceFrequency && (

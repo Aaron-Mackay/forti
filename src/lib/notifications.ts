@@ -2,23 +2,46 @@ import { EmailParams, MailerSend, Recipient, Sender } from 'mailersend';
 import webpush from 'web-push';
 import type { PushSubscription as DbPushSubscription } from '@/generated/prisma/browser';
 import { getCheckInDate } from './checkInUtils';
+import { getNotificationConfig } from './notificationConfig';
 import prisma from './prisma';
 
-// Configure web-push VAPID keys once (these are set via env vars)
-if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT ?? 'mailto:noreply@example.com',
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-  );
-}
-
-function mailer() {
-  return new MailerSend({ apiKey: process.env.MAILERSEND_API_KEY! });
-}
-
-const FROM_EMAIL = process.env.MAILERSEND_FROM!;
+const notificationConfig = getNotificationConfig();
 const FROM_NAME = 'Forti';
+
+let mailerSendClient: MailerSend | null = null;
+
+function getMailerSendClient(): MailerSend | null {
+  if (!notificationConfig.canSendEmail) return null;
+
+  const apiKey = notificationConfig.email.apiKey;
+  if (!apiKey) return null;
+
+  if (!mailerSendClient) {
+    mailerSendClient = new MailerSend({ apiKey });
+  }
+
+  return mailerSendClient;
+}
+
+let isPushConfigured = false;
+
+function ensurePushConfigured(): boolean {
+  if (!notificationConfig.canSendPush) return false;
+  if (isPushConfigured) return true;
+
+  const publicKey = notificationConfig.push.publicKey;
+  const privateKey = notificationConfig.push.privateKey;
+  if (!publicKey || !privateKey) return false;
+
+  webpush.setVapidDetails(
+    notificationConfig.push.subject,
+    publicKey,
+    privateKey
+  );
+  isPushConfigured = true;
+
+  return true;
+}
 
 /** Send a weekly check-in reminder to a client */
 export async function sendCheckInReminder({
@@ -28,17 +51,21 @@ export async function sendCheckInReminder({
   name: string;
   email: string;
 }): Promise<void> {
-  if (!process.env.MAILERSEND_API_KEY || !FROM_EMAIL) return;
+  if (!notificationConfig.canSendEmail) return;
+
+  const mailer = getMailerSendClient();
+  const fromEmail = notificationConfig.email.from;
+  if (!mailer || !fromEmail) return;
 
   const params = new EmailParams()
-    .setFrom(new Sender(FROM_EMAIL, FROM_NAME))
+    .setFrom(new Sender(fromEmail, FROM_NAME))
     .setTo([new Recipient(email, name)])
     .setSubject('Your weekly check-in is due')
     .setText(
       `Hi ${name},\n\nYour weekly check-in is ready to complete.\n\nLog in to Forti and head to the Check-in page to fill it in.\n\n— The Forti Team`
     );
 
-  await mailer().email.send(params);
+  await mailer.email.send(params);
 }
 
 // ---------------------------------------------------------------------------
@@ -87,13 +114,17 @@ async function deliverNotification({
   );
 
   // 3. Send email
-  if (process.env.MAILERSEND_API_KEY && FROM_EMAIL) {
+  if (notificationConfig.canSendEmail) {
+    const mailer = getMailerSendClient();
+    const fromEmail = notificationConfig.email.from;
+    if (!mailer || !fromEmail) return;
+
     const params = new EmailParams()
-      .setFrom(new Sender(FROM_EMAIL, FROM_NAME))
+      .setFrom(new Sender(fromEmail, FROM_NAME))
       .setTo([new Recipient(recipient.email, recipient.name)])
       .setSubject(emailSubject)
       .setText(emailText);
-    await mailer().email.send(params);
+    await mailer.email.send(params);
   }
 }
 
@@ -194,17 +225,21 @@ export async function sendCoachInviteEmail({
   coachName: string;
   inviteLink: string;
 }): Promise<void> {
-  if (!process.env.MAILERSEND_API_KEY || !FROM_EMAIL) return;
+  if (!notificationConfig.canSendEmail) return;
+
+  const mailer = getMailerSendClient();
+  const fromEmail = notificationConfig.email.from;
+  if (!mailer || !fromEmail) return;
 
   const params = new EmailParams()
-    .setFrom(new Sender(FROM_EMAIL, FROM_NAME))
+    .setFrom(new Sender(fromEmail, FROM_NAME))
     .setTo([new Recipient(email)])
     .setSubject(`${coachName} invited you to train on Forti`)
     .setText(
       `Hi,\n\n${coachName} has invited you to connect with them as your coach on Forti.\n\nClick the link below to get started:\n${inviteLink}\n\n— The Forti Team`
     );
 
-  await mailer().email.send(params);
+  await mailer.email.send(params);
 }
 
 /** Send a web push notification to a single subscribed device */
@@ -212,7 +247,7 @@ export async function sendPushNotification(
   sub: Pick<DbPushSubscription, 'endpoint' | 'p256dh' | 'auth'>,
   payload: { title: string; body: string; url?: string }
 ): Promise<void> {
-  if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return;
+  if (!ensurePushConfigured()) return;
 
   await webpush.sendNotification(
     { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },

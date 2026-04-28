@@ -41,15 +41,15 @@ export function openDatabase(): Promise<IDBDatabase> {
   });
 }
 
-export async function addRequest(data: Omit<OfflineRequest, 'id'>): Promise<void> {
+export async function addRequest(data: Omit<OfflineRequest, 'id'>): Promise<number> {
   const db = await openDatabase();
   const tx = db.transaction('requests', 'readwrite');
   const store = tx.objectStore('requests');
-  await new Promise<void>((resolve, reject) => {
+  return new Promise<number>((resolve, reject) => {
     const request = store.add(data);
     request.onsuccess = () => {
-      resolve();
       window.dispatchEvent(new CustomEvent('queue-updated')); // ✅ dispatch event on add
+      resolve(Number(request.result));
     };
     request.onerror = () => reject(request.error);
   });
@@ -72,9 +72,13 @@ export async function deleteRequest(id: number): Promise<void> {
   const tx = db.transaction('requests', 'readwrite');
   const store = tx.objectStore('requests');
   const req = store.delete(id);
-  req.onsuccess = () => {
-    window.dispatchEvent(new CustomEvent('queue-updated'));
-  };
+  return new Promise((resolve, reject) => {
+    req.onsuccess = () => {
+      window.dispatchEvent(new CustomEvent('queue-updated'));
+      resolve();
+    };
+    req.onerror = () => reject(req.error);
+  });
 }
 
 export async function clearRequests(): Promise<void> {

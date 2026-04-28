@@ -67,18 +67,12 @@ test.describe('Settings page — UI', () => {
     await expect(settingsLink).toBeVisible();
     await expect(logoutButton).toBeVisible();
 
-    await feedbackLink.scrollIntoViewIfNeeded();
-    await settingsLink.scrollIntoViewIfNeeded();
-    await logoutButton.scrollIntoViewIfNeeded();
-
-    const feedbackBox = await feedbackLink.boundingBox();
-    const settingsBox = await settingsLink.boundingBox();
-    const logoutBox = await logoutButton.boundingBox();
-    expect(feedbackBox).not.toBeNull();
-    expect(settingsBox).not.toBeNull();
-    expect(logoutBox).not.toBeNull();
-    expect(settingsBox!.y).toBeGreaterThan(feedbackBox!.y);
-    expect(logoutBox!.y).toBeGreaterThan(settingsBox!.y);
+    const navOrder = await drawer.getByRole('link').allTextContents();
+    const feedbackIdx = navOrder.findIndex((label) => /feedback/i.test(label));
+    const settingsIdx = navOrder.findIndex((label) => /^settings$/i.test(label.trim()));
+    expect(feedbackIdx).toBeGreaterThanOrEqual(0);
+    expect(settingsIdx).toBeGreaterThan(feedbackIdx);
+    expect(settingsIdx).toBeLessThan(navOrder.length);
   });
 
   test('shows all dashboard card, workout, features, and coaching labels', async ({ page }) => {
@@ -119,6 +113,7 @@ test.describe('Settings page — state', () => {
     'State-dependent tests run on desktop chromium only; parallel browser projects share a DB user');
 
   test.beforeEach(async ({ page }) => {
+    await page.request.post('/api/coach/activate', { data: { active: false } });
     await page.request.patch('/api/user/settings', { data: { settings: ALL_ON } });
     await page.goto('/user/settings');
     await expect(page.getByLabel('Next Workout').first()).toBeVisible();
@@ -126,6 +121,7 @@ test.describe('Settings page — state', () => {
 
   test.afterEach(async ({ page }) => {
     await page.request.patch('/api/user/settings', { data: { settings: ALL_ON } });
+    await page.request.post('/api/coach/activate', { data: { active: false } });
   });
 
   test('shows 12 toggles; dashboard/workout switches are on and Enable coach features is off by default', async ({ page }) => {

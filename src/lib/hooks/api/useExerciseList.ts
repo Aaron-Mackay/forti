@@ -11,6 +11,7 @@ type ExerciseListState = {
 };
 
 const EXERCISE_CACHE_TTL_MS = 5 * 60 * 1000;
+const EXERCISE_STORAGE_KEY = 'forti.exerciseListCache.v1';
 let exercisesCache: Exercise[] | null = null;
 let exercisesCacheTime = 0;
 let inFlightRequest: Promise<Exercise[]> | null = null;
@@ -23,6 +24,14 @@ function hasFreshCache() {
 function updateCache(nextExercises: Exercise[]) {
   exercisesCache = nextExercises;
   exercisesCacheTime = Date.now();
+  try {
+    window.localStorage.setItem(EXERCISE_STORAGE_KEY, JSON.stringify({
+      exercises: nextExercises,
+      savedAt: exercisesCacheTime,
+    }));
+  } catch {
+    // Storage failures are non-fatal; keep in-memory cache.
+  }
   listeners.forEach(listener => listener(nextExercises));
 }
 
@@ -52,6 +61,22 @@ export function useExerciseList(enabled: boolean): ExerciseListState {
   }, []);
 
   useEffect(() => {
+    if (exercisesCache !== null) return;
+    try {
+      const raw = window.localStorage.getItem(EXERCISE_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {exercises?: Exercise[]; savedAt?: number};
+      if (!Array.isArray(parsed.exercises) || typeof parsed.savedAt !== 'number') return;
+      // Keep storage fallback stale-tolerant so first offline open still has data.
+      exercisesCache = parsed.exercises;
+      exercisesCacheTime = parsed.savedAt;
+      setExercises(parsed.exercises);
+    } catch {
+      // Ignore malformed cache.
+    }
+  }, []);
+
+  useEffect(() => {
     if (!enabled) return;
     if (hasFreshCache()) {
       if (exercisesCache) setExercises(exercisesCache);
@@ -65,7 +90,9 @@ export function useExerciseList(enabled: boolean): ExerciseListState {
 
     request
       .then((data) => updateCache(data))
-      .catch(() => {/* non-fatal — dialog shows empty list */})
+      .catch(() => {
+        // Non-fatal; retain whatever was already in memory/local storage.
+      })
       .finally(() => {
         setLoading(false);
         if (inFlightRequest === request) inFlightRequest = null;

@@ -77,7 +77,7 @@ describe('POST /api/event', () => {
     mockPrisma.event.create.mockResolvedValue(makeBlock({id: 10, name: 'Cut'}));
     mockTx.event.findMany.mockResolvedValue([]);
     mockTx.event.delete.mockResolvedValue(makeBlock());
-    mockTx.event.update.mockResolvedValue(makeBlock({endDate: date('2024-01-09')}));
+    mockTx.event.update.mockResolvedValue(makeBlock({endDate: date('2024-01-10')}));
     mockTx.event.create.mockResolvedValue(makeBlock({id: 10, name: 'Cut'}));
   });
 
@@ -101,8 +101,8 @@ describe('POST /api/event', () => {
       eventId: 1,
       action: 'split',
       resultingRanges: [
-        {startDate: '2024-01-01', endDate: '2024-01-09'},
-        {startDate: '2024-01-21', endDate: '2024-01-31'},
+        {startDate: '2024-01-01', endDate: '2024-01-10'},
+        {startDate: '2024-01-20', endDate: '2024-01-31'},
       ],
     });
   });
@@ -111,7 +111,7 @@ describe('POST /api/event', () => {
     mockPrisma.event.findMany.mockResolvedValue([makeBlock()]);
     mockTx.event.findMany.mockResolvedValue([makeBlock()]);
     mockTx.event.create
-      .mockResolvedValueOnce(makeBlock({id: 2, startDate: date('2024-01-21')}))
+      .mockResolvedValueOnce(makeBlock({id: 2, startDate: date('2024-01-20')}))
       .mockResolvedValueOnce(makeBlock({
         id: 10,
         name: 'Cut',
@@ -135,7 +135,7 @@ describe('POST /api/event', () => {
     expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
     expect(mockTx.event.update).toHaveBeenCalledWith({
       where: {id: 1},
-      data: {endDate: date('2024-01-09')},
+      data: {endDate: date('2024-01-10')},
     });
     expect(body.event).toMatchObject({id: 10, name: 'Cut'});
     expect(body.affectedEvents.map((affectedEvent: {type: string}) => affectedEvent.type)).toEqual(['updated', 'created']);
@@ -155,5 +155,26 @@ describe('POST /api/event', () => {
 
     expect(res.status).toBe(400);
     expect(body.error).toBe('Block events cannot be recurring.');
+  });
+
+  it('does not treat adjacent block ranges as overlaps', async () => {
+    mockPrisma.event.findMany.mockResolvedValue([]);
+
+    const res = await POST(makeRequest({
+      userId: 'user-1',
+      name: 'Cut',
+      startDate: '2024-01-31',
+      endDate: '2024-02-10',
+      eventType: EventType.BlockEvent,
+      blockSubtype: BlockSubtype.Cut,
+    }));
+
+    expect(res.status).toBe(200);
+    expect(mockPrisma.event.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        startDate: {lt: date('2024-02-10')},
+        endDate: {gt: date('2024-01-31')},
+      }),
+    }));
   });
 });

@@ -1,110 +1,12 @@
-import {Exercise, ExerciseCategory, Prisma} from '@/generated/prisma/browser';
+import { ExerciseCategory } from '@/generated/prisma/browser';
 import prisma from '@/lib/prisma';
-import {MetricPrisma, EventPrisma, PlanPrisma, UserPrisma} from "@/types/dataTypes";
-
-export async function getUsers() {
-  return prisma.user.findMany();
-}
-
-export async function getExercises() {
-  return prisma.exercise.findMany();
-}
-
-export async function getExercisesAndCategories() {
-  const allExercises = await prisma.exercise.findMany({
-    select: {id: true, name: true, category: true},
-  }) as Exercise[];
-
-  const categories = [...new Set(allExercises.map(e => e.category as string).filter(Boolean))];
-
-  return {allExercises, categories};
-}
-
-export async function getUserData(userId: string): Promise<UserPrisma | null> {
-  const user = await prisma.user.findUnique({
-    where: {id: userId},
-    include: {
-      plans: {
-        orderBy: {order: 'asc'},
-        include: {
-          weeks: {
-            orderBy: {order: 'asc'},
-            include: {
-              workouts: {
-                orderBy: {order: 'asc'},
-                include: {
-                  exercises: {
-                    orderBy: {order: 'asc'},
-                    include: {
-                      exercise: true,
-                      sets: {orderBy: {order: 'asc'}},
-                      substitutedFor: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-      userExerciseNotes: true,
-    },
-  });
-
-  if (!user) return null;
-
-  return user
-}
-
-
-export async function getUserEvents(userId: string) {
-  return prisma.event.findMany({
-    where: {userId: userId},
-    orderBy: {startDate: 'asc'}
-  })
-}
-
-export async function getUserMetrics(userId: string) {
-  return prisma.metric.findMany({
-    where: {userId: userId},
-    orderBy: {date: 'asc'}
-  })
-}
-
-export async function getUserCheckIns(userId: string) {
-  return prisma.weeklyCheckIn.findMany({
-    where: {userId},
-    orderBy: {weekStartDate: 'asc'},
-  });
-}
-
-export async function updateUserMetric(metric: Omit<MetricPrisma, 'id' | 'customMetrics'> & { customMetrics: Prisma.InputJsonValue | null }) {
-  const {customMetrics, ...rest} = metric;
-  // Prisma nullable JSON fields need Prisma.JsonNull (not null) to explicitly clear them
-  const customMetricsValue = customMetrics === null ? Prisma.JsonNull : customMetrics;
-  return await prisma.metric.upsert({
-    where: {
-      userId_date: {
-        userId: metric.userId,
-        date: metric.date,
-      }
-    },
-    update: {...rest, customMetrics: customMetricsValue},
-    create: {...rest, customMetrics: customMetricsValue},
-  });
-}
-
-export async function saveUserEvent(eventData: Omit<EventPrisma, 'id'>) {
-  return await prisma.event.create({
-    data: eventData,
-  });
-}
+import { PlanPrisma } from '@/types/dataTypes';
 
 function omit<T extends object, K extends keyof T>(
   obj: T,
-  keys: K[]
+  keys: K[],
 ): Omit<T, K> {
-  const result = {...obj};
+  const result = { ...obj };
   for (const key of keys) {
     delete result[key];
   }
@@ -224,9 +126,9 @@ export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
 
     const uploadedPlan = await tx.plan.create({
       data: {
-        ...omit(planData, ["weeks", "id", "userId"]),
-        user: {connect: {id: planData.userId}}
-      }
+        ...omit(planData, ['weeks', 'id', 'userId']),
+        user: { connect: { id: planData.userId } },
+      },
     });
 
     if (existingPlanCount === 0) {
@@ -238,11 +140,11 @@ export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
 
     for (const week of planData.weeks) {
       const uploadedWeek = await tx.week.create({
-        data: {...omit(week, ["workouts", "id"]), planId: uploadedPlan.id}
+        data: { ...omit(week, ['workouts', 'id']), planId: uploadedPlan.id },
       });
       for (const workout of week.workouts) {
         const uploadedWorkout = await tx.workout.create({
-          data: {...omit(workout, ["exercises", "id"]), weekId: uploadedWeek.id}
+          data: { ...omit(workout, ['exercises', 'id']), weekId: uploadedWeek.id },
         });
         for (const exercise of workout.exercises) {
           const exerciseId = exerciseIdsByKey.get(
@@ -265,21 +167,21 @@ export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
             },
           });
           const idMap = new Map<number, number>();
-          const regularSets = exercise.sets.filter(s => !s.isDropSet);
-          const dropSets = exercise.sets.filter(s => s.isDropSet);
+          const regularSets = exercise.sets.filter((s) => !s.isDropSet);
+          const dropSets = exercise.sets.filter((s) => s.isDropSet);
           for (const set of regularSets) {
             const created = await tx.exerciseSet.create({
-              data: {...omit(set, ["id"]), workoutExerciseId: uploadedWorkoutExercise.id}
+              data: { ...omit(set, ['id']), workoutExerciseId: uploadedWorkoutExercise.id },
             });
             idMap.set(set.id, created.id);
           }
           for (const set of dropSets) {
             await tx.exerciseSet.create({
               data: {
-                ...omit(set, ["id"]),
+                ...omit(set, ['id']),
                 workoutExerciseId: uploadedWorkoutExercise.id,
                 parentSetId: set.parentSetId != null ? (idMap.get(set.parentSetId) ?? null) : null,
-              }
+              },
             });
           }
         }
@@ -287,30 +189,6 @@ export async function saveUserPlan(planData: PlanPrisma): Promise<number> {
     }
     return uploadedPlan.id;
   }, { timeout: 15000 });
-}
-
-export async function deleteUserEvent(eventId: number, userId: string) {
-  return await prisma.event.delete({
-    where: {id: eventId, userId},
-  });
-}
-
-export async function updateUserEvent(eventId: number, data: Partial<EventPrisma>) {
-  return await prisma.event.update({
-    where: {id: eventId},
-    data,
-  });
-}
-
-export async function findOverlappingBlockEvent(userId: string, startDate: Date, endDate: Date) {
-  return await prisma.event.findFirst({
-    where: {
-      userId,
-      eventType: 'BlockEvent',
-      startDate: {lte: endDate},
-      endDate: {gte: startDate},
-    },
-  });
 }
 
 export async function getAllLinkedPlans(userId: string) {
@@ -354,7 +232,7 @@ export async function getAllLinkedPlans(userId: string) {
       },
       orderBy: [{ userId: 'asc' }, { order: 'asc' }],
     }),
-  ])
+  ]);
 
   return {
     activePlanId: user?.activePlanId ?? null,
@@ -367,14 +245,7 @@ export async function getAllLinkedPlans(userId: string) {
       isActive: plan.id === user?.activePlanId,
     })),
     clientPlans,
-  }
-}
-
-export async function getCoachClients(coachId: string): Promise<{ id: string; name: string | null }[]> {
-  return prisma.user.findMany({
-    where: { coachId },
-    select: { id: true, name: true },
-  });
+  };
 }
 
 export async function getUserFromPlan(planId: string) {
@@ -391,13 +262,4 @@ export async function getUserFromPlan(planId: string) {
   });
 
   return plan?.user || null;
-}
-
-export async function getCoachFromUser(userId: string) {
-  return await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      coachId: true,
-    }
-  })
 }

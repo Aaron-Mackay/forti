@@ -1,11 +1,12 @@
 'use client'
 
 import React from 'react'
-import { Box, IconButton, Typography } from '@mui/material'
+import { Box, Dialog, DialogContent, DialogTitle, IconButton, TextField, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import CloseIcon from '@mui/icons-material/Close'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
+import NotesOutlinedIcon from '@mui/icons-material/NotesOutlined'
 import {
   DndContext,
   closestCenter,
@@ -25,7 +26,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { PlanPrisma, WorkoutPrisma, WorkoutExercisePrisma } from '@/types/dataTypes'
 import { computeE1rm } from '@lib/e1rm'
 import { getExerciseSetModel } from './exerciseSetModel'
-import { stripWorkoutSuffix } from './planPresentation'
+import { getE1rmDeltaDirection, getPreviousTrackedExercise, stripWorkoutSuffix } from './planPresentation'
 import { EditableExerciseNameWithMeta } from './PlanExercisePrimitives'
 import { cellSx, headerCellSx, inputSx, MenuState, WorkoutEditorDispatch } from './PlanSheetShared'
 
@@ -44,6 +45,7 @@ type SortableExerciseTbodyProps = {
   openRenamePicker: (weekId: number, workoutId: number, workoutExerciseId: number) => void
   setMenuState: (state: MenuState | null) => void
   bestE1rm: number | null
+  previousBestE1rm: number | null
   repRangeInvalid: boolean
   onRepRangeFocus?: (exerciseId: number) => void
   onRepRangeBlur?: (exerciseId: number) => void
@@ -62,6 +64,7 @@ const SortableExerciseTbody = ({
   openRenamePicker,
   setMenuState,
   bestE1rm,
+  previousBestE1rm,
   repRangeInvalid,
   onRepRangeFocus,
   onRepRangeBlur,
@@ -71,6 +74,12 @@ const SortableExerciseTbody = ({
   })
 
   const { topLevelSets, dropsByParent } = getExerciseSetModel(ex)
+  const bestE1rmDelta = getE1rmDeltaDirection(bestE1rm, previousBestE1rm)
+  const bestE1rmDeltaMeta = {
+    up: { icon: '↑', color: 'var(--mui-palette-success-main, #2e7d32)', ariaLabel: 'e1RM increased from previous week' },
+    down: { icon: '↓', color: 'var(--mui-palette-error-main, #d32f2f)', ariaLabel: 'e1RM decreased from previous week' },
+    flat: { icon: '→', color: 'var(--mui-palette-text-disabled, #bbb)', ariaLabel: 'e1RM unchanged from previous week' },
+  } as const
 
   return (
     <tbody
@@ -136,8 +145,8 @@ const SortableExerciseTbody = ({
           if (!set) {
             return (
               <React.Fragment key={setIndex}>
-                <td style={{ ...cellSx, textAlign: 'center', color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
-                <td style={{ ...cellSx, textAlign: 'center', color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
+                <td style={{ ...cellSx,  color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
+                <td style={{ ...cellSx,  color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
               </React.Fragment>
             )
           }
@@ -174,9 +183,21 @@ const SortableExerciseTbody = ({
           )
         })}
         <td style={{ ...cellSx, textAlign: 'right', color: 'var(--mui-palette-text-disabled, #bbb)', fontSize: '0.68rem' }}>
-          {bestE1rm != null ? `~${Math.round(bestE1rm)}` : '—'}
+          {bestE1rm != null ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+              <span>{`~${Math.round(bestE1rm)}`}</span>
+              {bestE1rmDelta !== 'none' ? (
+                <span
+                  aria-label={bestE1rmDeltaMeta[bestE1rmDelta].ariaLabel}
+                  style={{ color: bestE1rmDeltaMeta[bestE1rmDelta].color, lineHeight: 1 }}
+                >
+                  {bestE1rmDeltaMeta[bestE1rmDelta].icon}
+                </span>
+              ) : null}
+            </span>
+          ) : '—'}
         </td>
-        <td style={{ ...cellSx, textAlign: 'center', padding: '0 2px' }}>
+        <td style={{ ...cellSx,  padding: '0 2px' }}>
           {!arrangeMode && (
             <IconButton
               size="small"
@@ -211,8 +232,8 @@ const SortableExerciseTbody = ({
               if (columnIndex !== 0) {
                 return (
                   <React.Fragment key={columnIndex}>
-                    <td style={{ ...cellSx, textAlign: 'center', color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
-                    <td style={{ ...cellSx, textAlign: 'center', color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
+                    <td style={{ ...cellSx,  color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
+                    <td style={{ ...cellSx,  color: 'var(--mui-palette-text-disabled, #bbb)' }}>—</td>
                   </React.Fragment>
                 )
               }
@@ -259,8 +280,10 @@ const SortableExerciseTbody = ({
 
 type SortableWorkoutSlotProps = {
   workout: WorkoutPrisma
+  plan: PlanPrisma
   planId: number
   weekId: number
+  currentWeekOrder: number
   maxSets: number
   workoutCount: number
   creationMode?: boolean
@@ -277,8 +300,10 @@ type SortableWorkoutSlotProps = {
 
 const SortableWorkoutSlot = ({
   workout,
+  plan,
   planId,
   weekId,
+  currentWeekOrder,
   maxSets,
   workoutCount,
   creationMode = false,
@@ -295,6 +320,7 @@ const SortableWorkoutSlot = ({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `wo-${workout.id}`,
   })
+  const [notesOpen, setNotesOpen] = React.useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -334,6 +360,44 @@ const SortableWorkoutSlot = ({
         <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.72rem', color: 'text.primary', flex: 1 }}>
           {stripWorkoutSuffix(workout.name ?? `Workout ${slotIdx + 1}`)}
         </Typography>
+        {!arrangeMode && (
+          <>
+            <IconButton
+              size="small"
+              sx={{ p: 0.25, ml: 0.5, opacity: workout.notes?.trim() ? 0.8 : 0.35, '&:hover': { opacity: 1 } }}
+              onClick={() => setNotesOpen(true)}
+              aria-label="Open workout notes"
+            >
+              <NotesOutlinedIcon sx={{ fontSize: '0.8rem' }} />
+            </IconButton>
+            <Dialog
+              open={notesOpen}
+              onClose={() => setNotesOpen(false)}
+              fullWidth
+              maxWidth="sm"
+            >
+              <DialogTitle sx={{ pb: 1 }}>{stripWorkoutSuffix(workout.name ?? `Workout ${slotIdx + 1}`)} notes</DialogTitle>
+              <DialogContent sx={{ pt: '8px !important' }}>
+                <TextField
+                  value={workout.notes ?? ''}
+                  onChange={(event) =>
+                    dispatch({
+                      type: 'UPDATE_WORKOUT_NOTES',
+                      planId,
+                      weekId,
+                      workoutId: workout.id,
+                      notes: event.target.value,
+                    })
+                  }
+                  placeholder="Add workout notes..."
+                  multiline
+                  minRows={4}
+                  fullWidth
+                />
+              </DialogContent>
+            </Dialog>
+          </>
+        )}
         {!arrangeMode && (
           <IconButton
             size="small"
@@ -381,6 +445,17 @@ const SortableWorkoutSlot = ({
                     const e1rm = computeE1rm(set.weight, set.reps)
                     if (e1rm != null && (bestE1rm == null || e1rm > bestE1rm)) bestE1rm = e1rm
                   }
+                  const previousTrackedExercise = getPreviousTrackedExercise(
+                    plan,
+                    currentWeekOrder,
+                    workout.order,
+                    exercise.exercise?.id ?? -1,
+                  )
+                  let previousBestE1rm: number | null = null
+                  for (const set of previousTrackedExercise?.sets ?? []) {
+                    const e1rm = computeE1rm(set.weight, set.reps)
+                    if (e1rm != null && (previousBestE1rm == null || e1rm > previousBestE1rm)) previousBestE1rm = e1rm
+                  }
 
                   return (
                     <SortableExerciseTbody
@@ -397,6 +472,7 @@ const SortableWorkoutSlot = ({
                       openRenamePicker={openRenamePicker}
                       setMenuState={setMenuState}
                       bestE1rm={bestE1rm}
+                      previousBestE1rm={previousBestE1rm}
                       repRangeInvalid={invalidRepRangeIds?.has(exercise.id) ?? false}
                       onRepRangeFocus={onRepRangeFocus}
                       onRepRangeBlur={onRepRangeBlur}
@@ -480,7 +556,7 @@ const SortableWorkoutSlot = ({
                       />
                     </td>
                   ))}
-                  <td style={{ ...cellSx, textAlign: 'center', padding: '0 2px' }}>
+                  <td style={{ ...cellSx,  padding: '0 2px' }}>
                     {!arrangeMode && (
                       <IconButton
                         size="small"
@@ -537,6 +613,7 @@ const SortableWorkoutSlot = ({
 }
 
 type WeekBlockProps = {
+  plan: PlanPrisma
   week: WeekData
   planId: number
   maxWorkoutCount: number
@@ -554,6 +631,7 @@ type WeekBlockProps = {
 }
 
 export function PlanSheetWeekBlock({
+  plan,
   week,
   planId,
   maxWorkoutCount,
@@ -621,8 +699,10 @@ export function PlanSheetWeekBlock({
                 <SortableWorkoutSlot
                   key={workout.id}
                   workout={workout}
+                  plan={plan}
                   planId={planId}
                   weekId={week.id}
+                  currentWeekOrder={week.order}
                   maxSets={maxSets}
                   workoutCount={sortedWorkouts.length}
                   creationMode={creationMode}

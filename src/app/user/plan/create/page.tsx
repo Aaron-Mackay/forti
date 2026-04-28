@@ -1,4 +1,5 @@
-import {getExercises, getUserData} from "@lib/api";
+import {getExercises} from "@lib/exerciseService";
+import {getUserData} from "@lib/userService";
 import {notFound} from "next/navigation";
 import PlanBuilderWithContext from "@/app/user/plan/create/PlanBuilderWithContext";
 import {Exercise} from "@/generated/prisma/browser";

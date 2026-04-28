@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import {Box, Skeleton, Typography} from '@mui/material';
 import {format} from 'date-fns';
 import type {E1rmHistoryPoint} from '@lib/contracts/exerciseHistory';
-import {PRIMARY_COLOUR, SUCCESS_COLOUR} from '@lib/theme';
+import {colorTokens} from '@lib/theme';
 
 // Captured at module load time so it isn't re-evaluated during renders
 const MODULE_LOAD_TIMESTAMP = Date.now();
@@ -70,7 +70,7 @@ export default function E1rmSparkline({
 
   // Discrete marker override: colour only the live "Now" point green
   const discreteMarkers = todayE1RM !== null
-    ? [{seriesIndex: 0, dataPointIndex: nowIndex, fillColor: SUCCESS_COLOUR, strokeColor: SUCCESS_COLOUR, size: 5}]
+    ? [{seriesIndex: 0, dataPointIndex: nowIndex, fillColor: colorTokens.status.success, strokeColor: colorTokens.status.success, size: 5}]
     : [];
 
   const series = [{name: 'Best e1RM', data: seriesData}];
@@ -81,7 +81,7 @@ export default function E1rmSparkline({
       <Box
         className="swiper-no-swiping"
         sx={{
-          border: '1px solid rgba(0, 0, 0, 0.23)',
+          border: `1px solid ${colorTokens.surface.borderStrong}`,
           borderRadius: 1,
           px: 0.5,
           py: 0.25,
@@ -114,7 +114,7 @@ export default function E1rmSparkline({
                 },
               },
             },
-            colors: [PRIMARY_COLOUR],
+            colors: [colorTokens.brand.primary],
             xaxis: {
               type: 'datetime',
               labels: {show: false},

@@ -15,7 +15,7 @@ import {
   Typography
 } from "@mui/material";
 import {DatePicker} from '@mui/x-date-pickers';
-import {getISOWeek, subDays} from 'date-fns';
+import {getISOWeek} from 'date-fns';
 import {EventPrisma} from "@/types/dataTypes";
 import {
   BlockOverlapConflictError,
@@ -25,6 +25,7 @@ import {
 } from "@lib/events";
 import {RecurrenceFrequency} from "@lib/apiSchemas";
 import {BlockOverlapConfirmationDialog} from "@/app/user/calendar/BlockOverlapConfirmationDialog";
+import {toExclusiveEndDate, toInclusiveEndDate} from "@/app/user/calendar/utils";
 
 const TIMEOUT = 300
 
@@ -40,7 +41,7 @@ export const EventCreationForm = (props: {
   const [customBlockName, setCustomBlockName] = useState<string>("")
   const [startDate, setStartDate] = useState<Date | null>(props.prefilledDateRange.start)
   const [endDate, setEndDate]
-    = useState<Date | null>(props.prefilledDateRange.endExcl && subDays(props.prefilledDateRange.endExcl, 1))
+    = useState<Date | null>(props.prefilledDateRange.endExcl && toInclusiveEndDate(props.prefilledDateRange.endExcl))
   const [recurrenceFrequency, setRecurrenceFrequency] = useState<RecurrenceFrequency | null>(null)
   const [recurrenceEnd, setRecurrenceEnd] = useState<Date | null>(null)
   const [pendingEvent, setPendingEvent] = useState<Omit<EventPrisma, 'id'> | null>(null)
@@ -111,7 +112,7 @@ export const EventCreationForm = (props: {
       userId: props.userId,
       eventType,
       startDate,
-      endDate: endDate || startDate,
+      endDate: endDate ? toExclusiveEndDate(endDate) : toExclusiveEndDate(startDate),
       name: customEventName || customBlockName || blockSubtype!,
       blockSubtype,
       customColor: null,

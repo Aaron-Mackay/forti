@@ -60,8 +60,10 @@ type MetricChartCardProps = {
   chartBlocks: { name: string; start: number; end: number; color: string }[];
   startDayMs: number;
   todayMs: number;
-  setSelection: React.Dispatch<React.SetStateAction<Selection>>;
   updateXaxis: (newMin: number, newMax: number) => void;
+  panByRatio: (ratio: number) => void;
+  zoomByFactor: (factor: number) => void;
+  resetToDefaultRange: () => void;
 }
 
 function MetricChartCard({
@@ -71,11 +73,20 @@ function MetricChartCard({
   chartBlocks,
   startDayMs,
   todayMs,
-  setSelection,
-  updateXaxis
+  updateXaxis,
+  panByRatio,
+  zoomByFactor,
+  resetToDefaultRange
 }: MetricChartCardProps) {
   const chartRef = useRef<HTMLDivElement>(null);
   const pinchRef = useRef<{ startWidth?: number, centerMs?: number }>({});
+  const selectionRef = useRef(selection);
+  const frameRequestRef = useRef<number | null>(null);
+  const pendingXaxisRef = useRef<{ min: number; max: number } | null>(null);
+
+  useEffect(() => {
+    selectionRef.current = selection;
+  }, [selection]);
 
   const chartMetrics = useCallback(() => {
     if (!chartRef.current) return {chartWidthPx: 1, msPerPixel: 1, visibleMs: 1};
@@ -87,6 +98,24 @@ function MetricChartCard({
       msPerPixel: visibleMs / chartWidthPx,
     };
   }, [selection]);
+
+  const updateXaxisThrottled = useCallback((newMin: number, newMax: number): void => {
+    pendingXaxisRef.current = {min: newMin, max: newMax};
+    if (frameRequestRef.current !== null) return;
+    frameRequestRef.current = requestAnimationFrame(() => {
+      frameRequestRef.current = null;
+      const pending = pendingXaxisRef.current;
+      if (!pending) return;
+      updateXaxis(pending.min, pending.max);
+      pendingXaxisRef.current = null;
+    });
+  }, [updateXaxis]);
+
+  useEffect(() => () => {
+    if (frameRequestRef.current !== null) {
+      cancelAnimationFrame(frameRequestRef.current);
+    }
+  }, []);
 
   useEffect(() => {
     const el = chartRef.current;
@@ -106,25 +135,24 @@ function MetricChartCard({
       const newMin = centerMs - (centerMs - selection.xaxis.min) / visibleMs * newWidth;
       const newMax = newMin + newWidth;
 
-      updateXaxis(newMin, newMax);
+      updateXaxisThrottled(newMin, newMax);
     };
 
     el.addEventListener('wheel', onWheelZoom, {passive: false});
     return () => el.removeEventListener('wheel', onWheelZoom);
-  }, [chartMetrics, selection, updateXaxis]);
+  }, [chartMetrics, selection, updateXaxisThrottled]);
 
   const onDrag: GestureHandlers['onDrag'] = ({delta: [dx]}) => {
     const {msPerPixel} = chartMetrics();
 
     const deltaMs = -dx * msPerPixel;
-    setSelection(prev => {
-      const totalRange = todayMs - startDayMs;
-      const width = prev.xaxis.max - prev.xaxis.min;
-      if (width >= totalRange) return prev;
-      const newMin = Math.max(startDayMs, Math.min(prev.xaxis.min + deltaMs, todayMs - width));
-      const newMax = newMin + width;
-      return {xaxis: {min: newMin, max: newMax}};
-    });
+    const currentSelection = selectionRef.current;
+    const totalRange = todayMs - startDayMs;
+    const width = currentSelection.xaxis.max - currentSelection.xaxis.min;
+    if (width >= totalRange) return;
+    const newMin = Math.max(startDayMs, Math.min(currentSelection.xaxis.min + deltaMs, todayMs - width));
+    const newMax = newMin + width;
+    updateXaxisThrottled(newMin, newMax);
   }
 
   const onPinch: GestureHandlers['onPinch'] = ({first, origin: [ox], movement: [mscale]}) => {
@@ -156,7 +184,7 @@ function MetricChartCard({
       newMin = newMax - newWidth;
     }
 
-    setSelection({xaxis: {min: newMin, max: newMax}});
+    updateXaxisThrottled(newMin, newMax);
   };
 
   const bindGestures = useGesture(
@@ -216,6 +244,31 @@ function MetricChartCard({
       <Chart options={chartOptions} series={series} type="line" height={CHART_HEIGHT}/>
       <Box
         {...bindGestures()}
+        tabIndex={0}
+        role="application"
+        aria-label="Dashboard chart. Drag to pan, wheel or pinch to zoom. Use arrow keys to pan, plus/minus to zoom, and R to reset to 1 month."
+        onKeyDown={(event) => {
+          if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            panByRatio(-0.2);
+          }
+          if (event.key === "ArrowRight") {
+            event.preventDefault();
+            panByRatio(0.2);
+          }
+          if (event.key === "+" || event.key === "=") {
+            event.preventDefault();
+            zoomByFactor(1.25);
+          }
+          if (event.key === "-" || event.key === "_") {
+            event.preventDefault();
+            zoomByFactor(0.8);
+          }
+          if (event.key.toLowerCase() === "r") {
+            event.preventDefault();
+            resetToDefaultRange();
+          }
+        }}
         sx={{
           position: 'absolute',
           top: 0,
@@ -258,9 +311,15 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
     {label: "All", min: startDayMs, max: todayMs},
   ];
 
+  const defaultRange = useMemo(() => ({
+    min: subMonths(today, 1).getTime(),
+    max: todayMs,
+  }), [today, todayMs]);
+
   const [selection, setSelection] = useState<Selection>({
-    xaxis: {min: subMonths(today, 1).getTime(), max: todayMs}
+    xaxis: {min: defaultRange.min, max: defaultRange.max}
   });
+  const [showGestureHint, setShowGestureHint] = useState(false);
 
   const chartBlocks = useMemo(() => (
     blocks.map(block => ({
@@ -283,6 +342,36 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
 
     setSelection({xaxis: {min: newMin, max: newMax}});
   }, [startDayMs, todayMs]);
+
+  const panByRatio = useCallback((ratio: number) => {
+    const width = selection.xaxis.max - selection.xaxis.min;
+    const shiftMs = width * ratio;
+    updateXaxis(selection.xaxis.min + shiftMs, selection.xaxis.max + shiftMs);
+  }, [selection, updateXaxis]);
+
+  const zoomByFactor = useCallback((factor: number) => {
+    const visibleMs = selection.xaxis.max - selection.xaxis.min;
+    const centerMs = selection.xaxis.min + visibleMs / 2;
+    const newWidth = visibleMs / factor;
+    updateXaxis(centerMs - newWidth / 2, centerMs + newWidth / 2);
+  }, [selection, updateXaxis]);
+
+  const resetToDefaultRange = useCallback(() => {
+    setSelection({xaxis: {min: defaultRange.min, max: defaultRange.max}});
+  }, [defaultRange]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hasSeenHint = window.localStorage.getItem('dashboard-chart-gesture-hint-seen') === 'true';
+    setShowGestureHint(!hasSeenHint);
+  }, []);
+
+  const dismissGestureHint = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('dashboard-chart-gesture-hint-seen', 'true');
+    }
+    setShowGestureHint(false);
+  }, []);
 
   const isActiveRange = (min: number, max: number) => {
     const tol = 1000 * 60 * 60 * 12;
@@ -323,13 +412,48 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
             chartBlocks={chartBlocks}
             startDayMs={startDayMs}
             todayMs={todayMs}
-            setSelection={setSelection}
             updateXaxis={updateXaxis}
+            panByRatio={panByRatio}
+            zoomByFactor={zoomByFactor}
+            resetToDefaultRange={resetToDefaultRange}
           />
         );
       })}
 
       <Box sx={{display: 'flex', alignItems: 'center', flexDirection: 'column', mt: 0.5}}>
+        {showGestureHint ? (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              px: 1.5,
+              py: 0.75,
+              borderRadius: 1,
+              bgcolor: 'action.hover',
+              mb: 1,
+            }}
+          >
+            <Typography variant="caption">
+              Tip: Drag to pan and wheel/pinch to zoom.
+            </Typography>
+            <Button size="small" onClick={dismissGestureHint}>Got it</Button>
+          </Box>
+        ) : null}
+
+        <Box sx={{display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 1}}>
+          <Typography variant="caption" sx={{fontWeight: 600}}>Pan</Typography>
+          <Button size="small" variant="outlined" onClick={() => panByRatio(-0.2)} aria-label="Pan chart left">←</Button>
+          <Button size="small" variant="outlined" onClick={() => panByRatio(0.2)} aria-label="Pan chart right">→</Button>
+
+          <Typography variant="caption" sx={{fontWeight: 600, ml: 1}}>Zoom</Typography>
+          <Button size="small" variant="outlined" onClick={() => zoomByFactor(1.25)} aria-label="Zoom in">+</Button>
+          <Button size="small" variant="outlined" onClick={() => zoomByFactor(0.8)} aria-label="Zoom out">−</Button>
+
+          <Button size="small" variant="text" onClick={() => setSelection({xaxis: {min: ranges[4].min, max: ranges[4].max}})}>Reset view</Button>
+          <Button size="small" variant="contained" onClick={resetToDefaultRange}>Reset to 1M</Button>
+        </Box>
+
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={1} gap={1}>
           <Button
             value={'weight'}
@@ -356,6 +480,7 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
             <StepsIcon/>
           </Button>
         </Box>
+
         <ButtonGroup>
           {ranges.map(r => (
             <Button

@@ -1,5 +1,5 @@
 import {PlanPrisma, SetPrisma, UserPrisma, WeekPrisma, WorkoutExercisePrisma, WorkoutPrisma} from "@/types/dataTypes";
-import {Exercise} from "@/generated/prisma/browser";
+import {Exercise, ExerciseCategory} from "@/generated/prisma/browser";
 import {CreateUuid, Dir} from "@lib/useWorkoutEditor";
 
 // ─── BFR preset constants ────────────────────────────────────────────────────
@@ -59,6 +59,17 @@ function makeEmptyWorkoutExercise(id: number, workoutId: number, order: number):
     isAdded: false,
     isBfr: false,
   };
+}
+
+const VALID_EXERCISE_CATEGORIES = new Set<string>(Object.values(ExerciseCategory));
+
+export function parseExerciseCategory(
+  input: string | ExerciseCategory | null | undefined,
+  fallback: ExerciseCategory | null = null
+): ExerciseCategory | null {
+  if (input == null) return fallback;
+  const normalized = input.trim().toLowerCase();
+  return VALID_EXERCISE_CATEGORIES.has(normalized) ? normalized as ExerciseCategory : fallback;
 }
 
 // ─── Immutable tree-traversal helpers ────────────────────────────────────────
@@ -137,14 +148,12 @@ export function updateExerciseInUser(
   workoutExerciseId: number,
   exerciseName: string,
   exercises: Exercise[],
-  category: string,
+  category: ExerciseCategory | null,
   createUuid: CreateUuid
 ): UserPrisma {
   //todo if exercise isn't in exercises, add it to db
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const newExercise = exercises.find(e => e.category === (category as any) && e.name === exerciseName) || {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    category: category as any,
+  const newExercise = exercises.find(e => e.category === category && e.name === exerciseName) || {
+    category,
     name: exerciseName,
     id: createUuid(),
     description: null,
@@ -452,11 +461,10 @@ export function updateRestTime(user: UserPrisma, planId: number, weekId: number,
   return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({...exercise, restTime}));
 }
 
-export function updateCategory(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, category: string): UserPrisma {
+export function updateCategory(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, category: ExerciseCategory | null): UserPrisma {
   return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({
     ...exercise,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    exercise: {...exercise.exercise, category: category as any, name: ""},
+    exercise: {...exercise.exercise, category, name: ""},
   }));
 }
 

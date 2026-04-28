@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
-import { getUserMetrics } from '@lib/api';
+import { getUserMetrics } from '@lib/metricService';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import prisma from '@lib/prisma';
 import { buildCsv } from '@/utils/csvExport';

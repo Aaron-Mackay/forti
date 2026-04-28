@@ -19,9 +19,15 @@ vi.mock('@lib/requireSession', () => ({
   },
 }));
 
-vi.mock('@lib/api', () => ({
+vi.mock('@lib/userService', () => ({
   getUserData: vi.fn(),
+}));
+
+vi.mock('@lib/eventService', () => ({
   getUserEvents: vi.fn(),
+}));
+
+vi.mock('@lib/metricService', () => ({
   getUserMetrics: vi.fn(),
 }));
 

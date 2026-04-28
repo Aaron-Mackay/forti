@@ -10,7 +10,7 @@ import TuneIcon from '@mui/icons-material/TuneRounded';
 import {minToHhMm} from "@/app/user/calendar/utils";
 import {CustomMetricDef, WeightUnit} from "@/types/settingsTypes";
 import {kgToDisplay} from "@/lib/units";
-import {Prisma} from "@/generated/prisma/browser";
+import type {Prisma} from "@/generated/prisma/browser";
 
 import type { BuiltInMetricKey, MetricKey } from '@/types/metricTypes';
 export type { BuiltInMetricKey, MetricKey };
@@ -43,7 +43,9 @@ const MetricButton = ({
   icon: React.ReactNode;
   value: boolean | string | number | null | undefined;
   onClick?: () => void;
-}) => (
+}) => {
+  const isEmpty = value === null || value === undefined || value === '';
+  return (
   <ButtonBase
     onClick={onClick}
     sx={{
@@ -54,20 +56,21 @@ const MetricButton = ({
       justifyContent: "center",
       gap: 0.25,
       borderRadius: 4,
-      bgcolor: value !== null ? "grey.100" : "grey.200",
+      bgcolor: isEmpty ? "grey.200" : "grey.100",
       py: 1,
       px: 0.5,
       minHeight: "3.5rem",
     }}
   >
     {icon}
-    {value ? (
+    {!isEmpty ? (
       <Typography variant="caption" lineHeight={1}>{value}</Typography>
     ) : (
       <AddRoundedIcon sx={{fontSize: "1rem"}}/>
     )}
   </ButtonBase>
-);
+  );
+};
 
 
 export const MetricsBar: React.FC<{
@@ -104,7 +107,7 @@ export const MetricsBar: React.FC<{
         setSelectedMetric('steps')
         setInputValue(steps)
       }}/>
-      <MetricButton value={sleepMins && minToHhMm(sleepMins)} icon={<SleepIcon/>} onClick={() => {
+      <MetricButton value={sleepMins == null ? null : minToHhMm(sleepMins)} icon={<SleepIcon/>} onClick={() => {
         setSelectedMetric('sleepMins')
         setInputValue(sleepMins)
       }}/>

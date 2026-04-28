@@ -1,389 +1,387 @@
 /**
- * Shared seeding logic for the Jeff Demo public demo account.
+ * Shared deterministic seeding logic for demo clients.
  *
- * Used by both seed.ts (full reset, today's date for live data) and
- * seed-demo.ts (prod/dev refresh, real today date).
- *
- * Callers are responsible for ensuring the user and exercises already exist
- * in the DB before calling seedJeffDemoData.
+ * Used by both seed.ts (full reset) and seed-demo.ts (idempotent demo refresh).
  */
 
 import prisma from '../../src/lib/prisma';
-import { BlockSubtype, EventType } from '../../src/generated/prisma/browser';
+import {
+  AuditEventType,
+  BlockSubtype,
+  EventType,
+  NotificationType,
+} from '../../src/generated/prisma/browser';
 import { getWeekStart, toDateOnly } from '../../src/lib/checkInUtils';
-
-// ─── Exercise definitions ──────────────────────────────────────────────────
 
 export const EXERCISE_DESCRIPTION =
   'DESC - Lorem ipsum dolor sit amet, consectetur adipiscing elit...';
 
-export const EXERCISE_DEFS: Array<{ name: string; category: string }> = [
-  { name: 'Bench Press',    category: 'Chest' },
-  { name: 'Squat',          category: 'Legs' },
-  { name: 'Deadlift',       category: 'Back' },
-  { name: 'Overhead Press', category: 'Shoulders' },
-  { name: 'Barbell Row',    category: 'Back' },
-  { name: 'Pull Ups',       category: 'Back' },
-];
+type ClientVariant = 'hypertrophy' | 'recomposition' | 'strength';
 
-// ─── Plan structure ────────────────────────────────────────────────────────
+interface DemoClientSeedOptions {
+  coachId: string;
+  today: Date;
+  variant: ClientVariant;
+}
 
-// Week 1 of each plan is always completed so "Next Workout" (Week 2, Workout A)
-// always has previous sets filled in. Each plan repeats the same two workout
-// templates across all its weeks so previous-set data is consistent.
-const PLAN_TEMPLATES = [
-  {
-    name:        "Jeff's Plan 1",
-    description: 'Training block 1 for Jeff',
-    weekCount:   2,
-    workoutTemplates: [
-      { name: 'Workout A', exercises: ['Bench Press', 'Squat', 'Deadlift', 'Treadmill'] },
-      { name: 'Workout B', exercises: ['Overhead Press', 'Barbell Row', 'Pull Ups'] },
-    ],
-    // How many days ago each Week-1 workout was completed
-    // (Workout A before Workout B, staggered by 2 days)
-    completionDaysAgo: [4, 2],
-  },
-  {
-    name:        "Jeff's Plan 2",
-    description: 'Training block 2 for Jeff',
-    weekCount:   3,
-    workoutTemplates: [
-      { name: 'Workout A', exercises: ['Squat', 'Barbell Row', 'Bench Press'] },
-      { name: 'Workout B', exercises: ['Deadlift', 'Pull Ups', 'Overhead Press'] },
-    ],
-    completionDaysAgo: [11, 9],
-  },
-];
-
-// Realistic base weights/reps for Week-1 sets so previous-set cards look genuine
 const EXERCISE_BASES: Record<string, { weight: number; reps: number }> = {
-  'Bench Press':    { weight: 80,  reps: 8 },
-  'Squat':          { weight: 100, reps: 5 },
-  'Deadlift':       { weight: 120, reps: 5 },
-  'Overhead Press': { weight: 55,  reps: 8 },
-  'Barbell Row':    { weight: 75,  reps: 8 },
-  'Pull Ups':       { weight: 0,   reps: 8 }, // bodyweight
+  'Bench Press': { weight: 80, reps: 8 },
+  Squat: { weight: 100, reps: 5 },
+  Deadlift: { weight: 125, reps: 5 },
+  'Overhead Press': { weight: 55, reps: 8 },
+  'Barbell Row': { weight: 75, reps: 8 },
+  'Pull Ups': { weight: 0, reps: 8 },
 };
 
-// ─── Main export ───────────────────────────────────────────────────────────
+const PLAN_LIBRARY: Record<ClientVariant, {
+  inactiveName: string;
+  activeName: string;
+  notes: [string, string];
+}> = {
+  hypertrophy: {
+    inactiveName: 'Foundation Hypertrophy (Completed)',
+    activeName: 'Upper/Lower Hypertrophy (Active)',
+    notes: ['Build volume tolerance', 'Progressive overload with controlled tempo'],
+  },
+  recomposition: {
+    inactiveName: 'Recomposition Primer (Completed)',
+    activeName: 'Recomposition Phase 2 (Active)',
+    notes: ['Body-composition reset block', 'Maintain strength while tightening nutrition'],
+  },
+  strength: {
+    inactiveName: 'Base Strength Cycle (Completed)',
+    activeName: 'Peaking Strength Cycle (Active)',
+    notes: ['Technique and base loading', 'Top sets + back-off progression'],
+  },
+};
 
-/**
- * Resets and recreates all of Jeff Demo's data relative to `today`.
- * Safe to call after a full TRUNCATE (deleteMany is a no-op) or against
- * an existing DB (deleteMany cleans up first).
- */
-export async function seedJeffDemoData(user: { id: string }, today: Date, coachId?: string): Promise<void> {
-  const daysAgo     = (n: number) => { const d = new Date(today); d.setDate(today.getDate() - n); return d; };
-  const daysFromNow = (n: number) => { const d = new Date(today); d.setDate(today.getDate() + n); return d; };
-  const maybeNull   = <T>(val: T): T | null => Math.random() < 0.3 ? null : val;
+function atDay(base: Date, deltaDays: number): Date {
+  const d = new Date(base);
+  d.setDate(base.getDate() + deltaDays);
+  return d;
+}
 
-  const allExercises = await prisma.exercise.findMany({ orderBy: { name: 'asc' } });
-  const findEx = (name: string) => allExercises.find(e => e.name === name)!;
+function isoDate(d: Date): string {
+  return toDateOnly(d).toISOString();
+}
 
-  // ── Exercise notes ────────────────────────────────────────────────────────
-  const noteDefs = [
-    { exerciseId: findEx('Bench Press').id,    note: 'Warm up properly to protect elbow' },
-    { exerciseId: findEx('Squat').id,           note: 'Squat properly' },
-    { exerciseId: findEx('Overhead Press').id,  note: 'Wrench and twist' },
-    { exerciseId: findEx('Barbell Row').id,     note: "Don't fall over" },
-  ];
-  for (const n of noteDefs) {
-    await prisma.userExerciseNote.upsert({
-      where:  { userId_exerciseId: { userId: user.id, exerciseId: n.exerciseId } },
-      update: {},
-      create: { userId: user.id, ...n },
-    });
+function macroTargets(dayOfWeek: number, variant: ClientVariant) {
+  const trainingDays = new Set([1, 2, 4, 6]);
+  const isTraining = trainingDays.has(dayOfWeek);
+
+  if (variant === 'hypertrophy') {
+    return isTraining
+      ? { caloriesTarget: 3000, proteinTarget: 190, carbsTarget: 380, fatTarget: 75 }
+      : { caloriesTarget: 2550, proteinTarget: 190, carbsTarget: 250, fatTarget: 85 };
   }
 
-  // ── Events ────────────────────────────────────────────────────────────────
+  if (variant === 'recomposition') {
+    return isTraining
+      ? { caloriesTarget: 2450, proteinTarget: 180, carbsTarget: 260, fatTarget: 70 }
+      : { caloriesTarget: 2150, proteinTarget: 180, carbsTarget: 170, fatTarget: 75 };
+  }
+
+  return isTraining
+    ? { caloriesTarget: 2850, proteinTarget: 200, carbsTarget: 320, fatTarget: 75 }
+    : { caloriesTarget: 2450, proteinTarget: 200, carbsTarget: 210, fatTarget: 85 };
+}
+
+export async function seedDemoClientData(user: { id: string; name: string }, options: DemoClientSeedOptions): Promise<void> {
+  const { coachId, today, variant } = options;
+  const planProfile = PLAN_LIBRARY[variant];
+
+  const allExercises = await prisma.exercise.findMany({ orderBy: { name: 'asc' } });
+  const findEx = (name: string) => {
+    const exercise = allExercises.find((e) => e.name === name);
+    if (!exercise) throw new Error(`Missing exercise in seed: ${name}`);
+    return exercise;
+  };
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      coachId,
+      settings: { registrationComplete: true, onboardingSeenWelcome: true, onboardingDismissed: true },
+    },
+  });
+
+  await prisma.userExerciseNote.deleteMany({ where: { userId: user.id } });
   await prisma.event.deleteMany({ where: { userId: user.id } });
+  await prisma.metric.deleteMany({ where: { userId: user.id } });
+  await prisma.weeklyCheckIn.deleteMany({ where: { userId: user.id } });
+  await prisma.targetTemplate.deleteMany({ where: { userId: user.id } });
+  await prisma.notification.deleteMany({ where: { userId: user.id } });
+  await prisma.auditEvent.deleteMany({ where: { actorUserId: user.id } });
+  await prisma.plan.deleteMany({ where: { userId: user.id } });
+
+  await prisma.userExerciseNote.createMany({
+    data: [
+      { userId: user.id, exerciseId: findEx('Bench Press').id, note: 'Pause one beat on chest to control bounce.' },
+      { userId: user.id, exerciseId: findEx('Squat').id, note: 'Brace before descent and keep chest stacked.' },
+      { userId: user.id, exerciseId: findEx('Deadlift').id, note: 'Drag the bar up the shins; lockout with glutes.' },
+    ],
+  });
+
   await prisma.event.createMany({
     data: [
-      // Active Bulk block (started 3 weeks ago, ends 5 weeks from now)
-      // → shows "Active Block" card on the dashboard
       {
-        userId:       user.id,
-        name:         'Bulk',
-        startDate:    daysAgo(21),
-        endDate:      daysFromNow(35),
-        eventType:    EventType.BlockEvent,
+        userId: user.id,
+        name: 'Current Build Block',
+        startDate: toDateOnly(atDay(today, -28)),
+        endDate: toDateOnly(atDay(today, 21)),
+        eventType: EventType.BlockEvent,
         blockSubtype: BlockSubtype.Bulk,
       },
-      // Upcoming Cut block (~8–11 weeks away) → visible on the calendar
       {
-        userId:       user.id,
-        name:         'Cut',
-        startDate:    daysFromNow(56),
-        endDate:      daysFromNow(77),
-        eventType:    EventType.BlockEvent,
-        blockSubtype: BlockSubtype.Cut,
+        userId: user.id,
+        name: 'Deload Week',
+        startDate: toDateOnly(atDay(today, 35)),
+        endDate: toDateOnly(atDay(today, 41)),
+        eventType: EventType.BlockEvent,
+        blockSubtype: BlockSubtype.Deload,
       },
-      // Single-day event tomorrow → shows in "Upcoming (7 days)" dashboard card
       {
-        userId:    user.id,
-        name:      'Manchester 10k',
-        startDate: daysFromNow(1),
-        endDate:   daysFromNow(1),
+        userId: user.id,
+        name: 'Body comp photos',
+        startDate: toDateOnly(atDay(today, 2)),
+        endDate: toDateOnly(atDay(today, 2)),
         eventType: EventType.CustomEvent,
-      },
-      // Holiday in ~4 weeks → visible on the calendar
-      {
-        userId:      user.id,
-        name:        'Holiday',
-        description: 'Recovery week',
-        startDate:   daysFromNow(28),
-        endDate:     daysFromNow(33),
-        eventType:   EventType.CustomEvent,
-      },
-      // Custom coloured event in the recent past → visible on the calendar
-      {
-        userId:      user.id,
-        name:        'Custom',
-        startDate:   daysAgo(30),
-        endDate:     daysAgo(10),
-        customColor: 'red',
-        eventType:   EventType.CustomEvent,
       },
     ],
   });
 
-  // ── Plans and workouts ────────────────────────────────────────────────────
-  // Cascade delete removes weeks → workouts → exercises → sets automatically.
-  await prisma.plan.deleteMany({ where: { userId: user.id } });
-
-  for (let planIdx = 0; planIdx < PLAN_TEMPLATES.length; planIdx++) {
-    const template = PLAN_TEMPLATES[planIdx];
-
-    const plan = await prisma.plan.create({
-      data: {
-        userId:      user.id,
-        order:       planIdx + 1,
-        name:        template.name,
-        description: template.description,
+  const inactivePlan = await prisma.plan.create({
+    data: {
+      userId: user.id,
+      order: 1,
+      name: planProfile.inactiveName,
+      description: planProfile.notes[0],
+      lastActivityDate: toDateOnly(atDay(today, -49)),
+      weeks: {
+        create: [1, 2].map((weekOrder) => ({
+          order: weekOrder,
+          workouts: {
+            create: [
+              {
+                order: 1,
+                name: `Week ${weekOrder} - Session A`,
+                notes: 'Completed and archived.',
+                dateCompleted: toDateOnly(atDay(today, -63 + weekOrder * 7)),
+              },
+              {
+                order: 2,
+                name: `Week ${weekOrder} - Session B`,
+                notes: 'Completed and archived.',
+                dateCompleted: toDateOnly(atDay(today, -61 + weekOrder * 7)),
+              },
+            ],
+          },
+        })),
       },
-    });
+    },
+  });
 
-    for (let weekIdx = 0; weekIdx < template.weekCount; weekIdx++) {
-      const isFirstWeek = weekIdx === 0;
+  const activePlan = await prisma.plan.create({
+    data: {
+      userId: user.id,
+      order: 2,
+      name: planProfile.activeName,
+      description: planProfile.notes[1],
+      lastActivityDate: toDateOnly(atDay(today, -1)),
+    },
+  });
 
-      const week = await prisma.week.create({
-        data: { planId: plan.id, order: weekIdx + 1 },
+  const workoutTemplates = [
+    { name: 'Upper A', exercises: ['Bench Press', 'Barbell Row', 'Overhead Press'] },
+    { name: 'Lower A', exercises: ['Squat', 'Deadlift'] },
+    { name: 'Upper B', exercises: ['Bench Press', 'Pull Ups', 'Overhead Press'] },
+  ] as const;
+
+  for (let weekOrder = 1; weekOrder <= 4; weekOrder += 1) {
+    const week = await prisma.week.create({ data: { planId: activePlan.id, order: weekOrder } });
+    for (let workoutOrder = 1; workoutOrder <= workoutTemplates.length; workoutOrder += 1) {
+      const template = workoutTemplates[workoutOrder - 1];
+      const workout = await prisma.workout.create({
+        data: {
+          weekId: week.id,
+          order: workoutOrder,
+          name: template.name,
+          notes: workoutOrder === 1 ? 'Top set then back-off sets.' : null,
+          dateCompleted: weekOrder <= 2 || (weekOrder === 3 && workoutOrder === 1)
+            ? toDateOnly(atDay(today, -28 + weekOrder * 7 + workoutOrder))
+            : null,
+        },
       });
 
-      for (let woIdx = 0; woIdx < template.workoutTemplates.length; woIdx++) {
-        const wo = template.workoutTemplates[woIdx];
-
-        const workout = await prisma.workout.create({
+      for (let exerciseOrder = 1; exerciseOrder <= template.exercises.length; exerciseOrder += 1) {
+        const exerciseName = template.exercises[exerciseOrder - 1];
+        const base = EXERCISE_BASES[exerciseName] ?? { weight: 60, reps: 8 };
+        const workoutExercise = await prisma.workoutExercise.create({
           data: {
-            weekId: week.id,
-            name:   wo.name,
-            notes:  woIdx % 2 === 0 ? 'Felt strong today 💪' : null,
-            order:  woIdx + 1,
+            workoutId: workout.id,
+            exerciseId: findEx(exerciseName).id,
+            order: exerciseOrder,
+            restTime: '90',
+            repRange: exerciseName === 'Deadlift' ? '3-6' : '6-10',
           },
         });
 
-        for (let i = 0; i < wo.exercises.length; i++) {
-          const exerciseName = wo.exercises[i];
-          const exerciseRecord = findEx(exerciseName);
-          const isCardio = exerciseRecord.category === 'cardio';
-          const base = EXERCISE_BASES[exerciseName] ?? { weight: 60, reps: 8 };
-
-          const workoutExercise = await prisma.workoutExercise.create({
+        for (let setOrder = 1; setOrder <= 3; setOrder += 1) {
+          const isComplete = Boolean(workout.dateCompleted);
+          await prisma.exerciseSet.create({
             data: {
-              workoutId:       workout.id,
-              exerciseId:      exerciseRecord.id,
-              order:           i + 1,
-              restTime:        isCardio ? null : '90',
-              repRange:        isCardio ? null : '8-12',
-              // Seed cardio data for completed (Week 1) workouts
-              cardioDuration:  isCardio && isFirstWeek ? 30 : null,
-              cardioDistance:  isCardio && isFirstWeek ? 5 : null,
-              cardioResistance: isCardio && isFirstWeek ? 3 : null,
+              workoutExerciseId: workoutExercise.id,
+              order: setOrder,
+              reps: isComplete ? base.reps + (setOrder === 3 ? -1 : 0) : null,
+              weight: isComplete && base.weight > 0 ? base.weight + (weekOrder - 1) * 2.5 : null,
             },
-          });
-
-          if (!isCardio) {
-            // 3 sets per resistance exercise; Week 1 filled in, subsequent weeks empty
-            let thirdSetId: number | null = null;
-            for (let s = 0; s < 3; s++) {
-              const createdSet = await prisma.exerciseSet.create({
-                data: {
-                  workoutExerciseId: workoutExercise.id,
-                  order:  s + 1,
-                  reps:   isFirstWeek ? base.reps : null,
-                  weight: isFirstWeek && base.weight > 0 ? base.weight : null,
-                },
-              });
-              if (s === 2) thirdSetId = createdSet.id;
-            }
-
-            // Add drop set(s) on the last regular set for the first resistance exercise
-            // in completed (Week 1) workouts, where there's a meaningful weight to drop from
-            if (isFirstWeek && i === 0 && base.weight > 0 && thirdSetId !== null) {
-              const drop1Weight = Math.round(base.weight * 0.8 / 2.5) * 2.5;
-              const drop1 = await prisma.exerciseSet.create({
-                data: {
-                  workoutExerciseId: workoutExercise.id,
-                  order:        4,
-                  reps:         base.reps + 2,
-                  weight:       drop1Weight,
-                  isDropSet:    true,
-                  parentSetId:  thirdSetId,
-                },
-              });
-
-              // Add a second drop on Plan 2 to demonstrate chained drops
-              if (planIdx === 1) {
-                const drop2Weight = Math.round(drop1.weight! * 0.8 / 2.5) * 2.5;
-                await prisma.exerciseSet.create({
-                  data: {
-                    workoutExerciseId: workoutExercise.id,
-                    order:        5,
-                    reps:         base.reps + 4,
-                    weight:       drop2Weight,
-                    isDropSet:    true,
-                    parentSetId:  thirdSetId,
-                  },
-                });
-              }
-            }
-          }
-        }
-
-        // Mark Week-1 workouts as completed on their staggered past dates
-        if (isFirstWeek) {
-          await prisma.workout.update({
-            where: { id: workout.id },
-            data:  { dateCompleted: daysAgo(template.completionDaysAgo[woIdx]) },
           });
         }
       }
     }
   }
 
-  // ── Day metrics ───────────────────────────────────────────────────────────
-  await prisma.metric.deleteMany({ where: { userId: user.id } });
+  await prisma.user.update({ where: { id: user.id }, data: { activePlanId: activePlan.id } });
+  if (!inactivePlan.id) throw new Error('Inactive plan seed failed');
 
-  await prisma.metric.createMany({
-    data: Array.from({ length: 60 }, (_, i) => {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-      return {
-        userId:    user.id,
-        date,
-        weight:    maybeNull(Number((84 - i * 0.03 + (Math.random() - 0.5)).toFixed(1))),
-        steps:     maybeNull(Math.floor(84 - i * 0.03 + (Math.random() - 0.5) * 3000 + 7000)),
-        sleepMins: maybeNull(Math.floor(Math.random() * (540 - 360 + 1)) + 360),
-        calories:  maybeNull(Math.floor(Math.random() * (2500 - 1500 + 1)) + 1500),
-        protein:   maybeNull(Math.floor(Math.random() * 200)),
-        carbs:     maybeNull(Math.floor(Math.random() * 400)),
-        fat:       maybeNull(Math.floor(Math.random() * 100)),
-      };
-    }),
+  const currentWeekStart = toDateOnly(getWeekStart(today));
+  await prisma.targetTemplate.createMany({
+    data: [
+      {
+        userId: user.id,
+        effectiveFrom: toDateOnly(atDay(currentWeekStart, -56)),
+        stepsTarget: 9000,
+        sleepMinsTarget: 465,
+      },
+      {
+        userId: user.id,
+        effectiveFrom: currentWeekStart,
+        stepsTarget: 10000,
+        sleepMinsTarget: 480,
+      },
+    ],
   });
 
-  // ── Weekly check-ins ──────────────────────────────────────────────────────
-  // 6 completed check-ins over the last 6 weeks. Weeks 1–3 are unreviewed
-  // (so the coach sees unread items); weeks 4–6 have coach notes from Todd.
-  await prisma.weeklyCheckIn.deleteMany({ where: { userId: user.id } });
+  const templates = await prisma.targetTemplate.findMany({ where: { userId: user.id } });
+  const latestTemplate = templates.find((t) => isoDate(t.effectiveFrom) === isoDate(currentWeekStart));
+  const oldTemplate = templates.find((t) => isoDate(t.effectiveFrom) !== isoDate(currentWeekStart));
+  if (!latestTemplate || !oldTemplate) throw new Error('Target template seed failed');
 
-  const checkInDefs = [
-    {
-      weeksAgo:        1,
-      energyLevel:     4, moodRating: 4, stressLevel: 2,
-      sleepQuality:    4, recoveryRating: 4, adherenceRating: 5,
-      completedWorkouts: 4, plannedWorkouts: 4,
-      weekReview:      'Best week in a while — hit all four sessions and nutrition was on point.',
-      coachMessage:    'Should I add a fifth session or keep it at four for now?',
-      goalsNextWeek:   'Add 2.5 kg to squat and keep calories at surplus.',
-      coachNotes:      null, coachReviewedAt: null,
-    },
-    {
-      weeksAgo:        2,
-      energyLevel:     3, moodRating: 3, stressLevel: 4,
-      sleepQuality:    3, recoveryRating: 3, adherenceRating: 4,
-      completedWorkouts: 3, plannedWorkouts: 4,
-      weekReview:      'Stressful week at work — missed one session but hit everything else.',
-      coachMessage:    null,
-      goalsNextWeek:   'Get back to four sessions and sort out sleep.',
-      coachNotes:      null, coachReviewedAt: null,
-    },
-    {
-      weeksAgo:        3,
-      energyLevel:     5, moodRating: 5, stressLevel: 2,
-      sleepQuality:    4, recoveryRating: 5, adherenceRating: 5,
-      completedWorkouts: 4, plannedWorkouts: 4,
-      weekReview:      'Felt incredible this week — new deadlift PB at 140 kg.',
-      coachMessage:    'Happy with how the deadlift is progressing. Any cues for lockout?',
-      goalsNextWeek:   'Maintain the momentum and dial in bench technique.',
-      coachNotes:      null, coachReviewedAt: null,
-    },
-    {
-      weeksAgo:        4,
-      energyLevel:     3, moodRating: 4, stressLevel: 3,
-      sleepQuality:    3, recoveryRating: 3, adherenceRating: 4,
-      completedWorkouts: 3, plannedWorkouts: 4,
-      weekReview:      'Solid week overall. Squat felt heavy but pushed through.',
-      coachMessage:    null,
-      goalsNextWeek:   'Focus on sleep and stay consistent with the programme.',
-      coachNotes:      'Good effort this week. Three sessions is still good progress — don\'t stress the missed one. Focus on sleep consistency; it\'ll make a big difference to recovery.',
-      coachReviewedAt: daysAgo(25),
-    },
-    {
-      weeksAgo:        5,
-      energyLevel:     4, moodRating: 4, stressLevel: 2,
-      sleepQuality:    5, recoveryRating: 4, adherenceRating: 5,
-      completedWorkouts: 4, plannedWorkouts: 4,
-      weekReview:      'Great week. Sleep was much better and energy levels showed it.',
-      coachMessage:    'Bench is moving well — should I switch to a closer grip?',
-      goalsNextWeek:   'Keep the sleep routine and push for a squat PB.',
-      coachNotes:      'Really strong week. On the bench grip question — stick with your current grip for another two weeks, then we\'ll experiment. Your form looks solid on video.',
-      coachReviewedAt: daysAgo(32),
-    },
-    {
-      weeksAgo:        6,
-      energyLevel:     2, moodRating: 3, stressLevel: 4,
-      sleepQuality:    2, recoveryRating: 2, adherenceRating: 3,
-      completedWorkouts: 2, plannedWorkouts: 4,
-      weekReview:      'Rough week — came down with a cold mid-week and had to cut sessions short.',
-      coachMessage:    'Felt awful this week, hope the numbers don\'t take too big a hit.',
-      goalsNextWeek:   'Get healthy and ease back in with lighter weights.',
-      coachNotes:      'Don\'t worry about the numbers at all — you did the right thing resting. Ease back in next week with 70–75% of your normal weights and focus on movement quality. Recovery is training too.',
-      coachReviewedAt: daysAgo(39),
-    },
-  ];
-
-  await prisma.weeklyCheckIn.createMany({
-    data: checkInDefs.map(def => {
-      const refDate = new Date(today);
-      refDate.setDate(today.getDate() - def.weeksAgo * 7);
-      const weekStart = toDateOnly(getWeekStart(refDate));
-      const completedAt = new Date(weekStart);
-      completedAt.setDate(completedAt.getDate() + 2); // submitted Wednesday of that week
-      return {
-        userId:           user.id,
-        weekStartDate:    weekStart,
-        completedAt,
-        energyLevel:      def.energyLevel,
-        moodRating:       def.moodRating,
-        stressLevel:      def.stressLevel,
-        sleepQuality:     def.sleepQuality,
-        recoveryRating:   def.recoveryRating,
-        adherenceRating:  def.adherenceRating,
-        completedWorkouts: def.completedWorkouts,
-        plannedWorkouts:  def.plannedWorkouts,
-        weekReview:       def.weekReview,
-        coachMessage:     def.coachMessage ?? null,
-        goalsNextWeek:    def.goalsNextWeek,
-        coachNotes:       def.coachNotes ?? null,
-        coachReviewedAt:  def.coachReviewedAt ?? null,
-      };
-    }),
+  await prisma.targetTemplateDay.createMany({
+    data: [latestTemplate, oldTemplate].flatMap((template, idx) =>
+      [1, 2, 3, 4, 5, 6, 7].map((dayOfWeek) => ({
+        templateId: template.id,
+        dayOfWeek,
+        ...(idx === 0 ? macroTargets(dayOfWeek, variant) : {
+          caloriesTarget: 2400,
+          proteinTarget: 180,
+          carbsTarget: 220,
+          fatTarget: 75,
+        }),
+      })),
+    ),
   });
 
-  // ── Coach link ────────────────────────────────────────────────────────────
-  if (coachId) {
-    await prisma.user.update({ where: { id: user.id }, data: { coachId } });
-  }
+  const metrics = Array.from({ length: 98 }, (_, i) => {
+    const date = toDateOnly(atDay(today, -i));
+    const trend = variant === 'hypertrophy' ? i * -0.015 : i * -0.02;
+    return {
+      userId: user.id,
+      date,
+      weight: Number((85 + trend + ((i % 5) - 2) * 0.08).toFixed(1)),
+      steps: 7200 + (i % 6) * 850,
+      sleepMins: 420 + (i % 4) * 20,
+      calories: variant === 'hypertrophy' ? 2850 - (i % 3) * 120 : 2350 - (i % 3) * 100,
+      protein: 175 + (i % 3) * 10,
+      carbs: variant === 'strength' ? 300 + (i % 4) * 20 : 240 + (i % 4) * 18,
+      fat: 68 + (i % 4) * 5,
+    };
+  });
+  await prisma.metric.createMany({ data: metrics });
+
+  const checkIns = [1, 2, 4, 5, 7, 9].map((weeksAgo, index) => {
+    const referenceDate = atDay(today, -weeksAgo * 7);
+    const weekStartDate = toDateOnly(getWeekStart(referenceDate));
+    const completedAt = index === 1 ? null : atDay(weekStartDate, 2);
+    const reviewed = index >= 3;
+    return {
+      userId: user.id,
+      weekStartDate,
+      completedAt,
+      energyLevel: completedAt ? Math.max(2, 5 - (index % 3)) : null,
+      moodRating: completedAt ? 4 - (index % 2) : null,
+      stressLevel: completedAt ? 2 + (index % 3) : null,
+      sleepQuality: completedAt ? 3 + (index % 2) : null,
+      recoveryRating: completedAt ? 3 + ((index + 1) % 2) : null,
+      adherenceRating: completedAt ? 4 - (index % 2) : null,
+      completedWorkouts: completedAt ? 2 + (index % 2) : null,
+      plannedWorkouts: 3,
+      weekReview: completedAt ? `Week ${weeksAgo}: generally solid, missed one accessory session.` : null,
+      goalsNextWeek: completedAt ? 'Keep nutrition adherence above 85% and hit all compounds.' : null,
+      coachMessage: completedAt && index === 0 ? 'Can we add an extra conditioning session?' : null,
+      coachNotes: reviewed ? 'Review complete — maintain current progression and prioritize sleep consistency.' : null,
+      coachReviewedAt: reviewed ? atDay(weekStartDate, 5) : null,
+    };
+  });
+  await prisma.weeklyCheckIn.createMany({ data: checkIns });
+
+  await prisma.notification.createMany({
+    data: [
+      {
+        userId: user.id,
+        type: NotificationType.CoachFeedback,
+        title: 'Coach reviewed your weekly check-in',
+        body: 'Feedback added on your latest submitted check-in.',
+        url: '/user/check-in',
+        readAt: null,
+        createdAt: atDay(today, -2),
+      },
+      {
+        userId: user.id,
+        type: NotificationType.LearningPlanStepDelivered,
+        title: 'New learning step unlocked',
+        body: 'Technique breakdown for your next squat session is available.',
+        url: '/user/library',
+        readAt: atDay(today, -1),
+        createdAt: atDay(today, -1),
+      },
+    ],
+  });
+
+  await prisma.auditEvent.createMany({
+    data: [
+      {
+        actorUserId: user.id,
+        eventType: AuditEventType.LoginSucceeded,
+        subjectType: 'user',
+        subjectId: user.id,
+        metadata: { provider: 'demo' },
+        occurredAt: atDay(today, -6),
+      },
+      {
+        actorUserId: user.id,
+        eventType: AuditEventType.PlanSaved,
+        subjectType: 'plan',
+        subjectId: String(activePlan.id),
+        metadata: { variant },
+        occurredAt: atDay(today, -3),
+      },
+      {
+        actorUserId: user.id,
+        eventType: AuditEventType.CheckInSubmitted,
+        subjectType: 'weeklyCheckIn',
+        subjectId: `${user.id}-week-${isoDate(getWeekStart(atDay(today, -7)))}`,
+        metadata: { source: 'seed' },
+        occurredAt: atDay(today, -4),
+      },
+    ],
+  });
+}
+
+export async function seedJeffDemoData(user: { id: string; name: string }, today: Date, coachId: string): Promise<void> {
+  await seedDemoClientData(user, {
+    coachId,
+    today,
+    variant: 'hypertrophy',
+  });
 }

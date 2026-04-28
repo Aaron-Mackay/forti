@@ -1,4 +1,3 @@
-import {addDays, subDays} from 'date-fns';
 import type {Event} from '@/generated/prisma/client';
 import {convertDateToDateString} from '@lib/dateUtils';
 
@@ -67,8 +66,8 @@ export function buildBlockOverlapResolution(
         originalRange,
         action: 'split',
         resultingRanges: [
-          toRange(block.startDate, subDays(incomingStartDate, 1)),
-          toRange(addDays(incomingEndDate, 1), block.endDate),
+          toRange(block.startDate, incomingStartDate),
+          toRange(incomingEndDate, block.endDate),
         ],
       };
     }
@@ -79,7 +78,7 @@ export function buildBlockOverlapResolution(
         name: block.name,
         originalRange,
         action: 'truncate',
-        resultingRanges: [toRange(block.startDate, subDays(incomingStartDate, 1))],
+        resultingRanges: [toRange(block.startDate, incomingStartDate)],
       };
     }
 
@@ -88,7 +87,7 @@ export function buildBlockOverlapResolution(
       name: block.name,
       originalRange,
       action: 'truncate',
-      resultingRanges: [toRange(addDays(incomingEndDate, 1), block.endDate)],
+      resultingRanges: [toRange(incomingEndDate, block.endDate)],
     };
   });
 }
@@ -111,14 +110,14 @@ export async function applyBlockOverlapResolution(
     if (block.startDate < incomingStartDate && block.endDate > incomingEndDate) {
       const updated = await tx.event.update({
         where: {id: block.id},
-        data: {endDate: subDays(incomingStartDate, 1)},
+        data: {endDate: incomingStartDate},
       });
       const created = await tx.event.create({
         data: {
           userId: block.userId,
           name: block.name,
           description: block.description,
-          startDate: addDays(incomingEndDate, 1),
+          startDate: incomingEndDate,
           endDate: block.endDate,
           customColor: block.customColor,
           eventType: block.eventType,
@@ -132,8 +131,8 @@ export async function applyBlockOverlapResolution(
     }
 
     const data = block.startDate < incomingStartDate
-      ? {endDate: subDays(incomingStartDate, 1)}
-      : {startDate: addDays(incomingEndDate, 1)};
+      ? {endDate: incomingStartDate}
+      : {startDate: incomingEndDate};
     const updated = await tx.event.update({where: {id: block.id}, data});
     affectedEvents.push({type: 'updated', event: updated});
   }

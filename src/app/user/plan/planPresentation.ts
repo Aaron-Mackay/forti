@@ -49,6 +49,18 @@ export function getLatestTrackedWeekId(plan: PlanPrisma): number | null {
   return lastTrackedWeekId ?? sortedWeeks[sortedWeeks.length - 1]?.id ?? null
 }
 
+export type E1rmDeltaDirection = 'up' | 'down' | 'flat' | 'none'
+
+export function getE1rmDeltaDirection(
+  currentE1rm: number | null,
+  previousE1rm: number | null,
+): E1rmDeltaDirection {
+  if (currentE1rm == null || previousE1rm == null) return 'none'
+  if (currentE1rm > previousE1rm) return 'up'
+  if (currentE1rm < previousE1rm) return 'down'
+  return 'flat'
+}
+
 export function getPreviousTrackedExercise(
   plan: PlanPrisma,
   currentWeekOrder: number,

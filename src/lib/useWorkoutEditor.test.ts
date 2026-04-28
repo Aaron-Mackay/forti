@@ -355,6 +355,22 @@ describe('reducer', () => {
     expect(newState.plans[0].weeks[0].workouts[0].name).toBe('New Name');
   });
 
+  it('UPDATE_WORKOUT_NOTES updates workout notes', () => {
+    const workout = new WorkoutBuilder(2).build();
+    const week = new WeekBuilder(1)
+      .addWorkout(workout)
+      .build();
+    const plan = new PlanBuilder(1)
+      .addWeek(week)
+      .build();
+    const state = new UserBuilder(1)
+      .addPlan(plan)
+      .build();
+    const action: WorkoutEditorAction = {type: 'UPDATE_WORKOUT_NOTES', planId: 1, weekId: 1, workoutId: 2, notes: 'Keep rest strict'};
+    const newState = reducer(state, action, mockUuid);
+    expect(newState.plans[0].weeks[0].workouts[0].notes).toBe('Keep rest strict');
+  });
+
   it('UPDATE_SET_WEIGHT updates the set weight', () => {
     const exercise = new ExerciseBuilder(3)
       .addSet(new SetBuilder(10).build())
@@ -478,6 +494,33 @@ describe('reducer', () => {
     expect(newState.plans[0].weeks[0].workouts[0].exercises[0].exercise.name).toBe('');
   });
 
+  it('UPDATE_CATEGORY falls back to null category for unknown UI values', () => {
+    const exercise = new ExerciseBuilder(3).build();
+    const workout = new WorkoutBuilder(2)
+      .addExercise(exercise)
+      .build();
+    const week = new WeekBuilder(1)
+      .addWorkout(workout)
+      .build();
+    const plan = new PlanBuilder(1)
+      .addWeek(week)
+      .build();
+    const state = new UserBuilder(1)
+      .addPlan(plan)
+      .build();
+    const action: WorkoutEditorAction = {
+      type: 'UPDATE_CATEGORY',
+      planId: 1,
+      weekId: 1,
+      workoutId: 2,
+      workoutExerciseId: 3,
+      category: 'not-a-real-category',
+    };
+    const newState = reducer(state, action, mockUuid);
+    expect(newState.plans[0].weeks[0].workouts[0].exercises[0].exercise.category).toBeNull();
+    expect(newState.plans[0].weeks[0].workouts[0].exercises[0].exercise.name).toBe('');
+  });
+
   it('UPDATE_EXERCISE updates the exercise object', () => {
     const exercise = new ExerciseBuilder(3).build();
     const workout = new WorkoutBuilder(2)
@@ -509,6 +552,35 @@ describe('reducer', () => {
     const newState = reducer(state, action, mockUuid);
     expect(newState.plans[0].weeks[0].workouts[0].exercises[0].exercise.name).toBe('Pull Up');
     expect(newState.plans[0].weeks[0].workouts[0].exercises[0].exercise.category).toBe('resistance');
+  });
+
+  it('UPDATE_EXERCISE falls back to null category for unknown UI values', () => {
+    const exercise = new ExerciseBuilder(3).build();
+    const workout = new WorkoutBuilder(2)
+      .addExercise(exercise)
+      .build();
+    const week = new WeekBuilder(1)
+      .addWorkout(workout)
+      .build();
+    const plan = new PlanBuilder(1)
+      .addWeek(week)
+      .build();
+    const state = new UserBuilder(1)
+      .addPlan(plan)
+      .build();
+    const action: WorkoutEditorAction = {
+      type: 'UPDATE_EXERCISE',
+      planId: 1,
+      weekId: 1,
+      workoutId: 2,
+      workoutExerciseId: 3,
+      exerciseName: 'Mystery Move',
+      exercises: [],
+      category: 'not-a-real-category',
+    };
+    const newState = reducer(state, action, mockUuid);
+    expect(newState.plans[0].weeks[0].workouts[0].exercises[0].exercise.name).toBe('Mystery Move');
+    expect(newState.plans[0].weeks[0].workouts[0].exercises[0].exercise.category).toBeNull();
   });
 
   it('MOVE_WORKOUT does not move workout out of bounds', () => {
