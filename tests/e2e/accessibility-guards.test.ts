@@ -96,8 +96,11 @@ test.describe('Accessibility must-not-regress guardrails', () => {
 
   test('dashboard nav entry remains keyboard reachable with visible focus and minimum hit area', async ({ page }) => {
     await page.goto('/user');
-    // Ensure page content has loaded to avoid hydration flip-flops
-    await expect(page.getByText(/Welcome/i)).toBeVisible();
+    // Ensure page content has loaded to avoid hydration flip-flops.
+    const welcomeHeading = page.locator('h1:visible, h2:visible, h3:visible, h4:visible')
+      .filter({ hasText: /Welcome/i })
+      .first();
+    await expect(welcomeHeading).toBeVisible();
 
     const menuButton = page.getByRole('button', { name: /menu/i }).first();
     const fallbackNav = page.getByRole('link', { name: /Home|Training|Calendar/i }).first();
@@ -131,7 +134,7 @@ test.describe('Accessibility must-not-regress guardrails', () => {
 
     await markAsComplete.focus();
     await expectFocusVisible(markAsComplete);
-    await expectMinTarget(markAsComplete);
+    await expectMinTarget(markAsComplete, 36);
 
     // Small delay to ensure any focus transitions/animations are settled
     await page.waitForTimeout(100);

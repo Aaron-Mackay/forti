@@ -78,8 +78,8 @@ test('client completes a workout from the workout flow', async ({ page }) => {
 
   await openWorkoutFlow(page);
 
-  // Wait for Exercises heading to ensure we reached the right view
-  await expect(page.getByText('Exercises', { exact: true })).toBeVisible();
+  // Wait for Exercises heading to ensure we reached the right view.
+  await expect(page.getByRole('heading', { name: 'Exercises', exact: true })).toBeVisible();
 
   const markAsComplete = page.getByRole('button', { name: 'Mark as Complete' });
   const completedButton = page.getByRole('button', { name: /^Completed/ });
