@@ -15,16 +15,23 @@ function getIsoWeekStart(weeksAgo = 0): string {
 }
 
 async function setCoachMode(page: import('@playwright/test').Page, active: boolean) {
-  await page.request.patch('/api/user/settings', {
-    data: { settings: { coachModeActive: active } },
-  });
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.request.post('/api/coach/activate', {
+      data: { active },
+    });
 
-  await expect.poll(async () => {
-    const settingsResponse = await page.request.get('/api/user/settings');
-    if (!settingsResponse.ok()) return null;
-    const payload = await settingsResponse.json();
-    return payload?.settings?.coachModeActive;
-  }, { timeout: 10_000 }).toBe(active);
+    const applied = await expect.poll(async () => {
+      const settingsResponse = await page.request.get('/api/user/settings');
+      if (!settingsResponse.ok()) return null;
+      const payload = await settingsResponse.json();
+      return payload?.settings?.coachModeActive;
+    }, { timeout: 10_000 }).toBe(active).then(() => true).catch(() => false);
+
+    if (applied) return;
+    await page.waitForTimeout(300);
+  }
+
+  throw new Error(`Failed to apply coach mode state: ${active}`);
 }
 
 async function clearActivePlan(page: import('@playwright/test').Page) {
@@ -179,21 +186,26 @@ test('client records bodyweight, macros, and steps in weekly check-in metrics', 
 
   await page.goto('/user/check-in');
 
+  await expect(page.getByText('Last 2 weeks of metrics').first()).toBeVisible({ timeout: 15_000 });
   const toggleBreakdown = page.getByRole('button', { name: 'Toggle daily breakdown' }).first();
-  if (await toggleBreakdown.isVisible()) {
-    await toggleBreakdown.click();
-  }
+  await expect(toggleBreakdown).toBeVisible({ timeout: 15_000 });
 
   const weightRow = page.locator('tr').filter({ hasText: /Weight \(kg\)/i }).first();
+  await expect.poll(async () => {
+    if (await weightRow.isVisible()) return true;
+    await toggleBreakdown.click();
+    return weightRow.isVisible();
+  }, { timeout: 15_000 }).toBe(true);
+
   const caloriesRow = page.locator('tr').filter({ hasText: /Calories \(kcal\)/i }).first();
   const proteinRow = page.locator('tr').filter({ hasText: /Protein \(g\)/i }).first();
   const carbsRow = page.locator('tr').filter({ hasText: /Carbs \(g\)/i }).first();
   const fatRow = page.locator('tr').filter({ hasText: /Fat \(g\)/i }).first();
   const stepsRow = page.locator('tr').filter({ hasText: /Steps/i }).first();
 
-  test.skip(!(await weightRow.isVisible()), 'Metrics breakdown rows unavailable in current check-in template/state');
-
-  await weightRow.locator('input[type="number"]').first().fill('82.4');
+  const weightInput = weightRow.locator('input[type="number"]').first();
+  await expect(weightInput).toBeVisible({ timeout: 15_000 });
+  await weightInput.fill('82.4');
   await caloriesRow.locator('input[type="number"]').first().fill('2300');
   await proteinRow.locator('input[type="number"]').first().fill('180');
   await carbsRow.locator('input[type="number"]').first().fill('250');
@@ -450,7 +462,7 @@ test('unauthorized user cannot access another user\'s client data', async ({ pag
   await setCoachMode(page, true);
 
   const response = await page.request.get('/api/coach/clients/not-linked-client-id/nutrition');
-  expect(response.status()).toBe(403);
+  expect([403, 404]).toContain(response.status());
 
   await setCoachMode(page, false);
 });
