@@ -88,7 +88,8 @@ test('client completes a workout from the workout flow', async ({ page }) => {
   } else {
     // If already completed, uncomplete it first so we can test the completion flow
     await completedButton.click();
-    await markAsComplete.waitFor({ state: 'visible' });
+    // Wait for the button to transition back to 'Mark as Complete'
+    await expect(markAsComplete).toBeVisible();
     await markAsComplete.click();
   }
 

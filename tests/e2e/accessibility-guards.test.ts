@@ -119,14 +119,20 @@ test.describe('Accessibility must-not-regress guardrails', () => {
 
   test('workout completion action keeps minimum hit area and contrast', async ({ page }) => {
     await openWorkoutDetail(page);
-    // Allow for either label since serial tests might leave it in completed state
-    const completeButton = page.getByRole('button', { name: /Mark as Complete|^Completed/i }).first();
-    await expect(completeButton).toBeVisible();
 
-    await completeButton.focus();
-    await expectFocusVisible(completeButton);
-    await expectMinTarget(completeButton);
-    expect(await contrastRatio(completeButton)).toBeGreaterThanOrEqual(3);
+    const markAsComplete = page.getByRole('button', { name: 'Mark as Complete' });
+    const completedButton = page.getByRole('button', { name: /^Completed/ });
+
+    // If already completed (from a previous serial test), uncomplete it first
+    if (!(await markAsComplete.isVisible())) {
+      await completedButton.click();
+      await expect(markAsComplete).toBeVisible();
+    }
+
+    await markAsComplete.focus();
+    await expectFocusVisible(markAsComplete);
+    await expectMinTarget(markAsComplete);
+    expect(await contrastRatio(markAsComplete)).toBeGreaterThanOrEqual(3);
   });
 
   test('nutrition target save action remains keyboard operable and clearly visible', async ({ page }) => {
