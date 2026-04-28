@@ -30,16 +30,26 @@ async function setCoachMode(page: import('@playwright/test').Page, active: boole
 async function openWorkoutFlow(page: import('@playwright/test').Page) {
   await page.goto('/user/workout');
 
-  if (await page.getByText('Plans', { exact: true }).isVisible()) {
-    await page.getByRole('listitem').first().getByRole('button').first().click();
-  }
+  for (let i = 0; i < 4; i += 1) {
+    const markAsComplete = page.getByRole('button', { name: 'Mark as Complete' });
+    const completedButton = page.getByRole('button', { name: /^Completed/ });
+    if (await markAsComplete.isVisible() || await completedButton.isVisible()) {
+      return;
+    }
 
-  if (await page.getByText('Weeks', { exact: true }).isVisible()) {
-    await page.getByRole('listitem').first().getByRole('button').first().click();
-  }
+    const firstItemButton = page.getByRole('listitem').first().getByRole('button').first();
+    if (await firstItemButton.isVisible()) {
+      await firstItemButton.click();
+      continue;
+    }
 
-  if (await page.getByText('Workouts', { exact: true }).isVisible()) {
-    await page.getByRole('listitem').first().getByRole('button').first().click();
+    const firstItemLink = page.getByRole('listitem').first().getByRole('link').first();
+    if (await firstItemLink.isVisible()) {
+      await firstItemLink.click();
+      continue;
+    }
+
+    break;
   }
 }
 
@@ -78,11 +88,9 @@ test('client completes a workout from the workout flow', async ({ page }) => {
 
   await openWorkoutFlow(page);
 
-  // Wait for Exercises heading to ensure we reached the right view.
-  await expect(page.getByRole('heading', { name: 'Exercises', exact: true })).toBeVisible();
-
   const markAsComplete = page.getByRole('button', { name: 'Mark as Complete' });
   const completedButton = page.getByRole('button', { name: /^Completed/ });
+  await expect(markAsComplete.or(completedButton)).toBeVisible();
 
   if (await markAsComplete.isVisible()) {
     await markAsComplete.click();

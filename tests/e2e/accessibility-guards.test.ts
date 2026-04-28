@@ -71,22 +71,27 @@ async function expectFocusVisible(locator: Locator): Promise<void> {
 async function openWorkoutDetail(page: Page): Promise<void> {
   await page.goto('/user/workout');
 
-  // If we are on Plans list, click first plan
-  if (await page.getByText('Plans', { exact: true }).isVisible()) {
-    await page.getByRole('listitem').first().getByRole('button').first().click();
-  }
+  for (let i = 0; i < 4; i += 1) {
+    const markAsComplete = page.getByRole('button', { name: 'Mark as Complete' });
+    const completedButton = page.getByRole('button', { name: /^Completed/ });
+    if (await markAsComplete.isVisible() || await completedButton.isVisible()) {
+      return;
+    }
 
-  // If we are on Weeks list, click first week
-  if (await page.getByText('Weeks', { exact: true }).isVisible()) {
-    await page.getByRole('listitem').first().getByRole('button').first().click();
-  }
+    const firstItemButton = page.getByRole('listitem').first().getByRole('button').first();
+    if (await firstItemButton.isVisible()) {
+      await firstItemButton.click();
+      continue;
+    }
 
-  // If we are on Workouts list, click first workout
-  if (await page.getByText('Workouts', { exact: true }).isVisible()) {
-    await page.getByRole('listitem').first().getByRole('button').first().click();
-  }
+    const firstItemLink = page.getByRole('listitem').first().getByRole('link').first();
+    if (await firstItemLink.isVisible()) {
+      await firstItemLink.click();
+      continue;
+    }
 
-  // We should now be on Exercises list (where Mark as Complete button lives)
+    break;
+  }
 }
 
 test.describe('Accessibility must-not-regress guardrails', () => {
