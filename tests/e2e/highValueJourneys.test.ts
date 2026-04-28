@@ -27,6 +27,23 @@ async function setCoachMode(page: import('@playwright/test').Page, active: boole
   }, { timeout: 10_000 }).toBe(active);
 }
 
+async function openWorkoutFlow(page: import('@playwright/test').Page) {
+  await page.goto('/user/workout');
+
+  const clickFirstPickerOrListItem = async (pickerLabel: RegExp) => {
+    const picker = page.getByRole('button', { name: pickerLabel }).first();
+    if (await picker.isVisible().catch(() => false)) {
+      await picker.click();
+      return;
+    }
+    await page.getByRole('listitem').first().getByRole('button').first().click();
+  };
+
+  await clickFirstPickerOrListItem(/Plan/i);
+  await clickFirstPickerOrListItem(/Week/i);
+  await clickFirstPickerOrListItem(/Workout/i);
+}
+
 test.describe.configure({ mode: 'serial' });
 test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile,
   'serial: desktop chromium only');
@@ -59,10 +76,7 @@ test('client completes a workout from the workout flow', async ({ page }) => {
     await route.continue();
   });
 
-  await page.goto('/user/workout');
-  await page.getByRole('button', { name: /Plan/i }).first().click();
-  await page.getByRole('button', { name: /Week/i }).first().click();
-  await page.getByRole('button', { name: /Workout/i }).first().click();
+  await openWorkoutFlow(page);
 
   const markAsComplete = page.getByRole('button', { name: 'Mark as Complete' });
   if (await markAsComplete.isVisible()) {
