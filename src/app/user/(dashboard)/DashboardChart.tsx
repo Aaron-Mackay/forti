@@ -32,13 +32,17 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
   const [selectedMetrics, setSelectedMetrics] = useState<BuiltInMetricKey[]>(['weight']);
   const metricLabelify = useCallback((metricKey: BuiltInMetricKey): string => metricKey[0].toUpperCase() + metricKey.slice(1), []);
 
-  const getData = useCallback(
-    (metric: BuiltInMetricKey): DataPoint[] =>
-      metrics
-        .filter(dm => dm[metric] !== null)
-        .map(dm => [new Date(dm.date).getTime(), dm[metric]]),
-    [metrics]
-  );
+  const metricDataByType = useMemo<Record<BuiltInMetricKey, DataPoint[]>>(() => ({
+    weight: metrics
+      .filter(dm => dm.weight !== null)
+      .map(dm => [new Date(dm.date).getTime(), dm.weight]),
+    calories: metrics
+      .filter(dm => dm.calories !== null)
+      .map(dm => [new Date(dm.date).getTime(), dm.calories]),
+    steps: metrics
+      .filter(dm => dm.steps !== null)
+      .map(dm => [new Date(dm.date).getTime(), dm.steps]),
+  }), [metrics]);
 
 
   const today: Date = useMemo(() => new Date(), [])
@@ -75,10 +79,10 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
     }
     return selectedMetrics.map((metricKey, i) => ({
       name: metricLabelify(metricKey),
-      data: getData(metricKey),
+      data: metricDataByType[metricKey],
       yAxisIndex: i as 0 | 1,
     }));
-  }, [metrics.length, getData, selectedMetrics, startDay, today]);
+  }, [metricDataByType, metrics.length, metricLabelify, selectedMetrics, startDay, today]);
 
   const isActiveRange = (min: number, max: number) => {
     const tol = 1000 * 60 * 60 * 12;
