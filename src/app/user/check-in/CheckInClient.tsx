@@ -213,6 +213,7 @@ export default function CheckInClient() {
                     weekPrior={currentData.weekPrior}
                     weekTargets={currentData.weekTargets}
                     customMetricDefs={settings.customMetrics ?? []}
+                    bodyweightUnit={settings.bodyweightUnit}
                     weekStartDate={currentData.checkIn.weekStartDate}
                     defaultExpanded={false}
                   />

@@ -27,6 +27,7 @@ import type {Metric} from '@/generated/prisma/browser';
 import type {CheckInWithUser, WeekTargets} from '@/types/checkInTypes';
 import {RATING_LABELS} from '@/types/checkInTypes';
 import type {CustomMetricDef} from '@/types/settingsTypes';
+import { parseDashboardSettings } from '@/types/settingsTypes';
 import type {TargetTemplateWithDays} from '@lib/targetTemplates';
 import {
   computeMacroGramsFromPercents,
@@ -155,9 +156,10 @@ export default function CoachCheckInDetailClient({
                                                    weekTargets,
                                                    activeTemplate,
                                                    customMetricDefs,
-                                                   weekWorkouts,
-                                                   coachTemplate,
+                                                 weekWorkouts,
+                                                 coachTemplate,
                                                  }: Props) {
+  const bodyweightUnit = parseDashboardSettings((checkIn.user as { settings?: unknown } | undefined)?.settings).bodyweightUnit;
   const [notes, setNotes] = useState(checkIn.coachNotes ?? '');
   const [coachResponseUrl, setCoachResponseUrl] = useState(checkIn.coachResponseUrl ?? '');
   const [targetValues, setTargetValues] = useState<TargetValues>(() => initTargetValues(activeTemplate));
@@ -443,6 +445,7 @@ export default function CoachCheckInDetailClient({
                   weekPrior={weekPrior}
                   weekTargets={weekTargets}
                   customMetricDefs={customMetricDefs}
+                  bodyweightUnit={bodyweightUnit}
                   weekStartDate={checkIn.weekStartDate}
                   expanded={metricsExpanded}
                   onExpandedChange={setMetricsExpanded}

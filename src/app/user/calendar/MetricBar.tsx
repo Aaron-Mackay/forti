@@ -8,8 +8,8 @@ import StepsIcon from '@mui/icons-material/DirectionsWalkRounded';
 import SleepIcon from '@mui/icons-material/HotelRounded';
 import TuneIcon from '@mui/icons-material/TuneRounded';
 import {minToHhMm} from "@/app/user/calendar/utils";
-import {CustomMetricDef, WeightUnit} from "@/types/settingsTypes";
-import {kgToDisplay} from "@/lib/units";
+import {CustomMetricDef} from "@/types/settingsTypes";
+import {BodyweightUnit, kgToBodyweightDisplay} from "@/lib/units";
 import type {Prisma} from "@/generated/prisma/browser";
 
 import type { BuiltInMetricKey, MetricKey } from '@/types/metricTypes';
@@ -78,26 +78,26 @@ export const MetricsBar: React.FC<{
   setSelectedMetric: (m: MetricKey) => void,
   setInputValue: (v: string | number | null) => void,
   customMetricDefs?: CustomMetricDef[],
-  weightUnit?: WeightUnit,
+  bodyweightUnit?: BodyweightUnit,
 }> = ({
         dateMetric,
         setSelectedMetric,
         setInputValue,
         customMetricDefs = [],
-        weightUnit = 'kg',
+        bodyweightUnit = 'kg',
       }) => {
   const {weight = null, calories = null, steps = null, sleepMins = null} = dateMetric || {};
   const customData = getCustomMetricsData(dateMetric?.customMetrics);
 
   const weightDisplay = weight != null
-    ? kgToDisplay(weight, weightUnit)
+    ? kgToBodyweightDisplay(weight, bodyweightUnit)
     : null;
 
   return (
     <Box display="flex" gap={1} alignItems="center" mb={1} flexWrap="wrap">
       <MetricButton value={weightDisplay} icon={<WeightIcon/>} onClick={() => {
         setSelectedMetric('weight')
-        setInputValue(weight)
+        setInputValue(weightDisplay)
       }}/>
       <MetricButton value={calories} icon={<FoodIcon/>} onClick={() => {
         setSelectedMetric('calories')

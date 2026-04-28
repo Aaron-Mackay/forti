@@ -5,6 +5,8 @@ import { Box, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typog
 import type { Metric } from '@/generated/prisma/browser';
 import { formatSleepMins } from '@/types/checkInTypes';
 import type { CustomMetricDef } from '@/types/settingsTypes';
+import type { BodyweightUnit } from '@/lib/units';
+import { bodyweightDisplayToKg, kgToBodyweightDisplay } from '@/lib/units';
 import ScrollEdgeFades from './ScrollEdgeFades';
 import { useScrollEdgeFades } from '@lib/hooks/useScrollEdgeFades';
 
@@ -12,6 +14,7 @@ interface Props {
   metrics: Metric[];
   weekStartDate: string | Date;
   customMetricDefs: CustomMetricDef[];
+  bodyweightUnit: BodyweightUnit;
   showMetricColumn?: boolean;
   includeEmptyRows?: boolean;
   forceCompactFont?: boolean;
@@ -109,6 +112,7 @@ export default function MetricsDailyBreakdown({
   metrics,
   weekStartDate,
   customMetricDefs,
+  bodyweightUnit,
   showMetricColumn = true,
   includeEmptyRows = false,
   forceCompactFont = false,
@@ -150,9 +154,12 @@ export default function MetricsDailyBreakdown({
 
   const stdRows: { label: string; key: MetricBreakdownKey; values: string[]; hasData: boolean }[] = [
     {
-      label: 'Weight (kg)',
+      label: `Weight (${bodyweightUnit})`,
       key: 'weight',
-      values: Array.from({ length: 7 }, (_, i) => val(i, m => m.weight != null ? `${m.weight}` : null)),
+      values: Array.from({ length: 7 }, (_, i) => val(i, m => {
+        const weight = kgToBodyweightDisplay(m.weight, bodyweightUnit);
+        return weight != null ? `${weight}` : null;
+      })),
       hasData: Array.from(byOffset.values()).some(m => m.weight != null),
     },
     {
@@ -221,7 +228,8 @@ export default function MetricsDailyBreakdown({
           return;
         }
         const raw = getMetricValueForKey(metric, row.key);
-        map.set(`${row.key}:${dayOffset}`, raw != null ? String(raw) : '');
+        const displayVal = row.key === 'weight' ? kgToBodyweightDisplay(raw, bodyweightUnit) : raw;
+        map.set(`${row.key}:${dayOffset}`, displayVal != null ? String(displayVal) : '');
       });
     });
     return map;
@@ -235,7 +243,7 @@ export default function MetricsDailyBreakdown({
   // props rather than the derived initialDraftValues Map, which has a new reference
   // on every render (rows is computed inline) and would cause an infinite loop.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setDraftValues(initialDraftValues); }, [metrics, customMetricDefs, weekStartDate, includeEmptyRows]);
+  useEffect(() => { setDraftValues(initialDraftValues); }, [metrics, customMetricDefs, weekStartDate, includeEmptyRows, bodyweightUnit]);
 
   if (rows.length === 0) return null;
 
@@ -341,7 +349,10 @@ export default function MetricsDailyBreakdown({
                           if (trimmed === '' || trimmed === '-' || trimmed === '.' || trimmed === '-.') return;
                           const next = Number(trimmed);
                           if (Number.isFinite(next)) {
-                            onMetricChange?.(i, row.key, next);
+                            const normalized = row.key === 'weight'
+                              ? bodyweightDisplayToKg(next, bodyweightUnit)
+                              : next;
+                            onMetricChange?.(i, row.key, normalized);
                           }
                         }}
                         onBlur={e => {
@@ -358,7 +369,10 @@ export default function MetricsDailyBreakdown({
                           }
                           const next = raw === '' ? null : Number(raw);
                           if (next === null || Number.isFinite(next)) {
-                            onMetricChange?.(i, row.key, next);
+                            const normalized = next === null || row.key !== 'weight'
+                              ? next
+                              : bodyweightDisplayToKg(next, bodyweightUnit);
+                            onMetricChange?.(i, row.key, normalized);
                           }
                         }}
                         onKeyDown={e => {

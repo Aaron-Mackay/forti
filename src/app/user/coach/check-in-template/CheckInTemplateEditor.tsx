@@ -125,6 +125,7 @@ function SystemCardPreview({ card }: { card: SystemCard }) {
         weekPrior={previewData.priorWeek}
         weekTargets={previewData.weekTargets}
         customMetricDefs={previewData.customMetricDefs}
+        bodyweightUnit="kg"
         weekStartDate={previewData.weekStart}
         defaultExpanded={card.columnSpan === 2}
         interactive={false}

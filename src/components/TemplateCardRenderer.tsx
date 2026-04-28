@@ -6,6 +6,7 @@ import type { Metric } from '@/generated/prisma/browser';
 import type { CheckInCard, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
 import type { PreviousPhotos, WeekTargets } from '@/types/checkInTypes';
 import type { CustomMetricDef } from '@/types/settingsTypes';
+import type { BodyweightUnit } from '@/lib/units';
 import type { MetricBreakdownKey } from './MetricsDailyBreakdown';
 import CheckInCustomCard from './CheckInCustomCard';
 import DataVizChartCard from './DataVizChartCard';
@@ -25,6 +26,7 @@ export interface SystemCardData {
   weekPrior: Metric[];
   weekTargets: WeekTargets | null;
   customMetricDefs: CustomMetricDef[];
+  bodyweightUnit: BodyweightUnit;
   completedWorkoutsCount: number;
   plannedWorkoutsCount: number;
   onWorkoutsClick?: () => void;
@@ -71,6 +73,7 @@ function SystemCardPlaceholder({
         weekPrior={previewData.priorWeek}
         weekTargets={previewData.weekTargets}
         customMetricDefs={previewData.customMetricDefs}
+        bodyweightUnit="kg"
         weekStartDate={previewData.weekStart}
         defaultExpanded={defaultExpanded}
         interactive={interactive}
@@ -211,6 +214,7 @@ export default function TemplateCardRenderer({
           weekPrior={systemData.weekPrior}
           weekTargets={systemData.weekTargets}
           customMetricDefs={systemData.customMetricDefs}
+          bodyweightUnit={systemData.bodyweightUnit}
           weekStartDate={systemData.weekStart}
           defaultExpanded={card.columnSpan === 2}
           interactive

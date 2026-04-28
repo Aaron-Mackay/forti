@@ -457,7 +457,7 @@ export default function SettingsClient({
 
       <Typography variant="overline" color="text.secondary">Units</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-        Weight unit for exercises and body metrics
+        Exercise weight unit
       </Typography>
       {loading ? (
         <Skeleton variant="rounded" height={40} sx={{ mb: 2 }} />
@@ -471,6 +471,25 @@ export default function SettingsClient({
         >
           <ToggleButton value="kg">kg</ToggleButton>
           <ToggleButton value="lbs">lbs</ToggleButton>
+        </ToggleButtonGroup>
+      )}
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        Bodyweight unit
+      </Typography>
+      {loading ? (
+        <Skeleton variant="rounded" height={40} sx={{ mb: 2 }} />
+      ) : (
+        <ToggleButtonGroup
+          value={settings.bodyweightUnit}
+          exclusive
+          onChange={(_e, val) => { if (val !== null) updateSetting('bodyweightUnit', val as 'kg' | 'lb' | 'st'); }}
+          size="small"
+          sx={{ mb: 2 }}
+        >
+          <ToggleButton value="kg">kg</ToggleButton>
+          <ToggleButton value="lb">lb</ToggleButton>
+          <ToggleButton value="st">st</ToggleButton>
         </ToggleButtonGroup>
       )}
 

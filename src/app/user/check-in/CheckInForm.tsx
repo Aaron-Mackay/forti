@@ -297,6 +297,7 @@ export default function CheckInForm({
     weekPrior,
     weekTargets,
     customMetricDefs: settings.customMetrics ?? [],
+    bodyweightUnit: settings.bodyweightUnit,
     completedWorkoutsCount,
     plannedWorkoutsCount,
     onWorkoutsClick: workoutClickable ? () => router.push(`/user/plan/${activePlanId}`) : undefined,
@@ -330,6 +331,7 @@ export default function CheckInForm({
             weekPrior={weekPrior}
             weekTargets={weekTargets}
             customMetricDefs={settings.customMetrics ?? []}
+            bodyweightUnit={settings.bodyweightUnit}
             weekStartDate={checkIn.weekStartDate}
             editableBreakdown
             onBreakdownMetricChange={handleMetricChange}

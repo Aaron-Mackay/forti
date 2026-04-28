@@ -39,6 +39,8 @@ import {
 import MacroTargetsPanel, {type MacroPercentValues} from '@/components/MacroTargetsPanel';
 import { fetchJsonWithSchema } from '@lib/fetchWrapper';
 import { GetTargetTemplateResponseSchema, TargetTemplateRequestSchema, TargetTemplateResponseSchema } from '@lib/contracts/targetTemplates';
+import { useSettings } from '@lib/providers/SettingsProvider';
+import { bodyweightDisplayToKg, kgToBodyweightDisplay } from '@/lib/units';
 
 interface Props {
   userId: string;
@@ -106,14 +108,14 @@ function hasAnyMacroActuals(metric: Pick<MetricPrisma, 'calories' | 'protein' | 
   return metric.calories !== null || metric.protein !== null || metric.carbs !== null || metric.fat !== null;
 }
 
-function metricToEditValues(m: MetricPrisma | undefined): EditValues {
+function metricToEditValues(m: MetricPrisma | undefined, bodyweightUnit: 'kg' | 'lb' | 'st'): EditValues {
   const str = (v: number | null | undefined) => (v !== null && v !== undefined ? String(v) : '');
   return {
     calories: str(m?.calories),
     protein: str(m?.protein),
     carbs: str(m?.carbs),
     fat: str(m?.fat),
-    weight: str(m?.weight),
+    weight: str(kgToBodyweightDisplay(m?.weight, bodyweightUnit)),
   };
 }
 
@@ -167,6 +169,7 @@ export default function NutritionClient({
   initialTemplates,
 }: Props) {
   useAppBar({ title: 'Nutrition' });
+  const { settings } = useSettings();
   const today = useMemo(() => new Date(), []);
 
   const [weekStart, setWeekStart] = useState<Date>(() =>
@@ -272,9 +275,9 @@ export default function NutritionClient({
   const openEditor = useCallback(
     (dateStr: string) => {
       setEditingDate(dateStr);
-      setEditValues(metricToEditValues(metricsByDate.get(dateStr)));
+      setEditValues(metricToEditValues(metricsByDate.get(dateStr), settings.bodyweightUnit));
     },
-    [metricsByDate],
+    [metricsByDate, settings.bodyweightUnit],
   );
 
   const closeEditor = useCallback(() => {
@@ -290,7 +293,12 @@ export default function NutritionClient({
           id: existing?.id ?? 0,
           userId,
           date: new Date(dateStr),
-          weight: editValues.weight !== '' ? toFloatOrNull(editValues.weight) : (existing?.weight ?? null),
+          weight: editValues.weight !== ''
+            ? (() => {
+              const parsed = toFloatOrNull(editValues.weight);
+              return parsed === null ? null : bodyweightDisplayToKg(parsed, settings.bodyweightUnit);
+            })()
+            : (existing?.weight ?? null),
           steps: existing?.steps ?? null,
           sleepMins: existing?.sleepMins ?? null,
           calories: editValues.calories !== '' ? toIntOrNull(editValues.calories) : (existing?.calories ?? null),
@@ -320,7 +328,7 @@ export default function NutritionClient({
         setSavingDay(false);
       }
     },
-    [userId, metricsByDate, editValues],
+    [userId, metricsByDate, editValues, settings.bodyweightUnit],
   );
 
   const openTargetsPanel = useCallback(() => {
@@ -678,7 +686,7 @@ export default function NutritionClient({
                           }}
                         >
                           <TextField
-                            label="Weight (kg)"
+                            label={`Weight (${settings.bodyweightUnit})`}
                             size="small"
                             type="number"
                             value={editValues.weight}
