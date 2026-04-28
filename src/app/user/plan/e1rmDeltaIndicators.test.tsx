@@ -107,7 +107,7 @@ describe('e1RM delta indicator rendering', () => {
         prevExercise={makeExercise(201, 11, 100, 5) as never}
       />,
     )
-    expect(screen.getByLabelText('e1RM increased from previous week')).toBeInTheDocument()
+    expect(screen.getByLabelText('e1RM increased from previous workout')).toBeInTheDocument()
 
     rerender(
       <ExerciseProgressCard
@@ -116,7 +116,7 @@ describe('e1RM delta indicator rendering', () => {
         prevExercise={makeExercise(202, 11, 100, 5) as never}
       />,
     )
-    expect(screen.getByLabelText('e1RM decreased from previous week')).toBeInTheDocument()
+    expect(screen.getByLabelText('e1RM decreased from previous workout')).toBeInTheDocument()
 
     rerender(
       <ExerciseProgressCard
@@ -125,7 +125,7 @@ describe('e1RM delta indicator rendering', () => {
         prevExercise={makeExercise(203, 11, 100, 5) as never}
       />,
     )
-    expect(screen.getByLabelText('e1RM unchanged from previous week')).toBeInTheDocument()
+    expect(screen.getByLabelText('e1RM unchanged from previous workout')).toBeInTheDocument()
 
     rerender(
       <ExerciseProgressCard
@@ -134,9 +134,9 @@ describe('e1RM delta indicator rendering', () => {
         prevExercise={makeExercise(204, 11, 100, 5) as never}
       />,
     )
-    expect(screen.queryByLabelText('e1RM increased from previous week')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('e1RM decreased from previous week')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('e1RM unchanged from previous week')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('e1RM increased from previous workout')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('e1RM decreased from previous workout')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('e1RM unchanged from previous workout')).not.toBeInTheDocument()
   })
 
   it('shows sheet view increase/decrease/flat/none indicators', () => {
@@ -177,20 +177,20 @@ describe('e1RM delta indicator rendering', () => {
     }
 
     const up = renderWeek(105, 100)
-    expect(screen.getByLabelText('e1RM increased from previous week')).toBeInTheDocument()
+    expect(screen.getByLabelText('e1RM increased from previous workout')).toBeInTheDocument()
     up.unmount()
 
     const down = renderWeek(95, 100)
-    expect(screen.getByLabelText('e1RM decreased from previous week')).toBeInTheDocument()
+    expect(screen.getByLabelText('e1RM decreased from previous workout')).toBeInTheDocument()
     down.unmount()
 
     const flat = renderWeek(100, 100)
-    expect(screen.getByLabelText('e1RM unchanged from previous week')).toBeInTheDocument()
+    expect(screen.getByLabelText('e1RM unchanged from previous workout')).toBeInTheDocument()
     flat.unmount()
 
     renderWeek(100, null)
-    expect(screen.queryByLabelText('e1RM increased from previous week')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('e1RM decreased from previous week')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('e1RM unchanged from previous week')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('e1RM increased from previous workout')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('e1RM decreased from previous workout')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('e1RM unchanged from previous workout')).not.toBeInTheDocument()
   })
 })

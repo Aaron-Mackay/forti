@@ -64,9 +64,9 @@ const cardioValueSx = {
 };
 
 const e1rmDeltaMeta = {
-  up: { icon: '↑', color: 'success.main', ariaLabel: 'e1RM increased from previous week' },
-  down: { icon: '↓', color: 'error.main', ariaLabel: 'e1RM decreased from previous week' },
-  flat: { icon: '→', color: 'text.disabled', ariaLabel: 'e1RM unchanged from previous week' },
+  up: { icon: '↑', color: 'success.main', ariaLabel: 'e1RM increased from previous workout' },
+  down: { icon: '↓', color: 'error.main', ariaLabel: 'e1RM decreased from previous workout' },
+  flat: { icon: '→', color: 'text.disabled', ariaLabel: 'e1RM unchanged from previous workout' },
 } as const;
 
 const ExerciseProgressCard = ({

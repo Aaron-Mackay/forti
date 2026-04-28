@@ -76,9 +76,9 @@ const SortableExerciseTbody = ({
   const { topLevelSets, dropsByParent } = getExerciseSetModel(ex)
   const bestE1rmDelta = getE1rmDeltaDirection(bestE1rm, previousBestE1rm)
   const bestE1rmDeltaMeta = {
-    up: { icon: '↑', color: 'var(--mui-palette-success-main, #2e7d32)', ariaLabel: 'e1RM increased from previous week' },
-    down: { icon: '↓', color: 'var(--mui-palette-error-main, #d32f2f)', ariaLabel: 'e1RM decreased from previous week' },
-    flat: { icon: '→', color: 'var(--mui-palette-text-disabled, #bbb)', ariaLabel: 'e1RM unchanged from previous week' },
+    up: { icon: '↑', color: 'var(--mui-palette-success-main, #2e7d32)', ariaLabel: 'e1RM increased from previous workout' },
+    down: { icon: '↓', color: 'var(--mui-palette-error-main, #d32f2f)', ariaLabel: 'e1RM decreased from previous workout' },
+    flat: { icon: '→', color: 'var(--mui-palette-text-disabled, #bbb)', ariaLabel: 'e1RM unchanged from previous workout' },
   } as const
 
   return (
