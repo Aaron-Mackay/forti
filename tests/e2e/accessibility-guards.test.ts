@@ -1,4 +1,5 @@
-import { test, expect, type Locator, type Page } from './fixtures';
+import { test, expect,  } from './fixtures';
+import {Locator, Page} from "@playwright/test";
 
 async function contrastRatio(locator: Locator): Promise<number> {
   return locator.evaluate((el) => {
@@ -69,26 +70,23 @@ async function expectFocusVisible(locator: Locator): Promise<void> {
 
 async function openWorkoutDetail(page: Page): Promise<void> {
   await page.goto('/user/workout');
-  const planPicker = page.getByRole('button', { name: /Plan/i }).first();
-  if (await planPicker.isVisible().catch(() => false)) {
-    await planPicker.click();
-  } else {
+
+  // If we are on Plans list, click first plan
+  if (await page.getByText('Plans', { exact: true }).isVisible()) {
     await page.getByRole('listitem').first().getByRole('button').first().click();
   }
 
-  const weekPicker = page.getByRole('button', { name: /Week/i }).first();
-  if (await weekPicker.isVisible().catch(() => false)) {
-    await weekPicker.click();
-  } else {
+  // If we are on Weeks list, click first week
+  if (await page.getByText('Weeks', { exact: true }).isVisible()) {
     await page.getByRole('listitem').first().getByRole('button').first().click();
   }
 
-  const workoutPicker = page.getByRole('button', { name: /Workout/i }).first();
-  if (await workoutPicker.isVisible().catch(() => false)) {
-    await workoutPicker.click();
-  } else {
+  // If we are on Workouts list, click first workout
+  if (await page.getByText('Workouts', { exact: true }).isVisible()) {
     await page.getByRole('listitem').first().getByRole('button').first().click();
   }
+
+  // We should now be on Exercises list (where Mark as Complete button lives)
 }
 
 test.describe('Accessibility must-not-regress guardrails', () => {
@@ -98,10 +96,13 @@ test.describe('Accessibility must-not-regress guardrails', () => {
 
   test('dashboard nav entry remains keyboard reachable with visible focus and minimum hit area', async ({ page }) => {
     await page.goto('/user');
+    // Ensure page content has loaded to avoid hydration flip-flops
+    await expect(page.getByText(/Welcome/i)).toBeVisible();
+
     const menuButton = page.getByRole('button', { name: /menu/i }).first();
     const fallbackNav = page.getByRole('link', { name: /Home|Training|Calendar/i }).first();
 
-    if (await menuButton.isVisible().catch(() => false)) {
+    if (await menuButton.isVisible()) {
       await menuButton.focus();
       await expectFocusVisible(menuButton);
       await expectMinTarget(menuButton);
@@ -118,7 +119,8 @@ test.describe('Accessibility must-not-regress guardrails', () => {
 
   test('workout completion action keeps minimum hit area and contrast', async ({ page }) => {
     await openWorkoutDetail(page);
-    const completeButton = page.getByRole('button', { name: 'Mark as Complete' });
+    // Allow for either label since serial tests might leave it in completed state
+    const completeButton = page.getByRole('button', { name: /Mark as Complete|^Completed/i }).first();
     await expect(completeButton).toBeVisible();
 
     await completeButton.focus();

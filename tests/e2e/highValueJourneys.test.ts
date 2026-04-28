@@ -30,18 +30,17 @@ async function setCoachMode(page: import('@playwright/test').Page, active: boole
 async function openWorkoutFlow(page: import('@playwright/test').Page) {
   await page.goto('/user/workout');
 
-  const clickFirstPickerOrListItem = async (pickerLabel: RegExp) => {
-    const picker = page.getByRole('button', { name: pickerLabel }).first();
-    if (await picker.isVisible().catch(() => false)) {
-      await picker.click();
-      return;
-    }
+  if (await page.getByText('Plans', { exact: true }).isVisible()) {
     await page.getByRole('listitem').first().getByRole('button').first().click();
-  };
+  }
 
-  await clickFirstPickerOrListItem(/Plan/i);
-  await clickFirstPickerOrListItem(/Week/i);
-  await clickFirstPickerOrListItem(/Workout/i);
+  if (await page.getByText('Weeks', { exact: true }).isVisible()) {
+    await page.getByRole('listitem').first().getByRole('button').first().click();
+  }
+
+  if (await page.getByText('Workouts', { exact: true }).isVisible()) {
+    await page.getByRole('listitem').first().getByRole('button').first().click();
+  }
 }
 
 test.describe.configure({ mode: 'serial' });
@@ -78,12 +77,19 @@ test('client completes a workout from the workout flow', async ({ page }) => {
 
   await openWorkoutFlow(page);
 
+  // Wait for Exercises heading to ensure we reached the right view
+  await expect(page.getByText('Exercises', { exact: true })).toBeVisible();
+
   const markAsComplete = page.getByRole('button', { name: 'Mark as Complete' });
+  const completedButton = page.getByRole('button', { name: /^Completed/ });
+
   if (await markAsComplete.isVisible()) {
     await markAsComplete.click();
   } else {
-    await page.getByRole('button', { name: /^Completed/ }).click();
-    await page.getByRole('button', { name: 'Mark as Complete' }).click();
+    // If already completed, uncomplete it first so we can test the completion flow
+    await completedButton.click();
+    await markAsComplete.waitFor({ state: 'visible' });
+    await markAsComplete.click();
   }
 
   await expect(page.getByRole('dialog')).toBeVisible();
