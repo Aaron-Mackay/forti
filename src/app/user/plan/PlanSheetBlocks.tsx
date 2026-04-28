@@ -74,12 +74,14 @@ const SortableExerciseTbody = ({
   })
 
   const { topLevelSets, dropsByParent } = getExerciseSetModel(ex)
-  const bestE1rmDelta = getE1rmDeltaDirection(bestE1rm, previousBestE1rm)
-  const bestE1rmDeltaMeta = {
-    up: { icon: '↑', color: 'var(--mui-palette-success-main, #2e7d32)', ariaLabel: 'e1RM increased from previous workout' },
-    down: { icon: '↓', color: 'var(--mui-palette-error-main, #d32f2f)', ariaLabel: 'e1RM decreased from previous workout' },
-    flat: { icon: '→', color: 'var(--mui-palette-text-disabled, #bbb)', ariaLabel: 'e1RM unchanged from previous workout' },
-  } as const
+  const deltaDirection = getE1rmDeltaDirection(bestE1rm, previousBestE1rm)
+  const deltaMeta = deltaDirection === 'up'
+    ? { symbol: '↑', color: 'var(--mui-palette-success-main, #2e7d32)', label: 'e1RM increased from previous workout' }
+    : deltaDirection === 'down'
+      ? { symbol: '↓', color: 'var(--mui-palette-error-main, #d32f2f)', label: 'e1RM decreased from previous workout' }
+      : deltaDirection === 'flat'
+        ? { symbol: '→', color: 'var(--mui-palette-text-disabled, #9e9e9e)', label: 'e1RM unchanged from previous workout' }
+        : null
 
   return (
     <tbody
@@ -183,19 +185,12 @@ const SortableExerciseTbody = ({
           )
         })}
         <td style={{ ...cellSx, textAlign: 'right', color: 'var(--mui-palette-text-disabled, #bbb)', fontSize: '0.68rem' }}>
-          {bestE1rm != null ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
-              <span>{`~${Math.round(bestE1rm)}`}</span>
-              {bestE1rmDelta !== 'none' ? (
-                <span
-                  aria-label={bestE1rmDeltaMeta[bestE1rmDelta].ariaLabel}
-                  style={{ color: bestE1rmDeltaMeta[bestE1rmDelta].color, lineHeight: 1 }}
-                >
-                  {bestE1rmDeltaMeta[bestE1rmDelta].icon}
-                </span>
-              ) : null}
+          {bestE1rm != null ? `~${Math.round(bestE1rm)}` : '—'}
+          {deltaMeta && (
+            <span aria-label={deltaMeta.label} style={{ marginLeft: 4, color: deltaMeta.color, fontWeight: 700 }}>
+              {deltaMeta.symbol}
             </span>
-          ) : '—'}
+          )}
         </td>
         <td style={{ ...cellSx,  padding: '0 2px' }}>
           {!arrangeMode && (
@@ -279,8 +274,8 @@ const SortableExerciseTbody = ({
 }
 
 type SortableWorkoutSlotProps = {
-  workout: WorkoutPrisma
   plan: PlanPrisma
+  workout: WorkoutPrisma
   planId: number
   weekId: number
   currentWeekOrder: number
@@ -299,8 +294,8 @@ type SortableWorkoutSlotProps = {
 }
 
 const SortableWorkoutSlot = ({
-  workout,
   plan,
+  workout,
   planId,
   weekId,
   currentWeekOrder,
@@ -445,14 +440,14 @@ const SortableWorkoutSlot = ({
                     const e1rm = computeE1rm(set.weight, set.reps)
                     if (e1rm != null && (bestE1rm == null || e1rm > bestE1rm)) bestE1rm = e1rm
                   }
-                  const previousTrackedExercise = getPreviousTrackedExercise(
+                  const previousExercise = getPreviousTrackedExercise(
                     plan,
                     currentWeekOrder,
                     workout.order,
                     exercise.exercise?.id ?? -1,
                   )
                   let previousBestE1rm: number | null = null
-                  for (const set of previousTrackedExercise?.sets ?? []) {
+                  for (const set of previousExercise?.sets ?? []) {
                     const e1rm = computeE1rm(set.weight, set.reps)
                     if (e1rm != null && (previousBestE1rm == null || e1rm > previousBestE1rm)) previousBestE1rm = e1rm
                   }
@@ -698,8 +693,8 @@ export function PlanSheetWeekBlock({
               return (
                 <SortableWorkoutSlot
                   key={workout.id}
-                  workout={workout}
                   plan={plan}
+                  workout={workout}
                   planId={planId}
                   weekId={week.id}
                   currentWeekOrder={week.order}
