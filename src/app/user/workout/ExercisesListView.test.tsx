@@ -84,6 +84,12 @@ describe('ExercisesListView', () => {
     expect(screen.getByText('Bench Press')).toBeInTheDocument();
   });
 
+  it('calls onEnter when the exercise list view mounts', () => {
+    const onEnter = vi.fn();
+    renderView({workout: buildWorkout(), onEnter, onBack, onSelectExercise, onWorkoutNoteBlur, onCompleteWorkout, onAddExercise});
+    expect(onEnter).toHaveBeenCalledTimes(1);
+  });
+
   it('shows "Mark as Complete" button when workout is not completed', () => {
     renderView({workout: buildWorkout({dateCompleted: null}), onBack, onSelectExercise, onWorkoutNoteBlur, onCompleteWorkout, onAddExercise});
     expect(screen.getByRole('button', {name: /mark as complete/i})).toBeInTheDocument();

@@ -1,5 +1,5 @@
 import React from 'react';
-import {render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 
 vi.mock('next-auth/react', () => ({useSession: () => ({data: null, status: 'unauthenticated'})}));
@@ -73,6 +73,8 @@ const defaultProps = {
   workout: buildWorkout(),
   currentWorkoutId: 1,
   activeExerciseId: 10,
+  previousSetsMap: new Map(),
+  fetchPreviousSets: vi.fn(),
   userExerciseNotes: [],
   onBack: vi.fn(),
   onSlideChange: vi.fn(),
@@ -114,76 +116,74 @@ describe('ExerciseDetailView', () => {
   });
 
   it('fetches previous sets on mount for the active exercise', async () => {
-    renderView(defaultProps);
+    const fetchPreviousSets = vi.fn();
+    renderView({...defaultProps, fetchPreviousSets});
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/exercises/100/previous-sets?currentWorkoutId=1&currentWorkoutExerciseId=10')
-      );
+      expect(fetchPreviousSets).toHaveBeenCalledWith(1, 10, 100);
     });
   });
 
-  it('displays previous workout data when fetch returns results', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockImplementation((input: string | URL | Request) => {
-      const url = String(input);
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve(url.includes('/previous-sets')
-          ? {
-            workouts: [
-              {
-                completedAt: '2026-01-14T12:00:00.000Z',
-                sets: [
-                  {weight: 80, reps: 10, order: 1, e1rm: 106.7},
-                  {weight: 80, reps: 9, order: 2, e1rm: 104},
-                ],
-              },
-              {
-                completedAt: '2026-01-07T12:00:00.000Z',
-                sets: [
-                  {weight: 77.5, reps: 9, order: 1, e1rm: 100.8},
-                ],
-              },
-            ],
-          }
-          : []),
-      });
-    }));
+  it('does not fetch previous sets on mount when active exercise is already cached', async () => {
+    const fetchPreviousSets = vi.fn();
+    renderView({
+      ...defaultProps,
+      fetchPreviousSets,
+      previousSetsMap: new Map([[10, {workouts: []}]]),
+    });
+    await waitFor(() => {
+      expect(fetchPreviousSets).not.toHaveBeenCalled();
+    });
+  });
 
-    renderView(defaultProps);
+  it('displays previous workout data when cache contains results', async () => {
+    renderView({
+      ...defaultProps,
+      previousSetsMap: new Map([[10, {
+        workouts: [
+          {
+            completedAt: '2026-01-14T12:00:00.000Z',
+            sets: [
+              {weight: 80, reps: 10, order: 1, e1rm: 106.7},
+              {weight: 80, reps: 9, order: 2, e1rm: 104},
+            ],
+            workoutName: 'Push Day',
+          },
+          {
+            completedAt: '2026-01-07T12:00:00.000Z',
+            sets: [
+              {weight: 77.5, reps: 9, order: 1, e1rm: 100.8},
+            ],
+            workoutName: 'Push Day',
+          },
+        ],
+      }]]),
+    });
 
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /previous workouts/i})).toBeInTheDocument();
     });
 
-    screen.getByRole('button', {name: /previous workouts/i}).click();
+    fireEvent.click(screen.getByRole('button', {name: /previous workouts/i}));
 
     expect(screen.getByLabelText('Previous workout table 1')).toBeInTheDocument();
-    expect(screen.getByText('Jan 14, 2026')).toBeInTheDocument();
-    expect(screen.getByText('Jan 7, 2026')).toBeInTheDocument();
+    expect(screen.getByText(/Jan.*14.*2026/)).toBeInTheDocument();
+    expect(screen.getByText(/Jan.*7.*2026/)).toBeInTheDocument();
     expect(screen.getByText('106.7')).toBeInTheDocument();
   });
 
   it('shows — for null previous weight or reps', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockImplementation((input: string | URL | Request) => {
-      const url = String(input);
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve(url.includes('/previous-sets')
-          ? {
-            workouts: [
-              {
-                completedAt: '2026-01-14T12:00:00.000Z',
-                sets: [
-                  {weight: null, reps: null, order: 1, e1rm: null},
-                ],
-              },
-            ],
-          }
-          : []),
-      });
-    }));
-
-    renderView(defaultProps);
+    renderView({
+      ...defaultProps,
+      previousSetsMap: new Map([[10, {
+        workouts: [
+          {
+            completedAt: '2026-01-14T12:00:00.000Z',
+            sets: [{weight: null, reps: null, order: 1, e1rm: null}],
+            workoutName: 'Push Day',
+          },
+        ],
+      }]]),
+    });
 
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /previous workouts/i})).toBeInTheDocument();
@@ -192,33 +192,11 @@ describe('ExerciseDetailView', () => {
     expect(screen.getAllByText('—')).toHaveLength(3);
   });
 
-  it('does not show previous workout controls when fetch returns empty', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockImplementation((input: string | URL | Request) => {
-      const url = String(input);
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve(url.includes('/previous-sets')
-          ? {workouts: []}
-          : []),
-      });
-    }));
-
-    renderView(defaultProps);
+  it('does not show previous workout controls when cache is empty', async () => {
+    renderView({...defaultProps, previousSetsMap: new Map([[10, {workouts: []}]])});
 
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalled();
-    });
-    expect(screen.queryByRole('button', {name: /previous workouts/i})).not.toBeInTheDocument();
-  });
-
-  it('does not show previous workout controls when fetch fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network error')));
-
-    renderView(defaultProps);
-
-    // Give it time to settle
-    await waitFor(() => {
-      expect(fetch).toHaveBeenCalled();
+      expect(screen.getByTestId('swiper')).toBeInTheDocument();
     });
     expect(screen.queryByRole('button', {name: /previous workouts/i})).not.toBeInTheDocument();
   });
