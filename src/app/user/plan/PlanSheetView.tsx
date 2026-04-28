@@ -201,6 +201,7 @@ const PlanSheetView = ({
           {sortedWeeks.map((week) => (
             <PlanSheetWeekBlock
               key={week.id}
+              plan={plan}
               week={week}
               planId={planId}
               maxWorkoutCount={maxWorkoutCount}
