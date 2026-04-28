@@ -4,7 +4,7 @@ const CHECK_INS_ROUTE = /\/api\/coach\/check-ins(?:\?.*)?$/;
 const CURRENT_CHECK_IN_ROUTE = '**/api/check-in/current';
 const CHECK_IN_POST_ROUTE = /\/api\/check-in$/;
 const METRIC_POST_ROUTE = /\/api\/metric$/;
-const PHOTO_UPLOAD_ROUTE = /\/api\/check-in\/photos$/;
+const PHOTO_UPLOAD_ROUTE = /\/api\/check-in\/photos\/?(?:\?.*)?$/;
 
 function getIsoWeekStart(weeksAgo = 0): string {
   const date = new Date();
@@ -126,10 +126,12 @@ test('client records bodyweight, macros, and steps in weekly check-in metrics', 
           goalsNextWeek: null,
           coachNotes: null,
           coachReviewedAt: null,
+          coachResponseUrl: null,
           frontPhotoUrl: null,
           backPhotoUrl: null,
           sidePhotoUrl: null,
           customResponses: null,
+          templateSnapshot: null,
         },
         currentWeek: [],
         weekPrior: [],
@@ -208,10 +210,12 @@ test('client submits weekly check-in with photos upload mocked', async ({ page }
           goalsNextWeek: null,
           coachNotes: null,
           coachReviewedAt: null,
+          coachResponseUrl: null,
           frontPhotoUrl: null,
           backPhotoUrl: null,
           sidePhotoUrl: null,
           customResponses: null,
+          templateSnapshot: null,
         },
         currentWeek: [],
         weekPrior: [],
@@ -257,7 +261,33 @@ test('client submits weekly check-in with photos upload mocked', async ({ page }
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ id: 234 }),
+        body: JSON.stringify({
+          checkIn: {
+            id: 234,
+            userId: 'test-user-id',
+            weekStartDate: currentWeek,
+            completedAt: new Date().toISOString(),
+            energyLevel: null,
+            moodRating: null,
+            stressLevel: null,
+            sleepQuality: null,
+            recoveryRating: null,
+            adherenceRating: null,
+            completedWorkouts: 1,
+            plannedWorkouts: 3,
+            weekReview: null,
+            coachMessage: null,
+            goalsNextWeek: null,
+            coachNotes: null,
+            coachReviewedAt: null,
+            coachResponseUrl: null,
+            frontPhotoUrl: null,
+            backPhotoUrl: null,
+            sidePhotoUrl: null,
+            customResponses: null,
+            templateSnapshot: null,
+          },
+        }),
       });
       return;
     }
@@ -266,13 +296,21 @@ test('client submits weekly check-in with photos upload mocked', async ({ page }
 
   await page.goto('/user/check-in');
 
+  const tinyPng = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO5W4x0AAAAASUVORK5CYII=',
+    'base64',
+  );
   await page.locator('input[type="file"]').first().setInputFiles({
-    name: 'front.jpg',
-    mimeType: 'image/jpeg',
-    buffer: Buffer.from('fake-image-data'),
+    name: 'front.png',
+    mimeType: 'image/png',
+    buffer: tinyPng,
   });
 
-  await page.getByRole('button', { name: 'Save' }).first().click(); // photo crop modal save
+  const photoDialog = page.getByRole('dialog').first();
+  await expect(photoDialog).toBeVisible();
+  await expect(photoDialog.getByText(/Adjust - Front Photo/i)).toBeVisible();
+  await expect(photoDialog.getByRole('progressbar')).toBeHidden();
+  await photoDialog.getByRole('button', { name: 'Save' }).click();
   await expect.poll(() => photoUploadCalled).toBeTruthy();
 
   await page.getByRole('button', { name: /Submit Check-in/i }).click();

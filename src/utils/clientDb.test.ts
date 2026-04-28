@@ -131,6 +131,17 @@ describe('clientDb cache helpers', () => {
     expect(entry!.data).toEqual(fakeEvents);
   });
 
+  it('reads events from eventsCache store even when other stores share same user key', async () => {
+    await saveUserDataCache(userId, fakeUserData);
+    await saveEventsCache(userId, fakeEvents);
+
+    const entry = await getEventsCache(userId);
+
+    expect(entry).toBeDefined();
+    expect(Array.isArray(entry!.data)).toBe(true);
+    expect(entry!.data).toEqual(fakeEvents);
+  });
+
   it('saves and retrieves metricsCache', async () => {
     await saveMetricsCache(userId, fakeMetrics);
     const entry = await getMetricsCache(userId);

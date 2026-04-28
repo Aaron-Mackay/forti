@@ -84,14 +84,14 @@ export const parsedEvents = (events: EventPrisma[]): FullCalendarIngestableEvent
       return {
         ...base,
         rrule,
-        duration: { days: differenceInDays(event.endDate, event.startDate) + 1 },
+        duration: { days: differenceInDays(event.endDate, event.startDate) },
       };
     }
 
     return {
       ...base,
       start: event.startDate,
-      end: addDays(event.endDate, 1), // FullCalendar uses exclusive end
+      end: event.endDate,
     };
   });
 }
@@ -100,7 +100,7 @@ export const getEventsOnDate = (dateInfo: DateClickArg, eventsInState: EventPris
   const clickedDate = dateInfo.date;
   return eventsInState.filter(event => {
     const start = event.startDate;
-    const end = event.endDate ?? start;
+    const end = event.endDate ?? addDays(start, 1);
     return start && end && start <= clickedDate && clickedDate < end;
   });
 }
