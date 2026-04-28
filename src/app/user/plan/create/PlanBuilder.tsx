@@ -20,7 +20,7 @@ type EditorSource = 'scratch' | 'template' | 'ai' | 'import'
 export const PlanBuilder = ({ blankPlan, clientId }: { blankPlan: PlanPrisma, clientId?: string }) => {
   const [view, setView] = useState<View>('entry')
   const [weekCount, setWeekCount] = useState('6')
-  const [editorInitialViewMode, setEditorInitialViewMode] = useState<'classic' | 'sheet'>('classic')
+  const [editorInitialViewMode, setEditorInitialViewMode] = useState<'classic' | 'sheet'>('sheet')
   const [editorSource, setEditorSource] = useState<EditorSource>('scratch')
   const { dispatch } = useWorkoutEditorContext()
   const router = useRouter()
@@ -74,7 +74,7 @@ export const PlanBuilder = ({ blankPlan, clientId }: { blankPlan: PlanPrisma, cl
           onSelectTemplates={() => setView('templates')}
           onSelectAi={() => setView('ai')}
           onSelectScratch={() => {
-            setEditorInitialViewMode('classic')
+            setEditorInitialViewMode('sheet')
             setEditorSource('scratch')
             setView('editor')
           }}
@@ -85,7 +85,7 @@ export const PlanBuilder = ({ blankPlan, clientId }: { blankPlan: PlanPrisma, cl
         <TemplateBrowserScreen
           onSelect={(wc) => {
             setWeekCount(wc)
-            setEditorInitialViewMode('classic')
+            setEditorInitialViewMode('sheet')
             setEditorSource('template')
             setView('editor')
           }}
@@ -96,7 +96,7 @@ export const PlanBuilder = ({ blankPlan, clientId }: { blankPlan: PlanPrisma, cl
         <AiFormScreen
           onSuccess={(wc) => {
             setWeekCount(wc)
-            setEditorInitialViewMode('classic')
+            setEditorInitialViewMode('sheet')
             setEditorSource('ai')
             setView('editor')
           }}

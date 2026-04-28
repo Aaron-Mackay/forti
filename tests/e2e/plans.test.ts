@@ -476,6 +476,7 @@ test.describe('Plan editor (scratch)', () => {
     await page.getByRole('button', { name: /^\+ workout$/i }).first().click();
     await expect(workoutChips).toHaveCount(initialCards + 1);
   });
+
 });
 
 // ── BFR preset toggle ─────────────────────────────────────────────────────────

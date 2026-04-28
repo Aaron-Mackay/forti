@@ -191,7 +191,7 @@ export const PlanEditorScreen = ({
   weekCount,
   setWeekCount,
   clientId,
-  initialViewMode = 'classic',
+  initialViewMode = 'sheet',
   source = 'scratch',
 }: PlanEditorScreenProps) => {
   const { statePlan, dispatch } = useNewPlan()

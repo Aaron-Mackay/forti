@@ -28,10 +28,10 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
   const { allExercises, dispatch, debouncedDispatch } = useWorkoutEditorContext();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState<'add' | 'change'>('add');
-  const [exerciseMenu, setExerciseMenu] = useState<null | { anchor: HTMLElement; exerciseId: number }>(null);
-  const [changeExerciseId, setChangeExerciseId] = useState<number | null>(null);
-  const [detailsExerciseId, setDetailsExerciseId] = useState<number | null>(null);
-  const [dropEnabledExerciseIds, setDropEnabledExerciseIds] = useState<Set<number>>(new Set());
+  const [exerciseMenu, setExerciseMenu] = useState<null | { anchor: HTMLElement; rowIndex: number }>(null);
+  const [changeExerciseRowIndex, setChangeExerciseRowIndex] = useState<number | null>(null);
+  const [detailsExerciseRowIndex, setDetailsExerciseRowIndex] = useState<number | null>(null);
+  const [dropEnabledExerciseRows, setDropEnabledExerciseRows] = useState<Set<number>>(new Set());
   const [notesExpanded, setNotesExpanded] = useState(false);
   const sortedWeeks = [...plan.weeks].sort((a, b) => a.order - b.order);
 
@@ -68,10 +68,11 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
   });
 
   // For each week, find the workout at the selected order slot
-  const workoutsByWeek = sortedWeeks.map(week => ({
-    week,
-    workout: week.workouts.find(w => w.order === selectedWorkoutOrder) ?? null,
-  }));
+  const workoutsByWeek = sortedWeeks.map((week) => {
+    const workout = week.workouts.find((w) => w.order === selectedWorkoutOrder) ?? null;
+    const sortedExercises = workout ? [...workout.exercises].sort((a, b) => a.order - b.order) : [];
+    return { week, workout, sortedExercises };
+  });
 
   // First non-completed week is "active" (current); past = completed
   const activeWeekIdx = sortedWeeks.findIndex(w => getWeekStatus(w) !== 'completed');
@@ -79,41 +80,29 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
     ? sortedWeeks[activeWeekIdx].order
     : sortedWeeks[sortedWeeks.length - 1]?.order ?? 1;
 
-  // Collect all unique exercises across all weeks for this workout slot (by exercise.id)
-  // Order preserves first occurrence across weeks in order
-  const exerciseMap = new Map<
-    number,
-    { exerciseId: number; name: string; category: string | null; repRange: string | null; restTime: string | null; targetRpe: number | null; targetRir: number | null }
-  >();
-  for (const { workout } of workoutsByWeek) {
-    if (!workout) continue;
-    const sorted = [...workout.exercises].sort((a, b) => a.order - b.order);
-    for (const ex of sorted) {
-      const eid = ex.exercise?.id;
-      if (eid != null && !exerciseMap.has(eid)) {
-        exerciseMap.set(eid, {
-          exerciseId: eid,
-          name: ex.exercise?.name ?? '(unnamed)',
-          category: ex.exercise?.category ?? null,
-          repRange: ex.repRange,
-          restTime: ex.restTime,
-          targetRpe: ex.targetRpe,
-          targetRir: ex.targetRir,
-        });
-      }
+  const maxExerciseCount = Math.max(0, ...workoutsByWeek.map(({ sortedExercises }) => sortedExercises.length));
+  const exerciseRows: Array<{
+    rowIndex: number;
+    templateExercise: (typeof workoutsByWeek)[number]['sortedExercises'][number];
+  }> = [];
+  for (let rowIndex = 0; rowIndex < maxExerciseCount; rowIndex += 1) {
+    const templateExercise = workoutsByWeek
+      .map(({ sortedExercises }) => sortedExercises[rowIndex] ?? null)
+      .find((exercise) => exercise != null);
+    if (templateExercise) {
+      exerciseRows.push({ rowIndex, templateExercise });
     }
   }
-  const exerciseList = Array.from(exerciseMap.values());
 
   // Active workout (for + Exercise action)
   const activeWorkout = workoutsByWeek.find(x => x.week.order === activeWeekOrder)?.workout ?? null;
-  const targetExerciseId = exerciseMenu?.exerciseId ?? changeExerciseId ?? detailsExerciseId;
-  const menuRows = targetExerciseId != null
+  const targetExerciseRowIndex = exerciseMenu?.rowIndex ?? changeExerciseRowIndex ?? detailsExerciseRowIndex;
+  const menuRows = targetExerciseRowIndex != null
     ? workoutsByWeek
-        .map(({ week, workout }) => ({
+        .map(({ week, workout, sortedExercises }) => ({
           week,
           workout,
-          ex: workout?.exercises.find((exercise) => exercise.exercise?.id === targetExerciseId) ?? null,
+          ex: sortedExercises[targetExerciseRowIndex] ?? null,
         }))
         .filter(({ ex }) => ex)
     : [];
@@ -122,7 +111,9 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
     workout && ex ? [{ weekId: week.id, workoutId: workout.id, exercise: ex }] : [],
   );
   const menuHasTrailingDrops = menuTargets.some((target) => hasTrailingDropSets(target.exercise));
-  const menuDropEnabled = targetExerciseId != null ? (dropEnabledExerciseIds.has(targetExerciseId) || menuHasTrailingDrops) : false;
+  const menuDropEnabled = targetExerciseRowIndex != null
+    ? (dropEnabledExerciseRows.has(targetExerciseRowIndex) || menuHasTrailingDrops)
+    : false;
   const lastWeek = sortedWeeks[sortedWeeks.length - 1] ?? null;
   const canRemoveWeek = sortedWeeks.length > 1;
 
@@ -146,7 +137,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
           onClick={() => {
             const newOrder = maxWorkoutCount + 1;
             setSelectedWorkoutOrder(newOrder);
-            setChangeExerciseId(null);
+            setChangeExerciseRowIndex(null);
             const activeWeek = sortedWeeks.find(w => w.order === activeWeekOrder);
             if (activeWeek) {
               dispatch({ type: 'ADD_WORKOUT', planId, weekId: activeWeek.id });
@@ -327,15 +318,22 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
               </tr>
             </thead>
             <tbody>
-            {exerciseList.map(({ exerciseId, name, category, repRange, restTime, targetRpe, targetRir }) => {
-              // Find this exercise's WorkoutExercise entry per week
-              const exByWeek = workoutsByWeek.map(({ week, workout }) => ({
+            {exerciseRows.map(({ rowIndex, templateExercise }) => {
+              const { name, category, repRange, restTime, targetRpe, targetRir } = {
+                name: templateExercise.exercise?.name ?? '(unnamed)',
+                category: templateExercise.exercise?.category ?? null,
+                repRange: templateExercise.repRange,
+                restTime: templateExercise.restTime,
+                targetRpe: templateExercise.targetRpe,
+                targetRir: templateExercise.targetRir,
+              };
+              const exByWeek = workoutsByWeek.map(({ week, workout, sortedExercises }) => ({
                 week,
                 workout,
-                ex: workout?.exercises.find(e => e.exercise?.id === exerciseId) ?? null,
+                ex: sortedExercises[rowIndex] ?? null,
               }));
               const isCardio = category === 'cardio';
-              const dropControlsEnabled = dropEnabledExerciseIds.has(exerciseId) || exByWeek.some(({ ex }) => {
+              const dropControlsEnabled = dropEnabledExerciseRows.has(rowIndex) || exByWeek.some(({ ex }) => {
                 if (!ex) return false;
                 const regularSets = ex.sets.filter((set) => !set.isDropSet).sort((a, b) => a.order - b.order);
                 const lastRegularSet = regularSets[regularSets.length - 1];
@@ -356,7 +354,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
               const metaParts = buildExerciseMetaParts({ repRange, restTime, targetRpe, targetRir });
 
               return (
-                <tr key={exerciseId} style={{ borderTop: '1px solid var(--mui-palette-divider, #e0e0e0)' }}>
+                <tr key={rowIndex} style={{ borderTop: '1px solid var(--mui-palette-divider, #e0e0e0)' }}>
                   {/* Exercise name + meta */}
                   <td style={{ padding: '8px 12px 8px 0', verticalAlign: 'top' }}>
                     <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 0.5 }}>
@@ -366,18 +364,18 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
                           metaParts={metaParts}
                           isBfr={isBfr}
                           onClick={() => {
-                            setChangeExerciseId(exerciseId);
+                            setChangeExerciseRowIndex(rowIndex);
                             setPickerMode('change');
                             setPickerOpen(true);
                           }}
                         />
                       </Box>
-                      <IconButton
-                        size="small"
-                        sx={{ p: 0.25, opacity: 0.6, '&:hover': { opacity: 1 } }}
-                        onClick={(event) => setExerciseMenu({ anchor: event.currentTarget, exerciseId })}
-                        aria-label="Exercise options"
-                      >
+                        <IconButton
+                          size="small"
+                          sx={{ p: 0.25, opacity: 0.6, '&:hover': { opacity: 1 } }}
+                        onClick={(event) => setExerciseMenu({ anchor: event.currentTarget, rowIndex })}
+                          aria-label="Exercise options"
+                        >
                         <MoreVertIcon sx={{ fontSize: '0.9rem' }} />
                       </IconButton>
                     </Box>
@@ -548,7 +546,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
                     color="primary"
                     sx={{ cursor: 'pointer' }}
                     onClick={() => {
-                      setChangeExerciseId(null);
+                      setChangeExerciseRowIndex(null);
                       setPickerMode('add');
                       setPickerOpen(true);
                     }}
@@ -601,11 +599,11 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
         title={pickerMode === 'change' ? 'Change Exercise' : 'Add Exercise'}
         onClose={() => {
           setPickerOpen(false);
-          setChangeExerciseId(null);
+          setChangeExerciseRowIndex(null);
         }}
         onSelect={(exercise) => {
           setPickerOpen(false);
-          if (pickerMode === 'change' && targetExerciseId != null) {
+          if (pickerMode === 'change' && targetExerciseRowIndex != null) {
             menuRows.forEach(({ week, workout, ex }) => {
               if (workout && ex) {
                 dispatch({
@@ -621,10 +619,10 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
               }
             });
             setExerciseMenu(null);
-            setChangeExerciseId(null);
+            setChangeExerciseRowIndex(null);
             return;
           }
-          setChangeExerciseId(null);
+          setChangeExerciseRowIndex(null);
           const activeWeekEntry = workoutsByWeek.find(x => x.workout?.id === activeWorkout?.id);
           if (activeWeekEntry && activeWorkout) {
             dispatch({
@@ -642,8 +640,8 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
         {menuExercise?.exercise?.category !== 'cardio' && (
           <ExerciseMenuActionItem
             onClick={() => {
-              if (!exerciseMenu) return;
-              setDetailsExerciseId(exerciseMenu.exerciseId);
+            if (!exerciseMenu) return;
+              setDetailsExerciseRowIndex(exerciseMenu.rowIndex);
               setExerciseMenu(null);
             }}
           >
@@ -655,17 +653,17 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
           dropSetsEnabled={menuDropEnabled}
           isBfr={Boolean(menuExercise?.isBfr)}
           onToggleDropSets={(checked) => {
-            if (targetExerciseId == null) return;
+            if (targetExerciseRowIndex == null) return;
             if (!checked) {
               removeTrailingDropSets({ dispatch, planId, targets: menuTargets });
-              setDropEnabledExerciseIds((prev) => {
+              setDropEnabledExerciseRows((prev) => {
                 const next = new Set(prev);
-                next.delete(targetExerciseId);
+                next.delete(targetExerciseRowIndex);
                 return next;
               });
               return;
             }
-            setDropEnabledExerciseIds((prev) => new Set(prev).add(targetExerciseId));
+            setDropEnabledExerciseRows((prev) => new Set(prev).add(targetExerciseRowIndex));
           }}
           onToggleBfr={(checked) => {
             setBfrEnabled({ dispatch, planId, targets: menuTargets, enabled: checked });
@@ -682,10 +680,10 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
         </ExerciseMenuActionItem>
       </Menu>
       <ExerciseDetailsDialog
-        open={detailsExerciseId != null}
+        open={detailsExerciseRowIndex != null}
         repRange={menuExercise?.repRange ?? null}
         restTime={menuExercise?.restTime ?? null}
-        onClose={() => setDetailsExerciseId(null)}
+        onClose={() => setDetailsExerciseRowIndex(null)}
         onSave={({ repRange: nextRepRange, restTime: nextRestTime }) => {
           menuRows.forEach(({ week, workout, ex }) => {
             if (!workout || !ex) return;
@@ -706,7 +704,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
               restTime: nextRestTime,
             });
           });
-          setDetailsExerciseId(null);
+          setDetailsExerciseRowIndex(null);
         }}
       />
     </Box>
