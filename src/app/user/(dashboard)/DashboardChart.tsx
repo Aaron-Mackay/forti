@@ -5,7 +5,6 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {Box, Button, ButtonGroup, Skeleton} from "@mui/material";
 import {addDays, subDays, subMonths} from "date-fns";
 import {MetricPrisma, EventPrisma} from "@/types/dataTypes";
-import {BuiltInMetricKey} from "@/app/user/calendar/MetricBar";
 import {getDefinedBlockColor} from "@/app/user/calendar/utils";
 import {DataPoint, Series} from "@/app/user/(dashboard)/utils";
 import {GestureHandlers, useGesture} from "@use-gesture/react";
@@ -28,11 +27,13 @@ type Selection = {
   xaxis: { min: number; max: number };
 }
 
-export default function DashboardChart({metrics = [], blocks = []}: { metrics: MetricPrisma[], blocks: EventPrisma[] }) {
-  const [selectedMetrics, setSelectedMetrics] = useState<BuiltInMetricKey[]>(['weight']);
-  const metricLabelify = useCallback((metricKey: BuiltInMetricKey): string => metricKey[0].toUpperCase() + metricKey.slice(1), []);
+type DashboardMetricKey = 'weight' | 'calories' | 'steps';
 
-  const metricDataByType = useMemo<Record<BuiltInMetricKey, DataPoint[]>>(() => ({
+export default function DashboardChart({metrics = [], blocks = []}: { metrics: MetricPrisma[], blocks: EventPrisma[] }) {
+  const [selectedMetrics, setSelectedMetrics] = useState<DashboardMetricKey[]>(['weight']);
+  const metricLabelify = useCallback((metricKey: DashboardMetricKey): string => metricKey[0].toUpperCase() + metricKey.slice(1), []);
+
+  const metricDataByType = useMemo<Record<DashboardMetricKey, DataPoint[]>>(() => ({
     weight: metrics
       .filter(dm => dm.weight !== null)
       .map(dm => [new Date(dm.date).getTime(), dm.weight]),
@@ -92,7 +93,7 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
     }))
   ), [blocks]);
 
-  const formatLabel = useCallback((val: number, metricKey: BuiltInMetricKey): string => {
+  const formatLabel = useCallback((val: number, metricKey: DashboardMetricKey): string => {
     switch (metricKey) {
       case 'weight':
         return val.toPrecision(3);  // 3 significant figures
@@ -293,7 +294,7 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
   );
 
   const toggleSelectedMetric = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const clickedBuiltInMetricKey = e.currentTarget.value as BuiltInMetricKey
+    const clickedBuiltInMetricKey = e.currentTarget.value as DashboardMetricKey
     setSelectedMetrics(prevState => {
       if (prevState.includes(clickedBuiltInMetricKey)) {
         return prevState.filter(mk => mk != clickedBuiltInMetricKey)
