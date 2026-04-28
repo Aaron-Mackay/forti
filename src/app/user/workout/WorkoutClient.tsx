@@ -1,5 +1,6 @@
 'use client';
 
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {useSearchParams} from 'next/navigation';
 import {useWorkoutSession} from './useWorkoutSession';
 import {UserPrisma} from '@/types/dataTypes';
@@ -14,11 +15,15 @@ import PlansListView from '@/app/user/workout/PlansListView';
 import WorkoutCompletionModal from '@/app/user/workout/WorkoutCompletionModal';
 import {StopwatchProvider} from '@/app/user/workout/StopwatchContext';
 import {Alert, Collapse} from '@mui/material';
+import type {PreviousExerciseHistory} from '@lib/contracts/exerciseHistory';
 
 export default function WorkoutClient({userData}: {userData: UserPrisma}) {
   const searchParams = useSearchParams();
   const workoutIdParam = searchParams.get('workoutId');
   const initialWorkoutId = workoutIdParam ? Number(workoutIdParam) : null;
+  const [previousSetsMap, setPreviousSetsMap] = useState<Map<number, PreviousExerciseHistory>>(new Map());
+  const previousSetsMapRef = useRef<Map<number, PreviousExerciseHistory>>(new Map());
+  const previousSetsInFlightRef = useRef<Set<number>>(new Set());
 
   const {
     userDataState,
@@ -47,6 +52,41 @@ export default function WorkoutClient({userData}: {userData: UserPrisma}) {
     handleRemoveExercise,
   } = useWorkoutSession(userData, initialWorkoutId);
 
+  useEffect(() => {
+    previousSetsMapRef.current = previousSetsMap;
+  }, [previousSetsMap]);
+
+  const fetchPreviousSets = useCallback(async (currentWorkoutId: number, workoutExerciseId: number, exerciseId: number) => {
+    if (previousSetsMapRef.current.has(workoutExerciseId) || previousSetsInFlightRef.current.has(workoutExerciseId)) return;
+    previousSetsInFlightRef.current.add(workoutExerciseId);
+    try {
+      const res = await fetch(
+        `/api/exercises/${exerciseId}/previous-sets?currentWorkoutId=${currentWorkoutId}&currentWorkoutExerciseId=${workoutExerciseId}`
+      );
+      const history: PreviousExerciseHistory = res.ok ? await res.json() : {workouts: []};
+      setPreviousSetsMap(prev => new Map(prev).set(workoutExerciseId, history));
+    } catch {
+      setPreviousSetsMap(prev => new Map(prev).set(workoutExerciseId, {workouts: []}));
+    } finally {
+      previousSetsInFlightRef.current.delete(workoutExerciseId);
+    }
+  }, []);
+
+  const prefetchPreviousSetsForWorkout = useCallback(async () => {
+    if (!selectedWorkout) return;
+    const candidates = selectedWorkout.exercises
+      .filter(ex => ex.exercise.category !== 'cardio')
+      .filter(ex => !previousSetsMapRef.current.has(ex.id));
+
+    const batchSize = 4;
+    for (let i = 0; i < candidates.length; i += batchSize) {
+      const batch = candidates.slice(i, i + batchSize);
+      await Promise.allSettled(
+        batch.map(ex => fetchPreviousSets(selectedWorkout.id, ex.id, ex.exerciseId))
+      );
+    }
+  }, [fetchPreviousSets, selectedWorkout]);
+
   // View switching
   let view;
   if (selectedPlan && selectedWeek && selectedWorkout && selectedExerciseId) {
@@ -55,6 +95,8 @@ export default function WorkoutClient({userData}: {userData: UserPrisma}) {
         workout={selectedWorkout}
         currentWorkoutId={selectedWorkout.id}
         activeExerciseId={selectedExerciseId}
+        previousSetsMap={previousSetsMap}
+        fetchPreviousSets={fetchPreviousSets}
         userExerciseNotes={userDataState.userExerciseNotes}
         onBack={navigateBack}
         onSlideChange={(swiper) => {
@@ -76,6 +118,7 @@ export default function WorkoutClient({userData}: {userData: UserPrisma}) {
     view = (
       <ExercisesListView
         workout={selectedWorkout}
+        onEnter={prefetchPreviousSetsForWorkout}
         onBack={navigateBack}
         onSelectExercise={setSelectedExerciseId}
         onWorkoutNoteBlur={handleWorkoutNoteBlur}
