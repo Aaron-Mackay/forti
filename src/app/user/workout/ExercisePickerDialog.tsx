@@ -3,6 +3,7 @@
 import {useEffect, useState} from 'react';
 import {useExerciseList} from '@lib/hooks/api/useExerciseList';
 import {
+  Alert,
   Box,
   CircularProgress,
   Dialog,
@@ -176,6 +177,11 @@ export default function ExercisePickerDialog({
       </Box>
       <Divider />
       <DialogContent sx={{p: 0, overflowY: 'auto', flex: 1}}>
+        {!loading && !navigator.onLine && exercises.length === 0 && (
+          <Alert severity="info" sx={{m: 2}}>
+            Offline and no cached exercise library yet. Go online once to load exercises for offline use.
+          </Alert>
+        )}
         {loading ? (
           <Box sx={{display: 'flex', justifyContent: 'center', p: 3}}>
             <CircularProgress size={28} />

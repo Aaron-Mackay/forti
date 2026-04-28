@@ -1,5 +1,5 @@
 import {Divider, Paper, styled} from "@mui/material";
-import {dateAndWeek, withOpacity} from "@/app/user/calendar/utils";
+import {dateAndWeek, toInclusiveEndDate, withOpacity} from "@/app/user/calendar/utils";
 import React from "react";
 import {EventPrisma} from "@/types/dataTypes";
 
@@ -17,7 +17,7 @@ export function EventListItem(props: { onClick: () => void, event: EventPrisma, 
       <span style={{textAlign: "center"}}>
                   {props.event.startDate && dateAndWeek(props.event.startDate)}
         <br/><Divider sx={{my: 1}}/>
-        {props.event.endDate && dateAndWeek(props.event.endDate)}
+        {props.event.endDate && dateAndWeek(toInclusiveEndDate(props.event.endDate))}
       </span>
     </div>
   </Item>);

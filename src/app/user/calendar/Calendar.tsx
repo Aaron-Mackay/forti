@@ -14,7 +14,7 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import CalendarBottomDrawer from "./CalendarBottomDrawer";
 import {APPBAR_HEIGHT, DRAWER_WIDTH} from "@/components/CustomAppBar";
 import { useAppBar } from '@lib/providers/AppBarProvider';
-import {format, isAfter, isBefore, isSameDay} from 'date-fns';
+import {addDays, format, isAfter, isBefore, isSameDay, startOfDay} from 'date-fns';
 import {getEventsOnDate, hasMeaningfulEventChanges, parsedEvents} from "@/app/user/calendar/utils";
 import {EventType} from "@/generated/prisma/browser";
 import {CalendarRightDrawer} from "@/app/user/calendar/CalendarRightDrawer";
@@ -91,12 +91,13 @@ export default function Calendar({events, metrics, userId}: Props) {
 
   const eventsOnSelectedDate: EventPrisma[] = useMemo(() => {
     if (!selectedDate) return [];
+    const normalizedSelectedDate = startOfDay(selectedDate);
     return eventsInState.filter(event => {
-      const start = event.startDate;
-      const end = event.endDate ?? start;
+      const start = startOfDay(event.startDate);
+      const end = event.endDate ? startOfDay(event.endDate) : addDays(start, 1);
       return (
-        (isSameDay(selectedDate, start) || isAfter(selectedDate, start)) &&
-        isBefore(selectedDate, end)
+        (isSameDay(normalizedSelectedDate, start) || isAfter(normalizedSelectedDate, start)) &&
+        isBefore(normalizedSelectedDate, end)
       );
     });
   }, [selectedDate, eventsInState]);

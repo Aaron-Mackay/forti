@@ -135,3 +135,63 @@ test.describe('Calendar — view toggle', () => {
     await expect(page.locator('.fc-multimonth')).toBeVisible();
   });
 });
+
+test.describe('Calendar date boundary regression checks', () => {
+  test('events ending on the prior day do not appear on the next day, and inclusive end displays correctly', async ({page}) => {
+    const suffix = Date.now();
+    const overflowEventName = `e2e-overflow-guard-${suffix}`;
+    const inclusiveEndEventName = `e2e-inclusive-end-${suffix}`;
+
+    const userDataRes = await page.request.get('/api/user-data');
+    expect(userDataRes.ok()).toBeTruthy();
+    const userData = await userDataRes.json() as {id: string};
+    const userId = userData.id;
+
+    const createEvent = async (payload: Record<string, unknown>) => {
+      const res = await page.request.post('/api/event', {data: payload});
+      expect(res.ok()).toBeTruthy();
+      return res.json() as Promise<{event: {id: number}}>;
+    };
+
+    // Event should include up to Apr 9 only (exclusive end Apr 10).
+    const overflowEvent = await createEvent({
+      userId,
+      name: overflowEventName,
+      eventType: 'CustomEvent',
+      startDate: '2026-04-01',
+      endDate: '2026-04-10',
+    });
+
+    // Event should include Apr 10,11,12 (exclusive end Apr 13).
+    const inclusiveEndEvent = await createEvent({
+      userId,
+      name: inclusiveEndEventName,
+      eventType: 'CustomEvent',
+      startDate: '2026-04-10',
+      endDate: '2026-04-13',
+    });
+
+    try {
+      await page.goto('/user/calendar');
+
+      // Click Apr 10 and open day drawer list.
+      await page.locator('.fc-day[data-date="2026-04-10"]').first().click();
+      const drawer = page.locator('.MuiDrawer-paperAnchorBottom');
+      await expect(drawer).toBeVisible({timeout: 5_000});
+
+      // Prior event (ending Apr 9 inclusive) must not appear on Apr 10.
+      await expect(drawer.getByText(overflowEventName)).toHaveCount(0);
+      // New event should appear on Apr 10.
+      await expect(drawer.getByText(inclusiveEndEventName)).toBeVisible();
+
+      // Open event details and verify displayed inclusive end date is Apr 12.
+      await drawer.getByText(inclusiveEndEventName).click();
+      await expect(drawer.getByText(inclusiveEndEventName)).toBeVisible();
+      await expect(drawer.getByText(/Sun Apr 12 2026/)).toBeVisible();
+      await expect(drawer.getByText(/Mon Apr 13 2026/)).toHaveCount(0);
+    } finally {
+      await page.request.delete(`/api/event/${overflowEvent.event.id}`);
+      await page.request.delete(`/api/event/${inclusiveEndEvent.event.id}`);
+    }
+  });
+});

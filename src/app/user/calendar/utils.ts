@@ -1,4 +1,4 @@
-import {addDays, differenceInDays, format, getISOWeek, subDays} from "date-fns";
+import {addDays, differenceInCalendarDays, format, getISOWeek, startOfDay, subDays} from "date-fns";
 import {BlockSubtype, EventType} from "@/generated/prisma/browser";
 import {EventPrisma} from "@/types/dataTypes";
 import {DateClickArg} from "@fullcalendar/interaction";
@@ -15,7 +15,7 @@ export const hhMmToMin = (time: string): number => {
 }
 
 export const dateAndWeek = (date: Date) => {
-  const typedDate: Date = typeof date === "string" ? new Date(date) : date
+  const typedDate: Date = startOfDay(typeof date === "string" ? new Date(date) : date)
   return `${typedDate.toDateString()} (Wk ${getISOWeek(typedDate)})`
 }
 export const getDefinedBlockColor = (blockSubtype: BlockSubtype): string => {
@@ -38,9 +38,13 @@ export const getEventColor = (event: EventPrisma): string | undefined => {
   return undefined;
 };
 
-export const toInclusiveEndDate = (exclusiveEndDate: Date): Date => subDays(exclusiveEndDate, 1);
+const normalizeDate = (date: Date): Date => startOfDay(date);
 
-export const toExclusiveEndDate = (inclusiveEndDate: Date): Date => addDays(inclusiveEndDate, 1);
+export const toInclusiveEndDate = (exclusiveEndDate: Date): Date =>
+  subDays(normalizeDate(exclusiveEndDate), 1);
+
+export const toExclusiveEndDate = (inclusiveEndDate: Date): Date =>
+  addDays(normalizeDate(inclusiveEndDate), 1);
 
 type FullCalendarBaseProps = {
   id: string,
@@ -77,30 +81,32 @@ export const parsedEvents = (events: EventPrisma[]): FullCalendarIngestableEvent
     };
 
     if (event.recurrenceFrequency) {
-      let rrule = `DTSTART:${formatIcalDate(event.startDate)}\nRRULE:FREQ=${event.recurrenceFrequency}`;
+      const normalizedStart = normalizeDate(event.startDate);
+      const normalizedEnd = normalizeDate(event.endDate);
+      let rrule = `DTSTART:${formatIcalDate(normalizedStart)}\nRRULE:FREQ=${event.recurrenceFrequency}`;
       if (event.recurrenceEnd) {
         rrule += `;UNTIL=${formatIcalDate(event.recurrenceEnd)}`;
       }
       return {
         ...base,
         rrule,
-        duration: { days: differenceInDays(event.endDate, event.startDate) },
+        duration: { days: differenceInCalendarDays(normalizedEnd, normalizedStart) },
       };
     }
 
     return {
       ...base,
-      start: event.startDate,
-      end: event.endDate,
+      start: normalizeDate(event.startDate),
+      end: normalizeDate(event.endDate),
     };
   });
 }
 
 export const getEventsOnDate = (dateInfo: DateClickArg, eventsInState: EventPrisma[]): EventPrisma[] => {
-  const clickedDate = dateInfo.date;
+  const clickedDate = normalizeDate(dateInfo.date);
   return eventsInState.filter(event => {
-    const start = event.startDate;
-    const end = event.endDate ?? addDays(start, 1);
+    const start = normalizeDate(event.startDate);
+    const end = event.endDate ? normalizeDate(event.endDate) : addDays(start, 1);
     return start && end && start <= clickedDate && clickedDate < end;
   });
 }
@@ -136,7 +142,7 @@ export const eventOccursInYear = (event: EventPrisma, year: number): boolean => 
     yearEnd,
   );
 }
-const eventDateKey = (date: Date | null): string => date ? format(date, 'yyyy-MM-dd') : '';
+const eventDateKey = (date: Date | null): string => date ? format(normalizeDate(date), 'yyyy-MM-dd') : '';
 
 const eventContentKey = (event: EventPrisma): string => [
   event.id,
