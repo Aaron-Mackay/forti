@@ -143,7 +143,7 @@ export default function MetricsSummaryTable({
 
   return (
     <Box>
-      <Table size="small" sx={{ '& .MuiTableCell-root': { px: 1 } }}>
+      <Table size="small" sx={{ '& .MuiTableCell-root': { px: 1 } }} data-testid="summary-table">
         <TableHead>
           <TableRow>
             <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, ...cellSx }}>Metric</TableCell>

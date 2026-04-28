@@ -273,7 +273,7 @@ export default function MetricsDailyBreakdown({
   return (
     <Box sx={{ position: 'relative', minWidth: 0 }}>
       <Box ref={scrollRef} sx={{ overflowX: 'auto' }} onScroll={handleScroll}>
-        <Table size="small" sx={{ width: '100%', '& .MuiTableCell-root': { px: 1 } }}>
+        <Table size="small" sx={{ width: '100%', '& .MuiTableCell-root': { px: 1 } }} data-testid="breakdown-table">
           <TableHead>
             <TableRow>
               {showMetricColumn && <TableCell sx={stickyMetricHeaderSx}>Metric</TableCell>}

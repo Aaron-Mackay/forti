@@ -189,28 +189,46 @@ test('client records bodyweight, macros, and steps in weekly check-in metrics', 
   await expect(page.getByText('Last 2 weeks of metrics').first()).toBeVisible({ timeout: 15_000 });
   const toggleBreakdown = page.getByRole('button', { name: 'Toggle daily breakdown' }).first();
   await expect(toggleBreakdown).toBeVisible({ timeout: 15_000 });
+  await toggleBreakdown.click();
 
-  const weightRow = page.locator('tr').filter({ hasText: /Weight \(kg\)/i }).first();
-  await expect.poll(async () => {
-    if (await weightRow.isVisible()) return true;
-    await toggleBreakdown.click();
-    return weightRow.isVisible();
-  }, { timeout: 15_000 }).toBe(true);
+  const summaryTable = page.getByTestId('summary-table');
+  const breakdownTable = page.getByTestId('breakdown-table');
 
-  const caloriesRow = page.locator('tr').filter({ hasText: /Calories \(kcal\)/i }).first();
-  const proteinRow = page.locator('tr').filter({ hasText: /Protein \(g\)/i }).first();
-  const carbsRow = page.locator('tr').filter({ hasText: /Carbs \(g\)/i }).first();
-  const fatRow = page.locator('tr').filter({ hasText: /Fat \(g\)/i }).first();
-  const stepsRow = page.locator('tr').filter({ hasText: /Steps/i }).first();
+  const getInputForMetric = async (metricName: RegExp) => {
+    const labelRows = summaryTable.locator('tr');
 
-  const weightInput = weightRow.locator('input[type="number"]').first();
+    const rowCount = await labelRows.count();
+
+    for (let i = 0; i < rowCount; i++) {
+      const row = labelRows.nth(i);
+
+      if (await row.filter({ hasText: metricName }).count()) {
+        return breakdownTable
+          .locator('tr')
+          .nth(i)
+          .locator('input[type="number"]')
+          .first();
+      }
+    }
+
+    throw new Error(`Could not find metric row: ${metricName}`);
+  };
+
+  const weightInput = await getInputForMetric(/Weight \(kg\)/i);
+  const caloriesInput = await getInputForMetric(/Calories/i);
+  const proteinInput = await getInputForMetric(/Protein \(g\)/i);
+  const carbsInput = await getInputForMetric(/Carbs \(g\)/i);
+  const fatInput = await getInputForMetric(/Fat \(g\)/i);
+  const stepsInput = await getInputForMetric(/Steps/i);
+
   await expect(weightInput).toBeVisible({ timeout: 15_000 });
+
   await weightInput.fill('82.4');
-  await caloriesRow.locator('input[type="number"]').first().fill('2300');
-  await proteinRow.locator('input[type="number"]').first().fill('180');
-  await carbsRow.locator('input[type="number"]').first().fill('250');
-  await fatRow.locator('input[type="number"]').first().fill('70');
-  await stepsRow.locator('input[type="number"]').first().fill('10200');
+  await caloriesInput.fill('2300');
+  await proteinInput.fill('180');
+  await carbsInput.fill('250');
+  await fatInput.fill('70');
+  await stepsInput.fill('10200');
 
   await page.waitForTimeout(700); // metric saves are debounced in the client
   expect(metricCalls).toBeGreaterThan(0);
