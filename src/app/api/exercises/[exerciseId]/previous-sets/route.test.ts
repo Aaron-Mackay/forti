@@ -210,7 +210,6 @@ describe('GET /api/exercises/[exerciseId]/previous-sets', () => {
           id: {not: 42},
         }),
         orderBy: {dateCompleted: 'desc'},
-        take: 3,
       }),
     );
   });

@@ -3,6 +3,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from "@lib/apiError";
 import {buildPreviousWorkoutFilter, resolveCurrentWorkoutCompletedAt} from '@lib/exerciseQueries';
+import { selectPreviousWorkoutCandidate } from '@lib/previousWorkoutSelector';
 
 export async function GET(req: NextRequest, props: { params: Promise<{ exerciseId: string }> }) {
   const params = await props.params;
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ exerciseI
     const user = session.user;
     const completedAt = await resolveCurrentWorkoutCompletedAt(currentWorkoutId);
 
-    const previousWorkoutExercise = await prisma.workoutExercise.findFirst({
+    const previousWorkoutExercises = await prisma.workoutExercise.findMany({
       where: {
         exerciseId,
         OR: [
@@ -29,6 +30,10 @@ export async function GET(req: NextRequest, props: { params: Promise<{ exerciseI
         workout: buildPreviousWorkoutFilter(user.id, currentWorkoutId, completedAt),
       },
       select: {
+        workoutId: true,
+        workout: {
+          select: { dateCompleted: true },
+        },
         cardioDuration: true,
         cardioDistance: true,
         cardioResistance: true,
@@ -38,7 +43,32 @@ export async function GET(req: NextRequest, props: { params: Promise<{ exerciseI
       },
     });
 
-    return NextResponse.json(previousWorkoutExercise ?? null);
+    const selectedExercise = selectPreviousWorkoutCandidate(
+      previousWorkoutExercises.map((entry) => ({
+        sortValue: entry.workout.dateCompleted?.getTime() ?? Number.NEGATIVE_INFINITY,
+        workoutId: entry.workoutId,
+        hasTrackedData:
+          entry.cardioDuration != null ||
+          entry.cardioDistance != null ||
+          entry.cardioResistance != null,
+        value: entry,
+      })),
+      {
+        currentSortValue: completedAt?.getTime() ?? Number.POSITIVE_INFINITY,
+        currentWorkoutId,
+        requireTrackedData: true,
+      },
+    )
+
+    if (!selectedExercise) {
+      return NextResponse.json(null)
+    }
+
+    return NextResponse.json({
+      cardioDuration: selectedExercise.cardioDuration,
+      cardioDistance: selectedExercise.cardioDistance,
+      cardioResistance: selectedExercise.cardioResistance,
+    });
   } catch (err: unknown) {
     console.error(err);
     return NextResponse.json({error: extractErrorMessage(err)}, {status: 500});

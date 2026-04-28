@@ -35,8 +35,23 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void fetchNotifications();
-    const interval = setInterval(() => void fetchNotifications(), 60_000);
-    return () => clearInterval(interval);
+
+    const interval = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      void fetchNotifications();
+    }, 60_000);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void fetchNotifications();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [fetchNotifications]);
 
   const markRead = useCallback(async (id: number) => {

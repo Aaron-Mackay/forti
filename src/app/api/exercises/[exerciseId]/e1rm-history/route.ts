@@ -4,6 +4,7 @@ import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from '@lib/apiError';
 import {buildPreviousWorkoutFilter, resolveCurrentWorkoutCompletedAt} from '@lib/exerciseQueries';
 import type { E1rmHistoryPoint } from '@lib/contracts/exerciseHistory';
+import { selectPreviousWorkoutCandidates } from '@lib/previousWorkoutSelector';
 
 export async function GET(req: NextRequest, props: {params: Promise<{exerciseId: string}>}) {
   const params = await props.params;
@@ -31,8 +32,19 @@ export async function GET(req: NextRequest, props: {params: Promise<{exerciseId:
       orderBy: {workout: {dateCompleted: 'asc'}},
     });
 
+    const selectedWorkoutExercises = selectPreviousWorkoutCandidates(
+      workoutExercises.map((we) => ({
+        sortValue: we.workout.dateCompleted?.getTime() ?? Number.NEGATIVE_INFINITY,
+        value: we,
+      })),
+      {
+        currentSortValue: completedAt?.getTime() ?? Number.POSITIVE_INFINITY,
+        excludeCurrentWorkout: false,
+      },
+    )
+
     const byDate = new Map<string, number>();
-    for (const we of workoutExercises) {
+    for (const we of selectedWorkoutExercises.slice().reverse()) {
       const date = we.workout.dateCompleted!.toISOString();
       for (const s of we.sets) {
         if (s.e1rm === null) continue;

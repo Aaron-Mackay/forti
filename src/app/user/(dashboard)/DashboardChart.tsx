@@ -5,7 +5,6 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {Box, Button, ButtonGroup, Skeleton, Typography} from "@mui/material";
 import {addDays, subDays, subMonths} from "date-fns";
 import {MetricPrisma, EventPrisma} from "@/types/dataTypes";
-import {BuiltInMetricKey} from "@/app/user/calendar/MetricBar";
 import {getDefinedBlockColor} from "@/app/user/calendar/utils";
 import {DataPoint, Series} from "@/app/user/(dashboard)/utils";
 import {GestureHandlers, useGesture} from "@use-gesture/react";
@@ -28,8 +27,10 @@ type Selection = {
   xaxis: { min: number; max: number };
 }
 
+type DashboardMetricKey = 'weight' | 'calories' | 'steps';
+
 type MetricConfig = {
-  key: BuiltInMetricKey;
+  key: DashboardMetricKey;
   label: string;
   unitHint: string;
   color: string;
@@ -41,7 +42,7 @@ const METRIC_CONFIGS: MetricConfig[] = [
   {key: 'steps', label: 'Steps', unitHint: 'steps', color: '#2e7d32'},
 ];
 
-const formatLabel = (val: number, metricKey: BuiltInMetricKey): string => {
+const formatLabel = (val: number, metricKey: DashboardMetricKey): string => {
   switch (metricKey) {
     case 'weight':
       return val.toPrecision(3);
@@ -285,14 +286,22 @@ function MetricChartCard({
 }
 
 export default function DashboardChart({metrics = [], blocks = []}: { metrics: MetricPrisma[], blocks: EventPrisma[] }) {
-  const [selectedMetrics, setSelectedMetrics] = useState<BuiltInMetricKey[]>(['weight', 'calories', 'steps']);
+  const [selectedMetrics, setSelectedMetrics] = useState<DashboardMetricKey[]>(['weight', 'calories', 'steps']);
+  const metricDataByType = useMemo<Record<DashboardMetricKey, DataPoint[]>>(() => ({
+    weight: metrics
+      .filter(dm => dm.weight !== null)
+      .map(dm => [new Date(dm.date).getTime(), dm.weight]),
+    calories: metrics
+      .filter(dm => dm.calories !== null)
+      .map(dm => [new Date(dm.date).getTime(), dm.calories]),
+    steps: metrics
+      .filter(dm => dm.steps !== null)
+      .map(dm => [new Date(dm.date).getTime(), dm.steps]),
+  }), [metrics]);
 
   const getData = useCallback(
-    (metric: BuiltInMetricKey): DataPoint[] =>
-      metrics
-        .filter(dm => dm[metric] !== null)
-        .map(dm => [new Date(dm.date).getTime(), dm[metric]]),
-    [metrics]
+    (metric: DashboardMetricKey): DataPoint[] => metricDataByType[metric],
+    [metricDataByType]
   );
 
   const today: Date = useMemo(() => new Date(), []);
@@ -379,11 +388,11 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
   };
 
   const toggleSelectedMetric = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const clickedBuiltInMetricKey = e.currentTarget.value as BuiltInMetricKey;
+    const clickedMetricKey = e.currentTarget.value as DashboardMetricKey;
     setSelectedMetrics(prevState => (
-      prevState.includes(clickedBuiltInMetricKey)
-        ? prevState.filter(mk => mk !== clickedBuiltInMetricKey)
-        : [...prevState, clickedBuiltInMetricKey]
+      prevState.includes(clickedMetricKey)
+        ? prevState.filter(mk => mk !== clickedMetricKey)
+        : [...prevState, clickedMetricKey]
     ));
   }
 
