@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type { Metric } from '@/generated/prisma/browser';
 import type { WeekTargets } from '@/types/checkInTypes';
 import type { CustomMetricDef } from '@/types/settingsTypes';
+import type { BodyweightUnit } from '@/lib/units';
 import type { MetricBreakdownKey } from './MetricsDailyBreakdown';
 import MetricsSummaryTable from './MetricsSummaryTable';
 import MetricsDailyBreakdown from './MetricsDailyBreakdown';
@@ -17,6 +18,7 @@ interface Props {
   weekPrior: Metric[];
   weekTargets: WeekTargets | null;
   customMetricDefs: CustomMetricDef[];
+  bodyweightUnit: BodyweightUnit;
   weekStartDate: string | Date;
   defaultExpanded?: boolean;
   interactive?: boolean;
@@ -32,6 +34,7 @@ export default function MetricsSystemCard({
   weekPrior,
   weekTargets,
   customMetricDefs,
+  bodyweightUnit,
   weekStartDate,
   defaultExpanded = false,
   interactive = true,
@@ -94,6 +97,7 @@ export default function MetricsSystemCard({
               weekPrior={weekPrior}
               weekTargets={weekTargets}
               customMetricDefs={customMetricDefs}
+              bodyweightUnit={bodyweightUnit}
               forceCompactFont={forceCompactFont}
             />
           </Box>
@@ -120,6 +124,7 @@ export default function MetricsSystemCard({
                   metrics={currentWeek}
                   weekStartDate={weekStartDate}
                   customMetricDefs={customMetricDefs}
+                  bodyweightUnit={bodyweightUnit}
                   showMetricColumn={false}
                   includeEmptyRows
                   forceCompactFont={forceCompactFont}
@@ -145,6 +150,7 @@ export default function MetricsSystemCard({
             weekPrior={weekPrior}
             weekTargets={weekTargets}
             customMetricDefs={customMetricDefs}
+            bodyweightUnit={bodyweightUnit}
             forceCompactFont={forceCompactFont}
           />
         </Box>
@@ -155,6 +161,7 @@ export default function MetricsSystemCard({
               metrics={currentWeek}
               weekStartDate={weekStartDate}
               customMetricDefs={customMetricDefs}
+              bodyweightUnit={bodyweightUnit}
               includeEmptyRows
               forceCompactFont={forceCompactFont}
               showRightFade

@@ -55,6 +55,7 @@ describe('parseDashboardSettings', () => {
       onboardingDismissed: false,
       onboardingSeenWelcome: false,
       weightUnit: 'kg' as const,
+      bodyweightUnit: 'kg' as const,
       exerciseUnitOverrides: {},
       trackedE1rmExercises: [],
       showE1rmProgress: false,
@@ -77,6 +78,24 @@ describe('parseDashboardSettings', () => {
   it('defaults weightUnit to kg for invalid values', () => {
     expect(parseDashboardSettings({ weightUnit: 'stones' }).weightUnit).toBe('kg');
     expect(parseDashboardSettings({ weightUnit: 42 }).weightUnit).toBe('kg');
+  });
+
+  it('defaults bodyweightUnit to kg when absent', () => {
+    expect(parseDashboardSettings({}).bodyweightUnit).toBe('kg');
+  });
+
+  it('parses bodyweightUnit lb and st', () => {
+    expect(parseDashboardSettings({ bodyweightUnit: 'lb' }).bodyweightUnit).toBe('lb');
+    expect(parseDashboardSettings({ bodyweightUnit: 'st' }).bodyweightUnit).toBe('st');
+  });
+
+  it('normalizes legacy bodyweightUnit lbs to lb', () => {
+    expect(parseDashboardSettings({ bodyweightUnit: 'lbs' }).bodyweightUnit).toBe('lb');
+  });
+
+  it('defaults bodyweightUnit to kg for invalid values', () => {
+    expect(parseDashboardSettings({ bodyweightUnit: 'stones' }).bodyweightUnit).toBe('kg');
+    expect(parseDashboardSettings({ bodyweightUnit: 42 }).bodyweightUnit).toBe('kg');
   });
 
   it('parses onboardingDismissed and onboardingSeenWelcome', () => {
