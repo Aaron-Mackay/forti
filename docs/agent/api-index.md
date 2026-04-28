@@ -4,8 +4,8 @@
 
 - /api/auth/[...nextauth] | methods=GET,POST | auth=none | contracts=-
 - /api/calendar-data | methods=GET | auth=session | contracts=-
-- /api/check-in | methods=GET,POST | auth=session | contracts=-
-- /api/check-in/current | methods=GET | auth=session | contracts=-
+- /api/check-in | methods=GET,POST | auth=session | contracts=@lib/contracts/checkIn
+- /api/check-in/current | methods=GET | auth=session | contracts=@lib/contracts/checkIn
 - /api/check-in/photos | methods=POST,DELETE | auth=session | contracts=-
 - /api/check-in/photos/[checkInId]/[angle] | methods=GET | auth=session | contracts=-
 - /api/coach | methods=GET | auth=session | contracts=-
@@ -19,6 +19,7 @@
 - /api/coach/clients/[clientId]/nutrition | methods=GET | auth=session | contracts=-
 - /api/coach/clients/[clientId]/supplements | methods=GET,POST | auth=session | contracts=-
 - /api/coach/clients/[clientId]/supplements/[supplementId] | methods=PATCH,DELETE | auth=session | contracts=-
+- /api/coach/clients/health-summary | methods=GET | auth=session | contracts=-
 - /api/coach/exercise-description/[exerciseId] | methods=PUT,DELETE | auth=session | contracts=-
 - /api/coach/invite | methods=POST | auth=session | contracts=-
 - /api/coach/learning-plans | methods=GET,POST | auth=session | contracts=-
@@ -69,7 +70,7 @@
 - /api/sets/[setId] | methods=PATCH,DELETE | auth=session | contracts=-
 - /api/supplements | methods=GET,POST | auth=session | contracts=-
 - /api/supplements/[id] | methods=PATCH,DELETE | auth=session | contracts=-
-- /api/target-templates | methods=GET,POST | auth=session | contracts=-
+- /api/target-templates | methods=GET,POST | auth=session | contracts=@lib/contracts/targetTemplates
 - /api/user-data | methods=GET | auth=session | contracts=-
 - /api/user/profile | methods=PATCH | auth=session | contracts=-
 - /api/user/settings | methods=GET,PATCH | auth=session | contracts=-
