@@ -29,28 +29,26 @@ async function setCoachMode(page: import('@playwright/test').Page, active: boole
 
 async function openWorkoutFlow(page: import('@playwright/test').Page) {
   await page.goto('/user/workout');
+  const content = page.locator('main');
+  const markAsComplete = content.getByRole('button', { name: 'Mark as Complete' });
+  const completedButton = content.getByRole('button', { name: /^Completed/ });
 
-  for (let i = 0; i < 4; i += 1) {
-    const markAsComplete = page.getByRole('button', { name: 'Mark as Complete' });
-    const completedButton = page.getByRole('button', { name: /^Completed/ });
-    if (await markAsComplete.isVisible() || await completedButton.isVisible()) {
-      return;
+  if (!(await markAsComplete.isVisible()) && !(await completedButton.isVisible())) {
+    const planButton = content.getByRole('button', { name: /Plan/i }).first();
+    if (await planButton.isVisible()) {
+      await planButton.click();
     }
-
-    const firstItemButton = page.getByRole('listitem').first().getByRole('button').first();
-    if (await firstItemButton.isVisible()) {
-      await firstItemButton.click();
-      continue;
+    const weekButton = content.getByRole('button', { name: /Week/i }).first();
+    if (await weekButton.isVisible()) {
+      await weekButton.click();
     }
-
-    const firstItemLink = page.getByRole('listitem').first().getByRole('link').first();
-    if (await firstItemLink.isVisible()) {
-      await firstItemLink.click();
-      continue;
+    const workoutButton = content.getByRole('button', { name: /Workout/i }).first();
+    if (await workoutButton.isVisible()) {
+      await workoutButton.click();
     }
-
-    break;
   }
+
+  await expect(markAsComplete.or(completedButton)).toBeVisible({ timeout: 10000 });
 }
 
 test.describe.configure({ mode: 'serial' });
