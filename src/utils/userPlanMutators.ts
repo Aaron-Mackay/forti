@@ -58,7 +58,22 @@ function makeEmptyWorkoutExercise(id: number, workoutId: number, order: number):
     substitutedFor: null,
     isAdded: false,
     isBfr: false,
+    requiresRecording: false,
   };
+}
+
+export function toggleRequiresRecording(
+  user: UserPrisma,
+  planId: number,
+  weekId: number,
+  workoutId: number,
+  workoutExerciseId: number,
+  enabled: boolean,
+): UserPrisma {
+  return withExercise(user, planId, weekId, workoutId, workoutExerciseId, (exercise) => ({
+    ...exercise,
+    requiresRecording: enabled,
+  }));
 }
 
 const VALID_EXERCISE_CATEGORIES = new Set<string>(Object.values(ExerciseCategory));

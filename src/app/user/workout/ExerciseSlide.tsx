@@ -249,8 +249,21 @@ export default function ExerciseSlide({
                 sx={{height: 18, fontSize: '0.7rem', flexShrink: 0}}
               />
             )}
+            {ex.requiresRecording && (
+              <Chip
+                label="Coach requested recording"
+                size="small"
+                color="info"
+                sx={{height: 18, fontSize: '0.7rem', flexShrink: 0}}
+              />
+            )}
 
           </Box>
+          {ex.requiresRecording && (
+            <Typography variant="caption" color="info.main" sx={{ display: 'block', mb: 0.5 }}>
+              Please record this exercise and submit it after your session.
+            </Typography>
+          )}
           <Typography variant="subtitle1" gutterBottom noWrap>
             Rest: {ex.restTime}
           </Typography>

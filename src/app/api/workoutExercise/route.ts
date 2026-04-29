@@ -4,11 +4,12 @@ import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from "@lib/apiError";
 import { forbiddenResponse } from '@lib/apiResponses';
 import { normalizeRepRange } from '@/lib/repRange';
+import { getCoachFromUser } from '@lib/coachService';
 
 export async function POST(req: NextRequest) {
   const session = await requireSession();
   const body = await req.json();
-  const {workoutId, exerciseId, order, repRange, restTime, setCount} = body;
+  const {workoutId, exerciseId, order, repRange, restTime, setCount, requiresRecording} = body;
 
   if (typeof workoutId !== 'number' || typeof exerciseId !== 'number' || typeof order !== 'number') {
     return NextResponse.json({error: 'workoutId, exerciseId and order must be numbers'}, {status: 400});
@@ -25,6 +26,9 @@ export async function POST(req: NextRequest) {
 
   const resolvedRestTime: string = typeof restTime === 'string' ? restTime.trim() : '90';
   const resolvedSetCount: number = typeof setCount === 'number' ? Math.min(10, Math.max(1, setCount)) : 3;
+  if ('requiresRecording' in body && typeof requiresRecording !== 'boolean') {
+    return NextResponse.json({error: 'requiresRecording must be a boolean'}, {status: 400});
+  }
 
   try {
     const workout = await prisma.workout.findUnique({
@@ -40,6 +44,13 @@ export async function POST(req: NextRequest) {
       return forbiddenResponse();
     }
 
+    if ('requiresRecording' in body) {
+      const assignedCoach = await getCoachFromUser(workout.week.plan.userId);
+      if (assignedCoach?.coachId !== session.user.id) {
+        return forbiddenResponse();
+      }
+    }
+
     const exercise = await prisma.exercise.findUnique({where: {id: exerciseId}});
     if (!exercise) {
       return NextResponse.json({error: 'Exercise not found'}, {status: 404});
@@ -53,6 +64,7 @@ export async function POST(req: NextRequest) {
         isAdded: true,
         repRange: resolvedRepRange,
         restTime: resolvedRestTime,
+        requiresRecording: requiresRecording ?? false,
         sets: {
           create: Array.from({length: resolvedSetCount}, (_, i) => ({order: i, reps: null, weight: null})),
         },
