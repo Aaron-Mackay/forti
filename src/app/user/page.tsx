@@ -46,7 +46,7 @@ export default async function UserPage() {
         />
         {settings.showMetricsChart
           && userMetrics.length > 0
-          && <DashboardChart metrics={userMetrics} blocks={userBlocks}/>}
+          && <DashboardChart metrics={userMetrics} blocks={userBlocks} bodyweightUnit={settings.bodyweightUnit}/>}
         {settings.showE1rmProgress
           && settings.trackedE1rmExercises.length > 0
           && <E1rmProgressCard exercises={settings.trackedE1rmExercises} weightUnit={settings.weightUnit}/>}

@@ -2,16 +2,13 @@
 
 import dynamic from "next/dynamic";
 import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
-import {Box, Button, ButtonGroup, Skeleton, Typography} from "@mui/material";
+import {Box, Button, Skeleton, Typography} from "@mui/material";
 import {addDays, subDays, subMonths} from "date-fns";
 import {MetricPrisma, EventPrisma} from "@/types/dataTypes";
 import {getDefinedBlockColor} from "@/app/user/calendar/utils";
 import {DataPoint, Series} from "@/app/user/(dashboard)/utils";
 import {GestureHandlers, useGesture} from "@use-gesture/react";
-
-import WeightIcon from '@mui/icons-material/Scale';
-import FoodIcon from '@mui/icons-material/RestaurantRounded';
-import StepsIcon from '@mui/icons-material/DirectionsWalkRounded';
+import type {BodyweightUnit} from "@/types/settingsTypes";
 
 const CHART_HEIGHT = 220;
 
@@ -32,15 +29,21 @@ type DashboardMetricKey = 'weight' | 'calories' | 'steps';
 type MetricConfig = {
   key: DashboardMetricKey;
   label: string;
-  unitHint: string;
   color: string;
 }
 
 const METRIC_CONFIGS: MetricConfig[] = [
-  {key: 'weight', label: 'Weight', unitHint: 'kg/lb', color: '#00a2f1'},
-  {key: 'calories', label: 'Calories', unitHint: 'kcal', color: '#d30bff'},
-  {key: 'steps', label: 'Steps', unitHint: 'steps', color: '#2e7d32'},
+  {key: 'weight', label: 'Weight', color: '#00a2f1'},
+  {key: 'calories', label: 'Calories', color: '#d30bff'},
+  {key: 'steps', label: 'Steps', color: '#2e7d32'},
 ];
+
+const Y_AXIS_ROUNDING_STEP: Record<DashboardMetricKey, number> = {
+  weight: 0.5,
+  calories: 100,
+  steps: 1000,
+};
+const WEIGHT_TREND_WINDOW = 7;
 
 const formatLabel = (val: number, metricKey: DashboardMetricKey): string => {
   switch (metricKey) {
@@ -54,30 +57,43 @@ const formatLabel = (val: number, metricKey: DashboardMetricKey): string => {
   }
 }
 
+function buildRollingAverageSeries(data: DataPoint[], windowSize: number): DataPoint[] {
+  const sorted = [...data].sort((a, b) => a[0] - b[0]);
+  const window: number[] = [];
+  let runningTotal = 0;
+
+  return sorted.map(([x, y]) => {
+    if (typeof y !== 'number') return [x, null];
+    window.push(y);
+    runningTotal += y;
+    if (window.length > windowSize) {
+      const removed = window.shift();
+      if (typeof removed === 'number') runningTotal -= removed;
+    }
+    return [x, runningTotal / window.length];
+  });
+}
+
 type MetricChartCardProps = {
   metric: MetricConfig;
+  bodyweightUnit: BodyweightUnit;
   series: Series[];
   selection: Selection;
   chartBlocks: { name: string; start: number; end: number; color: string }[];
   startDayMs: number;
   todayMs: number;
   updateXaxis: (newMin: number, newMax: number) => void;
-  panByRatio: (ratio: number) => void;
-  zoomByFactor: (factor: number) => void;
-  resetToDefaultRange: () => void;
 }
 
 function MetricChartCard({
   metric,
+  bodyweightUnit,
   series,
   selection,
   chartBlocks,
   startDayMs,
   todayMs,
-  updateXaxis,
-  panByRatio,
-  zoomByFactor,
-  resetToDefaultRange
+  updateXaxis
 }: MetricChartCardProps) {
   const chartRef = useRef<HTMLDivElement>(null);
   const pinchRef = useRef<{ startWidth?: number, centerMs?: number }>({});
@@ -117,6 +133,33 @@ function MetricChartCard({
       cancelAnimationFrame(frameRequestRef.current);
     }
   }, []);
+
+  const yAxisBounds = useMemo(() => {
+    const visibleValues: number[] = [];
+    for (const s of series) {
+      for (const [x, y] of s.data) {
+        if (typeof y !== 'number') continue;
+        if (x < selection.xaxis.min || x > selection.xaxis.max) continue;
+        visibleValues.push(y);
+      }
+    }
+    if (visibleValues.length === 0) return null;
+
+    const rawMin = Math.min(...visibleValues);
+    const rawMax = Math.max(...visibleValues);
+    const span = rawMax - rawMin;
+    const baseSpan = span > 0 ? span : Math.max(Math.abs(rawMax) * 0.08, 1);
+    const padding = baseSpan * 0.08;
+
+    const step = Y_AXIS_ROUNDING_STEP[metric.key];
+    let min = Math.floor((rawMin - padding) / step) * step;
+    let max = Math.ceil((rawMax + padding) / step) * step;
+
+    if (metric.key === 'calories' || metric.key === 'steps') min = Math.max(0, min);
+    if (max <= min) max = min + step;
+
+    return {min, max};
+  }, [metric.key, selection.xaxis.max, selection.xaxis.min, series]);
 
   useEffect(() => {
     const el = chartRef.current;
@@ -194,6 +237,9 @@ function MetricChartCard({
   );
 
   const chartOptions: ApexCharts.ApexOptions = {
+    colors: metric.key === 'weight' && series.length > 1
+      ? [metric.color, '#1565c0']
+      : [metric.color],
     chart: {
       id: `chart-${metric.key}`,
       type: "line",
@@ -204,27 +250,27 @@ function MetricChartCard({
     },
     stroke: {
       curve: "smooth",
-      width: 2,
+      width: metric.key === 'weight' && series.length > 1 ? [2, 3] : 2,
+      dashArray: 0,
     },
     markers: {
-      size: 3,
+      size: metric.key === 'weight' && series.length > 1 ? [3, 0] : 3,
       shape: "diamond",
       colors: ['#000000'],
     },
-    colors: [metric.color],
     xaxis: {type: "datetime", min: selection.xaxis.min, max: selection.xaxis.max},
     yaxis: {
-      title: {text: metric.label},
+      min: yAxisBounds?.min,
+      max: yAxisBounds?.max,
+      title: {
+        text: metric.key === 'weight'
+          ? `Weight (${bodyweightUnit})`
+          : metric.label
+      },
       labels: {formatter: val => formatLabel(val, metric.key)},
     },
     tooltip: {x: {format: "yyyy-MM-dd"}},
     legend: {show: false},
-    subtitle: {
-      text: `Unit: ${metric.unitHint}`,
-      align: 'left',
-      offsetY: 6,
-      style: {fontSize: '12px', fontWeight: 500},
-    },
     annotations: {
       xaxis: chartBlocks.map(phase => ({
         x: phase.start,
@@ -247,29 +293,7 @@ function MetricChartCard({
         {...bindGestures()}
         tabIndex={0}
         role="application"
-        aria-label="Dashboard chart. Drag to pan, wheel or pinch to zoom. Use arrow keys to pan, plus/minus to zoom, and R to reset to 1 month."
-        onKeyDown={(event) => {
-          if (event.key === "ArrowLeft") {
-            event.preventDefault();
-            panByRatio(-0.2);
-          }
-          if (event.key === "ArrowRight") {
-            event.preventDefault();
-            panByRatio(0.2);
-          }
-          if (event.key === "+" || event.key === "=") {
-            event.preventDefault();
-            zoomByFactor(1.25);
-          }
-          if (event.key === "-" || event.key === "_") {
-            event.preventDefault();
-            zoomByFactor(0.8);
-          }
-          if (event.key.toLowerCase() === "r") {
-            event.preventDefault();
-            resetToDefaultRange();
-          }
-        }}
+        aria-label="Dashboard chart. Drag to pan, wheel or pinch to zoom."
         sx={{
           position: 'absolute',
           top: 0,
@@ -277,6 +301,7 @@ function MetricChartCard({
           right: 0,
           bottom: 0,
           cursor: 'grab',
+          touchAction: 'none',
           zIndex: 10,
           backgroundColor: 'transparent',
         }}
@@ -285,8 +310,15 @@ function MetricChartCard({
   );
 }
 
-export default function DashboardChart({metrics = [], blocks = []}: { metrics: MetricPrisma[], blocks: EventPrisma[] }) {
-  const [selectedMetrics, setSelectedMetrics] = useState<DashboardMetricKey[]>(['weight', 'calories', 'steps']);
+export default function DashboardChart({
+  metrics = [],
+  blocks = [],
+  bodyweightUnit = 'kg'
+}: {
+  metrics: MetricPrisma[];
+  blocks: EventPrisma[];
+  bodyweightUnit?: BodyweightUnit;
+}) {
   const metricDataByType = useMemo<Record<DashboardMetricKey, DataPoint[]>>(() => ({
     weight: metrics
       .filter(dm => dm.weight !== null)
@@ -312,16 +344,8 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
   const startDayMs = startDay.getTime();
   const todayMs = today.getTime();
 
-  const ranges = [
-    {label: "1W", min: subDays(today, 7).getTime(), max: todayMs},
-    {label: "1M", min: subMonths(today, 1).getTime(), max: todayMs},
-    {label: "3M", min: subMonths(today, 3).getTime(), max: todayMs},
-    {label: "6M", min: subMonths(today, 6).getTime(), max: todayMs},
-    {label: "All", min: startDayMs, max: todayMs},
-  ];
-
   const defaultRange = useMemo(() => ({
-    min: subMonths(today, 1).getTime(),
+    min: subDays(today, 28).getTime(),
     max: todayMs,
   }), [today, todayMs]);
 
@@ -352,23 +376,6 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
     setSelection({xaxis: {min: newMin, max: newMax}});
   }, [startDayMs, todayMs]);
 
-  const panByRatio = useCallback((ratio: number) => {
-    const width = selection.xaxis.max - selection.xaxis.min;
-    const shiftMs = width * ratio;
-    updateXaxis(selection.xaxis.min + shiftMs, selection.xaxis.max + shiftMs);
-  }, [selection, updateXaxis]);
-
-  const zoomByFactor = useCallback((factor: number) => {
-    const visibleMs = selection.xaxis.max - selection.xaxis.min;
-    const centerMs = selection.xaxis.min + visibleMs / 2;
-    const newWidth = visibleMs / factor;
-    updateXaxis(centerMs - newWidth / 2, centerMs + newWidth / 2);
-  }, [selection, updateXaxis]);
-
-  const resetToDefaultRange = useCallback(() => {
-    setSelection({xaxis: {min: defaultRange.min, max: defaultRange.max}});
-  }, [defaultRange]);
-
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hasSeenHint = window.localStorage.getItem('dashboard-chart-gesture-hint-seen') === 'true';
@@ -382,52 +389,41 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
     setShowGestureHint(false);
   }, []);
 
-  const isActiveRange = (min: number, max: number) => {
-    const tol = 1000 * 60 * 60 * 12;
-    return Math.abs(selection.xaxis.min - min) < tol && Math.abs(selection.xaxis.max - max) < tol;
-  };
-
-  const toggleSelectedMetric = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const clickedMetricKey = e.currentTarget.value as DashboardMetricKey;
-    setSelectedMetrics(prevState => (
-      prevState.includes(clickedMetricKey)
-        ? prevState.filter(mk => mk !== clickedMetricKey)
-        : [...prevState, clickedMetricKey]
-    ));
-  }
-
-  const visibleMetrics = METRIC_CONFIGS.filter(metric => selectedMetrics.includes(metric.key));
-
   return (
     <Box sx={{height: '100%'}}>
-      {visibleMetrics.length === 0 && (
-        <Typography variant="body2" color="text.secondary" sx={{mb: 1}}>
-          Select at least one metric to show a chart.
-        </Typography>
-      )}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {xs: '1fr', md: 'repeat(3, minmax(0, 1fr))'},
+          gap: 1.5,
+        }}
+      >
+        {METRIC_CONFIGS.map(metric => {
+          const data = getData(metric.key);
+          const series: Series[] = data.length > 0
+            ? metric.key === 'weight'
+              ? [
+                {name: metric.label, data, yAxisIndex: 0},
+                {name: 'Weight trend (7-day avg)', data: buildRollingAverageSeries(data, WEIGHT_TREND_WINDOW), yAxisIndex: 0},
+              ]
+              : [{name: metric.label, data, yAxisIndex: 0}]
+            : [{name: 'invisible', data: [[startDayMs, null], [todayMs, null]], yAxisIndex: 0}];
 
-      {visibleMetrics.map(metric => {
-        const data = getData(metric.key);
-        const series: Series[] = data.length > 0
-          ? [{name: metric.label, data, yAxisIndex: 0}]
-          : [{name: 'invisible', data: [[startDayMs, null], [todayMs, null]], yAxisIndex: 0}];
-
-        return (
-          <MetricChartCard
-            key={metric.key}
-            metric={metric}
-            series={series}
-            selection={selection}
-            chartBlocks={chartBlocks}
-            startDayMs={startDayMs}
-            todayMs={todayMs}
-            updateXaxis={updateXaxis}
-            panByRatio={panByRatio}
-            zoomByFactor={zoomByFactor}
-            resetToDefaultRange={resetToDefaultRange}
-          />
-        );
-      })}
+          return (
+            <MetricChartCard
+              key={metric.key}
+              metric={metric}
+              bodyweightUnit={bodyweightUnit}
+              series={series}
+              selection={selection}
+              chartBlocks={chartBlocks}
+              startDayMs={startDayMs}
+              todayMs={todayMs}
+              updateXaxis={updateXaxis}
+            />
+          );
+        })}
+      </Box>
 
       <Box sx={{display: 'flex', alignItems: 'center', flexDirection: 'column', mt: 0.5}}>
         {showGestureHint ? (
@@ -450,57 +446,6 @@ export default function DashboardChart({metrics = [], blocks = []}: { metrics: M
           </Box>
         ) : null}
 
-        <Box sx={{display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 1}}>
-          <Typography variant="caption" sx={{fontWeight: 600}}>Pan</Typography>
-          <Button size="small" variant="outlined" onClick={() => panByRatio(-0.2)} aria-label="Pan chart left">←</Button>
-          <Button size="small" variant="outlined" onClick={() => panByRatio(0.2)} aria-label="Pan chart right">→</Button>
-
-          <Typography variant="caption" sx={{fontWeight: 600, ml: 1}}>Zoom</Typography>
-          <Button size="small" variant="outlined" onClick={() => zoomByFactor(1.25)} aria-label="Zoom in">+</Button>
-          <Button size="small" variant="outlined" onClick={() => zoomByFactor(0.8)} aria-label="Zoom out">−</Button>
-
-          <Button size="small" variant="text" onClick={() => setSelection({xaxis: {min: ranges[4].min, max: ranges[4].max}})}>Reset view</Button>
-          <Button size="small" variant="contained" onClick={resetToDefaultRange}>Reset to 1M</Button>
-        </Box>
-
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1} gap={1}>
-          <Button
-            value={'weight'}
-            onClick={toggleSelectedMetric}
-            variant={selectedMetrics.includes('weight') ? "contained" : "outlined"}
-            sx={{borderRadius: 999, minWidth: "2rem", px: 1, py: 0}}
-          >
-            <WeightIcon/>
-          </Button>
-          <Button
-            value={'calories'}
-            onClick={toggleSelectedMetric}
-            variant={selectedMetrics.includes('calories') ? "contained" : "outlined"}
-            sx={{borderRadius: 999, minWidth: "2rem", px: 1, py: 0}}
-          >
-            <FoodIcon/>
-          </Button>
-          <Button
-            value={'steps'}
-            onClick={toggleSelectedMetric}
-            variant={selectedMetrics.includes('steps') ? "contained" : "outlined"}
-            sx={{borderRadius: 999, minWidth: "2rem", px: 1, py: 0}}
-          >
-            <StepsIcon/>
-          </Button>
-        </Box>
-
-        <ButtonGroup>
-          {ranges.map(r => (
-            <Button
-              key={r.label}
-              onClick={() => setSelection({xaxis: {min: r.min, max: r.max}})}
-              variant={isActiveRange(r.min, r.max) ? "contained" : "outlined"}
-            >
-              {r.label}
-            </Button>
-          ))}
-        </ButtonGroup>
       </Box>
     </Box>
   );

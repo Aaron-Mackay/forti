@@ -58,6 +58,7 @@ const ClientOverviewPage = async ({ params }: Props) => {
           <DashboardChart
             metrics={metrics}
             blocks={events.filter((e: PrismaEvent) => e.eventType === EventType.BlockEvent)}
+            bodyweightUnit={clientSettings.bodyweightUnit}
           />
         )}
         {clientSettings.trackedE1rmExercises.length > 0 && (
