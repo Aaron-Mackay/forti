@@ -66,6 +66,7 @@ export function parsedPlanToPlanPrisma(
                 notes: ex.notes ?? null,
                 targetRpe: ex.targetRpe ?? null,
                 targetRir: ex.targetRir ?? null,
+                requiresRecording: ex.requiresRecording ?? false,
                 exercise: {
                   id: PLACEHOLDER_ID,
                   name: ex.exercise.name,
