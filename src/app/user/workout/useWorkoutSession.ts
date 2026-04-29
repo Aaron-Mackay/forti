@@ -414,6 +414,7 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
       substitutedFor: null,
       isAdded: true,
       isBfr: false,
+      requiresRecording: false
     };
 
     setUserData(prev =>
