@@ -19,6 +19,7 @@ const AiExerciseSchema = z.object({
   category: z.string().optional().default('resistance'),
   repRange: z.string().nullable().optional(),
   isBfr: z.boolean().optional().default(false),
+  requiresRecording: z.boolean().optional().default(false),
   restTime: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   targetRpe: z.number().nullable().optional(),
@@ -82,6 +83,7 @@ export type ParsedPlan = {
       order: number;
       dateCompleted: null;
         exercises: Array<{
+          requiresRecording: boolean;
           exercise: { name: string; category: string };
           order: number;
           repRange: string | null | undefined;
@@ -265,6 +267,7 @@ export function parseAiPlanResponse(rawInput: unknown): ParsedPlan {
         order: woi + 1,
         dateCompleted: null,
         exercises: workout.exercises.map((ex, ei) => ({
+          requiresRecording: ex.requiresRecording,
           exercise: { name: ex.name, category: ex.category },
           order: ei + 1,
           repRange: ex.repRange ?? null,
