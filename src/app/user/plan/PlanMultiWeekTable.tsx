@@ -10,7 +10,7 @@ import { ExerciseMenuActionItem, ExerciseMenuDropAndBfrItems } from './ExerciseM
 import { getLatestTrackedWeekId, stripWorkoutSuffix } from './planPresentation';
 import { buildExerciseMetaParts, CompactSetEditor, EditableExerciseNameWithMeta, SetCountControls } from './PlanExercisePrimitives';
 import { confirmRemoveLastSetWithDrops, getExerciseSetModel } from './exerciseSetModel';
-import { hasTrailingDropSets, removeExercises, removeTrailingDropSets, setBfrEnabled } from './exerciseMenuActions';
+import { hasTrailingDropSets, removeExercises, removeTrailingDropSets, setBfrEnabled, setRequiresRecordingEnabled } from './exerciseMenuActions';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -652,6 +652,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
           isCardio={menuExercise?.exercise?.category === 'cardio'}
           dropSetsEnabled={menuDropEnabled}
           isBfr={Boolean(menuExercise?.isBfr)}
+          requiresRecording={Boolean(menuExercise?.requiresRecording)}
           onToggleDropSets={(checked) => {
             if (targetExerciseRowIndex == null) return;
             if (!checked) {
@@ -667,6 +668,9 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
           }}
           onToggleBfr={(checked) => {
             setBfrEnabled({ dispatch, planId, targets: menuTargets, enabled: checked });
+          }}
+          onToggleRequiresRecording={(checked) => {
+            setRequiresRecordingEnabled({ dispatch, planId, targets: menuTargets, enabled: checked });
           }}
         />
         <ExerciseMenuActionItem
