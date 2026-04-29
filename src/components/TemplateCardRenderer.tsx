@@ -29,6 +29,12 @@ export interface SystemCardData {
   bodyweightUnit: BodyweightUnit;
   completedWorkoutsCount: number;
   plannedWorkoutsCount: number;
+  workoutSummaries: Array<{
+    workoutId: number;
+    workoutName: string;
+    completedSets: number;
+    plannedSets: number;
+  }>;
   onWorkoutsClick?: () => void;
   canEditMetrics?: boolean;
   onMetricChange?: (dayOffset: number, key: MetricBreakdownKey, value: number | null) => void;
@@ -94,9 +100,9 @@ function SystemCardPlaceholder({
       </Box>
       <Stack spacing={0.5}>
         {previewData.trainingSessions.map(session => (
-          <Box key={`${session.day}-${session.name}`} sx={{ display: 'flex', gap: 1.25, alignItems: 'baseline' }}>
-            <Typography variant="caption" color="text.disabled" sx={{ minWidth: 28 }}>{session.day}</Typography>
+          <Box key={`${session.day}-${session.name}`} sx={{ display: 'flex', gap: 1.25, alignItems: 'baseline', justifyContent: 'space-between', px: 1 }}>
             <Typography variant="body2" color="text.secondary">{session.name}</Typography>
+            <Typography variant="caption" color="text.disabled">9/12 sets</Typography>
           </Box>
         ))}
       </Stack>
@@ -229,12 +235,13 @@ export default function TemplateCardRenderer({
   }
 
   // training
-  const { completedWorkoutsCount, plannedWorkoutsCount, onWorkoutsClick } = systemData;
+  const { completedWorkoutsCount, plannedWorkoutsCount, workoutSummaries, onWorkoutsClick } = systemData;
   return (
     <Paper variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2, minWidth: 0 }}>
       <WorkoutsSystemCard
         completedWorkoutsCount={completedWorkoutsCount}
         plannedWorkoutsCount={plannedWorkoutsCount}
+        workoutSummaries={workoutSummaries}
         onWorkoutsClick={onWorkoutsClick}
       />
     </Paper>

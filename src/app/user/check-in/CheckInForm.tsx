@@ -10,7 +10,6 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useRouter } from 'next/navigation';
 import type { Metric, WeeklyCheckIn } from '@/generated/prisma/browser';
 import { useSettings } from '@lib/providers/SettingsProvider';
@@ -19,6 +18,7 @@ import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
 import { updateMetricClient } from '@lib/metrics';
 import TemplateCardRenderer from '@/components/TemplateCardRenderer';
 import type { SystemCardData } from '@/components/TemplateCardRenderer';
+import WorkoutsSystemCard from '@/components/WorkoutsSystemCard';
 import type { MetricBreakdownKey } from '@/components/MetricsDailyBreakdown';
 import MetricsSystemCard from '@/components/MetricsSystemCard';
 import ProgressPhotoSection from './ProgressPhotoSection';
@@ -35,6 +35,12 @@ interface Props {
   weekTargets: WeekTargets | null;
   completedWorkoutsCount: number;
   plannedWorkoutsCount: number;
+  workoutSummaries: Array<{
+    workoutId: number;
+    workoutName: string;
+    completedSets: number;
+    plannedSets: number;
+  }>;
   activePlanId: number | null;
   template: CheckInTemplate | null;
   onSubmitted: () => void;
@@ -66,7 +72,7 @@ function getInitialMetricsExpansion(template: CheckInTemplate | null): Record<st
 
 export default function CheckInForm({
   currentWeek, weekPrior, checkIn, previousPhotos, weekTargets,
-  completedWorkoutsCount, plannedWorkoutsCount, activePlanId,
+  completedWorkoutsCount, plannedWorkoutsCount, workoutSummaries, activePlanId,
   template, onSubmitted,
 }: Props) {
   const router = useRouter();
@@ -300,6 +306,7 @@ export default function CheckInForm({
     bodyweightUnit: settings.bodyweightUnit,
     completedWorkoutsCount,
     plannedWorkoutsCount,
+    workoutSummaries,
     onWorkoutsClick: workoutClickable ? () => router.push(`/user/plan/${activePlanId}`) : undefined,
     canEditMetrics: true,
     onMetricChange: handleMetricChange,
@@ -341,28 +348,13 @@ export default function CheckInForm({
 
       {/* Workout row — shown above only in legacy mode or when template doesn't include a workouts card */}
       {!templateHasWorkouts && (
-        <Box
-          onClick={workoutClickable ? () => router.push(`/user/plan/${activePlanId}`) : undefined}
-          sx={{
-            mt: templateHasMetrics ? 0 : 1.5,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            px: 1,
-            py: 0.75,
-            borderRadius: 1,
-            bgcolor: 'action.hover',
-            cursor: workoutClickable ? 'pointer' : 'default',
-            ...(workoutClickable && { '&:hover': { bgcolor: 'action.selected' } }),
-          }}
-        >
-          <Typography variant="body2" color="text.secondary">Training</Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Typography variant="body2" fontWeight={600}>
-              {completedWorkoutsCount}/{plannedWorkoutsCount}
-            </Typography>
-            {workoutClickable && <ChevronRightIcon sx={{ fontSize: 16, color: 'text.disabled' }} />}
-          </Box>
+        <Box sx={{ mt: templateHasMetrics ? 0 : 1.5 }}>
+          <WorkoutsSystemCard
+            completedWorkoutsCount={completedWorkoutsCount}
+            plannedWorkoutsCount={plannedWorkoutsCount}
+            workoutSummaries={workoutSummaries}
+            onWorkoutsClick={workoutClickable ? () => router.push(`/user/plan/${activePlanId}`) : undefined}
+          />
         </Box>
       )}
 

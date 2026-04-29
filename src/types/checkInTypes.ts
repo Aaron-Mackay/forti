@@ -31,6 +31,12 @@ export interface CurrentCheckInResponse {
   weekTargets: WeekTargets | null;
   completedWorkoutsCount: number;
   plannedWorkoutsCount: number;
+  workoutSummaries: Array<{
+    workoutId: number;
+    workoutName: string;
+    completedSets: number;
+    plannedSets: number;
+  }>;
   activePlanId: number | null;
   /** Coach's check-in template, if the client has a coach with a configured template. */
   template: CheckInTemplate | null;

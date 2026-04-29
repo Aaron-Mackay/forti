@@ -77,6 +77,12 @@ export const CurrentCheckInResponseSchema = z.object({
   weekTargets: WeekTargetsSchema.nullable(),
   completedWorkoutsCount: z.number().int().nonnegative(),
   plannedWorkoutsCount: z.number().int().nonnegative(),
+  workoutSummaries: z.array(z.object({
+    workoutId: z.number().int(),
+    workoutName: z.string(),
+    completedSets: z.number().int().nonnegative(),
+    plannedSets: z.number().int().nonnegative(),
+  })),
   activePlanId: z.number().int().nullable(),
   template: CheckInTemplateSchema.nullable(),
 });

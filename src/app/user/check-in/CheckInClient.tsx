@@ -34,6 +34,7 @@ function normalizeCurrentCheckInResponse(data: CurrentCheckInResponse): CurrentD
     weekTargets: data.weekTargets ?? null,
     completedWorkoutsCount: data.completedWorkoutsCount ?? data.checkIn.completedWorkouts ?? 0,
     plannedWorkoutsCount: data.plannedWorkoutsCount ?? data.checkIn.plannedWorkouts ?? 0,
+    workoutSummaries: data.workoutSummaries ?? [],
     activePlanId: data.activePlanId ?? null,
     template: data.template ?? null,
   };
@@ -148,6 +149,7 @@ export default function CheckInClient() {
             weekTargets={currentData.weekTargets}
             completedWorkoutsCount={currentData.completedWorkoutsCount}
             plannedWorkoutsCount={currentData.plannedWorkoutsCount}
+            workoutSummaries={currentData.workoutSummaries}
             activePlanId={currentData.activePlanId}
             template={currentData.template}
             onSubmitted={() => setSubmitted(s => !s)}
@@ -182,6 +184,7 @@ export default function CheckInClient() {
                 weekTargets={currentData.weekTargets}
                 completedWorkoutsCount={currentData.completedWorkoutsCount}
                 plannedWorkoutsCount={currentData.plannedWorkoutsCount}
+                workoutSummaries={currentData.workoutSummaries}
                 activePlanId={currentData.activePlanId}
                 template={currentData.template}
                 onSubmitted={() => setSubmitted(s => !s)}
@@ -235,6 +238,7 @@ export default function CheckInClient() {
                   weekTargets={currentData.weekTargets}
                   completedWorkoutsCount={currentData.completedWorkoutsCount}
                   plannedWorkoutsCount={currentData.plannedWorkoutsCount}
+                  workoutSummaries={currentData.workoutSummaries}
                   activePlanId={currentData.activePlanId}
                   template={currentData.template}
                   onSubmitted={() => setSubmitted(s => !s)}

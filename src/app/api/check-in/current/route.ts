@@ -84,20 +84,13 @@ export async function GET() {
   // Count workouts completed during the current week, and total planned in those weeks
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 7);
-  const [completedWorkoutsCount, plannedWorkoutsCount, lastCompletedWorkout, coachTemplate] = await Promise.all([
-    prisma.workout.count({
+  const [weeksWithCompleted, lastCompletedWorkout, coachTemplate] = await Promise.all([
+    prisma.week.findMany({
       where: {
-        week: { plan: { userId } },
-        dateCompleted: { gte: weekStart, lt: weekEnd },
+        plan: { userId },
+        workouts: { some: { dateCompleted: { gte: weekStart, lt: weekEnd } } },
       },
-    }),
-    prisma.workout.count({
-      where: {
-        week: {
-          plan: { userId },
-          workouts: { some: { dateCompleted: { gte: weekStart, lt: weekEnd } } },
-        },
-      },
+      select: { id: true },
     }),
     prisma.workout.findFirst({
       where: {
@@ -109,6 +102,38 @@ export async function GET() {
     }),
     getTemplateForClient(userId),
   ]);
+  const weekIds = weeksWithCompleted.map(w => w.id);
+  const plannedWorkouts = weekIds.length === 0 ? [] : await prisma.workout.findMany({
+    where: { weekId: { in: weekIds } },
+    select: {
+      id: true,
+      name: true,
+      dateCompleted: true,
+      week: { select: { order: true } },
+      exercises: { select: { sets: { select: { reps: true } } } },
+    },
+    orderBy: [
+      { week: { order: 'asc' } },
+      { order: 'asc' },
+    ],
+  });
+  const completedWorkoutsCount = plannedWorkouts.filter(w =>
+    w.dateCompleted !== null && w.dateCompleted >= weekStart && w.dateCompleted < weekEnd
+  ).length;
+  const plannedWorkoutsCount = plannedWorkouts.length;
+  const workoutSummaries = plannedWorkouts.map(workout => {
+    const plannedSets = workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+    const completedSets = workout.exercises.reduce(
+      (sum, ex) => sum + ex.sets.filter(set => set.reps !== null && set.reps > 0).length,
+      0,
+    );
+    return {
+      workoutId: workout.id,
+      workoutName: workout.name,
+      completedSets,
+      plannedSets,
+    };
+  });
   const activePlanId = lastCompletedWorkout?.week.planId ?? null;
 
   // Fetch targets for the current week
@@ -138,6 +163,7 @@ export async function GET() {
       weekTargets,
       completedWorkoutsCount,
       plannedWorkoutsCount,
+      workoutSummaries,
       activePlanId,
       template: coachTemplate,
     }),
