@@ -15,7 +15,7 @@ Default goal: reproduce the failing CI behavior locally, fix, and confirm green 
 - Ensure dependencies are installed (`npm install`) and Playwright browsers are present.
 - Assume DB is remote (Neon or equivalent) unless user explicitly says local DB.
 
-## 1) Sync DB schema and seed expected state
+## 1) Sync DB schema and seed expected state (required before every parity run)
 
 Run these first to align data-state with CI expectations:
 
@@ -29,9 +29,10 @@ Notes:
 - `prisma db push` may fail if DB connectivity is blocked (VPN, firewall, DNS). Resolve network first.
 - Neon compute can be suspended; any successful DB client command should wake it.
 
-## 2) Run exact CI-parity command
+## 2) Run exact CI-parity command (always escalated)
 
-Use `start-server-and-test` with production start and CI env vars:
+Use `start-server-and-test` with production start and CI env vars.
+Run this command with escalated permissions by default to avoid sandbox Chromium launch failures (`mach_port_rendezvous ... Permission denied (1100)`):
 
 ```bash
 CI=true ENABLE_TEST_AUTH=true NEXTAUTH_SECRET=ci-e2e-secret-not-for-production NEXTAUTH_URL=http://localhost:3000 npx start-server-and-test start http://localhost:3000 "npx playwright test --project=chromium"
@@ -45,11 +46,7 @@ CI=true ENABLE_TEST_AUTH=true NEXTAUTH_SECRET=ci-e2e-secret-not-for-production N
 
 Swap shard index as needed (`1/3`, `2/3`, `3/3`).
 
-## 3) If Chromium launch fails in sandbox (`mach_port_rendezvous ... Permission denied (1100)`)
-
-Re-run the same command with escalated permissions. This is an environment/runtime restriction, not an app test failure.
-
-## 4) Debug loop for failing tests
+## 3) Debug loop for failing tests
 
 1. Re-run just the failing spec/test with same CI env flags.
 2. Prefer deterministic selectors scoped to `main`/active panels; avoid nav/sidebar ambiguity.
@@ -58,7 +55,7 @@ Re-run the same command with escalated permissions. This is an environment/runti
 - if thresholds are design-token-dependent, use the explicit accepted minimum used in app/tests.
 4. Re-run full failing shard command until green.
 
-## 5) Verify before push
+## 4) Verify before push
 
 Minimum verification:
 
@@ -75,7 +72,7 @@ CI=true ENABLE_TEST_AUTH=true NEXTAUTH_SECRET=ci-e2e-secret-not-for-production N
 CI=true ENABLE_TEST_AUTH=true NEXTAUTH_SECRET=ci-e2e-secret-not-for-production NEXTAUTH_URL=http://localhost:3000 npx start-server-and-test start http://localhost:3000 "npx playwright test --shard=3/3 --project=chromium"
 ```
 
-## 6) Git hygiene
+## 5) Git hygiene
 
 - Commit only intentional test/app changes.
 - Do not commit local agent/tooling folders unless explicitly asked (`.agents/`, `.codex/`).
@@ -91,5 +88,9 @@ git status --short
 rg -n "getByRole\(|first\(\)|nth\(|test\.skip|toBeVisible\(" tests/e2e -S
 
 # Re-run a single failing file in CI-parity mode
+# Ensure schema/seed/build were run first
+# npx prisma db push --accept-data-loss
+# npm run seed
+# npm run build
 CI=true ENABLE_TEST_AUTH=true NEXTAUTH_SECRET=ci-e2e-secret-not-for-production NEXTAUTH_URL=http://localhost:3000 npx start-server-and-test start http://localhost:3000 "npx playwright test tests/e2e/<file>.test.ts --project=chromium"
 ```
