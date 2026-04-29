@@ -1,7 +1,6 @@
 'use client';
 
 import { Box, Paper, Stack, Typography } from '@mui/material';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import type { Metric } from '@/generated/prisma/browser';
 import type { CheckInCard, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
 import type { PreviousPhotos, WeekTargets } from '@/types/checkInTypes';
@@ -11,6 +10,7 @@ import type { MetricBreakdownKey } from './MetricsDailyBreakdown';
 import CheckInCustomCard from './CheckInCustomCard';
 import DataVizChartCard from './DataVizChartCard';
 import MetricsSystemCard from './MetricsSystemCard';
+import WorkoutsSystemCard from './WorkoutsSystemCard';
 import ProgressPhotoSection from '@/app/user/check-in/ProgressPhotoSection';
 import { DEFAULT_CHECK_IN_TEMPLATE_PREVIEW_DATA } from './checkInTemplatePreviewData';
 
@@ -232,28 +232,11 @@ export default function TemplateCardRenderer({
   const { completedWorkoutsCount, plannedWorkoutsCount, onWorkoutsClick } = systemData;
   return (
     <Paper variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2, minWidth: 0 }}>
-      <Box
-        onClick={onWorkoutsClick}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          px: 1,
-          py: 0.75,
-          borderRadius: 1,
-          bgcolor: 'action.hover',
-          cursor: onWorkoutsClick ? 'pointer' : 'default',
-          ...(onWorkoutsClick && { '&:hover': { bgcolor: 'action.selected' } }),
-        }}
-      >
-        <Typography variant="body2" color="text.secondary">Training</Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Typography variant="body2" fontWeight={600}>
-            {completedWorkoutsCount}/{plannedWorkoutsCount}
-          </Typography>
-          {onWorkoutsClick && <ChevronRightIcon sx={{ fontSize: 16, color: 'text.disabled' }} />}
-        </Box>
-      </Box>
+      <WorkoutsSystemCard
+        completedWorkoutsCount={completedWorkoutsCount}
+        plannedWorkoutsCount={plannedWorkoutsCount}
+        onWorkoutsClick={onWorkoutsClick}
+      />
     </Paper>
   );
 }
