@@ -11,13 +11,20 @@ const { mockRecordAuditEvent, mockGetSessionActorUserId } = vi.hoisted(() => ({
   mockGetSessionActorUserId: vi.fn(),
 }));
 
+const { mockGetCoachFromUser } = vi.hoisted(() => ({
+  mockGetCoachFromUser: vi.fn(),
+}));
+
 vi.mock('@lib/confirmPermission', () => ({
   default: mockConfirmPermission,
 }));
 
-vi.mock('@lib/prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   default: {
     $transaction: mockTransaction,
+    user: {
+      findUnique: vi.fn(),
+    },
   },
 }));
 
@@ -33,6 +40,10 @@ vi.mock('@lib/sessionActor', () => ({
   getSessionActorUserId: mockGetSessionActorUserId,
 }));
 
+vi.mock('@lib/coachService', () => ({
+  getCoachFromUser: mockGetCoachFromUser,
+}));
+
 vi.mock('@lib/requireSession', () => ({
   isAuthenticationError: vi.fn(() => false),
   authenticationErrorResponse: vi.fn(() => Response.json({ error: 'Unauthorized' }, { status: 401 })),
@@ -44,6 +55,7 @@ describe('POST /api/saveUserWorkoutData', () => {
     mockConfirmPermission.mockResolvedValue(undefined);
     mockTransaction.mockResolvedValue(undefined);
     mockGetSessionActorUserId.mockResolvedValue('user-1');
+    mockGetCoachFromUser.mockResolvedValue(null);
   });
 
   it('uses the extended Prisma transaction timeout for large saves', async () => {
