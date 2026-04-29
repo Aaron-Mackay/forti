@@ -28,6 +28,7 @@ export const ExerciseInputSchema = z.object({
   targetRpe: z.number().nullable().optional(),
   targetRir: z.number().int().nullable().optional(),
   isBfr: z.boolean().optional().default(false),
+  requiresRecording: z.boolean().optional().default(false),
   sets: z.array(SetInputSchema),
 });
 

@@ -4,6 +4,7 @@ import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from "@lib/apiError";
 import {getWorkoutExerciseWithOwner} from "@lib/queries";
 import {errorResponse, forbiddenResponse, notFoundResponse} from "@lib/apiResponses";
+import { getCoachFromUser } from '@lib/coachService';
 
 export async function DELETE(_req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
   const params = await props.params;
@@ -32,7 +33,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
   const params = await props.params;
   const session = await requireSession();
   const body = await req.json();
-  const {notes, cardioDuration, cardioDistance, cardioResistance, exerciseId, targetRpe, targetRir, isBfr} = body;
+  const {notes, cardioDuration, cardioDistance, cardioResistance, exerciseId, targetRpe, targetRir, isBfr, requiresRecording} = body;
 
   if ('notes' in body && typeof notes !== 'string') {
     return errorResponse('notes must be a string', 400);
@@ -40,6 +41,9 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
 
   if ('isBfr' in body && typeof isBfr !== 'boolean') {
     return errorResponse('isBfr must be a boolean', 400);
+  }
+  if ('requiresRecording' in body && typeof requiresRecording !== 'boolean') {
+    return errorResponse('requiresRecording must be a boolean', 400);
   }
 
   if ('exerciseId' in body && typeof exerciseId !== 'number') {
@@ -55,6 +59,12 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
     if (workoutExercise.workout.week.plan.userId !== session.user.id) {
       return forbiddenResponse();
     }
+    if ('requiresRecording' in body) {
+      const assignedCoach = await getCoachFromUser(workoutExercise.workout.week.plan.userId);
+      if (assignedCoach?.coachId !== session.user.id) {
+        return forbiddenResponse();
+      }
+    }
 
     const updateData: {
       notes?: string;
@@ -66,6 +76,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
       exerciseId?: number;
       substitutedForId?: number | null;
       isBfr?: boolean;
+      requiresRecording?: boolean;
     } = {};
 
     if ('notes' in body) updateData.notes = notes;
@@ -82,6 +93,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
     }
 
     if ('isBfr' in body) updateData.isBfr = isBfr;
+    if ('requiresRecording' in body) updateData.requiresRecording = requiresRecording;
 
     if ('exerciseId' in body && exerciseId !== workoutExercise.exerciseId) {
       const exercise = await prisma.exercise.findUnique({where: {id: exerciseId}});

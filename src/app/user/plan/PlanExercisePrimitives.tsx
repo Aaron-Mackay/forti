@@ -32,17 +32,20 @@ export function ExerciseNameWithMeta({
   metaParts,
   index,
   isBfr = false,
+  requiresRecording = false,
 }: {
   name: string
   metaParts: string[]
   index?: number
   isBfr?: boolean
+  requiresRecording?: boolean
 }) {
   return (
     <>
       <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.3, display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
         <Box component="span">{index != null ? `${index + 1}. ${name}` : name}</Box>
         {isBfr && <Chip label="BFR" size="small" color="warning" sx={{ height: 16, fontSize: '0.6rem' }} />}
+        {requiresRecording && <Chip label="Record requested" size="small" color="info" sx={{ height: 16, fontSize: '0.6rem' }} />}
       </Typography>
       {metaParts.length > 0 && (
         <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem' }}>
@@ -58,6 +61,7 @@ export function EditableExerciseNameWithMeta({
   metaParts,
   index,
   isBfr = false,
+  requiresRecording = false,
   onClick,
   compact = false,
   emptyLabel = 'Add exercise',
@@ -66,6 +70,7 @@ export function EditableExerciseNameWithMeta({
   metaParts?: string[]
   index?: number
   isBfr?: boolean
+  requiresRecording?: boolean
   onClick: () => void
   compact?: boolean
   emptyLabel?: string
@@ -117,6 +122,7 @@ export function EditableExerciseNameWithMeta({
                 {displayName}
               </Box>
               {isBfr && <Chip label="BFR" size="small" color="warning" sx={{ height: 16, fontSize: '0.6rem' }} />}
+              {requiresRecording && <Chip label="Record requested" size="small" color="info" sx={{ height: 16, fontSize: '0.6rem' }} />}
             </Typography>
             <EditIcon
               className="edit-icon"

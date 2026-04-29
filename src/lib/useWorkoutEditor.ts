@@ -116,6 +116,14 @@ export type WorkoutEditorAction =
   field: 'cardioDuration' | 'cardioDistance' | 'cardioResistance';
   value: number | null;
 }
+  | {
+  type: 'TOGGLE_REQUIRES_RECORDING';
+  planId: number;
+  weekId: number;
+  workoutId: number;
+  workoutExerciseId: number;
+  enabled: boolean;
+}
 
 export type CreateUuid = () => number;
 
@@ -411,6 +419,12 @@ export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, 
       const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId: workoutExerciseId});
       if (!exercise) return userDataState;
       return userPlanMutators.toggleBfr(userDataState, planId, weekId, workoutId, workoutExerciseId, enabled, createUuid);
+    }
+    case 'TOGGLE_REQUIRES_RECORDING': {
+      const { planId, weekId, workoutId, workoutExerciseId, enabled } = action;
+      const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId: workoutExerciseId});
+      if (!exercise) return userDataState;
+      return userPlanMutators.toggleRequiresRecording(userDataState, planId, weekId, workoutId, workoutExerciseId, enabled);
     }
 
     default:

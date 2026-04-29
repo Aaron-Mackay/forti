@@ -306,6 +306,7 @@ model WorkoutExercise {
   substitutedFor   Exercise?     @relation("SubstitutedExercises", fields: [substitutedForId], references: [id])
   isAdded          Boolean       @default(false) // true if added during workout (not in original plan)
   isBfr            Boolean       @default(false) // true if this is a BFR (Blood Flow Restriction) exercise
+  requiresRecording Boolean       @default(false) // coach requested client upload a recording for this specific assignment
 
   @@unique([workoutId, order])
   @@index([exerciseId])

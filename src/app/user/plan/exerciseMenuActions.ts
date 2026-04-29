@@ -94,6 +94,29 @@ export function setBfrEnabled({
   })
 }
 
+export function setRequiresRecordingEnabled({
+  dispatch,
+  planId,
+  targets,
+  enabled,
+}: {
+  dispatch: WorkoutEditorDispatch
+  planId: number
+  targets: ExerciseActionTarget[]
+  enabled: boolean
+}) {
+  targets.forEach((target) => {
+    dispatch({
+      type: 'TOGGLE_REQUIRES_RECORDING',
+      planId,
+      weekId: target.weekId,
+      workoutId: target.workoutId,
+      workoutExerciseId: target.exercise.id,
+      enabled,
+    })
+  })
+}
+
 export function removeExercises({
   dispatch,
   planId,
