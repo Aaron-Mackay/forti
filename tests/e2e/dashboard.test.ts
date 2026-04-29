@@ -34,8 +34,10 @@ test.describe('Dashboard', () => {
   });
 
   test('renders the metrics chart container', async ({ page }) => {
-    // The chart SVG or its wrapper is present once data loads
-    await expect(page.locator('.apexcharts-canvas')).toBeVisible({ timeout: 10_000 });
+    // Dashboard now renders multiple metric charts; assert at least one is visible.
+    const chartCanvases = page.locator('.apexcharts-canvas');
+    await expect(chartCanvases.first()).toBeVisible({ timeout: 10_000 });
+    await expect(chartCanvases).toHaveCount(3);
   });
 
   test('authenticated user is NOT redirected to login', async ({ page }) => {
