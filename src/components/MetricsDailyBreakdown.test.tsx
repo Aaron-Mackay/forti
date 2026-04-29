@@ -20,6 +20,22 @@ function makeMetric(partial: Partial<Metric> = {}): Metric {
 }
 
 describe('MetricsDailyBreakdown', () => {
+  it('shows weekday and calendar date in each header cell', () => {
+    render(
+      <MetricsDailyBreakdown
+        metrics={[makeMetric({ steps: 1000 })]}
+        weekStartDate="2026-01-05"
+        customMetricDefs={[]}
+        includeEmptyRows
+      />,
+    );
+
+    expect(screen.getByText('Mon')).toBeInTheDocument();
+    expect(screen.getByText('05/01')).toBeInTheDocument();
+    expect(screen.getByText('Sun')).toBeInTheDocument();
+    expect(screen.getByText('11/01')).toBeInTheDocument();
+  });
+
   it('keeps 4-digit numeric values visible in editable fields and preserves them after resync', async () => {
     const onMetricChange = vi.fn();
     const metric = makeMetric({ steps: 1000 });

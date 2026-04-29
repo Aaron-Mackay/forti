@@ -1,5 +1,5 @@
 import React from 'react';
-import {getExercises} from '@lib/api';
+import {getExercises} from '@lib/exerciseService';
 import ExercisesClient from './ExercisesClient';
 import getLoggedInUser from '@lib/getLoggedInUser';
 import prisma from '@/lib/prisma';

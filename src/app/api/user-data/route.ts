@@ -1,5 +1,5 @@
 import {requireSession} from '@lib/requireSession';
-import {getUserData} from '@lib/api';
+import {getUserData} from '@lib/userService';
 import {NextResponse} from 'next/server';
 import {withRouteAuth} from '@lib/routeAuth';
 

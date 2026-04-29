@@ -26,6 +26,8 @@ export default function ExerciseDetailView({
   workout,
   currentWorkoutId,
   activeExerciseId,
+  previousSetsMap,
+  fetchPreviousSets,
   userExerciseNotes,
   onBack,
   onSlideChange,
@@ -40,6 +42,8 @@ export default function ExerciseDetailView({
   workout: WorkoutPrisma;
   currentWorkoutId: number;
   activeExerciseId: number;
+  previousSetsMap: Map<number, PreviousExerciseHistory>;
+  fetchPreviousSets: (currentWorkoutId: number, workoutExerciseId: number, exerciseId: number) => void | Promise<void>;
   userExerciseNotes: UserExerciseNote[];
   onBack: () => void;
   onSlideChange: (swiper: SwiperType) => void;
@@ -60,21 +64,8 @@ export default function ExerciseDetailView({
   const initialSlide = useRef(
     workout.exercises.findIndex((e) => e.id === activeExerciseId)
   ).current;
-  const [previousSetsMap, setPreviousSetsMap] = useState<Map<number, PreviousExerciseHistory>>(new Map());
   const [e1rmHistoryMap, setE1rmHistoryMap] = useState<Map<number, E1rmHistoryPoint[] | null>>(new Map());
   const [previousCardioMap, setPreviousCardioMap] = useState<Map<number, PreviousCardio | null>>(new Map());
-
-  const fetchPreviousSets = (workoutExerciseId: number, exerciseId: number) => {
-    if (previousSetsMap.has(workoutExerciseId)) return;
-    fetch(`/api/exercises/${exerciseId}/previous-sets?currentWorkoutId=${currentWorkoutId}&currentWorkoutExerciseId=${workoutExerciseId}`)
-      .then(res => res.ok ? res.json() : {workouts: []})
-      .then((history: PreviousExerciseHistory) => {
-        setPreviousSetsMap(prev => new Map(prev).set(workoutExerciseId, history));
-      })
-      .catch(() => {
-        setPreviousSetsMap(prev => new Map(prev).set(workoutExerciseId, {workouts: []}));
-      });
-  };
 
   const fetchE1rmHistory = (exerciseId: number) => {
     if (e1rmHistoryMap.has(exerciseId)) return;
@@ -105,12 +96,13 @@ export default function ExerciseDetailView({
       if (initial.exercise.category === 'cardio') {
         fetchPreviousCardio(initial.exerciseId);
       } else {
-        fetchPreviousSets(initial.id, initial.exerciseId);
+        if (!previousSetsMap.has(initial.id)) {
+          fetchPreviousSets(currentWorkoutId, initial.id, initial.exerciseId);
+        }
         fetchE1rmHistory(initial.exerciseId);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeExerciseId, currentWorkoutId, fetchPreviousSets, previousSetsMap, workout.exercises]);
 
   const handleSlideChange = (swiper: SwiperType) => {
     onSlideChange(swiper);
@@ -119,7 +111,9 @@ export default function ExerciseDetailView({
       if (ex.exercise.category === 'cardio') {
         fetchPreviousCardio(ex.exerciseId);
       } else {
-        fetchPreviousSets(ex.id, ex.exerciseId);
+        if (!previousSetsMap.has(ex.id)) {
+          fetchPreviousSets(currentWorkoutId, ex.id, ex.exerciseId);
+        }
         fetchE1rmHistory(ex.exerciseId);
       }
     }

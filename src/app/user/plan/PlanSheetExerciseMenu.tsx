@@ -4,7 +4,7 @@ import React from 'react'
 import { Divider, Menu } from '@mui/material'
 import { Dir } from '@lib/useWorkoutEditor'
 import { WorkoutExercisePrisma } from '@/types/dataTypes'
-import { addTrailingDropSet, removeExercises, removeTrailingDropSets, setBfrEnabled } from './exerciseMenuActions'
+import { addTrailingDropSet, removeExercises, removeTrailingDropSets, setBfrEnabled, setRequiresRecordingEnabled } from './exerciseMenuActions'
 import { confirmRemoveLastSetWithDrops } from './exerciseSetModel'
 import { ExerciseMenuActionItem, ExerciseMenuDropAndBfrItems, ExerciseMenuMoveItems } from './ExerciseMenuItems'
 import { MenuState, WorkoutEditorDispatch } from './PlanSheetShared'
@@ -57,6 +57,10 @@ export function PlanSheetExerciseMenu({
           }}
           onToggleBfr={(checked) => {
             setBfrEnabled({ dispatch, planId, targets: menuTarget, enabled: checked })
+          }}
+          requiresRecording={Boolean(menuEx?.requiresRecording)}
+          onToggleRequiresRecording={(checked) => {
+            setRequiresRecordingEnabled({ dispatch, planId, targets: menuTarget, enabled: checked })
           }}
         />,
         <Divider key="div0" />,

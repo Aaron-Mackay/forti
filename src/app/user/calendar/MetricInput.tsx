@@ -6,7 +6,8 @@ import {hhMmToMin, minToHhMm} from "@/app/user/calendar/utils";
 import Button from "@mui/material/Button";
 import {MetricPrisma} from "@/types/dataTypes";
 import {updateMetricClient} from "@lib/metrics";
-import {CustomMetricDef, WeightUnit} from "@/types/settingsTypes";
+import {CustomMetricDef} from "@/types/settingsTypes";
+import {BodyweightUnit, bodyweightDisplayToKg} from "@/lib/units";
 
 const BUILTIN_KEYS = new Set<MetricKey>(['weight', 'calories', 'steps', 'sleepMins']);
 
@@ -27,7 +28,7 @@ export const MetricInput: React.FC<{
   setMetricStateCb: (date: Date, metric: MetricPrisma | null) => void;
   hideBack?: boolean;
   customMetricDefs?: CustomMetricDef[];
-  weightUnit?: WeightUnit;
+  bodyweightUnit?: BodyweightUnit;
 }> = ({
         setSelectedMetric,
         selectedMetric,
@@ -39,7 +40,7 @@ export const MetricInput: React.FC<{
         setMetricStateCb,
         hideBack = false,
         customMetricDefs = [],
-        weightUnit = 'kg',
+        bodyweightUnit = 'kg',
       }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -77,11 +78,15 @@ export const MetricInput: React.FC<{
         customMetrics: updatedData as MetricPrisma['customMetrics'],
       };
     } else {
+      const parsed = parseMetricInputValue(inputValue);
+      const value = selectedMetric === 'weight' && parsed !== null
+        ? bodyweightDisplayToKg(parsed, bodyweightUnit)
+        : parsed;
       updatedMetric = {
         ...(dateMetric as MetricPrisma),
         date: selectedDate,
         userId: userId,
-        [selectedMetric]: parseMetricInputValue(inputValue),
+        [selectedMetric]: value,
       };
     }
 
@@ -96,7 +101,7 @@ export const MetricInput: React.FC<{
   };
 
   const displayLabel = selectedMetric === 'weight'
-    ? `weight (${weightUnit})`
+    ? `weight (${bodyweightUnit})`
     : selectedMetric === 'sleepMins'
     ? 'sleep'
     : (customDef?.name ?? selectedMetric ?? '');

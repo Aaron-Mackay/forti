@@ -63,8 +63,8 @@ test.describe('Plan detail page', () => {
   });
 
   test('shows week column headers (Wk N)', async ({ page }) => {
-    // Desktop: PlanMultiWeekTable renders week column headers
-    await expect(page.getByText(/Wk \d+/i).first()).toBeVisible();
+    // Supports both legacy "Wk N" and current "Week N" labels.
+    await expect(page.getByText(/(?:wk|week)\s*\d+/i).first()).toBeVisible();
   });
 
   test('shows editable weight inputs for exercises', async ({ page }) => {
@@ -424,7 +424,7 @@ test.describe('Plan editor (scratch)', () => {
   });
 
   test('shows a + Workout control', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /^\+ workout$/i }).first()).toBeVisible();
+    await expect(page.locator('[aria-label="Add workout"]').first()).toBeVisible();
   });
 
   test('Save Plan button is disabled when plan name is empty', async ({ page }) => {
@@ -433,7 +433,7 @@ test.describe('Plan editor (scratch)', () => {
 
   test('Save Plan button enables after typing a plan name and exercise name', async ({ page }) => {
     await page.getByLabel(/plan name/i).fill('My Test Plan');
-    await page.getByText('+ Exercise').first().click();
+    await page.locator('[aria-label="Add exercise"]').first().click();
     const dialog = page.getByRole('dialog', { name: 'Add Exercise' });
     await dialog.getByLabel('Search exercises').fill('Squat');
     await dialog.getByRole('button', { name: /^Squat$/ }).click();
@@ -441,27 +441,27 @@ test.describe('Plan editor (scratch)', () => {
   });
 
   test('shows create option when exercise name has no match', async ({ page }) => {
-    await page.getByText('+ Exercise').first().click();
+    await page.locator('[aria-label="Add exercise"]').first().click();
     const dialog = page.getByRole('dialog', { name: 'Add Exercise' });
     await dialog.getByLabel('Search exercises').fill('Nonexistent Exercise XYZ');
     await expect(dialog.getByRole('button', { name: /Create "Nonexistent Exercise XYZ"/ })).toBeVisible();
   });
 
   test('does not show create option when exercise field is empty', async ({ page }) => {
-    await page.getByText('+ Exercise').first().click();
+    await page.locator('[aria-label="Add exercise"]').first().click();
     const dialog = page.getByRole('dialog', { name: 'Add Exercise' });
     await expect(dialog.getByRole('button', { name: /Create "/ })).not.toBeVisible();
   });
 
   test('does not show create option when exercise name matches an existing exercise', async ({ page }) => {
-    await page.getByText('+ Exercise').first().click();
+    await page.locator('[aria-label="Add exercise"]').first().click();
     const dialog = page.getByRole('dialog', { name: 'Add Exercise' });
     await dialog.getByLabel('Search exercises').fill('Squat');
     await expect(dialog.getByRole('button', { name: /Create "/ })).not.toBeVisible();
   });
 
   test('clicking create option opens Add New Exercise dialog with name pre-filled', async ({ page }) => {
-    await page.getByText('+ Exercise').first().click();
+    await page.locator('[aria-label="Add exercise"]').first().click();
     const pickerDialog = page.getByRole('dialog', { name: 'Add Exercise' });
     await pickerDialog.getByLabel('Search exercises').fill('Nordic Curl');
     await pickerDialog.getByRole('button', { name: /Create "Nordic Curl"/ }).click();
@@ -471,11 +471,13 @@ test.describe('Plan editor (scratch)', () => {
   });
 
   test('clicking + Workout adds a new workout card', async ({ page }) => {
-    const workoutChips = page.getByRole('button', { name: /^workout \d+$/i });
-    const initialCards = await workoutChips.count();
-    await page.getByRole('button', { name: /^\+ workout$/i }).first().click();
-    await expect(workoutChips).toHaveCount(initialCards + 1);
+    // In sheet-first UI, each workout column exposes an "Add exercise" ghost control.
+    const addExerciseControls = page.locator('[aria-label="Add exercise"]');
+    const initialCards = await addExerciseControls.count();
+    await page.locator('[aria-label="Add workout"]').first().click();
+    await expect(addExerciseControls).toHaveCount(initialCards + 1);
   });
+
 });
 
 // ── BFR preset toggle ─────────────────────────────────────────────────────────

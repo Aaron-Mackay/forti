@@ -1,26 +1,12 @@
-import {NextRequest, NextResponse} from "next/server";
-import confirmPermission from "@lib/confirmPermission";
-import {EventSchema} from "@lib/apiSchemas";
-import {errorResponse, validationErrorResponse} from "@lib/apiResponses";
-import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSession";
-import prisma from "@lib/prisma";
-import {
-  applyBlockOverlapResolution,
-  buildBlockOverlapResolution,
-  EventMutationResponse,
-} from "@lib/blockOverlapResolution";
-import {EventType} from "@/generated/prisma/browser";
-
-function blockOverlapConflictResponse(overlapResolution: ReturnType<typeof buildBlockOverlapResolution>) {
-  return NextResponse.json(
-    {
-      error: 'Block overlaps existing block events.',
-      code: 'CONFLICT',
-      details: {overlapResolution},
-    },
-    {status: 409},
-  );
-}
+import {NextRequest, NextResponse} from 'next/server';
+import confirmPermission from '@lib/confirmPermission';
+import {EventSchema} from '@lib/apiSchemas';
+import {errorResponse, validationErrorResponse} from '@lib/apiResponses';
+import {authenticationErrorResponse, isAuthenticationError} from '@lib/requireSession';
+import prisma from '@lib/prisma';
+import {EventMutationResponse} from '@lib/blockOverlapResolution';
+import {EventType} from '@/generated/prisma/browser';
+import {executeEventBlockMutation} from '@lib/eventBlockMutation';
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,7 +27,7 @@ export async function POST(req: NextRequest) {
       blockSubtype: null,
       recurrenceFrequency: null,
       recurrenceEnd: null,
-      ...eventData
+      ...eventData,
     };
 
     if (
@@ -56,43 +42,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({event: uploadedEvent, affectedEvents: []} satisfies EventMutationResponse);
     }
 
-    const overlappingBlocks = await prisma.event.findMany({
-      where: {
-        userId: completeEvent.userId,
-        eventType: EventType.BlockEvent,
-        startDate: {lte: completeEvent.endDate},
-        endDate: {gte: completeEvent.startDate},
-      },
-      orderBy: {startDate: 'asc'},
+    const result = await executeEventBlockMutation({
+      userId: completeEvent.userId,
+      startDate: completeEvent.startDate,
+      endDate: completeEvent.endDate,
+      resolveBlockOverlaps,
+      operation: async (tx) => tx.event.create({data: completeEvent}),
     });
 
-    if (overlappingBlocks.length > 0 && !resolveBlockOverlaps) {
-      return blockOverlapConflictResponse(
-        buildBlockOverlapResolution(overlappingBlocks, completeEvent.startDate, completeEvent.endDate)
-      );
+    if (result.type === 'conflict') {
+      return NextResponse.json(result.payload, {status: 409});
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-      const currentOverlaps = await tx.event.findMany({
-        where: {
-          userId: completeEvent.userId,
-          eventType: EventType.BlockEvent,
-          startDate: {lte: completeEvent.endDate},
-          endDate: {gte: completeEvent.startDate},
-        },
-        orderBy: {startDate: 'asc'},
-      });
-      const affectedEvents = await applyBlockOverlapResolution(
-        tx,
-        currentOverlaps,
-        completeEvent.startDate,
-        completeEvent.endDate
-      );
-      const event = await tx.event.create({data: completeEvent});
-      return {event, affectedEvents} satisfies EventMutationResponse;
-    });
-
-    return NextResponse.json(result);
+    return NextResponse.json(result.data);
   } catch (error) {
     if (error instanceof NextResponse) return error;
     if (isAuthenticationError(error)) return authenticationErrorResponse();

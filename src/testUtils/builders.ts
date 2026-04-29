@@ -192,6 +192,7 @@ export class ExerciseBuilder {
       substitutedFor: null,
       isAdded: false,
       isBfr: false,
+      requiresRecording: false,
     };
   }
   addSet(set: SetPrisma) {

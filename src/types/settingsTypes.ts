@@ -1,5 +1,6 @@
-import type { WeightUnit } from '@/lib/units';
+import type { BodyweightUnit, WeightUnit } from '@/lib/units';
 export type { WeightUnit };
+export type { BodyweightUnit };
 
 /** Per-exercise unit override stored in settings. */
 export type ExerciseUnitOverride = 'kg' | 'lbs' | 'none';
@@ -35,6 +36,8 @@ export interface Settings {
   onboardingSeenWelcome: boolean;
   // Unit preference — all weights stored in kg, converted on display
   weightUnit: WeightUnit;
+  // Bodyweight unit preference — bodyweight values are stored in kg and converted on display
+  bodyweightUnit: BodyweightUnit;
   // Per-exercise overrides: key = exerciseId as string, value = unit or 'none'
   exerciseUnitOverrides: Record<string, ExerciseUnitOverride>;
   // Up to 5 exercises whose e1rm progress is shown on the dashboard
@@ -65,6 +68,7 @@ export const DEFAULT_SETTINGS: Settings = {
   onboardingDismissed: false,
   onboardingSeenWelcome: false,
   weightUnit: 'kg',
+  bodyweightUnit: 'kg',
   exerciseUnitOverrides: {},
   trackedE1rmExercises: [],
   showE1rmProgress: true,
@@ -148,6 +152,9 @@ export function parseDashboardSettings(raw: unknown): Settings {
     onboardingDismissed:     typeof s.onboardingDismissed     === 'boolean' ? s.onboardingDismissed     : false,
     onboardingSeenWelcome:   typeof s.onboardingSeenWelcome   === 'boolean' ? s.onboardingSeenWelcome   : false,
     weightUnit:              s.weightUnit === 'lbs' ? 'lbs' : 'kg',
+    bodyweightUnit:          (s.bodyweightUnit === 'lb' || s.bodyweightUnit === 'st')
+      ? s.bodyweightUnit
+      : (s.bodyweightUnit === 'lbs' ? 'lb' : 'kg'),
     exerciseUnitOverrides:   parseExerciseUnitOverrides(s.exerciseUnitOverrides),
     trackedE1rmExercises:    parseTrackedE1rmExercises(s.trackedE1rmExercises),
     showE1rmProgress:        typeof s.showE1rmProgress === 'boolean' ? s.showE1rmProgress : true,

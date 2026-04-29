@@ -15,12 +15,15 @@ import type { Metric } from '@/generated/prisma/browser';
 import { computeMetricSummary, formatSleepMins } from '@/types/checkInTypes';
 import type { WeekTargets } from '@/types/checkInTypes';
 import type { CustomMetricDef } from '@/types/settingsTypes';
+import type { BodyweightUnit } from '@/lib/units';
+import { kgToBodyweightDisplay } from '@/lib/units';
 
 interface Props {
   currentWeek: Metric[];
   weekPrior: Metric[];
   weekTargets: WeekTargets | null;
   customMetricDefs?: CustomMetricDef[];
+  bodyweightUnit: BodyweightUnit;
   forceCompactFont?: boolean;
 }
 
@@ -60,6 +63,7 @@ export default function MetricsSummaryTable({
   weekPrior,
   weekTargets,
   customMetricDefs = [],
+  bodyweightUnit,
   forceCompactFont = false,
 }: Props) {
   const curr = computeMetricSummary(currentWeek);
@@ -68,10 +72,10 @@ export default function MetricsSummaryTable({
 
   const rows: { label: string; current: string; target: string; prior: string; dir: DeltaDir; hasData: boolean }[] = [
     {
-      label: 'Weight (kg)',
-      current: curr.avgWeight !== null ? `${curr.avgWeight}` : '—',
+      label: `Weight (${bodyweightUnit})`,
+      current: curr.avgWeight !== null ? `${kgToBodyweightDisplay(curr.avgWeight, bodyweightUnit)}` : '—',
       target: '—',
-      prior:  prior.avgWeight !== null ? `${prior.avgWeight}` : '—',
+      prior:  prior.avgWeight !== null ? `${kgToBodyweightDisplay(prior.avgWeight, bodyweightUnit)}` : '—',
       dir: delta(curr.avgWeight, prior.avgWeight, 0),
       hasData: curr.avgWeight !== null,
     },
@@ -143,7 +147,7 @@ export default function MetricsSummaryTable({
 
   return (
     <Box>
-      <Table size="small" sx={{ '& .MuiTableCell-root': { px: 1 } }}>
+      <Table size="small" sx={{ '& .MuiTableCell-root': { px: 1 } }} data-testid="summary-table">
         <TableHead>
           <TableRow>
             <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, ...cellSx }}>Metric</TableCell>

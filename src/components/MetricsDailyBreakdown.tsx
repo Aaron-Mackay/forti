@@ -5,6 +5,8 @@ import { Box, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typog
 import type { Metric } from '@/generated/prisma/browser';
 import { formatSleepMins } from '@/types/checkInTypes';
 import type { CustomMetricDef } from '@/types/settingsTypes';
+import type { BodyweightUnit } from '@/lib/units';
+import { bodyweightDisplayToKg, kgToBodyweightDisplay } from '@/lib/units';
 import ScrollEdgeFades from './ScrollEdgeFades';
 import { useScrollEdgeFades } from '@lib/hooks/useScrollEdgeFades';
 
@@ -12,6 +14,7 @@ interface Props {
   metrics: Metric[];
   weekStartDate: string | Date;
   customMetricDefs: CustomMetricDef[];
+  bodyweightUnit: BodyweightUnit;
   showMetricColumn?: boolean;
   includeEmptyRows?: boolean;
   forceCompactFont?: boolean;
@@ -109,6 +112,7 @@ export default function MetricsDailyBreakdown({
   metrics,
   weekStartDate,
   customMetricDefs,
+  bodyweightUnit,
   showMetricColumn = true,
   includeEmptyRows = false,
   forceCompactFont = false,
@@ -134,10 +138,13 @@ export default function MetricsDailyBreakdown({
   }
 
   // Day header labels derived from weekStart using UTC to avoid timezone-day mismatch
-  const dayLabels = Array.from({ length: 7 }, (_, i) => {
+  const dayHeaders = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
     d.setUTCDate(d.getUTCDate() + i);
-    return d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' });
+    return {
+      weekday: d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' }),
+      date: d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', timeZone: 'UTC' }),
+    };
   });
 
   function val(i: number, fn: (m: Metric) => string | null): string {
@@ -147,9 +154,12 @@ export default function MetricsDailyBreakdown({
 
   const stdRows: { label: string; key: MetricBreakdownKey; values: string[]; hasData: boolean }[] = [
     {
-      label: 'Weight (kg)',
+      label: `Weight (${bodyweightUnit})`,
       key: 'weight',
-      values: Array.from({ length: 7 }, (_, i) => val(i, m => m.weight != null ? `${m.weight}` : null)),
+      values: Array.from({ length: 7 }, (_, i) => val(i, m => {
+        const weight = kgToBodyweightDisplay(m.weight, bodyweightUnit);
+        return weight != null ? `${weight}` : null;
+      })),
       hasData: Array.from(byOffset.values()).some(m => m.weight != null),
     },
     {
@@ -218,7 +228,8 @@ export default function MetricsDailyBreakdown({
           return;
         }
         const raw = getMetricValueForKey(metric, row.key);
-        map.set(`${row.key}:${dayOffset}`, raw != null ? String(raw) : '');
+        const displayVal = row.key === 'weight' ? kgToBodyweightDisplay(raw, bodyweightUnit) : raw;
+        map.set(`${row.key}:${dayOffset}`, displayVal != null ? String(displayVal) : '');
       });
     });
     return map;
@@ -232,14 +243,14 @@ export default function MetricsDailyBreakdown({
   // props rather than the derived initialDraftValues Map, which has a new reference
   // on every render (rows is computed inline) and would cause an infinite loop.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setDraftValues(initialDraftValues); }, [metrics, customMetricDefs, weekStartDate, includeEmptyRows]);
+  useEffect(() => { setDraftValues(initialDraftValues); }, [metrics, customMetricDefs, weekStartDate, includeEmptyRows, bodyweightUnit]);
 
   if (rows.length === 0) return null;
 
   const cellSx = forceCompactFont
     ? { fontSize: '0.72rem' }
     : { fontSize: { xs: '0.72rem', lg: '0.875rem' } };
-  const dayColumnWidth = showMetricColumn ? `${100 / (dayLabels.length + 1)}%` : `${100 / dayLabels.length}%`;
+  const dayColumnWidth = showMetricColumn ? `${100 / (dayHeaders.length + 1)}%` : `${100 / dayHeaders.length}%`;
   const stickyMetricCellSx = showMetricColumn
     ? {
       ...cellSx,
@@ -270,12 +281,35 @@ export default function MetricsDailyBreakdown({
   return (
     <Box sx={{ position: 'relative', minWidth: 0 }}>
       <Box ref={scrollRef} sx={{ overflowX: 'auto' }} onScroll={handleScroll}>
-        <Table size="small" sx={{ width: '100%', '& .MuiTableCell-root': { px: 1 } }}>
+        <Table size="small" sx={{ width: '100%', '& .MuiTableCell-root': { px: 1 } }} data-testid="breakdown-table">
           <TableHead>
             <TableRow>
               {showMetricColumn && <TableCell sx={stickyMetricHeaderSx}>Metric</TableCell>}
-              {dayLabels.map(label => (
-                <TableCell key={label} align="center" sx={{ width: dayColumnWidth, fontWeight: 600, ...cellSx }}>{label}</TableCell>
+              {dayHeaders.map(({ weekday, date }) => (
+                <TableCell key={`${weekday}-${date}`} align="center" sx={{ width: dayColumnWidth, fontWeight: 600, ...cellSx }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: { xs: 'column', lg: 'row' },
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: { xs: 0, lg: 0.5 },
+                      lineHeight: 1.15,
+                      whiteSpace: { xs: 'normal', lg: 'nowrap' },
+                    }}
+                  >
+                    <Typography component="span" sx={{ fontWeight: 600, ...cellSx }}>
+                      {weekday}
+                    </Typography>
+                    <Typography
+                      component="span"
+                      color="text.secondary"
+                      sx={{ fontSize: '0.68rem', lineHeight: 1.1 }}
+                    >
+                      {date}
+                    </Typography>
+                  </Box>
+                </TableCell>
               ))}
             </TableRow>
           </TableHead>
@@ -315,7 +349,10 @@ export default function MetricsDailyBreakdown({
                           if (trimmed === '' || trimmed === '-' || trimmed === '.' || trimmed === '-.') return;
                           const next = Number(trimmed);
                           if (Number.isFinite(next)) {
-                            onMetricChange?.(i, row.key, next);
+                            const normalized = row.key === 'weight'
+                              ? bodyweightDisplayToKg(next, bodyweightUnit)
+                              : next;
+                            onMetricChange?.(i, row.key, normalized);
                           }
                         }}
                         onBlur={e => {
@@ -332,7 +369,10 @@ export default function MetricsDailyBreakdown({
                           }
                           const next = raw === '' ? null : Number(raw);
                           if (next === null || Number.isFinite(next)) {
-                            onMetricChange?.(i, row.key, next);
+                            const normalized = next === null || row.key !== 'weight'
+                              ? next
+                              : bodyweightDisplayToKg(next, bodyweightUnit);
+                            onMetricChange?.(i, row.key, normalized);
                           }
                         }}
                         onKeyDown={e => {

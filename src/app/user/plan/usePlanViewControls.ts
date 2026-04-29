@@ -24,7 +24,7 @@ function readStoredViewMode(storageKey: string, defaultViewMode: PlanViewMode): 
 }
 
 export function usePlanViewControls({
-  defaultViewMode = 'classic',
+  defaultViewMode = 'sheet',
   persistViewMode = false,
   viewModeStorageKey = 'planViewMode',
   zoomStorageKey = 'sheetZoom',

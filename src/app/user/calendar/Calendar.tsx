@@ -14,8 +14,8 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import CalendarBottomDrawer from "./CalendarBottomDrawer";
 import {APPBAR_HEIGHT, DRAWER_WIDTH} from "@/components/CustomAppBar";
 import { useAppBar } from '@lib/providers/AppBarProvider';
-import {format, isAfter, isBefore, isSameDay} from 'date-fns';
-import {getEventsOnDate, parsedEvents} from "@/app/user/calendar/utils";
+import {addDays, format, isAfter, isBefore, isSameDay, startOfDay} from 'date-fns';
+import {getEventsOnDate, hasMeaningfulEventChanges, parsedEvents} from "@/app/user/calendar/utils";
 import {EventType} from "@/generated/prisma/browser";
 import {CalendarRightDrawer} from "@/app/user/calendar/CalendarRightDrawer";
 import {getMetricsCache, getEventsCache, saveMetricsCache, saveEventsCache} from "@/utils/clientDb";
@@ -70,9 +70,11 @@ export default function Calendar({events, metrics, userId}: Props) {
         const response = await fetch('/api/calendar-data');
         if (!response.ok) return;
         const {events: freshEvents, metrics: freshMetrics} = await response.json();
-        const eventsChanged = freshEvents.length !== eventsInState.length ||
-          freshEvents.some((e: EventPrisma, i: number) => e.id !== eventsInState[i]?.id);
-        setEventsInState(freshEvents);
+        let eventsChanged = false;
+        setEventsInState((prevEvents) => {
+          eventsChanged = hasMeaningfulEventChanges(prevEvents, freshEvents);
+          return freshEvents;
+        });
         setDayMetricsState(freshMetrics);
         await Promise.all([
           saveEventsCache(userId, freshEvents),
@@ -85,20 +87,22 @@ export default function Calendar({events, metrics, userId}: Props) {
     };
     window.addEventListener('online', handleOnline);
     return () => window.removeEventListener('online', handleOnline);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const eventsOnSelectedDate: EventPrisma[] = useMemo(() => {
     if (!selectedDate) return [];
+    const normalizedSelectedDate = startOfDay(selectedDate);
     return eventsInState.filter(event => {
-      const start = event.startDate;
-      const end = event.endDate ?? start;
+      const start = startOfDay(event.startDate);
+      const end = event.endDate ? startOfDay(event.endDate) : addDays(start, 1);
       return (
-        (isSameDay(selectedDate, start) || isAfter(selectedDate, start)) &&
-        isBefore(selectedDate, end)
+        (isSameDay(normalizedSelectedDate, start) || isAfter(normalizedSelectedDate, start)) &&
+        isBefore(normalizedSelectedDate, end)
       );
     });
   }, [selectedDate, eventsInState]);
+
+  const fullCalendarEvents = useMemo(() => parsedEvents(eventsInState), [eventsInState]);
 
   const handleFabCreateClick = () => {
     setBottomDrawerView('event-form');
@@ -204,7 +208,7 @@ export default function Calendar({events, metrics, userId}: Props) {
             el.innerText = "•";
             info.el.querySelector('.fc-daygrid-day-top')?.appendChild(el);
           }}
-          events={parsedEvents(eventsInState)}
+          events={fullCalendarEvents}
           headerToolbar={{
             left: 'title',
             center: '',

@@ -1,5 +1,5 @@
 import {useReducer} from 'react';
-import {Exercise} from "@/generated/prisma/browser";
+import {Exercise, ExerciseCategory} from "@/generated/prisma/browser";
 
 import {PlanPrisma, SetPrisma, UserPrisma, WeekPrisma, WorkoutExercisePrisma, WorkoutPrisma} from "@/types/dataTypes";
 import * as userPlanMutators from "@/utils/userPlanMutators";
@@ -30,6 +30,7 @@ export type WorkoutEditorAction =
   | { type: 'REMOVE_DROP_SET'; planId: number; weekId: number; workoutId: number; exerciseId: number; setId: number }
   | { type: 'SET_DROPS_PER_SET'; planId: number; weekId: number; workoutId: number; exerciseId: number; dropCount: number }
   | { type: 'UPDATE_WORKOUT_NAME'; planId: number, weekId: number; workoutId: number; name: string }
+  | { type: 'UPDATE_WORKOUT_NOTES'; planId: number, weekId: number; workoutId: number; notes: string }
   | {
   type: 'UPDATE_SET_WEIGHT';
   planId: number,
@@ -85,7 +86,7 @@ export type WorkoutEditorAction =
   weekId: number;
   workoutId: number;
   workoutExerciseId: number;
-  category: string;
+  category: string | ExerciseCategory | null;
 }
   | {
   type: "UPDATE_EXERCISE";
@@ -95,7 +96,7 @@ export type WorkoutEditorAction =
   workoutExerciseId: number;
   exerciseName: string;
   exercises: Exercise[];
-  category: string
+  category: string | ExerciseCategory | null
 }
   | { type: 'REPLACE_PLAN'; planId: number; plan: PlanPrisma }
   | {
@@ -114,6 +115,14 @@ export type WorkoutEditorAction =
   exerciseId: number;
   field: 'cardioDuration' | 'cardioDistance' | 'cardioResistance';
   value: number | null;
+}
+  | {
+  type: 'TOGGLE_REQUIRES_RECORDING';
+  planId: number;
+  weekId: number;
+  workoutId: number;
+  workoutExerciseId: number;
+  enabled: boolean;
 }
 
 export type CreateUuid = () => number;
@@ -325,6 +334,13 @@ export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, 
       return userPlanMutators.updateWorkoutName(userDataState, planId, weekId, workoutId, name)
     }
 
+    case 'UPDATE_WORKOUT_NOTES': {
+      const { planId, weekId, workoutId, notes } = action;
+      const workout = getNestedOrWarn({planId, weekId, workoutId});
+      if (!workout) return userDataState;
+      return userPlanMutators.updateWorkoutNotes(userDataState, planId, weekId, workoutId, notes)
+    }
+
     case 'UPDATE_SET_WEIGHT': {
       const { planId, weekId, workoutId, exerciseId, setId, weight } = action;
       const set = getNestedOrWarn({planId, weekId, workoutId, exerciseId, setId});
@@ -371,14 +387,16 @@ export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, 
       const { planId, weekId, workoutId, workoutExerciseId, category } = action;
       const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId: workoutExerciseId});
       if (!exercise) return userDataState;
-      return userPlanMutators.updateCategory(userDataState, planId, weekId, workoutId, workoutExerciseId, category);
+      const typedCategory = userPlanMutators.parseExerciseCategory(category, null);
+      return userPlanMutators.updateCategory(userDataState, planId, weekId, workoutId, workoutExerciseId, typedCategory);
     }
 
     case "UPDATE_EXERCISE": {
       const { planId, weekId, workoutId, workoutExerciseId, exerciseName, exercises, category } = action;
       const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId: workoutExerciseId});
       if (!exercise) return userDataState;
-      return userPlanMutators.updateExerciseInUser(userDataState, planId, weekId, workoutId, workoutExerciseId, exerciseName, exercises, category, createUuid)
+      const typedCategory = userPlanMutators.parseExerciseCategory(category, null);
+      return userPlanMutators.updateExerciseInUser(userDataState, planId, weekId, workoutId, workoutExerciseId, exerciseName, exercises, typedCategory, createUuid)
     }
 
     case 'REPLACE_PLAN': {
@@ -401,6 +419,12 @@ export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, 
       const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId: workoutExerciseId});
       if (!exercise) return userDataState;
       return userPlanMutators.toggleBfr(userDataState, planId, weekId, workoutId, workoutExerciseId, enabled, createUuid);
+    }
+    case 'TOGGLE_REQUIRES_RECORDING': {
+      const { planId, weekId, workoutId, workoutExerciseId, enabled } = action;
+      const exercise = getNestedOrWarn({planId, weekId, workoutId, exerciseId: workoutExerciseId});
+      if (!exercise) return userDataState;
+      return userPlanMutators.toggleRequiresRecording(userDataState, planId, weekId, workoutId, workoutExerciseId, enabled);
     }
 
     default:

@@ -62,6 +62,8 @@ export function ExerciseMenuDropAndBfrItems({
   isBfr,
   onToggleDropSets,
   onToggleBfr,
+  requiresRecording,
+  onToggleRequiresRecording,
 }: {
   dense?: boolean
   isCardio: boolean
@@ -69,6 +71,8 @@ export function ExerciseMenuDropAndBfrItems({
   isBfr: boolean
   onToggleDropSets: (checked: boolean) => void
   onToggleBfr: (checked: boolean) => void
+  requiresRecording: boolean
+  onToggleRequiresRecording: (checked: boolean) => void
 }) {
   if (isCardio) return null
 
@@ -85,6 +89,12 @@ export function ExerciseMenuDropAndBfrItems({
         checked={isBfr}
         dense={dense}
         onToggle={onToggleBfr}
+      />
+      <ExerciseMenuToggleItem
+        label="Ask client to record"
+        checked={requiresRecording}
+        dense={dense}
+        onToggle={onToggleRequiresRecording}
       />
     </>
   )

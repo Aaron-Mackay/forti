@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
-import { getUserCheckIns } from '@lib/api';
+import { getUserCheckIns } from '@lib/userService';
 import { buildCsv } from '@/utils/csvExport';
 import { errorResponse } from '@lib/apiResponses';
 

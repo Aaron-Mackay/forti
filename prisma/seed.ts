@@ -1,279 +1,63 @@
 import prisma from '../src/lib/prisma';
-import { BlockSubtype, EventType, LibraryAssetType } from "../src/generated/prisma/browser";
+import { AuditEventType, LibraryAssetType, NotificationType } from '../src/generated/prisma/browser';
 import { seedTestUserData } from './lib/testUserSeedData';
-import { seedJeffDemoData } from './lib/jeffDemoSeedData';
-import { getWeekStart, toDateOnly } from '../src/lib/checkInUtils';
+import { EXERCISE_DESCRIPTION, seedDemoClientData } from './lib/jeffDemoSeedData';
 import exercisesData from './exercises.json';
 import { EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, SeedExercise } from '../src/types/dataTypes';
 import { computeE1rm } from '../src/lib/e1rm';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const exercises = exercisesData as any as SeedExercise[];
+const exercises = exercisesData as unknown as SeedExercise[];
 
 function validateExercises(data: SeedExercise[]): void {
   for (const ex of data) {
     for (const eq of ex.equipment) {
-      if (!EXERCISE_EQUIPMENT.includes(eq as never)) {
-        throw new Error(`Invalid equipment "${eq}" in exercise "${ex.name}"`);
-      }
+      if (!EXERCISE_EQUIPMENT.includes(eq as never)) throw new Error(`Invalid equipment "${eq}" in exercise "${ex.name}"`);
     }
     for (const muscle of ex.primaryMuscles ?? []) {
-      if (!EXERCISE_MUSCLES.includes(muscle as never)) {
-        throw new Error(`Invalid primary muscle "${muscle}" in exercise "${ex.name}"`);
-      }
+      if (!EXERCISE_MUSCLES.includes(muscle as never)) throw new Error(`Invalid primary muscle "${muscle}" in exercise "${ex.name}"`);
     }
     for (const muscle of ex.secondaryMuscles ?? []) {
-      if (!EXERCISE_MUSCLES.includes(muscle as never)) {
-        throw new Error(`Invalid secondary muscle "${muscle}" in exercise "${ex.name}"`);
-      }
+      if (!EXERCISE_MUSCLES.includes(muscle as never)) throw new Error(`Invalid secondary muscle "${muscle}" in exercise "${ex.name}"`);
     }
   }
 }
 
-function getRandomBetween(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
-}
-
-function daysAgo(n: number): Date {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
+function atDay(base: Date, deltaDays: number): Date {
+  const d = new Date(base);
+  d.setDate(base.getDate() + deltaDays);
   return d;
 }
 
 async function main() {
-  // Clear existing data
+  const today = new Date();
+
   await prisma.$executeRawUnsafe(`
-    TRUNCATE "ExerciseSet", "WorkoutExercise", "Exercise", "Workout", "Week", "Plan", "User", "Event", "UserExerciseNote", "Metric", "Account", "Session", "WeeklyCheckIn", "PushSubscription", "TargetTemplate", "TargetTemplateDay"
+    TRUNCATE "ExerciseSet", "WorkoutExercise", "Exercise", "Workout", "Week", "Plan", "User", "Event", "UserExerciseNote", "Metric", "Account", "Session", "WeeklyCheckIn", "PushSubscription", "TargetTemplate", "TargetTemplateDay", "Notification", "AuditEvent", "LearningPlan", "LearningPlanStep", "LearningPlanAssignment", "LibraryAsset"
     CASCADE
   `);
 
-  // Seed Exercises from exercises.json
   validateExercises(exercises);
-  await prisma.exercise.createMany({
-    data: exercises,
-  });
+  await prisma.exercise.createMany({ data: exercises.map((ex) => ({ ...ex, description: ex.description ?? EXERCISE_DESCRIPTION })) });
 
-  const allExercises = await prisma.exercise.findMany({ orderBy: { name: 'asc' } });
-  const findEx = (exerciseName: string) => allExercises.find(e => e.name === exerciseName)!;
-
-  // Deterministic exercise groups — same exercises repeat across weeks/plans
-  // so the "previous sets" feature always has data to display.
-  const groupA = [findEx('Bench Press'), findEx('Squat'), findEx('Deadlift')];
-  const groupB = [findEx('Overhead Press'), findEx('Barbell Row'), findEx('Pull Ups')];
-
-  // Completion schedule: one entry per workout in loop order (plan → week → workout).
-  // Plan 0: 2 weeks × 2 workouts = 4  |  Plan 1: 3 weeks × 2 workouts = 6  →  10 total
-  // The last two (Plan 1 Week 2) are left incomplete so the user has a current workout to do.
-  const workoutCompletionDates: (Date | null)[] = [
-    daysAgo(46), daysAgo(43), // Plan 1, Week 1
-    daysAgo(39), daysAgo(36), // Plan 1, Week 2
-    daysAgo(32), daysAgo(29), // Plan 2, Week 1
-    daysAgo(25), daysAgo(22), // Plan 2, Week 2
-    null, null,               // Plan 2, Week 3 — current / incomplete
-  ];
-
-  // ── Seed Todd (Jeff's coach) ──────────────────────────────────────────────
-  // Todd has a custom check-in template that Jeff sees when submitting check-ins.
-  const toddCheckInTemplate = {
-    version: 1,
-    fields: [
-      { id: crypto.randomUUID(), type: 'photos', label: 'Progress photos' },
-      { id: crypto.randomUUID(), type: 'rating', label: 'Energy', minScale: 1, maxScale: 10, minLabel: 'Exhausted', maxLabel: 'Thriving' },
-      { id: crypto.randomUUID(), type: 'rating', label: 'Recovery', minScale: 1, maxScale: 10, minLabel: 'Still sore', maxLabel: 'Fresh' },
-      { id: crypto.randomUUID(), type: 'rating', label: 'Adherence to plan', minScale: 1, maxScale: 5, minLabel: 'Off plan', maxLabel: 'Perfect' },
-      { id: crypto.randomUUID(), type: 'textarea', label: 'How did training feel this week?' },
-      { id: crypto.randomUUID(), type: 'text', label: 'Any pain or niggles to flag?' },
-      { id: crypto.randomUUID(), type: 'textarea', label: 'Message to your coach' },
-    ],
-  };
-  const todd = await prisma.user.create({
+  const coach = await prisma.user.create({
     data: {
-      name: 'Todd',
+      name: 'Todd Coach',
       email: 'todd@example.com',
       coachCode: '123456',
       settings: { registrationComplete: true, onboardingSeenWelcome: true, onboardingDismissed: true, coachModeActive: true },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      checkInTemplate: toddCheckInTemplate as any,
     },
   });
 
-  await prisma.userExerciseNote.createMany({
-    data: [
-      { userId: todd.id, exerciseId: findEx('Bench Press').id, note: 'Warm up properly to protect elbow' },
-      { userId: todd.id, exerciseId: findEx('Squat').id, note: 'Squat properly' },
-      { userId: todd.id, exerciseId: findEx('Overhead Press').id, note: 'Wrench and twist' },
-      { userId: todd.id, exerciseId: findEx('Barbell Row').id, note: "Don't fall over" },
-    ],
-  });
+  const [jeff, maria, alex] = await Promise.all([
+    prisma.user.create({ data: { name: 'Jeff Demo', email: 'jeff@example.com' } }),
+    prisma.user.create({ data: { name: 'Maria Client', email: 'maria@example.com' } }),
+    prisma.user.create({ data: { name: 'Alex Client', email: 'alex@example.com' } }),
+  ]);
 
-  await prisma.event.createMany({
-    data: [
-      {
-        userId: todd.id,
-        name: 'Training Week 1',
-        description: "Start of Todd's program",
-        startDate: new Date('2025-06-01'),
-        endDate: new Date('2025-06-07'),
-        eventType: EventType.CustomEvent
-      },
-      {
-        userId: todd.id,
-        name: 'Holiday',
-        description: 'Recovery week',
-        startDate: new Date('2025-08-15'),
-        endDate: new Date('2025-08-20'),
-        eventType: EventType.CustomEvent
-      },
-      {
-        userId: todd.id,
-        name: 'Bulk',
-        startDate: new Date('2025-08-01'),
-        endDate: new Date('2025-08-31'),
-        eventType: EventType.BlockEvent,
-        blockSubtype: BlockSubtype.Bulk
-      },
-      {
-        userId: todd.id,
-        name: 'Cut',
-        startDate: new Date('2025-09-01'),
-        endDate: new Date('2025-09-21'),
-        eventType: EventType.BlockEvent,
-        blockSubtype: BlockSubtype.Cut
-      },
-      {
-        userId: todd.id,
-        name: 'Custom',
-        startDate: new Date('2025-07-01'),
-        endDate: new Date('2025-07-21'),
-        customColor: 'red',
-        eventType: EventType.CustomEvent
-      },
-    ],
-  });
+  await seedDemoClientData(jeff, { coachId: coach.id, today, variant: 'hypertrophy' });
+  await seedDemoClientData(maria, { coachId: coach.id, today, variant: 'recomposition' });
+  await seedDemoClientData(alex, { coachId: coach.id, today, variant: 'strength' });
 
-  const planCount = 2;
-  let workoutCounter = 0;
-  for (let planIdx = 0; planIdx < planCount; planIdx++) {
-    const plan = await prisma.plan.create({
-      data: {
-        userId: todd.id,
-        order: planIdx + 1,
-        name: `Todd's Plan ${planIdx + 1}`,
-        description: `Training block ${planIdx + 1} for Todd`,
-      },
-    });
-
-    const weekCount = 2 + planIdx;
-    for (let weekIdx = 0; weekIdx < weekCount; weekIdx++) {
-      const week = await prisma.week.create({
-        data: { planId: plan.id, order: weekIdx + 1 },
-      });
-
-      const workoutCount = 2;
-      for (let woIdx = 0; woIdx < workoutCount; woIdx++) {
-        const completionDate = workoutCompletionDates[workoutCounter++] ?? null;
-
-        const workout = await prisma.workout.create({
-          data: {
-            weekId: week.id,
-            name: `Workout ${woIdx + 1} (Plan ${planIdx + 1} - Week ${weekIdx + 1})`,
-            notes: woIdx % 2 === 0 ? 'Felt strong today 💪' : null,
-            order: woIdx + 1,
-          },
-        });
-
-        const selectedExercises = woIdx % 2 === 0 ? groupA : groupB;
-
-        for (let i = 0; i < selectedExercises.length; i++) {
-          const exercise = selectedExercises[i];
-
-          const workoutExercise = await prisma.workoutExercise.create({
-            data: {
-              workoutId: workout.id,
-              exerciseId: exercise.id,
-              order: i + 1,
-              restTime: "90",
-              repRange: "8-12",
-            },
-          });
-
-          const setCount = Math.floor(getRandomBetween(2, 5));
-
-          for (let s = 0; s < setCount; s++) {
-            await prisma.exerciseSet.create({
-              data: {
-                workoutExerciseId: workoutExercise.id,
-                order: s + 1,
-                reps: completionDate !== null ? 8 + Math.floor(Math.random() * 5) : null,
-                weight: completionDate !== null ? Math.round(Math.random() * 50 + 30) : null,
-              },
-            });
-          }
-        }
-
-        if (completionDate !== null) {
-          await prisma.workout.update({
-            where: { id: workout.id },
-            data: { dateCompleted: completionDate },
-          });
-        }
-      }
-    }
-  }
-
-  // Seed DayMetrics for Todd for the last 60 days
-  const today = new Date();
-  const dayMetricsData = [];
-  for (let i = 0; i < 60; i++) {
-    const date = new Date(today);
-    date.setDate(today.getDate() - i);
-    const maybeNull = (val: any) => Math.random() < 0.3 ? null : val;
-    dayMetricsData.push({
-      userId: todd.id,
-      date,
-      weight: maybeNull(Number((Math.random() * 2 + 82).toFixed(1))),
-      steps: maybeNull(Math.floor(Math.random() * (10000 - 2000 + 1)) + 2000),
-      sleepMins: maybeNull(Math.floor(Math.random() * (540 - 360 + 1)) + 360),
-      calories: maybeNull(Math.floor(Math.random() * (2500 - 1500 + 1)) + 1500),
-      protein: maybeNull(Math.floor(Math.random() * 200)),
-      carbs: maybeNull(Math.floor(Math.random() * 400)),
-      fat: maybeNull(Math.floor(Math.random() * 100)),
-    });
-  }
-  await prisma.metric.createMany({ data: dayMetricsData });
-
-  // ── Seed WeeklyCheckIns for Todd ──────────────────────────────────────────
-  // Create 6 completed check-ins over the last 6 weeks
-  const checkInData = [];
-  for (let w = 1; w <= 6; w++) {
-    const refDate = new Date(today);
-    refDate.setDate(today.getDate() - w * 7);
-    const weekStart = toDateOnly(getWeekStart(refDate));
-    const completedAt = new Date(weekStart);
-    completedAt.setDate(completedAt.getDate() + 1); // completed on Tuesday of that week
-
-    checkInData.push({
-      userId: todd.id,
-      weekStartDate: weekStart,
-      completedAt,
-      energyLevel: Math.ceil(Math.random() * 5),
-      moodRating: Math.ceil(Math.random() * 5),
-      stressLevel: Math.ceil(Math.random() * 5),
-      sleepQuality: Math.ceil(Math.random() * 5),
-      recoveryRating: Math.ceil(Math.random() * 5),
-      adherenceRating: Math.ceil(Math.random() * 5),
-      completedWorkouts: Math.floor(Math.random() * 4) + 1,
-      plannedWorkouts: 4,
-      weekReview: w % 2 === 0 ? 'Solid week overall, hit all my main lifts.' : 'Struggled with sleep mid-week but pushed through.',
-      coachMessage: w % 3 === 0 ? 'Should I increase squat weight next week?' : null,
-      goalsNextWeek: 'Stay consistent on nutrition and add 2.5kg to deadlift.',
-    });
-  }
-  await prisma.weeklyCheckIn.createMany({ data: checkInData });
-
-  // ── Seed TestUser (E2E test account) ─────────────────────────────────────
-  // A fixed past date is used so E2E tests running against real-today (~2026)
-  // see no active blocks and no upcoming events.
   const testuser = await prisma.user.create({
     data: {
       name: 'TestUser',
@@ -283,103 +67,108 @@ async function main() {
   });
   await seedTestUserData(testuser, new Date('2024-06-01'));
 
-  // ── Seed Jeff Demo (public "Try Demo" login user) ─────────────────────────
-  // Today's date is used so the dashboard shows live data: active block,
-  // upcoming events, etc.
-  const jeff = await prisma.user.create({
+  const coachAsset = await prisma.libraryAsset.create({
     data: {
-      name: 'Jeff Demo',
-      email: 'jeff@example.com',
-      settings: { registrationComplete: true, onboardingSeenWelcome: true, onboardingDismissed: true },
+      userId: coach.id,
+      title: 'Squat Form Guide',
+      description: 'Essential cues for a safe and strong squat.',
+      type: LibraryAssetType.LINK,
+      url: 'https://www.youtube.com/watch?v=ultWZbUMPL8',
+      isCoachAsset: true,
     },
   });
-  await seedJeffDemoData(jeff, new Date(), todd.id);
 
-  // Seed a TargetTemplate for Jeff (current week, uniform macros)
-  await prisma.targetTemplate.create({
+  const learningPlan = await prisma.learningPlan.create({
     data: {
-      userId: jeff.id,
-      effectiveFrom: toDateOnly(getWeekStart(new Date())),
-      stepsTarget: 10000,
-      sleepMinsTarget: 480,
-      days: {
-        create: [1, 2, 3, 4, 5, 6, 7].map(dow => ({
-          dayOfWeek: dow,
-          caloriesTarget: 2500,
-          proteinTarget: 160,
-          carbsTarget: 280,
-          fatTarget: 70,
-        })),
+      coachId: coach.id,
+      title: 'Movement Fundamentals (4-Week Onramp)',
+      description: 'Educational progression for technique and consistency.',
+      steps: {
+        create: [
+          { order: 1, dayOffset: 0, title: 'Warm-up intent', body: 'Build a repeatable warm-up routine.' },
+          { order: 2, dayOffset: 3, title: 'Bracing primer', body: 'Practice 360° brace breathing before compound lifts.' },
+          { order: 3, dayOffset: 7, title: 'Squat depth audit', body: 'Film top set and compare against depth standards.', assetId: coachAsset.id },
+          { order: 4, dayOffset: 10, title: 'Recovery habits', body: 'Define one sleep and one stress habit for the next week.' },
+        ],
       },
     },
+    include: { steps: true },
   });
 
-  // ── Library assets ─────────────────────────────────────────────────────────
-  await prisma.libraryAsset.createMany({
+  for (const [index, client] of [jeff, maria, alex].entries()) {
+    const stepProgress = Object.fromEntries(
+      learningPlan.steps.map((step, stepIndex) => [String(step.id), {
+        notifiedAt: atDay(today, -(12 - stepIndex * 2)).toISOString(),
+        completedAt: index === 0 || stepIndex < 2 ? atDay(today, -(10 - stepIndex * 2)).toISOString() : null,
+      }]),
+    );
+    await prisma.learningPlanAssignment.create({
+      data: {
+        planId: learningPlan.id,
+        clientId: client.id,
+        startDate: atDay(today, -14),
+        stepProgress,
+      },
+    });
+  }
+
+  await prisma.notification.createMany({
     data: [
-      // Todd's coach assets — shared with all his clients (including Jeff)
       {
-        userId: todd.id,
-        title: 'Squat Form Guide',
-        description: 'Essential cues for a safe and strong squat. Watch before each squat session.',
-        type: LibraryAssetType.LINK,
-        url: 'https://www.youtube.com/watch?v=ultWZbUMPL8',
-        isCoachAsset: true,
+        userId: coach.id,
+        type: NotificationType.CheckInSubmitted,
+        title: 'New check-in submitted',
+        body: 'Jeff Demo submitted a weekly check-in.',
+        url: '/user/coach/check-ins',
+        createdAt: atDay(today, -1),
       },
       {
-        userId: todd.id,
-        title: 'Training Programme Overview',
-        description: 'Your current block structure, phase goals, and weekly expectations.',
-        type: LibraryAssetType.DOCUMENT,
-        url: null,
-        isCoachAsset: true,
-      },
-      {
-        userId: todd.id,
-        title: 'Movement Standards',
-        description: 'Reference images for key lifts — what good form looks like at each stage.',
-        type: LibraryAssetType.IMAGE,
-        url: null,
-        isCoachAsset: true,
-      },
-      // Todd's private asset
-      {
-        userId: todd.id,
-        title: 'Coaching Resources',
-        description: 'Articles and research I reference regularly when writing programmes.',
-        type: LibraryAssetType.LINK,
-        url: 'https://www.strongerbyscience.com',
-        isCoachAsset: false,
-      },
-      // Jeff's private assets
-      {
-        userId: jeff.id,
-        title: 'My PR Tracker',
-        description: 'Personal records spreadsheet — updated after each training session.',
-        type: LibraryAssetType.LINK,
-        url: 'https://docs.google.com/spreadsheets',
-        isCoachAsset: false,
-      },
-      {
-        userId: jeff.id,
-        title: 'PR Attempt — Deadlift',
-        description: 'Form check from my last max attempt. Need to work on lockout.',
-        type: LibraryAssetType.VIDEO,
-        url: null,
-        isCoachAsset: false,
+        userId: coach.id,
+        type: NotificationType.LearningPlanStepDelivered,
+        title: 'Learning step delivered',
+        body: 'A new educational step was delivered to Maria Client.',
+        url: '/user/coach/clients',
+        readAt: atDay(today, -1),
+        createdAt: atDay(today, -1),
       },
     ],
   });
 
-  // Backfill e1rm for all seeded sets
+  await prisma.auditEvent.createMany({
+    data: [
+      {
+        actorUserId: coach.id,
+        eventType: AuditEventType.LoginSucceeded,
+        subjectType: 'user',
+        subjectId: coach.id,
+        metadata: { provider: 'demo-coach' },
+        occurredAt: atDay(today, -9),
+      },
+      {
+        actorUserId: coach.id,
+        eventType: AuditEventType.CheckInReviewed,
+        subjectType: 'weeklyCheckIn',
+        subjectId: `${jeff.id}-latest`,
+        metadata: { clientName: jeff.name },
+        occurredAt: atDay(today, -2),
+      },
+      {
+        actorUserId: coach.id,
+        eventType: AuditEventType.PlanCreated,
+        subjectType: 'learningPlan',
+        subjectId: String(learningPlan.id),
+        metadata: { title: learningPlan.title },
+        occurredAt: atDay(today, -14),
+      },
+    ],
+  });
+
   const allSets = await prisma.exerciseSet.findMany({ select: { id: true, weight: true, reps: true } });
   for (const set of allSets) {
     await prisma.exerciseSet.update({ where: { id: set.id }, data: { e1rm: computeE1rm(set.weight, set.reps) } });
   }
 
-  const dbUrl = process.env.DATABASE_URL ?? "";
-  const dbLoc = dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1") ? 'local' : 'neon';
-  console.log(`✅ Seeded ${dbLoc} database with Plans, Weeks, Workouts (partial & full), Sets (partial & full), Events, and DayMetrics`);
+  console.log('✅ Seeded deterministic demo ecosystem with coach + multiple clients and realistic progress history.');
 }
 
 main()

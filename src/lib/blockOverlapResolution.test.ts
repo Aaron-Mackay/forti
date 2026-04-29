@@ -55,7 +55,7 @@ describe('buildBlockOverlapResolution', () => {
 
     expect(result[0]).toMatchObject({
       action: 'truncate',
-      resultingRanges: [{startDate: '2024-01-01', endDate: '2024-01-09'}],
+      resultingRanges: [{startDate: '2024-01-01', endDate: '2024-01-10'}],
     });
   });
 
@@ -68,7 +68,7 @@ describe('buildBlockOverlapResolution', () => {
 
     expect(result[0]).toMatchObject({
       action: 'truncate',
-      resultingRanges: [{startDate: '2024-01-21', endDate: '2024-01-31'}],
+      resultingRanges: [{startDate: '2024-01-20', endDate: '2024-01-31'}],
     });
   });
 
@@ -82,8 +82,8 @@ describe('buildBlockOverlapResolution', () => {
     expect(result[0]).toMatchObject({
       action: 'split',
       resultingRanges: [
-        {startDate: '2024-01-01', endDate: '2024-01-09'},
-        {startDate: '2024-01-21', endDate: '2024-01-31'},
+        {startDate: '2024-01-01', endDate: '2024-01-10'},
+        {startDate: '2024-01-20', endDate: '2024-01-31'},
       ],
     });
   });
@@ -92,8 +92,8 @@ describe('buildBlockOverlapResolution', () => {
 describe('applyBlockOverlapResolution', () => {
   it('updates the original block and creates the after block for splits', async () => {
     const original = block({startDate: date('2024-01-01'), endDate: date('2024-01-31')});
-    const updated = {...original, endDate: date('2024-01-09')};
-    const created = {...original, id: 2, startDate: date('2024-01-21')};
+    const updated = {...original, endDate: date('2024-01-10')};
+    const created = {...original, id: 2, startDate: date('2024-01-20')};
     const tx = {
       event: {
         delete: vi.fn(),
@@ -106,13 +106,13 @@ describe('applyBlockOverlapResolution', () => {
 
     expect(tx.event.update).toHaveBeenCalledWith({
       where: {id: 1},
-      data: {endDate: date('2024-01-09')},
+      data: {endDate: date('2024-01-10')},
     });
     expect(tx.event.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         userId: 'user-1',
         name: 'Bulk',
-        startDate: date('2024-01-21'),
+        startDate: date('2024-01-20'),
         endDate: date('2024-01-31'),
         recurrenceFrequency: null,
         recurrenceEnd: null,

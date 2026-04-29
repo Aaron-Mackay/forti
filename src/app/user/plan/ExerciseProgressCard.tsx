@@ -7,10 +7,11 @@ import { WorkoutExercisePrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
 import { Dir } from '@/lib/useWorkoutEditor';
 import { computeE1rm } from '@/lib/e1rm';
+import { getE1rmDeltaDirection } from './planPresentation';
 import { ExerciseMenuActionItem, ExerciseMenuDropAndBfrItems, ExerciseMenuMoveItems } from './ExerciseMenuItems';
 import { buildExerciseMetaParts, CompactSetEditor, EditableExerciseNameWithMeta, SetCountControls } from './PlanExercisePrimitives';
 import { confirmRemoveLastSetWithDrops, getExerciseSetModel } from './exerciseSetModel';
-import { hasTrailingDropSets, removeExercises, removeTrailingDropSets as removeTrailingDropSetsForTargets, setBfrEnabled } from './exerciseMenuActions';
+import { hasTrailingDropSets, removeExercises, removeTrailingDropSets as removeTrailingDropSetsForTargets, setBfrEnabled, setRequiresRecordingEnabled } from './exerciseMenuActions';
 import ExercisePickerDialog from '@/app/user/workout/ExercisePickerDialog';
 import ExerciseDetailsDialog from './ExerciseDetailsDialog';
 
@@ -61,6 +62,11 @@ const cardioValueSx = {
   justifyContent: 'center',
   border: '1px solid transparent',
 };
+const e1rmDeltaMeta = {
+  up: { symbol: '↑', color: 'success.main', label: 'e1RM increased from previous workout' },
+  down: { symbol: '↓', color: 'error.main', label: 'e1RM decreased from previous workout' },
+  flat: { symbol: '→', color: 'text.disabled', label: 'e1RM unchanged from previous workout' },
+} as const;
 
 const ExerciseProgressCard = ({
   exerciseLink,
@@ -234,6 +240,8 @@ const ExerciseProgressCard = ({
 
             const prevE1rm = computeE1rm(prev?.weight, prev?.reps);
             const setE1rm = set ? computeE1rm(set.weight, set.reps) : null;
+            const deltaDirection = getE1rmDeltaDirection(setE1rm, prevE1rm);
+            const deltaMeta = deltaDirection !== 'none' ? e1rmDeltaMeta[deltaDirection] : null;
 
             return (
               <Box
@@ -292,6 +300,15 @@ const ExerciseProgressCard = ({
 
                 <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.72rem' }}>
                   {setE1rm != null ? Math.round(setE1rm) : '—'}
+                  {deltaMeta && (
+                    <Box
+                      component="span"
+                      aria-label={deltaMeta.label}
+                      sx={{ ml: 0.35, color: deltaMeta.color, fontWeight: 700, fontSize: '0.72rem', lineHeight: 1 }}
+                    >
+                      {deltaMeta.symbol}
+                    </Box>
+                  )}
                 </Typography>
               </Box>
             );
@@ -391,6 +408,7 @@ const ExerciseProgressCard = ({
           isCardio={isCardio}
           dropSetsEnabled={showDropControls}
           isBfr={exerciseLink.isBfr}
+          requiresRecording={Boolean(exerciseLink.requiresRecording)}
           onToggleDropSets={(checked) => {
             if (!checked) {
               handleDisableDropSets();
@@ -401,6 +419,9 @@ const ExerciseProgressCard = ({
           }}
           onToggleBfr={(checked) => {
             setBfrEnabled({ dispatch, planId, targets: [menuTarget], enabled: checked });
+          }}
+          onToggleRequiresRecording={(checked) => {
+            setRequiresRecordingEnabled({ dispatch, planId, targets: [menuTarget], enabled: checked });
           }}
         />
         <ExerciseMenuActionItem

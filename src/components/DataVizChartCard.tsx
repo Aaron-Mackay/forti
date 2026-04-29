@@ -22,7 +22,7 @@ import { RELATIVE_WEEK_OPTIONS } from '@/types/datavizTypes';
 import { BUILTIN_METRIC_LABELS } from '@/types/metricTypes';
 import { useApiGet } from '@lib/hooks/api/useApiGet';
 import type { MetricHistoryResponse } from '@lib/contracts/metricHistory';
-import { PRIMARY_COLOUR } from '@lib/theme';
+import { colorTokens } from '@lib/theme';
 import { getCheckInWeekStart } from '@lib/checkInUtils';
 import { useSettings } from '@lib/providers/SettingsProvider';
 import { generateDataVizDummySeries } from './dataVizDummySeries';
@@ -145,7 +145,7 @@ export default function DataVizChartCard({
     },
     stroke: { curve: 'smooth' as const, width: 2 },
     markers: { size: 3 },
-    colors: [PRIMARY_COLOUR],
+    colors: [colorTokens.brand.primary],
     xaxis: {
       type: 'datetime' as const,
       min: rangeStartTs,
@@ -160,7 +160,7 @@ export default function DataVizChartCard({
     },
     tooltip: { x: { format: 'dd MMM yyyy' } },
     legend: { show: false },
-    grid: { borderColor: 'rgba(0,0,0,0.06)' },
+    grid: { borderColor: colorTokens.surface.borderSubtle },
   }), [card.metric, rangeStartTs, rangeEndTs]);
 
   const hasPoints = series[0].data.length > 0;

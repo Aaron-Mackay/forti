@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {
   Box,
   Button,
@@ -37,6 +37,7 @@ import { useScrollEdgeFades } from '@lib/hooks/useScrollEdgeFades';
 
 export default function ExercisesListView({
                                             workout,
+                                            onEnter,
                                             onBack,
                                             onSelectExercise,
                                             onWorkoutNoteBlur,
@@ -45,6 +46,7 @@ export default function ExercisesListView({
                                             onRemoveExercise,
                                           }: {
   workout: WorkoutPrisma;
+  onEnter?: () => void | Promise<void>;
   onBack: () => void;
   onSelectExercise: (exerciseId: number) => void;
   onWorkoutNoteBlur: (note: string) => void;
@@ -53,6 +55,9 @@ export default function ExercisesListView({
   onRemoveExercise?: (workoutExerciseId: number) => void;
 }) {
   useAppBar({title: workout.name, showBack: true, onBack});
+  useEffect(() => {
+    onEnter?.();
+  }, [onEnter]);
   const [notesOpen, setNotesOpen] = useState(false);
   const [noteValue, setNoteValue] = useState(workout.notes ?? '');
 

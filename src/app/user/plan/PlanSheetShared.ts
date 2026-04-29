@@ -35,6 +35,7 @@ export const cellSx: CSSProperties = {
   borderBottom: '1px solid var(--mui-palette-divider, #e0e0e0)',
   whiteSpace: 'nowrap',
   verticalAlign: 'middle',
+  textAlign: 'center',
 }
 
 export const headerCellSx: CSSProperties = {

@@ -1,7 +1,8 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@lib/auth';
 import { notFound } from 'next/navigation';
-import { getUserEvents, getUserMetrics } from '@lib/api';
+import { getUserEvents } from '@lib/eventService';
+import { getUserMetrics } from '@lib/metricService';
 import { getActiveTemplateForWeek } from '@lib/targetTemplates';
 import { getWeekStart } from '@lib/checkInUtils';
 import NutritionClient from './NutritionClient';

@@ -1,4 +1,4 @@
-import {getAllLinkedPlans} from "@lib/api";
+import {getAllLinkedPlans} from "@lib/planService";
 import React from "react";
 import getLoggedInUser from "@lib/getLoggedInUser";
 import AppBarTitle from "@/components/AppBarTitle";

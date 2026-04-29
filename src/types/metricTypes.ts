@@ -10,7 +10,7 @@ export const BUILTIN_METRIC_KEYS: BuiltInMetricKey[] = [
 ];
 
 export const BUILTIN_METRIC_LABELS: Record<BuiltInMetricKey, string> = {
-  weight:   'Weight (kg)',
+  weight:   'Weight',
   steps:    'Steps',
   sleepMins:'Sleep (mins)',
   calories: 'Calories',

@@ -1,4 +1,6 @@
-import {getExercisesAndCategories, getUserData, getUserFromPlan} from "@lib/api";
+import {getExercisesAndCategories} from "@lib/exerciseService";
+import {getUserFromPlan} from "@lib/planService";
+import {getUserData} from "@lib/userService";
 import {PlanTable} from "../PlanTable";
 import {WorkoutEditorProvider} from "@/context/WorkoutEditorContext";
 import React from "react";

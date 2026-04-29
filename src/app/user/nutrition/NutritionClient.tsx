@@ -37,6 +37,10 @@ import {
   isMacroPercentSplitValid,
 } from '@lib/macroTargets';
 import MacroTargetsPanel, {type MacroPercentValues} from '@/components/MacroTargetsPanel';
+import { fetchJsonWithSchema } from '@lib/fetchWrapper';
+import { GetTargetTemplateResponseSchema, TargetTemplateRequestSchema, TargetTemplateResponseSchema } from '@lib/contracts/targetTemplates';
+import { useSettings } from '@lib/providers/SettingsProvider';
+import { bodyweightDisplayToKg, kgToBodyweightDisplay } from '@/lib/units';
 
 interface Props {
   userId: string;
@@ -104,14 +108,14 @@ function hasAnyMacroActuals(metric: Pick<MetricPrisma, 'calories' | 'protein' | 
   return metric.calories !== null || metric.protein !== null || metric.carbs !== null || metric.fat !== null;
 }
 
-function metricToEditValues(m: MetricPrisma | undefined): EditValues {
+function metricToEditValues(m: MetricPrisma | undefined, bodyweightUnit: 'kg' | 'lb' | 'st'): EditValues {
   const str = (v: number | null | undefined) => (v !== null && v !== undefined ? String(v) : '');
   return {
     calories: str(m?.calories),
     protein: str(m?.protein),
     carbs: str(m?.carbs),
     fat: str(m?.fat),
-    weight: str(m?.weight),
+    weight: str(kgToBodyweightDisplay(m?.weight, bodyweightUnit)),
   };
 }
 
@@ -165,6 +169,7 @@ export default function NutritionClient({
   initialTemplates,
 }: Props) {
   useAppBar({ title: 'Nutrition' });
+  const { settings } = useSettings();
   const today = useMemo(() => new Date(), []);
 
   const [weekStart, setWeekStart] = useState<Date>(() =>
@@ -221,9 +226,8 @@ export default function NutritionClient({
 
     setTemplateLoading(true);
     const weekMonday = convertDateToDateString(weekStart);
-    fetch(`/api/target-templates?weekStart=${weekMonday}`)
-      .then(r => r.json())
-      .then(({ template }: { template: TargetTemplateWithDays | null }) =>
+    fetchJsonWithSchema(`/api/target-templates?weekStart=${weekMonday}`, GetTargetTemplateResponseSchema)
+      .then(({ template }) =>
         setActiveTemplate(template ?? null),
       )
       .catch(() => setActiveTemplate(null))
@@ -271,9 +275,9 @@ export default function NutritionClient({
   const openEditor = useCallback(
     (dateStr: string) => {
       setEditingDate(dateStr);
-      setEditValues(metricToEditValues(metricsByDate.get(dateStr)));
+      setEditValues(metricToEditValues(metricsByDate.get(dateStr), settings.bodyweightUnit));
     },
-    [metricsByDate],
+    [metricsByDate, settings.bodyweightUnit],
   );
 
   const closeEditor = useCallback(() => {
@@ -289,7 +293,12 @@ export default function NutritionClient({
           id: existing?.id ?? 0,
           userId,
           date: new Date(dateStr),
-          weight: editValues.weight !== '' ? toFloatOrNull(editValues.weight) : (existing?.weight ?? null),
+          weight: editValues.weight !== ''
+            ? (() => {
+              const parsed = toFloatOrNull(editValues.weight);
+              return parsed === null ? null : bodyweightDisplayToKg(parsed, settings.bodyweightUnit);
+            })()
+            : (existing?.weight ?? null),
           steps: existing?.steps ?? null,
           sleepMins: existing?.sleepMins ?? null,
           calories: editValues.calories !== '' ? toIntOrNull(editValues.calories) : (existing?.calories ?? null),
@@ -319,7 +328,7 @@ export default function NutritionClient({
         setSavingDay(false);
       }
     },
-    [userId, metricsByDate, editValues],
+    [userId, metricsByDate, editValues, settings.bodyweightUnit],
   );
 
   const openTargetsPanel = useCallback(() => {
@@ -360,19 +369,21 @@ export default function NutritionClient({
       const days: Record<number, typeof macro> = {};
       for (let dow = 1; dow <= 7; dow++) days[dow] = macro;
 
+      const payload = TargetTemplateRequestSchema.parse({
+        effectiveFrom: convertDateToDateString(weekStart),
+        stepsTarget: activeTemplate?.stepsTarget ?? null,
+        sleepMinsTarget: activeTemplate?.sleepMinsTarget ?? null,
+        days,
+        targetUserId: userId,
+      });
+
       const res = await fetch('/api/target-templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          effectiveFrom: convertDateToDateString(weekStart),
-          stepsTarget: activeTemplate?.stepsTarget ?? null,
-          sleepMinsTarget: activeTemplate?.sleepMinsTarget ?? null,
-          days,
-          targetUserId: userId,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Failed to save targets');
-      const updated: TargetTemplateWithDays = await res.json();
+      const updated = TargetTemplateResponseSchema.parse(await res.json());
       setActiveTemplate(updated);
       trackFirstWeekEvent('first_nutrition_target_set', { source: 'nutrition_week_targets' });
       setTargetsPanelOpen(false);
@@ -411,7 +422,7 @@ export default function NutritionClient({
                   backgroundColor: activeBlock.blockSubtype
                     ? getDefinedBlockColor(activeBlock.blockSubtype)
                     : (activeBlock.customColor ?? 'grey.500'),
-                  color: 'white',
+                  color: 'common.white',
                   fontWeight: 600,
                 }}
               />
@@ -675,7 +686,7 @@ export default function NutritionClient({
                           }}
                         >
                           <TextField
-                            label="Weight (kg)"
+                            label={`Weight (${settings.bodyweightUnit})`}
                             size="small"
                             type="number"
                             value={editValues.weight}

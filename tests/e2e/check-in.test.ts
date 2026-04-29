@@ -19,27 +19,43 @@ function getIsoWeekStart(weeksAgo = 0): string {
 const CURRENT_WEEK = getIsoWeekStart(0);
 const PREV_WEEK = getIsoWeekStart(1);
 
+function makeCheckIn(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 1,
+    userId: 'test',
+    weekStartDate: CURRENT_WEEK,
+    completedAt: null,
+    energyLevel: null,
+    moodRating: null,
+    stressLevel: null,
+    sleepQuality: null,
+    recoveryRating: null,
+    adherenceRating: null,
+    completedWorkouts: null,
+    plannedWorkouts: null,
+    weekReview: null,
+    coachMessage: null,
+    goalsNextWeek: null,
+    customResponses: null,
+    templateSnapshot: null,
+    coachNotes: null,
+    coachResponseUrl: null,
+    coachReviewedAt: null,
+    frontPhotoUrl: null,
+    backPhotoUrl: null,
+    sidePhotoUrl: null,
+    ...overrides,
+  };
+}
+
 function makeCurrentResponse(completed: boolean) {
   return {
-    checkIn: {
-      id: 1,
-      userId: 'test',
-      weekStartDate: CURRENT_WEEK,
+    checkIn: makeCheckIn({
       completedAt: completed ? '2026-03-20T10:00:00.000Z' : null,
       energyLevel: completed ? 4 : null,
-      moodRating: null,
-      stressLevel: null,
-      sleepQuality: null,
-      recoveryRating: null,
-      adherenceRating: null,
       completedWorkouts: completed ? 3 : null,
       plannedWorkouts: completed ? 4 : null,
-      weekReview: null,
-      coachMessage: null,
-      goalsNextWeek: null,
-      coachNotes: null,
-      coachReviewedAt: null,
-    },
+    }),
     currentWeek: [],
     weekPrior: [],
     previousPhotos: null,
@@ -51,9 +67,8 @@ function makeCurrentResponse(completed: boolean) {
   };
 }
 
-const PAST_CHECK_IN = {
+const PAST_CHECK_IN = makeCheckIn({
   id: 2,
-  userId: 'test',
   weekStartDate: PREV_WEEK,
   completedAt: new Date(Date.parse(PREV_WEEK) + (5 * 24 * 60 * 60 * 1000)).toISOString(),
   energyLevel: 4,
@@ -67,9 +82,7 @@ const PAST_CHECK_IN = {
   weekReview: 'Good week overall',
   coachMessage: null,
   goalsNextWeek: null,
-  coachNotes: null,
-  coachReviewedAt: null,
-};
+});
 
 test.describe('Check-in page — form not yet submitted', () => {
   test.beforeEach(async ({ page }) => {
@@ -168,7 +181,7 @@ test.describe('Check-in page — form submission', () => {
         route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ id: 1 }),
+          body: JSON.stringify({ checkIn: makeCurrentResponse(true).checkIn }),
         });
       } else {
         route.continue();

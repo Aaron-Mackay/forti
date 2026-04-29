@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSession, authenticationErrorResponse, isAuthenticationError } from '@lib/requireSession';
 import { getActiveTemplateForWeek, upsertTargetTemplate } from '@lib/targetTemplates';
-import { TargetTemplateSchema } from '@lib/apiSchemas';
+import { GetTargetTemplateResponseSchema, TargetTemplateRequestSchema, TargetTemplateResponseSchema } from '@lib/contracts/targetTemplates';
 import { errorResponse, validationErrorResponse, forbiddenResponse } from '@lib/apiResponses';
 import { getWeekStart } from '@lib/checkInUtils';
 import prisma from '@lib/prisma';
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     const weekMonday = getWeekStart(parsedDate);
     const template = await getActiveTemplateForWeek(userId, weekMonday);
-    return NextResponse.json({ template });
+    return NextResponse.json(GetTargetTemplateResponseSchema.parse({ template }));
   } catch (err: unknown) {
     if (isAuthenticationError(err)) return authenticationErrorResponse();
     console.error(err);
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const sessionUserId = session.user.id;
 
     const json = await req.json();
-    const parsed = TargetTemplateSchema.safeParse(json);
+    const parsed = TargetTemplateRequestSchema.safeParse(json);
     if (!parsed.success) {
       return validationErrorResponse(parsed.error);
     }
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       parsedDays,
     );
 
-    return NextResponse.json(template);
+    return NextResponse.json(TargetTemplateResponseSchema.parse(template));
   } catch (err: unknown) {
     if (isAuthenticationError(err)) return authenticationErrorResponse();
     console.error(err);

@@ -8,6 +8,7 @@ import {computeE1rm} from "@lib/e1rm";
 import {findOrCreateExercise} from "@lib/exerciseQueries";
 import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSession";
 import { getSessionActorUserId } from '@lib/sessionActor';
+import { getCoachFromUser } from '@lib/coachService';
 import {
   SaveUserWorkoutDataRequestSchema,
   type SaveUserWorkoutDataRequest,
@@ -40,6 +41,8 @@ export async function POST(req: Request) {
   }
 
   const actorUserId = await getSessionActorUserId();
+  const assignedCoach = await getCoachFromUser(userId);
+  const actorIsAssignedCoach = Boolean(actorUserId && assignedCoach?.coachId === actorUserId);
 
 
   try {
@@ -117,6 +120,7 @@ export async function POST(req: Request) {
               },
             });
             for (const exercise of workout.exercises) {
+              const requiresRecording = actorIsAssignedCoach ? (exercise.requiresRecording ?? false) : false;
               const exerciseRecord = await findOrCreateExercise(
                 tx,
                 exercise.exercise.name,
@@ -132,6 +136,7 @@ export async function POST(req: Request) {
                   restTime: exercise.restTime,
                   notes: exercise.notes,
                   isBfr: exercise.isBfr ?? false,
+                  requiresRecording,
                 },
               });
               const idMap = new Map<number, number>();
@@ -206,6 +211,18 @@ export async function POST(req: Request) {
         analyticsData: {
           planCount: body.plans.length,
           target: actorUserId === userId ? 'self' : 'client',
+          requiresRecordingCount: actorIsAssignedCoach
+            ? body.plans.reduce(
+              (total, plan) => total + plan.weeks.reduce(
+                (weekTotal, week) => weekTotal + week.workouts.reduce(
+                  (workoutTotal, workout) => workoutTotal + workout.exercises.filter((exercise) => exercise.requiresRecording).length,
+                  0,
+                ),
+                0,
+              ),
+              0,
+            )
+            : 0,
         },
         subjectType: 'user_plan',
         subjectId: userId,
@@ -213,6 +230,7 @@ export async function POST(req: Request) {
           targetUserId: userId,
           planCount: body.plans.length,
           activePlanId: body.activePlanId ?? null,
+          requiresRecordingAllowed: actorIsAssignedCoach,
         },
       });
     }

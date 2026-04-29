@@ -75,6 +75,7 @@ function ex(
     order,
     repRange,
     isBfr: false,
+    requiresRecording: false,
     restTime,
     notes: null,
     targetRpe: null,

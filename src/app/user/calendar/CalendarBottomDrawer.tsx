@@ -50,7 +50,7 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
                                                                customMetricDefs = [],
                                                              }) => {
   const { settings } = useSettings();
-  const weightUnit = settings.weightUnit;
+  const bodyweightUnit = settings.bodyweightUnit;
 
   const [selectedMetric, setSelectedMetric] = useState<MetricKey | null>(null);
   const [inputValue, setInputValue] = useState<string | number | null>('');
@@ -106,7 +106,7 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
                 setSelectedMetric={setSelectedMetric}
                 setInputValue={setInputValue}
                 customMetricDefs={customMetricDefs}
-                weightUnit={weightUnit}
+                bodyweightUnit={bodyweightUnit}
               />
               <Typography variant="h6">{selectedDate?.toDateString()}</Typography>
             </Box>
@@ -159,7 +159,7 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
             userId={userId}
             dateMetric={dateMetric}
             customMetricDefs={customMetricDefs}
-            weightUnit={weightUnit}
+            bodyweightUnit={bodyweightUnit}
           />
         )}
       </Box>

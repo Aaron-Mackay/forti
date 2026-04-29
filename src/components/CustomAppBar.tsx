@@ -52,6 +52,7 @@ import {useSettings} from '@lib/providers/SettingsProvider';
 import {useCoachClients} from '@lib/providers/CoachClientsProvider';
 import {useNotifications} from '@lib/providers/NotificationsProvider';
 import {useApiGet} from '@lib/hooks/api/useApiGet';
+import {colorTokens} from '@lib/theme';
 
 export const APPBAR_HEIGHT = 56;
 export const DRAWER_WIDTH = 250;
@@ -286,7 +287,7 @@ export default function CustomAppBar(
             <FortiIcon style={{width: 50, height: 50}}/>
           )}
           <Typography variant="h5">{isCoachDomain ? 'Coach' : 'Forti'}</Typography>
-          <Chip label="Beta" size="small" sx={{bgcolor: "rgba(45,127,249,0.15)", color: "rgb(45,127,249)", fontWeight: 600, fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.05em", border: "none", height: 20, flexShrink: 0}}/>
+          <Chip label="Beta" size="small" sx={{bgcolor: `${colorTokens.brand.primary}26`, color: colorTokens.brand.primary, fontWeight: 600, fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.05em", border: "none", height: 20, flexShrink: 0}}/>
           <Box sx={{flexGrow: 1}}/>
           <IconButton component={Link} href="/user/notifications" color="inherit" size="small" aria-label="notifications">
             <Badge badgeContent={unreadCount} color="error" max={99}>
