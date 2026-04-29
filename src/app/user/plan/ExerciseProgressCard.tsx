@@ -11,7 +11,7 @@ import { getE1rmDeltaDirection } from './planPresentation';
 import { ExerciseMenuActionItem, ExerciseMenuDropAndBfrItems, ExerciseMenuMoveItems } from './ExerciseMenuItems';
 import { buildExerciseMetaParts, CompactSetEditor, EditableExerciseNameWithMeta, SetCountControls } from './PlanExercisePrimitives';
 import { confirmRemoveLastSetWithDrops, getExerciseSetModel } from './exerciseSetModel';
-import { hasTrailingDropSets, removeExercises, removeTrailingDropSets as removeTrailingDropSetsForTargets, setBfrEnabled } from './exerciseMenuActions';
+import { hasTrailingDropSets, removeExercises, removeTrailingDropSets as removeTrailingDropSetsForTargets, setBfrEnabled, setRequiresRecordingEnabled } from './exerciseMenuActions';
 import ExercisePickerDialog from '@/app/user/workout/ExercisePickerDialog';
 import ExerciseDetailsDialog from './ExerciseDetailsDialog';
 
@@ -408,6 +408,7 @@ const ExerciseProgressCard = ({
           isCardio={isCardio}
           dropSetsEnabled={showDropControls}
           isBfr={exerciseLink.isBfr}
+          requiresRecording={Boolean(exerciseLink.requiresRecording)}
           onToggleDropSets={(checked) => {
             if (!checked) {
               handleDisableDropSets();
@@ -418,6 +419,9 @@ const ExerciseProgressCard = ({
           }}
           onToggleBfr={(checked) => {
             setBfrEnabled({ dispatch, planId, targets: [menuTarget], enabled: checked });
+          }}
+          onToggleRequiresRecording={(checked) => {
+            setRequiresRecordingEnabled({ dispatch, planId, targets: [menuTarget], enabled: checked });
           }}
         />
         <ExerciseMenuActionItem
