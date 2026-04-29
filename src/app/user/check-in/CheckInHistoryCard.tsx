@@ -14,6 +14,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { WeeklyCheckIn } from '@/generated/prisma/browser';
+import { useRouter } from 'next/navigation';
 import { RATING_LABELS } from '@/types/checkInTypes';
 import { checkInHasRatings, checkInHasReflection, checkInHasPhotos, checkInHasCustomResponses } from '@/lib/checkInUtils';
 import CheckInPhotoTile from '@/components/CheckInPhotoTile';
@@ -21,9 +22,22 @@ import PhotoViewerDialog from '@/components/PhotoViewerDialog';
 import CustomCheckInResponseDisplay from '@/components/CustomCheckInResponseDisplay';
 import { parseCheckInTemplate } from '@/types/checkInTemplateTypes';
 import { getLoomEmbedUrl } from '@lib/loom';
+import WorkoutsSystemCard from '@/components/WorkoutsSystemCard';
 
 interface Props {
-  checkIn: WeeklyCheckIn;
+  checkIn: WeeklyCheckIn & {
+    workoutSummaries?: Array<{
+      workoutId: number;
+      workoutName: string;
+      completedSets: number;
+      plannedSets: number;
+      muscleDoneSets: Array<{
+        muscle: string;
+        doneSets: number;
+      }>;
+    }>;
+    activePlanId?: number | null;
+  };
   defaultExpanded?: boolean;
 }
 
@@ -51,10 +65,23 @@ export function CheckInDetails({
   checkIn,
   onPhotoOpen,
 }: {
-  checkIn: WeeklyCheckIn;
+  checkIn: WeeklyCheckIn & {
+    workoutSummaries?: Array<{
+      workoutId: number;
+      workoutName: string;
+      completedSets: number;
+      plannedSets: number;
+      muscleDoneSets: Array<{
+        muscle: string;
+        doneSets: number;
+      }>;
+    }>;
+    activePlanId?: number | null;
+  };
   onPhotoOpen?: (src: string, alt: string) => void;
 }) {
   const hasTraining = checkIn.completedWorkouts !== null || checkIn.plannedWorkouts !== null;
+  const hasTrainingCard = Array.isArray(checkIn.workoutSummaries) && checkIn.workoutSummaries.length > 0;
   const hasPhotos = checkInHasPhotos(checkIn);
   const isCustomMode = checkInHasCustomResponses(checkIn);
 
@@ -92,7 +119,7 @@ export function CheckInDetails({
         </>
       )}
 
-      {hasTraining && (
+      {hasTraining && !hasTrainingCard && (
         <>
           {(hasCustomContent || hasSomeLegacyContent) && <Divider sx={{ my: 1.5 }} />}
           <Typography variant="overline" color="text.secondary">Training</Typography>
@@ -199,6 +226,7 @@ export function CheckInDetails({
 export default function CheckInHistoryCard({ checkIn, defaultExpanded = false }: Props) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [activePhoto, setActivePhoto] = useState<{ src: string; alt: string } | null>(null);
+  const router = useRouter();
 
   const weekStart = new Date(checkIn.weekStartDate);
   const weekLabel = weekStart.toLocaleDateString('en-GB', {
@@ -233,6 +261,17 @@ export default function CheckInHistoryCard({ checkIn, defaultExpanded = false }:
       </AccordionSummary>
 
       <AccordionDetails>
+        {Array.isArray(checkIn.workoutSummaries) && checkIn.workoutSummaries.length > 0 && (
+          <>
+            <WorkoutsSystemCard
+              workoutSummaries={checkIn.workoutSummaries}
+              onWorkoutsClick={checkIn.activePlanId
+                ? () => router.push(`/user/plan/${checkIn.activePlanId}?returnTo=${encodeURIComponent('/user/check-in')}`)
+                : undefined}
+            />
+            <Divider sx={{ my: 1.5 }} />
+          </>
+        )}
         <CheckInDetails
           checkIn={checkIn}
           onPhotoOpen={(src, alt) => setActivePhoto({ src, alt })}

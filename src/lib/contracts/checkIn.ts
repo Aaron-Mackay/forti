@@ -82,6 +82,10 @@ export const CurrentCheckInResponseSchema = z.object({
     workoutName: z.string(),
     completedSets: z.number().int().nonnegative(),
     plannedSets: z.number().int().nonnegative(),
+    muscleDoneSets: z.array(z.object({
+      muscle: z.string(),
+      doneSets: z.number().nonnegative(),
+    })),
   })),
   activePlanId: z.number().int().nullable(),
   template: CheckInTemplateSchema.nullable(),

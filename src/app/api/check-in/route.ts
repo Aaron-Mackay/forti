@@ -50,11 +50,89 @@ export async function GET(req: NextRequest) {
     prisma.weeklyCheckIn.count({ where }),
   ]);
 
-  const mappedCheckIns = checkIns.map(c => ({
+  const mappedCheckInsBase = checkIns.map(c => ({
     ...c,
     frontPhotoUrl: c.frontPhotoUrl ? `/api/check-in/photos/${c.id}/front` : null,
     backPhotoUrl: c.backPhotoUrl ? `/api/check-in/photos/${c.id}/back` : null,
     sidePhotoUrl: c.sidePhotoUrl ? `/api/check-in/photos/${c.id}/side` : null,
+  }));
+  const mappedCheckIns = await Promise.all(mappedCheckInsBase.map(async (checkIn) => {
+    const weekStart = new Date(checkIn.weekStartDate);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    const weeksWithCompleted = await prisma.week.findMany({
+      where: {
+        plan: { userId },
+        workouts: { some: { dateCompleted: { gte: weekStart, lt: weekEnd } } },
+      },
+      select: { id: true },
+    });
+    const weekIds = weeksWithCompleted.map(w => w.id);
+    const plannedWorkouts = weekIds.length === 0 ? [] : await prisma.workout.findMany({
+      where: { weekId: { in: weekIds } },
+      select: {
+        id: true,
+        name: true,
+        dateCompleted: true,
+        week: { select: { order: true, planId: true } },
+        exercises: {
+          select: {
+            sets: { select: { id: true, reps: true, isDropSet: true, parentSetId: true, order: true } },
+            exercise: { select: { category: true, primaryMuscles: true } },
+          },
+        },
+      },
+      orderBy: [
+        { week: { order: 'asc' } },
+        { order: 'asc' },
+      ],
+    });
+    const workoutSummaries = plannedWorkouts.map(workout => {
+      const plannedSets = workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+      const completedSets = workout.exercises.reduce(
+        (sum, ex) => sum + ex.sets.filter(set => set.reps !== null && set.reps > 0).length,
+        0,
+      );
+      const muscleDoneTotals = new Map<string, number>();
+      for (const ex of workout.exercises) {
+        if (ex.exercise.category !== 'resistance') continue;
+        const regularSets = ex.sets.filter(set => !set.isDropSet);
+        let doneContribution = 0;
+        for (const regular of regularSets) {
+          if (regular.reps !== null && regular.reps > 0) doneContribution += 1;
+          const drops = ex.sets
+            .filter(set => set.isDropSet && set.parentSetId === regular.id)
+            .sort((a, b) => a.order - b.order);
+          for (const drop of drops) {
+            if (drop.reps !== null && drop.reps > 0) doneContribution += 0.5;
+          }
+        }
+        if (doneContribution <= 0) continue;
+        for (const muscle of ex.exercise.primaryMuscles) {
+          muscleDoneTotals.set(muscle, (muscleDoneTotals.get(muscle) ?? 0) + doneContribution);
+        }
+      }
+      return {
+        workoutId: workout.id,
+        workoutName: workout.name,
+        completedSets,
+        plannedSets,
+        muscleDoneSets: Array.from(muscleDoneTotals.entries()).map(([muscle, doneSets]) => ({
+          muscle,
+          doneSets,
+        })),
+      };
+    });
+    const lastCompletedWorkout = plannedWorkouts
+      .filter(w => w.dateCompleted !== null && w.dateCompleted >= weekStart && w.dateCompleted < weekEnd)
+      .sort((a, b) => (b.dateCompleted?.getTime() ?? 0) - (a.dateCompleted?.getTime() ?? 0))[0];
+    const activePlanId = lastCompletedWorkout?.week.planId ?? null;
+
+    return {
+      ...checkIn,
+      workoutSummaries,
+      activePlanId,
+    };
   }));
 
   return NextResponse.json(CheckInHistoryResponseSchema.parse({ checkIns: mappedCheckIns, total }));

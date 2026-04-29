@@ -14,13 +14,6 @@ interface Props {
   lockedClientId?: string;
 }
 
-interface WeekWorkout {
-  id: number;
-  name: string;
-  dateCompleted: string;
-  week: { planId: number };
-}
-
 interface ApiResponse {
   checkIn: CheckInWithUser;
   currentWeek: Metric[];
@@ -28,7 +21,17 @@ interface ApiResponse {
   weekTargets: WeekTargets | null;
   activeTemplate: TargetTemplateWithDays | null;
   customMetricDefs: CustomMetricDef[];
-  weekWorkouts: WeekWorkout[];
+  workoutSummaries: Array<{
+    workoutId: number;
+    workoutName: string;
+    completedSets: number;
+    plannedSets: number;
+    muscleDoneSets: Array<{
+      muscle: string;
+      doneSets: number;
+    }>;
+  }>;
+  activePlanId: number | null;
 }
 
 interface CoachTemplateApiResponse {
@@ -42,7 +45,8 @@ export default function CoachCheckInDetailPageClient({ checkInId, lockedClientId
   const [weekTargets, setWeekTargets] = useState<WeekTargets | null>(null);
   const [activeTemplate, setActiveTemplate] = useState<TargetTemplateWithDays | null>(null);
   const [customMetricDefs, setCustomMetricDefs] = useState<CustomMetricDef[]>([]);
-  const [weekWorkouts, setWeekWorkouts] = useState<WeekWorkout[]>([]);
+  const [workoutSummaries, setWorkoutSummaries] = useState<ApiResponse['workoutSummaries']>([]);
+  const [activePlanId, setActivePlanId] = useState<number | null>(null);
   const [coachTemplate, setCoachTemplate] = useState<CheckInTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +84,8 @@ export default function CoachCheckInDetailPageClient({ checkInId, lockedClientId
           setWeekTargets(data.weekTargets);
           setActiveTemplate(data.activeTemplate);
           setCustomMetricDefs(data.customMetricDefs);
-          setWeekWorkouts(data.weekWorkouts);
+          setWorkoutSummaries(data.workoutSummaries ?? []);
+          setActivePlanId(data.activePlanId ?? null);
           setCoachTemplate(templateData.template);
         }
       } catch {
@@ -122,5 +127,17 @@ export default function CoachCheckInDetailPageClient({ checkInId, lockedClientId
     );
   }
 
-  return <CoachCheckInDetailClient checkIn={checkIn} currentWeek={currentWeek} weekPrior={weekPrior} weekTargets={weekTargets} activeTemplate={activeTemplate} customMetricDefs={customMetricDefs} weekWorkouts={weekWorkouts} coachTemplate={coachTemplate} />;
+  return (
+    <CoachCheckInDetailClient
+      checkIn={checkIn}
+      currentWeek={currentWeek}
+      weekPrior={weekPrior}
+      weekTargets={weekTargets}
+      activeTemplate={activeTemplate}
+      customMetricDefs={customMetricDefs}
+      workoutSummaries={workoutSummaries}
+      activePlanId={activePlanId}
+      coachTemplate={coachTemplate}
+    />
+  );
 }

@@ -5,15 +5,11 @@ import {useMemo, useState} from 'react';
 import type {TargetValues} from './CoachWeekTargetsCard';
 import CoachWeekTargetsCard from './CoachWeekTargetsCard';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import PendingIcon from '@mui/icons-material/PendingOutlined';
 import {
   Alert,
   Box,
   Button,
-  Card,
-  CardActionArea,
-  CardContent,
   Chip,
   CircularProgress,
   Divider,
@@ -36,6 +32,7 @@ import {
   sumMacroPercents,
 } from '@lib/macroTargets';
 import MetricsSystemCard from '@/components/MetricsSystemCard';
+import WorkoutsSystemCard from '@/components/WorkoutsSystemCard';
 import {checkInHasPhotos, checkInHasRatings, checkInHasReflection, checkInHasCustomResponses} from '@/lib/checkInUtils';
 import {parseCheckInTemplate} from '@/types/checkInTemplateTypes';
 import type {CheckInTemplate} from '@/types/checkInTemplateTypes';
@@ -47,13 +44,6 @@ import CustomCheckInResponseDisplay from '@/components/CustomCheckInResponseDisp
 import SupplementsClient from '@/app/user/supplements/SupplementsClient';
 import {getLoomEmbedUrl} from '@lib/loom';
 
-interface WeekWorkout {
-  id: number;
-  name: string;
-  dateCompleted: string;
-  week: { planId: number };
-}
-
 interface Props {
   checkIn: CheckInWithUser;
   currentWeek: Metric[];
@@ -61,7 +51,17 @@ interface Props {
   weekTargets: WeekTargets | null;
   activeTemplate: TargetTemplateWithDays | null;
   customMetricDefs: CustomMetricDef[];
-  weekWorkouts: WeekWorkout[];
+  workoutSummaries: Array<{
+    workoutId: number;
+    workoutName: string;
+    completedSets: number;
+    plannedSets: number;
+    muscleDoneSets: Array<{
+      muscle: string;
+      doneSets: number;
+    }>;
+  }>;
+  activePlanId: number | null;
   coachTemplate: CheckInTemplate | null;
 }
 
@@ -152,11 +152,12 @@ function initTargetValues(tpl: TargetTemplateWithDays | null): TargetValues {
 export default function CoachCheckInDetailClient({
                                                    checkIn,
                                                    currentWeek,
-                                                   weekPrior,
-                                                   weekTargets,
-                                                   activeTemplate,
-                                                   customMetricDefs,
-                                                 weekWorkouts,
+                                                 weekPrior,
+                                                 weekTargets,
+                                                 activeTemplate,
+                                                 customMetricDefs,
+                                                 workoutSummaries,
+                                                 activePlanId,
                                                  coachTemplate,
                                                  }: Props) {
   const bodyweightUnit = parseDashboardSettings((checkIn.user as { settings?: unknown } | undefined)?.settings).bodyweightUnit;
@@ -456,40 +457,17 @@ export default function CoachCheckInDetailClient({
           )}
 
 
-          <Card variant="outlined" sx={{height: '100%', borderRadius: 3}}>
-            <CardActionArea
-              component="a"
-              href={weekWorkouts.length > 0
-                ? `/user/plan/${weekWorkouts[weekWorkouts.length - 1].week.planId}`
-                : `/user/coach/clients/${checkIn.user.id}/plans`}
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{height: '100%'}}
-            >
-              <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%', p: {xs: 2, sm: 2.5}}}>
-                <Box sx={{display: 'flex', alignItems: 'center', mb: 1.5}}>
-                  <Typography variant="overline" color="text.secondary" sx={{flexGrow: 1}}>
-                    Training
-                  </Typography>
-                  <ChevronRightIcon fontSize="small" color="action"/>
-                </Box>
-                {weekWorkouts.length > 0 ? (
-                  <Stack spacing={0.5}>
-                    {weekWorkouts.map(w => (
-                      <Box key={w.id} sx={{display: 'flex', gap: 1.5, alignItems: 'baseline'}}>
-                        <Typography variant="caption" color="text.secondary" sx={{minWidth: 28}}>
-                          {new Date(w.dateCompleted).toLocaleDateString('en-GB', {weekday: 'short'})}
-                        </Typography>
-                        <Typography variant="body2">{w.name}</Typography>
-                      </Box>
-                    ))}
-                  </Stack>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">No workouts logged in the last 7 days.</Typography>
-                )}
-              </CardContent>
-            </CardActionArea>
-          </Card>
+          <Section>
+            <WorkoutsSystemCard
+              workoutSummaries={workoutSummaries}
+              onWorkoutsClick={() => {
+                const href = activePlanId !== null
+                  ? `/user/plan/${activePlanId}`
+                  : `/user/coach/clients/${checkIn.user.id}/plans`;
+                window.open(href, '_blank', 'noopener,noreferrer');
+              }}
+            />
+          </Section>
         </Box>
 
       </Box>

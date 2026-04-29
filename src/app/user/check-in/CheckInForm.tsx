@@ -40,6 +40,10 @@ interface Props {
     workoutName: string;
     completedSets: number;
     plannedSets: number;
+    muscleDoneSets: Array<{
+      muscle: string;
+      doneSets: number;
+    }>;
   }>;
   activePlanId: number | null;
   template: CheckInTemplate | null;
@@ -176,6 +180,9 @@ export default function CheckInForm({
   }
 
   const workoutClickable = completedWorkoutsCount > 0 && activePlanId !== null;
+  const trainingHref = activePlanId !== null
+    ? `/user/plan/${activePlanId}?returnTo=${encodeURIComponent('/user/check-in')}`
+    : null;
 
   // ── Determine which system blocks the template positions ───────────────────
   const templateHasMetrics  = activeTemplate?.cards.some(c => c.kind === 'system' && c.systemType === 'metrics')  ?? false;
@@ -307,7 +314,7 @@ export default function CheckInForm({
     completedWorkoutsCount,
     plannedWorkoutsCount,
     workoutSummaries,
-    onWorkoutsClick: workoutClickable ? () => router.push(`/user/plan/${activePlanId}`) : undefined,
+    onWorkoutsClick: workoutClickable && trainingHref ? () => router.push(trainingHref) : undefined,
     canEditMetrics: true,
     onMetricChange: handleMetricChange,
   };
@@ -350,10 +357,8 @@ export default function CheckInForm({
       {!templateHasWorkouts && (
         <Box sx={{ mt: templateHasMetrics ? 0 : 1.5 }}>
           <WorkoutsSystemCard
-            completedWorkoutsCount={completedWorkoutsCount}
-            plannedWorkoutsCount={plannedWorkoutsCount}
             workoutSummaries={workoutSummaries}
-            onWorkoutsClick={workoutClickable ? () => router.push(`/user/plan/${activePlanId}`) : undefined}
+            onWorkoutsClick={workoutClickable && trainingHref ? () => router.push(trainingHref) : undefined}
           />
         </Box>
       )}

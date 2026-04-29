@@ -79,7 +79,7 @@ export async function getCoachCheckInById(coachId: string, checkInId: number) {
   const windowEnd = checkIn.completedAt ?? weekEnd;
   const windowStart = new Date(windowEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  const [currentWeek, weekPrior, template, clientUser, weekWorkouts] = await Promise.all([
+  const [currentWeek, weekPrior, template, clientUser, weekWorkouts, weeksWithCompleted] = await Promise.all([
     prisma.metric.findMany({
       where: { userId: checkIn.userId, date: { gte: weekStart, lt: weekEnd } },
     }),
@@ -96,7 +96,74 @@ export async function getCoachCheckInById(coachId: string, checkInId: number) {
       select: { id: true, name: true, dateCompleted: true, week: { select: { planId: true } } },
       orderBy: { dateCompleted: 'asc' },
     }),
+    prisma.week.findMany({
+      where: {
+        plan: { userId: checkIn.userId },
+        workouts: { some: { dateCompleted: { gte: weekStart, lt: weekEnd } } },
+      },
+      select: { id: true },
+    }),
   ]);
+  const weekIds = weeksWithCompleted.map(w => w.id);
+  const plannedWorkouts = weekIds.length === 0 ? [] : await prisma.workout.findMany({
+    where: { weekId: { in: weekIds } },
+    select: {
+      id: true,
+      name: true,
+      dateCompleted: true,
+      week: { select: { order: true, planId: true } },
+      exercises: {
+        select: {
+          sets: { select: { id: true, reps: true, isDropSet: true, parentSetId: true, order: true } },
+          exercise: { select: { category: true, primaryMuscles: true } },
+        },
+      },
+    },
+    orderBy: [
+      { week: { order: 'asc' } },
+      { order: 'asc' },
+    ],
+  });
+  const workoutSummaries = plannedWorkouts.map(workout => {
+    const plannedSets = workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+    const completedSets = workout.exercises.reduce(
+      (sum, ex) => sum + ex.sets.filter(set => set.reps !== null && set.reps > 0).length,
+      0,
+    );
+    const muscleDoneTotals = new Map<string, number>();
+    for (const ex of workout.exercises) {
+      if (ex.exercise.category !== 'resistance') continue;
+      const regularSets = ex.sets.filter(set => !set.isDropSet);
+      let doneContribution = 0;
+      for (const regular of regularSets) {
+        if (regular.reps !== null && regular.reps > 0) doneContribution += 1;
+        const drops = ex.sets
+          .filter(set => set.isDropSet && set.parentSetId === regular.id)
+          .sort((a, b) => a.order - b.order);
+        for (const drop of drops) {
+          if (drop.reps !== null && drop.reps > 0) doneContribution += 0.5;
+        }
+      }
+      if (doneContribution <= 0) continue;
+      for (const muscle of ex.exercise.primaryMuscles) {
+        muscleDoneTotals.set(muscle, (muscleDoneTotals.get(muscle) ?? 0) + doneContribution);
+      }
+    }
+    return {
+      workoutId: workout.id,
+      workoutName: workout.name,
+      completedSets,
+      plannedSets,
+      muscleDoneSets: Array.from(muscleDoneTotals.entries()).map(([muscle, doneSets]) => ({
+        muscle,
+        doneSets,
+      })),
+    };
+  });
+  const lastCompletedWorkout = plannedWorkouts
+    .filter(w => w.dateCompleted !== null && w.dateCompleted >= weekStart && w.dateCompleted < weekEnd)
+    .sort((a, b) => (b.dateCompleted?.getTime() ?? 0) - (a.dateCompleted?.getTime() ?? 0))[0];
+  const activePlanId = lastCompletedWorkout?.week.planId ?? null;
 
   function avgNullable(vals: (number | null)[]): number | null {
     const valid = vals.filter((v): v is number => v !== null);
@@ -124,5 +191,7 @@ export async function getCoachCheckInById(coachId: string, checkInId: number) {
     activeTemplate: template as TargetTemplateWithDays | null,
     customMetricDefs,
     weekWorkouts,
+    workoutSummaries,
+    activePlanId,
   };
 }

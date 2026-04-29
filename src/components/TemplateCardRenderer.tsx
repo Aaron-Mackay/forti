@@ -34,6 +34,10 @@ export interface SystemCardData {
     workoutName: string;
     completedSets: number;
     plannedSets: number;
+    muscleDoneSets: Array<{
+      muscle: string;
+      doneSets: number;
+    }>;
   }>;
   onWorkoutsClick?: () => void;
   canEditMetrics?: boolean;
@@ -235,14 +239,23 @@ export default function TemplateCardRenderer({
   }
 
   // training
-  const { completedWorkoutsCount, plannedWorkoutsCount, workoutSummaries, onWorkoutsClick } = systemData;
+  const { workoutSummaries, onWorkoutsClick } = systemData;
   return (
-    <Paper variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2, minWidth: 0 }}>
+    <Paper
+      variant="outlined"
+      onClick={onWorkoutsClick}
+      sx={{
+        gridColumn,
+        p: 2,
+        borderRadius: 2,
+        minWidth: 0,
+        cursor: onWorkoutsClick ? 'pointer' : 'default',
+        ...(onWorkoutsClick && { '&:hover': { bgcolor: 'action.hover' } }),
+      }}
+    >
       <WorkoutsSystemCard
-        completedWorkoutsCount={completedWorkoutsCount}
-        plannedWorkoutsCount={plannedWorkoutsCount}
         workoutSummaries={workoutSummaries}
-        onWorkoutsClick={onWorkoutsClick}
+        onWorkoutsClick={undefined}
       />
     </Paper>
   );

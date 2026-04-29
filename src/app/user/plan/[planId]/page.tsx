@@ -7,10 +7,19 @@ import React from "react";
 import {notFound} from "next/navigation";
 import getLoggedInUser from "@lib/getLoggedInUser";
 
-const PlanPage = async ({params}: { params: Promise<{ planId: string }> }) => {
+const PlanPage = async ({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ planId: string }>;
+  searchParams?: Promise<{ returnTo?: string }>;
+}) => {
   const planId = (await params).planId
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const userDetails = await getUserFromPlan(planId)
   const loggedInUserId = (await getLoggedInUser()).id
+  const returnTo = resolvedSearchParams?.returnTo;
+  const clientBackHref = returnTo === '/user/check-in' ? '/user/check-in' : '/user/plan';
 
   if (userDetails?.id !== loggedInUserId && userDetails?.coachId !== loggedInUserId) {
     return notFound()
@@ -25,7 +34,7 @@ const PlanPage = async ({params}: { params: Promise<{ planId: string }> }) => {
       <WorkoutEditorProvider userData={userData} allExercises={allExercises}>
       <PlanTable
         planId={planId}
-        backHref={userDetails.id === loggedInUserId ? '/user/plan' : `/user/coach/clients/${userDetails.id}/plans`}
+        backHref={userDetails.id === loggedInUserId ? clientBackHref : `/user/coach/clients/${userDetails.id}/plans`}
       />
     </WorkoutEditorProvider>
   )
