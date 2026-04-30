@@ -114,7 +114,7 @@ describe('ExerciseSlide', () => {
       />,
     );
 
-    expect(screen.getByText('Personal Best E1RM: 200.0')).toBeInTheDocument();
+    expect(screen.getByText('Est. 1RM history')).toBeInTheDocument();
     expect(screen.getByTestId('e1rm-sparkline')).not.toBeVisible();
 
     fireEvent.click(screen.getByText('Est. 1RM history'));

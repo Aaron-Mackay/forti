@@ -16,6 +16,7 @@ import WorkoutCompletionModal from '@/app/user/workout/WorkoutCompletionModal';
 import {StopwatchProvider} from '@/app/user/workout/StopwatchContext';
 import {Alert, Collapse} from '@mui/material';
 import type {PreviousExerciseHistory} from '@lib/contracts/exerciseHistory';
+import {groupWorkoutExercises} from './groupWorkoutExercises';
 
 export default function WorkoutClient({userData}: {userData: UserPrisma}) {
   const searchParams = useSearchParams();
@@ -86,6 +87,7 @@ export default function WorkoutClient({userData}: {userData: UserPrisma}) {
       );
     }
   }, [fetchPreviousSets, selectedWorkout]);
+  const selectedWorkoutGroups = selectedWorkout ? groupWorkoutExercises(selectedWorkout.exercises) : [];
 
   // View switching
   let view;
@@ -100,7 +102,7 @@ export default function WorkoutClient({userData}: {userData: UserPrisma}) {
         userExerciseNotes={userDataState.userExerciseNotes}
         onBack={navigateBack}
         onSlideChange={(swiper) => {
-          const newExercise = selectedWorkout.exercises[swiper.activeIndex];
+          const newExercise = selectedWorkoutGroups[swiper.activeIndex]?.items[0];
           if (newExercise && newExercise.id !== selectedExerciseId) {
             setSelectedExerciseId(newExercise.id);
           }
@@ -110,6 +112,7 @@ export default function WorkoutClient({userData}: {userData: UserPrisma}) {
         onFormCueBlur={handleFormCueBlur}
         onCardioUpdate={handleCardioUpdate}
         onSubstituteExercise={handleSubstituteExercise}
+        onRemoveExercise={handleRemoveExercise}
         snackbar={snackbar}
         handleSnackbarClose={handleSnackbarClose}
       />

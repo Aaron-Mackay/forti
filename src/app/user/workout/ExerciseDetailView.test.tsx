@@ -57,6 +57,7 @@ function buildWorkout(): WorkoutPrisma {
         substitutedFor: null,
         isAdded: false,
         isBfr: false,
+        requiresRecording: false,
         sets: [
           {id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100, e1rm: null, rpe: null, rir: null, isDropSet: false, parentSetId: null},
           {id: 2, workoutExerciseId: 10, order: 2, reps: 6, weight: 90, e1rm: null, rpe: null, rir: null, isDropSet: false, parentSetId: null},
@@ -85,6 +86,7 @@ const defaultProps = {
   onSubstituteExercise: vi.fn(),
   snackbar: {open: false, message: '', severity: 'success' as const},
   handleSnackbarClose: vi.fn(),
+  onRemoveExercise: vi.fn(),
 };
 
 function renderView(props: React.ComponentProps<typeof ExerciseDetailView>) {
@@ -109,6 +111,21 @@ beforeEach(() => {
 });
 
 describe('ExerciseDetailView', () => {
+  it('renders duplicate exercise items as one grouped swiper slide', () => {
+    const workout = buildWorkout();
+    workout.exercises.push({
+      ...workout.exercises[0],
+      id: 11,
+      repRange: '10-12',
+      restTime: '75s',
+      sets: [
+        {id: 3, workoutExerciseId: 11, order: 1, reps: 12, weight: 60, e1rm: null, rpe: null, rir: null, isDropSet: false, parentSetId: null},
+      ],
+    });
+    renderView({...defaultProps, workout});
+    expect(screen.getAllByTestId('swiper-slide')).toHaveLength(1);
+  });
+
   it('renders set weight and reps inputs', () => {
     renderView(defaultProps);
     expect(screen.getAllByLabelText(/Weight set/i)).toHaveLength(2);

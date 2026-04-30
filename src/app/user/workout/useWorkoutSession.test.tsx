@@ -81,8 +81,8 @@ describe('useWorkoutSession', () => {
     });
 
     act(() => {
-      result.current.handleSetUpdate(0, 'reps', '1');
-      result.current.handleSetUpdate(0, 'reps', '16');
+      result.current.handleSetUpdate(1001, 0, 'reps', '1');
+      result.current.handleSetUpdate(1001, 0, 'reps', '16');
     });
 
     expect(queueOrSendRequest).not.toHaveBeenCalledWith('/api/sets/5001', 'PATCH', expect.anything());
@@ -110,8 +110,8 @@ describe('useWorkoutSession', () => {
     });
 
     act(() => {
-      result.current.handleSetUpdate(0, 'weight', '1');
-      result.current.handleSetUpdate(0, 'weight', '16');
+      result.current.handleSetUpdate(1001, 0, 'weight', '1');
+      result.current.handleSetUpdate(1001, 0, 'weight', '16');
     });
 
     await act(async () => {

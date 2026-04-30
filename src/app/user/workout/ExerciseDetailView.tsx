@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {
   Alert,
   Box,
@@ -21,6 +21,8 @@ import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 import ExerciseSlide from './ExerciseSlide';
 import CardioSlide, {PreviousCardio} from './CardioSlide';
 import type { E1rmHistoryPoint, PreviousExerciseHistory } from '@lib/contracts/exerciseHistory';
+import {groupWorkoutExercises} from './groupWorkoutExercises';
+import GroupedExerciseSlide from './GroupedExerciseSlide';
 
 export default function ExerciseDetailView({
   workout,
@@ -36,6 +38,7 @@ export default function ExerciseDetailView({
   onFormCueBlur,
   onCardioUpdate,
   onSubstituteExercise,
+  onRemoveExercise,
   snackbar,
   handleSnackbarClose,
 }: {
@@ -47,27 +50,29 @@ export default function ExerciseDetailView({
   userExerciseNotes: UserExerciseNote[];
   onBack: () => void;
   onSlideChange: (swiper: SwiperType) => void;
-  handleSetUpdate: (setIdx: number, field: 'weight' | 'reps', value: string) => void;
-  handleEffortUpdate: (setId: number, field: 'rpe' | 'rir', value: number | null) => void;
+  handleSetUpdate: (workoutExerciseId: number, setIdx: number, field: 'weight' | 'reps', value: string) => void;
+  handleEffortUpdate: (workoutExerciseId: number, setId: number, field: 'rpe' | 'rir', value: number | null) => void;
   onFormCueBlur: (exerciseId: number, note: string) => void;
   onCardioUpdate: (workoutExerciseId: number, field: 'cardioDuration' | 'cardioDistance' | 'cardioResistance', value: number | null) => void;
   onSubstituteExercise: (workoutExerciseId: number) => void;
+  onRemoveExercise: (workoutExerciseId: number) => void;
   snackbar: { open: boolean; message: string; severity: 'success' | 'info' };
   handleSnackbarClose: () => void;
 }) {
   useAppBar({ title: 'Exercises', showBack: true, onBack });
   const paginationRef = useRef<HTMLDivElement | null>(null);
+  const exerciseGroups = groupWorkoutExercises(workout.exercises);
   // Frozen on mount — activeExerciseId only changes here via user swipes, never via
   // external navigation, so useRef is safe. Passing a live value causes Swiper v12's
   // React wrapper to call update() mid-animation, which is the root cause of the
   // halfway-stuck bug.
   const initialSlide = useRef(
-    workout.exercises.findIndex((e) => e.id === activeExerciseId)
+    Math.max(0, exerciseGroups.findIndex((group) => group.items.some(item => item.id === activeExerciseId)))
   ).current;
   const [e1rmHistoryMap, setE1rmHistoryMap] = useState<Map<number, E1rmHistoryPoint[] | null>>(new Map());
   const [previousCardioMap, setPreviousCardioMap] = useState<Map<number, PreviousCardio | null>>(new Map());
 
-  const fetchE1rmHistory = (exerciseId: number) => {
+  const fetchE1rmHistory = useCallback((exerciseId: number) => {
     if (e1rmHistoryMap.has(exerciseId)) return;
     setE1rmHistoryMap(prev => new Map(prev).set(exerciseId, null));
     fetch(`/api/exercises/${exerciseId}/e1rm-history?currentWorkoutId=${currentWorkoutId}`)
@@ -76,9 +81,9 @@ export default function ExerciseDetailView({
         setE1rmHistoryMap(prev => new Map(prev).set(exerciseId, data))
       )
       .catch(() => setE1rmHistoryMap(prev => new Map(prev).set(exerciseId, [])));
-  };
+  }, [currentWorkoutId, e1rmHistoryMap]);
 
-  const fetchPreviousCardio = (exerciseId: number) => {
+  const fetchPreviousCardio = useCallback((exerciseId: number) => {
     if (previousCardioMap.has(exerciseId)) return;
     fetch(`/api/exercises/${exerciseId}/previous-cardio?currentWorkoutId=${currentWorkoutId}`)
       .then(res => res.ok ? res.json() : null)
@@ -87,34 +92,38 @@ export default function ExerciseDetailView({
       })
       .catch(() => {/* ignore fetch errors — previous data is optional */
       });
-  };
+  }, [currentWorkoutId, previousCardioMap]);
 
   // Fetch for the initially active exercise on mount
   useEffect(() => {
-    const initial = workout.exercises.find(e => e.id === activeExerciseId);
-    if (initial) {
-      if (initial.exercise.category === 'cardio') {
-        fetchPreviousCardio(initial.exerciseId);
-      } else {
-        if (!previousSetsMap.has(initial.id)) {
-          fetchPreviousSets(currentWorkoutId, initial.id, initial.exerciseId);
+    const initialGroup = exerciseGroups.find(group => group.items.some(item => item.id === activeExerciseId));
+    if (initialGroup) {
+      for (const item of initialGroup.items) {
+        if (item.exercise.category === 'cardio') {
+          fetchPreviousCardio(item.exerciseId);
+        } else {
+          if (!previousSetsMap.has(item.id)) {
+            fetchPreviousSets(currentWorkoutId, item.id, item.exerciseId);
+          }
+          fetchE1rmHistory(item.exerciseId);
         }
-        fetchE1rmHistory(initial.exerciseId);
       }
     }
-  }, [activeExerciseId, currentWorkoutId, fetchPreviousSets, previousSetsMap, workout.exercises]);
+  }, [activeExerciseId, currentWorkoutId, exerciseGroups, fetchPreviousSets, previousSetsMap]);
 
   const handleSlideChange = (swiper: SwiperType) => {
     onSlideChange(swiper);
-    const ex = workout.exercises[swiper.activeIndex];
-    if (ex) {
-      if (ex.exercise.category === 'cardio') {
-        fetchPreviousCardio(ex.exerciseId);
-      } else {
-        if (!previousSetsMap.has(ex.id)) {
-          fetchPreviousSets(currentWorkoutId, ex.id, ex.exerciseId);
+    const group = exerciseGroups[swiper.activeIndex];
+    if (group) {
+      for (const item of group.items) {
+        if (item.exercise.category === 'cardio') {
+          fetchPreviousCardio(item.exerciseId);
+        } else {
+          if (!previousSetsMap.has(item.id)) {
+            fetchPreviousSets(currentWorkoutId, item.id, item.exerciseId);
+          }
+          fetchE1rmHistory(item.exerciseId);
         }
-        fetchE1rmHistory(ex.exerciseId);
       }
     }
   };
@@ -157,26 +166,41 @@ export default function ExerciseDetailView({
             width: '100%',
           }}
         >
-          {workout.exercises.map((ex) => (
-            <SwiperSlide key={ex.id} style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-              {ex.exercise.category === 'cardio' ? (
-                <CardioSlide
-                  ex={ex}
-                  userExerciseNote={userExerciseNotes.find(n => n.exerciseId === ex.exerciseId)}
-                  onFormCueBlur={onFormCueBlur}
-                  onCardioUpdate={(field, value) => onCardioUpdate(ex.id, field, value)}
-                  previousCardio={previousCardioMap.get(ex.exerciseId)}
-                />
+          {exerciseGroups.map((group) => (
+            <SwiperSlide key={group.key} style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+              {group.items.length === 1 ? (
+                group.items[0].exercise.category === 'cardio' ? (
+                  <CardioSlide
+                    ex={group.items[0]}
+                    userExerciseNote={userExerciseNotes.find(n => n.exerciseId === group.items[0].exerciseId)}
+                    onFormCueBlur={onFormCueBlur}
+                    onCardioUpdate={(field, value) => onCardioUpdate(group.items[0].id, field, value)}
+                    previousCardio={previousCardioMap.get(group.items[0].exerciseId)}
+                  />
+                ) : (
+                  <ExerciseSlide
+                    ex={group.items[0]}
+                    userExerciseNote={userExerciseNotes.find(n => n.exerciseId === group.items[0].exerciseId)}
+                    onFormCueBlur={onFormCueBlur}
+                    handleSetUpdate={handleSetUpdate}
+                    handleEffortUpdate={handleEffortUpdate}
+                    previousWorkout={previousSetsMap.get(group.items[0].id)}
+                    history={e1rmHistoryMap.get(group.items[0].exerciseId) ?? null}
+                    onSubstitute={() => onSubstituteExercise(group.items[0].id)}
+                  />
+                )
               ) : (
-                <ExerciseSlide
-                  ex={ex}
-                  userExerciseNote={userExerciseNotes.find(n => n.exerciseId === ex.exerciseId)}
+                <GroupedExerciseSlide
+                  group={group}
+                  userExerciseNote={userExerciseNotes.find(n => n.exerciseId === group.exerciseId)}
                   onFormCueBlur={onFormCueBlur}
                   handleSetUpdate={handleSetUpdate}
                   handleEffortUpdate={handleEffortUpdate}
-                  previousWorkout={previousSetsMap.get(ex.id)}
-                  history={e1rmHistoryMap.get(ex.exerciseId) ?? null}
-                  onSubstitute={() => onSubstituteExercise(ex.id)}
+                  history={e1rmHistoryMap.get(group.exerciseId) ?? null}
+                  previousSetsMap={previousSetsMap}
+                  onSubstituteExercise={onSubstituteExercise}
+                  onRemoveExercise={onRemoveExercise}
+                  onCardioUpdate={onCardioUpdate}
                 />
               )}
             </SwiperSlide>

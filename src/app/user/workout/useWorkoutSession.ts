@@ -205,13 +205,13 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
     if (depth > 0) history.back();
   }, [depth]);
 
-  const handleSetUpdate = (setIdx: number, field: Field, value: string) => {
-    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId && selectedExerciseId)) return;
+  const handleSetUpdate = (workoutExerciseId: number, setIdx: number, field: Field, value: string) => {
+    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
 
     const plan = userDataState.plans.find(p => p.id === selectedPlanId);
     const week = plan?.weeks.find(w => w.id === selectedWeekId);
     const workout = week?.workouts.find(w => w.id === selectedWorkoutId);
-    const exercise = workout?.exercises.find(e => e.id === selectedExerciseId);
+    const exercise = workout?.exercises.find(e => e.id === workoutExerciseId);
     if (!exercise) return;
 
     const parsedValue = value === '' ? null : Number(value);
@@ -236,7 +236,7 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
     });
 
     setUserData(prev =>
-      updateUserSets(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, selectedExerciseId, updatedSets)
+      updateUserSets(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, workoutExerciseId, updatedSets)
     );
 
     // Debounce the network request to avoid race conditions and truncation
@@ -461,11 +461,11 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
       });
   };
 
-  const handleEffortUpdate = (setId: number, field: 'rpe' | 'rir', value: number | null) => {
-    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId && selectedExerciseId)) return;
+  const handleEffortUpdate = (workoutExerciseId: number, setId: number, field: 'rpe' | 'rir', value: number | null) => {
+    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
 
     setUserData(prev =>
-      updateSetEffort(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, selectedExerciseId, setId, field, value)
+      updateSetEffort(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, workoutExerciseId, setId, field, value)
     );
 
     queueOrSendRequest(`/api/sets/${setId}`, 'PATCH', {[field]: value})

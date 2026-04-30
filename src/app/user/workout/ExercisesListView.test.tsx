@@ -121,7 +121,8 @@ describe('ExercisesListView', () => {
 
   it('shows rep range and rest time on the second line', () => {
     renderView({workout: buildWorkout(), onBack, onSelectExercise, onWorkoutNoteBlur, onCompleteWorkout, onAddExercise});
-    expect(screen.getByText('8 - 12 reps · 90s rest')).toBeInTheDocument();
+    expect(screen.getByText('8 - 12 reps')).toBeInTheDocument();
+    expect(screen.getByText('90s rest')).toBeInTheDocument();
   });
 
   it('shows nothing on the second line when repRange and restTime are both null', () => {
@@ -168,6 +169,45 @@ describe('ExercisesListView', () => {
       onBack, onSelectExercise, onWorkoutNoteBlur, onCompleteWorkout, onAddExercise, onRemoveExercise,
     });
     expect(screen.getByRole('button', {name: /remove exercise/i})).toBeInTheDocument();
+  });
+
+  it('confirms before removing an added exercise block', () => {
+    const onRemoveExercise = vi.fn();
+    renderView({
+      workout: buildWorkout({exercises: [baseExercise({
+        id: 10, exerciseId: 101, isAdded: true,
+        exercise: {id: 101, name: 'Incline Press', category: ExerciseCategory.resistance, description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [], createdByUserId: null},
+        sets: [],
+      })]}),
+      onBack, onSelectExercise, onWorkoutNoteBlur, onCompleteWorkout, onAddExercise, onRemoveExercise,
+    });
+
+    fireEvent.click(screen.getByRole('button', {name: /remove exercise/i}));
+    expect(onRemoveExercise).not.toHaveBeenCalled();
+    expect(screen.getByText('Remove exercise?')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', {name: /^remove$/i}));
+    expect(onRemoveExercise).toHaveBeenCalledWith(10);
+  });
+
+  it('groups duplicate exercises into one top-level row with child prescriptions', () => {
+    const first = baseExercise({id: 10, exerciseId: 100, repRange: '6-8', restTime: '120s'});
+    const second = baseExercise({id: 11, exerciseId: 100, repRange: '10-12', restTime: '90s', sets: [
+      {id: 3, workoutExerciseId: 11, order: 1, reps: null, weight: null, e1rm: null, rpe: null, rir: null, isDropSet: false, parentSetId: null},
+    ]});
+
+    renderView({
+      workout: buildWorkout({exercises: [first, second]}),
+      onBack, onSelectExercise, onWorkoutNoteBlur, onCompleteWorkout, onAddExercise,
+    });
+
+    expect(screen.getAllByText('Bench Press')).toHaveLength(1);
+    expect(screen.getByText('6 - 8 reps')).toBeInTheDocument();
+    expect(screen.getByText('120s rest')).toBeInTheDocument();
+    expect(screen.getByText('10 - 12 reps')).toBeInTheDocument();
+    expect(screen.getByText('90s rest')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Bench Press'));
+    expect(onSelectExercise).toHaveBeenCalledWith(10);
   });
 
   it('shows empty circle for cardio exercise with no data logged', () => {

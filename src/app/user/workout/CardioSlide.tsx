@@ -13,6 +13,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import InfoIcon from '@mui/icons-material/Info';
 import {WorkoutExercisePrisma} from '@/types/dataTypes';
 import {UserExerciseNote} from '@/generated/prisma/browser';
+import CardioInputsSection from './CardioInputsSection';
 
 export type PreviousCardio = {
   cardioDuration: number | null;
@@ -49,7 +50,6 @@ export default function CardioSlide({
 
   const duration = ex.cardioDuration;
   const distance = ex.cardioDistance;
-  const resistance = ex.cardioResistance;
 
   const pace = duration && distance && duration > 0 && distance > 0
     ? formatPace(duration, distance)
@@ -62,18 +62,6 @@ export default function CardioSlide({
     if (previousCardio.cardioDistance != null) parts.push(`${previousCardio.cardioDistance} km`);
     return parts.length > 0 ? parts.join(' · ') : null;
   })();
-
-  const handleNumberInput = (
-    field: 'cardioDuration' | 'cardioDistance' | 'cardioResistance',
-    raw: string
-  ) => {
-    if (raw === '') {
-      onCardioUpdate(field, null);
-      return;
-    }
-    const n = parseFloat(raw);
-    if (!isNaN(n)) onCardioUpdate(field, n);
-  };
 
   return (
     <Paper
@@ -131,35 +119,7 @@ export default function CardioSlide({
       )}
 
       {/* Inputs */}
-      <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, mt: 1}}>
-        <TextField
-          label="Duration (min)"
-          size="small"
-          autoComplete="off"
-          inputProps={{inputMode: 'decimal', pattern: '[0-9.]*'}}
-          value={duration?.toString() ?? ''}
-          onChange={e => handleNumberInput('cardioDuration', e.target.value)}
-          sx={{'& input': {textAlign: 'center'}}}
-        />
-        <TextField
-          label="Distance (km)"
-          size="small"
-          autoComplete="off"
-          inputProps={{inputMode: 'decimal', pattern: '[0-9.]*'}}
-          value={distance?.toString() ?? ''}
-          onChange={e => handleNumberInput('cardioDistance', e.target.value)}
-          sx={{'& input': {textAlign: 'center'}}}
-        />
-        <TextField
-          label="Avg. Resistance / Incline"
-          size="small"
-          autoComplete="off"
-          inputProps={{inputMode: 'decimal', pattern: '[0-9.]*'}}
-          value={resistance?.toString() ?? ''}
-          onChange={e => handleNumberInput('cardioResistance', e.target.value)}
-          sx={{'& input': {textAlign: 'center'}}}
-        />
-      </Box>
+      <CardioInputsSection ex={ex} onCardioUpdate={onCardioUpdate} />
 
       {/* Pace */}
       {pace && (

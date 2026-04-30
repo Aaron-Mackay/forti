@@ -33,7 +33,8 @@ import {useAppBar} from '@lib/providers/AppBarProvider';
 import {HEIGHT_EXC_APPBAR} from '@/components/shell/CustomAppBar';
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 import ScrollEdgeFades from '@/components/shell/ScrollEdgeFades';
-import { useScrollEdgeFades } from '@lib/hooks/useScrollEdgeFades';
+import {useScrollEdgeFades} from '@lib/hooks/useScrollEdgeFades';
+import {groupWorkoutExercises} from './groupWorkoutExercises';
 
 export default function ExercisesListView({
                                             workout,
@@ -61,11 +62,12 @@ export default function ExercisesListView({
   const [notesOpen, setNotesOpen] = useState(false);
   const [noteValue, setNoteValue] = useState(workout.notes ?? '');
 
-  const { scrollRef: listRef, handleScroll: handleListScroll, showStartFade, showEndFade } =
-    useScrollEdgeFades<HTMLUListElement>({ axis: 'y', threshold: 4 });
+  const {scrollRef: listRef, handleScroll: handleListScroll, showStartFade, showEndFade} =
+    useScrollEdgeFades<HTMLUListElement>({axis: 'y', threshold: 4});
 
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [pickedDate, setPickedDate] = useState<Date | null>(null);
+  const [pendingRemoveExerciseId, setPendingRemoveExerciseId] = useState<number | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLongPress = useRef(false);
 
@@ -101,6 +103,7 @@ export default function ExercisesListView({
   const completedDate = workout.dateCompleted
     ? new Date(workout.dateCompleted).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'})
     : null;
+  const exerciseGroups = groupWorkoutExercises(workout.exercises);
 
   return (
     <Box sx={{
@@ -129,7 +132,7 @@ export default function ExercisesListView({
             <AddIcon fontSize="small"/>
           </IconButton>
         </Box>
-        <Box sx={{ position: 'relative', flex: 1, minHeight: 0 }}>
+        <Box sx={{position: 'relative', flex: 1, minHeight: 0}}>
           <List
             ref={listRef}
             className={"maskedOverflow"}
@@ -142,116 +145,127 @@ export default function ExercisesListView({
               overflowY: 'auto',
             }}
           >
-          {workout.exercises.map((ex) => {
-            const isSubstituted = ex.substitutedForId != null;
-            const isAdded = ex.isAdded;
-            return (
-              <ListItem
-                key={ex.id}
-                disablePadding
-                sx={{
-                  borderLeft: isSubstituted ? '3px solid' : isAdded ? '3px solid' : 'none',
-                  borderColor: isSubstituted ? 'warning.main' : 'info.main',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                <ListItemButton onClick={() => onSelectExercise(ex.id)} sx={{flex: 1}}>
-                  <Box sx={{flex: 1, minWidth: 0}}>
-                    {/* Line 1: name + chips */}
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap'}}>
-                      <Typography variant="body2" sx={{fontWeight: 500}}>
-                        {ex.exercise.name}
-                      </Typography>
-                      {ex.isBfr && (
-                        <Chip
-                          label="BFR"
-                          size="small"
-                          color="warning"
-                          sx={{height: 18, fontSize: '0.65rem'}}
-                        />
-                      )}
-                      {isSubstituted && (
-                        <Chip
-                          label="Sub"
-                          size="small"
-                          color="warning"
-                          variant="outlined"
-                          title={ex.substitutedFor ? `Originally: ${ex.substitutedFor.name}` : undefined}
-                          sx={{height: 18, fontSize: '0.65rem'}}
-                        />
-                      )}
-                      {isAdded && (
-                        <Chip
-                          label="Added"
-                          size="small"
-                          color="info"
-                          variant="outlined"
-                          sx={{height: 18, fontSize: '0.65rem'}}
-                        />
-                      )}
-                    </Box>
-                    {/* Line 2: meta left, indicators right */}
-                    <Box sx={{display: 'flex', alignItems: 'center', mt: 0.25}}>
-                      {ex.exercise.category === 'cardio' ? (
-                        ex.cardioDuration != null || ex.cardioDistance != null ? (
-                          <Typography variant="caption" color="text.secondary">
-                            {[
-                              ex.cardioDuration != null ? `${ex.cardioDuration} min` : null,
-                              ex.cardioDistance != null ? `${ex.cardioDistance} km` : null,
-                            ].filter(Boolean).join(' · ')}
-                          </Typography>
-                        ) : (
-                          <PanoramaFishEyeIcon sx={{fontSize: '1.1rem', color: 'text.secondary'}}/>
-                        )
-                      ) : (
-                        <>
-                          {(() => {
-                            const metaParts = [
-                              ex.repRange ? `${ex.repRange.replaceAll('-', ' - ')} reps` : null,
-                              ex.restTime ?
-                                `${ex.restTime.endsWith('s') ? ex.restTime : `${ex.restTime}s`} rest`
-                                : null,
-                            ].filter(Boolean).join(' · ');
-                            return metaParts ? (
-                              <Typography variant="caption" color="text.secondary">{metaParts}</Typography>
-                            ) : null;
-                          })()}
-                          <Box sx={{flex: 1}}/>
-                          <Box sx={{display: 'flex', alignItems: 'center'}}>
-                            {ex.sets.map((set, idx) => {
-                              const iconSx = set.isDropSet ? {fontSize: '0.85rem'} : {fontSize: '1.1rem'};
-                              return set.reps
-                                ? <TaskAltIcon key={idx} sx={iconSx}/>
-                                : <PanoramaFishEyeIcon key={idx} sx={iconSx}/>;
-                            })}
+            {exerciseGroups.map((group) => {
+              const first = group.items[0];
+              const groupHasSubstituted = group.items.some(item => item.substitutedForId != null);
+              const groupHasAdded = group.items.some(item => item.isAdded);
+              return (
+                <ListItem
+                  key={group.key}
+                  disablePadding
+                  sx={{
+                    borderLeft: groupHasSubstituted ? '3px solid' : groupHasAdded ? '3px solid' : 'none',
+                    borderColor: groupHasSubstituted ? 'warning.main' : 'info.main',
+                    display: 'flex',
+                    alignItems: 'stretch',
+                  }}
+                >
+                  <ListItemButton onClick={() => onSelectExercise(first.id)} sx={{flex: 1, alignItems: 'flex-start'}}>
+                    <Box sx={{flex: 1, minWidth: 0}}>
+                      <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap'}}>
+                        <Typography variant="body2" sx={{fontWeight: 500}}>
+                          {first.exercise.name}
+                        </Typography>
+                      </Box>
+                      {group.items.map((ex, idx) => {
+                        const isSubstituted = ex.substitutedForId != null;
+                        const isAdded = ex.isAdded;
+                        return (
+                          <Box key={ex.id} sx={{mt: idx === 0 ? 0.25 : 1}}>
+                            <Box sx={{display: 'flex', alignItems: 'center', mt: 0.25}}>
+                              {ex.exercise.category === 'cardio' ? (
+                                ex.cardioDuration != null || ex.cardioDistance != null ? (
+                                  <Typography variant="caption" color="text.secondary">
+                                    {[
+                                      ex.cardioDuration != null ? `${ex.cardioDuration} min` : null,
+                                      ex.cardioDistance != null ? `${ex.cardioDistance} km` : null,
+                                    ].filter(Boolean).join(' · ')}
+                                  </Typography>
+                                ) : (
+                                  <PanoramaFishEyeIcon sx={{fontSize: '1.1rem', color: 'text.secondary'}}/>
+                                )
+                              ) : (
+                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1, width: '100%', minWidth: 0}}>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {ex.repRange ? `${ex.repRange.replaceAll('-', ' - ')} reps` : null}
+                                  </Typography>
+                                  {ex.restTime && ex.repRange && '·'}
+                                  <Typography variant="caption" color="text.secondary">
+                                    {ex.restTime ? `${ex.restTime.endsWith('s') ? ex.restTime : `${ex.restTime}s`} rest` : null}
+                                  </Typography>
+                                  {(ex.isBfr || isSubstituted || isAdded) && '·'}
+                                  {ex.isBfr && (
+                                    <Chip label="BFR" size="small" color="warning"
+                                          sx={{height: 18, fontSize: '0.65rem'}}/>
+                                  )}
+                                  {isSubstituted && (
+                                    <Chip
+                                      label="Sub"
+                                      size="small"
+                                      color="warning"
+                                      variant="outlined"
+                                      title={ex.substitutedFor ? `Originally: ${ex.substitutedFor.name}` : undefined}
+                                      sx={{height: 18, fontSize: '0.65rem'}}
+                                    />
+                                  )}
+                                  {isAdded && (
+                                    <Chip label="Added" size="small" color="info" variant="outlined"
+                                          sx={{height: 18, fontSize: '0.65rem'}}/>
+                                  )}
+                                  <Box sx={{flex: 1}}/>
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 0.5,
+                                    }}
+                                  >
+                                    <Box sx={{display: 'flex', alignItems: 'center'}}>
+                                      {ex.sets.map((set, setIdx) => {
+                                        const iconSx = set.isDropSet
+                                          ? {fontSize: '0.85rem'}
+                                          : {fontSize: '1.1rem'};
+
+                                        return set.reps ? (
+                                          <TaskAltIcon key={setIdx} sx={iconSx}/>
+                                        ) : (
+                                          <PanoramaFishEyeIcon key={setIdx} sx={iconSx}/>
+                                        );
+                                      })}
+                                    </Box>
+
+                                    {isAdded && onRemoveExercise ? (
+                                      <IconButton
+                                        size="small"
+                                        color="error"
+                                        aria-label={`Remove exercise block ${idx + 1}`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setPendingRemoveExerciseId(ex.id);
+                                        }}
+                                      >
+                                        <DeleteOutlineIcon fontSize="small"/>
+                                      </IconButton>
+                                    ) : <Box sx={{height: 30, width: 30}}/>}
+                                  </Box>
+                                </Box>
+                              )}
+                            </Box>
+                            {isSubstituted && ex.substitutedFor && (
+                              <Typography variant="caption" color="warning.main" sx={{display: 'block', mt: 0.25}}>
+                                Originally: {ex.substitutedFor.name}
+                              </Typography>
+                            )}
                           </Box>
-                        </>
-                      )}
+                        );
+                      })}
                     </Box>
-                    {isSubstituted && ex.substitutedFor && (
-                      <Typography variant="caption" color="warning.main" sx={{display: 'block', mt: 0.25}}>
-                        Originally: {ex.substitutedFor.name}
-                      </Typography>
-                    )}
-                  </Box>
-                </ListItemButton>
-                {isAdded && onRemoveExercise && (
-                  <IconButton
-                    size="small"
-                    color="error"
-                    aria-label="Remove exercise"
-                    onClick={() => onRemoveExercise(ex.id)}
-                    sx={{mr: 0.5}}
-                  >
-                    <DeleteOutlineIcon fontSize="small"/>
-                  </IconButton>
-                )}
-              </ListItem>
-            );
-          })}
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
           </List>
-          <ScrollEdgeFades axis="y" showStart={showStartFade} showEnd={showEndFade} size={40} background="default" />
+          <ScrollEdgeFades axis="y" showStart={showStartFade} showEnd={showEndFade} size={40} background="default"/>
         </Box>
         <Box
           sx={{display: 'flex', alignItems: 'center', cursor: 'pointer', mb: 1}}
@@ -316,6 +330,28 @@ export default function ExercisesListView({
               }}
             >
               Complete
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog open={pendingRemoveExerciseId !== null} onClose={() => setPendingRemoveExerciseId(null)}>
+          <DialogTitle>Remove exercise?</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2">
+              This will remove this added exercise block from the workout.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setPendingRemoveExerciseId(null)}>Cancel</Button>
+            <Button
+              color="error"
+              onClick={() => {
+                if (pendingRemoveExerciseId != null && onRemoveExercise) {
+                  onRemoveExercise(pendingRemoveExerciseId);
+                }
+                setPendingRemoveExerciseId(null);
+              }}
+            >
+              Remove
             </Button>
           </DialogActions>
         </Dialog>
