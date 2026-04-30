@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import getLoggedInUser from '@lib/getLoggedInUser';
 import prisma from '@lib/prisma';
-import AppBarTitle from '@/components/AppBarTitle';
+import AppBarTitle from '@/components/shell/AppBarTitle';
 import { getUserEvents } from '@lib/eventService';
 import { getUserMetrics } from '@lib/metricService';
 import { getUserData } from '@lib/userService';
@@ -11,7 +11,7 @@ import DashboardChart from '@/app/user/(dashboard)/DashboardChart';
 import E1rmProgressCard from '@/app/user/(dashboard)/E1rmProgressCard';
 import ClientQuickLinks from './ClientQuickLinks';
 import { Paper } from '@mui/material';
-import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 import { Event as PrismaEvent, EventType } from '@/generated/prisma/browser';
 
 interface Props {

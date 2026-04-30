@@ -22,7 +22,7 @@ import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import FlipCameraIosIcon from '@mui/icons-material/FlipCameraIos';
 
 import { getCoverDrawRect, getOrderedCameraDeviceIds } from './photoCaptureUtils';
-import { APPBAR_HEIGHT } from '@/components/CustomAppBar';
+import { APPBAR_HEIGHT } from '@/components/shell/CustomAppBar';
 
 type Angle = 'front' | 'back' | 'side';
 type FacingMode = 'user' | 'environment';

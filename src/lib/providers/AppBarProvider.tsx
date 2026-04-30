@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Box, Toolbar, useMediaQuery, useTheme } from '@mui/material';
-import CustomAppBar, { APPBAR_HEIGHT, DRAWER_WIDTH } from '@/components/CustomAppBar';
+import CustomAppBar, { APPBAR_HEIGHT, DRAWER_WIDTH } from '@/components/shell/CustomAppBar';
 
 interface AppBarConfig {
   title: string;

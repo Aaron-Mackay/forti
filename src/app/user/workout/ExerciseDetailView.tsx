@@ -16,7 +16,7 @@ import './styles.css';
 import {WorkoutPrisma} from '@/types/dataTypes';
 import {UserExerciseNote} from '@/generated/prisma/browser';
 import { useAppBar } from '@lib/providers/AppBarProvider';
-import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 import ExerciseSlide from './ExerciseSlide';
 import CardioSlide, {PreviousCardio} from './CardioSlide';

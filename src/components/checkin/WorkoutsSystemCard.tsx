@@ -1,8 +1,8 @@
 'use client';
 
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import FrontBody from '@/components/front.svg';
-import BackBody from '@/components/back.svg';
+import FrontBody from '@/components/fitness/front.svg';
+import BackBody from '@/components/fitness/back.svg';
 import {Box, CircularProgress, Typography} from '@mui/material';
 import {useId, useInsertionEffect, useMemo} from 'react';
 

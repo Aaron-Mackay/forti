@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
 import getLoggedInUser from '@lib/getLoggedInUser';
 import prisma from '@lib/prisma';
-import AppBarTitle from '@/components/AppBarTitle';
-import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import AppBarTitle from '@/components/shell/AppBarTitle';
+import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 import { Box, Paper } from '@mui/material';
 import CoachCheckInsClient from '@/app/user/coach/check-ins/CoachCheckInsClient';
 

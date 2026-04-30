@@ -2,9 +2,9 @@
 
 import {Box, Chip, Dialog, DialogContent, DialogTitle, IconButton, Typography} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import MuscleHighlight from '@/components/MuscleHighlight';
+import MuscleHighlight from '@/components/fitness/MuscleHighlight';
 import {WorkoutPrisma} from '@/types/dataTypes';
-import {APPBAR_HEIGHT} from '@/components/CustomAppBar';
+import {APPBAR_HEIGHT} from '@/components/shell/CustomAppBar';
 
 function ordinal(n: number): string {
   const s = ['th', 'st', 'nd', 'rd'];

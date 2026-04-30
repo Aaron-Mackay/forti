@@ -1,7 +1,7 @@
 import React from "react";
 import getLoggedInUser from "@lib/getLoggedInUser";
-import {HEIGHT_EXC_APPBAR} from "@/components/CustomAppBar";
-import AppBarTitle from "@/components/AppBarTitle";
+import {HEIGHT_EXC_APPBAR} from "@/components/shell/CustomAppBar";
+import AppBarTitle from "@/components/shell/AppBarTitle";
 import {Paper, Typography} from "@mui/material";
 import DashboardChart from "@/app/user/(dashboard)/DashboardChart";
 import DashboardCards from "@/app/user/(dashboard)/DashboardCards";

@@ -31,16 +31,16 @@ import {
   isMacroPercentSplitValid,
   sumMacroPercents,
 } from '@lib/macroTargets';
-import MetricsSystemCard from '@/components/MetricsSystemCard';
-import WorkoutsSystemCard from '@/components/WorkoutsSystemCard';
+import MetricsSystemCard from '@/components/checkin/MetricsSystemCard';
+import WorkoutsSystemCard from '@/components/checkin/WorkoutsSystemCard';
 import {checkInHasPhotos, checkInHasRatings, checkInHasReflection, checkInHasCustomResponses} from '@/lib/checkInUtils';
 import {parseCheckInTemplate} from '@/types/checkInTemplateTypes';
 import type {CheckInTemplate} from '@/types/checkInTemplateTypes';
 import type {DataVizCard} from '@/types/datavizTypes';
-import DataVizChartCard from '@/components/DataVizChartCard';
-import CheckInPhotoTile from '@/components/CheckInPhotoTile';
-import PhotoViewerDialog from '@/components/PhotoViewerDialog';
-import CustomCheckInResponseDisplay from '@/components/CustomCheckInResponseDisplay';
+import DataVizChartCard from '@/components/charts/DataVizChartCard';
+import CheckInPhotoTile from '@/components/checkin/CheckInPhotoTile';
+import PhotoViewerDialog from '@/components/checkin/PhotoViewerDialog';
+import CustomCheckInResponseDisplay from '@/components/checkin/CustomCheckInResponseDisplay';
 import SupplementsClient from '@/app/user/supplements/SupplementsClient';
 import {getLoomEmbedUrl} from '@lib/loom';
 

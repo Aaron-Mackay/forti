@@ -21,7 +21,7 @@ import SchoolIcon from '@mui/icons-material/School';
 import { useRouter } from 'next/navigation';
 import { useApiGet } from '@lib/hooks/api/useApiGet';
 import { useApiMutation } from '@lib/hooks/useApiMutation';
-import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 
 interface PlanSummary {
   id: number;

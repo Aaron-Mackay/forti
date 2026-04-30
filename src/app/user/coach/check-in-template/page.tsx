@@ -1,5 +1,5 @@
-import AppBarTitle from '@/components/AppBarTitle';
-import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import AppBarTitle from '@/components/shell/AppBarTitle';
+import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 import { Box, Paper } from '@mui/material';
 import CheckInTemplateEditor from './CheckInTemplateEditor';
 

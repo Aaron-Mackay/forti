@@ -32,7 +32,7 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CalculateOutlinedIcon from '@mui/icons-material/CalculateOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import MuscleHighlight from '@/components/MuscleHighlight';
+import MuscleHighlight from '@/components/fitness/MuscleHighlight';
 import E1rmSparkline from './E1rmSparkline';
 import WeightInput from './WeightInput';
 import PlateCalculatorSheet from './PlateCalculatorSheet';
@@ -43,7 +43,7 @@ import {SetPrisma, WorkoutExercisePrisma} from '@/types/dataTypes';
 import {UserExerciseNote} from '@/generated/prisma/browser';
 import type {E1rmHistoryPoint, PreviousExerciseHistory} from '@lib/contracts/exerciseHistory';
 import {useSettings} from '@lib/providers/SettingsProvider';
-import ScrollEdgeFades from '@/components/ScrollEdgeFades';
+import ScrollEdgeFades from '@/components/shell/ScrollEdgeFades';
 import {useScrollEdgeFades} from '@lib/hooks/useScrollEdgeFades';
 import VideocamIcon from '@mui/icons-material/Videocam';
 

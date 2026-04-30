@@ -17,12 +17,12 @@ import type { WeeklyCheckIn } from '@/generated/prisma/browser';
 import { useRouter } from 'next/navigation';
 import { RATING_LABELS } from '@/types/checkInTypes';
 import { checkInHasRatings, checkInHasReflection, checkInHasPhotos, checkInHasCustomResponses } from '@/lib/checkInUtils';
-import CheckInPhotoTile from '@/components/CheckInPhotoTile';
-import PhotoViewerDialog from '@/components/PhotoViewerDialog';
-import CustomCheckInResponseDisplay from '@/components/CustomCheckInResponseDisplay';
+import CheckInPhotoTile from '@/components/checkin/CheckInPhotoTile';
+import PhotoViewerDialog from '@/components/checkin/PhotoViewerDialog';
+import CustomCheckInResponseDisplay from '@/components/checkin/CustomCheckInResponseDisplay';
 import { parseCheckInTemplate } from '@/types/checkInTemplateTypes';
 import { getLoomEmbedUrl } from '@lib/loom';
-import WorkoutsSystemCard from '@/components/WorkoutsSystemCard';
+import WorkoutsSystemCard from '@/components/checkin/WorkoutsSystemCard';
 
 interface Props {
   checkIn: WeeklyCheckIn & {

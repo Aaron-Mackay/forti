@@ -12,7 +12,7 @@ import AddIcon from '@mui/icons-material/Add';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import CalendarBottomDrawer from "./CalendarBottomDrawer";
-import {APPBAR_HEIGHT, DRAWER_WIDTH} from "@/components/CustomAppBar";
+import {APPBAR_HEIGHT, DRAWER_WIDTH} from "@/components/shell/CustomAppBar";
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import {addDays, format, isAfter, isBefore, isSameDay, startOfDay} from 'date-fns';
 import {getEventsOnDate, hasMeaningfulEventChanges, parsedEvents} from "@/app/user/calendar/utils";

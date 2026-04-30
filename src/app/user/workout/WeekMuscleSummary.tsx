@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Box, Dialog, DialogContent, DialogTitle, IconButton, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import MuscleBodyHeatmap from '@/components/MuscleBodyHeatmap';
+import MuscleBodyHeatmap from '@/components/fitness/MuscleBodyHeatmap';
 import { WeekPrisma, ExerciseMuscle, MUSCLE_NAMES } from '@/types/dataTypes';
 
 type MuscleCounts = Record<string, { planned: number; done: number }>;

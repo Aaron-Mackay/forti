@@ -23,7 +23,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import {Exercise} from '@/generated/prisma/browser';
 import {AddExerciseForm} from '@/app/exercises/AddExerciseForm';
-import {APPBAR_HEIGHT, HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar';
+import {APPBAR_HEIGHT, HEIGHT_EXC_APPBAR} from '@/components/shell/CustomAppBar';
 
 // Maps plain-English search terms to substrings found in muscle IDs.
 // Muscle IDs use kebab shorthand (e.g. sternal-pec, ant-delts, lower-back).

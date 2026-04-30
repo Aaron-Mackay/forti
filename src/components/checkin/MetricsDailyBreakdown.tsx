@@ -7,7 +7,7 @@ import { formatSleepMins } from '@/types/checkInTypes';
 import type { CustomMetricDef } from '@/types/settingsTypes';
 import type { BodyweightUnit } from '@/lib/units';
 import { bodyweightDisplayToKg, kgToBodyweightDisplay } from '@/lib/units';
-import ScrollEdgeFades from './ScrollEdgeFades';
+import ScrollEdgeFades from '@/components/shell/ScrollEdgeFades';
 import { useScrollEdgeFades } from '@lib/hooks/useScrollEdgeFades';
 
 interface Props {

@@ -8,11 +8,11 @@ import type { CustomMetricDef } from '@/types/settingsTypes';
 import type { BodyweightUnit } from '@/lib/units';
 import type { MetricBreakdownKey } from './MetricsDailyBreakdown';
 import CheckInCustomCard from './CheckInCustomCard';
-import DataVizChartCard from './DataVizChartCard';
+import DataVizChartCard from '@/components/charts/DataVizChartCard';
 import MetricsSystemCard from './MetricsSystemCard';
 import WorkoutsSystemCard from './WorkoutsSystemCard';
 import ProgressPhotoSection from '@/app/user/check-in/ProgressPhotoSection';
-import { DEFAULT_CHECK_IN_TEMPLATE_PREVIEW_DATA } from './checkInTemplatePreviewData';
+import { DEFAULT_CHECK_IN_TEMPLATE_PREVIEW_DATA } from '@/components/checkin/checkInTemplatePreviewData';
 
 // ─── System card data bundle ──────────────────────────────────────────────────
 

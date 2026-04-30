@@ -1,9 +1,9 @@
 import {getUserData} from '@lib/userService'; // Server-side data fetching
 import WorkoutClient from './WorkoutClient';
 import {notFound} from "next/navigation";
-import NetworkStatusBanner from "@/components/NetworkStatusBanner";
+import NetworkStatusBanner from "./_components/NetworkStatusBanner";
 import getLoggedInUser from "@lib/getLoggedInUser";
-import {Loading} from "@/components/Loading";
+import {Loading} from "@/components/shell/Loading";
 import {Suspense} from "react";
 
 export default async function DashboardPage() {

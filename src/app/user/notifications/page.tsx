@@ -12,7 +12,7 @@ import {
   ListItemText,
   Typography,
 } from '@mui/material';
-import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import { useNotifications } from '@lib/providers/NotificationsProvider';
 import { useRouter } from 'next/navigation';

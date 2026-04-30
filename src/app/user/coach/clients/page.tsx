@@ -1,6 +1,6 @@
 import { getCoachClientHealthSummary } from '@lib/coachService';
 import getLoggedInUser from '@lib/getLoggedInUser';
-import AppBarTitle from '@/components/AppBarTitle';
+import AppBarTitle from '@/components/shell/AppBarTitle';
 import {
   Box,
   Card,

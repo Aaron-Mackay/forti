@@ -17,7 +17,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import {Exercise} from '@/generated/prisma/browser';
-import {APPBAR_HEIGHT, HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar';
+import {APPBAR_HEIGHT, HEIGHT_EXC_APPBAR} from '@/components/shell/CustomAppBar';
 
 export interface AddExerciseConfig {
   setCount: number;

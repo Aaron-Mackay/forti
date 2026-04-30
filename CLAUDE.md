@@ -100,6 +100,12 @@ Update route code/contracts and regenerate the index instead of manually editing
 - `prisma/` — schema + seed scripts.
 - `tests/e2e/` — Playwright scenarios.
 
+## Component Placement Rules
+
+- Route-local UI belongs in `src/app/**/_components/` when used only within that route subtree.
+- Shared UI belongs in `src/components/**` and should be grouped by domain (for example `shell`, `checkin`, `fitness`, `charts`, `inputs`) instead of adding flat files.
+- Promote a route-local component to `src/components/**` only when it is reused across multiple route families or by app-level providers/layout.
+
 ---
 
 ## Key Shared Files (high traffic)

@@ -1,5 +1,5 @@
 import ProtectedLayout from "@/app/protected-layout";
-import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
+import ServiceWorkerRegistrar from "@/components/shell/ServiceWorkerRegistrar";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (

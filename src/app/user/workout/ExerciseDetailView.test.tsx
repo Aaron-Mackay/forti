@@ -25,7 +25,7 @@ vi.mock('swiper/react', () => ({
 vi.mock('swiper/modules', () => ({Pagination: {}}));
 vi.mock('swiper/css', () => ({}));
 vi.mock('swiper/css/pagination', () => ({}));
-vi.mock('@/components/MuscleHighlight', () => ({
+vi.mock('@/components/fitness/MuscleHighlight', () => ({
   default: ({primaryMuscles, exerciseId}: {primaryMuscles: string[]; secondaryMuscles?: string[]; exerciseId: number}) =>
     primaryMuscles.length > 0 ? <div data-testid={`anatomy-${exerciseId}`}/> : null,
 }));

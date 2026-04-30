@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import getLoggedInUser from '@lib/getLoggedInUser';
 import prisma from '@lib/prisma';
-import AppBarTitle from '@/components/AppBarTitle';
+import AppBarTitle from '@/components/shell/AppBarTitle';
 import PlansListCard from '@/app/user/plan/PlansListCard';
 
 interface Props {

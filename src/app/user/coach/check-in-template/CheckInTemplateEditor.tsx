@@ -83,12 +83,12 @@ import { RELATIVE_WEEK_OPTIONS } from '@/types/datavizTypes';
 import { BUILTIN_METRIC_KEYS, BUILTIN_METRIC_LABELS } from '@/types/metricTypes';
 import type { BuiltInMetricKey } from '@/types/metricTypes';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import TemplateCardRenderer from '@/components/TemplateCardRenderer';
-import DataVizChartCard from '@/components/DataVizChartCard';
-import MetricsSystemCard from '@/components/MetricsSystemCard';
+import TemplateCardRenderer from '@/components/checkin/TemplateCardRenderer';
+import DataVizChartCard from '@/components/charts/DataVizChartCard';
+import MetricsSystemCard from '@/components/checkin/MetricsSystemCard';
 import CustomCheckInField from '@/app/user/check-in/CustomCheckInField';
-import {HEIGHT_EXC_APPBAR} from "@/components/CustomAppBar";
-import { DEFAULT_CHECK_IN_TEMPLATE_PREVIEW_DATA } from '@/components/checkInTemplatePreviewData';
+import {HEIGHT_EXC_APPBAR} from "@/components/shell/CustomAppBar";
+import { DEFAULT_CHECK_IN_TEMPLATE_PREVIEW_DATA } from '@/components/checkin/checkInTemplatePreviewData';
 
 // Motion-wrapped MUI Box — accepts both `sx` and Framer Motion props
 const MotionBox = motion.create(Box);

@@ -4,7 +4,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import {Box, IconButton, Typography} from "@mui/material";
 import {useSettings} from "@lib/providers/SettingsProvider";
-import {APPBAR_HEIGHT} from "@/components/CustomAppBar";
+import {APPBAR_HEIGHT} from "@/components/shell/CustomAppBar";
 import {useStopwatch} from "@/app/user/workout/StopwatchContext";
 
 const AppBarStopwatch: React.FC = () => {

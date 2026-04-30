@@ -30,9 +30,9 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {WorkoutPrisma} from '@/types/dataTypes';
 import './exercisesListView.css'
 import {useAppBar} from '@lib/providers/AppBarProvider';
-import {HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar';
+import {HEIGHT_EXC_APPBAR} from '@/components/shell/CustomAppBar';
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
-import ScrollEdgeFades from '@/components/ScrollEdgeFades';
+import ScrollEdgeFades from '@/components/shell/ScrollEdgeFades';
 import { useScrollEdgeFades } from '@lib/hooks/useScrollEdgeFades';
 
 export default function ExercisesListView({

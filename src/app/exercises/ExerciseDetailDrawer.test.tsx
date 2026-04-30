@@ -3,7 +3,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {ExerciseCategory} from '@/generated/prisma/browser';
 import ExerciseDetailDrawer from './ExerciseDetailDrawer';
 
-vi.mock('@/components/MuscleHighlight', () => ({
+vi.mock('@/components/fitness/MuscleHighlight', () => ({
   default: () => <div data-testid="muscle-highlight"/>,
 }));
 

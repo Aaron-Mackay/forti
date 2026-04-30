@@ -9,7 +9,7 @@ import {EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, ExerciseEquipment, ExerciseMuscle}
 import ExerciseCard from './ExerciseCard';
 import {AddExerciseForm} from './AddExerciseForm';
 import ExerciseDetailDrawer from './ExerciseDetailDrawer';
-import {HEIGHT_EXC_APPBAR} from '@/components/CustomAppBar';
+import {HEIGHT_EXC_APPBAR} from '@/components/shell/CustomAppBar';
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import type {ExerciseCoachNote} from './types';
 

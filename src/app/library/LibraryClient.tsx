@@ -31,7 +31,7 @@ import { LibraryAsset, LibraryAssetType } from '@/generated/prisma/browser';
 import { useEffect, useMemo, useState } from 'react';
 import LibraryAssetCard from './LibraryAssetCard';
 import ImportLinksDialog from './ImportLinksDialog';
-import { APPBAR_HEIGHT, HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import { APPBAR_HEIGHT, HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 
 interface Props {
   ownAssets: LibraryAsset[];

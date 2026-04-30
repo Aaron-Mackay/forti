@@ -1,7 +1,7 @@
 import {getAllLinkedPlans} from "@lib/planService";
 import React from "react";
 import getLoggedInUser from "@lib/getLoggedInUser";
-import AppBarTitle from "@/components/AppBarTitle";
+import AppBarTitle from "@/components/shell/AppBarTitle";
 import PlansListCard from "./PlansListCard";
 
 const PlanPage = async () => {

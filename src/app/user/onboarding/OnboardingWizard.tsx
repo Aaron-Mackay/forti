@@ -19,7 +19,7 @@ import {
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CHECK_IN_DAY_NAMES } from '@/types/checkInTypes';
-import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
 
 const TOTAL_STEPS = 3; // steps 0–2, then a done screen at step 3

@@ -22,7 +22,7 @@ import CheckInHistoryCard, { CheckInDetails } from './CheckInHistoryCard';
 import { usePushSubscription } from '@lib/usePushSubscription';
 import { CheckInHistoryResponseSchema, CurrentCheckInResponseSchema, type CurrentCheckInResponse } from '@lib/contracts/checkIn';
 import { useSettings } from '@lib/providers/SettingsProvider';
-import MetricsSystemCard from '@/components/MetricsSystemCard';
+import MetricsSystemCard from '@/components/checkin/MetricsSystemCard';
 import { fetchJsonWithSchema } from '@lib/fetchWrapper';
 
 type CurrentData = CurrentCheckInResponse;

@@ -22,7 +22,7 @@ import { useApiGet } from '@lib/hooks/api/useApiGet';
 import { useApiMutation } from '@lib/hooks/useApiMutation';
 import type { LibraryAssetType } from '@/generated/prisma/browser';
 import type { StepProgressMap } from '@lib/learningPlanSchemas';
-import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 
 interface AssetSummary {
   id: string;

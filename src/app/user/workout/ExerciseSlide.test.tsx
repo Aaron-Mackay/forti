@@ -15,7 +15,7 @@ vi.mock('@lib/providers/SettingsProvider', () => ({
   }),
 }));
 
-vi.mock('@/components/MuscleHighlight', () => ({default: () => null}));
+vi.mock('@/components/fitness/MuscleHighlight', () => ({default: () => null}));
 vi.mock('./E1rmSparkline', () => ({
   default: ({history}: {history: Array<unknown> | null}) => (
     <div data-testid="e1rm-sparkline">{history && history.length > 0 ? 'sparkline' : 'Log a weighted set to start tracking'}</div>

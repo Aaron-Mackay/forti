@@ -3,7 +3,7 @@ import { authOptions } from '@lib/auth';
 import { redirect } from 'next/navigation';
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
-import AppBarTitle from '@/components/AppBarTitle';
+import AppBarTitle from '@/components/shell/AppBarTitle';
 import LibraryClient from './LibraryClient';
 
 export default async function LibraryPage() {

@@ -36,7 +36,7 @@ import {
   deriveMacroPercentsFromTargets,
   isMacroPercentSplitValid,
 } from '@lib/macroTargets';
-import MacroTargetsPanel, {type MacroPercentValues} from '@/components/MacroTargetsPanel';
+import MacroTargetsPanel, {type MacroPercentValues} from '@/components/inputs/MacroTargetsPanel';
 import { fetchJsonWithSchema } from '@lib/fetchWrapper';
 import { GetTargetTemplateResponseSchema, TargetTemplateRequestSchema, TargetTemplateResponseSchema } from '@lib/contracts/targetTemplates';
 import { useSettings } from '@lib/providers/SettingsProvider';

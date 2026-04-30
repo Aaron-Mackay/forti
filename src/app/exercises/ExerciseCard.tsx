@@ -3,7 +3,7 @@
 import {Exercise} from '@/generated/prisma/browser';
 import {Box, Card, CardContent, Chip, Typography} from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
-import MuscleHighlight from '@/components/MuscleHighlight';
+import MuscleHighlight from '@/components/fitness/MuscleHighlight';
 
 export default function ExerciseCard({
   exercise,

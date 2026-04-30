@@ -15,7 +15,7 @@ import SchoolIcon from '@mui/icons-material/School';
 import LinkIcon from '@mui/icons-material/Link';
 import {Exercise} from '@/generated/prisma/browser';
 import {format} from 'date-fns';
-import MuscleHighlight from '@/components/MuscleHighlight';
+import MuscleHighlight from '@/components/fitness/MuscleHighlight';
 import type {E1rmHistoryPoint} from '@lib/contracts/exerciseHistory';
 import {PRIMARY_COLOUR} from '@lib/theme';
 import type {ExerciseCoachNote} from './types';

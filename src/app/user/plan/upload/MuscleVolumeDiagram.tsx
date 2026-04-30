@@ -2,7 +2,7 @@
 
 import { Box, Stack, Typography } from '@mui/material'
 import type { ExerciseMuscle } from '@/types/dataTypes'
-import MuscleBodyHeatmap, { MUSCLE_BLUE_SHADES } from '@/components/MuscleBodyHeatmap'
+import MuscleBodyHeatmap, { MUSCLE_BLUE_SHADES } from '@/components/fitness/MuscleBodyHeatmap'
 
 export default function MuscleVolumeDiagram({ volumes }: { volumes: Partial<Record<ExerciseMuscle, number>> }) {
   const id = 'muscle-volume-summary'

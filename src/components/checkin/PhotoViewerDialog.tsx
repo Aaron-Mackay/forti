@@ -2,7 +2,7 @@
 
 import { Box, Dialog, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { APPBAR_HEIGHT, HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import { APPBAR_HEIGHT, HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 
 interface Props {
   photo: { src: string; alt: string } | null;

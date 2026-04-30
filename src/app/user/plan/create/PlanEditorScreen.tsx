@@ -41,7 +41,7 @@ import PlanWeekView from '../PlanWeekView'
 import PlanMultiWeekTable from '../PlanMultiWeekTable'
 import { usePlanViewControls } from '../usePlanViewControls'
 import { usePlanRepRangeValidation } from '../usePlanRepRangeValidation'
-import MuscleHighlight from '@/components/MuscleHighlight'
+import MuscleHighlight from '@/components/fitness/MuscleHighlight'
 import {
   EXERCISE_MUSCLES,
   ExerciseMuscle,

@@ -1,8 +1,8 @@
 'use client';
 
 import {Box, Divider, Paper, Stack, TextField, Typography, useMediaQuery, useTheme} from '@mui/material';
-import SleepHmInput from '@/components/SleepHmInput';
-import MacroTargetsPanel from '@/components/MacroTargetsPanel';
+import SleepHmInput from './_components/SleepHmInput';
+import MacroTargetsPanel from '@/components/inputs/MacroTargetsPanel';
 
 export interface TargetValues {
   steps: string;

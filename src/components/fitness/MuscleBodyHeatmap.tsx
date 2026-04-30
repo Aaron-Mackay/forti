@@ -4,8 +4,8 @@ import { useInsertionEffect } from 'react'
 import type { CSSProperties } from 'react'
 import { Box } from '@mui/material'
 import type { SxProps, Theme } from '@mui/material/styles'
-import FrontBody from '@/components/front.svg'
-import BackBody from '@/components/back.svg'
+import FrontBody from '@/components/fitness/front.svg'
+import BackBody from '@/components/fitness/back.svg'
 
 export const MUSCLE_BLUE_SHADES = ['#93c5fd', '#3b82f6', '#1d4ed8', '#1e3a8a'] as const
 

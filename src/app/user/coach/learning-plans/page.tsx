@@ -1,4 +1,4 @@
-import AppBarTitle from '@/components/AppBarTitle';
+import AppBarTitle from '@/components/shell/AppBarTitle';
 
 export default function CoachLearningPlansPage() {
   return (

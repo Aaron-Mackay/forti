@@ -6,7 +6,7 @@ import { useAppBar } from '@lib/providers/AppBarProvider';
 import ProgressIcon from '@/lib/ProgressIcon';
 import { getWorkoutStatus } from '@/lib/workoutProgress';
 import WeekMuscleSummary from './WeekMuscleSummary';
-import { HEIGHT_EXC_APPBAR } from '@/components/CustomAppBar';
+import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 
 export default function WorkoutsListView({
   week,
