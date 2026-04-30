@@ -101,7 +101,7 @@ describe('ExerciseSlide', () => {
     expect(screen.getByLabelText('Est. 1RM set 1')).toBeInTheDocument();
   });
 
-  it('toggles e1rm history behind a text trigger', async () => {
+  it('renders no notes or e1rm content until a tab is selected', () => {
     render(
       <ExerciseSlide
         ex={buildExercise()}
@@ -114,14 +114,60 @@ describe('ExerciseSlide', () => {
       />,
     );
 
-    expect(screen.getByText('Est. 1RM history')).toBeInTheDocument();
-    expect(screen.getByTestId('e1rm-sparkline')).not.toBeVisible();
+    expect(screen.queryByPlaceholderText(/add form cues and notes for this exercise/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('e1rm-sparkline')).not.toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByText('Est. 1RM history'));
+  it('toggles e1rm history behind a tab trigger', async () => {
+    render(
+      <ExerciseSlide
+        ex={buildExercise()}
+        userExerciseNote={undefined}
+        onFormCueBlur={vi.fn()}
+        handleSetUpdate={vi.fn()}
+        handleEffortUpdate={vi.fn()}
+        previousWorkout={{workouts: []}}
+        history={[{date: '2025-02-10T00:00:00.000Z', bestE1rm: 200}]}
+      />,
+    );
+
+    expect(screen.queryByTestId('e1rm-sparkline')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', {name: /progress/i}));
 
     await waitFor(() => {
       expect(screen.getByTestId('e1rm-sparkline')).toBeVisible();
     });
+
+    fireEvent.click(screen.getByRole('tab', {name: /progress/i}));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('e1rm-sparkline')).not.toBeInTheDocument();
+    });
+  });
+
+  it('switches between notes and e1rm panels with one active tab at a time', async () => {
+    render(
+      <ExerciseSlide
+        ex={buildExercise()}
+        userExerciseNote={undefined}
+        onFormCueBlur={vi.fn()}
+        handleSetUpdate={vi.fn()}
+        handleEffortUpdate={vi.fn()}
+        previousWorkout={{workouts: []}}
+        history={[{date: '2025-02-10T00:00:00.000Z', bestE1rm: 200}]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('tab', {name: /notes/i}));
+    expect(screen.getByPlaceholderText(/add form cues and notes for this exercise/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('e1rm-sparkline')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', {name: /progress/i}));
+    await waitFor(() => {
+      expect(screen.getByTestId('e1rm-sparkline')).toBeVisible();
+    });
+    expect(screen.queryByPlaceholderText(/add form cues and notes for this exercise/i)).not.toBeInTheDocument();
   });
 
   it('shows an accordion with up to three previous workout tables below the set list', async () => {

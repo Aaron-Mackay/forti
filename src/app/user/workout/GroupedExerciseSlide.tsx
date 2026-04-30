@@ -1,9 +1,7 @@
 'use client';
 
 import {useState} from 'react';
-import {Box, Chip, Collapse, IconButton, Menu, MenuItem, Paper, TextField, Typography,} from '@mui/material';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import InfoIcon from '@mui/icons-material/Info';
+import {Box, Chip, IconButton, Menu, MenuItem, Paper, Tab, Tabs, TextField, Typography,} from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import MuscleHighlight from '@/components/fitness/MuscleHighlight';
 import type {UserExerciseNote} from '@/generated/prisma/browser';
@@ -14,7 +12,8 @@ import WorkoutExerciseSetSection from './WorkoutExerciseSetSection';
 import E1rmHistorySection from './E1rmHistorySection';
 import PreviousWorkoutsSection from './PreviousWorkoutsSection';
 import CardioInputsSection from './CardioInputsSection';
-import {getGroupBestE1rm, getHistoricalBest, hasAnyE1rmHistory} from './exerciseHistoryUtils';
+import {getGroupBestE1rm, getHistoricalBest} from './exerciseHistoryUtils';
+import {AnimatePresence, motion} from "framer-motion";
 
 type Props = {
   group: WorkoutExerciseGroup;
@@ -45,18 +44,15 @@ export default function GroupedExerciseSlide({
   const override = settings.exerciseUnitOverrides[String(group.exerciseId)] ?? null;
   const effectiveUnit = override ?? settings.weightUnit;
   const [editValue, setEditValue] = useState<string | null>(null);
-  const [formCueOpen, setFormCueOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState<'notes' | 'e1rm' | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [menuExerciseId, setMenuExerciseId] = useState<number | null>(null);
 
   const first = group.items[0];
   const formCue = editValue ?? userExerciseNote?.note ?? '';
-  const hasFormCue = formCue.trim().length > 0;
 
   const bestE1rm = getGroupBestE1rm(group.items);
   const historicalBest = getHistoricalBest(history);
-  const hasPreviousHistory = hasAnyE1rmHistory(history);
   const firstBlock = group.items[0];
   const firstBlockPreviousWorkouts = previousSetsMap.get(firstBlock.id)?.workouts ?? [];
 
@@ -76,29 +72,47 @@ export default function GroupedExerciseSlide({
         borderColor: 'divider',
       }}
     >
-      <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
-        <Typography variant="h6">{first.exercise.name}</Typography>
-      </Box>
-
-      <Box sx={{display: 'flex', alignItems: 'stretch', justifyContent: 'space-between', mb: 1}}>
-        <Box sx={{minWidth: 0, pr: 1}}>
-          <Box
-            sx={{display: 'flex', alignItems: 'center', cursor: 'pointer', mt: 0.25}}
-            onClick={() => setFormCueOpen(o => !o)}
-          >
-            <IconButton size="small" color={formCueOpen || hasFormCue ? 'primary' : 'default'} sx={{mr: 0.5}}>
-              {formCueOpen ? <InfoIcon fontSize="small"/> : <InfoOutlinedIcon fontSize="small"/>}
-            </IconButton>
-            <Typography variant="caption" color={formCueOpen || hasFormCue ? 'primary' : 'text.secondary'}>
-              Notes
-            </Typography>
+      <Box sx={{width: '100%', display: 'flex', justifyContent: 'space-between', mb: 1, gap: 1, alignItems: 'stretch'}}>
+        <Box sx={{flex: '1 1 0%', minWidth: 0}}>
+          <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
+            <Typography variant="h6">{first.exercise.name}</Typography>
+          </Box>
+          <Box sx={{display: 'flex', alignItems: 'stretch', justifyContent: 'space-between'}}>
+            <Box sx={{minWidth: 0, pr: 1}}>
+              <Tabs
+                value={activePanel ?? false}
+                onChange={() => {
+                }}
+                variant="fullWidth"
+                sx={{mt: 0.25, minHeight: 32, '& .MuiTab-root': {minHeight: 32, py: 0.5, whiteSpace: 'nowrap'}}}
+              >
+                <Tab
+                  value="notes"
+                  label="Notes"
+                  onClick={() => setActivePanel(curr => (curr === 'notes' ? null : 'notes'))}
+                  sx={{fontSize: '0.6rem', textTransform: 'none'}}
+                />
+                <Tab
+                  value="e1rm"
+                  label="Progress"
+                  onClick={() => setActivePanel(curr => (curr === 'e1rm' ? null : 'e1rm'))}
+                  sx={{fontSize: '0.6rem', textTransform: 'none'}}
+                />
+              </Tabs>
+            </Box>
           </Box>
         </Box>
-        <Box sx={{
-          alignSelf: 'stretch',
-          flex: '0 0 auto',
-          width: 'auto',
-        }}>
+        <Box
+          sx={{
+            flex: '0 1 auto',
+            width: 'auto',
+            maxWidth: '48%',
+            minWidth: 0,
+            height: '100%',
+            alignSelf: 'stretch',
+            overflow: 'hidden',
+          }}
+        >
           <MuscleHighlight
             primaryMuscles={first.exercise.primaryMuscles}
             secondaryMuscles={first.exercise.secondaryMuscles}
@@ -108,32 +122,60 @@ export default function GroupedExerciseSlide({
         </Box>
       </Box>
 
-      <Collapse in={formCueOpen} sx={{width: '100%'}}>
-        <TextField
-          multiline
-          fullWidth
-          minRows={2}
-          maxRows={4}
-          placeholder="Add form cues and notes for this exercise..."
-          value={formCue}
-          onChange={e => setEditValue(e.target.value)}
-          onFocus={() => setEditValue(formCue)}
-          onBlur={() => {
-            onFormCueBlur(group.exerciseId, formCue);
-            setEditValue(null);
-          }}
-          size="small"
-        />
-      </Collapse>
+      <AnimatePresence initial={false}>
+        {activePanel && (
+          <Box
+            key={activePanel}
+            component={motion.div}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{
+              duration: 0.18,
+              ease: 'easeOut',
+            }}
+            sx={{
+              width: '100%',
+              overflow: 'hidden',
+              mb: 1,
+            }}
+          >
+            {activePanel === 'notes' && (
+              <TextField
+                multiline
+                fullWidth
+                minRows={2}
+                maxRows={4}
+                placeholder="Add form cues and notes for this exercise..."
+                value={formCue}
+                onChange={e => setEditValue(e.target.value)}
+                onFocus={() => setEditValue(formCue)}
+                onBlur={() => {
+                  onFormCueBlur(group.exerciseId, formCue);
+                  setEditValue(null);
+                }}
+                size="small"
+                sx={{
+                  mt: 0.75,
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem',
+                  },
+                }}
+              />
+            )}
 
-      <E1rmHistorySection
-        exerciseId={group.exerciseId}
-        history={history}
-        todayE1RM={bestE1rm}
-        historyOpen={historyOpen}
-        onToggle={() => setHistoryOpen(o => !o)}
-        highlight={hasPreviousHistory}
-      />
+            {activePanel === 'e1rm' && (
+              <Box>
+                <E1rmHistorySection
+                  exerciseId={group.exerciseId}
+                  history={history}
+                  todayE1RM={bestE1rm}
+                />
+              </Box>
+            )}
+          </Box>
+        )}
+      </AnimatePresence>
 
       <Box sx={{overflowY: 'auto', minHeight: 0, flex: 1}}>
         {group.items.map((item, idx) => {
@@ -145,11 +187,21 @@ export default function GroupedExerciseSlide({
             <Box key={item.id}>
               <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                 <Typography variant="caption" color="text.secondary">
-                  Rest: {item.restTime ?? '—'}
+                  Rest: {item.restTime ?? '—'}s
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   Reps: {item.repRange ?? '—'}
                 </Typography>
+                {item.targetRpe != null && (
+                  <Typography variant="subtitle1" gutterBottom noWrap>
+                    Target: RPE {item.targetRpe}
+                  </Typography>
+                )}
+                {item.targetRir != null && (
+                  <Typography variant="subtitle1" gutterBottom noWrap>
+                    Target: {item.targetRir} RIR
+                  </Typography>
+                )}
                 {item.isBfr && <Chip label="BFR" size="small" color="warning" sx={{height: 18, fontSize: '0.65rem'}}/>}
                 {item.isAdded && <Chip label="Added" size="small" color="info" variant="outlined"
                                        sx={{height: 18, fontSize: '0.65rem'}}/>}

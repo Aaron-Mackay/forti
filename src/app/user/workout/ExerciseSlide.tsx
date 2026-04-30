@@ -10,6 +10,8 @@ import {
   Menu,
   MenuItem,
   Paper,
+  Tab,
+  Tabs,
   Table,
   TableBody,
   TableCell,
@@ -17,8 +19,6 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import InfoIcon from '@mui/icons-material/Info';
 import CheckIcon from '@mui/icons-material/Check';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -38,9 +38,8 @@ import PreviousWorkoutsSection from './PreviousWorkoutsSection';
 import {
   getHistoricalBest,
   getTodayBestE1rm,
-  hasAnyE1rmHistory,
-  hasGraphableE1rmHistory
 } from './exerciseHistoryUtils';
+import {AnimatePresence, motion} from 'framer-motion';
 
 export default function ExerciseSlide({
                                         ex,
@@ -67,8 +66,7 @@ export default function ExerciseSlide({
 
   // null = not editing; drives value from prop so duplicate-exercise slides stay in sync
   const [editValue, setEditValue] = useState<string | null>(null);
-  const [formCueOpen, setFormCueOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState<'notes' | 'e1rm' | null>(null);
 
   const formCue = editValue ?? userExerciseNote?.note ?? '';
   const [warmupOpen, setWarmupOpen] = useState(false);
@@ -102,13 +100,10 @@ export default function ExerciseSlide({
     }))
     : null;
 
-  const hasFormCue = formCue.trim().length > 0;
   const previousWorkouts = previousWorkout?.workouts ?? [];
   const hasPreviousWorkout = previousWorkouts.length > 0;
   const todayBestE1rm = getTodayBestE1rm(ex);
   const historicalBest = getHistoricalBest(history);
-  const hasGraphableHistory = hasGraphableE1rmHistory(history);
-  const hasPreviousHistory = hasAnyE1rmHistory(history);
 
   return (
     <Paper
@@ -145,8 +140,8 @@ export default function ExerciseSlide({
           </IconButton>
         )}
       </Box>
-      <Box sx={{display: 'flex', alignItems: 'stretch', width: '100%', mb: 1, justifyContent: 'space-between'}}>
-        <Box sx={{flex: '0 1 max-content', width: 'max-content', maxWidth: '100%'}}>
+      <Box sx={{display: 'flex', alignItems: 'stretch', width: '100%', mb: 1, justifyContent: 'space-between', gap: 1}}>
+        <Box sx={{flex: '1 1 auto', minWidth: 0}}>
           <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
             {ex.isBfr && (
               <Chip
@@ -169,7 +164,7 @@ export default function ExerciseSlide({
             </Typography>
           )}
           <Typography variant="subtitle1" gutterBottom noWrap>
-            Rest: {ex.restTime}
+            Rest: {ex.restTime}s
           </Typography>
           <Typography variant="subtitle1" gutterBottom noWrap>
             Reps: {ex.repRange}
@@ -184,23 +179,37 @@ export default function ExerciseSlide({
               Target: {ex.targetRir} RIR
             </Typography>
           )}
-          <Box
-            sx={{display: 'flex', alignItems: 'center', cursor: 'pointer', mt: 0.5}}
-            onClick={() => setFormCueOpen(o => !o)}
+          <Tabs
+            value={activePanel ?? false}
+            onChange={() => {}}
+            variant="fullWidth"
+            sx={{mt: 0.5, minHeight: 32, '& .MuiTab-root': {minHeight: 32, py: 0.5, whiteSpace: 'nowrap'}}}
           >
-            <IconButton size="small" color={formCueOpen ? 'primary' : 'default'} sx={{mr: 0.5}}>
-              {formCueOpen ? <InfoIcon fontSize="small"/> : <InfoOutlinedIcon fontSize="small"/>}
-            </IconButton>
-            <Typography variant="caption" color={formCueOpen || hasFormCue ? 'primary' : 'text.secondary'} noWrap>
-              Notes
-            </Typography>
-          </Box>
+            <Tab
+              value="notes"
+              label="Notes"
+              onClick={() => setActivePanel(curr => (curr === 'notes' ? null : 'notes'))}
+              sx={{fontSize: '0.6rem', textTransform: 'none'}}
+            />
+            <Tab
+              value="e1rm"
+              label="Progress"
+              onClick={() => setActivePanel(curr => (curr === 'e1rm' ? null : 'e1rm'))}
+              sx={{fontSize: '0.6rem', textTransform: 'none'}}
+            />
+          </Tabs>
         </Box>
-        <Box sx={{
-          alignSelf: 'stretch',
-          flex: '0 0 auto',
-          width: 'auto',
-        }}>
+        <Box
+          sx={{
+            flex: '0 1 auto',
+            width: 'auto',
+            maxWidth: '48%',
+            minWidth: 0,
+            height: '100%',
+            alignSelf: 'stretch',
+            overflow: 'hidden',
+          }}
+        >
           <MuscleHighlight
             primaryMuscles={ex.exercise.primaryMuscles}
             secondaryMuscles={ex.exercise.secondaryMuscles}
@@ -210,25 +219,60 @@ export default function ExerciseSlide({
         </Box>
       </Box>
 
-      {/* Form cue textarea */}
-      <Collapse in={formCueOpen} sx={{width: '100%', mb: 1}}>
-        <TextField
-          multiline
-          fullWidth
-          minRows={2}
-          maxRows={4}
-          placeholder="Add form cues and notes for this exercise..."
-          value={formCue}
-          onChange={e => setEditValue(e.target.value)}
-          onFocus={() => setEditValue(formCue)}
-          onBlur={() => {
-            onFormCueBlur(ex.exerciseId, formCue);
-            setEditValue(null);
-          }}
-          size="small"
-          sx={{mt: 0.5}}
-        />
-      </Collapse>
+      <AnimatePresence initial={false}>
+        {activePanel && (
+          <Box
+            key={activePanel}
+            component={motion.div}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{
+              duration: 0.18,
+              ease: 'easeOut',
+            }}
+            sx={{
+              width: '100%',
+              overflow: 'hidden',
+              mb: 1,
+            }}
+          >
+            {activePanel === 'notes' && (
+              <TextField
+                multiline
+                fullWidth
+                minRows={2}
+                maxRows={4}
+                placeholder="Add form cues and notes for this exercise..."
+                value={formCue}
+                onChange={e => setEditValue(e.target.value)}
+                onFocus={() => setEditValue(formCue)}
+                onBlur={() => {
+                  onFormCueBlur(ex.exerciseId, formCue);
+                  setEditValue(null);
+                }}
+                size="small"
+                sx={{
+                  mt: 0.75,
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem',
+                  },
+                }}
+              />
+            )}
+
+            {activePanel === 'e1rm' && (
+              <Box>
+                <E1rmHistorySection
+                  exerciseId={ex.exerciseId}
+                  history={history}
+                  todayE1RM={todayBestE1rm}
+                />
+              </Box>
+            )}
+          </Box>
+        )}
+      </AnimatePresence>
 
       {/* Warmup suggestions — hidden for 'no unit' machines and when setting is off */}
       <Box sx={{
@@ -285,15 +329,6 @@ export default function ExerciseSlide({
               setPlateCalcSetIdx(setIdx);
               setPlateCalcOpen(true);
             }}
-          />
-
-          <E1rmHistorySection
-            exerciseId={ex.exerciseId}
-            history={history}
-            todayE1RM={todayBestE1rm}
-            historyOpen={historyOpen}
-            onToggle={() => setHistoryOpen(o => !o)}
-            highlight={hasGraphableHistory || hasPreviousHistory}
           />
 
           {hasPreviousWorkout ? (
