@@ -62,6 +62,7 @@ function makeCurrentResponse(completed: boolean) {
     weekTargets: null,
     completedWorkoutsCount: completed ? 3 : 0,
     plannedWorkoutsCount: completed ? 4 : 0,
+    workoutSummaries: [],
     activePlanId: null,
     template: null,
   };
@@ -93,7 +94,7 @@ test.describe('Check-in page — form not yet submitted', () => {
         body: JSON.stringify(makeCurrentResponse(false)),
       }),
     );
-    await page.route(/\/api\/check-in\?/, (route) =>
+    await page.route(/\/api\/check-in(?:\?.*)?$/, (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -129,7 +130,7 @@ test.describe('Check-in page — already submitted', () => {
         body: JSON.stringify(makeCurrentResponse(true)),
       }),
     );
-    await page.route(/\/api\/check-in\?/, (route) =>
+    await page.route(/\/api\/check-in(?:\?.*)?$/, (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -167,7 +168,7 @@ test.describe('Check-in page — form submission', () => {
       });
     });
 
-    await page.route(/\/api\/check-in\?/, (route) =>
+    await page.route(/\/api\/check-in(?:\?.*)?$/, (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -206,7 +207,7 @@ test.describe('Check-in page — history', () => {
         body: JSON.stringify(makeCurrentResponse(true)),
       }),
     );
-    await page.route(/\/api\/check-in\?/, (route) =>
+    await page.route(/\/api\/check-in(?:\?.*)?$/, (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',

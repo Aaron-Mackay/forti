@@ -86,7 +86,7 @@ export const CurrentCheckInResponseSchema = z.object({
       muscle: z.string(),
       doneSets: z.number().nonnegative(),
     })),
-  })),
+  })).optional().default([]),
   activePlanId: z.number().int().nullable(),
   template: CheckInTemplateSchema.nullable(),
 });

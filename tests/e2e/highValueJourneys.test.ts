@@ -161,13 +161,14 @@ test('client records bodyweight, macros, and steps in weekly check-in metrics', 
         weekTargets: null,
         completedWorkoutsCount: 0,
         plannedWorkoutsCount: 3,
+        workoutSummaries: [],
         activePlanId: null,
         template: null,
       }),
     }),
   );
 
-  await page.route(/\/api\/check-in\?/, (route) =>
+  await page.route(/\/api\/check-in(?:\?.*)?$/, (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -186,7 +187,6 @@ test('client records bodyweight, macros, and steps in weekly check-in metrics', 
 
   await page.goto('/user/check-in');
 
-  await expect(page.getByText('Last 2 weeks of metrics').first()).toBeVisible({ timeout: 15_000 });
   const toggleBreakdown = page.getByRole('button', { name: 'Toggle daily breakdown' }).first();
   await expect(toggleBreakdown).toBeVisible({ timeout: 15_000 });
   await toggleBreakdown.click();

@@ -15,9 +15,10 @@ Default goal: reproduce the failing CI behavior locally, fix, and confirm green 
 - Ensure dependencies are installed (`npm install`) and Playwright browsers are present.
 - Assume DB is remote (Neon or equivalent) unless user explicitly says local DB.
 
-## 1) Sync DB schema and seed expected state (required before every parity run)
+## 1) Sync DB schema and seed expected state (required before every parity run, always escalated)
 
-Run these first to align data-state with CI expectations:
+Run these first to align data-state with CI expectations.
+Run all three with escalated permissions by default (remote DB/network access is expected):
 
 ```bash
 npx prisma db push --accept-data-loss
@@ -28,6 +29,7 @@ npm run build
 Notes:
 - `prisma db push` may fail if DB connectivity is blocked (VPN, firewall, DNS). Resolve network first.
 - Neon compute can be suspended; any successful DB client command should wake it.
+- `npm run seed` can also require the same network path to Neon; treat seed as escalated by default.
 
 ## 2) Run exact CI-parity command (always escalated)
 

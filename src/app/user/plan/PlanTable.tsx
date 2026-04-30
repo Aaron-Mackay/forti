@@ -36,7 +36,12 @@ export const PlanTable: React.FC<{
     toggleArrangeMode,
     viewMode,
     zoom,
-  } = usePlanViewControls({ persistViewMode: true });
+  } = usePlanViewControls({
+    defaultViewMode: isMobile ? 'classic' : 'sheet',
+    persistViewMode: true,
+    viewModeStorageKey: isMobile ? 'planViewModeMobile' : 'planViewModeDesktop',
+    zoomStorageKey: isMobile ? 'sheetZoomMobile' : 'sheetZoomDesktop',
+  });
 
   const plan = planId
     ? userDataState.plans.find(p => p.id === parseInt(planId))
