@@ -162,6 +162,12 @@ CRON_SECRET=
 4. Run highest-signal checks for affected scope.
 5. Ensure commit is atomic and passes pre-commit checks.
 
+## Clarification-First Rule
+
+- If any requirement, acceptance criteria, plan step, or implementation detail is ambiguous, stop and ask clarifying questions before proceeding.
+- Do not make assumptions when uncertainty could change behavior, architecture, data model, scope, testing approach, or timeline.
+- When asking, provide concise options and key tradeoffs so the user can answer quickly.
+
 ## Scope Notes
 
 - This file is intentionally compact; avoid adding long catalogs here.
