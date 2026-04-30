@@ -1,19 +1,10 @@
 'use client';
 
-import { useInsertionEffect, useState } from 'react';
+import { useState } from 'react';
 import { Box, Dialog, DialogContent, DialogTitle, IconButton, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import FrontBody from '@/components/front.svg';
-import BackBody from '@/components/back.svg';
+import MuscleBodyHeatmap from '@/components/MuscleBodyHeatmap';
 import { WeekPrisma, ExerciseMuscle, MUSCLE_NAMES } from '@/types/dataTypes';
-
-function getBlueShade(doneSets: number): string {
-  if (doneSets >= 7) return '#1e3a8a';
-  if (doneSets >= 5) return '#1d4ed8';
-  if (doneSets >= 3) return '#3b82f6';
-  if (doneSets >= 1) return '#93c5fd';
-  return '';
-}
 
 type MuscleCounts = Record<string, { planned: number; done: number }>;
 
@@ -68,23 +59,6 @@ export default function WeekMuscleSummary({ week }: { week: WeekPrisma }) {
     .filter(([, { planned }]) => planned > 0)
     .sort(([, a], [, b]) => b.planned - a.planned);
 
-  const css = targeted
-    .map(([muscle, { done }]) => {
-      const shade = getBlueShade(done);
-      if (!shade) return '';
-      return `#${id} [data-muscle="${muscle}"] { fill: ${shade} !important; }`;
-    })
-    .filter(Boolean)
-    .join('\n');
-
-  useInsertionEffect(() => {
-    if (!css) return;
-    const el = document.createElement('style');
-    el.textContent = css;
-    document.head.appendChild(el);
-    return () => { document.head.removeChild(el); };
-  }, [css]);
-
   if (targeted.length === 0) return null;
 
   return (
@@ -93,17 +67,14 @@ export default function WeekMuscleSummary({ week }: { week: WeekPrisma }) {
         Muscle Coverage
       </Typography>
 
-      {/* Body diagram — tappable to open muscle detail modal */}
-      <Box
+      <MuscleBodyHeatmap
         id={id}
+        values={Object.fromEntries(targeted.map(([muscle, { done }]) => [muscle, done]))}
         onClick={() => setModalOpen(true)}
         sx={{ display: 'flex', gap: 0.5, height: 195, justifyContent: 'center', cursor: 'pointer' }}
-      >
-        <FrontBody style={{ height: '100%', width: 'auto' }} />
-        <BackBody style={{ height: '100%', width: 'auto' }} />
-      </Box>
+        bodyStyle={{ height: '100%', width: 'auto' }}
+      />
 
-      {/* Muscle detail modal */}
       <Dialog open={modalOpen} onClose={() => setModalOpen(false)} fullWidth maxWidth="xs">
         <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           Muscle Coverage
