@@ -3,9 +3,9 @@
 import {MetricPrisma, EventPrisma} from "@/types/dataTypes";
 import FullCalendar from "@fullcalendar/react";
 import multiMonthPlugin from "@fullcalendar/multimonth";
-import interactionPlugin, {DateClickArg} from "@fullcalendar/interaction";
+import interactionPlugin from "@fullcalendar/interaction";
 import rrulePlugin from "@fullcalendar/rrule";
-import React, {useEffect, useMemo, useRef, useState} from "react";
+import React, {useEffect, useMemo, useRef} from "react";
 import './calendar.css'
 import {Alert, Box, Collapse, Fab, ToggleButton, ToggleButtonGroup, useMediaQuery, useTheme} from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
@@ -14,16 +14,15 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import CalendarBottomDrawer from "./CalendarBottomDrawer";
 import {APPBAR_HEIGHT, DRAWER_WIDTH} from "@/components/shell/CustomAppBar";
 import { useAppBar } from '@lib/providers/AppBarProvider';
-import {addDays, format, isAfter, isBefore, isSameDay, startOfDay} from 'date-fns';
-import {getEventsOnDate, hasMeaningfulEventChanges, parsedEvents} from "@/app/user/calendar/utils";
+import {format, isSameDay} from 'date-fns';
+import {hasMeaningfulEventChanges, parsedEvents} from "@/app/user/calendar/utils";
 import {EventType} from "@/generated/prisma/browser";
 import {CalendarRightDrawer} from "@/app/user/calendar/CalendarRightDrawer";
 import {getMetricsCache, getEventsCache, saveMetricsCache, saveEventsCache} from "@/utils/clientDb";
 import {useOfflineCache} from '@lib/hooks/useOfflineCache';
 import WeekListView from "@/app/user/calendar/WeekListView";
 import {useSettings} from '@lib/providers/SettingsProvider';
-
-type CalendarViewMode = 'calendar' | 'weeks';
+import {useCalendarController} from "@/app/user/calendar/useCalendarController";
 
 const TOGGLE_HEIGHT = 44;
 
@@ -43,21 +42,14 @@ export default function Calendar({events, metrics, userId}: Props) {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
 
-  const [viewMode, setViewMode] = useState<CalendarViewMode>('calendar');
-  const [eventsInState, setEventsInState] = useState<EventPrisma[]>(events);
-
-  const [bottomDrawerOpen, setBottomDrawerOpen] = useState(false);
-  const [bottomDrawerView, setBottomDrawerView] = useState<BottomDrawerView>('list');
-
-  const [rightDrawerOpen, setRightDrawerOpen] = useState(false)
-  const [rightDrawerView, setRightDrawerView] = useState<EventType | null>(null)
-
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<EventPrisma | null>(null);
-  const [dayMetricsState, setDayMetricsState] = useState<MetricPrisma[]>(metrics);
-  const [calendarUpdatedBanner, setCalendarUpdatedBanner] = useState(false);
-  const [prefilledDateRange, setPrefilledDateRange] =
-    useState<{ start: Date | null, endExcl: Date | null }>({start: null, endExcl: null})
+  const controller = useCalendarController(events, metrics);
+  const {
+    viewMode, setViewMode, eventsInState, setEventsInState, dayMetricsState, setDayMetricsState,
+    bottomDrawerOpen, bottomDrawerView, setBottomDrawerView, rightDrawerOpen, rightDrawerView,
+    selectedDate, selectedEvent, setSelectedEvent, prefilledDateRange, setPrefilledDateRange,
+    calendarUpdatedBanner, setCalendarUpdatedBanner, eventsOnSelectedDate, openDay, openEventForm,
+    closeBottomDrawer, openRightDrawer,
+  } = controller;
 
   // On mount: if offline, restore cached state; if online, prime the cache.
   useOfflineCache(userId, eventsInState, setEventsInState, getEventsCache, saveEventsCache);
@@ -87,42 +79,16 @@ export default function Calendar({events, metrics, userId}: Props) {
     };
     window.addEventListener('online', handleOnline);
     return () => window.removeEventListener('online', handleOnline);
-  }, [userId]);
-
-  const eventsOnSelectedDate: EventPrisma[] = useMemo(() => {
-    if (!selectedDate) return [];
-    const normalizedSelectedDate = startOfDay(selectedDate);
-    return eventsInState.filter(event => {
-      const start = startOfDay(event.startDate);
-      const end = event.endDate ? startOfDay(event.endDate) : addDays(start, 1);
-      return (
-        (isSameDay(normalizedSelectedDate, start) || isAfter(normalizedSelectedDate, start)) &&
-        isBefore(normalizedSelectedDate, end)
-      );
-    });
-  }, [selectedDate, eventsInState]);
+  }, [setCalendarUpdatedBanner, setDayMetricsState, setEventsInState, userId]);
 
   const fullCalendarEvents = useMemo(() => parsedEvents(eventsInState), [eventsInState]);
 
   const handleFabCreateClick = () => {
-    setBottomDrawerView('event-form');
-    setBottomDrawerOpen(true);
-  }
-
-  const handleDateSelect = (dateInfo: DateClickArg) => {
-    const eventsOnDate = getEventsOnDate(dateInfo, eventsInState);
-
-    setSelectedDate(dateInfo.date);
-    setPrefilledDateRange({start: dateInfo.date, endExcl: null})
-    setSelectedEvent(eventsOnDate.length === 1 ? eventsOnDate[0] : null);
-    setBottomDrawerView('list');
-    setBottomDrawerOpen(true);
+    openEventForm();
   }
 
   const handleDateRangeSelect = (start: Date, endExcl: Date) => {
-    setBottomDrawerOpen(true)
-    setBottomDrawerView('event-form')
-    setPrefilledDateRange({start, endExcl})
+    openEventForm({start, endExcl});
   }
 
   const handleTodayButtonClick = () => {
@@ -200,7 +166,7 @@ export default function Calendar({events, metrics, userId}: Props) {
           height={`calc(100dvh - ${APPBAR_HEIGHT}px - ${TOGGLE_HEIGHT}px)`}
           selectable={true}
           selectLongPressDelay={400}
-          dateClick={(dateInfo) => handleDateSelect(dateInfo)}
+          dateClick={(dateInfo) => openDay(dateInfo)}
           select={({start, end}) => handleDateRangeSelect(start, end)}
           dayCellDidMount={(info) => {
             const el = document.createElement("div");
@@ -243,15 +209,13 @@ export default function Calendar({events, metrics, userId}: Props) {
       }}>
         {eventsInState.filter(event => event.eventType === EventType.CustomEvent).length
           && <Fab variant="extended" size="medium" onClick={() => {
-            setRightDrawerView(EventType.CustomEvent);
-            setRightDrawerOpen(true);
+            openRightDrawer(EventType.CustomEvent);
           }}>
             Events
           </Fab>}
         {eventsInState.filter(event => event.eventType === EventType.BlockEvent).length
           && <Fab variant="extended" size="medium" onClick={() => {
-            setRightDrawerView(EventType.BlockEvent);
-            setRightDrawerOpen(true);
+            openRightDrawer(EventType.BlockEvent);
           }}>
             Blocks
           </Fab>}
@@ -270,7 +234,9 @@ export default function Calendar({events, metrics, userId}: Props) {
         selectedEvent={selectedEvent}
         setSelectedEvent={setSelectedEvent}
         eventsOnSelectedDate={eventsOnSelectedDate}
-        setDrawerOpen={setBottomDrawerOpen}
+        setDrawerOpen={(open) => {
+          if (!open) closeBottomDrawer();
+        }}
         dateMetric={
           selectedDate &&
           dayMetricsState.find(dm => isSameDay(dm.date, selectedDate))
@@ -296,10 +262,14 @@ export default function Calendar({events, metrics, userId}: Props) {
       />
       <CalendarRightDrawer
         rightDrawerOpen={rightDrawerOpen}
-        setRightDrawerOpen={setRightDrawerOpen}
+        setRightDrawerOpen={(open) => {
+          if (!open) controller.closeRightDrawer();
+        }}
         rightDrawerView={rightDrawerView}
         eventsInState={eventsInState}
-        setBottomDrawerOpen={setBottomDrawerOpen}
+        setBottomDrawerOpen={(open) => {
+          if (!open) closeBottomDrawer();
+        }}
         setBottomDrawerView={setBottomDrawerView}
         setSelectedEvent={setSelectedEvent}
         year={calendarRef.current?.getApi().view.currentStart.getFullYear()}
