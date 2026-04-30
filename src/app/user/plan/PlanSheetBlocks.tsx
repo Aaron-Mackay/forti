@@ -28,7 +28,8 @@ import { computeE1rm } from '@lib/e1rm'
 import { getExerciseSetModel } from './exerciseSetModel'
 import { getE1rmDeltaDirection, getPreviousTrackedExercise, stripWorkoutSuffix } from './planPresentation'
 import { EditableExerciseNameWithMeta } from './PlanExercisePrimitives'
-import { cellSx, headerCellSx, inputSx, MenuState, WorkoutEditorDispatch } from './PlanSheetShared'
+import { cellSx, headerCellSx, inputSx } from './PlanSheetShared'
+import { usePlanSheetContext } from './PlanSheetContext'
 
 type WeekData = PlanPrisma['weeks'][number]
 
@@ -37,18 +38,11 @@ type SortableExerciseTbodyProps = {
   exFullIndex: number
   exerciseCount: number
   maxSets: number
-  planId: number
   weekId: number
   workoutId: number
-  dispatch: WorkoutEditorDispatch
-  arrangeMode: boolean
-  openRenamePicker: (weekId: number, workoutId: number, workoutExerciseId: number) => void
-  setMenuState: (state: MenuState | null) => void
   bestE1rm: number | null
   previousBestE1rm: number | null
   repRangeInvalid: boolean
-  onRepRangeFocus?: (exerciseId: number) => void
-  onRepRangeBlur?: (exerciseId: number) => void
 }
 
 const SortableExerciseTbody = ({
@@ -56,19 +50,15 @@ const SortableExerciseTbody = ({
   exFullIndex,
   exerciseCount,
   maxSets,
-  planId,
   weekId,
   workoutId,
-  dispatch,
-  arrangeMode,
-  openRenamePicker,
-  setMenuState,
   bestE1rm,
   previousBestE1rm,
   repRangeInvalid,
-  onRepRangeFocus,
-  onRepRangeBlur,
 }: SortableExerciseTbodyProps) => {
+  const {
+    planId, dispatch, arrangeMode, openRenamePicker, setMenuState, onRepRangeFocus, onRepRangeBlur,
+  } = usePlanSheetContext()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `ex-${ex.id}`,
   })
@@ -277,42 +267,26 @@ const SortableExerciseTbody = ({
 type SortableWorkoutSlotProps = {
   plan: PlanPrisma
   workout: WorkoutPrisma
-  planId: number
   weekId: number
   currentWeekOrder: number
   maxSets: number
   workoutCount: number
-  creationMode?: boolean
-  dispatch: WorkoutEditorDispatch
-  arrangeMode: boolean
-  openPicker: (weekId: number, workoutId: number) => void
-  openRenamePicker: (weekId: number, workoutId: number, workoutExerciseId: number) => void
-  setMenuState: (state: MenuState | null) => void
   slotIdx: number
-  invalidRepRangeIds?: Set<number>
-  onRepRangeFocus?: (exerciseId: number) => void
-  onRepRangeBlur?: (exerciseId: number) => void
 }
 
 const SortableWorkoutSlot = ({
   plan,
   workout,
-  planId,
   weekId,
   currentWeekOrder,
   maxSets,
   workoutCount,
-  creationMode = false,
-  dispatch,
-  arrangeMode,
-  openPicker,
-  openRenamePicker,
-  setMenuState,
   slotIdx,
-  invalidRepRangeIds,
-  onRepRangeFocus,
-  onRepRangeBlur,
 }: SortableWorkoutSlotProps) => {
+  const {
+    planId, dispatch, arrangeMode, openPicker, openRenamePicker, setMenuState,
+    creationMode, invalidRepRangeIds,
+  } = usePlanSheetContext()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `wo-${workout.id}`,
   })
@@ -457,21 +431,14 @@ const SortableWorkoutSlot = ({
                     <SortableExerciseTbody
                       key={exercise.id}
                       ex={exercise}
-                      exFullIndex={sortedExercises.findIndex((entry) => entry.id === exercise.id)}
-                      exerciseCount={sortedExercises.length}
+                  exFullIndex={sortedExercises.findIndex((entry) => entry.id === exercise.id)}
+                  exerciseCount={sortedExercises.length}
                       maxSets={maxSets}
-                      planId={planId}
                       weekId={weekId}
                       workoutId={workout.id}
-                      dispatch={dispatch}
-                      arrangeMode={arrangeMode}
-                      openRenamePicker={openRenamePicker}
-                      setMenuState={setMenuState}
                       bestE1rm={bestE1rm}
                       previousBestE1rm={previousBestE1rm}
                       repRangeInvalid={invalidRepRangeIds?.has(exercise.id) ?? false}
-                      onRepRangeFocus={onRepRangeFocus}
-                      onRepRangeBlur={onRepRangeBlur}
                     />
                   )
                 })
@@ -612,38 +579,19 @@ const SortableWorkoutSlot = ({
 type WeekBlockProps = {
   plan: PlanPrisma
   week: WeekData
-  planId: number
   maxWorkoutCount: number
   slotMaxSets: number[]
-  creationMode?: boolean
-  dispatch: WorkoutEditorDispatch
-  arrangeMode: boolean
   showWeekHeader: boolean
-  openPicker: (weekId: number, workoutId: number) => void
-  openRenamePicker: (weekId: number, workoutId: number, workoutExerciseId: number) => void
-  setMenuState: (state: MenuState | null) => void
-  invalidRepRangeIds?: Set<number>
-  onRepRangeFocus?: (exerciseId: number) => void
-  onRepRangeBlur?: (exerciseId: number) => void
 }
 
 export function PlanSheetWeekBlock({
   plan,
   week,
-  planId,
   maxWorkoutCount,
   slotMaxSets,
-  creationMode = false,
-  dispatch,
-  arrangeMode,
   showWeekHeader,
-  openPicker,
-  openRenamePicker,
-  setMenuState,
-  invalidRepRangeIds,
-  onRepRangeFocus,
-  onRepRangeBlur,
 }: WeekBlockProps) {
+  const { planId, dispatch, arrangeMode } = usePlanSheetContext()
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
@@ -697,21 +645,11 @@ export function PlanSheetWeekBlock({
                   key={workout.id}
                   plan={plan}
                   workout={workout}
-                  planId={planId}
                   weekId={week.id}
                   currentWeekOrder={week.order}
                   maxSets={maxSets}
                   workoutCount={sortedWorkouts.length}
-                  creationMode={creationMode}
-                  dispatch={dispatch}
-                  arrangeMode={arrangeMode}
-                  openPicker={openPicker}
-                  openRenamePicker={openRenamePicker}
-                  setMenuState={setMenuState}
                   slotIdx={slotIdx}
-                  invalidRepRangeIds={invalidRepRangeIds}
-                  onRepRangeFocus={onRepRangeFocus}
-                  onRepRangeBlur={onRepRangeBlur}
                 />
               )
             })}

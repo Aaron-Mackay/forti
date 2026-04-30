@@ -9,6 +9,7 @@ import ExercisePickerDialog from '@/app/user/workout/ExercisePickerDialog'
 import { MenuState } from './PlanSheetShared'
 import { PlanSheetWeekBlock } from './PlanSheetBlocks'
 import { PlanSheetExerciseMenu } from './PlanSheetExerciseMenu'
+import { PlanSheetProvider } from './PlanSheetContext'
 
 interface PlanSheetViewProps {
   plan: PlanPrisma
@@ -196,58 +197,63 @@ const PlanSheetView = ({
 
   return (
     <>
-      <Box ref={scrollRef} sx={{ overflow: 'auto', touchAction: 'pan-x pan-y', height: 'calc(100dvh - 200px)' }}>
-        <Box ref={innerRef} sx={{ width: 'max-content', zoom }}>
-          {sortedWeeks.map((week) => (
-            <PlanSheetWeekBlock
-              key={week.id}
-              plan={plan}
-              week={week}
-              planId={planId}
-              maxWorkoutCount={maxWorkoutCount}
-              slotMaxSets={slotMaxSets}
-              creationMode={creationMode}
-              dispatch={dispatch}
-              arrangeMode={arrangeMode}
-              showWeekHeader={!creationMode || showWeekHeaders}
-              openPicker={openPicker}
-              openRenamePicker={openRenamePicker}
-              setMenuState={setMenuState}
-              invalidRepRangeIds={invalidRepRangeIds}
-              onRepRangeFocus={onRepRangeFocus}
-              onRepRangeBlur={onRepRangeBlur}
-            />
-          ))}
+      <PlanSheetProvider
+        value={{
+          planId,
+          dispatch,
+          arrangeMode,
+          creationMode,
+          openPicker,
+          openRenamePicker,
+          setMenuState,
+          invalidRepRangeIds,
+          onRepRangeFocus,
+          onRepRangeBlur,
+        }}
+      >
+        <Box ref={scrollRef} sx={{ overflow: 'auto', touchAction: 'pan-x pan-y', height: 'calc(100dvh - 200px)' }}>
+          <Box ref={innerRef} sx={{ width: 'max-content', zoom }}>
+            {sortedWeeks.map((week) => (
+              <PlanSheetWeekBlock
+                key={week.id}
+                plan={plan}
+                week={week}
+                maxWorkoutCount={maxWorkoutCount}
+                slotMaxSets={slotMaxSets}
+                showWeekHeader={!creationMode || showWeekHeaders}
+              />
+            ))}
 
-          {!arrangeMode && !creationMode && (
-            <Box
-              onClick={() => {
-                const lastWeek = sortedWeeks[sortedWeeks.length - 1]
-                if (lastWeek) dispatch({ type: 'DUPLICATE_WEEK', planId, weekId: lastWeek.id })
-              }}
-              aria-label="Add week"
-              sx={{
-                mt: 2,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '2px dashed',
-                borderColor: 'divider',
-                borderRadius: 1,
-                cursor: 'pointer',
-                color: 'primary.main',
-                opacity: 0.35,
-                py: 1,
-                minWidth: '8rem',
-                '&:hover': { opacity: 0.9 },
-                transition: 'opacity 0.15s',
-              }}
-            >
-              <AddIcon sx={{ fontSize: '1rem' }} />
-            </Box>
-          )}
+            {!arrangeMode && !creationMode && (
+              <Box
+                onClick={() => {
+                  const lastWeek = sortedWeeks[sortedWeeks.length - 1]
+                  if (lastWeek) dispatch({ type: 'DUPLICATE_WEEK', planId, weekId: lastWeek.id })
+                }}
+                aria-label="Add week"
+                sx={{
+                  mt: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '2px dashed',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  cursor: 'pointer',
+                  color: 'primary.main',
+                  opacity: 0.35,
+                  py: 1,
+                  minWidth: '8rem',
+                  '&:hover': { opacity: 0.9 },
+                  transition: 'opacity 0.15s',
+                }}
+              >
+                <AddIcon sx={{ fontSize: '1rem' }} />
+              </Box>
+            )}
+          </Box>
         </Box>
-      </Box>
+      </PlanSheetProvider>
 
       <PlanSheetExerciseMenu
         dispatch={dispatch}

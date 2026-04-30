@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import ExerciseProgressCard from './ExerciseProgressCard'
 import { PlanSheetWeekBlock } from './PlanSheetBlocks'
+import { PlanSheetProvider } from './PlanSheetContext'
 
 vi.mock('@/context/WorkoutEditorContext', () => ({
   useWorkoutEditorContext: () => ({ allExercises: [], dispatch: vi.fn() }),
@@ -160,19 +161,25 @@ describe('e1RM delta indicator rendering', () => {
       }
 
       return render(
-        <PlanSheetWeekBlock
-          plan={plan as never}
-          week={plan.weeks[1] as never}
-          planId={1}
-          maxWorkoutCount={1}
-          slotMaxSets={[1]}
-          dispatch={vi.fn()}
-          arrangeMode={false}
-          showWeekHeader={false}
-          openPicker={vi.fn()}
-          openRenamePicker={vi.fn()}
-          setMenuState={vi.fn()}
-        />,
+        <PlanSheetProvider
+          value={{
+            planId: 1,
+            dispatch: vi.fn(),
+            arrangeMode: false,
+            creationMode: false,
+            openPicker: vi.fn(),
+            openRenamePicker: vi.fn(),
+            setMenuState: vi.fn(),
+          }}
+        >
+          <PlanSheetWeekBlock
+            plan={plan as never}
+            week={plan.weeks[1] as never}
+            maxWorkoutCount={1}
+            slotMaxSets={[1]}
+            showWeekHeader={false}
+          />
+        </PlanSheetProvider>,
       )
     }
 
