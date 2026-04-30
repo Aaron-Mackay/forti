@@ -21,6 +21,7 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -40,11 +41,11 @@ import {formatWeight, kgToDisplay} from '@/lib/units';
 import type {ExerciseUnitOverride} from '@/types/settingsTypes';
 import {SetPrisma, WorkoutExercisePrisma} from '@/types/dataTypes';
 import {UserExerciseNote} from '@/generated/prisma/browser';
-import type {E1rmHistoryPoint} from '@lib/contracts/exerciseHistory';
+import type {E1rmHistoryPoint, PreviousExerciseHistory} from '@lib/contracts/exerciseHistory';
 import {useSettings} from '@lib/providers/SettingsProvider';
-import type {PreviousExerciseHistory} from '@lib/contracts/exerciseHistory';
 import ScrollEdgeFades from '@/components/ScrollEdgeFades';
-import { useScrollEdgeFades } from '@lib/hooks/useScrollEdgeFades';
+import {useScrollEdgeFades} from '@lib/hooks/useScrollEdgeFades';
+import VideocamIcon from '@mui/icons-material/Videocam';
 
 function formatCompletedDate(value: string | null): string | null {
   if (!value) return null;
@@ -142,8 +143,8 @@ export default function ExerciseSlide({
   const [plateCalcSetIdx, setPlateCalcSetIdx] = useState<number | null>(null);
   const [unitMenuAnchor, setUnitMenuAnchor] = useState<HTMLElement | null>(null);
   const [exerciseMenuAnchor, setExerciseMenuAnchor] = useState<HTMLElement | null>(null);
-  const { scrollRef, handleScroll: handleListScroll, showStartFade, showEndFade } =
-    useScrollEdgeFades<HTMLDivElement>({ axis: 'y', threshold: 4 });
+  const {scrollRef, handleScroll: handleListScroll, showStartFade, showEndFade} =
+    useScrollEdgeFades<HTMLDivElement>({axis: 'y', threshold: 4});
 
   const isBarbell = ex.exercise.equipment?.includes('barbell') ?? false;
 
@@ -216,16 +217,6 @@ export default function ExerciseSlide({
           <Typography variant="h6">
             {ex.exercise.name}
           </Typography>
-          {ex.substitutedFor && (
-            <Typography variant="caption" color="warning.main" sx={{display: 'block', mb: 0.5}}>
-              Originally: {ex.substitutedFor.name}
-            </Typography>
-          )}
-          {ex.isAdded && !ex.substitutedFor && (
-            <Typography variant="caption" color="info.main" sx={{display: 'block', mb: 0.5}}>
-              Added during workout
-            </Typography>
-          )}
         </Box>
         {onSubstitute && (
           <IconButton
@@ -238,7 +229,7 @@ export default function ExerciseSlide({
           </IconButton>
         )}
       </Box>
-      <Box sx={{display: 'flex', alignItems: 'stretch', width: '100%', mb: 1}}>
+      <Box sx={{display: 'flex', alignItems: 'stretch', width: '100%', mb: 1, justifyContent: 'space-between'}}>
         <Box sx={{flex: '0 1 max-content', width: 'max-content', maxWidth: '100%'}}>
           <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
             {ex.isBfr && (
@@ -259,9 +250,14 @@ export default function ExerciseSlide({
             )}
 
           </Box>
-          {ex.requiresRecording && (
-            <Typography variant="caption" color="info.main" sx={{ display: 'block', mb: 0.5 }}>
-              Please record this exercise and submit it after your session.
+          {ex.isAdded && !ex.substitutedFor && (
+            <Typography variant="caption" color="info.main" sx={{display: 'block', mb: 0.5}}>
+              Added during workout
+            </Typography>
+          )}
+          {ex.substitutedFor && (
+            <Typography variant="caption" color="warning.main" sx={{display: 'block', mb: 0.5}}>
+              Originally: {ex.substitutedFor.name}
             </Typography>
           )}
           <Typography variant="subtitle1" gutterBottom noWrap>
@@ -292,7 +288,11 @@ export default function ExerciseSlide({
             </Typography>
           </Box>
         </Box>
-        <Box sx={{flex: '1 1 0%', minWidth: 0}}>
+        <Box sx={{
+          alignSelf: 'stretch',
+          flex: '0 0 auto',
+          width: 'auto',
+        }}>
           <MuscleHighlight
             primaryMuscles={ex.exercise.primaryMuscles}
             secondaryMuscles={ex.exercise.secondaryMuscles}
@@ -313,7 +313,10 @@ export default function ExerciseSlide({
           value={formCue}
           onChange={e => setEditValue(e.target.value)}
           onFocus={() => setEditValue(formCue)}
-          onBlur={() => { onFormCueBlur(ex.exerciseId, formCue); setEditValue(null); }}
+          onBlur={() => {
+            onFormCueBlur(ex.exerciseId, formCue);
+            setEditValue(null);
+          }}
           size="small"
           sx={{mt: 0.5}}
         />
@@ -357,7 +360,8 @@ export default function ExerciseSlide({
       </Box>
 
       <Box sx={{position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column'}}>
-        <Box ref={scrollRef} onScroll={() => handleListScroll()} sx={{flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', width: '100%'}}>
+        <Box ref={scrollRef} onScroll={() => handleListScroll()}
+             sx={{flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', width: '100%'}}>
           {ex.sets.length > 0 && (
             <Box
               sx={{
@@ -371,7 +375,8 @@ export default function ExerciseSlide({
               }}
             >
               <Box sx={{width: 36, flex: 'none'}}>
-                <Typography variant="caption" color="text.secondary" sx={{display: 'block', textAlign: 'center'}}>Set</Typography>
+                <Typography variant="caption" color="text.secondary"
+                            sx={{display: 'block', textAlign: 'left'}}>Set</Typography>
               </Box>
               <Box sx={{flex: '1 1 0', minWidth: 0}}>
                 <Typography variant="caption" color="text.secondary" sx={{display: 'block', textAlign: 'center'}}>
@@ -379,10 +384,12 @@ export default function ExerciseSlide({
                 </Typography>
               </Box>
               <Box sx={{flex: '1 1 0', minWidth: 0}}>
-                <Typography variant="caption" color="text.secondary" sx={{display: 'block', textAlign: 'center'}}>Reps</Typography>
+                <Typography variant="caption" color="text.secondary"
+                            sx={{display: 'block', textAlign: 'center'}}>Reps</Typography>
               </Box>
               <Box sx={{flex: '1 1 0', minWidth: 0}}>
-                <Typography variant="caption" color="text.secondary" sx={{display: 'block', textAlign: 'center'}}>Est. 1RM</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{display: 'block', textAlign: 'center'}}>Est.
+                  1RM</Typography>
               </Box>
             </Box>
           )}
@@ -410,7 +417,12 @@ export default function ExerciseSlide({
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                             }}
                           >
-                            <Typography variant="caption" fontWeight={600}>{groupIdx + 1}</Typography>
+                            {groupIdx === 0 && ex.requiresRecording
+                              ? <Tooltip placement='right' title='Record a set and send to your coach'>
+                                <VideocamIcon sx={{color: '#e8453c'}}/>
+                              </Tooltip>
+                              : <Typography variant="caption" fontWeight={600}>{groupIdx + 1}</Typography>
+                            }
                           </Box>
                           {isBarbell && effectiveUnit !== 'none' && settings.showPlateCalculator && (
                             <IconButton
@@ -477,69 +489,90 @@ export default function ExerciseSlide({
                     </Box>
                   </ListItem>
 
-                  {/* Effort chip row — shown when effortMetric is enabled */}
-                  {settings.effortMetric !== 'none' && (
-                    <EffortChipRow
-                      metric={settings.effortMetric}
-                      value={settings.effortMetric === 'rpe' ? (group.parent.rpe ?? null) : (group.parent.rir ?? null)}
-                      onSelect={(v) => handleEffortUpdate(group.parent.id, settings.effortMetric as 'rpe' | 'rir', v)}
-                    />
-                  )}
+                  {/* Effort chip row — shown when effortMetric is enabled */
+                  }
+                  {
+                    settings.effortMetric !== 'none' && (
+                      <EffortChipRow
+                        metric={settings.effortMetric}
+                        value={settings.effortMetric === 'rpe' ? (group.parent.rpe ?? null) : (group.parent.rir ?? null)}
+                        onSelect={(v) => handleEffortUpdate(group.parent.id, settings.effortMetric as 'rpe' | 'rir', v)}
+                      />
+                    )
+                  }
 
-                  {/* Drop set rows */}
-                  {group.drops.map((drop, dropIdx) => {
-                    const dropSetIdx = ex.sets.findIndex(s => s.id === drop.id);
-                    return (
-                      <ListItem
-                        key={drop.id}
-                        disablePadding
-                        sx={{alignItems: 'center', mb: 0.5, mt: 1.5, pl: 4}}
-                      >
-                        <Box sx={{display: 'flex', alignItems: 'center', width: '100%', gap: 1, overflowX: 'hidden'}}>
-                          <Box sx={{width: 72, flex: 'none', mr: 1}}>
-                            <Typography variant="body2" color="text.secondary">
-                              ↓ Drop {dropIdx + 1}
-                            </Typography>
+                  {/* Drop set rows */
+                  }
+                  {
+                    group.drops.map((drop, dropIdx) => {
+                      const dropSetIdx = ex.sets.findIndex(s => s.id === drop.id);
+                      return (
+                        <ListItem
+                          key={drop.id}
+                          disablePadding
+                          sx={{alignItems: 'center', mb: 0.5, mt: 1.5, pl: 4}}
+                        >
+                          <Box sx={{display: 'flex', alignItems: 'center', width: '100%', gap: 1, overflowX: 'hidden'}}>
+                            <Box sx={{width: 72, flex: 'none', mr: 1}}>
+                              <Typography variant="body2" color="text.secondary">
+                                ↓ Drop {dropIdx + 1}
+                              </Typography>
+                            </Box>
+                            <WeightInput
+                              valueKg={drop.weight}
+                              unit={effectiveUnit}
+                              onChange={(kgStr) => handleSetUpdate(dropSetIdx, 'weight', kgStr)}
+                              onLongPress={(el) => setUnitMenuAnchor(el)}
+                              ariaLabel={`Drop ${dropIdx + 1} weight`}
+                              visibleLabel={false}
+                              variant="standard"
+                              sx={{flex: '1 1 0', minWidth: 0}}
+                            />
+                            <TextField
+                              type="text"
+                              size="small"
+                              variant="standard"
+                              hiddenLabel
+                              autoComplete="off"
+                              value={drop.reps ?? ''}
+                              onChange={(e) => {
+                                if (!/^\d*$/.test(e.target.value)) return;
+                                handleSetUpdate(dropSetIdx, 'reps', e.target.value);
+                              }}
+                              sx={{flex: '1 1 0', minWidth: 0, '& input': {textAlign: 'center'}}}
+                              inputProps={{
+                                inputMode: 'numeric',
+                                pattern: '[0-9]*',
+                                'aria-label': `Drop ${dropIdx + 1} reps`
+                              }}
+                            />
                           </Box>
-                          <WeightInput
-                            valueKg={drop.weight}
-                            unit={effectiveUnit}
-                            onChange={(kgStr) => handleSetUpdate(dropSetIdx, 'weight', kgStr)}
-                            onLongPress={(el) => setUnitMenuAnchor(el)}
-                            ariaLabel={`Drop ${dropIdx + 1} weight`}
-                            visibleLabel={false}
-                            variant="standard"
-                            sx={{flex: '1 1 0', minWidth: 0}}
-                          />
-                          <TextField
-                            type="text"
-                            size="small"
-                            variant="standard"
-                            hiddenLabel
-                            autoComplete="off"
-                            value={drop.reps ?? ''}
-                            onChange={(e) => {
-                              if (!/^\d*$/.test(e.target.value)) return;
-                              handleSetUpdate(dropSetIdx, 'reps', e.target.value);
-                            }}
-                            sx={{flex: '1 1 0', minWidth: 0, '& input': {textAlign: 'center'}}}
-                            inputProps={{inputMode: 'numeric', pattern: '[0-9]*', 'aria-label': `Drop ${dropIdx + 1} reps`}}
-                          />
-                        </Box>
-                      </ListItem>
-                    );
-                  })}
+                        </ListItem>
+                      );
+                    })
+                  }
                 </Box>
-              );
+              )
+                ;
             })}
           </List>
 
           <Box
-            sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, cursor: 'pointer', width: '100%', mb: 0.5, mt: 1}}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 1,
+              cursor: 'pointer',
+              width: '100%',
+              mb: 0.5,
+              mt: 1
+            }}
             onClick={() => setHistoryOpen(o => !o)}
           >
             <Box sx={{display: 'flex', alignItems: 'center', minWidth: 0}}>
-              <IconButton size="small" color={historyOpen || hasGraphableHistory ? 'primary' : 'default'} sx={{mr: 0.5}}>
+              <IconButton size="small" color={historyOpen || hasGraphableHistory ? 'primary' : 'default'}
+                          sx={{mr: 0.5}}>
                 {historyOpen ? <InfoIcon fontSize="small"/> : <InfoOutlinedIcon fontSize="small"/>}
               </IconButton>
               <Typography variant="caption" color={historyOpen || hasGraphableHistory ? 'primary' : 'text.secondary'}>
@@ -568,7 +601,8 @@ export default function ExerciseSlide({
 
           {hasPreviousWorkout && (
             <Accordion disableGutters sx={{width: '100%', mt: 1}}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls="previous-workouts-content" id="previous-workouts-header">
+              <AccordionSummary expandIcon={<ExpandMoreIcon/>} aria-controls="previous-workouts-content"
+                                id="previous-workouts-header">
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1, minWidth: 0}}>
                   <Typography variant="body2" fontWeight={500}>Previous workouts</Typography>
                 </Box>
@@ -616,7 +650,7 @@ export default function ExerciseSlide({
             </Accordion>
           )}
         </Box>
-        <ScrollEdgeFades axis="y" showStart={showStartFade} showEnd={showEndFade} size={48} background="paper" />
+        <ScrollEdgeFades axis="y" showStart={showStartFade} showEnd={showEndFade} size={48} background="paper"/>
       </Box>
 
       {/* Unit override context menu — opened by long-pressing a weight field */}
