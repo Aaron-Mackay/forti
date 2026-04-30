@@ -240,14 +240,6 @@ export default function ExerciseSlide({
                 sx={{height: 18, fontSize: '0.7rem', flexShrink: 0}}
               />
             )}
-            {ex.requiresRecording && (
-              <Chip
-                label="Coach requested recording"
-                size="small"
-                color="info"
-                sx={{height: 18, fontSize: '0.7rem', flexShrink: 0}}
-              />
-            )}
 
           </Box>
           {ex.isAdded && !ex.substitutedFor && (

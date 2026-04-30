@@ -108,6 +108,7 @@ const SortableExerciseTbody = ({
             <EditableExerciseNameWithMeta
               name={ex.exercise?.name}
               isBfr={ex.isBfr}
+              requiresRecording={Boolean(ex.requiresRecording)}
               compact
               onClick={() => openRenamePicker(weekId, workoutId, ex.id)}
             />
@@ -528,6 +529,7 @@ const SortableWorkoutSlot = ({
                       <EditableExerciseNameWithMeta
                         name={exercise.exercise?.name}
                         isBfr={exercise.isBfr}
+                        requiresRecording={Boolean(exercise.requiresRecording)}
                         compact
                         onClick={() => openRenamePicker(weekId, workout.id, exercise.id)}
                       />

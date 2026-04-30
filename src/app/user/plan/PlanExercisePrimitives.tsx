@@ -1,10 +1,11 @@
 'use client'
 
 import React from 'react'
-import { Box, Chip, Typography } from '@mui/material'
+import {Box, Chip, Tooltip, Typography} from '@mui/material'
 import type { SxProps, Theme } from '@mui/material/styles'
 import EditIcon from '@mui/icons-material/Edit'
 import { computeE1rm } from '@/lib/e1rm'
+import VideocamIcon from "@mui/icons-material/Videocam";
 
 type ExerciseMetaInput = {
   repRange: string | null
@@ -45,7 +46,9 @@ export function ExerciseNameWithMeta({
       <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.3, display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
         <Box component="span">{index != null ? `${index + 1}. ${name}` : name}</Box>
         {isBfr && <Chip label="BFR" size="small" color="warning" sx={{ height: 16, fontSize: '0.6rem' }} />}
-        {requiresRecording && <Chip label="Record requested" size="small" color="info" sx={{ height: 16, fontSize: '0.6rem' }} />}
+        {requiresRecording && <Tooltip placement='right' title='Record a set and send to your coach'>
+          <VideocamIcon sx={{color: '#e8453c', height: '1rem'}}/>
+        </Tooltip>}
       </Typography>
       {metaParts.length > 0 && (
         <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem' }}>
@@ -122,7 +125,9 @@ export function EditableExerciseNameWithMeta({
                 {displayName}
               </Box>
               {isBfr && <Chip label="BFR" size="small" color="warning" sx={{ height: 16, fontSize: '0.6rem' }} />}
-              {requiresRecording && <Chip label="Record requested" size="small" color="info" sx={{ height: 16, fontSize: '0.6rem' }} />}
+              {requiresRecording && <Tooltip placement='right' title='Record a set and send to your coach'>
+                <VideocamIcon sx={{color: '#e8453c', height: '1rem'}}/>
+              </Tooltip>}
             </Typography>
             <EditIcon
               className="edit-icon"
