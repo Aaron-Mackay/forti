@@ -9,6 +9,8 @@ import type { Metric } from '@/generated/prisma/browser';
 import type { WeekTargets } from '@/types/checkInTypes';
 import type { CustomMetricDef } from '@/types/settingsTypes';
 import type { BodyweightUnit } from '@/lib/units';
+import type { MetricCardConfig } from '@/types/checkInTemplateTypes';
+import { resolveMetricCardConfig } from '@/types/checkInTemplateTypes';
 import type { MetricBreakdownKey } from './MetricsDailyBreakdown';
 import MetricsSummaryTable from './MetricsSummaryTable';
 import MetricsDailyBreakdown from './MetricsDailyBreakdown';
@@ -27,6 +29,7 @@ interface Props {
   layoutMode?: 'auto' | 'force-mobile';
   editableBreakdown?: boolean;
   onBreakdownMetricChange?: (dayOffset: number, key: MetricBreakdownKey, value: number | null) => void;
+  metricConfig?: MetricCardConfig;
 }
 
 export default function MetricsSystemCard({
@@ -43,12 +46,14 @@ export default function MetricsSystemCard({
   layoutMode = 'auto',
   editableBreakdown = false,
   onBreakdownMetricChange,
+  metricConfig,
 }: Props) {
   const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
   const isControlled = typeof expanded === 'boolean';
   const isExpanded = isControlled ? expanded : internalExpanded;
   const forceMobileLayout = layoutMode === 'force-mobile';
   const forceCompactFont = forceMobileLayout || isExpanded;
+  const resolvedMetricConfig = resolveMetricCardConfig(metricConfig);
 
   useEffect(() => {
     if (!isControlled) {
@@ -99,6 +104,7 @@ export default function MetricsSystemCard({
               customMetricDefs={customMetricDefs}
               bodyweightUnit={bodyweightUnit}
               forceCompactFont={forceCompactFont}
+              metricConfig={resolvedMetricConfig}
             />
           </Box>
         </Box>
@@ -131,6 +137,7 @@ export default function MetricsSystemCard({
                   showRightFade
                   editable={editableBreakdown}
                   onMetricChange={onBreakdownMetricChange}
+                  metricConfig={resolvedMetricConfig}
                 />
               </Box>
             </Box>
@@ -152,6 +159,7 @@ export default function MetricsSystemCard({
             customMetricDefs={customMetricDefs}
             bodyweightUnit={bodyweightUnit}
             forceCompactFont={forceCompactFont}
+            metricConfig={resolvedMetricConfig}
           />
         </Box>
         <Collapse in={isExpanded} unmountOnExit>
@@ -167,6 +175,7 @@ export default function MetricsSystemCard({
               showRightFade
               editable={editableBreakdown}
               onMetricChange={onBreakdownMetricChange}
+              metricConfig={resolvedMetricConfig}
             />
           </Box>
         </Collapse>

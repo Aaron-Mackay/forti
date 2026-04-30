@@ -11,6 +11,7 @@ import {
   MAX_TEMPLATE_CARDS,
   MAX_RATING_SCALE,
   MIN_RATING_SCALE,
+  resolveMetricCardConfig,
 } from './checkInTemplateTypes';
 import type { CheckInTemplate, CustomCard } from './checkInTemplateTypes';
 
@@ -126,6 +127,31 @@ describe('parseCheckInTemplate — v2', () => {
     expect(result!.cards).toHaveLength(2);
     expect(result!.cards[0]).toMatchObject({ kind: 'system', systemType: 'metrics' });
     expect(result!.cards[1]).toMatchObject({ kind: 'custom', title: 'Wellbeing', columnSpan: 2 });
+  });
+
+  it('parses metric config for metrics system cards', () => {
+    const result = parseCheckInTemplate({
+      version: 2,
+      cards: [
+        {
+          kind: 'system',
+          id: 'metrics-1',
+          systemType: 'metrics',
+          columnSpan: 1,
+          metricConfig: {
+            visibleBuiltInMetrics: ['calories', 'protein', 'protein', 'unknown-key'],
+            includeCustomMetrics: false,
+          },
+        },
+      ],
+    });
+
+    const metricsCard = result?.cards[0];
+    expect(metricsCard?.kind).toBe('system');
+    if (metricsCard?.kind === 'system' && metricsCard.systemType === 'metrics') {
+      expect(metricsCard.metricConfig?.visibleBuiltInMetrics).toEqual(['calories', 'protein']);
+      expect(metricsCard.metricConfig?.includeCustomMetrics).toBe(false);
+    }
   });
 
   it('skips cards with no id', () => {
@@ -314,6 +340,25 @@ describe('validateTemplate — v2', () => {
       ],
     });
     expect(err).toBeNull();
+  });
+
+  it('rejects metrics card with no visible metrics', () => {
+    const err = validateTemplate({
+      version: 2,
+      cards: [
+        {
+          kind: 'system',
+          id: 'metrics-1',
+          systemType: 'metrics',
+          columnSpan: 1,
+          metricConfig: {
+            visibleBuiltInMetrics: [],
+            includeCustomMetrics: false,
+          },
+        },
+      ],
+    });
+    expect(err).toMatch(/at least one metric/i);
   });
 
   it('rejects invalid version', () => {
@@ -539,6 +584,14 @@ describe('DEFAULT_TEMPLATE', () => {
     const labels = textareas.map(f => f.label);
     expect(labels).toContain('How did your week go overall?');
     expect(labels).toContain('Goals / focus for next week');
+  });
+});
+
+describe('resolveMetricCardConfig', () => {
+  it('defaults to all built-ins and includes custom metrics when config is missing', () => {
+    const config = resolveMetricCardConfig();
+    expect(config.visibleBuiltInMetrics).toEqual(['weight', 'steps', 'sleepMins', 'calories', 'protein', 'carbs', 'fat']);
+    expect(config.includeCustomMetrics).toBe(true);
   });
 });
 

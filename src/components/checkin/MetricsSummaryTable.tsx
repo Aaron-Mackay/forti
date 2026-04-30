@@ -17,6 +17,8 @@ import type { WeekTargets } from '@/types/checkInTypes';
 import type { CustomMetricDef } from '@/types/settingsTypes';
 import type { BodyweightUnit } from '@/lib/units';
 import { kgToBodyweightDisplay } from '@/lib/units';
+import type { BuiltInMetricKey } from '@/types/metricTypes';
+import type { MetricCardConfig } from '@/types/checkInTemplateTypes';
 
 interface Props {
   currentWeek: Metric[];
@@ -25,6 +27,7 @@ interface Props {
   customMetricDefs?: CustomMetricDef[];
   bodyweightUnit: BodyweightUnit;
   forceCompactFont?: boolean;
+  metricConfig: Required<MetricCardConfig>;
 }
 
 type DeltaDir = 'up' | 'down' | 'flat';
@@ -65,13 +68,14 @@ export default function MetricsSummaryTable({
   customMetricDefs = [],
   bodyweightUnit,
   forceCompactFont = false,
+  metricConfig,
 }: Props) {
   const curr = computeMetricSummary(currentWeek);
   const prior = computeMetricSummary(weekPrior);
   const tgt = weekTargets;
 
-  const rows: { label: string; current: string; target: string; prior: string; dir: DeltaDir; hasData: boolean }[] = [
-    {
+  const builtInRows: Record<BuiltInMetricKey, { label: string; current: string; target: string; prior: string; dir: DeltaDir; hasData: boolean }> = {
+    weight: {
       label: `Weight (${bodyweightUnit})`,
       current: curr.avgWeight !== null ? `${kgToBodyweightDisplay(curr.avgWeight, bodyweightUnit)}` : '—',
       target: '—',
@@ -79,7 +83,7 @@ export default function MetricsSummaryTable({
       dir: delta(curr.avgWeight, prior.avgWeight, 0),
       hasData: curr.avgWeight !== null,
     },
-    {
+    steps: {
       label: 'Steps',
       current: curr.avgSteps !== null ? Math.round(curr.avgSteps).toLocaleString() : '—',
       target:  tgt?.stepsTarget != null ? tgt.stepsTarget.toLocaleString() : '—',
@@ -87,7 +91,7 @@ export default function MetricsSummaryTable({
       dir: delta(curr.avgSteps, prior.avgSteps),
       hasData: curr.avgSteps !== null,
     },
-    {
+    sleepMins: {
       label: 'Sleep',
       current: formatSleepMins(curr.avgSleepMins),
       target:  tgt?.sleepMinsTarget != null ? formatSleepMins(tgt.sleepMinsTarget) : '—',
@@ -95,7 +99,7 @@ export default function MetricsSummaryTable({
       dir: delta(curr.avgSleepMins, prior.avgSleepMins),
       hasData: curr.avgSleepMins !== null,
     },
-    {
+    calories: {
       label: 'Calories',
       current: curr.avgCalories !== null ? Math.round(curr.avgCalories).toLocaleString() : '—',
       target:  tgt?.caloriesTarget != null ? tgt.caloriesTarget.toLocaleString() : '—',
@@ -103,7 +107,7 @@ export default function MetricsSummaryTable({
       dir: delta(curr.avgCalories, prior.avgCalories),
       hasData: curr.avgCalories !== null,
     },
-    {
+    protein: {
       label: 'Protein (g)',
       current: curr.avgProtein !== null ? `${Math.round(curr.avgProtein)}` : '—',
       target:  tgt?.proteinTarget != null ? `${tgt.proteinTarget}` : '—',
@@ -111,7 +115,7 @@ export default function MetricsSummaryTable({
       dir: delta(curr.avgProtein, prior.avgProtein),
       hasData: curr.avgProtein !== null,
     },
-    {
+    carbs: {
       label: 'Carbs (g)',
       current: curr.avgCarbs !== null ? `${Math.round(curr.avgCarbs)}` : '—',
       target:  tgt?.carbsTarget != null ? `${tgt.carbsTarget}` : '—',
@@ -119,7 +123,7 @@ export default function MetricsSummaryTable({
       dir: delta(curr.avgCarbs, prior.avgCarbs),
       hasData: curr.avgCarbs !== null,
     },
-    {
+    fat: {
       label: 'Fat (g)',
       current: curr.avgFat !== null ? `${Math.round(curr.avgFat)}` : '—',
       target:  tgt?.fatTarget != null ? `${tgt.fatTarget}` : '—',
@@ -127,7 +131,11 @@ export default function MetricsSummaryTable({
       dir: delta(curr.avgFat, prior.avgFat),
       hasData: curr.avgFat !== null,
     },
-    ...customMetricDefs.map(def => {
+  };
+
+  const rows: { label: string; current: string; target: string; prior: string; dir: DeltaDir; hasData: boolean }[] = [
+    ...metricConfig.visibleBuiltInMetrics.map(key => builtInRows[key]),
+    ...(metricConfig.includeCustomMetrics ? customMetricDefs.map(def => {
       const currVal = avgCustom(currentWeek, def.id);
       const priorVal = avgCustom(weekPrior, def.id);
       return {
@@ -138,7 +146,7 @@ export default function MetricsSummaryTable({
         dir: delta(currVal, priorVal),
         hasData: currVal !== null,
       };
-    }),
+    }) : []),
   ];
 
   const cellSx = forceCompactFont

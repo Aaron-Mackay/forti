@@ -27,6 +27,7 @@ describe('MetricsDailyBreakdown', () => {
         weekStartDate="2026-01-05"
         customMetricDefs={[]}
         includeEmptyRows
+        metricConfig={{ visibleBuiltInMetrics: ['weight', 'steps', 'sleepMins', 'calories', 'protein', 'carbs', 'fat'], includeCustomMetrics: true }}
       />,
     );
 
@@ -47,6 +48,7 @@ describe('MetricsDailyBreakdown', () => {
         includeEmptyRows
         editable
         onMetricChange={onMetricChange}
+        metricConfig={{ visibleBuiltInMetrics: ['weight', 'steps', 'sleepMins', 'calories', 'protein', 'carbs', 'fat'], includeCustomMetrics: true }}
       />,
     );
 
@@ -69,11 +71,29 @@ describe('MetricsDailyBreakdown', () => {
         includeEmptyRows
         editable
         onMetricChange={onMetricChange}
+        metricConfig={{ visibleBuiltInMetrics: ['weight', 'steps', 'sleepMins', 'calories', 'protein', 'carbs', 'fat'], includeCustomMetrics: true }}
       />,
     );
 
     await waitFor(() => {
       expect(stepInputs[0].value).toBe('1234');
     });
+  });
+
+  it('hides filtered built-in metrics rows', () => {
+    render(
+      <MetricsDailyBreakdown
+        metrics={[makeMetric({ calories: 2200, protein: 160, carbs: 200, fat: 70 })]}
+        weekStartDate="2026-01-05"
+        customMetricDefs={[]}
+        includeEmptyRows
+        metricConfig={{ visibleBuiltInMetrics: ['calories'], includeCustomMetrics: true }}
+      />,
+    );
+
+    expect(screen.getByText('Calories')).toBeInTheDocument();
+    expect(screen.queryByText('Protein (g)')).not.toBeInTheDocument();
+    expect(screen.queryByText('Carbs (g)')).not.toBeInTheDocument();
+    expect(screen.queryByText('Fat (g)')).not.toBeInTheDocument();
   });
 });

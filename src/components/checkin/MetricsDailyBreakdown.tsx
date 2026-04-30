@@ -9,6 +9,8 @@ import type { BodyweightUnit } from '@/lib/units';
 import { bodyweightDisplayToKg, kgToBodyweightDisplay } from '@/lib/units';
 import ScrollEdgeFades from '@/components/shell/ScrollEdgeFades';
 import { useScrollEdgeFades } from '@lib/hooks/useScrollEdgeFades';
+import type { BuiltInMetricKey } from '@/types/metricTypes';
+import type { MetricCardConfig } from '@/types/checkInTemplateTypes';
 
 interface Props {
   metrics: Metric[];
@@ -21,9 +23,9 @@ interface Props {
   showRightFade?: boolean;
   editable?: boolean;
   onMetricChange?: (dayOffset: number, key: MetricBreakdownKey, value: number | null) => void;
+  metricConfig: Required<MetricCardConfig>;
 }
 
-type BuiltInMetricKey = 'weight' | 'steps' | 'sleepMins' | 'calories' | 'protein' | 'carbs' | 'fat';
 export type MetricBreakdownKey = BuiltInMetricKey | `custom:${string}`;
 
 function getMetricValueForKey(metric: Metric | undefined, key: MetricBreakdownKey): number | null {
@@ -119,6 +121,7 @@ export default function MetricsDailyBreakdown({
   showRightFade = false,
   editable = false,
   onMetricChange,
+  metricConfig,
 }: Props) {
   const {
     scrollRef,
@@ -152,8 +155,8 @@ export default function MetricsDailyBreakdown({
     return m ? (fn(m) ?? '—') : '—';
   }
 
-  const stdRows: { label: string; key: MetricBreakdownKey; values: string[]; hasData: boolean }[] = [
-    {
+  const builtInRows: Record<BuiltInMetricKey, { label: string; key: MetricBreakdownKey; values: string[]; hasData: boolean }> = {
+    weight: {
       label: `Weight (${bodyweightUnit})`,
       key: 'weight',
       values: Array.from({ length: 7 }, (_, i) => val(i, m => {
@@ -162,13 +165,13 @@ export default function MetricsDailyBreakdown({
       })),
       hasData: Array.from(byOffset.values()).some(m => m.weight != null),
     },
-    {
+    steps: {
       label: 'Steps',
       key: 'steps',
       values: Array.from({ length: 7 }, (_, i) => val(i, m => m.steps != null ? m.steps.toLocaleString() : null)),
       hasData: Array.from(byOffset.values()).some(m => m.steps != null),
     },
-    {
+    sleepMins: {
       label: 'Sleep',
       key: 'sleepMins',
       values: Array.from({ length: 7 }, (_, i) => {
@@ -177,31 +180,31 @@ export default function MetricsDailyBreakdown({
       }),
       hasData: Array.from(byOffset.values()).some(m => m.sleepMins != null),
     },
-    {
+    calories: {
       label: 'Calories',
       key: 'calories',
       values: Array.from({ length: 7 }, (_, i) => val(i, m => m.calories != null ? m.calories.toLocaleString() : null)),
       hasData: Array.from(byOffset.values()).some(m => m.calories != null),
     },
-    {
+    protein: {
       label: 'Protein (g)',
       key: 'protein',
       values: Array.from({ length: 7 }, (_, i) => val(i, m => m.protein != null ? `${m.protein}` : null)),
       hasData: Array.from(byOffset.values()).some(m => m.protein != null),
     },
-    {
+    carbs: {
       label: 'Carbs (g)',
       key: 'carbs',
       values: Array.from({ length: 7 }, (_, i) => val(i, m => m.carbs != null ? `${m.carbs}` : null)),
       hasData: Array.from(byOffset.values()).some(m => m.carbs != null),
     },
-    {
+    fat: {
       label: 'Fat (g)',
       key: 'fat',
       values: Array.from({ length: 7 }, (_, i) => val(i, m => m.fat != null ? `${m.fat}` : null)),
       hasData: Array.from(byOffset.values()).some(m => m.fat != null),
     },
-  ];
+  };
 
   const customRows: { label: string; key: MetricBreakdownKey; values: string[]; hasData: boolean }[] = customMetricDefs.map(def => ({
     label: def.name,
@@ -213,7 +216,11 @@ export default function MetricsDailyBreakdown({
     hasData: Array.from(byOffset.values()).some(m => getCustomValue(m, def.id) != null),
   }));
 
-  const rows = includeEmptyRows ? [...stdRows, ...customRows] : [...stdRows, ...customRows].filter(r => r.hasData);
+  const visibleBuiltInRows = metricConfig.visibleBuiltInMetrics.map(key => builtInRows[key]);
+  const visibleCustomRows = metricConfig.includeCustomMetrics ? customRows : [];
+  const rows = includeEmptyRows
+    ? [...visibleBuiltInRows, ...visibleCustomRows]
+    : [...visibleBuiltInRows, ...visibleCustomRows].filter(r => r.hasData);
   const initialDraftValues = useMemo(() => {
     const map = new Map<string, string>();
     const start = new Date(weekStartDate);

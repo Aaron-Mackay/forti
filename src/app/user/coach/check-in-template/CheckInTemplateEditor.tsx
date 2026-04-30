@@ -15,9 +15,11 @@ import {
   FormControl,
   IconButton,
   InputLabel,
+  FormControlLabel,
   Menu,
   MenuItem,
   Paper,
+  Checkbox,
   Select,
   Stack,
   TextField,
@@ -77,6 +79,7 @@ import type {
   RatingOperator,
   TextOperator,
   CustomCheckInResponses,
+  MetricCardConfig,
 } from '@/types/checkInTemplateTypes';
 import type { DataVizCard, RelativeWeeks } from '@/types/datavizTypes';
 import { RELATIVE_WEEK_OPTIONS } from '@/types/datavizTypes';
@@ -89,6 +92,7 @@ import MetricsSystemCard from '@/components/checkin/MetricsSystemCard';
 import CustomCheckInField from '@/app/user/check-in/CustomCheckInField';
 import {HEIGHT_EXC_APPBAR} from "@/components/shell/CustomAppBar";
 import { DEFAULT_CHECK_IN_TEMPLATE_PREVIEW_DATA } from '@/components/checkin/checkInTemplatePreviewData';
+import { resolveMetricCardConfig } from '@/types/checkInTemplateTypes';
 
 // Motion-wrapped MUI Box — accepts both `sx` and Framer Motion props
 const MotionBox = motion.create(Box);
@@ -129,6 +133,7 @@ function SystemCardPreview({ card }: { card: SystemCard }) {
         weekStartDate={previewData.weekStart}
         defaultExpanded={card.columnSpan === 2}
         interactive={false}
+        metricConfig={card.metricConfig}
       />
     );
   }
@@ -496,6 +501,62 @@ interface SortableSystemCardProps {
 function SortableSystemCard({ card, onUpdate, onRemove }: SortableSystemCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
   const { label, Icon } = SYSTEM_CARD_META[card.systemType];
+  const resolvedMetricConfig = card.systemType === 'metrics'
+    ? resolveMetricCardConfig(card.metricConfig)
+    : null;
+
+  function updateMetricConfig(nextConfig: Required<MetricCardConfig>) {
+    if (card.systemType !== 'metrics') return;
+    onUpdate({ ...card, metricConfig: nextConfig });
+  }
+
+  function toggleBuiltInMetric(key: BuiltInMetricKey, checked: boolean) {
+    if (card.systemType !== 'metrics' || !resolvedMetricConfig) return;
+    const nextSet = new Set(resolvedMetricConfig.visibleBuiltInMetrics);
+    if (checked) {
+      nextSet.add(key);
+    } else {
+      nextSet.delete(key);
+    }
+    updateMetricConfig({
+      ...resolvedMetricConfig,
+      visibleBuiltInMetrics: BUILTIN_METRIC_KEYS.filter(metricKey => nextSet.has(metricKey)),
+    });
+  }
+
+  function toggleMacros(checked: boolean) {
+    if (card.systemType !== 'metrics' || !resolvedMetricConfig) return;
+    const macroKeys: BuiltInMetricKey[] = ['protein', 'carbs', 'fat'];
+    const nextSet = new Set(resolvedMetricConfig.visibleBuiltInMetrics);
+    for (const key of macroKeys) {
+      if (checked) nextSet.add(key);
+      else nextSet.delete(key);
+    }
+    updateMetricConfig({
+      ...resolvedMetricConfig,
+      visibleBuiltInMetrics: BUILTIN_METRIC_KEYS.filter(metricKey => nextSet.has(metricKey)),
+    });
+  }
+
+  function toggleCustomMetrics(checked: boolean) {
+    if (card.systemType !== 'metrics' || !resolvedMetricConfig) return;
+    updateMetricConfig({
+      ...resolvedMetricConfig,
+      includeCustomMetrics: checked,
+    });
+  }
+
+  const hasAnyBuiltInMetricVisible = resolvedMetricConfig
+    ? resolvedMetricConfig.visibleBuiltInMetrics.length > 0
+    : true;
+  const hasAnyMetricVisible = resolvedMetricConfig
+    ? hasAnyBuiltInMetricVisible || resolvedMetricConfig.includeCustomMetrics
+    : true;
+  const macrosEnabled = resolvedMetricConfig
+    ? (['protein', 'carbs', 'fat'] as BuiltInMetricKey[]).every(
+      key => resolvedMetricConfig.visibleBuiltInMetrics.includes(key),
+    )
+    : true;
 
   return (
     <Box ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, height: '100%' }} sx={{ display: 'grid', minWidth: 0 }}>
@@ -530,6 +591,54 @@ function SortableSystemCard({ card, onUpdate, onRemove }: SortableSystemCardProp
         <Box sx={{ opacity: 0.6, pointerEvents: 'none' }}>
           <SystemCardPreview card={card} />
         </Box>
+        {card.systemType === 'metrics' && resolvedMetricConfig && (
+          <Stack spacing={0.5} sx={{ mt: 1.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+              Metrics shown
+            </Typography>
+            {BUILTIN_METRIC_KEYS.map(metricKey => (
+              <FormControlLabel
+                key={metricKey}
+                sx={{ m: 0 }}
+                control={(
+                  <Checkbox
+                    size="small"
+                    checked={resolvedMetricConfig.visibleBuiltInMetrics.includes(metricKey)}
+                    onChange={e => toggleBuiltInMetric(metricKey, e.target.checked)}
+                  />
+                )}
+                label={<Typography variant="caption">{BUILTIN_METRIC_LABELS[metricKey]}</Typography>}
+              />
+            ))}
+            <FormControlLabel
+              sx={{ m: 0 }}
+              control={(
+                <Checkbox
+                  size="small"
+                  checked={macrosEnabled}
+                  onChange={e => toggleMacros(e.target.checked)}
+                />
+              )}
+              label={<Typography variant="caption">Individual macros</Typography>}
+            />
+            <FormControlLabel
+              sx={{ m: 0 }}
+              control={(
+                <Checkbox
+                  size="small"
+                  checked={resolvedMetricConfig.includeCustomMetrics}
+                  onChange={e => toggleCustomMetrics(e.target.checked)}
+                />
+              )}
+              label={<Typography variant="caption">Custom metrics</Typography>}
+            />
+            {!hasAnyMetricVisible && (
+              <Typography variant="caption" color="error.main">
+                Select at least one metric.
+              </Typography>
+            )}
+          </Stack>
+        )}
       </Paper>
     </Box>
   );

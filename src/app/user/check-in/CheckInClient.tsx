@@ -24,6 +24,8 @@ import { CheckInHistoryResponseSchema, CurrentCheckInResponseSchema, type Curren
 import { useSettings } from '@lib/providers/SettingsProvider';
 import MetricsSystemCard from '@/components/checkin/MetricsSystemCard';
 import { fetchJsonWithSchema } from '@lib/fetchWrapper';
+import { checkInHasCustomResponses } from '@/lib/checkInUtils';
+import { parseCheckInTemplate } from '@/types/checkInTemplateTypes';
 
 type CurrentData = CurrentCheckInResponse;
 
@@ -98,6 +100,12 @@ export default function CheckInClient() {
   }
 
   const isCompleted = !!currentData?.checkIn.completedAt;
+  const completedCheckInTemplateSnapshot = currentData && checkInHasCustomResponses(currentData.checkIn)
+    ? parseCheckInTemplate(currentData.checkIn.templateSnapshot)
+    : null;
+  const completedMetricsCardConfig = completedCheckInTemplateSnapshot?.cards.find(
+    card => card.kind === 'system' && card.systemType === 'metrics',
+  )?.metricConfig;
 
   const weekLabel = currentData
     ? new Date(currentData.checkIn.weekStartDate).toLocaleDateString('en-GB', {
@@ -219,6 +227,7 @@ export default function CheckInClient() {
                     bodyweightUnit={settings.bodyweightUnit}
                     weekStartDate={currentData.checkIn.weekStartDate}
                     defaultExpanded={false}
+                    metricConfig={completedMetricsCardConfig}
                   />
                 </>
               )}

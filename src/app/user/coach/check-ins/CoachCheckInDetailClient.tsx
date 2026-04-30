@@ -265,6 +265,10 @@ export default function CoachCheckInDetailClient({
 
   const isCustomMode = checkInHasCustomResponses(checkIn);
   const templateSnapshot = isCustomMode ? parseCheckInTemplate(checkIn.templateSnapshot) : null;
+  const metricsCardConfig = templateSnapshot?.cards.find(
+    (card): card is Extract<CheckInTemplate['cards'][number], { kind: 'system'; systemType: 'metrics' }> =>
+      card.kind === 'system' && card.systemType === 'metrics',
+  )?.metricConfig;
   const hasRatings = !isCustomMode && checkInHasRatings(checkIn);
   const hasReflection = !isCustomMode && checkInHasReflection(checkIn);
   const hasPhotos = checkInHasPhotos(checkIn);
@@ -451,6 +455,7 @@ export default function CoachCheckInDetailClient({
                   expanded={metricsExpanded}
                   onExpandedChange={setMetricsExpanded}
                   interactive
+                  metricConfig={metricsCardConfig}
                 />
               </Section>
             </Box>

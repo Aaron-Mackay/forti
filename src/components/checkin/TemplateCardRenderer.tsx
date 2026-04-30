@@ -48,6 +48,7 @@ export interface SystemCardData {
 
 function SystemCardPlaceholder({
   systemType,
+  metricConfig,
   defaultExpanded,
   interactive,
   forceMobileLayout,
@@ -55,6 +56,7 @@ function SystemCardPlaceholder({
   onExpandedChange,
 }: {
   systemType: 'photos' | 'metrics' | 'workouts';
+  metricConfig?: Extract<CheckInCard, { kind: 'system'; systemType: 'metrics' }>['metricConfig'];
   defaultExpanded: boolean;
   interactive: boolean;
   forceMobileLayout: boolean;
@@ -90,6 +92,7 @@ function SystemCardPlaceholder({
         expanded={expanded}
         onExpandedChange={onExpandedChange}
         layoutMode={forceMobileLayout ? 'force-mobile' : 'auto'}
+        metricConfig={metricConfig}
       />
     );
   }
@@ -192,6 +195,7 @@ export default function TemplateCardRenderer({
         </Typography>
         <SystemCardPlaceholder
           systemType={systemType}
+          metricConfig={card.systemType === 'metrics' ? card.metricConfig : undefined}
           defaultExpanded={card.columnSpan === 2}
           interactive={systemPreviewInteractive}
           forceMobileLayout={forceMobileLayout}
@@ -233,6 +237,7 @@ export default function TemplateCardRenderer({
           layoutMode={forceMobileLayout ? 'force-mobile' : 'auto'}
           editableBreakdown={Boolean(systemData.canEditMetrics)}
           onBreakdownMetricChange={systemData.onMetricChange}
+          metricConfig={card.metricConfig}
         />
       </Paper>
     );

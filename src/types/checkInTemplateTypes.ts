@@ -1,6 +1,7 @@
 import type { DataVizCard, DataVizTimeRange, RelativeWeeks } from './datavizTypes';
 import { RELATIVE_WEEK_OPTIONS } from './datavizTypes';
 import { BUILTIN_METRIC_KEYS } from './metricTypes';
+import type { BuiltInMetricKey } from './metricTypes';
 export type { DataVizCard };
 
 // Types for coach-customisable check-in templates.
@@ -88,12 +89,28 @@ export type CheckInInputField =
 // ─── Card interfaces ──────────────────────────────────────────────────────────
 
 /** Pre-defined system block — renders existing app data at the coach-chosen position. */
-export interface SystemCard {
+export interface MetricCardConfig {
+  visibleBuiltInMetrics?: BuiltInMetricKey[];
+  includeCustomMetrics?: boolean;
+}
+
+interface BaseSystemCard {
   kind: 'system';
   id: string;
   systemType: 'photos' | 'metrics' | 'workouts';
   columnSpan: 1 | 2;  // desktop grid column span; xs always full-width
 }
+
+export interface MetricsSystemCard extends BaseSystemCard {
+  systemType: 'metrics';
+  metricConfig?: MetricCardConfig;
+}
+
+export interface NonMetricsSystemCard extends BaseSystemCard {
+  systemType: 'photos' | 'workouts';
+}
+
+export type SystemCard = MetricsSystemCard | NonMetricsSystemCard;
 
 /** Coach-defined card containing input fields. */
 export interface CustomCard {
@@ -122,6 +139,36 @@ export const MAX_TEMPLATE_FIELDS = 20;  // total input fields across all custom 
 export const MAX_TEMPLATE_CARDS  = 20;
 export const MAX_RATING_SCALE    = 10;
 export const MIN_RATING_SCALE    = 2;
+
+export const DEFAULT_METRIC_CARD_CONFIG = {
+  visibleBuiltInMetrics: [...BUILTIN_METRIC_KEYS],
+  includeCustomMetrics: true,
+} satisfies Required<MetricCardConfig>;
+
+function isBuiltInMetricKey(value: unknown): value is BuiltInMetricKey {
+  return typeof value === 'string' && BUILTIN_METRIC_KEYS.includes(value as BuiltInMetricKey);
+}
+
+function normalizeMetricKeySelection(keys: unknown, fallbackToAll: boolean): BuiltInMetricKey[] {
+  if (!Array.isArray(keys)) return fallbackToAll ? [...BUILTIN_METRIC_KEYS] : [];
+  const keySet = new Set<BuiltInMetricKey>();
+  for (const key of keys) {
+    if (isBuiltInMetricKey(key)) keySet.add(key);
+  }
+  if (keySet.size === 0) return fallbackToAll ? [...BUILTIN_METRIC_KEYS] : [];
+  return BUILTIN_METRIC_KEYS.filter(key => keySet.has(key));
+}
+
+export function resolveMetricCardConfig(config?: MetricCardConfig): Required<MetricCardConfig> {
+  const hasExplicitBuiltInSelection = Array.isArray(config?.visibleBuiltInMetrics);
+  return {
+    visibleBuiltInMetrics: normalizeMetricKeySelection(
+      config?.visibleBuiltInMetrics,
+      !hasExplicitBuiltInSelection,
+    ),
+    includeCustomMetrics: config?.includeCustomMetrics ?? true,
+  };
+}
 
 // ─── Utility helpers ─────────────────────────────────────────────────────────
 
@@ -304,11 +351,32 @@ function parseDataVizCard(raw: Record<string, unknown>): DataVizCard | null {
 function parseSystemCard(raw: Record<string, unknown>): SystemCard | null {
   if (typeof raw.id !== 'string' || !raw.id) return null;
   if (raw.systemType !== 'photos' && raw.systemType !== 'metrics' && raw.systemType !== 'workouts') return null;
+  if (raw.systemType !== 'metrics') {
+    return {
+      kind: 'system',
+      id: raw.id as string,
+      systemType: raw.systemType,
+      columnSpan: parseColumnSpan(raw.columnSpan),
+    };
+  }
+
+  let metricConfig: MetricCardConfig | undefined;
+  if (raw.metricConfig && typeof raw.metricConfig === 'object' && !Array.isArray(raw.metricConfig)) {
+    const rawConfig = raw.metricConfig as Record<string, unknown>;
+    metricConfig = {
+      visibleBuiltInMetrics: normalizeMetricKeySelection(rawConfig.visibleBuiltInMetrics, false),
+      includeCustomMetrics: typeof rawConfig.includeCustomMetrics === 'boolean'
+        ? rawConfig.includeCustomMetrics
+        : true,
+    };
+  }
+
   return {
     kind: 'system',
     id: raw.id as string,
-    systemType: raw.systemType as SystemCard['systemType'],
+    systemType: 'metrics',
     columnSpan: parseColumnSpan(raw.columnSpan),
+    ...(metricConfig ? { metricConfig } : {}),
   };
 }
 
@@ -477,6 +545,28 @@ export function validateTemplate(template: CheckInTemplate): string | null {
       if (card.systemType === 'photos')   { photosCount++;   if (photosCount   > 1) return 'Only one photos card is allowed per template'; }
       if (card.systemType === 'metrics')  { metricsCount++;  if (metricsCount  > 1) return 'Only one metrics card is allowed per template'; }
       if (card.systemType === 'workouts') { workoutsCount++; if (workoutsCount > 1) return 'Only one workouts card is allowed per template'; }
+      if (card.systemType === 'metrics' && card.metricConfig) {
+        const { visibleBuiltInMetrics, includeCustomMetrics } = card.metricConfig;
+        if (visibleBuiltInMetrics !== undefined) {
+          if (!Array.isArray(visibleBuiltInMetrics)) {
+            return `Metrics card "${card.id}" visibleBuiltInMetrics must be an array`;
+          }
+          if (!visibleBuiltInMetrics.every(key => BUILTIN_METRIC_KEYS.includes(key))) {
+            return `Metrics card "${card.id}" has unknown metric key`;
+          }
+        }
+        if (includeCustomMetrics !== undefined && typeof includeCustomMetrics !== 'boolean') {
+          return `Metrics card "${card.id}" includeCustomMetrics must be boolean`;
+        }
+        const selectedKeys = card.metricConfig.visibleBuiltInMetrics;
+        const builtInVisibleCount = selectedKeys
+          ? selectedKeys.filter(key => BUILTIN_METRIC_KEYS.includes(key)).length
+          : BUILTIN_METRIC_KEYS.length;
+        const includeCustomResolved = card.metricConfig.includeCustomMetrics ?? true;
+        if (builtInVisibleCount === 0 && !includeCustomResolved) {
+          return 'Metrics card must show at least one metric.';
+        }
+      }
     } else if (card.kind === 'custom') {
       if (!Array.isArray(card.fields)) return `Card "${card.id}" fields must be an array`;
 
