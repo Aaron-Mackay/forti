@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Box,
@@ -15,17 +15,19 @@ import type { Metric, WeeklyCheckIn } from '@/generated/prisma/browser';
 import { useSettings } from '@lib/providers/SettingsProvider';
 import RatingField from './RatingField';
 import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
-import { updateMetricClient } from '@lib/metrics';
 import TemplateCardRenderer from '@/components/checkin/TemplateCardRenderer';
 import type { SystemCardData } from '@/components/checkin/TemplateCardRenderer';
 import WorkoutsSystemCard from '@/components/checkin/WorkoutsSystemCard';
-import type { MetricBreakdownKey } from '@/components/checkin/MetricsDailyBreakdown';
 import MetricsSystemCard from '@/components/checkin/MetricsSystemCard';
 import ProgressPhotoSection from './ProgressPhotoSection';
 import type { PreviousPhotos, WeekTargets } from '@/types/checkInTypes';
 import type { CheckInTemplate, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
 import { parseCustomResponses, isFieldVisible, getAllInputFields } from '@/types/checkInTemplateTypes';
 import { SubmitCheckInResponseSchema } from '@lib/contracts/checkIn';
+import { useCheckInPayload } from './useCheckInPayload';
+import { useCheckInPhotos } from './useCheckInPhotos';
+import { useCheckInMetricsEditor } from './useCheckInMetricsEditor';
+import { useCheckInAutosave } from './useCheckInAutosave';
 
 interface Props {
   currentWeek: Metric[];
@@ -84,11 +86,7 @@ export default function CheckInForm({
   const isEditing = Boolean(checkIn.completedAt);
   const activeTemplate = template ?? null;
 
-  const [photoUrls, setPhotoUrls] = useState<{ front: string | null; back: string | null; side: string | null }>({
-    front: checkIn.frontPhotoUrl ?? null,
-    back: checkIn.backPhotoUrl ?? null,
-    side: checkIn.sidePhotoUrl ?? null,
-  });
+  const { photoUrls, onPhotoUploaded, onPhotoRemoved } = useCheckInPhotos(checkIn);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -99,10 +97,11 @@ export default function CheckInForm({
   const [metricsExpandedByCardId, setMetricsExpandedByCardId] = useState<Record<string, boolean>>(
     () => getInitialMetricsExpansion(activeTemplate)
   );
-  const [currentWeekMetrics, setCurrentWeekMetrics] = useState<Metric[]>(currentWeek);
-  const metricSaveTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  const checkInSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasInitialAutoSaveRunRef = useRef(false);
+  const { currentWeekMetrics, handleMetricChange } = useCheckInMetricsEditor({
+    checkIn,
+    currentWeek,
+    setError: (message) => setError(message),
+  });
 
   // ── Legacy mode state ──────────────────────────────────────────────────────
   const [legacyForm, setLegacyForm] = useState<LegacyFormState>({
@@ -125,30 +124,13 @@ export default function CheckInForm({
     setCustomResponses(r => ({ ...r, [fieldId]: value }));
   }
 
-  const checkInPayload = useMemo(() => {
-    if (activeTemplate !== null) {
-      return {
-        customResponses,
-        completedWorkouts: completedWorkoutsCount,
-        plannedWorkouts: plannedWorkoutsCount,
-      } as Record<string, unknown>;
-    }
-
-    return {
-      ...legacyForm,
-      completedWorkouts: completedWorkoutsCount,
-      plannedWorkouts: plannedWorkoutsCount,
-      energyLevel: legacyForm.energyLevel ?? undefined,
-      moodRating: legacyForm.moodRating ?? undefined,
-      stressLevel: legacyForm.stressLevel ?? undefined,
-      sleepQuality: legacyForm.sleepQuality ?? undefined,
-      recoveryRating: legacyForm.recoveryRating ?? undefined,
-      adherenceRating: legacyForm.adherenceRating ?? undefined,
-      weekReview: legacyForm.weekReview || undefined,
-      coachMessage: legacyForm.coachMessage || undefined,
-      goalsNextWeek: legacyForm.goalsNextWeek || undefined,
-    } as Record<string, unknown>;
-  }, [activeTemplate, customResponses, completedWorkoutsCount, plannedWorkoutsCount, legacyForm]);
+  const checkInPayload = useCheckInPayload({
+    activeTemplate,
+    customResponses,
+    legacyForm,
+    completedWorkoutsCount,
+    plannedWorkoutsCount,
+  });
 
   async function persistCheckIn(payload: Record<string, unknown>) {
     const res = await fetch('/api/check-in', {
@@ -208,104 +190,19 @@ export default function CheckInForm({
   useEffect(() => {
     setMetricsExpandedByCardId(getInitialMetricsExpansion(activeTemplate));
   }, [activeTemplate]);
-  useEffect(() => {
-    setCurrentWeekMetrics(currentWeek);
-  }, [currentWeek]);
-
-  useEffect(() => {
-    return () => {
-      metricSaveTimeoutsRef.current.forEach(timeoutId => clearTimeout(timeoutId));
-      metricSaveTimeoutsRef.current.clear();
-      if (checkInSaveTimeoutRef.current) {
-        clearTimeout(checkInSaveTimeoutRef.current);
-        checkInSaveTimeoutRef.current = null;
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isEditing) return;
-    if (!hasInitialAutoSaveRunRef.current) {
-      hasInitialAutoSaveRunRef.current = true;
-      return;
-    }
-
-    if (checkInSaveTimeoutRef.current) clearTimeout(checkInSaveTimeoutRef.current);
-    checkInSaveTimeoutRef.current = setTimeout(async () => {
-      try {
-        await persistCheckIn(checkInPayload);
-      } catch {
-        setError('Failed to auto-save check-in');
-      } finally {
-        checkInSaveTimeoutRef.current = null;
-      }
-    }, 500);
-  }, [isEditing, checkInPayload]);
-
-  const handleMetricChange = useCallback((dayOffset: number, key: MetricBreakdownKey, value: number | null) => {
-    const d = new Date(checkIn.weekStartDate);
-    d.setUTCDate(d.getUTCDate() + dayOffset);
-    const dateIso = d.toISOString().slice(0, 10);
-
-    let nextMetric: Metric | null = null;
-    setCurrentWeekMetrics(prev => {
-      const idx = prev.findIndex(m => new Date(m.date).toISOString().slice(0, 10) === dateIso);
-      const existing = idx >= 0 ? prev[idx] : undefined;
-      const baseMetric: Metric = existing ?? {
-        id: 0,
-        userId: checkIn.userId,
-        date: new Date(dateIso),
-        weight: null,
-        steps: null,
-        sleepMins: null,
-        calories: null,
-        protein: null,
-        carbs: null,
-        fat: null,
-        customMetrics: null,
-      };
-      nextMetric = key.startsWith('custom:')
-        ? {
-          ...baseMetric,
-          customMetrics: {
-            ...((baseMetric.customMetrics as Record<string, { value: number | null; target: number | null }> | null) ?? {}),
-            [key.replace('custom:', '')]: { value, target: null },
-          },
-        }
-        : { ...baseMetric, [key]: value } as Metric;
-
-      if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = nextMetric;
-        return next;
-      }
-      return [...prev, nextMetric];
-    });
-
-    if (!nextMetric) return;
-
-    const saveKey = `${dateIso}:${key}`;
-    const existingTimeout = metricSaveTimeoutsRef.current.get(saveKey);
-    if (existingTimeout) clearTimeout(existingTimeout);
-
-    const timeoutId = setTimeout(async () => {
-      try {
-        await updateMetricClient(nextMetric as Metric);
-      } catch {
-        setError('Failed to update metric');
-      } finally {
-        metricSaveTimeoutsRef.current.delete(saveKey);
-      }
-    }, 400);
-    metricSaveTimeoutsRef.current.set(saveKey, timeoutId);
-  }, [checkIn.userId, checkIn.weekStartDate]);
+  useCheckInAutosave({
+    isEditing,
+    payload: checkInPayload,
+    persistCheckIn,
+    setError: (message) => setError(message),
+  });
 
   const systemData: SystemCardData = {
     photoUrls,
     previousPhotos,
     weekStart: new Date(checkIn.weekStartDate).toISOString(),
-    onPhotoUploaded: (angle, url) => setPhotoUrls(p => ({ ...p, [angle]: url })),
-    onPhotoRemoved: (angle) => setPhotoUrls(p => ({ ...p, [angle]: null })),
+    onPhotoUploaded,
+    onPhotoRemoved,
     currentWeek: currentWeekMetrics,
     weekPrior,
     weekTargets,
@@ -330,8 +227,8 @@ export default function CheckInForm({
             currentPhotos={photoUrls}
             previousPhotos={previousPhotos}
             weekStart={new Date(checkIn.weekStartDate).toISOString()}
-            onPhotoUploaded={(angle, url) => setPhotoUrls(p => ({ ...p, [angle]: url }))}
-            onPhotoRemoved={(angle) => setPhotoUrls(p => ({ ...p, [angle]: null }))}
+            onPhotoUploaded={onPhotoUploaded}
+            onPhotoRemoved={onPhotoRemoved}
           />
           <Divider sx={{ my: 3 }} />
         </>
