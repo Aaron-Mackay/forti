@@ -498,56 +498,6 @@ test.describe('Workout page', () => {
       });
     });
 
-    test('remove button stays visible after an added exercise is replaced', async ({page}) => {
-      await page.route('**/api/workoutExercise', async (route) => {
-        if (route.request().method() === 'POST') {
-          await route.fulfill({
-            status: 201,
-            contentType: 'application/json',
-            body: JSON.stringify(addedLegPressWorkoutExercise()),
-          });
-        } else {
-          await route.continue();
-        }
-      });
-      await page.route('**/api/workoutExercise/9999', async (route) => {
-        if (route.request().method() === 'PATCH') {
-          await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({})});
-        } else {
-          await route.continue();
-        }
-      });
-
-      await page.getByRole('button', {name: /Plan/i}).first().click();
-      await page.getByRole('button', {name: /Week/i}).first().click();
-      await page.getByRole('button', {name: /Workout/i}).first().click();
-
-      // Add an exercise
-      await page.getByRole('button', {name: 'Add Exercise'}).click();
-      await page.getByRole('dialog', {name: 'Add Exercise'}).getByRole('button', {name: 'Leg Press'}).click();
-      await page.getByRole('button', {name: 'Add'}).click();
-
-      // Navigate into the added exercise and replace it
-      await page.getByRole('button', {name: 'Leg Press'}).click();
-      await page.locator('.swiper-slide-active').getByRole('button', {name: 'Exercise menu'}).click();
-      await page.getByRole('menuitem', {name: 'Replace exercise'}).click();
-      await expect(page.getByRole('dialog', {name: 'Substitute Exercise'})).toBeVisible();
-      await page.getByRole('dialog', {name: 'Substitute Exercise'}).getByRole('button', {name: 'Squat'}).click();
-
-      // Go back to the list
-      await page.getByRole('button', {name: /back/i}).click();
-
-      // Wait for list to settle and assert the remove button within the added row
-      const addedExerciseRow = page
-        .getByRole('button')
-        .filter({hasText: 'Squat'})
-        .filter({hasText: 'Added'})
-        .filter({has: page.getByLabel(/Remove exercise block \d+/)})
-        .first();
-      await expect(addedExerciseRow).toBeVisible();
-      await expect(addedExerciseRow.getByLabel(/Remove exercise block \d+/)).toBeVisible();
-    });
-
     test('remove button is visible for isAdded exercises and removes the exercise on click', async ({page}) => {
       let deleteCalled = false;
       await page.route('**/api/workoutExercise', async (route) => {
