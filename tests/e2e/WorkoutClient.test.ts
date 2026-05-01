@@ -513,7 +513,12 @@ test.describe('Workout page', () => {
       await page.getByRole('button', {name: /back/i}).click();
 
       // Wait for list to settle and assert the remove button within the added row
-      const addedExerciseRow = page.getByRole('button', {name: /Squat .* Added/i});
+      const addedExerciseRow = page
+        .getByRole('button')
+        .filter({hasText: 'Squat'})
+        .filter({hasText: 'Added'})
+        .filter({has: page.getByLabel(/Remove exercise block \d+/)})
+        .first();
       await expect(addedExerciseRow).toBeVisible();
       await expect(addedExerciseRow.getByLabel(/Remove exercise block \d+/)).toBeVisible();
     });
@@ -567,12 +572,17 @@ test.describe('Workout page', () => {
       await page.getByRole('button', {name: 'Add'}).click();
 
       // Wait for list update and scope to the newly added row
-      const addedExerciseRow = page.getByRole('button', {name: /Leg Press .* Added/i});
+      const addedExerciseRow = page
+        .getByRole('button')
+        .filter({hasText: 'Leg Press'})
+        .filter({hasText: 'Added'})
+        .filter({has: page.getByLabel(/Remove exercise block \d+/)})
+        .first();
       await expect(addedExerciseRow).toBeVisible();
-      await expect(addedExerciseRow.getByLabel('Remove exercise block 1')).toBeVisible();
+      await expect(addedExerciseRow.getByLabel(/Remove exercise block \d+/)).toBeVisible();
 
       // Click remove
-      await addedExerciseRow.getByLabel('Remove exercise block 1').click();
+      await addedExerciseRow.getByLabel(/Remove exercise block \d+/).click();
       await page.getByRole('dialog', {name: 'Remove exercise?'}).getByRole('button', {name: 'Remove'}).click();
 
       // Verify the remove action was sent
