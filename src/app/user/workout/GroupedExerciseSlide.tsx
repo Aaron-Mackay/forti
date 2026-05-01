@@ -1,7 +1,7 @@
 'use client';
 
 import {useState} from 'react';
-import {Box, Chip, IconButton, Menu, MenuItem, Paper, Tab, Tabs, TextField, Typography,} from '@mui/material';
+import {Box, Chip, IconButton, Menu, MenuItem, Paper, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography,} from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import MuscleHighlight from '@/components/fitness/MuscleHighlight';
 import type {UserExerciseNote} from '@/generated/prisma/browser';
@@ -10,10 +10,10 @@ import type {WorkoutExerciseGroup} from './groupWorkoutExercises';
 import {useSettings} from '@lib/providers/SettingsProvider';
 import WorkoutExerciseSetSection from './WorkoutExerciseSetSection';
 import E1rmHistorySection from './E1rmHistorySection';
-import PreviousWorkoutsSection from './PreviousWorkoutsSection';
 import CardioInputsSection from './CardioInputsSection';
 import {getGroupBestE1rm, getHistoricalBest} from './exerciseHistoryUtils';
-import {AnimatePresence, motion} from "framer-motion";
+import {formatWeight, kgToDisplay} from '@/lib/units';
+import WorkoutSlidePanels, {type WorkoutSlidePanelKey} from './_components/WorkoutSlidePanels';
 
 type Props = {
   group: WorkoutExerciseGroup;
@@ -44,7 +44,7 @@ export default function GroupedExerciseSlide({
   const override = settings.exerciseUnitOverrides[String(group.exerciseId)] ?? null;
   const effectiveUnit = override ?? settings.weightUnit;
   const [editValue, setEditValue] = useState<string | null>(null);
-  const [activePanel, setActivePanel] = useState<'notes' | 'e1rm' | null>(null);
+  const [activePanel, setActivePanel] = useState<WorkoutSlidePanelKey | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [menuExerciseId, setMenuExerciseId] = useState<number | null>(null);
 
@@ -72,115 +72,14 @@ export default function GroupedExerciseSlide({
         borderColor: 'divider',
       }}
     >
-      <Box sx={{width: '100%', display: 'flex', justifyContent: 'space-between', mb: 1, gap: 1, alignItems: 'stretch'}}>
-        <Box sx={{flex: '1 1 0%', minWidth: 0}}>
-          <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
-            <Typography
-              variant="h6"
-              sx={{fontSize: 'clamp(15px, 5vw, 20px)'}}>
-              {first.exercise.name}
-            </Typography>
-          </Box>
-          <Box sx={{display: 'flex', alignItems: 'stretch', justifyContent: 'space-between'}}>
-            <Box sx={{minWidth: 0, pr: 1}}>
-              <Tabs
-                value={activePanel ?? false}
-                onChange={() => {
-                }}
-                variant="fullWidth"
-                sx={{mt: 0.25, minHeight: 32, '& .MuiTab-root': {minHeight: 32, py: 0.5, whiteSpace: 'nowrap'}}}
-              >
-                <Tab
-                  value="notes"
-                  label="Notes"
-                  onClick={() => setActivePanel(curr => (curr === 'notes' ? null : 'notes'))}
-                  sx={{fontSize: '0.6rem', textTransform: 'none'}}
-                />
-                <Tab
-                  value="e1rm"
-                  label="Progress"
-                  onClick={() => setActivePanel(curr => (curr === 'e1rm' ? null : 'e1rm'))}
-                  sx={{fontSize: '0.6rem', textTransform: 'none'}}
-                />
-              </Tabs>
-            </Box>
-          </Box>
-        </Box>
-        <Box
-          sx={{
-            flex: '0 1 auto',
-            width: 'auto',
-            maxWidth: '48%',
-            minWidth: 0,
-            height: '100%',
-            alignSelf: 'stretch',
-            overflow: 'hidden',
-          }}
-        >
-          <MuscleHighlight
-            primaryMuscles={first.exercise.primaryMuscles}
-            secondaryMuscles={first.exercise.secondaryMuscles}
-            exerciseId={first.exerciseId}
-            filterByQuadrants
-          />
-        </Box>
+
+      <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
+        <Typography
+          variant="h6"
+          sx={{fontSize: 'clamp(15px, 5vw, 20px)'}}>
+          {first.exercise.name}
+        </Typography>
       </Box>
-
-      <AnimatePresence initial={false}>
-        {activePanel && (
-          <Box
-            key={activePanel}
-            component={motion.div}
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{
-              duration: 0.18,
-              ease: 'easeOut',
-            }}
-            sx={{
-              width: '100%',
-              overflow: 'hidden',
-              mb: 1,
-            }}
-          >
-            {activePanel === 'notes' && (
-              <TextField
-                multiline
-                fullWidth
-                minRows={2}
-                maxRows={4}
-                placeholder="Add form cues and notes for this exercise..."
-                value={formCue}
-                onChange={e => setEditValue(e.target.value)}
-                onFocus={() => setEditValue(formCue)}
-                onBlur={() => {
-                  onFormCueBlur(group.exerciseId, formCue);
-                  setEditValue(null);
-                }}
-                size="small"
-                sx={{
-                  mt: 0.75,
-                  '& .MuiInputBase-input': {
-                    fontSize: '0.875rem',
-                  },
-                }}
-              />
-            )}
-
-            {activePanel === 'e1rm' && (
-              <Box>
-                <E1rmHistorySection
-                  exerciseId={group.exerciseId}
-                  history={history}
-                  todayE1RM={bestE1rm}
-                />
-              </Box>
-            )}
-          </Box>
-        )}
-      </AnimatePresence>
-
       <Box sx={{overflowY: 'auto', minHeight: 0, flex: 1}}>
         {group.items.map((item, idx) => {
           const effortMetric = settings.effortMetric;
@@ -197,12 +96,12 @@ export default function GroupedExerciseSlide({
                   Reps: {item.repRange ?? '—'}
                 </Typography>
                 {item.targetRpe != null && (
-                  <Typography variant="subtitle1" gutterBottom noWrap>
+                  <Typography variant="caption" gutterBottom noWrap>
                     Target: RPE {item.targetRpe}
                   </Typography>
                 )}
                 {item.targetRir != null && (
-                  <Typography variant="subtitle1" gutterBottom noWrap>
+                  <Typography variant="caption" gutterBottom noWrap>
                     Target: {item.targetRir} RIR
                   </Typography>
                 )}
@@ -258,12 +157,139 @@ export default function GroupedExerciseSlide({
           );
         })}
 
-        {firstBlockPreviousWorkouts.length > 0 ? (
-          <PreviousWorkoutsSection
-            blocks={[{history: {workouts: firstBlockPreviousWorkouts}}]}
-            weightUnit={effectiveUnit === 'none' ? 'kg' : effectiveUnit}
-          />
-        ) : null}
+        <WorkoutSlidePanels
+          activePanel={activePanel}
+          onActivePanelChange={setActivePanel}
+          panels={[
+            {
+              value: 'notes',
+              label: 'Notes',
+              render: () => (
+                <TextField
+                  multiline
+                  fullWidth
+                  minRows={2}
+                  maxRows={4}
+                  placeholder="Add form cues and notes for this exercise..."
+                  value={formCue}
+                  onChange={e => setEditValue(e.target.value)}
+                  onFocus={() => setEditValue(formCue)}
+                  onBlur={() => {
+                    onFormCueBlur(group.exerciseId, formCue);
+                    setEditValue(null);
+                  }}
+                  size="small"
+                  sx={{
+                    mt: 0.75,
+                    '& .MuiInputBase-input': {
+                      fontSize: '0.875rem',
+                    },
+                  }}
+                />
+              ),
+            },
+            {
+              value: 'e1rm',
+              label: 'Progress',
+              render: () => (
+                <Box>
+                  <E1rmHistorySection
+                    exerciseId={group.exerciseId}
+                    history={history}
+                    todayE1RM={bestE1rm}
+                  />
+                </Box>
+              ),
+            },
+            {
+              value: 'muscles',
+              label: 'Muscles',
+              render: () => (
+                <Box sx={{width: '100%', overflow: 'hidden', mb: 1}}>
+                  <Box
+                    sx={{
+                      width: '100%',
+                      maxWidth: 240,
+                      aspectRatio: '2 / 1',
+                      mx: 'auto',
+                    }}
+                  >
+                    <MuscleHighlight
+                      primaryMuscles={first.exercise.primaryMuscles}
+                      secondaryMuscles={first.exercise.secondaryMuscles}
+                      exerciseId={first.exerciseId}
+                      filterByQuadrants
+                    />
+                  </Box>
+                </Box>
+              ),
+            },
+            {
+              value: 'history',
+              label: 'History',
+              render: () => (
+                <Box sx={{width: '100%', overflow: 'hidden', mb: 1}}>
+                  {firstBlockPreviousWorkouts.length > 0 ? (
+                    <Box sx={{width: '100%'}}>
+                      <Box sx={{mb: 0}}>
+                        {firstBlockPreviousWorkouts.map((workout, workoutIdx) => (
+                          <Box key={`${workout.completedAt}-${workoutIdx}`} sx={{mb: workoutIdx === firstBlockPreviousWorkouts.length - 1 ? 0 : 1.5}}>
+                            {workout.completedAt ? (
+                              <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 0.75}}>
+                                {new Date(workout.completedAt).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'})}
+                                {workout.workoutName ? ` · ${workout.workoutName}` : ''}
+                              </Typography>
+                            ) : null}
+                            <Table
+                              size="small"
+                              aria-label={`Previous workout table ${workoutIdx + 1}`}
+                              sx={{'& td, & th': {py: 0.5, px: 0.75}}}
+                            >
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell align="center">Set</TableCell>
+                                  <TableCell align="center">Weight</TableCell>
+                                  <TableCell align="center">Reps</TableCell>
+                                  <TableCell align="center">Est. 1RM</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {workout.sets.map(set => (
+                                  <TableRow key={set.order}>
+                                    <TableCell align="center">{set.order}</TableCell>
+                                    <TableCell align="center">{formatWeight(set.weight, effectiveUnit === 'none' ? 'kg' : effectiveUnit)}</TableCell>
+                                    <TableCell align="center">{set.reps ?? '—'}</TableCell>
+                                    <TableCell align="center">{set.e1rm == null ? '—' : (kgToDisplay(set.e1rm, effectiveUnit === 'none' ? 'kg' : effectiveUnit) ?? set.e1rm).toFixed(1)}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </Box>
+                        ))}
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Box
+                      sx={{
+                        height: 80,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '1px dashed',
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                      }}
+                    >
+                      <Typography variant="caption" color="text.disabled">
+                        No previous workouts yet
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              ),
+            },
+          ]}
+        />
       </Box>
       <Menu
         anchorEl={menuAnchor}

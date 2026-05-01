@@ -16,9 +16,10 @@ vi.mock('@lib/providers/SettingsProvider', () => ({
   }),
 }));
 
-vi.mock('@/components/fitness/MuscleHighlight', () => ({default: () => null}));
+vi.mock('@/components/fitness/MuscleHighlight', () => ({
+  default: () => <div data-testid="muscle-highlight" />,
+}));
 vi.mock('./WorkoutExerciseSetSection', () => ({default: () => <div data-testid="set-section" />}));
-vi.mock('./PreviousWorkoutsSection', () => ({default: () => null}));
 vi.mock('./CardioInputsSection', () => ({default: () => <div data-testid="cardio-section" />}));
 vi.mock('./E1rmSparkline', () => ({
   default: ({history}: {history: Array<unknown> | null}) => (
@@ -118,4 +119,48 @@ describe('GroupedExerciseSlide', () => {
     fireEvent.click(screen.getByRole('tab', {name: /progress/i}));
     expect(screen.queryByTestId('e1rm-sparkline')).not.toBeVisible();
   });
+
+  it('shows previous workout tables behind the history tab', () => {
+    render(
+      <GroupedExerciseSlide
+        group={buildGroup()}
+        userExerciseNote={undefined}
+        onFormCueBlur={vi.fn()}
+        handleSetUpdate={vi.fn()}
+        handleEffortUpdate={vi.fn()}
+        history={[]}
+        previousSetsMap={new Map([[1, {workouts: [{completedAt: '2026-01-14T12:00:00.000Z', sets: [{order: 1, weight: 80, reps: 8, e1rm: 101.3}]}]}]])}
+        onSubstituteExercise={vi.fn()}
+        onRemoveExercise={vi.fn()}
+        onCardioUpdate={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('tab', {name: /history/i}));
+
+    expect(screen.getByLabelText('Previous workout table 1')).toBeInTheDocument();
+    expect(screen.getByText('Jan 14, 2026')).toBeInTheDocument();
+  });
+
+  it('shows an empty state in history when no previous workout data exists', () => {
+    render(
+      <GroupedExerciseSlide
+        group={buildGroup()}
+        userExerciseNote={undefined}
+        onFormCueBlur={vi.fn()}
+        handleSetUpdate={vi.fn()}
+        handleEffortUpdate={vi.fn()}
+        history={[]}
+        previousSetsMap={new Map()}
+        onSubstituteExercise={vi.fn()}
+        onRemoveExercise={vi.fn()}
+        onCardioUpdate={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('tab', {name: /history/i}));
+
+    expect(screen.getByText('No previous workouts yet')).toBeInTheDocument();
+  });
+
 });

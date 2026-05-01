@@ -10,11 +10,10 @@ import {
   Menu,
   MenuItem,
   Paper,
-  Tab,
-  Tabs,
   Table,
   TableBody,
   TableCell,
+  TableHead,
   TableRow,
   TextField,
   Typography,
@@ -24,7 +23,7 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import MuscleHighlight from '@/components/fitness/MuscleHighlight';
 import PlateCalculatorSheet from './PlateCalculatorSheet';
-import {formatWeight} from '@/lib/units';
+import {formatWeight, kgToDisplay} from '@/lib/units';
 import type {ExerciseUnitOverride} from '@/types/settingsTypes';
 import {WorkoutExercisePrisma} from '@/types/dataTypes';
 import {UserExerciseNote} from '@/generated/prisma/browser';
@@ -34,12 +33,8 @@ import ScrollEdgeFades from '@/components/shell/ScrollEdgeFades';
 import {useScrollEdgeFades} from '@lib/hooks/useScrollEdgeFades';
 import WorkoutExerciseSetSection from './WorkoutExerciseSetSection';
 import E1rmHistorySection from './E1rmHistorySection';
-import PreviousWorkoutsSection from './PreviousWorkoutsSection';
-import {
-  getHistoricalBest,
-  getTodayBestE1rm,
-} from './exerciseHistoryUtils';
-import {AnimatePresence, motion} from 'framer-motion';
+import {getHistoricalBest, getTodayBestE1rm,} from './exerciseHistoryUtils';
+import WorkoutSlidePanels, {type WorkoutSlidePanelKey} from './_components/WorkoutSlidePanels';
 
 export default function ExerciseSlide({
                                         ex,
@@ -66,7 +61,7 @@ export default function ExerciseSlide({
 
   // null = not editing; drives value from prop so duplicate-exercise slides stay in sync
   const [editValue, setEditValue] = useState<string | null>(null);
-  const [activePanel, setActivePanel] = useState<'notes' | 'e1rm' | null>(null);
+  const [activePanel, setActivePanel] = useState<WorkoutSlidePanelKey | null>(null);
 
   const formCue = editValue ?? userExerciseNote?.note ?? '';
   const [warmupOpen, setWarmupOpen] = useState(false);
@@ -101,7 +96,6 @@ export default function ExerciseSlide({
     : null;
 
   const previousWorkouts = previousWorkout?.workouts ?? [];
-  const hasPreviousWorkout = previousWorkouts.length > 0;
   const todayBestE1rm = getTodayBestE1rm(ex);
   const historicalBest = getHistoricalBest(history);
 
@@ -124,13 +118,11 @@ export default function ExerciseSlide({
     >
       {/* Header row: name/rest/reps/notes toggle on left, anatomy on right */}
       <Box sx={{display: 'flex', width: "100%", justifyContent: 'space-between', alignItems: 'flex-start'}}>
-        <Box>
-          <Typography
-            variant="h6"
-            sx={{fontSize: 'clamp(15px, 5vw, 20px)'}}>
-            {ex.exercise.name}
-          </Typography>
-        </Box>
+        <Typography
+          variant="h6"
+          sx={{fontSize: 'clamp(15px, 5vw, 20px)'}}>
+          {ex.exercise.name}
+        </Typography>
         {onSubstitute && (
           <IconButton
             size="small"
@@ -143,138 +135,32 @@ export default function ExerciseSlide({
         )}
       </Box>
       <Box sx={{display: 'flex', alignItems: 'stretch', width: '100%', mb: 1, justifyContent: 'space-between', gap: 1}}>
-        <Box sx={{flex: '1 1 auto', minWidth: 0}}>
-          <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-            {ex.isBfr && (
-              <Chip
-                label="BFR"
-                size="small"
-                color="warning"
-                sx={{height: 18, fontSize: '0.7rem', flexShrink: 0}}
-              />
-            )}
-
-          </Box>
-          {ex.isAdded && !ex.substitutedFor && (
-            <Typography variant="caption" color="info.main" sx={{display: 'block', mb: 0.5}}>
-              Added during workout
-            </Typography>
-          )}
-          {ex.substitutedFor && (
-            <Typography variant="caption" color="warning.main" sx={{display: 'block', mb: 0.5}}>
-              Originally: {ex.substitutedFor.name}
-            </Typography>
-          )}
-          <Typography variant="subtitle1" gutterBottom noWrap>
+        <Box sx={{flex: '1 1 auto', minWidth: 0, display: 'flex', gap: 1}}>
+          <Typography variant="caption" gutterBottom noWrap>
             Rest: {ex.restTime}s
           </Typography>
-          <Typography variant="subtitle1" gutterBottom noWrap>
+          <Typography variant="caption" gutterBottom noWrap>
             Reps: {ex.repRange}
           </Typography>
           {ex.targetRpe != null && (
-            <Typography variant="subtitle1" gutterBottom noWrap>
+            <Typography variant="caption" gutterBottom noWrap>
               Target: RPE {ex.targetRpe}
             </Typography>
           )}
           {ex.targetRir != null && (
-            <Typography variant="subtitle1" gutterBottom noWrap>
+            <Typography variant="caption" gutterBottom noWrap>
               Target: {ex.targetRir} RIR
             </Typography>
           )}
-          <Tabs
-            value={activePanel ?? false}
-            onChange={() => {}}
-            variant="fullWidth"
-            sx={{mt: 0.5, minHeight: 32, '& .MuiTab-root': {minHeight: 32, py: 0.5, whiteSpace: 'nowrap'}}}
-          >
-            <Tab
-              value="notes"
-              label="Notes"
-              onClick={() => setActivePanel(curr => (curr === 'notes' ? null : 'notes'))}
-              sx={{fontSize: '0.6rem', textTransform: 'none'}}
-            />
-            <Tab
-              value="e1rm"
-              label="Progress"
-              onClick={() => setActivePanel(curr => (curr === 'e1rm' ? null : 'e1rm'))}
-              sx={{fontSize: '0.6rem', textTransform: 'none'}}
-            />
-          </Tabs>
-        </Box>
-        <Box
-          sx={{
-            flex: '0 1 auto',
-            width: 'auto',
-            maxWidth: '48%',
-            minWidth: 0,
-            height: '100%',
-            alignSelf: 'stretch',
-            overflow: 'hidden',
-          }}
-        >
-          <MuscleHighlight
-            primaryMuscles={ex.exercise.primaryMuscles}
-            secondaryMuscles={ex.exercise.secondaryMuscles}
-            exerciseId={ex.exerciseId}
-            filterByQuadrants
-          />
+          {ex.isBfr && <Chip label="BFR" size="small" color="warning" sx={{height: 18, fontSize: '0.65rem'}}/>}
+          {ex.isAdded && <Chip label="Added" size="small" color="info" variant="outlined"
+                               sx={{height: 18, fontSize: '0.65rem'}}/>}
+          {ex.substitutedForId != null && (
+            <Chip label="Sub" size="small" color="warning" variant="outlined"
+                  sx={{height: 18, fontSize: '0.65rem'}}/>
+          )}
         </Box>
       </Box>
-
-      <AnimatePresence initial={false}>
-        {activePanel && (
-          <Box
-            key={activePanel}
-            component={motion.div}
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{
-              duration: 0.18,
-              ease: 'easeOut',
-            }}
-            sx={{
-              width: '100%',
-              overflow: 'hidden',
-              mb: 1,
-            }}
-          >
-            {activePanel === 'notes' && (
-              <TextField
-                multiline
-                fullWidth
-                minRows={2}
-                maxRows={4}
-                placeholder="Add form cues and notes for this exercise..."
-                value={formCue}
-                onChange={e => setEditValue(e.target.value)}
-                onFocus={() => setEditValue(formCue)}
-                onBlur={() => {
-                  onFormCueBlur(ex.exerciseId, formCue);
-                  setEditValue(null);
-                }}
-                size="small"
-                sx={{
-                  mt: 0.75,
-                  '& .MuiInputBase-input': {
-                    fontSize: '0.875rem',
-                  },
-                }}
-              />
-            )}
-
-            {activePanel === 'e1rm' && (
-              <Box>
-                <E1rmHistorySection
-                  exerciseId={ex.exerciseId}
-                  history={history}
-                  todayE1RM={todayBestE1rm}
-                />
-              </Box>
-            )}
-          </Box>
-        )}
-      </AnimatePresence>
 
       {/* Warmup suggestions — hidden for 'no unit' machines and when setting is off */}
       <Box sx={{
@@ -333,12 +219,139 @@ export default function ExerciseSlide({
             }}
           />
 
-          {hasPreviousWorkout ? (
-            <PreviousWorkoutsSection
-              blocks={[{history: {workouts: previousWorkouts}}]}
-              weightUnit={effectiveUnit === 'none' ? 'kg' : effectiveUnit}
-            />
-          ) : null}
+          <WorkoutSlidePanels
+            activePanel={activePanel}
+            onActivePanelChange={setActivePanel}
+            panels={[
+              {
+                value: 'notes',
+                label: 'Notes',
+                render: () => (
+                  <TextField
+                    multiline
+                    fullWidth
+                    minRows={2}
+                    maxRows={4}
+                    placeholder="Add form cues and notes for this exercise..."
+                    value={formCue}
+                    onChange={e => setEditValue(e.target.value)}
+                    onFocus={() => setEditValue(formCue)}
+                    onBlur={() => {
+                      onFormCueBlur(ex.exerciseId, formCue);
+                      setEditValue(null);
+                    }}
+                    size="small"
+                    sx={{
+                      mt: 0.75,
+                      '& .MuiInputBase-input': {
+                        fontSize: '0.875rem',
+                      },
+                    }}
+                  />
+                ),
+              },
+              {
+                value: 'e1rm',
+                label: 'Progress',
+                render: () => (
+                  <Box sx={{overflow: 'hidden', mb: 1, maxWidth: '85dvw'}}>
+                    <E1rmHistorySection
+                      exerciseId={ex.exerciseId}
+                      history={history}
+                      todayE1RM={todayBestE1rm}
+                    />
+                  </Box>
+                ),
+              },
+              {
+                value: 'muscles',
+                label: 'Muscles',
+                render: () => (
+                  <Box sx={{width: '100%', overflow: 'hidden', mb: 1}}>
+                    <Box
+                      sx={{
+                        width: '100%',
+                        maxWidth: 240,
+                        aspectRatio: '2 / 1',
+                        mx: 'auto',
+                      }}
+                    >
+                      <MuscleHighlight
+                        primaryMuscles={ex.exercise.primaryMuscles}
+                        secondaryMuscles={ex.exercise.secondaryMuscles}
+                        exerciseId={ex.exerciseId}
+                        filterByQuadrants
+                      />
+                    </Box>
+                  </Box>
+                ),
+              },
+              {
+                value: 'history',
+                label: 'History',
+                render: () => (
+                  <Box sx={{width: '100%', overflow: 'hidden', mb: 1}}>
+                    {previousWorkouts.length > 0 ? (
+                      <Box sx={{width: '100%'}}>
+                        <Box sx={{mb: 0}}>
+                          {previousWorkouts.map((workout, workoutIdx) => (
+                            <Box key={`${workout.completedAt}-${workoutIdx}`} sx={{mb: workoutIdx === previousWorkouts.length - 1 ? 0 : 1.5}}>
+                              {workout.completedAt ? (
+                                <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 0.75}}>
+                                  {new Date(workout.completedAt).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'})}
+                                  {workout.workoutName ? ` · ${workout.workoutName}` : ''}
+                                </Typography>
+                              ) : null}
+                              <Table
+                                size="small"
+                                aria-label={`Previous workout table ${workoutIdx + 1}`}
+                                sx={{'& td, & th': {py: 0.5, px: 0.75}}}
+                              >
+                                <TableHead>
+                                  <TableRow>
+                                    <TableCell align="center">Set</TableCell>
+                                    <TableCell align="center">Weight</TableCell>
+                                    <TableCell align="center">Reps</TableCell>
+                                    <TableCell align="center">Est. 1RM</TableCell>
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {workout.sets.map(set => (
+                                    <TableRow key={set.order}>
+                                      <TableCell align="center">{set.order}</TableCell>
+                                      <TableCell align="center">{formatWeight(set.weight, effectiveUnit === 'none' ? 'kg' : effectiveUnit)}</TableCell>
+                                      <TableCell align="center">{set.reps ?? '—'}</TableCell>
+                                      <TableCell align="center">{set.e1rm == null ? '—' : (kgToDisplay(set.e1rm, effectiveUnit === 'none' ? 'kg' : effectiveUnit) ?? set.e1rm).toFixed(1)}</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </Box>
+                          ))}
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Box
+                        sx={{
+                          height: 80,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: '1px dashed',
+                          borderColor: 'divider',
+                          borderRadius: 1,
+                        }}
+                      >
+                        <Typography variant="caption" color="text.disabled">
+                          No previous workouts yet
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                ),
+              },
+            ]}
+          />
         </Box>
         <ScrollEdgeFades axis="y" showStart={showStartFade} showEnd={showEndFade} size={48} background="paper"/>
       </Box>

@@ -116,7 +116,9 @@ test.describe('Workout page', () => {
     await page.getByRole('button', { name: 'Squat' }).click();
 
     await expect(page.getByLabel('Reps set 1').first()).toBeVisible();
-    await expect(page.locator('[id^="anatomy-"]').first()).toBeVisible();
+    const activeSlide = page.locator('.swiper-slide-active');
+    await activeSlide.getByRole('tab', { name: /muscles/i }).click();
+    await expect(activeSlide.locator('[id^="anatomy-"]').first()).toBeVisible();
   });
 
   test('back button in exercise detail returns to exercises list', async ({ page }) => {
@@ -691,7 +693,7 @@ test.describe('Workout page', () => {
       await expect(page.getByLabel('Reps set 1').first()).toBeVisible();
 
       const activeSlide = page.locator('.swiper-slide-active');
-      await activeSlide.getByRole('button', {name: /Previous workouts/i}).click();
+      await activeSlide.getByRole('tab', {name: /history/i}).click();
       await expect(activeSlide.getByText('Jan 14, 2026')).toBeVisible();
       await expect(activeSlide.getByText('Jan 7, 2026')).toBeVisible();
       const latestWorkoutTable = activeSlide.getByLabel('Previous workout table 1');
@@ -725,7 +727,7 @@ test.describe('Workout page', () => {
       await expect(page.getByLabel('Reps set 1').first()).toBeVisible();
 
       const activeSlide = page.locator('.swiper-slide-active');
-      await activeSlide.getByRole('button', {name: /Previous workouts/i}).click();
+      await activeSlide.getByRole('tab', {name: /history/i}).click();
       await expect(activeSlide.getByRole('cell', {name: '—'}).first()).toBeVisible();
       await expect(activeSlide.getByRole('cell', {name: '65 kg'})).toBeVisible();
     });
@@ -745,7 +747,9 @@ test.describe('Workout page', () => {
       await page.getByRole('button', { name: 'Squat' }).click();
       await expect(page.getByLabel('Reps set 1').first()).toBeVisible();
 
-      await expect(page.getByRole('button', {name: /Previous workouts/i})).toHaveCount(0);
+      const activeSlide = page.locator('.swiper-slide-active');
+      await activeSlide.getByRole('tab', {name: /history/i}).click();
+      await expect(activeSlide.getByText('No previous workouts yet')).toBeVisible();
     });
   });
 });

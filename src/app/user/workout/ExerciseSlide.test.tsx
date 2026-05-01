@@ -15,7 +15,9 @@ vi.mock('@lib/providers/SettingsProvider', () => ({
   }),
 }));
 
-vi.mock('@/components/fitness/MuscleHighlight', () => ({default: () => null}));
+vi.mock('@/components/fitness/MuscleHighlight', () => ({
+  default: () => <div data-testid="muscle-highlight" />,
+}));
 vi.mock('./E1rmSparkline', () => ({
   default: ({history}: {history: Array<unknown> | null}) => (
     <div data-testid="e1rm-sparkline">{history && history.length > 0 ? 'sparkline' : 'Log a weighted set to start tracking'}</div>
@@ -65,7 +67,7 @@ function buildExercise(): WorkoutExercisePrisma {
 }
 
 describe('ExerciseSlide', () => {
-  it('does not render previous workout controls when no previous workout history exists', () => {
+  it('shows an empty state in history when no previous workout history exists', () => {
     render(
       <ExerciseSlide
         ex={buildExercise()}
@@ -78,7 +80,9 @@ describe('ExerciseSlide', () => {
       />,
     );
 
-    expect(screen.queryByRole('button', {name: /previous workouts/i})).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', {name: /history/i}));
+
+    expect(screen.getByText('No previous workouts yet')).toBeInTheDocument();
   });
 
   it('renders a shared header row with unit and e1rm columns', () => {
@@ -170,6 +174,29 @@ describe('ExerciseSlide', () => {
     expect(screen.queryByPlaceholderText(/add form cues and notes for this exercise/i)).not.toBeInTheDocument();
   });
 
+  it('shows the muscles panel with a width-driven aspect ratio wrapper', async () => {
+    render(
+      <ExerciseSlide
+        ex={buildExercise()}
+        userExerciseNote={undefined}
+        onFormCueBlur={vi.fn()}
+        handleSetUpdate={vi.fn()}
+        handleEffortUpdate={vi.fn()}
+        previousWorkout={{workouts: []}}
+        history={[]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('tab', {name: /muscles/i}));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('muscle-highlight')).toBeInTheDocument();
+    });
+
+    const wrapper = screen.getByTestId('muscle-highlight').parentElement;
+    expect(wrapper).toHaveStyle({width: '100%', maxWidth: '240px'});
+  });
+
   it('shows an accordion with up to three previous workout tables below the set list', async () => {
     render(
       <ExerciseSlide
@@ -194,10 +221,7 @@ describe('ExerciseSlide', () => {
       />,
     );
 
-    expect(screen.getByRole('button', {name: /previous workouts/i})).toBeInTheDocument();
-    expect(screen.getByLabelText('Previous workout table 1')).not.toBeVisible();
-
-    fireEvent.click(screen.getByRole('button', {name: /previous workouts/i}));
+    fireEvent.click(screen.getByRole('tab', {name: /history/i}));
 
     await waitFor(() => {
       expect(screen.getByLabelText('Previous workout table 1')).toBeVisible();
