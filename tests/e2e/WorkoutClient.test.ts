@@ -17,6 +17,43 @@ async function clearActivePlan(page: import('@playwright/test').Page) {
   expect(response.ok()).toBe(true);
 }
 
+function addedLegPressWorkoutExercise() {
+  return {
+    id: 9999,
+    workoutId: 1,
+    exerciseId: 999,
+    order: 99,
+    isAdded: true,
+    repRange: '8-12',
+    restTime: '90',
+    targetRpe: null,
+    targetRir: null,
+    notes: null,
+    cardioDuration: null,
+    cardioDistance: null,
+    cardioResistance: null,
+    substitutedForId: null,
+    substitutedFor: null,
+    isBfr: false,
+    requiresRecording: false,
+    sets: [
+      {id: 99001, workoutExerciseId: 9999, order: 0, reps: null, weight: null, rpe: null, rir: null, e1rm: null, isDropSet: false, parentSetId: null},
+      {id: 99002, workoutExerciseId: 9999, order: 1, reps: null, weight: null, rpe: null, rir: null, e1rm: null, isDropSet: false, parentSetId: null},
+      {id: 99003, workoutExerciseId: 9999, order: 2, reps: null, weight: null, rpe: null, rir: null, e1rm: null, isDropSet: false, parentSetId: null},
+    ],
+    exercise: {
+      id: 999,
+      name: 'Leg Press',
+      category: 'resistance',
+      description: null,
+      equipment: [],
+      primaryMuscles: [],
+      secondaryMuscles: [],
+      createdByUserId: null,
+    },
+  };
+}
+
 test.describe('Workout page', () => {
   test.beforeEach(async ({ page }) => {
     await clearActivePlan(page);
@@ -446,12 +483,16 @@ test.describe('Workout page', () => {
 
   test.describe('remove added exercise', () => {
     test.beforeEach(async ({page}) => {
-      await page.route('**/api/exercises', async (route) => {
+      await page.evaluate(() => {
+        window.localStorage.removeItem('forti.exerciseListCache.v1');
+      });
+      await page.route(url => url.pathname === '/api/exercises', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify([
             {id: 1, name: 'Squat', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+            {id: 999, name: 'Leg Press', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
           ]),
         });
       });
@@ -463,23 +504,7 @@ test.describe('Workout page', () => {
           await route.fulfill({
             status: 201,
             contentType: 'application/json',
-            body: JSON.stringify({
-              id: 9999,
-              workoutId: 1,
-              exerciseId: 999,
-              order: 99,
-              isAdded: true,
-              repRange: '8-12',
-              restTime: '90',
-              notes: null,
-              cardioDuration: null,
-              cardioDistance: null,
-              cardioResistance: null,
-              substitutedForId: null,
-              substitutedFor: null,
-              sets: [],
-              exercise: {id: 999, name: 'Leg Press', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
-            }),
+            body: JSON.stringify(addedLegPressWorkoutExercise()),
           });
         } else {
           await route.continue();
@@ -499,7 +524,7 @@ test.describe('Workout page', () => {
 
       // Add an exercise
       await page.getByRole('button', {name: 'Add Exercise'}).click();
-      await page.getByRole('dialog', {name: 'Add Exercise'}).getByRole('button', {name: 'Squat'}).click();
+      await page.getByRole('dialog', {name: 'Add Exercise'}).getByRole('button', {name: 'Leg Press'}).click();
       await page.getByRole('button', {name: 'Add'}).click();
 
       // Navigate into the added exercise and substitute it
@@ -530,23 +555,7 @@ test.describe('Workout page', () => {
           await route.fulfill({
             status: 201,
             contentType: 'application/json',
-            body: JSON.stringify({
-              id: 9999,
-              workoutId: 1,
-              exerciseId: 999,
-              order: 99,
-              isAdded: true,
-              repRange: '8-12',
-              restTime: '90',
-              notes: null,
-              cardioDuration: null,
-              cardioDistance: null,
-              cardioResistance: null,
-              substitutedForId: null,
-              substitutedFor: null,
-              sets: [],
-              exercise: {id: 999, name: 'Leg Press', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
-            }),
+            body: JSON.stringify(addedLegPressWorkoutExercise()),
           });
         } else {
           await route.continue();
@@ -568,7 +577,7 @@ test.describe('Workout page', () => {
 
       // Add exercise via the two-step flow
       await page.getByRole('button', {name: 'Add Exercise'}).click();
-      await page.getByRole('dialog', {name: 'Add Exercise'}).getByRole('button', {name: 'Squat'}).click();
+      await page.getByRole('dialog', {name: 'Add Exercise'}).getByRole('button', {name: 'Leg Press'}).click();
       await page.getByRole('button', {name: 'Add'}).click();
 
       // Wait for list update and scope to the newly added row
