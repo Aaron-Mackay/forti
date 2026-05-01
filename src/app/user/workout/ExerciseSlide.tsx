@@ -125,7 +125,9 @@ export default function ExerciseSlide({
       {/* Header row: name/rest/reps/notes toggle on left, anatomy on right */}
       <Box sx={{display: 'flex', width: "100%", justifyContent: 'space-between', alignItems: 'flex-start'}}>
         <Box>
-          <Typography variant="h6">
+          <Typography
+            variant="h6"
+            sx={{fontSize: 'clamp(15px, 5vw, 20px)'}}>
             {ex.exercise.name}
           </Typography>
         </Box>

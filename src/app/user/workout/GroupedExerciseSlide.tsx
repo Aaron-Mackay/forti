@@ -75,7 +75,11 @@ export default function GroupedExerciseSlide({
       <Box sx={{width: '100%', display: 'flex', justifyContent: 'space-between', mb: 1, gap: 1, alignItems: 'stretch'}}>
         <Box sx={{flex: '1 1 0%', minWidth: 0}}>
           <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
-            <Typography variant="h6">{first.exercise.name}</Typography>
+            <Typography
+              variant="h6"
+              sx={{fontSize: 'clamp(15px, 5vw, 20px)'}}>
+              {first.exercise.name}
+            </Typography>
           </Box>
           <Box sx={{display: 'flex', alignItems: 'stretch', justifyContent: 'space-between'}}>
             <Box sx={{minWidth: 0, pr: 1}}>
