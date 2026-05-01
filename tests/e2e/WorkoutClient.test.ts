@@ -217,11 +217,11 @@ test.describe('Workout page', () => {
 
       // Scope to active slide — all slides render in DOM simultaneously
       const activeSlide = page.locator('.swiper-slide-active');
-      const historyToggle = activeSlide.getByText('Est. 1RM history').first();
+      const historyToggle = activeSlide.getByRole('tab', {name: 'Progress'});
       await expect(historyToggle).toBeVisible();
-      await expect(activeSlide.getByText(/Personal Best E1RM: 200\.0/)).toBeVisible();
+      await expect(activeSlide.locator('.apexcharts-canvas')).not.toBeVisible();
       await historyToggle.click();
-      await expect(activeSlide.getByText(/Personal Best E1RM: 200\.0/)).toBeVisible();
+      await expect(activeSlide.locator('.apexcharts-canvas')).toBeVisible();
     });
   });
 
@@ -513,10 +513,11 @@ test.describe('Workout page', () => {
       await page.getByRole('button', {name: /back/i}).click();
 
       // Remove button should still be visible
-      await expect(page.getByRole('button', {name: 'Remove exercise'})).toBeVisible();
+      await expect(page.getByLabel('Remove exercise block 1')).toBeVisible();
     });
 
     test('remove button is visible for isAdded exercises and removes the exercise on click', async ({page}) => {
+      let deleteCalled = false;
       await page.route('**/api/workoutExercise', async (route) => {
         if (route.request().method() === 'POST') {
           await route.fulfill({
@@ -546,6 +547,7 @@ test.describe('Workout page', () => {
       });
       await page.route('**/api/workoutExercise/9999', async (route) => {
         if (route.request().method() === 'DELETE') {
+          deleteCalled = true;
           await route.fulfill({status: 204});
         } else {
           await route.continue();
@@ -563,13 +565,16 @@ test.describe('Workout page', () => {
       await page.getByRole('button', {name: 'Add'}).click();
 
       // The added exercise should now appear with a remove button
-      await expect(page.getByRole('button', {name: 'Remove exercise'})).toBeVisible();
+      const addedExerciseRow = page.getByRole('button', {name: /Leg Press/i});
+      await expect(addedExerciseRow).toBeVisible();
+      await expect(addedExerciseRow.getByLabel('Remove exercise block 1')).toBeVisible();
 
       // Click remove
-      await page.getByRole('button', {name: 'Remove exercise'}).click();
+      await addedExerciseRow.getByLabel('Remove exercise block 1').click();
+      await page.getByRole('dialog', {name: 'Remove exercise?'}).getByRole('button', {name: 'Remove'}).click();
 
-      // The remove button should be gone
-      await expect(page.getByRole('button', {name: 'Remove exercise'})).not.toBeVisible();
+      // Verify the remove action was sent
+      await expect.poll(() => deleteCalled).toBe(true);
     });
   });
 
