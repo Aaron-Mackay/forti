@@ -547,11 +547,38 @@ export function substituteExercise(
   originalExerciseId: number
 ): UserPrisma {
   return withExercise(user, planId, weekId, workoutId, workoutExerciseId, ex => {
-    const isRevertingToOriginal = ex.substitutedForId != null && newExercise.id === ex.substitutedForId;
-    return {
+    const clearedSets = ex.sets.map(set => ({
+      ...set,
+      reps: null,
+      weight: null,
+      e1rm: null,
+      rpe: null,
+      rir: null,
+      isDropSet: false,
+      parentSetId: null,
+    }));
+    const replacementBase = {
       ...ex,
       exercise: newExercise,
       exerciseId: newExercise.id,
+      sets: clearedSets,
+      cardioDuration: null,
+      cardioDistance: null,
+      cardioResistance: null,
+      isBfr: false,
+    };
+
+    if (ex.isAdded) {
+      return {
+        ...replacementBase,
+        substitutedForId: null,
+        substitutedFor: null,
+      };
+    }
+
+    const isRevertingToOriginal = ex.substitutedForId != null && newExercise.id === ex.substitutedForId;
+    return {
+      ...replacementBase,
       substitutedForId: isRevertingToOriginal ? null : (ex.substitutedForId ?? originalExerciseId),
       substitutedFor: isRevertingToOriginal ? null : (ex.substitutedFor ?? ex.exercise),
     };

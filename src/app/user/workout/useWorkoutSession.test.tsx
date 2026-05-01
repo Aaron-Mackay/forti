@@ -260,4 +260,55 @@ describe('useWorkoutSession', () => {
       severity: 'info',
     });
   });
+
+  it('shows replaced reset snackbar for added exercises', async () => {
+    const userData = buildUserData();
+    userData.plans[0].weeks[0].workouts[0].exercises[0].isAdded = true;
+    const {result} = renderHook(() => useWorkoutSession(userData, 301));
+
+    act(() => {
+      result.current.handleSubstituteExercise(1001);
+    });
+
+    await act(async () => {
+      result.current.handleSubstituteConfirm({
+        id: 2002,
+        name: 'Leg Press',
+        category: 'resistance',
+        description: null,
+        equipment: [],
+        primaryMuscles: [],
+        secondaryMuscles: [],
+        createdByUserId: null,
+      });
+      await Promise.resolve();
+    });
+
+    expect(result.current.snackbar.message).toBe('Exercise replaced. Sets and exercise-specific fields reset.');
+  });
+
+  it('shows substituted reset snackbar for planned exercises', async () => {
+    const userData = buildUserData();
+    const {result} = renderHook(() => useWorkoutSession(userData, 301));
+
+    act(() => {
+      result.current.handleSubstituteExercise(1001);
+    });
+
+    await act(async () => {
+      result.current.handleSubstituteConfirm({
+        id: 2002,
+        name: 'Leg Press',
+        category: 'resistance',
+        description: null,
+        equipment: [],
+        primaryMuscles: [],
+        secondaryMuscles: [],
+        createdByUserId: null,
+      });
+      await Promise.resolve();
+    });
+
+    expect(result.current.snackbar.message).toBe('Exercise substituted. Sets and exercise-specific fields reset.');
+  });
 });

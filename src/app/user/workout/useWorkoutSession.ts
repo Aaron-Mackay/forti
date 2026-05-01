@@ -33,6 +33,7 @@ type SubstituteTarget = {
   workoutExerciseId: number;
   exerciseId: number;
   category: string;
+  isAdded: boolean;
 } | null;
 
 // Returns true if the plan structure changed in a way the user should know about
@@ -362,6 +363,7 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
       workoutExerciseId,
       exerciseId: ex.exerciseId,
       category: ex.exercise.category ?? 'resistance',
+      isAdded: ex.isAdded,
     });
   };
 
@@ -382,10 +384,19 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
       'PATCH',
       {exerciseId: newExercise.id}
     )
-      .then(() => setSnackbar({open: true, message: 'Exercise substituted', severity: 'success'}))
+      .then(() => {
+        const message = substituteTarget.isAdded
+          ? 'Exercise replaced. Sets and exercise-specific fields reset.'
+          : 'Exercise substituted. Sets and exercise-specific fields reset.';
+        setSnackbar({open: true, message, severity: 'success'});
+      })
       .catch(() => {
         setUserData(prevUserData);
-        setSnackbar({open: true, message: 'Failed to substitute exercise', severity: 'info'});
+        setSnackbar({
+          open: true,
+          message: substituteTarget.isAdded ? 'Failed to replace exercise' : 'Failed to substitute exercise',
+          severity: 'info',
+        });
       });
   };
 

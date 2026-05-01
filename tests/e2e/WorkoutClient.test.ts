@@ -498,7 +498,7 @@ test.describe('Workout page', () => {
       });
     });
 
-    test('remove button stays visible after an added exercise is substituted', async ({page}) => {
+    test('remove button stays visible after an added exercise is replaced', async ({page}) => {
       await page.route('**/api/workoutExercise', async (route) => {
         if (route.request().method() === 'POST') {
           await route.fulfill({
@@ -527,10 +527,10 @@ test.describe('Workout page', () => {
       await page.getByRole('dialog', {name: 'Add Exercise'}).getByRole('button', {name: 'Leg Press'}).click();
       await page.getByRole('button', {name: 'Add'}).click();
 
-      // Navigate into the added exercise and substitute it
+      // Navigate into the added exercise and replace it
       await page.getByRole('button', {name: 'Leg Press'}).click();
       await page.locator('.swiper-slide-active').getByRole('button', {name: 'Exercise menu'}).click();
-      await page.getByRole('menuitem', {name: 'Substitute exercise'}).click();
+      await page.getByRole('menuitem', {name: 'Replace exercise'}).click();
       await expect(page.getByRole('dialog', {name: 'Substitute Exercise'})).toBeVisible();
       await page.getByRole('dialog', {name: 'Substitute Exercise'}).getByRole('button', {name: 'Squat'}).click();
 

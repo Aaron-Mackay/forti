@@ -99,18 +99,44 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
       const exercise = await prisma.exercise.findUnique({where: {id: exerciseId}});
       if (!exercise) return notFoundResponse('Exercise');
       updateData.exerciseId = exerciseId;
-      if (workoutExercise.substitutedForId !== null && exerciseId === workoutExercise.substitutedForId) {
-        // Reverting to the original exercise — clear the substitution marker
+      if (workoutExercise.isAdded) {
+        // Added rows are replace-only and should never carry substitution lineage.
+        updateData.substitutedForId = null;
+      } else if (workoutExercise.substitutedForId !== null && exerciseId === workoutExercise.substitutedForId) {
+        // Reverting to the original exercise — clear the substitution marker.
         updateData.substitutedForId = null;
       } else if (!workoutExercise.substitutedForId) {
-        // First substitution — record the original exercise
+        // First substitution — record the original exercise.
         updateData.substitutedForId = workoutExercise.exerciseId;
       }
+      // Exercise assignment changed, so clear exercise-specific execution data.
+      updateData.cardioDuration = null;
+      updateData.cardioDistance = null;
+      updateData.cardioResistance = null;
+      updateData.isBfr = false;
     }
 
     const updated = await prisma.workoutExercise.update({
       where: {id: workoutExerciseId},
-      data: updateData,
+      data: {
+        ...updateData,
+        ...(updateData.exerciseId != null ? {
+          sets: {
+            updateMany: {
+              where: {},
+              data: {
+                reps: null,
+                weight: null,
+                e1rm: null,
+                rpe: null,
+                rir: null,
+                isDropSet: false,
+                parentSetId: null,
+              },
+            },
+          },
+        } : {}),
+      },
     });
 
     return NextResponse.json(updated);

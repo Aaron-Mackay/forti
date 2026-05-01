@@ -31,6 +31,7 @@ export function getWorkoutExerciseWithOwner(workoutExerciseId: number) {
     select: {
       id: true,
       exerciseId: true,
+      isAdded: true,
       substitutedForId: true,
       workout: {
         select: {

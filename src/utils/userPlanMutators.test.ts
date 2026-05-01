@@ -698,7 +698,7 @@ describe('updateWorkoutDateCompleted', () => {
 // ─── substituteExercise ──────────────────────────────────────────────────────
 
 describe('substituteExercise', () => {
-  it('swaps the exercise and records the original exerciseId', () => {
+  it('swaps a planned exercise and records the original exerciseId', () => {
     const user = buildBaseUser();
     const newExercise = {
       id: 999,
@@ -715,7 +715,12 @@ describe('substituteExercise', () => {
     const ex = result.plans[0].weeks[0].workouts[0].exercises[0];
 
     expect(ex.exercise.name).toBe('Dumbbell Bench Press');
-    expect(ex.substitutedForId).toBe(-1); // original exerciseId
+    expect(ex.substitutedForId).toBe(-1);
+    expect(ex.cardioDuration).toBeNull();
+    expect(ex.cardioDistance).toBeNull();
+    expect(ex.cardioResistance).toBeNull();
+    expect(ex.isBfr).toBe(false);
+    expect(ex.sets.every(set => set.reps == null && set.weight == null && set.e1rm == null && set.rpe == null && set.rir == null)).toBe(true);
   });
 
   it('preserves substitutedForId if already set (does not overwrite)', () => {
@@ -772,6 +777,50 @@ describe('substituteExercise', () => {
     expect(ex.exercise.name).toBe('Bench Press');
     expect(ex.substitutedForId).toBeNull();
     expect(ex.substitutedFor).toBeNull();
+  });
+
+  it('treats added rows as replace-only and clears any legacy substitution lineage', () => {
+    const user = buildBaseUser();
+    const workoutExercise = user.plans[0].weeks[0].workouts[0].exercises[0];
+    workoutExercise.isAdded = true;
+    workoutExercise.substitutedForId = 1234;
+    workoutExercise.substitutedFor = {
+      id: 1234,
+      name: 'Legacy Original',
+      category: 'resistance',
+      description: null,
+      equipment: [],
+      primaryMuscles: [],
+      secondaryMuscles: [],
+      createdByUserId: null,
+    };
+    workoutExercise.isBfr = true;
+    workoutExercise.cardioDuration = 20;
+    workoutExercise.cardioDistance = 3;
+    workoutExercise.cardioResistance = 6;
+
+    const newExercise = {
+      id: 999,
+      name: 'Leg Press',
+      category: 'resistance' as ExerciseCategory,
+      description: null,
+      equipment: [],
+      primaryMuscles: [],
+      secondaryMuscles: [],
+      createdByUserId: null,
+    };
+
+    const result = substituteExercise(user, 1, 101, 201, 301, newExercise, -1);
+    const ex = result.plans[0].weeks[0].workouts[0].exercises[0];
+
+    expect(ex.isAdded).toBe(true);
+    expect(ex.exerciseId).toBe(999);
+    expect(ex.substitutedForId).toBeNull();
+    expect(ex.substitutedFor).toBeNull();
+    expect(ex.isBfr).toBe(false);
+    expect(ex.cardioDuration).toBeNull();
+    expect(ex.cardioDistance).toBeNull();
+    expect(ex.cardioResistance).toBeNull();
   });
 
   it('does not affect other exercises in the workout', () => {

@@ -353,7 +353,7 @@ export default function ExerciseSlide({
             onSubstitute?.();
           }}
         >
-          Substitute exercise
+          {ex.isAdded ? 'Replace exercise' : 'Substitute exercise'}
         </MenuItem>
       </Menu>
 

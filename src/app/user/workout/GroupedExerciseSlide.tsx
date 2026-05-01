@@ -276,7 +276,7 @@ export default function GroupedExerciseSlide({
             setMenuExerciseId(null);
           }}
         >
-          Substitute exercise
+          {group.items.find(i => i.id === menuExerciseId)?.isAdded ? 'Replace exercise' : 'Substitute exercise'}
         </MenuItem>
         {group.items.find(i => i.id === menuExerciseId)?.isAdded && (
           <MenuItem
