@@ -512,8 +512,10 @@ test.describe('Workout page', () => {
       // Go back to the list
       await page.getByRole('button', {name: /back/i}).click();
 
-      // Remove button should still be visible
-      await expect(page.getByLabel('Remove exercise block 1')).toBeVisible();
+      // Wait for list to settle and assert the remove button within the added row
+      const addedExerciseRow = page.getByRole('button', {name: /Squat .* Added/i});
+      await expect(addedExerciseRow).toBeVisible();
+      await expect(addedExerciseRow.getByLabel(/Remove exercise block \d+/)).toBeVisible();
     });
 
     test('remove button is visible for isAdded exercises and removes the exercise on click', async ({page}) => {
@@ -564,8 +566,8 @@ test.describe('Workout page', () => {
       await page.getByRole('dialog', {name: 'Add Exercise'}).getByRole('button', {name: 'Squat'}).click();
       await page.getByRole('button', {name: 'Add'}).click();
 
-      // The added exercise should now appear with a remove button
-      const addedExerciseRow = page.getByRole('button', {name: /Leg Press/i});
+      // Wait for list update and scope to the newly added row
+      const addedExerciseRow = page.getByRole('button', {name: /Leg Press .* Added/i});
       await expect(addedExerciseRow).toBeVisible();
       await expect(addedExerciseRow.getByLabel('Remove exercise block 1')).toBeVisible();
 
