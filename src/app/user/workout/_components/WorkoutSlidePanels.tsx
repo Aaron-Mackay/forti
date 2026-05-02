@@ -33,6 +33,8 @@ type Props = {
   panelSx?: SxProps<Theme>;
 };
 
+const toSxArray = (sx?: SxProps<Theme>) => (Array.isArray(sx) ? sx : sx ? [sx] : []);
+
 export default function WorkoutSlidePanels({
   activePanel,
   onActivePanelChange,
@@ -76,7 +78,7 @@ export default function WorkoutSlidePanels({
               borderRadius: 999,
             },
           },
-          tabsSx,
+          ...toSxArray(tabsSx),
         ]}
         >
           {visiblePanels.map(panel => (
@@ -114,7 +116,7 @@ export default function WorkoutSlidePanels({
                 mt: 1,
                 mb: 1,
               },
-              panelSx,
+              ...toSxArray(panelSx),
             ]}
           >
             {activePanelConfig.render()}
