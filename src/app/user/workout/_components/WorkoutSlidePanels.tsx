@@ -132,12 +132,8 @@ export default function WorkoutSlidePanels({
             <Swiper
               initialSlide={panels.findIndex(p => p.value === activePanel)}
               onSwiper={(swiper) => { swiperRef.current = swiper; }}
-              onSlideChange={(swiper) => {
-                const newPanel = panels[swiper.activeIndex];
-                if (newPanel) onActivePanelChange(newPanel.value);
-              }}
-              touchReleaseOnEdges={true}
-              style={{width: '100%'}}
+              allowTouchMove={false}
+              style={{width: '100%', overflow: 'hidden'}}
             >
               {panels.map(panel => (
                 <SwiperSlide key={panel.value}>
