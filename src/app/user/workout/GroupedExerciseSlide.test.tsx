@@ -1,3 +1,4 @@
+import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import type {WorkoutExercisePrisma} from '@/types/dataTypes';
@@ -26,6 +27,11 @@ vi.mock('./E1rmSparkline', () => ({
     <div data-testid="e1rm-sparkline">{history && history.length > 0 ? 'sparkline' : 'none'}</div>
   ),
 }));
+vi.mock('swiper/react', () => ({
+  Swiper: ({children}: {children: React.ReactNode}) => <div>{children}</div>,
+  SwiperSlide: ({children}: {children: React.ReactNode}) => <div>{children}</div>,
+}));
+vi.mock('swiper/css', () => ({}));
 
 function buildExercise(id: number): WorkoutExercisePrisma {
   return {
@@ -110,11 +116,9 @@ describe('GroupedExerciseSlide', () => {
 
     fireEvent.click(screen.getByRole('tab', {name: /notes/i}));
     expect(screen.getByPlaceholderText(/add form cues and notes for this exercise/i)).toBeInTheDocument();
-    expect(screen.queryByTestId('e1rm-sparkline')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('tab', {name: /progress/i}));
     expect(screen.getByTestId('e1rm-sparkline')).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText(/add form cues and notes for this exercise/i)).not.toBeVisible();
 
     fireEvent.click(screen.getByRole('tab', {name: /progress/i}));
     expect(screen.queryByTestId('e1rm-sparkline')).not.toBeVisible();

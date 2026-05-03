@@ -1,6 +1,6 @@
 'use client';
 
-import type {ReactNode} from 'react';
+import {useRef, useEffect, type ReactNode} from 'react';
 import {Box, Tab, Tabs, Tooltip} from '@mui/material';
 import type {SxProps, Theme} from '@mui/material/styles';
 import {AnimatePresence, motion} from 'framer-motion';
@@ -9,6 +9,9 @@ import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
 import HistoryIcon from '@mui/icons-material/History';
+import {Swiper, SwiperSlide} from 'swiper/react';
+import {type Swiper as SwiperType} from 'swiper/types';
+import 'swiper/css';
 
 export type WorkoutSlidePanelKey = 'notes' | 'e1rm' | 'muscles' | 'history';
 
@@ -42,8 +45,15 @@ export default function WorkoutSlidePanels({
   tabsSx,
   panelSx,
 }: Props) {
-  const visiblePanels = panels;
-  const activePanelConfig = activePanel ? visiblePanels.find(panel => panel.value === activePanel) : null;
+  const swiperRef = useRef<SwiperType | null>(null);
+
+  useEffect(() => {
+    if (!swiperRef.current || activePanel === null) return;
+    const idx = panels.findIndex(p => p.value === activePanel);
+    if (idx !== -1 && swiperRef.current.activeIndex !== idx) {
+      swiperRef.current.slideTo(idx, 300);
+    }
+  }, [activePanel, panels]);
 
   const panelIcon = (panel: WorkoutSlidePanel) => (
     <Tooltip title={panel.label} arrow>
@@ -81,7 +91,7 @@ export default function WorkoutSlidePanels({
           ...toSxArray(tabsSx),
         ]}
         >
-          {visiblePanels.map(panel => (
+          {panels.map(panel => (
             <Tab
               key={panel.value}
               value={panel.value}
@@ -98,9 +108,9 @@ export default function WorkoutSlidePanels({
         </Tabs>
 
       <AnimatePresence initial={false}>
-        {activePanelConfig && (
+        {activePanel !== null && (
           <Box
-            key={activePanelConfig.value}
+            key="slide-panel-swiper"
             component={motion.div}
             initial={{height: 0, opacity: 0}}
             animate={{height: 'auto', opacity: 1}}
@@ -119,7 +129,22 @@ export default function WorkoutSlidePanels({
               ...toSxArray(panelSx),
             ]}
           >
-            {activePanelConfig.render()}
+            <Swiper
+              initialSlide={panels.findIndex(p => p.value === activePanel)}
+              onSwiper={(swiper) => { swiperRef.current = swiper; }}
+              onSlideChange={(swiper) => {
+                const newPanel = panels[swiper.activeIndex];
+                if (newPanel) onActivePanelChange(newPanel.value);
+              }}
+              touchReleaseOnEdges={true}
+              style={{width: '100%'}}
+            >
+              {panels.map(panel => (
+                <SwiperSlide key={panel.value}>
+                  {panel.render()}
+                </SwiperSlide>
+              ))}
+            </Swiper>
           </Box>
         )}
       </AnimatePresence>

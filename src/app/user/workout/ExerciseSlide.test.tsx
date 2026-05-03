@@ -1,3 +1,4 @@
+import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import type {WorkoutExercisePrisma} from '@/types/dataTypes';
@@ -24,6 +25,11 @@ vi.mock('./E1rmSparkline', () => ({
   ),
 }));
 vi.mock('./PlateCalculatorSheet', () => ({default: () => null}));
+vi.mock('swiper/react', () => ({
+  Swiper: ({children}: {children: React.ReactNode}) => <div>{children}</div>,
+  SwiperSlide: ({children}: {children: React.ReactNode}) => <div>{children}</div>,
+}));
+vi.mock('swiper/css', () => ({}));
 vi.mock('./WeightInput', () => ({
   default: ({label, unit, ariaLabel, visibleLabel = true}: {label?: string; unit: 'kg' | 'lb' | 'none'; ariaLabel?: string; visibleLabel?: boolean}) => (
     <div aria-label={ariaLabel ?? label ?? (unit === 'none' ? 'Weight' : unit)} data-testid="weight-input">
@@ -165,13 +171,11 @@ describe('ExerciseSlide', () => {
 
     fireEvent.click(screen.getByRole('tab', {name: /notes/i}));
     expect(screen.getByPlaceholderText(/add form cues and notes for this exercise/i)).toBeInTheDocument();
-    expect(screen.queryByTestId('e1rm-sparkline')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('tab', {name: /progress/i}));
     await waitFor(() => {
       expect(screen.getByTestId('e1rm-sparkline')).toBeVisible();
     });
-    expect(screen.queryByPlaceholderText(/add form cues and notes for this exercise/i)).not.toBeInTheDocument();
   });
 
   it('shows the muscles panel with a width-driven aspect ratio wrapper', async () => {

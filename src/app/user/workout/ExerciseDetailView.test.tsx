@@ -152,7 +152,7 @@ describe('ExerciseDetailView', () => {
     });
   });
 
-  it('displays previous workout data when cache contains results', async () => {
+  it('displays previous workout data when cache contains results', () => {
     renderView({
       ...defaultProps,
       previousSetsMap: new Map([[10, {
@@ -176,11 +176,7 @@ describe('ExerciseDetailView', () => {
       }]]),
     });
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', {name: /previous workouts/i})).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole('button', {name: /previous workouts/i}));
+    fireEvent.click(screen.getByRole('tab', {name: /history/i}));
 
     expect(screen.getByLabelText('Previous workout table 1')).toBeInTheDocument();
     expect(screen.getByText(/Jan.*14.*2026/)).toBeInTheDocument();
@@ -188,7 +184,7 @@ describe('ExerciseDetailView', () => {
     expect(screen.getByText('106.7')).toBeInTheDocument();
   });
 
-  it('shows — for null previous weight or reps', async () => {
+  it('shows — for null previous weight or reps', () => {
     renderView({
       ...defaultProps,
       previousSetsMap: new Map([[10, {
@@ -202,10 +198,7 @@ describe('ExerciseDetailView', () => {
       }]]),
     });
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', {name: /previous workouts/i})).toBeInTheDocument();
-    });
-    screen.getByRole('button', {name: /previous workouts/i}).click();
+    fireEvent.click(screen.getByRole('tab', {name: /history/i}));
     expect(screen.getAllByText('—')).toHaveLength(3);
   });
 
@@ -222,6 +215,7 @@ describe('ExerciseDetailView', () => {
     const workout = buildWorkout();
     workout.exercises[0].exercise.primaryMuscles = ['sternal-pec', 'triceps'];
     renderView({...defaultProps, workout});
+    fireEvent.click(screen.getByRole('tab', {name: /muscles/i}));
     expect(screen.getByTestId('anatomy-100')).toBeInTheDocument();
   });
 
