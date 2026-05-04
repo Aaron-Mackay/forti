@@ -168,6 +168,17 @@ CRON_SECRET=
 4. Run highest-signal checks for affected scope.
 5. Ensure commit is atomic and passes pre-commit checks.
 
+## Efficiency Rules (Do Not Violate)
+
+### Trust the plan
+If a plan file exists at `.claude/plans/`, treat it as the specification. Do not re-explore files the plan already identified — go directly to them and implement. Re-read a file only if something genuinely unexpected forces a correction.
+
+### Exploration budget
+If you have run more than 5 grep/find/Bash search commands without making a single file edit, stop and start implementing. Additional searching at that point is a signal of anxiety, not necessity.
+
+### No speculative installs
+Never run `npm install` without first checking `package.json` to confirm the package is absent. A single Read is enough. If the package is already listed, do not reinstall it.
+
 ## Clarification-First Rule
 
 - If any requirement, acceptance criteria, plan step, or implementation detail is ambiguous, stop and ask clarifying questions before proceeding.
