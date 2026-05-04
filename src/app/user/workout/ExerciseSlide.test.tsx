@@ -25,11 +25,6 @@ vi.mock('./E1rmSparkline', () => ({
   ),
 }));
 vi.mock('./PlateCalculatorSheet', () => ({default: () => null}));
-vi.mock('swiper/react', () => ({
-  Swiper: ({children}: {children: React.ReactNode}) => <div>{children}</div>,
-  SwiperSlide: ({children}: {children: React.ReactNode}) => <div>{children}</div>,
-}));
-vi.mock('swiper/css', () => ({}));
 vi.mock('./WeightInput', () => ({
   default: ({label, unit, ariaLabel, visibleLabel = true}: {label?: string; unit: 'kg' | 'lb' | 'none'; ariaLabel?: string; visibleLabel?: boolean}) => (
     <div aria-label={ariaLabel ?? label ?? (unit === 'none' ? 'Weight' : unit)} data-testid="weight-input">

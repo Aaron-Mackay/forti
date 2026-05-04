@@ -27,12 +27,6 @@ vi.mock('./E1rmSparkline', () => ({
     <div data-testid="e1rm-sparkline">{history && history.length > 0 ? 'sparkline' : 'none'}</div>
   ),
 }));
-vi.mock('swiper/react', () => ({
-  Swiper: ({children}: {children: React.ReactNode}) => <div>{children}</div>,
-  SwiperSlide: ({children}: {children: React.ReactNode}) => <div>{children}</div>,
-}));
-vi.mock('swiper/css', () => ({}));
-
 function buildExercise(id: number): WorkoutExercisePrisma {
   return {
     id,
