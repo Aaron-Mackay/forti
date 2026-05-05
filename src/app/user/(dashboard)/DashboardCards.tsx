@@ -16,7 +16,8 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import UpcomingIcon from "@mui/icons-material/Upcoming";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import Link from "next/link";
-import {MetricPrisma, EventPrisma, UserPrisma} from "@/types/dataTypes";
+import {MetricPrisma, EventPrisma} from "@/types/dataTypes";
+import type {ActivePlanWithStats} from "@lib/userService";
 import {Settings} from "@/types/settingsTypes";
 import {EventType} from "@/generated/prisma/browser";
 import {convertDateToDateString} from "@lib/dateUtils";
@@ -26,10 +27,7 @@ import MetricDrawer from "@/app/user/(dashboard)/MetricDrawer";
 import WelcomeModal from "@/app/user/(dashboard)/WelcomeModal";
 import GettingStartedCard from "@/app/user/(dashboard)/GettingStartedCard";
 
-function findNextWorkout(userData: UserPrisma | null) {
-  if (!userData) return null;
-
-  const activePlan = userData.plans.find((plan) => plan.id === userData.activePlanId);
+function findNextWorkout(activePlan: ActivePlanWithStats['activePlan']) {
   if (!activePlan) return null;
 
   for (const week of activePlan.weeks) {
@@ -48,27 +46,6 @@ function getTodayMetric(dayMetrics: MetricPrisma[], today: Date) {
   return dayMetrics.find(
     dm => convertDateToDateString(new Date(dm.date)) === todayStr
   ) ?? null;
-}
-
-function getWeeklyTrainingCount(userData: UserPrisma | null, today: Date): number {
-  if (!userData) return 0;
-  const dayOfWeek = today.getDay();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-  monday.setHours(0, 0, 0, 0);
-
-  let count = 0;
-  for (const plan of userData.plans) {
-    for (const week of plan.weeks) {
-      for (const workout of week.workouts) {
-        if (workout.dateCompleted) {
-          const completed = new Date(workout.dateCompleted);
-          if (completed >= monday && completed <= today) count++;
-        }
-      }
-    }
-  }
-  return count;
 }
 
 function getActiveBlock(events: EventPrisma[], today: Date) {
@@ -105,7 +82,7 @@ function daysRemaining(endDate: Date, today: Date): number {
 }
 
 interface DashboardCardsProps {
-  userData: UserPrisma | null;
+  activePlanData: ActivePlanWithStats | null;
   metrics: MetricPrisma[];
   events: EventPrisma[];
   today: Date;
@@ -113,15 +90,15 @@ interface DashboardCardsProps {
   settings: Settings;
 }
 
-export default function DashboardCards({userData, metrics, events, today, userId, settings}: DashboardCardsProps) {
-  const nextWorkout = findNextWorkout(userData);
+export default function DashboardCards({activePlanData, metrics, events, today, userId, settings}: DashboardCardsProps) {
+  const nextWorkout = findNextWorkout(activePlanData?.activePlan ?? null);
   const [todayMetricState, setTodayMetricState] = useState<MetricPrisma | null>(
     getTodayMetric(metrics, today)
   );
   const [selectedMetric, setSelectedMetric] = useState<MetricKey | null>(null);
   const [inputValue, setInputValue] = useState<string | number | null>(null);
 
-  const weeklyCount = getWeeklyTrainingCount(userData, today);
+  const weeklyCount = activePlanData?.weeklyTrainingCount ?? 0;
   const activeBlock = getActiveBlock(events, today);
   const upcomingEvents = getUpcomingEvents(events, today);
 
@@ -132,7 +109,7 @@ export default function DashboardCards({userData, metrics, events, today, userId
   return (
     <>
       <WelcomeModal />
-      <GettingStartedCard userData={userData} metrics={metrics} today={today} />
+      <GettingStartedCard activePlanData={activePlanData} metrics={metrics} today={today} />
       <Grid container spacing={2} sx={{mb: 2}}>
 
         {/* Next Workout */}

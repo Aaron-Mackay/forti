@@ -3,7 +3,31 @@ import prisma from '@lib/prisma';
 import { requireSession } from '@lib/requireSession';
 import { errorResponse, forbiddenResponse, notFoundResponse, validationErrorResponse } from '@lib/apiResponses';
 import { withRouteAuth } from '@lib/routeAuth';
-import { ActivePlanRequestSchema, type ActivePlanSuccess } from '@lib/contracts/activePlan';
+import { ActivePlanRequestSchema, type ActivePlanGetResponse, type ActivePlanSuccess } from '@lib/contracts/activePlan';
+import { getActivePlanWithStats } from '@lib/userService';
+
+export const GET = withRouteAuth(async function GET(req: NextRequest) {
+  const session = await requireSession();
+  const sessionUserId = session.user.id;
+
+  const { searchParams } = new URL(req.url);
+  const targetUserId = searchParams.get('targetUserId') ?? sessionUserId;
+
+  if (targetUserId !== sessionUserId) {
+    const targetUser = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { coachId: true },
+    });
+    if (!targetUser || targetUser.coachId !== sessionUserId) {
+      return forbiddenResponse();
+    }
+  }
+
+  const data = await getActivePlanWithStats(targetUserId);
+  if (!data) return notFoundResponse('User');
+
+  return NextResponse.json(data satisfies ActivePlanGetResponse);
+});
 
 export const PATCH = withRouteAuth(async function PATCH(req: NextRequest) {
   const session = await requireSession();

@@ -4,7 +4,7 @@ import prisma from '@lib/prisma';
 import AppBarTitle from '@/components/shell/AppBarTitle';
 import { getUserEvents } from '@lib/eventService';
 import { getUserMetrics } from '@lib/metricService';
-import { getUserData } from '@lib/userService';
+import { getActivePlanWithStats } from '@lib/userService';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import DashboardCards from '@/app/user/(dashboard)/DashboardCards';
 import DashboardChart from '@/app/user/(dashboard)/DashboardChart';
@@ -31,8 +31,8 @@ const ClientOverviewPage = async ({ params }: Props) => {
     notFound();
   }
 
-  const [userData, metrics, events] = await Promise.all([
-    getUserData(clientId),
+  const [activePlanData, metrics, events] = await Promise.all([
+    getActivePlanWithStats(clientId),
     getUserMetrics(clientId),
     getUserEvents(clientId),
   ]);
@@ -47,7 +47,7 @@ const ClientOverviewPage = async ({ params }: Props) => {
       <Paper sx={{ px: 2, pt: 2, minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
         <ClientQuickLinks clientId={clientId} />
         <DashboardCards
-          userData={userData}
+          activePlanData={activePlanData}
           metrics={metrics}
           events={events}
           today={new Date()}

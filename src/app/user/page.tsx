@@ -8,7 +8,7 @@ import DashboardCards from "@/app/user/(dashboard)/DashboardCards";
 import E1rmProgressCard from "@/app/user/(dashboard)/E1rmProgressCard";
 import {getUserEvents} from "@lib/eventService";
 import {getUserMetrics} from "@lib/metricService";
-import {getUserData} from "@lib/userService";
+import {getActivePlanWithStats} from "@lib/userService";
 import {Event as PrismaEvent, EventType} from "@/generated/prisma/browser";
 import prisma from "@lib/prisma";
 import {parseDashboardSettings} from "@/types/settingsTypes";
@@ -16,10 +16,10 @@ import {redirect} from "next/navigation";
 
 export default async function UserPage() {
   const user = await getLoggedInUser()
-  const [userMetrics, allEvents, userData, userRecord] = await Promise.all([
+  const [userMetrics, allEvents, activePlanData, userRecord] = await Promise.all([
     getUserMetrics(user.id),
     getUserEvents(user.id),
-    getUserData(user.id),
+    getActivePlanWithStats(user.id),
     prisma.user.findUnique({ where: { id: user.id }, select: { settings: true } }),
   ])
   const userBlocks = allEvents.filter((ev: PrismaEvent) => ev.eventType === EventType.BlockEvent)
@@ -37,7 +37,7 @@ export default async function UserPage() {
           {`Welcome ${user.name?.split(' ')[0]}`}
         </Typography>
         <DashboardCards
-          userData={userData}
+          activePlanData={activePlanData}
           metrics={userMetrics}
           events={allEvents}
           today={new Date()}

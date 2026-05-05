@@ -21,16 +21,17 @@ import Link from 'next/link';
 import { useSettings } from '@lib/providers/SettingsProvider';
 import { useApiGet } from '@lib/hooks/api/useApiGet';
 import type { CheckInHistoryResponse } from '@lib/contracts/checkIn';
-import { MetricPrisma, PlanPrisma, WeekPrisma, WorkoutPrisma, UserPrisma } from '@/types/dataTypes';
+import { MetricPrisma } from '@/types/dataTypes';
+import type { ActivePlanWithStats } from '@lib/userService';
 import { convertDateToDateString } from '@lib/dateUtils';
 
 interface Props {
-  userData: UserPrisma | null;
+  activePlanData: ActivePlanWithStats | null;
   metrics: MetricPrisma[];
   today: Date;
 }
 
-export default function GettingStartedCard({ userData, metrics, today }: Props) {
+export default function GettingStartedCard({ activePlanData, metrics, today }: Props) {
   const { settings, loading, updateSetting } = useSettings();
 
   // Only fetch check-in data while the card is visible
@@ -43,7 +44,7 @@ export default function GettingStartedCard({ userData, metrics, today }: Props) 
   const steps = [
     {
       label: 'Create your first plan',
-      done: (userData?.plans.length ?? 0) > 0,
+      done: activePlanData?.hasAnyPlan ?? false,
       href: '/user/plan/create',
     },
     {
@@ -58,9 +59,7 @@ export default function GettingStartedCard({ userData, metrics, today }: Props) 
     },
     {
       label: 'Do your first workout',
-      done: userData?.plans.some((p: PlanPrisma) =>
-        p.weeks.some((w: WeekPrisma) => w.workouts.some((wo: WorkoutPrisma) => wo.dateCompleted !== null))
-      ) ?? false,
+      done: activePlanData?.hasAnyCompletedWorkout ?? false,
       href: '/user/workout',
     },
   ];
