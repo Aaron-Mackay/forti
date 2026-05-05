@@ -3,8 +3,9 @@ import {NextRequest, NextResponse} from 'next/server';
 import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from "@lib/apiError";
 import {getWorkoutExerciseWithOwner} from "@lib/queries";
-import {errorResponse, forbiddenResponse, notFoundResponse} from "@lib/apiResponses";
+import {errorResponse, forbiddenResponse, notFoundResponse, validationErrorResponse} from "@lib/apiResponses";
 import { getCoachFromUser } from '@lib/coachService';
+import { WorkoutExerciseUpdateRequestSchema } from '@lib/contracts/workoutExercise';
 
 export async function DELETE(_req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
   const params = await props.params;
@@ -32,23 +33,15 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ worko
 export async function PATCH(req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
   const params = await props.params;
   const session = await requireSession();
-  const body = await req.json();
+
+  const json = await req.json().catch(() => null);
+  if (json == null) return errorResponse('Invalid JSON body', 400);
+
+  const parsed = WorkoutExerciseUpdateRequestSchema.safeParse(json);
+  if (!parsed.success) return validationErrorResponse(parsed.error);
+
+  const body = parsed.data;
   const {notes, cardioDuration, cardioDistance, cardioResistance, exerciseId, targetRpe, targetRir, isBfr, requiresRecording} = body;
-
-  if ('notes' in body && typeof notes !== 'string') {
-    return errorResponse('notes must be a string', 400);
-  }
-
-  if ('isBfr' in body && typeof isBfr !== 'boolean') {
-    return errorResponse('isBfr must be a boolean', 400);
-  }
-  if ('requiresRecording' in body && typeof requiresRecording !== 'boolean') {
-    return errorResponse('requiresRecording must be a boolean', 400);
-  }
-
-  if ('exerciseId' in body && typeof exerciseId !== 'number') {
-    return errorResponse('exerciseId must be a number', 400);
-  }
 
   try {
     const workoutExerciseId = Number(params.workoutExerciseId);
@@ -59,7 +52,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
     if (workoutExercise.workout.week.plan.userId !== session.user.id) {
       return forbiddenResponse();
     }
-    if ('requiresRecording' in body) {
+    if (requiresRecording !== undefined) {
       const assignedCoach = await getCoachFromUser(workoutExercise.workout.week.plan.userId);
       if (assignedCoach?.coachId !== session.user.id) {
         return forbiddenResponse();
@@ -79,23 +72,23 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
       requiresRecording?: boolean;
     } = {};
 
-    if ('notes' in body) updateData.notes = notes;
-    if ('cardioDuration' in body) updateData.cardioDuration = cardioDuration ?? null;
-    if ('cardioDistance' in body) updateData.cardioDistance = cardioDistance ?? null;
-    if ('cardioResistance' in body) updateData.cardioResistance = cardioResistance ?? null;
-    if ('targetRpe' in body) {
+    if (notes !== undefined) updateData.notes = notes;
+    if (cardioDuration !== undefined) updateData.cardioDuration = cardioDuration ?? null;
+    if (cardioDistance !== undefined) updateData.cardioDistance = cardioDistance ?? null;
+    if (cardioResistance !== undefined) updateData.cardioResistance = cardioResistance ?? null;
+    if (targetRpe !== undefined) {
       updateData.targetRpe = typeof targetRpe === 'number' ? targetRpe : null;
       if (updateData.targetRpe !== null) updateData.targetRir = null; // mutually exclusive
     }
-    if ('targetRir' in body) {
+    if (targetRir !== undefined) {
       updateData.targetRir = typeof targetRir === 'number' ? targetRir : null;
       if (updateData.targetRir !== null) updateData.targetRpe = null; // mutually exclusive
     }
 
-    if ('isBfr' in body) updateData.isBfr = isBfr;
-    if ('requiresRecording' in body) updateData.requiresRecording = requiresRecording;
+    if (isBfr !== undefined) updateData.isBfr = isBfr;
+    if (requiresRecording !== undefined) updateData.requiresRecording = requiresRecording;
 
-    if ('exerciseId' in body && exerciseId !== workoutExercise.exerciseId) {
+    if (exerciseId !== undefined && exerciseId !== workoutExercise.exerciseId) {
       const exercise = await prisma.exercise.findUnique({where: {id: exerciseId}});
       if (!exercise) return notFoundResponse('Exercise');
       updateData.exerciseId = exerciseId;

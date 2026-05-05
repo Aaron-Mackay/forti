@@ -5,7 +5,8 @@ import prisma from '@lib/prisma';
 import { getCoachTemplate, saveCoachTemplate, deleteCoachTemplate } from '@lib/checkInTemplate';
 import { validateTemplate } from '@/types/checkInTemplateTypes';
 import type { CheckInTemplate } from '@/types/checkInTemplateTypes';
-import { errorResponse } from '@lib/apiResponses';
+import { errorResponse, validationErrorResponse } from '@lib/apiResponses';
+import { CheckInTemplateUpdateRequestSchema } from '@lib/contracts/checkIn';
 
 async function requireCoachMode(userId: string): Promise<boolean> {
   const user = await prisma.user.findUnique({
@@ -37,18 +38,22 @@ export async function PUT(req: NextRequest) {
     return errorResponse('Coach mode is not active', 403);
   }
 
-  const body = await req.json() as { template: CheckInTemplate };
-  if (!body.template || typeof body.template !== 'object') {
-    return errorResponse('template is required', 400);
-  }
+  const json = await req.json().catch(() => null);
+  if (json == null) return errorResponse('Invalid JSON body', 400);
 
-  const validationError = validateTemplate(body.template);
+  const parsed = CheckInTemplateUpdateRequestSchema.safeParse(json);
+  if (!parsed.success) return validationErrorResponse(parsed.error);
+
+  // Inner template shape is validated by validateTemplate() — the contract
+  // schema only enforces that `template` is an object.
+  const template = parsed.data.template as unknown as CheckInTemplate;
+  const validationError = validateTemplate(template);
   if (validationError) {
     return errorResponse(validationError, 400);
   }
 
-  await saveCoachTemplate(userId, body.template);
-  return NextResponse.json({ template: body.template });
+  await saveCoachTemplate(userId, template);
+  return NextResponse.json({ template });
 }
 
 /** DELETE /api/coach/check-in-template — remove the template; clients revert to the default form */

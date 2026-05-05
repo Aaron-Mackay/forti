@@ -2,33 +2,33 @@ import prisma from '@/lib/prisma';
 import {NextRequest, NextResponse} from 'next/server';
 import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from "@lib/apiError";
-import { forbiddenResponse } from '@lib/apiResponses';
+import { errorResponse, forbiddenResponse, notFoundResponse, validationErrorResponse } from '@lib/apiResponses';
 import { normalizeRepRange } from '@/lib/repRange';
 import { getCoachFromUser } from '@lib/coachService';
+import { WorkoutExerciseCreateRequestSchema } from '@lib/contracts/workoutExercise';
 
 export async function POST(req: NextRequest) {
   const session = await requireSession();
-  const body = await req.json();
-  const {workoutId, exerciseId, order, repRange, restTime, setCount, requiresRecording} = body;
 
-  if (typeof workoutId !== 'number' || typeof exerciseId !== 'number' || typeof order !== 'number') {
-    return NextResponse.json({error: 'workoutId, exerciseId and order must be numbers'}, {status: 400});
-  }
+  const json = await req.json().catch(() => null);
+  if (json == null) return errorResponse('Invalid JSON body', 400);
 
-  const resolvedRepRangeRaw: string = typeof repRange === 'string' ? repRange : '8-12';
-  const resolvedRepRange = normalizeRepRange(resolvedRepRangeRaw);
+  const parsed = WorkoutExerciseCreateRequestSchema.safeParse(json);
+  if (!parsed.success) return validationErrorResponse(parsed.error);
+
+  const { workoutId, exerciseId, order, repRange, restTime, setCount, requiresRecording } = parsed.data;
+  const requiresRecordingProvided = requiresRecording !== undefined;
+
+  const resolvedRepRange = normalizeRepRange(repRange ?? '8-12');
   if (!resolvedRepRange) {
-    return NextResponse.json(
-      {error: 'Invalid repRange format. Use exact ("10"), range ("5-10"), plus ("5+"), or "AMRAP".'},
-      {status: 400},
+    return errorResponse(
+      'Invalid repRange format. Use exact ("10"), range ("5-10"), plus ("5+"), or "AMRAP".',
+      400,
     );
   }
 
   const resolvedRestTime: string = typeof restTime === 'string' ? restTime.trim() : '90';
-  const resolvedSetCount: number = typeof setCount === 'number' ? Math.min(10, Math.max(1, setCount)) : 3;
-  if ('requiresRecording' in body && typeof requiresRecording !== 'boolean') {
-    return NextResponse.json({error: 'requiresRecording must be a boolean'}, {status: 400});
-  }
+  const resolvedSetCount: number = setCount ?? 3;
 
   try {
     const workout = await prisma.workout.findUnique({
@@ -36,15 +36,13 @@ export async function POST(req: NextRequest) {
       include: {week: {include: {plan: true}}},
     });
 
-    if (!workout) {
-      return NextResponse.json({error: 'Workout not found'}, {status: 404});
-    }
+    if (!workout) return notFoundResponse('Workout');
 
     if (workout.week.plan.userId !== session.user.id) {
       return forbiddenResponse();
     }
 
-    if ('requiresRecording' in body) {
+    if (requiresRecordingProvided) {
       const assignedCoach = await getCoachFromUser(workout.week.plan.userId);
       if (assignedCoach?.coachId !== session.user.id) {
         return forbiddenResponse();
@@ -52,9 +50,7 @@ export async function POST(req: NextRequest) {
     }
 
     const exercise = await prisma.exercise.findUnique({where: {id: exerciseId}});
-    if (!exercise) {
-      return NextResponse.json({error: 'Exercise not found'}, {status: 404});
-    }
+    if (!exercise) return notFoundResponse('Exercise');
 
     const workoutExercise = await prisma.workoutExercise.create({
       data: {
@@ -78,6 +74,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(workoutExercise, {status: 201});
   } catch (err: unknown) {
     console.error(err);
-    return NextResponse.json({error: extractErrorMessage(err)}, {status: 500});
+    return errorResponse(extractErrorMessage(err), 500);
   }
 }

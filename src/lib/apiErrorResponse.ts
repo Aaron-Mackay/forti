@@ -34,8 +34,11 @@ export function unauthenticatedResponse(): NextResponse<ApiErrorEnvelope> {
   return apiErrorResponse(API_AUTH_ERROR.UNAUTHENTICATED.code, API_AUTH_ERROR.UNAUTHENTICATED.message);
 }
 
-export function forbiddenResponse(): NextResponse<ApiErrorEnvelope> {
-  return apiErrorResponse(API_AUTH_ERROR.FORBIDDEN.code, API_AUTH_ERROR.FORBIDDEN.message);
+export function forbiddenResponse(message?: string): NextResponse<ApiErrorEnvelope> {
+  return apiErrorResponse(
+    API_AUTH_ERROR.FORBIDDEN.code,
+    message ?? API_AUTH_ERROR.FORBIDDEN.message,
+  );
 }
 
 export function validationErrorResponse(error: ZodError): NextResponse<ApiErrorEnvelope> {

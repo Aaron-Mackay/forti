@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import { getCoachCheckInById } from '@lib/coachCheckIns';
+import { errorResponse, forbiddenResponse, notFoundResponse } from '@lib/apiResponses';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -11,17 +12,11 @@ export async function GET(_req: Request, { params }: Props) {
   const { id } = await params;
   const checkInId = Number(id);
 
-  if (Number.isNaN(checkInId)) {
-    return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
-  }
+  if (Number.isNaN(checkInId)) return errorResponse('Invalid id', 400);
 
   const result = await getCoachCheckInById(session.user.id, checkInId);
-  if (result.status === 'forbidden') {
-    return NextResponse.json({ error: 'Coach mode is not active' }, { status: 403 });
-  }
-  if (result.status === 'not_found') {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  }
+  if (result.status === 'forbidden') return forbiddenResponse('Coach mode is not active');
+  if (result.status === 'not_found') return notFoundResponse('Check-in');
 
   return NextResponse.json({
     checkIn: result.checkIn,

@@ -6,6 +6,14 @@ const NullableRatingSchema = z.number().int().min(1).max(5).nullable();
 const JsonValueSchema = z.custom<Prisma.JsonValue>((value) => value !== undefined);
 const CheckInTemplateSchema = z.custom<CheckInTemplate>((value) => value !== undefined);
 
+// PUT /api/coach/check-in-template — wraps a CheckInTemplate object whose
+// detailed shape is validated separately by validateTemplate() in
+// @/types/checkInTemplateTypes.
+export const CheckInTemplateUpdateRequestSchema = z.object({
+  template: z.record(z.string(), z.unknown()),
+});
+export type CheckInTemplateUpdateRequest = z.infer<typeof CheckInTemplateUpdateRequestSchema>;
+
 export const CheckInPhotoUrlsSchema = z.object({
   frontPhotoUrl: z.string().nullable(),
   backPhotoUrl: z.string().nullable(),

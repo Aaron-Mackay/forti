@@ -96,7 +96,9 @@ describe('PATCH /api/sets/[setId]', () => {
     const res = await PATCH(req, props);
 
     expect(res.status).toBe(400);
-    await expect(res.json()).resolves.toEqual({error: 'reps must be a number or null'});
+    const body = await res.json();
+    expect(body).toMatchObject({code: 'BAD_REQUEST'});
+    expect(body.details?.fieldErrors?.reps).toBeDefined();
     expect(mockGetSetWithOwner).not.toHaveBeenCalled();
     expect(mockUpdate).not.toHaveBeenCalled();
   });
@@ -106,7 +108,9 @@ describe('PATCH /api/sets/[setId]', () => {
     const res = await PATCH(req, props);
 
     expect(res.status).toBe(400);
-    await expect(res.json()).resolves.toEqual({error: 'weight must be a number or null'});
+    const body = await res.json();
+    expect(body).toMatchObject({code: 'BAD_REQUEST'});
+    expect(body.details?.fieldErrors?.weight).toBeDefined();
     expect(mockGetSetWithOwner).not.toHaveBeenCalled();
     expect(mockUpdate).not.toHaveBeenCalled();
   });

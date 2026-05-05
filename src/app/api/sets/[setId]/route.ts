@@ -4,8 +4,9 @@ import {requireSession} from "@lib/requireSession";
 import {extractErrorMessage} from "@lib/apiError";
 import {computeE1rm} from "@lib/e1rm";
 import {getSetWithOwner} from "@lib/queries";
-import {errorResponse, forbiddenResponse, notFoundResponse} from "@lib/apiResponses";
+import {errorResponse, forbiddenResponse, notFoundResponse, validationErrorResponse} from "@lib/apiResponses";
 import { touchPlanActivity } from '@lib/planActivity';
+import { SetUpdateRequestSchema } from "@lib/contracts/sets";
 
 export async function DELETE(_req: NextRequest, props: { params: Promise<{ setId: string }> }) {
   const params = await props.params;
@@ -31,32 +32,19 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ setId
 export async function PATCH(req: NextRequest, props: { params: Promise<{ setId: string }> }) {
   const params = await props.params;
   const session = await requireSession();
-  const {reps, weight, rpe, rir} = await req.json();
-  const data: { [p: string]: number | null } = {};
 
-  const isNumberOrNull = (value: unknown) => value === null || typeof value === 'number';
+  const json = await req.json().catch(() => null);
+  if (json == null) return errorResponse('Invalid JSON body', 400);
 
-  if (reps !== undefined && !isNumberOrNull(reps)) {
-    return NextResponse.json({error: 'reps must be a number or null'}, {status: 400});
-  }
-  if (weight !== undefined && !isNumberOrNull(weight)) {
-    return NextResponse.json({error: 'weight must be a number or null'}, {status: 400});
-  }
-  if (rpe !== undefined && !isNumberOrNull(rpe)) {
-    return NextResponse.json({error: 'rpe must be a number or null'}, {status: 400});
-  }
-  if (rir !== undefined && !isNumberOrNull(rir)) {
-    return NextResponse.json({error: 'rir must be a number or null'}, {status: 400});
-  }
+  const parsed = SetUpdateRequestSchema.safeParse(json);
+  if (!parsed.success) return validationErrorResponse(parsed.error);
 
+  const data: { reps?: number | null; weight?: number | null; rpe?: number | null; rir?: number | null; e1rm?: number | null } = {};
+  const { reps, weight, rpe, rir } = parsed.data;
   if (reps !== undefined) data.reps = reps;
   if (weight !== undefined) data.weight = weight;
   if (rpe !== undefined) data.rpe = rpe;
   if (rir !== undefined) data.rir = rir;
-
-  if (!Object.keys(data).length) {
-    return NextResponse.json({error: 'No valid fields provided'}, {status: 400});
-  }
 
   try {
     const setId = Number(params.setId);
@@ -67,13 +55,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ setId: 
       return forbiddenResponse();
     }
 
-    // Merge incoming values with existing to compute e1rm even when only one field changes
-    const mergedWeight = reps !== undefined || weight !== undefined
-      ? (data.weight !== undefined ? data.weight : set.weight)
-      : set.weight;
-    const mergedReps = reps !== undefined || weight !== undefined
-      ? (data.reps !== undefined ? data.reps : set.reps)
-      : set.reps;
+    const mergedWeight = data.weight !== undefined ? data.weight : set.weight;
+    const mergedReps = data.reps !== undefined ? data.reps : set.reps;
     data.e1rm = computeE1rm(mergedWeight, mergedReps);
 
     const updated = await prisma.exerciseSet.update({

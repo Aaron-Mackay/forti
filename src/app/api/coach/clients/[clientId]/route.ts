@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
-import { forbiddenResponse } from '@lib/apiResponses';
+import { forbiddenResponse, notFoundResponse } from '@lib/apiResponses';
 
 export async function DELETE(
   _req: NextRequest,
@@ -17,9 +17,7 @@ export async function DELETE(
     select: { coachId: true },
   });
 
-  if (!client) {
-    return NextResponse.json({ error: 'Client not found' }, { status: 404 });
-  }
+  if (!client) return notFoundResponse('Client');
   if (client.coachId !== userId) {
     return forbiddenResponse();
   }
