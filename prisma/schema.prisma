@@ -284,6 +284,7 @@ model Exercise {
 
   @@unique([name, category, createdByUserId], name: "name_category_user")
   @@index([createdByUserId])
+  @@index([createdByUserId, name])
 }
 
 model WorkoutExercise {
@@ -522,6 +523,7 @@ model Notification {
 
   @@index([userId, readAt])
   @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, type, readAt])
 }
 
 model LearningPlan {

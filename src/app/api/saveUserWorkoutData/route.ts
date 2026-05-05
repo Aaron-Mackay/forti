@@ -142,9 +142,10 @@ export async function POST(req: Request) {
               const idMap = new Map<number, number>();
               const regularSets = exercise.sets.filter(s => !s.isDropSet);
               const dropSets = exercise.sets.filter(s => s.isDropSet);
-              for (const set of regularSets) {
-                const created = await tx.exerciseSet.create({
-                  data: {
+
+              if (regularSets.length > 0) {
+                const created = await tx.exerciseSet.createManyAndReturn({
+                  data: regularSets.map((set) => ({
                     workoutExerciseId: createdExercise.id,
                     weight: set.weight ?? null,
                     reps: set.reps ?? null,
@@ -152,13 +153,17 @@ export async function POST(req: Request) {
                     isDropSet: false,
                     parentSetId: null,
                     e1rm: computeE1rm(set.weight, set.reps),
-                  },
+                  })),
                 });
-                if (set.id != null) idMap.set(set.id, created.id);
+                // createManyAndReturn preserves input order, so map by index.
+                regularSets.forEach((set, i) => {
+                  if (set.id != null) idMap.set(set.id, created[i].id);
+                });
               }
-              for (const set of dropSets) {
-                await tx.exerciseSet.create({
-                  data: {
+
+              if (dropSets.length > 0) {
+                await tx.exerciseSet.createMany({
+                  data: dropSets.map((set) => ({
                     workoutExerciseId: createdExercise.id,
                     weight: set.weight ?? null,
                     reps: set.reps ?? null,
@@ -166,7 +171,7 @@ export async function POST(req: Request) {
                     isDropSet: true,
                     parentSetId: set.parentSetId != null ? (idMap.get(set.parentSetId) ?? null) : null,
                     e1rm: computeE1rm(set.weight, set.reps),
-                  },
+                  })),
                 });
               }
             }
