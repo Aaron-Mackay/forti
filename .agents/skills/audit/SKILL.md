@@ -10,7 +10,7 @@ args:
 
 Run systematic quality checks and generate a comprehensive audit report with prioritized issues and actionable recommendations. Don't fix issues - document them for other commands to address.
 
-**First**: Use the frontend-design skill for design principles and anti-patterns.
+**First**: Load [frontend-design](../frontend-design/SKILL.md) and [shared prep](../frontend-design/reference/shared-prep.md) for design principles and anti-patterns.
 
 ## Diagnostic Scan
 

@@ -12,7 +12,7 @@ Reduce visual intensity in designs that are too bold, aggressive, or overstimula
 
 ## MANDATORY PREPARATION
 
-Use the frontend-design skill — it contains design principles, anti-patterns, and the **Context Gathering Protocol**. Follow the protocol before proceeding — if no design context exists yet, you MUST run teach-impeccable first.
+Load [shared prep](../frontend-design/reference/shared-prep.md) first. If no design context exists yet, run `teach-impeccable` before proceeding.
 
 ---
 

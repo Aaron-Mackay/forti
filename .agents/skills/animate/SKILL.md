@@ -12,7 +12,7 @@ Analyze a feature and strategically add animations and micro-interactions that e
 
 ## MANDATORY PREPARATION
 
-Use the frontend-design skill — it contains design principles, anti-patterns, and the **Context Gathering Protocol**. Follow the protocol before proceeding — if no design context exists yet, you MUST run teach-impeccable first. Additionally gather: performance constraints.
+Load [shared prep](../frontend-design/reference/shared-prep.md) first. If no design context exists yet, run `teach-impeccable` before proceeding. Additionally gather: performance constraints.
 
 ---
 
