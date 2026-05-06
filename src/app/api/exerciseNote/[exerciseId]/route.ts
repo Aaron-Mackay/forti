@@ -2,15 +2,20 @@ import prisma from '@/lib/prisma';
 import {NextRequest, NextResponse} from 'next/server';
 import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from "@lib/apiError";
+import {errorResponse, validationErrorResponse} from '@lib/apiResponses';
+import {ExerciseNoteUpdateRequestSchema} from '@lib/contracts/exerciseNote';
 
 export async function PUT(req: NextRequest, props: { params: Promise<{ exerciseId: string }> }) {
   const params = await props.params;
   const session = await requireSession();
-  const {note} = await req.json();
 
-  if (typeof note !== 'string') {
-    return NextResponse.json({error: 'note must be a string'}, {status: 400});
-  }
+  const json = await req.json().catch(() => null);
+  if (json == null) return errorResponse('Invalid JSON body', 400);
+
+  const parsed = ExerciseNoteUpdateRequestSchema.safeParse(json);
+  if (!parsed.success) return validationErrorResponse(parsed.error);
+
+  const { note } = parsed.data;
 
   try {
     const exerciseId = Number(params.exerciseId);
@@ -34,6 +39,6 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ exerciseI
     return NextResponse.json(updated);
   } catch (err: unknown) {
     console.error(err);
-    return NextResponse.json({error: extractErrorMessage(err)}, {status: 500});
+    return errorResponse(extractErrorMessage(err), 500);
   }
 }

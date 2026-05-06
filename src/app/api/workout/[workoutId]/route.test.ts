@@ -62,7 +62,7 @@ describe('PATCH /api/workout/[workoutId]', () => {
       const res = await PATCH(req, props);
       expect(res.status).toBe(400);
       const body = await res.json();
-      expect(body.error).toMatch(/at least one/i);
+      expect(body).toMatchObject({code: 'BAD_REQUEST'});
     });
 
     it('returns 400 when notes is not a string', async () => {
@@ -70,7 +70,8 @@ describe('PATCH /api/workout/[workoutId]', () => {
       const res = await PATCH(req, props);
       expect(res.status).toBe(400);
       const body = await res.json();
-      expect(body.error).toMatch(/notes must be a string/i);
+      expect(body).toMatchObject({code: 'BAD_REQUEST'});
+      expect(body.details?.fieldErrors?.notes).toBeDefined();
     });
 
     it('returns 400 when dateCompleted is not a string or null', async () => {
@@ -78,7 +79,8 @@ describe('PATCH /api/workout/[workoutId]', () => {
       const res = await PATCH(req, props);
       expect(res.status).toBe(400);
       const body = await res.json();
-      expect(body.error).toMatch(/dateCompleted must be/i);
+      expect(body).toMatchObject({code: 'BAD_REQUEST'});
+      expect(body.details?.fieldErrors?.dateCompleted).toBeDefined();
     });
   });
 

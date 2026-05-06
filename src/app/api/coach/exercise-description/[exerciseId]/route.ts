@@ -1,8 +1,9 @@
 import prisma from '@/lib/prisma';
 import {NextRequest, NextResponse} from 'next/server';
 import {requireSession} from '@lib/requireSession';
-import {forbiddenResponse, errorResponse} from '@lib/apiResponses';
+import {forbiddenResponse, errorResponse, validationErrorResponse} from '@lib/apiResponses';
 import {extractErrorMessage} from '@lib/apiError';
+import {CoachExerciseDescriptionRequestSchema} from '@lib/contracts/coach';
 
 async function verifyCoach(userId: string): Promise<boolean> {
   const clientCount = await prisma.user.count({where: {coachId: userId}});
@@ -18,14 +19,13 @@ export async function PUT(req: NextRequest, props: {params: Promise<{exerciseId:
     return forbiddenResponse();
   }
 
-  const {note, url} = await req.json();
-  if (typeof note !== 'string') {
-    return errorResponse('note must be a string', 400);
-  }
-  if (url != null && typeof url !== 'string') {
-    return errorResponse('url must be a string when provided', 400);
-  }
+  const json = await req.json().catch(() => null);
+  if (json == null) return errorResponse('Invalid JSON body', 400);
 
+  const parsed = CoachExerciseDescriptionRequestSchema.safeParse(json);
+  if (!parsed.success) return validationErrorResponse(parsed.error);
+
+  const { note, url } = parsed.data;
   const trimmedNote = note.trim();
   const trimmedUrl = typeof url === 'string' ? url.trim() : null;
 

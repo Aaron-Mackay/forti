@@ -5,6 +5,8 @@ import { recordAuditEvent } from '@lib/auditEvents';
 import prisma from '@lib/prisma';
 import { notifyClientCoachFeedback } from '@lib/notifications';
 import { getCoachCheckInById } from '@lib/coachCheckIns';
+import { errorResponse, forbiddenResponse, notFoundResponse, validationErrorResponse } from '@lib/apiResponses';
+import { CoachCheckInNotesRequestSchema } from '@lib/contracts/coach';
 
 /** PATCH /api/coach/check-ins/[id]/notes — coach saves notes on a client's check-in */
 export async function PATCH(
@@ -16,41 +18,30 @@ export async function PATCH(
   const { id } = await params;
   const checkInId = parseInt(id);
 
-  if (isNaN(checkInId)) {
-    return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
-  }
+  if (isNaN(checkInId)) return errorResponse('Invalid id', 400);
 
   const checkInResult = await getCoachCheckInById(coachId, checkInId);
-  if (checkInResult.status === 'forbidden') {
-    return NextResponse.json({ error: 'Coach mode is not active' }, { status: 403 });
-  }
-  if (checkInResult.status === 'not_found') {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  }
+  if (checkInResult.status === 'forbidden') return forbiddenResponse('Coach mode is not active');
+  if (checkInResult.status === 'not_found') return notFoundResponse('Check-in');
 
   const { checkIn } = checkInResult;
 
-  const body = await req.json() as { coachNotes: string; coachResponseUrl?: string | null };
-  if (typeof body.coachNotes !== 'string') {
-    return NextResponse.json({ error: 'coachNotes must be a string' }, { status: 400 });
-  }
-  if (
-    body.coachResponseUrl !== undefined
-    && body.coachResponseUrl !== null
-    && typeof body.coachResponseUrl !== 'string'
-  ) {
-    return NextResponse.json({ error: 'coachResponseUrl must be a string' }, { status: 400 });
-  }
+  const json = await req.json().catch(() => null);
+  if (json == null) return errorResponse('Invalid JSON body', 400);
 
+  const parsedBody = CoachCheckInNotesRequestSchema.safeParse(json);
+  if (!parsedBody.success) return validationErrorResponse(parsedBody.error);
+
+  const body = parsedBody.data;
   const trimmedCoachResponseUrl = body.coachResponseUrl?.trim() ?? '';
   if (trimmedCoachResponseUrl) {
     try {
-      const parsed = new URL(trimmedCoachResponseUrl);
-      if (!['http:', 'https:'].includes(parsed.protocol)) {
+      const parsedUrl = new URL(trimmedCoachResponseUrl);
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
         throw new Error('Invalid protocol');
       }
     } catch {
-      return NextResponse.json({ error: 'coachResponseUrl must be a valid http(s) URL' }, { status: 400 });
+      return errorResponse('coachResponseUrl must be a valid http(s) URL', 400);
     }
   }
 

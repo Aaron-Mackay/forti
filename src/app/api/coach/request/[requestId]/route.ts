@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { notifyClientRequestAccepted } from '@lib/notifications';
-import { forbiddenResponse } from '@lib/apiResponses';
+import { errorResponse, forbiddenResponse, notFoundResponse, validationErrorResponse } from '@lib/apiResponses';
+import { CoachRequestActionSchema } from '@lib/contracts/coach';
 
 export async function PATCH(
   req: NextRequest,
@@ -13,28 +14,25 @@ export async function PATCH(
 
   const { requestId } = await params;
   const id = parseInt(requestId, 10);
-  if (isNaN(id)) {
-    return NextResponse.json({ error: 'Invalid requestId' }, { status: 400 });
-  }
+  if (isNaN(id)) return errorResponse('Invalid requestId', 400);
 
-  const body = await req.json() as { action: 'accept' | 'reject' };
-  if (body.action !== 'accept' && body.action !== 'reject') {
-    return NextResponse.json({ error: 'action must be accept or reject' }, { status: 400 });
-  }
+  const json = await req.json().catch(() => null);
+  if (json == null) return errorResponse('Invalid JSON body', 400);
+
+  const parsed = CoachRequestActionSchema.safeParse(json);
+  if (!parsed.success) return validationErrorResponse(parsed.error);
+
+  const body = parsed.data;
 
   const coachRequest = await prisma.coachRequest.findUnique({
     where: { id },
     select: { id: true, clientId: true, coachId: true, status: true },
   });
 
-  if (!coachRequest) {
-    return NextResponse.json({ error: 'Request not found' }, { status: 404 });
-  }
-  if (coachRequest.coachId !== userId) {
-    return forbiddenResponse();
-  }
+  if (!coachRequest) return notFoundResponse('Request');
+  if (coachRequest.coachId !== userId) return forbiddenResponse();
   if (coachRequest.status !== 'Pending') {
-    return NextResponse.json({ error: 'Request is no longer pending' }, { status: 400 });
+    return errorResponse('Request is no longer pending', 400);
   }
 
   if (body.action === 'accept') {

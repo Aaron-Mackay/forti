@@ -3,6 +3,8 @@ import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { Prisma } from '@/generated/prisma/browser';
 import { parseDashboardSettings, Settings } from '@/types/settingsTypes';
+import { errorResponse, validationErrorResponse } from '@lib/apiResponses';
+import { UserSettingsUpdateRequestSchema } from '@lib/contracts/userSettings';
 
 async function generateUniqueCoachCode(): Promise<string> {
   for (let i = 0; i < 10; i++) {
@@ -30,10 +32,11 @@ export async function PATCH(req: NextRequest) {
   const session = await requireSession();
   const userId = session.user.id;
 
-  const body = await req.json() as { settings: Partial<Settings> };
-  if (!body.settings || typeof body.settings !== 'object') {
-    return NextResponse.json({ error: 'settings must be an object' }, { status: 400 });
-  }
+  const json = await req.json().catch(() => null);
+  if (json == null) return errorResponse('Invalid JSON body', 400);
+
+  const parsed = UserSettingsUpdateRequestSchema.safeParse(json);
+  if (!parsed.success) return validationErrorResponse(parsed.error);
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -41,7 +44,7 @@ export async function PATCH(req: NextRequest) {
   });
 
   const current = parseDashboardSettings(user?.settings);
-  const merged: Settings = { ...current, ...body.settings };
+  const merged: Settings = { ...current, ...(parsed.data.settings as Partial<Settings>) };
   const shouldGenerateCoachCode = merged.coachModeActive && !user?.coachCode;
   const coachCode = shouldGenerateCoachCode ? await generateUniqueCoachCode() : user?.coachCode;
 

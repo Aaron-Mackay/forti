@@ -3,29 +3,23 @@ import {NextRequest, NextResponse} from 'next/server';
 import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from "@lib/apiError";
 import {getWorkoutWithOwner} from "@lib/queries";
-import {errorResponse, forbiddenResponse, notFoundResponse} from "@lib/apiResponses";
+import {errorResponse, forbiddenResponse, notFoundResponse, validationErrorResponse} from "@lib/apiResponses";
 import { touchPlanActivity } from '@lib/planActivity';
+import { WorkoutUpdateRequestSchema } from '@lib/contracts/workout';
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ workoutId: string }> }) {
   const params = await props.params;
   const session = await requireSession();
-  const body = await req.json();
-  const { notes, dateCompleted } = body;
 
-  const hasNotes = 'notes' in body;
-  const hasDateCompleted = 'dateCompleted' in body;
+  const json = await req.json().catch(() => null);
+  if (json == null) return errorResponse('Invalid JSON body', 400);
 
-  if (!hasNotes && !hasDateCompleted) {
-    return errorResponse('At least one of notes or dateCompleted must be provided', 400);
-  }
+  const parsed = WorkoutUpdateRequestSchema.safeParse(json);
+  if (!parsed.success) return validationErrorResponse(parsed.error);
 
-  if (hasNotes && typeof notes !== 'string') {
-    return errorResponse('notes must be a string', 400);
-  }
-
-  if (hasDateCompleted && dateCompleted !== null && typeof dateCompleted !== 'string') {
-    return errorResponse('dateCompleted must be an ISO string or null', 400);
-  }
+  const { notes, dateCompleted } = parsed.data;
+  const hasNotes = notes !== undefined;
+  const hasDateCompleted = dateCompleted !== undefined;
 
   try {
     const workoutId = Number(params.workoutId);

@@ -1,21 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
-
-interface PushSubscriptionBody {
-  endpoint: string;
-  keys: { p256dh: string; auth: string };
-}
+import { errorResponse, validationErrorResponse } from '@lib/apiResponses';
+import { PushSubscribeRequestSchema, PushUnsubscribeRequestSchema } from '@lib/contracts/push';
 
 /** POST /api/push/subscribe — register a push subscription for the current user */
 export async function POST(req: NextRequest) {
   const session = await requireSession();
   const userId = session.user.id;
 
-  const body = await req.json() as PushSubscriptionBody;
-  if (!body.endpoint || !body.keys?.p256dh || !body.keys?.auth) {
-    return NextResponse.json({ error: 'Invalid subscription payload' }, { status: 400 });
-  }
+  const json = await req.json().catch(() => null);
+  if (json == null) return errorResponse('Invalid JSON body', 400);
+
+  const parsed = PushSubscribeRequestSchema.safeParse(json);
+  if (!parsed.success) return validationErrorResponse(parsed.error);
+
+  const body = parsed.data;
 
   await prisma.pushSubscription.upsert({
     where: { endpoint: body.endpoint },
@@ -40,13 +40,14 @@ export async function DELETE(req: NextRequest) {
   const session = await requireSession();
   const userId = session.user.id;
 
-  const body = await req.json() as { endpoint: string };
-  if (!body.endpoint) {
-    return NextResponse.json({ error: 'endpoint is required' }, { status: 400 });
-  }
+  const json = await req.json().catch(() => null);
+  if (json == null) return errorResponse('Invalid JSON body', 400);
+
+  const parsed = PushUnsubscribeRequestSchema.safeParse(json);
+  if (!parsed.success) return validationErrorResponse(parsed.error);
 
   await prisma.pushSubscription.deleteMany({
-    where: { endpoint: body.endpoint, userId },
+    where: { endpoint: parsed.data.endpoint, userId },
   });
 
   return NextResponse.json({ ok: true });

@@ -3,6 +3,8 @@ import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { parseDashboardSettings, Settings } from '@/types/settingsTypes';
 import { Prisma } from '@/generated/prisma/browser';
+import { errorResponse, notFoundResponse, validationErrorResponse } from '@lib/apiResponses';
+import { CoachActivateRequestSchema } from '@lib/contracts/coach';
 
 async function generateUniqueCoachCode(): Promise<string> {
   for (let attempt = 0; attempt < 10; attempt++) {
@@ -17,18 +19,19 @@ export async function POST(req: NextRequest) {
   const session = await requireSession();
   const userId = session.user.id;
 
-  const body = await req.json() as { active: boolean };
-  if (typeof body.active !== 'boolean') {
-    return NextResponse.json({ error: 'active must be a boolean' }, { status: 400 });
-  }
+  const json = await req.json().catch(() => null);
+  if (json == null) return errorResponse('Invalid JSON body', 400);
+
+  const parsed = CoachActivateRequestSchema.safeParse(json);
+  if (!parsed.success) return validationErrorResponse(parsed.error);
+
+  const body = parsed.data;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { coachCode: true, settings: true },
   });
-  if (!user) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 });
-  }
+  if (!user) return notFoundResponse('User');
 
   // Generate code on first activation if not already assigned
   let coachCode = user.coachCode;
