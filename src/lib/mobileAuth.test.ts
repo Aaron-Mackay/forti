@@ -124,7 +124,7 @@ describe('mobileAuth rejection cases', () => {
   it('rejects a tampered token', async () => {
     const { token } = await issueMobileAccessToken('user-5');
     const parts = token.split('.');
-    parts[2] = parts[2].replace(/.$/, (c) => (c === 'A' ? 'B' : 'A'));
+    parts[2] = `A${parts[2].slice(1)}`;
     const tampered = parts.join('.');
 
     await expect(verifyMobileAccessToken(tampered)).rejects.toBeInstanceOf(MobileTokenError);

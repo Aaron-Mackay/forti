@@ -45,6 +45,17 @@ export function validationErrorResponse(error: ZodError): NextResponse<ApiErrorE
   return apiErrorResponse('BAD_REQUEST', 'Invalid request', { details: error.flatten() });
 }
 
+export function rateLimitedResponse(
+  message = 'Rate limit exceeded',
+  retryAfterSeconds?: number,
+): NextResponse<ApiErrorEnvelope> {
+  const response = apiErrorResponse('RATE_LIMITED', message);
+  if (retryAfterSeconds !== undefined) {
+    response.headers.set('Retry-After', String(retryAfterSeconds));
+  }
+  return response;
+}
+
 export function notFoundResponse(resource: string): NextResponse<ApiErrorEnvelope> {
   return apiErrorResponse('NOT_FOUND', `${resource} not found`);
 }

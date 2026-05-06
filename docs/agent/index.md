@@ -6,6 +6,9 @@ Use this index for fast file targeting before broad repo searches.
 
 - `src/lib/auth.ts` — `authOptions` (providers, callbacks, cookie/session strategy) and exported NextAuth handlers (`GET`/`POST`).
 - `src/lib/requireSession.ts` — `requireSession()`, `AuthenticationError`, and `authenticationErrorResponse()` for API auth gating.
+- `src/lib/mobileAuth.ts` — mobile access/refresh JWT issuance and verification helpers.
+- `src/lib/recordSignInAuditEvent.ts` — shared login audit helper used by both web and mobile sign-in paths.
+- `src/app/api/auth/mobile/token-exchange/route.ts` — mobile Google ID-token exchange endpoint that creates bearer-token sessions.
 - `src/lib/sessionActor.ts` + `src/lib/confirmPermission.ts` — actor resolution and user-level authorization checks used by protected routes.
 
 ## Workout editor state changes
@@ -17,6 +20,7 @@ Use this index for fast file targeting before broad repo searches.
 ## API contract changes
 
 - Contract schemas: `src/lib/contracts/saveUserWorkoutData.ts` (`SaveUserWorkoutDataRequestSchema`, `SaveUserWorkoutDataSuccessSchema`), `src/lib/planSchemas.ts` (`PlanInputSchema`).
+- Contract schemas: `src/lib/contracts/mobileAuth.ts` — request/response contracts for mobile token exchange and follow-on bearer auth endpoints.
 - Route implementation: `src/app/api/saveUserWorkoutData/route.ts` — `POST /api/saveUserWorkoutData` request parsing, validation, and persistence flow.
 - Contract/error policy doc: `docs/api-error-contract.md` — canonical auth and validation response contract guidance.
 
