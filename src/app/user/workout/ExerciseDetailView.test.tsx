@@ -176,11 +176,7 @@ describe('ExerciseDetailView', () => {
       }]]),
     });
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', {name: /previous workouts/i})).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole('button', {name: /previous workouts/i}));
+    fireEvent.click(screen.getByRole('tab', {name: /history/i}));
 
     expect(screen.getByLabelText('Previous workout table 1')).toBeInTheDocument();
     expect(screen.getByText(/Jan.*14.*2026/)).toBeInTheDocument();
@@ -202,31 +198,28 @@ describe('ExerciseDetailView', () => {
       }]]),
     });
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', {name: /previous workouts/i})).toBeInTheDocument();
-    });
-    screen.getByRole('button', {name: /previous workouts/i}).click();
+    fireEvent.click(screen.getByRole('tab', {name: /history/i}));
     expect(screen.getAllByText('—')).toHaveLength(3);
   });
 
-  it('does not show previous workout controls when cache is empty', async () => {
+  it('shows empty previous workout state when cache is empty', async () => {
     renderView({...defaultProps, previousSetsMap: new Map([[10, {workouts: []}]])});
 
-    await waitFor(() => {
-      expect(screen.getByTestId('swiper')).toBeInTheDocument();
-    });
-    expect(screen.queryByRole('button', {name: /previous workouts/i})).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', {name: /history/i}));
+    expect(screen.getByText('No previous workouts yet')).toBeInTheDocument();
   });
 
   it('renders the anatomy diagram when the exercise has muscles', () => {
     const workout = buildWorkout();
     workout.exercises[0].exercise.primaryMuscles = ['sternal-pec', 'triceps'];
     renderView({...defaultProps, workout});
+    fireEvent.click(screen.getByRole('tab', {name: /muscles/i}));
     expect(screen.getByTestId('anatomy-100')).toBeInTheDocument();
   });
 
   it('does not render the anatomy diagram when the exercise has no muscles', () => {
     renderView(defaultProps);
+    fireEvent.click(screen.getByRole('tab', {name: /muscles/i}));
     expect(screen.queryByTestId('anatomy-100')).not.toBeInTheDocument();
   });
 });
