@@ -2,7 +2,10 @@
 
 import {useEffect, useState} from 'react';
 import {fetchJson} from '@lib/fetchWrapper';
+import {storage} from '@lib/storage';
 import {Exercise} from '@/generated/prisma/browser';
+
+type ExerciseCacheRecord = {exercises?: Exercise[]; savedAt?: number};
 
 type ExerciseListState = {
   exercises: Exercise[];
@@ -24,14 +27,10 @@ function hasFreshCache() {
 function updateCache(nextExercises: Exercise[]) {
   exercisesCache = nextExercises;
   exercisesCacheTime = Date.now();
-  try {
-    window.localStorage.setItem(EXERCISE_STORAGE_KEY, JSON.stringify({
-      exercises: nextExercises,
-      savedAt: exercisesCacheTime,
-    }));
-  } catch {
-    // Storage failures are non-fatal; keep in-memory cache.
-  }
+  storage.setJson(EXERCISE_STORAGE_KEY, {
+    exercises: nextExercises,
+    savedAt: exercisesCacheTime,
+  });
   listeners.forEach(listener => listener(nextExercises));
 }
 
@@ -62,18 +61,12 @@ export function useExerciseList(enabled: boolean): ExerciseListState {
 
   useEffect(() => {
     if (exercisesCache !== null) return;
-    try {
-      const raw = window.localStorage.getItem(EXERCISE_STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as {exercises?: Exercise[]; savedAt?: number};
-      if (!Array.isArray(parsed.exercises) || typeof parsed.savedAt !== 'number') return;
-      // Keep storage fallback stale-tolerant so first offline open still has data.
-      exercisesCache = parsed.exercises;
-      exercisesCacheTime = parsed.savedAt;
-      setExercises(parsed.exercises);
-    } catch {
-      // Ignore malformed cache.
-    }
+    const parsed = storage.getJson<ExerciseCacheRecord>(EXERCISE_STORAGE_KEY);
+    if (!parsed || !Array.isArray(parsed.exercises) || typeof parsed.savedAt !== 'number') return;
+    // Keep storage fallback stale-tolerant so first offline open still has data.
+    exercisesCache = parsed.exercises;
+    exercisesCacheTime = parsed.savedAt;
+    setExercises(parsed.exercises);
   }, []);
 
   useEffect(() => {

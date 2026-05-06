@@ -1,4 +1,5 @@
 import { track } from '@vercel/analytics';
+import { storage } from '@lib/storage';
 
 type FirstWeekEventKey =
   | 'onboarding_completed'
@@ -15,9 +16,8 @@ export function trackFirstWeekEvent(
   key: FirstWeekEventKey,
   payload?: Record<string, string | number | boolean>
 ) {
-  if (typeof window === 'undefined') return;
   const k = storageKey(key);
-  if (window.localStorage.getItem(k)) return;
+  if (storage.getString(k)) return;
   track(key, payload);
-  window.localStorage.setItem(k, '1');
+  storage.setString(k, '1');
 }
