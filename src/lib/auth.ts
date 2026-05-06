@@ -3,8 +3,7 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
-import { AuditEventType } from '@/generated/prisma/browser';
-import { recordAuditEvent } from '@lib/auditEvents';
+import { recordSignInAuditEvent } from '@lib/recordSignInAuditEvent';
 
 function isAllowedDevTunnelHost(hostname: string) {
   if (process.env.NODE_ENV === 'production') return false;
@@ -170,21 +169,9 @@ export const authOptions: AuthOptions = {
         return;
       }
 
-      const isGoogle = provider === 'google';
-      await recordAuditEvent({
-        actorUserId: user.id,
-        eventType: AuditEventType.LoginSucceeded,
-        analyticsEvent: isGoogle ? 'login_succeeded_google' : 'login_succeeded_demo',
-        analyticsData: {
-          provider: isGoogle ? 'google' : 'demo',
-          isCoach: provider === 'demo-coach',
-        },
-        subjectType: 'user',
-        subjectId: user.id,
-        metadata: {
-          provider: provider ?? 'unknown',
-          isCoach: provider === 'demo-coach',
-        },
+      await recordSignInAuditEvent({
+        userId: user.id,
+        provider,
       });
     },
   },

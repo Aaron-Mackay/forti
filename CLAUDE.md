@@ -156,7 +156,10 @@ VAPID_SUBJECT=
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=
 NEXT_PUBLIC_APP_URL=
 CRON_SECRET=
+MOBILE_JWT_SECRET=
 ```
+
+`MOBILE_JWT_SECRET` signs mobile bearer tokens; generate with `openssl rand -hex 32` and keep it distinct from `NEXTAUTH_SECRET`.
 
 ---
 

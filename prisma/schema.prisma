@@ -54,6 +54,7 @@ model User {
   targetTemplates           TargetTemplate[]
   auditEvents               AuditEvent[]               @relation("AuditEventActor")
   trainingSessions          TrainingSession[]
+  mobileSessions            MobileSession[]
 
   @@index([coachId])
   @@index([activePlanId])
@@ -553,6 +554,26 @@ model LearningPlanStep {
 
   @@unique([planId, order])
   @@index([planId])
+}
+
+model MobileSession {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash      String         @unique // SHA-256 of refresh token; never store raw
+  expiresAt      DateTime
+  createdAt      DateTime       @default(now())
+  lastUsedAt     DateTime       @default(now())
+  revokedAt      DateTime?
+  // Rotation chain — when a refresh token is rotated, the new row sets replacedFromId
+  // back to the previous row. If the previous row is presented again (already used),
+  // we have evidence of theft and revoke the entire chain.
+  replacedFromId String?        @unique
+  replacedFrom   MobileSession? @relation("RotationChain", fields: [replacedFromId], references: [id])
+  replacedBy     MobileSession? @relation("RotationChain")
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model LearningPlanAssignment {
