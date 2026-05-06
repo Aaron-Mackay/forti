@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { RefObject } from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
+import type {RefObject} from 'react';
+import {NO_FADES, computeScrollFades} from '@lib/scrollEdgeFades';
 
 type ScrollAxis = 'x' | 'y';
 
@@ -19,6 +20,20 @@ interface UseScrollEdgeFadesResult<T extends HTMLElement> {
   updateFades: () => void;
 }
 
+function readDomMetrics(node: HTMLElement, axis: ScrollAxis) {
+  return axis === 'x'
+    ? {
+        scrollPosition: node.scrollLeft,
+        visibleSize: node.clientWidth,
+        contentSize: node.scrollWidth,
+      }
+    : {
+        scrollPosition: node.scrollTop,
+        visibleSize: node.clientHeight,
+        contentSize: node.scrollHeight,
+      };
+}
+
 export function useScrollEdgeFades<T extends HTMLElement>({
   axis = 'y',
   enabled = true,
@@ -30,24 +45,17 @@ export function useScrollEdgeFades<T extends HTMLElement>({
 
   const updateFades = useCallback(() => {
     if (!enabled) {
-      setShowStartFade(false);
-      setShowEndFade(false);
+      setShowStartFade(NO_FADES.showStartFade);
+      setShowEndFade(NO_FADES.showEndFade);
       return;
     }
 
     const node = scrollRef.current;
     if (!node) return;
 
-    const scrollPosition = axis === 'x' ? node.scrollLeft : node.scrollTop;
-    const visibleSize = axis === 'x' ? node.clientWidth : node.clientHeight;
-    const contentSize = axis === 'x' ? node.scrollWidth : node.scrollHeight;
-    const maxScroll = Math.max(contentSize - visibleSize, 0);
-    const scrollable = maxScroll > threshold;
-    const atStart = scrollPosition <= threshold;
-    const atEnd = scrollPosition >= maxScroll - threshold;
-
-    setShowStartFade(scrollable && !atStart);
-    setShowEndFade(scrollable && !atEnd);
+    const next = computeScrollFades(readDomMetrics(node, axis), threshold);
+    setShowStartFade(next.showStartFade);
+    setShowEndFade(next.showEndFade);
   }, [axis, enabled, threshold]);
 
   const handleScroll = useCallback(() => {
