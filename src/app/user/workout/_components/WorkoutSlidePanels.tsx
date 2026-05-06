@@ -1,6 +1,6 @@
 'use client';
 
-import {useRef, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import {Box, Tab, Tabs, Tooltip} from '@mui/material';
 import type {SxProps, Theme} from '@mui/material/styles';
 import {AnimatePresence, motion} from 'framer-motion';
@@ -25,8 +25,6 @@ const PANEL_ICONS: Record<WorkoutSlidePanelKey, ReactNode> = {
   history: <HistoryIcon fontSize="small" />,
 };
 
-const PANEL_ORDER: WorkoutSlidePanelKey[] = ['notes', 'e1rm', 'muscles', 'history'];
-
 type Props = {
   activePanel: WorkoutSlidePanelKey | null;
   onActivePanelChange: (panel: WorkoutSlidePanelKey | null) => void;
@@ -44,13 +42,9 @@ export default function WorkoutSlidePanels({
   tabsSx,
   panelSx,
 }: Props) {
-  const prevPanelRef = useRef<WorkoutSlidePanelKey | null>(null);
   const activePanelConfig = activePanel ? panels.find(p => p.value === activePanel) : null;
-
-  const prevIdx = prevPanelRef.current ? PANEL_ORDER.indexOf(prevPanelRef.current) : -1;
-  const nextIdx = activePanel ? PANEL_ORDER.indexOf(activePanel) : -1;
-  const direction = prevIdx === -1 || nextIdx === -1 ? 1 : nextIdx >= prevIdx ? 1 : -1;
-  if (activePanel !== prevPanelRef.current) prevPanelRef.current = activePanel;
+  const panelIndex = Math.max(panels.findIndex(p => p.value === activePanel), 0);
+  const panelCount = panels.length;
 
   const panelIcon = (panel: WorkoutSlidePanel) => (
     <Tooltip title={panel.label} arrow>
@@ -117,14 +111,24 @@ export default function WorkoutSlidePanels({
               ...toSxArray(panelSx),
             ]}
           >
-            <motion.div
-              key={activePanel}
-              initial={{opacity: 0, x: direction * 24}}
-              animate={{opacity: 1, x: 0}}
-              transition={{duration: 0.12, ease: 'easeOut'}}
-            >
-              {activePanelConfig.render()}
-            </motion.div>
+            {/* Sliding track: all panel slots sit side-by-side; only the active one
+                renders content so height tracks the active panel, not the tallest. */}
+            <Box sx={{overflow: 'hidden'}}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  width: `${panelCount * 100}%`,
+                  transform: `translateX(${(-panelIndex * 100) / panelCount}%)`,
+                  transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              >
+                {panels.map(panel => (
+                  <Box key={panel.value} sx={{width: `${100 / panelCount}%`, flexShrink: 0}}>
+                    {panel.value === activePanel ? panel.render() : null}
+                  </Box>
+                ))}
+              </Box>
+            </Box>
           </Box>
         )}
       </AnimatePresence>
