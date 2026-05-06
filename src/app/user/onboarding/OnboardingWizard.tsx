@@ -179,11 +179,11 @@ function StepCoach({
         label="Coach invite code"
         value={coachCode}
         onChange={e => onCoachCodeChange(e.target.value)}
-        inputProps={{ maxLength: 6, pattern: '[0-9]*', inputMode: 'numeric' }}
-        placeholder="6-digit code"
+        inputProps={{ maxLength: 8, pattern: '[0-9]*', inputMode: 'numeric' }}
+        placeholder="6- or 8-digit code"
         fullWidth
         error={!!coachCodeError}
-        helperText={coachCodeError ?? 'Ask your coach for their 6-digit invite code'}
+        helperText={coachCodeError ?? 'Ask your coach for their invite code'}
         sx={{ mb: 4 }}
       />
 

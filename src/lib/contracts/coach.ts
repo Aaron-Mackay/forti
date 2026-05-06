@@ -8,7 +8,7 @@ export type CoachActivateRequest = z.infer<typeof CoachActivateRequestSchema>;
 
 // POST /api/coach/request
 export const CoachRequestCreateSchema = z.object({
-  code: z.string().regex(/^\d{6}$/, 'code must be a 6-digit number'),
+  code: z.string().regex(/^(\d{6}|\d{8})$/, 'code must be a 6- or 8-digit number'),
 });
 export type CoachRequestCreate = z.infer<typeof CoachRequestCreateSchema>;
 

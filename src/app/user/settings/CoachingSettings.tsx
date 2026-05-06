@@ -95,8 +95,8 @@ export default function CoachingSettings({ mode = 'normal' }: { mode?: 'normal' 
 
   function handleLink() {
     const code = codeInput.trim();
-    if (!/^\d{6}$/.test(code)) {
-      setActionError('Please enter a valid 6-digit code');
+    if (!/^(\d{6}|\d{8})$/.test(code)) {
+      setActionError('Please enter a valid 6- or 8-digit code');
       return;
     }
     doAction('link', () => fetch('/api/coach/request', {
@@ -414,10 +414,10 @@ export default function CoachingSettings({ mode = 'normal' }: { mode?: 'normal' 
                 label="Enter coach code"
                 value={codeInput}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 8);
                   setCodeInput(val);
                 }}
-                inputProps={{ inputMode: 'numeric', maxLength: 6 }}
+                inputProps={{ inputMode: 'numeric', maxLength: 8 }}
                 size="small"
                 sx={{ flex: 1 }}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleLink(); }}
@@ -425,7 +425,7 @@ export default function CoachingSettings({ mode = 'normal' }: { mode?: 'normal' 
               <Button
                 variant="contained"
                 onClick={handleLink}
-                disabled={busy === 'link' || codeInput.length !== 6}
+                disabled={busy === 'link' || (codeInput.length !== 6 && codeInput.length !== 8)}
                 startIcon={busy === 'link' ? <CircularProgress size={14} color="inherit" /> : undefined}
                 sx={{ whiteSpace: 'nowrap', height: 40 }}
               >

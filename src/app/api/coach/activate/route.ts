@@ -5,15 +5,7 @@ import { parseDashboardSettings, Settings } from '@/types/settingsTypes';
 import { Prisma } from '@/generated/prisma/browser';
 import { errorResponse, notFoundResponse, validationErrorResponse } from '@lib/apiResponses';
 import { CoachActivateRequestSchema } from '@lib/contracts/coach';
-
-async function generateUniqueCoachCode(): Promise<string> {
-  for (let attempt = 0; attempt < 10; attempt++) {
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    const existing = await prisma.user.findUnique({ where: { coachCode: code } });
-    if (!existing) return code;
-  }
-  throw new Error('Failed to generate a unique coach code');
-}
+import { generateUniqueCoachCode } from '@lib/coachCode';
 
 export async function POST(req: NextRequest) {
   const session = await requireSession();
