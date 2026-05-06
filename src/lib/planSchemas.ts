@@ -14,6 +14,10 @@ export const SetInputSchema = z.object({
 });
 
 export const ExerciseInputSchema = z.object({
+  // WorkoutExercise.id (the join row). Optional so newly-added exercises
+  // don't have to invent an id — saveUserWorkoutData uses this to match
+  // incoming rows against existing ones during diff-mode persistence.
+  id: z.number().int().positive().optional(),
   exercise: z.object({
     id: z.number().optional().nullable(),
     name: z.string(),
@@ -33,6 +37,7 @@ export const ExerciseInputSchema = z.object({
 });
 
 export const WorkoutInputSchema = z.object({
+  id: z.number().int().positive().optional(),
   name: z.string(),
   notes: z.string().nullable().optional(),
   order: z.number().int(),
@@ -41,6 +46,7 @@ export const WorkoutInputSchema = z.object({
 });
 
 export const WeekInputSchema = z.object({
+  id: z.number().int().positive().optional(),
   order: z.number().int(),
   workouts: z.array(WorkoutInputSchema),
 });
