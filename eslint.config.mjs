@@ -30,6 +30,27 @@ const eslintConfig = [
       ],
     },
   },
+  // ── src/lib/ portability: keep shared code free of web-only navigation ─────
+  // next/navigation is web-only; RN uses expo-router with a different API.
+  // getLoggedInUser.ts is explicitly server-side and exempt.
+  {
+    files: ['src/lib/**/*.{ts,tsx}'],
+    ignores: ['src/lib/getLoggedInUser.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'next/navigation',
+              message:
+                'next/navigation is web-only. Keep src/lib/ portable for the RN client — confine navigation imports to src/app/** and src/components/shell/**.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   // ── Test files: disable app-only rules that create false positives ──────────
   {
     files: ['tests/**/*.ts'],

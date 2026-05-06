@@ -27,6 +27,7 @@ Code in `src/lib/` is intended to be portable to a future React Native client. S
 - `src/lib/storage.ts` — `storage` (SSR-safe localStorage adapter, `getString`/`setString`/`remove`/`getJson`/`setJson`) is the only sanctioned place to touch `window.localStorage`. RN port replaces this file's implementation.
 - `src/lib/scrollEdgeFades.ts` — `computeScrollFades(metrics, threshold)` is the pure scroll-edge-fade logic; `src/lib/hooks/useScrollEdgeFades.ts` is the web hook that wires DOM events (scroll/resize/`ResizeObserver`) around it.
 - `src/lib/usePushSubscription.ts` — explicitly web-only (Service Worker / `PushManager` / `Notification`). Do not import from any path intended for RN reuse.
+- `next/navigation` is web-only (RN uses expo-router with a different API). Confine to `src/app/**` (route files) and `src/components/shell/**` (web chrome). Banned from `src/lib/**` via ESLint `no-restricted-imports`; the only exempt file is `src/lib/getLoggedInUser.ts`, which is server-side.
 - `src/lib/fetchWrapper.ts` + `src/lib/clientApi.ts` — platform-agnostic; reusable as-is.
 - Auth: `src/lib/auth.ts` / `src/lib/requireSession.ts` / `src/lib/getLoggedInUser.ts` are server-side (NextAuth + `next/navigation`). The browser-side session is consumed via NextAuth's `useSession` (web-only). RN will need its own token storage/refresh layer.
 
