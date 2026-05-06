@@ -16,7 +16,8 @@ import LinkIcon from '@mui/icons-material/Link';
 import {Exercise} from '@/generated/prisma/browser';
 import {format} from 'date-fns';
 import MuscleHighlight from '@/components/fitness/MuscleHighlight';
-import type {E1rmHistoryPoint} from '@lib/contracts/exerciseHistory';
+import {E1rmHistoryResponseSchema, type E1rmHistoryPoint} from '@lib/contracts/exerciseHistory';
+import {fetchJsonWithSchema} from '@lib/fetchWrapper';
 import {PRIMARY_COLOUR} from '@lib/theme';
 import type {ExerciseCoachNote} from './types';
 
@@ -33,8 +34,7 @@ function E1rmChart({exercise}: {exercise: Exercise}) {
   const [history, setHistory] = useState<E1rmHistoryPoint[] | null>(null);
 
   useEffect(() => {
-    fetch(`/api/exercises/${exercise.id}/e1rm-history`)
-      .then(r => (r.ok ? r.json() : []))
+    fetchJsonWithSchema(`/api/exercises/${exercise.id}/e1rm-history`, E1rmHistoryResponseSchema)
       .then(setHistory)
       .catch(() => setHistory([]));
   }, [exercise.id]);

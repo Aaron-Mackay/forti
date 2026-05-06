@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { Box, Card, CardContent, Divider, IconButton, Skeleton, Typography } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { format } from 'date-fns';
-import type { E1rmHistoryPoint } from '@lib/contracts/exerciseHistory';
+import { E1rmHistoryResponseSchema, type E1rmHistoryPoint } from '@lib/contracts/exerciseHistory';
+import { fetchJsonWithSchema } from '@lib/fetchWrapper';
 import type { TrackedE1rmExercise } from '@/types/settingsTypes';
 import type { WeightUnit } from '@/lib/units';
 import { formatWeight } from '@/lib/units';
@@ -21,9 +22,8 @@ function ExerciseRow({ exercise, weightUnit }: { exercise: TrackedE1rmExercise; 
   const [history, setHistory] = useState<E1rmHistoryPoint[] | null>(null);
 
   useEffect(() => {
-    fetch(`/api/exercises/${exercise.id}/e1rm-history`)
-      .then(res => (res.ok ? res.json() : Promise.resolve([])))
-      .then((data: E1rmHistoryPoint[]) => setHistory(data))
+    fetchJsonWithSchema(`/api/exercises/${exercise.id}/e1rm-history`, E1rmHistoryResponseSchema)
+      .then(setHistory)
       .catch(() => setHistory([]));
   }, [exercise.id]);
 

@@ -6,6 +6,16 @@ export const E1rmHistoryPointSchema = z.object({
 });
 export type E1rmHistoryPoint = z.infer<typeof E1rmHistoryPointSchema>;
 
+export const E1rmHistoryResponseSchema = z.array(E1rmHistoryPointSchema);
+export type E1rmHistoryResponse = z.infer<typeof E1rmHistoryResponseSchema>;
+
+export const PreviousCardioResponseSchema = z.object({
+  cardioDuration: z.number().nullable(),
+  cardioDistance: z.number().nullable(),
+  cardioResistance: z.number().nullable(),
+}).nullable();
+export type PreviousCardioResponse = z.infer<typeof PreviousCardioResponseSchema>;
+
 export const PreviousWorkoutSummarySchema = z.object({
   completedAt: z.string().nullable(),
   workoutName: z.string(),

@@ -16,6 +16,8 @@ import {APPBAR_HEIGHT, DRAWER_WIDTH} from "@/components/shell/CustomAppBar";
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import {format, isSameDay} from 'date-fns';
 import {hasMeaningfulEventChanges, parsedEvents} from "@/app/user/calendar/utils";
+import {CalendarDataResponseSchema} from '@lib/contracts/calendarData';
+import {fetchJsonWithSchema} from '@lib/fetchWrapper';
 import {EventType} from "@/generated/prisma/browser";
 import {CalendarRightDrawer} from "@/app/user/calendar/CalendarRightDrawer";
 import {getMetricsCache, getEventsCache, saveMetricsCache, saveEventsCache} from "@/utils/clientDb";
@@ -59,9 +61,10 @@ export default function Calendar({events, metrics, userId}: Props) {
   useEffect(() => {
     const handleOnline = async () => {
       try {
-        const response = await fetch('/api/calendar-data');
-        if (!response.ok) return;
-        const {events: freshEvents, metrics: freshMetrics} = await response.json();
+        const {events: freshEvents, metrics: freshMetrics} = await fetchJsonWithSchema(
+          '/api/calendar-data',
+          CalendarDataResponseSchema,
+        );
         let eventsChanged = false;
         setEventsInState((prevEvents) => {
           eventsChanged = hasMeaningfulEventChanges(prevEvents, freshEvents);

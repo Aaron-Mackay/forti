@@ -19,8 +19,15 @@ import { useAppBar } from '@lib/providers/AppBarProvider';
 import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 import ExerciseSlide from './ExerciseSlide';
-import CardioSlide, {PreviousCardio} from './CardioSlide';
-import type { E1rmHistoryPoint, PreviousExerciseHistory } from '@lib/contracts/exerciseHistory';
+import CardioSlide from './CardioSlide';
+import {
+  E1rmHistoryResponseSchema,
+  PreviousCardioResponseSchema,
+  type E1rmHistoryPoint,
+  type PreviousCardioResponse,
+  type PreviousExerciseHistory,
+} from '@lib/contracts/exerciseHistory';
+import { fetchJsonWithSchema } from '@lib/fetchWrapper';
 import {groupWorkoutExercises} from './groupWorkoutExercises';
 import GroupedExerciseSlide from './GroupedExerciseSlide';
 
@@ -70,28 +77,27 @@ export default function ExerciseDetailView({
     Math.max(0, exerciseGroups.findIndex((group) => group.items.some(item => item.id === activeExerciseId)))
   ).current;
   const [e1rmHistoryMap, setE1rmHistoryMap] = useState<Map<number, E1rmHistoryPoint[] | null>>(new Map());
-  const [previousCardioMap, setPreviousCardioMap] = useState<Map<number, PreviousCardio | null>>(new Map());
+  const [previousCardioMap, setPreviousCardioMap] = useState<Map<number, PreviousCardioResponse>>(new Map());
 
   const fetchE1rmHistory = useCallback((exerciseId: number) => {
     if (e1rmHistoryMap.has(exerciseId)) return;
     setE1rmHistoryMap(prev => new Map(prev).set(exerciseId, null));
-    fetch(`/api/exercises/${exerciseId}/e1rm-history?currentWorkoutId=${currentWorkoutId}`)
-      .then(r => (r.ok ? r.json() : []))
-      .then((data: E1rmHistoryPoint[]) =>
-        setE1rmHistoryMap(prev => new Map(prev).set(exerciseId, data))
-      )
+    fetchJsonWithSchema(
+      `/api/exercises/${exerciseId}/e1rm-history?currentWorkoutId=${currentWorkoutId}`,
+      E1rmHistoryResponseSchema,
+    )
+      .then(data => setE1rmHistoryMap(prev => new Map(prev).set(exerciseId, data)))
       .catch(() => setE1rmHistoryMap(prev => new Map(prev).set(exerciseId, [])));
   }, [currentWorkoutId, e1rmHistoryMap]);
 
   const fetchPreviousCardio = useCallback((exerciseId: number) => {
     if (previousCardioMap.has(exerciseId)) return;
-    fetch(`/api/exercises/${exerciseId}/previous-cardio?currentWorkoutId=${currentWorkoutId}`)
-      .then(res => res.ok ? res.json() : null)
-      .then((data: PreviousCardio | null) => {
-        setPreviousCardioMap(prev => new Map(prev).set(exerciseId, data));
-      })
-      .catch(() => {/* ignore fetch errors — previous data is optional */
-      });
+    fetchJsonWithSchema(
+      `/api/exercises/${exerciseId}/previous-cardio?currentWorkoutId=${currentWorkoutId}`,
+      PreviousCardioResponseSchema,
+    )
+      .then(data => setPreviousCardioMap(prev => new Map(prev).set(exerciseId, data)))
+      .catch(() => {/* ignore fetch errors — previous data is optional */});
   }, [currentWorkoutId, previousCardioMap]);
 
   // Fetch for the initially active exercise on mount
