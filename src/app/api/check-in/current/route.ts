@@ -84,27 +84,20 @@ export async function GET() {
   // Count workouts completed during the current week, and total planned in those weeks
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 7);
-  const [weeksWithCompleted, lastCompletedWorkout, coachTemplate] = await Promise.all([
-    prisma.week.findMany({
-      where: {
-        plan: { userId },
-        workouts: { some: { dateCompleted: { gte: weekStart, lt: weekEnd } } },
-      },
-      select: { id: true },
-    }),
+  const [lastCompletedWorkout, coachTemplate] = await Promise.all([
     prisma.workout.findFirst({
       where: {
         week: { plan: { userId } },
         dateCompleted: { gte: weekStart, lt: weekEnd },
       },
       orderBy: { dateCompleted: 'desc' },
-      select: { week: { select: { planId: true } } },
+      select: { weekId: true, week: { select: { planId: true } } },
     }),
     getTemplateForClient(userId),
   ]);
-  const weekIds = weeksWithCompleted.map(w => w.id);
-  const plannedWorkouts = weekIds.length === 0 ? [] : await prisma.workout.findMany({
-    where: { weekId: { in: weekIds } },
+  const targetWeekId = lastCompletedWorkout?.weekId ?? null;
+  const plannedWorkouts = targetWeekId === null ? [] : await prisma.workout.findMany({
+    where: { weekId: targetWeekId },
     select: {
       id: true,
       name: true,

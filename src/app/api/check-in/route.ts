@@ -60,16 +60,17 @@ export async function GET(req: NextRequest) {
     const weekStart = new Date(checkIn.weekStartDate);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 7);
-    const weeksWithCompleted = await prisma.week.findMany({
+    const lastCompletedWorkoutForWindow = await prisma.workout.findFirst({
       where: {
-        plan: { userId },
-        workouts: { some: { dateCompleted: { gte: weekStart, lt: weekEnd } } },
+        week: { plan: { userId } },
+        dateCompleted: { gte: weekStart, lt: weekEnd },
       },
-      select: { id: true },
+      orderBy: { dateCompleted: 'desc' },
+      select: { weekId: true },
     });
-    const weekIds = weeksWithCompleted.map(w => w.id);
-    const plannedWorkouts = weekIds.length === 0 ? [] : await prisma.workout.findMany({
-      where: { weekId: { in: weekIds } },
+    const targetWeekId = lastCompletedWorkoutForWindow?.weekId ?? null;
+    const plannedWorkouts = targetWeekId === null ? [] : await prisma.workout.findMany({
+      where: { weekId: targetWeekId },
       select: {
         id: true,
         name: true,

@@ -79,7 +79,7 @@ export async function getCoachCheckInById(coachId: string, checkInId: number) {
   const windowEnd = checkIn.completedAt ?? weekEnd;
   const windowStart = new Date(windowEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  const [currentWeek, weekPrior, template, clientUser, weekWorkouts, weeksWithCompleted] = await Promise.all([
+  const [currentWeek, weekPrior, template, clientUser, weekWorkouts] = await Promise.all([
     prisma.metric.findMany({
       where: { userId: checkIn.userId, date: { gte: weekStart, lt: weekEnd } },
     }),
@@ -93,20 +93,13 @@ export async function getCoachCheckInById(coachId: string, checkInId: number) {
         week: { plan: { userId: checkIn.userId } },
         dateCompleted: { gte: windowStart, lt: windowEnd },
       },
-      select: { id: true, name: true, dateCompleted: true, week: { select: { planId: true } } },
-      orderBy: { dateCompleted: 'asc' },
-    }),
-    prisma.week.findMany({
-      where: {
-        plan: { userId: checkIn.userId },
-        workouts: { some: { dateCompleted: { gte: weekStart, lt: weekEnd } } },
-      },
-      select: { id: true },
+      select: { id: true, name: true, dateCompleted: true, weekId: true, week: { select: { planId: true } } },
+      orderBy: { dateCompleted: 'desc' },
     }),
   ]);
-  const weekIds = weeksWithCompleted.map(w => w.id);
-  const plannedWorkouts = weekIds.length === 0 ? [] : await prisma.workout.findMany({
-    where: { weekId: { in: weekIds } },
+  const targetWeekId = weekWorkouts[0]?.weekId ?? null;
+  const plannedWorkouts = targetWeekId === null ? [] : await prisma.workout.findMany({
+    where: { weekId: targetWeekId },
     select: {
       id: true,
       name: true,
