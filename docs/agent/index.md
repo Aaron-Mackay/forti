@@ -20,6 +20,16 @@ Use this index for fast file targeting before broad repo searches.
 - Route implementation: `src/app/api/saveUserWorkoutData/route.ts` — `POST /api/saveUserWorkoutData` request parsing, validation, and persistence flow.
 - Contract/error policy doc: `docs/api-error-contract.md` — canonical auth and validation response contract guidance.
 
+## Cross-platform / web-only boundaries
+
+Code in `src/lib/` is intended to be portable to a future React Native client. Shared hooks/services should not import `window`/`document`/`localStorage`/`navigator`/etc. directly — go through one of these adapters or extract a pure helper alongside a thin web wrapper.
+
+- `src/lib/storage.ts` — `storage` (SSR-safe localStorage adapter, `getString`/`setString`/`remove`/`getJson`/`setJson`) is the only sanctioned place to touch `window.localStorage`. RN port replaces this file's implementation.
+- `src/lib/scrollEdgeFades.ts` — `computeScrollFades(metrics, threshold)` is the pure scroll-edge-fade logic; `src/lib/hooks/useScrollEdgeFades.ts` is the web hook that wires DOM events (scroll/resize/`ResizeObserver`) around it.
+- `src/lib/usePushSubscription.ts` — explicitly web-only (Service Worker / `PushManager` / `Notification`). Do not import from any path intended for RN reuse.
+- `src/lib/fetchWrapper.ts` + `src/lib/clientApi.ts` — platform-agnostic; reusable as-is.
+- Auth: `src/lib/auth.ts` / `src/lib/requireSession.ts` / `src/lib/getLoggedInUser.ts` are server-side (NextAuth + `next/navigation`). The browser-side session is consumed via NextAuth's `useSession` (web-only). RN will need its own token storage/refresh layer.
+
 ## Maintenance rule (required)
 
 - Update this file whenever you add a major feature area or a new top-level domain (for example: a new `src/app/<domain>/...` surface or a new `src/lib/contracts/<domain>.ts` contract group).
