@@ -23,6 +23,10 @@ export type MobileRefreshTokenPayload = {
 
 export type MobileTokenErrorCode = 'expired' | 'invalid' | 'wrong-type';
 
+type VerifyMobileTokenOptions = {
+  ignoreExpiration?: boolean;
+};
+
 export class MobileTokenError extends Error {
   readonly code: MobileTokenErrorCode;
 
@@ -79,7 +83,7 @@ export async function issueMobileRefreshToken(
   return { token, expiresAt: new Date(exp * 1000) };
 }
 
-async function verifyToken(token: string): Promise<{
+async function verifyToken(token: string, options?: VerifyMobileTokenOptions): Promise<{
   sub: string;
   tokenType: MobileTokenType;
   jti?: string;
@@ -90,6 +94,7 @@ async function verifyToken(token: string): Promise<{
       issuer: ISSUER,
       audience: AUDIENCE,
       algorithms: [ALG],
+      ...(options?.ignoreExpiration ? { currentDate: new Date(0) } : {}),
     });
   } catch (err) {
     if (err instanceof joseErrors.JWTExpired) {
@@ -119,8 +124,11 @@ export async function verifyMobileAccessToken(token: string): Promise<MobileAcce
   return { sub: payload.sub, tokenType: 'mobile-access' };
 }
 
-export async function verifyMobileRefreshToken(token: string): Promise<MobileRefreshTokenPayload> {
-  const payload = await verifyToken(token);
+export async function verifyMobileRefreshToken(
+  token: string,
+  options?: VerifyMobileTokenOptions,
+): Promise<MobileRefreshTokenPayload> {
+  const payload = await verifyToken(token, options);
   if (payload.tokenType !== 'mobile-refresh') {
     throw new MobileTokenError('wrong-type', 'expected mobile-refresh token');
   }

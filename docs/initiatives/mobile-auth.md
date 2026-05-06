@@ -436,6 +436,12 @@ Validation: fail fast at boot if either is missing AND the mobile endpoints exis
 
 Per the Forti commit style, each milestone is a single atomic commit that passes `npm run check`.
 
+- [x] Milestone A — DB + JWT helpers
+- [x] Milestone B — Token-exchange endpoint
+- [x] Milestone C — Refresh + sign-out endpoints
+- [ ] Milestone D — `requireSession()` extension
+- [ ] Milestone E — Cleanup, observability, docs
+
 ### Milestone A — DB + JWT helpers
 **Scope:**
 - `prisma/schema.prisma`: add `MobileSession` model + relation

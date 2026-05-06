@@ -429,6 +429,7 @@ model AiUsageLog {
 
 enum AuditEventType {
   LoginSucceeded
+  RefreshTokenReuseDetected
   PlanCreated
   PlanSaved
   CheckInSubmitted

@@ -123,9 +123,7 @@ describe('mobileAuth rejection cases', () => {
 
   it('rejects a tampered token', async () => {
     const { token } = await issueMobileAccessToken('user-5');
-    const parts = token.split('.');
-    parts[2] = `A${parts[2].slice(1)}`;
-    const tampered = parts.join('.');
+    const tampered = `${token}x`;
 
     await expect(verifyMobileAccessToken(tampered)).rejects.toBeInstanceOf(MobileTokenError);
   });
@@ -142,6 +140,25 @@ describe('mobileAuth rejection cases', () => {
       .sign(key());
 
     await expect(verifyMobileRefreshToken(bad)).rejects.toMatchObject({ code: 'invalid' });
+  });
+
+  it('can verify an expired refresh token when expiry checks are disabled', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const expired = await new SignJWT({ tokenType: 'mobile-refresh' })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setSubject('user-x')
+      .setJti('session-expired')
+      .setIssuer('forti')
+      .setAudience('forti-mobile')
+      .setIssuedAt(now - 1000)
+      .setExpirationTime(now - 10)
+      .sign(key());
+
+    await expect(verifyMobileRefreshToken(expired, { ignoreExpiration: true })).resolves.toMatchObject({
+      sub: 'user-x',
+      tokenType: 'mobile-refresh',
+      jti: 'session-expired',
+    });
   });
 });
 

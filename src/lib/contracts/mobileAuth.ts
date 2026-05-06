@@ -5,6 +5,16 @@ export const MobileTokenExchangeRequestSchema = z.object({
 });
 export type MobileTokenExchangeRequest = z.infer<typeof MobileTokenExchangeRequestSchema>;
 
+export const MobileRefreshRequestSchema = z.object({
+  refreshToken: z.string().min(1),
+});
+export type MobileRefreshRequest = z.infer<typeof MobileRefreshRequestSchema>;
+
+export const MobileSignOutRequestSchema = z.object({
+  refreshToken: z.string().min(1),
+});
+export type MobileSignOutRequest = z.infer<typeof MobileSignOutRequestSchema>;
+
 export const MobileAuthUserSchema = z.object({
   id: z.string(),
   name: z.string().nullable(),
