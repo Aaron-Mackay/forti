@@ -18,6 +18,7 @@
     "seed": "ts-node -r dotenv/config prisma/seed.ts",
     "recalculate-e1rm": "ts-node -r dotenv/config scripts/recalculate-e1rm.ts",
     "api:index": "node scripts/generate-api-index.mjs",
+    "api:index:check": "npm run api:index && git diff --exit-code docs/agent/api-index.md",
     "merge-exercises": "ts-node -r dotenv/config scripts/merge-exercises.ts",
     "seed:demo": "ts-node -r dotenv/config prisma/seed-demo.ts",
     "local-db": "psql -h localhost -U postgres -d postgres",
@@ -25,7 +26,7 @@
     "test:e2e": "start-server-and-test dev http://localhost:3000 'playwright test'",
     "test:e2e:preview": "BASE_URL=https://www.preview.forti-training.co.uk playwright test",
     "rebuild-prisma": "prisma migrate dev --name \"\" && prisma generate",
-    "check": "npm run test && npm run lint && npm run build",
+    "check": "npm run api:index:check && npm run test && npm run lint && npm run build",
     "knip": "knip",
     "prepare": "husky"
   },

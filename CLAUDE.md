@@ -83,7 +83,7 @@ Update route code/contracts and regenerate the index instead of manually editing
 - Use Playwright fixtures from `tests/e2e/fixtures` (`import { test, expect } from './fixtures';`).
 
 ### Commit and pre-commit
-- Husky pre-commit runs `npm run check` (test + lint + build).
+- Husky pre-commit runs `npm run check` (API index verification + test + lint + build).
 - Do not bypass pre-commit hooks.
 - Prefer atomic commits (one logical concern per commit).
 
