@@ -30,12 +30,16 @@ const eslintConfig = [
       ],
     },
   },
-  // ── src/lib/ portability: keep shared code free of web-only navigation ─────
+  // ── src/lib/ portability: keep shared code free of web-only Next/Auth APIs ─
   // next/navigation is web-only; RN uses expo-router with a different API.
-  // getLoggedInUser.ts is explicitly server-side and exempt.
+  // next-auth/react is web-only; RN will need its own session/sign-in layer.
+  // getLoggedInUser.ts and providers/AuthProvider.tsx are explicitly web-only.
   {
     files: ['src/lib/**/*.{ts,tsx}'],
-    ignores: ['src/lib/getLoggedInUser.ts'],
+    ignores: [
+      'src/lib/getLoggedInUser.ts',
+      'src/lib/providers/AuthProvider.tsx',
+    ],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -45,6 +49,11 @@ const eslintConfig = [
               name: 'next/navigation',
               message:
                 'next/navigation is web-only. Keep src/lib/ portable for the RN client — confine navigation imports to src/app/** and src/components/shell/**.',
+            },
+            {
+              name: 'next-auth/react',
+              message:
+                'next-auth/react is web-only. Keep src/lib/ portable for the RN client — confine sign-in/out and session-hook imports to src/app/** and src/components/shell/**.',
             },
           ],
         },
