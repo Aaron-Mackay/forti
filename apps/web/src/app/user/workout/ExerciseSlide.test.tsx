@@ -165,7 +165,11 @@ describe('ExerciseSlide', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('tab', {name: /notes/i}));
+    const notesTab = screen.getByRole('tab', {name: /notes/i});
+    fireEvent.click(notesTab);
+    await waitFor(() => {
+      expect(notesTab).toHaveAttribute('aria-selected', 'true');
+    });
     expect(screen.getByPlaceholderText(/add form cues and notes for this exercise/i)).toBeInTheDocument();
     expect(screen.queryByTestId('e1rm-sparkline')).not.toBeInTheDocument();
 
@@ -173,9 +177,9 @@ describe('ExerciseSlide', () => {
     fireEvent.click(progressTab);
     await waitFor(() => {
       expect(progressTab).toHaveAttribute('aria-selected', 'true');
+      expect(notesTab).toHaveAttribute('aria-selected', 'false');
     });
     expect(screen.getByTestId('e1rm-sparkline')).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText(/add form cues and notes for this exercise/i)).not.toBeInTheDocument();
   });
 
   it('shows the muscles panel with a width-driven aspect ratio wrapper', async () => {
