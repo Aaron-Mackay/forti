@@ -11,7 +11,7 @@ import { recordAuditEvent } from '@lib/auditEvents';
 import {
   MobileAuthSuccessSchema,
   MobileRefreshRequestSchema,
-} from '@lib/contracts/mobileAuth';
+} from '@forti/shared';
 import {
   MobileTokenError,
   hashRefreshToken,

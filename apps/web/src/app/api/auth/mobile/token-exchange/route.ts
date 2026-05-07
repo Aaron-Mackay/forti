@@ -10,7 +10,7 @@ import {
 import {
   MobileAuthSuccessSchema,
   MobileTokenExchangeRequestSchema,
-} from '@lib/contracts/mobileAuth';
+} from '@forti/shared';
 import { issueMobileAccessToken, issueMobileRefreshToken, hashRefreshToken } from '@lib/mobileAuth';
 import { consumeRateLimit } from '@lib/rateLimit';
 import { recordSignInAuditEvent } from '@lib/recordSignInAuditEvent';

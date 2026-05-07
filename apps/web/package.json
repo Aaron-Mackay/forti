@@ -52,6 +52,7 @@
     "@types/web-push": "^3.6.4",
     "@use-gesture/react": "^10.3.1",
     "@vercel/analytics": "^2.0.1",
+    "@forti/shared": "*",
     "@vercel/blob": "^2.3.3",
     "@vercel/speed-insights": "^2.0.0",
     "apexcharts": "^5.10.6",
