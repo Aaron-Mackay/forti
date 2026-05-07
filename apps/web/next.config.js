@@ -14,6 +14,7 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  transpilePackages: ['@forti/shared'],
   experimental: {
     proxyClientMaxBodySize: `${safeUploadMb}mb`,
   },

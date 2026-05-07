@@ -54,7 +54,7 @@ function detectAuthRequirement(content) {
 }
 
 function detectContractModulePath(content) {
-  const importRegex = /from\s+['"]([^'"]*lib\/contracts\/[^'"]+)['"]/g;
+  const importRegex = /from\s+['"]([^'"]*(?:lib\/contracts\/|@forti\/shared\b)[^'"]*)['"]/g;
   const modules = new Set();
 
   let match;

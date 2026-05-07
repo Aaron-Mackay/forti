@@ -1,6 +1,6 @@
 import prisma from '@lib/prisma';
 import { errorResponse, rateLimitedResponse, validationErrorResponse } from '@lib/apiResponses';
-import { MobileSignOutRequestSchema } from '@lib/contracts/mobileAuth';
+import { MobileSignOutRequestSchema } from '@forti/shared';
 import { hashRefreshToken, verifyMobileRefreshToken } from '@lib/mobileAuth';
 import { consumeRateLimit } from '@lib/rateLimit';
 
