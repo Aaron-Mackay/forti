@@ -61,7 +61,7 @@ jobs:
         run: npm ci
 
       - name: Apply database schema
-        run: npm run -w @forti/web exec -- prisma db push
+        run: npm exec -w @forti/web -- prisma db push
 
       - name: Seed database
         run: npm run seed
@@ -73,7 +73,7 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
       - name: Install Playwright browsers
-        run: npm run -w @forti/web exec -- playwright install --with-deps
+        run: npm exec -w @forti/web -- playwright install --with-deps
 
       - name: Build Next.js app
         # Use a production build so Next.js serves routes via webpack, not
