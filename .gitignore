@@ -5,7 +5,7 @@
 
 
 # dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -15,14 +15,14 @@
 !.yarn/versions
 
 # testing
-/coverage
+coverage/
 
 # next.js
-/.next/
-/out/
+.next/
+out/
 
 # production
-/build
+build/
 
 # misc
 .DS_Store
@@ -46,15 +46,24 @@ next-env.d.ts
 /.idea/
 
 # Playwright
-node_modules/
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-/playwright/.auth/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+playwright/.auth/
 /.claude/settings.local.json
 /.playwright-cli/
 /.playwright-mcp/
 
 # Prisma generated client
-/src/generated/
+**/src/generated/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+# generated native folders (Expo prebuild output)
+apps/mobile/ios/
+apps/mobile/android/

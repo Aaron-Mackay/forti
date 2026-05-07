@@ -2,25 +2,27 @@ export PATH="/opt/node22/bin:$PATH"
 export NVM_DIR="$HOME/.nvm"
 if [ -f .env ]; then set -a; . ./.env; set +a; fi
 if [ -f .env.local ]; then set -a; . ./.env.local; set +a; fi
+if [ -f apps/web/.env ]; then set -a; . ./apps/web/.env; set +a; fi
+if [ -f apps/web/.env.local ]; then set -a; . ./apps/web/.env.local; set +a; fi
 
 if [ -s "$NVM_DIR/nvm.sh" ]; then
   . "$NVM_DIR/nvm.sh"
   nvm use
 fi
 
-if [ ! -d "src/generated/prisma" ]; then
+if [ ! -d "apps/web/src/generated/prisma" ]; then
   echo "⚙️  Prisma client not found — generating..."
-  npx prisma generate
+  npm run -w @forti/web exec -- prisma generate
 fi
 
 npm run check
 
 DB_HOST=$(echo "$DATABASE_URL" | sed 's|.*@\([^:/]*\).*|\1|')
 if pg_isready -h "$DB_HOST" -t 3 -q 2>/dev/null; then
-  npx prisma migrate diff \
+  npm run -w @forti/web exec -- prisma migrate diff \
     --from-config-datasource \
     --to-schema prisma/schema.prisma \
-    --exit-code || (echo "❌ schema.prisma has changes without a migration. Run: npx prisma migrate dev --name your_change" && exit 1)
+    --exit-code || (echo "❌ schema.prisma has changes without a migration. Run: npm run rebuild-prisma" && exit 1)
 else
   echo "⚠️  DB not reachable — skipping schema drift check"
 fi
