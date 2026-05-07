@@ -24,6 +24,7 @@ export default function WorkoutClient({userData}: {userData: UserPrisma}) {
   const initialWorkoutId = workoutIdParam ? Number(workoutIdParam) : null;
   const [previousSetsMap, setPreviousSetsMap] = useState<Map<number, PreviousExerciseHistory>>(new Map());
   const previousSetsMapRef = useRef<Map<number, PreviousExerciseHistory>>(new Map());
+  const previousSetsExerciseIdRef = useRef<Map<number, number>>(new Map());
   const previousSetsInFlightRef = useRef<Set<number>>(new Set());
 
   const {
@@ -58,15 +59,29 @@ export default function WorkoutClient({userData}: {userData: UserPrisma}) {
   }, [previousSetsMap]);
 
   const fetchPreviousSets = useCallback(async (currentWorkoutId: number, workoutExerciseId: number, exerciseId: number) => {
-    if (previousSetsMapRef.current.has(workoutExerciseId) || previousSetsInFlightRef.current.has(workoutExerciseId)) return;
+    const fetchedForExerciseId = previousSetsExerciseIdRef.current.get(workoutExerciseId);
+    const hasCurrentExerciseHistory = fetchedForExerciseId === exerciseId && previousSetsMapRef.current.has(workoutExerciseId);
+
+    if (hasCurrentExerciseHistory || previousSetsInFlightRef.current.has(workoutExerciseId)) return;
+
+    if (fetchedForExerciseId !== undefined && fetchedForExerciseId !== exerciseId) {
+      setPreviousSetsMap(prev => {
+        const next = new Map(prev);
+        next.delete(workoutExerciseId);
+        return next;
+      });
+    }
+
     previousSetsInFlightRef.current.add(workoutExerciseId);
     try {
       const res = await fetch(
         `/api/exercises/${exerciseId}/previous-sets?currentWorkoutId=${currentWorkoutId}&currentWorkoutExerciseId=${workoutExerciseId}`
       );
       const history: PreviousExerciseHistory = res.ok ? await res.json() : {workouts: []};
+      previousSetsExerciseIdRef.current.set(workoutExerciseId, exerciseId);
       setPreviousSetsMap(prev => new Map(prev).set(workoutExerciseId, history));
     } catch {
+      previousSetsExerciseIdRef.current.set(workoutExerciseId, exerciseId);
       setPreviousSetsMap(prev => new Map(prev).set(workoutExerciseId, {workouts: []}));
     } finally {
       previousSetsInFlightRef.current.delete(workoutExerciseId);
