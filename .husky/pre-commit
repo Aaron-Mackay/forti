@@ -12,14 +12,14 @@ fi
 
 if [ ! -d "apps/web/src/generated/prisma" ]; then
   echo "⚙️  Prisma client not found — generating..."
-  npm run -w @forti/web exec -- prisma generate
+  npm exec -w @forti/web -- prisma generate
 fi
 
 npm run check
 
 DB_HOST=$(echo "$DATABASE_URL" | sed 's|.*@\([^:/]*\).*|\1|')
 if pg_isready -h "$DB_HOST" -t 3 -q 2>/dev/null; then
-  npm run -w @forti/web exec -- prisma migrate diff \
+  npm exec -w @forti/web -- prisma migrate diff \
     --from-config-datasource \
     --to-schema prisma/schema.prisma \
     --exit-code || (echo "❌ schema.prisma has changes without a migration. Run: npm run rebuild-prisma" && exit 1)
