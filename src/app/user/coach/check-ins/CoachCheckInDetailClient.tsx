@@ -33,13 +33,12 @@ import {
 } from '@lib/macroTargets';
 import MetricsSystemCard from '@/components/checkin/MetricsSystemCard';
 import WorkoutsSystemCard from '@/components/checkin/WorkoutsSystemCard';
-import {checkInHasPhotos, checkInHasRatings, checkInHasReflection, checkInHasCustomResponses} from '@/lib/checkInUtils';
+import {checkInHasRatings, checkInHasReflection, checkInHasCustomResponses} from '@/lib/checkInUtils';
 import {parseCheckInTemplate} from '@/types/checkInTemplateTypes';
 import type {CheckInTemplate} from '@/types/checkInTemplateTypes';
 import type {DataVizCard} from '@/types/datavizTypes';
 import DataVizChartCard from '@/components/charts/DataVizChartCard';
-import CheckInPhotoTile from '@/components/checkin/CheckInPhotoTile';
-import PhotoViewerDialog from '@/components/checkin/PhotoViewerDialog';
+import CheckInPhotoCompare from './_components/CheckInPhotoCompare';
 import CustomCheckInResponseDisplay from '@/components/checkin/CustomCheckInResponseDisplay';
 import SupplementsClient from '@/app/user/supplements/SupplementsClient';
 import {getLoomEmbedUrl} from '@lib/loom';
@@ -168,7 +167,6 @@ export default function CoachCheckInDetailClient({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   const [reviewedAt, setReviewedAt] = useState(checkIn.coachReviewedAt);
-  const [activePhoto, setActivePhoto] = useState<{ src: string; alt: string } | null>(null);
   const [metricsExpanded, setMetricsExpanded] = useState(false);
   const baselineTargetValues = useMemo(() => initTargetValues(activeTemplate), [activeTemplate]);
 
@@ -271,7 +269,6 @@ export default function CoachCheckInDetailClient({
   )?.metricConfig;
   const hasRatings = !isCustomMode && checkInHasRatings(checkIn);
   const hasReflection = !isCustomMode && checkInHasReflection(checkIn);
-  const hasPhotos = checkInHasPhotos(checkIn);
 
   return (
     <Box>
@@ -352,36 +349,7 @@ export default function CoachCheckInDetailClient({
             },
           }}
         >
-          {hasPhotos && (
-            <Section>
-              <Typography variant="overline" color="text.secondary" sx={{display: 'block', mb: 1.5}}>
-                Progress photos
-              </Typography>
-              <Box
-                sx={{
-                  display: 'grid',
-                  gap: 1.5,
-                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))'
-                }}
-              >
-                <CheckInPhotoTile
-                  src={checkIn.frontPhotoUrl}
-                  alt="Front progress photo"
-                  onClick={(src, alt) => setActivePhoto({src, alt})}
-                />
-                <CheckInPhotoTile
-                  src={checkIn.sidePhotoUrl}
-                  alt="Side progress photo"
-                  onClick={(src, alt) => setActivePhoto({src, alt})}
-                />
-                <CheckInPhotoTile
-                  src={checkIn.backPhotoUrl}
-                  alt="Back progress photo"
-                  onClick={(src, alt) => setActivePhoto({src, alt})}
-                />
-              </Box>
-            </Section>
-          )}
+          <CheckInPhotoCompare currentCheckIn={checkIn} />
 
           {isCustomMode && templateSnapshot && (
             <Box sx={{ gridColumn: '1 / -1' }}>
@@ -582,7 +550,6 @@ export default function CoachCheckInDetailClient({
         </Button>
       </Stack>
 
-      <PhotoViewerDialog photo={activePhoto} onClose={() => setActivePhoto(null)}/>
     </Box>
   );
 }

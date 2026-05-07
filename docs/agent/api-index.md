@@ -17,6 +17,7 @@
 - /api/coach/check-ins | methods=GET | auth=session | contracts=-
 - /api/coach/check-ins/[id] | methods=GET | auth=session | contracts=-
 - /api/coach/check-ins/[id]/notes | methods=PATCH | auth=session | contracts=@lib/contracts/coach
+- /api/coach/check-ins/[id]/photo-history | methods=GET | auth=session | contracts=-
 - /api/coach/clients | methods=GET | auth=session | contracts=-
 - /api/coach/clients/[clientId] | methods=DELETE | auth=session | contracts=-
 - /api/coach/clients/[clientId]/nutrition | methods=GET | auth=session | contracts=-

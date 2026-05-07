@@ -229,6 +229,98 @@ test.describe('Coach check-ins — reviewed state', () => {
   });
 });
 
+test.describe('Coach check-ins — progress photo compare', () => {
+  const PIXEL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9ZL5UusAAAAASUVORK5CYII=';
+
+  const CHECK_IN_WITH_PHOTOS = {
+    ...UNREVIEWED_CHECK_IN,
+    frontPhotoUrl: PIXEL,
+    sidePhotoUrl: PIXEL,
+    backPhotoUrl: PIXEL,
+  };
+
+  const PHOTO_HISTORY_ROUTE = /\/api\/coach\/check-ins\/10\/photo-history(?:\?.*)?$/;
+
+  test.beforeEach(async ({ page }) => {
+    await page.route(CHECK_IN_10_ROUTE, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(makeDetailApiResponse(CHECK_IN_WITH_PHOTOS)),
+      }),
+    );
+  });
+
+  test('renders side-by-side comparison with empty state when no prior history', async ({ page }) => {
+    await page.route(PHOTO_HISTORY_ROUTE, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ entries: [] }),
+      }),
+    );
+
+    await page.goto('/user/coach/check-ins/10');
+
+    await expect(page.getByText('Progress photos')).toBeVisible();
+    await expect(page.getByText('This week')).toBeVisible();
+    await expect(page.getByText('Compare with')).toBeVisible();
+    await expect(page.getByText('No earlier photos yet')).toBeVisible();
+  });
+
+  test('renders comparison week selector and switches photos when changed', async ({ page }) => {
+    await page.route(PHOTO_HISTORY_ROUTE, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          entries: [
+            { id: 9, weekStartDate: '2026-03-02T00:00:00.000Z', frontPhotoUrl: PIXEL, sidePhotoUrl: PIXEL, backPhotoUrl: null },
+            { id: 8, weekStartDate: '2026-02-23T00:00:00.000Z', frontPhotoUrl: PIXEL, sidePhotoUrl: null, backPhotoUrl: null },
+          ],
+        }),
+      }),
+    );
+
+    await page.goto('/user/coach/check-ins/10');
+
+    const select = page.locator('[role="combobox"]').filter({ hasText: 'Week of 2 Mar 2026' });
+    await expect(select).toBeVisible();
+
+    await select.click();
+    await expect(page.getByRole('option', { name: /Week of 2 Mar 2026/ })).toBeVisible();
+    await expect(page.getByRole('option', { name: /Week of 23 Feb 2026/ })).toBeVisible();
+
+    await page.getByRole('option', { name: /Week of 23 Feb 2026/ }).click();
+    await expect(select).toContainText('Week of 23 Feb 2026');
+  });
+
+  test('clicking a tile opens the dialog with prev/next week navigation', async ({ page }) => {
+    await page.route(PHOTO_HISTORY_ROUTE, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          entries: [
+            { id: 9, weekStartDate: '2026-03-02T00:00:00.000Z', frontPhotoUrl: PIXEL, sidePhotoUrl: PIXEL, backPhotoUrl: PIXEL },
+          ],
+        }),
+      }),
+    );
+
+    await page.goto('/user/coach/check-ins/10');
+
+    await page.getByRole('button', { name: /Front progress photo, week of 9 Mar 2026/ }).click();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    const prevBtn = dialog.getByRole('button', { name: 'Previous week' });
+    await expect(prevBtn).toBeEnabled();
+    await prevBtn.click();
+    await expect(dialog.getByText('2 Mar 2026')).toBeVisible();
+  });
+});
+
 test.describe('Coach check-ins — Browse tab', () => {
   test.beforeEach(async ({ page }) => {
     await page.route(CHECK_INS_ROUTE, (route) =>
