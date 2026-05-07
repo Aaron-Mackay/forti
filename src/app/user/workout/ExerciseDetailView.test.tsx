@@ -217,9 +217,13 @@ describe('ExerciseDetailView', () => {
     expect(screen.getByTestId('anatomy-100')).toBeInTheDocument();
   });
 
-  it('does not render the anatomy diagram when the exercise has no muscles', () => {
+  it('does not render the anatomy diagram when the exercise has no muscles', async () => {
     renderView(defaultProps);
-    fireEvent.click(screen.getByRole('tab', {name: /muscles/i}));
+    const musclesTab = screen.getByRole('tab', {name: /muscles/i});
+    fireEvent.click(musclesTab);
+    await waitFor(() => {
+      expect(musclesTab).toHaveAttribute('aria-selected', 'true');
+    });
     expect(screen.queryByTestId('anatomy-100')).not.toBeInTheDocument();
   });
 });

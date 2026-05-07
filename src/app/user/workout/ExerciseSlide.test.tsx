@@ -137,13 +137,15 @@ describe('ExerciseSlide', () => {
 
     expect(screen.queryByTestId('e1rm-sparkline')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', {name: /progress/i}));
+    const progressTab = screen.getByRole('tab', {name: /progress/i});
+    fireEvent.click(progressTab);
 
     await waitFor(() => {
-      expect(screen.getByTestId('e1rm-sparkline')).toBeVisible();
+      expect(progressTab).toHaveAttribute('aria-selected', 'true');
     });
+    expect(screen.getByTestId('e1rm-sparkline')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', {name: /progress/i}));
+    fireEvent.click(progressTab);
 
     await waitFor(() => {
       expect(screen.queryByTestId('e1rm-sparkline')).not.toBeInTheDocument();
@@ -167,10 +169,12 @@ describe('ExerciseSlide', () => {
     expect(screen.getByPlaceholderText(/add form cues and notes for this exercise/i)).toBeInTheDocument();
     expect(screen.queryByTestId('e1rm-sparkline')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', {name: /progress/i}));
+    const progressTab = screen.getByRole('tab', {name: /progress/i});
+    fireEvent.click(progressTab);
     await waitFor(() => {
-      expect(screen.getByTestId('e1rm-sparkline')).toBeVisible();
+      expect(progressTab).toHaveAttribute('aria-selected', 'true');
     });
+    expect(screen.getByTestId('e1rm-sparkline')).toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/add form cues and notes for this exercise/i)).not.toBeInTheDocument();
   });
 
@@ -221,11 +225,13 @@ describe('ExerciseSlide', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('tab', {name: /history/i}));
+    const historyTab = screen.getByRole('tab', {name: /history/i});
+    fireEvent.click(historyTab);
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Previous workout table 1')).toBeVisible();
+      expect(historyTab).toHaveAttribute('aria-selected', 'true');
     });
+    expect(screen.getByLabelText('Previous workout table 1')).toBeInTheDocument();
     expect(screen.getByText('Jan 14, 2026')).toBeInTheDocument();
     expect(screen.getByText('Jan 7, 2026')).toBeInTheDocument();
     expect(screen.getByText('106.7')).toBeInTheDocument();

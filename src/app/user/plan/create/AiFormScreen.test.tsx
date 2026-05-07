@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
@@ -160,8 +160,14 @@ describe('AiFormScreen — success', () => {
       expect(screen.getByText(/building your plan/i)).toBeInTheDocument()
     })
 
-    // Resolve to avoid dangling promise
-    resolve!({ ok: true, json: async () => minimalParsedPlan })
+    await act(async () => {
+      resolve!({ ok: true, json: async () => minimalParsedPlan })
+      await Promise.resolve()
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByText(/building your plan/i)).not.toBeInTheDocument()
+    })
   })
 })
 

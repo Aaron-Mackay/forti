@@ -253,6 +253,7 @@ describe('offlineSync', () => {
     });
 
     it('logs error if a request fails', async () => {
+      vi.useFakeTimers();
       (globalThis.navigator as any).onLine = true;
       const requests = [
         { id: 1, url: '/api/1', method: 'POST', body: { a: 1 } },
@@ -261,11 +262,14 @@ describe('offlineSync', () => {
       globalThis.fetch = vi.fn().mockRejectedValue(new Error('fail'));
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      await syncQueuedRequests();
+      const syncPromise = syncQueuedRequests();
+      await vi.runAllTimersAsync();
+      await syncPromise;
 
       expect(consoleError).toHaveBeenCalled();
 
       consoleError.mockRestore();
+      vi.useRealTimers();
     });
   });
 
