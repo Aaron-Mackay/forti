@@ -9,8 +9,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "echo \"(no mobile tests yet)\"",
-    "check": "tsc --noEmit && expo lint"
+    "test": "vitest run --config vitest.config.ts",
+    "check": "npm run test && tsc --noEmit && expo lint"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

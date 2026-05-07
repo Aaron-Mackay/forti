@@ -17,11 +17,11 @@ Keep this index updated when major feature areas or top-level domains are added.
 
 ## Project Overview
 
-**Forti** is a full-stack fitness tracking web app for users and coaches.
+**Forti** is a full-stack fitness tracking app for users and coaches with a Next.js web client and an Expo mobile client.
 
 - Track workouts, plans, metrics, check-ins, and progress history.
 - Supports coach-client linking, feedback, reminders, and notifications.
-- Stack: Next.js 16 (App Router), React 19, TypeScript strict, Prisma + PostgreSQL, NextAuth, MUI v7.
+- Stack: Next.js 16 (App Router), Expo / React Native, React 19, TypeScript strict, Prisma + PostgreSQL, NextAuth, MUI v7.
 
 ---
 
@@ -30,12 +30,15 @@ Keep this index updated when major feature areas or top-level domains are added.
 ```bash
 # Dev
 npm run dev
+npm run dev:mobile
 
 # Quality
 npm run test
 npm run lint
 npm run build
 npm run check
+npm run test:mobile
+npm run check:mobile
 
 # E2E
 npm run test:e2e
@@ -60,11 +63,19 @@ Update route code/contracts and regenerate the index instead of manually editing
 ### Auth & access
 - Use `requireSession()` for authenticated API routes.
 - Use ownership-check helpers for nested resources (`getSetWithOwner`, `getWorkoutExerciseWithOwner`, `getWorkoutWithOwner`).
+- Server endpoints may be called by either the web cookie session or the mobile bearer-token session.
+- Mobile auth lives only under `/api/auth/mobile/*`; do not create mobile-specific business endpoints.
 
 ### API contracts
-- Shared request/response contracts belong in `src/lib/contracts/`, not route files.
-- Client code must not import from `src/app/api/**/route.ts`.
+- Shared web-server contracts belong in `apps/web/src/lib/contracts/`, not route files.
+- Cross-platform request/response contracts shared by web and mobile belong in `packages/shared/src/contracts/`.
+- Client code must not import from `apps/web/src/app/api/**/route.ts`.
 - Prefer shared zod schemas for route input and output; keep API error shapes standardized via `src/lib/apiResponses.ts`.
+
+### Cross-platform boundaries
+- Shared code intended for both web and mobile must not import `next/*`, `next-auth/react`, DOM globals, or React Native-only modules.
+- Mobile screens should consume typed services/API clients, not route internals, Prisma types, or web-only hooks/providers.
+- If a contract or helper is needed by both clients, promote it to `packages/shared` instead of duplicating shapes.
 
 ### Ordering/data integrity
 - Models with `order` fields must remain gapless and consistent within parent scope.
@@ -91,14 +102,16 @@ Update route code/contracts and regenerate the index instead of manually editing
 
 ## Repo Map (Quick Navigation)
 
-- `src/app/` — App Router pages and API handlers.
-- `src/components/` — reusable UI components.
-- `src/lib/` — shared server/client utilities, hooks, providers, API helpers.
-- `src/lib/contracts/` — shared API DTO schemas and inferred types.
-- `src/types/` — shared TS interfaces and data types.
-- `src/utils/` — standalone utilities (CSV, offline sync, AI parsing, etc.).
-- `prisma/` — schema + seed scripts.
-- `tests/e2e/` — Playwright scenarios.
+- `apps/web/src/app/` — App Router pages and API handlers.
+- `apps/web/src/components/` — reusable web UI components.
+- `apps/web/src/lib/` — shared web server/client utilities, hooks, providers, API helpers.
+- `apps/web/src/lib/contracts/` — web-owned API DTO schemas and inferred types.
+- `apps/mobile/` — Expo app, mobile auth/session lifecycle, and mobile API clients.
+- `packages/shared/src/` — cross-platform DTOs and pure helpers shared by web and mobile.
+- `apps/web/src/types/` — shared web TS interfaces and data types.
+- `apps/web/src/utils/` — standalone utilities (CSV, offline sync, AI parsing, etc.).
+- `apps/web/prisma/` — schema + seed scripts.
+- `apps/web/tests/e2e/` — Playwright scenarios.
 
 ## Component Placement Rules
 
@@ -130,6 +143,10 @@ Update route code/contracts and regenerate the index instead of manually editing
   - **Read this only if task involves API endpoints, request/response shapes, or route-level auth rules.**
   - `docs/agent/api-surface.md`
 
+- Mobile app architecture, auth/session lifecycle, and cross-platform boundaries moved out of this file.
+  - **Read this only if task involves Expo/mobile, bearer auth, or deciding whether logic belongs in mobile, web, or shared packages.**
+  - `docs/agent/mobile.md`
+
 - Full schema narrative, entity relationships, and data modeling details moved out of this file.
   - **Read this only if task involves Prisma models, migrations, seed semantics, ordering constraints, or data backfills.**
   - `docs/agent/data-model.md`
@@ -157,6 +174,11 @@ NEXT_PUBLIC_VAPID_PUBLIC_KEY=
 NEXT_PUBLIC_APP_URL=
 CRON_SECRET=
 MOBILE_JWT_SECRET=
+GOOGLE_MOBILE_CLIENT_IDS=
+EXPO_PUBLIC_API_BASE_URL=
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=
+EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=
 ```
 
 `MOBILE_JWT_SECRET` signs mobile bearer tokens; generate with `openssl rand -hex 32` and keep it distinct from `NEXTAUTH_SECRET`.

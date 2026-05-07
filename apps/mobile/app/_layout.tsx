@@ -1,6 +1,7 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { ActivityIndicator, View } from 'react-native';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
@@ -22,9 +23,24 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     if (status === 'signed-out' && !onLogin) {
       router.replace('/login');
     } else if (status === 'signed-in' && onLogin) {
-      router.replace('/');
+      router.replace('/(app)/(tabs)');
     }
   }, [status, segments, router]);
+
+  if (status === 'loading') {
+    return (
+      <View
+        style={{
+          alignItems: 'center',
+          backgroundColor: '#0b0f19',
+          flex: 1,
+          justifyContent: 'center',
+        }}
+      >
+        <ActivityIndicator color="#f5f7fb" />
+      </View>
+    );
+  }
 
   return <>{children}</>;
 }
@@ -37,9 +53,8 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <AuthGate>
           <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(app)" options={{ headerShown: false }} />
             <Stack.Screen name="login" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
         </AuthGate>
         <StatusBar style="auto" />

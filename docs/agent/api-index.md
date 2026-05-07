@@ -76,8 +76,8 @@
 - /api/supplements/[id] | methods=PATCH,DELETE | auth=session | contracts=-
 - /api/target-templates | methods=GET,POST | auth=session | contracts=@lib/contracts/targetTemplates
 - /api/user-data | methods=GET | auth=session | contracts=-
-- /api/user/profile | methods=PATCH | auth=session | contracts=-
-- /api/user/settings | methods=GET,PATCH | auth=session | contracts=@lib/contracts/userSettings
+- /api/user/profile | methods=GET,PATCH | auth=session | contracts=@forti/shared
+- /api/user/settings | methods=GET,PATCH | auth=session | contracts=@forti/shared
 - /api/users | methods=GET | auth=session | contracts=-
 - /api/workout/[workoutId] | methods=PATCH | auth=session | contracts=@lib/contracts/workout
 - /api/workoutExercise | methods=POST | auth=session | contracts=@lib/contracts/workoutExercise

@@ -16,7 +16,9 @@
     "build": "npm run build --workspace=@forti/web",
     "start": "npm run start --workspace=@forti/web",
     "lint": "npm run lint --workspace=@forti/web",
+    "lint:mobile": "npm run lint --workspace=@forti/mobile",
     "test": "npm run test --workspace=@forti/web",
+    "test:mobile": "npm run test --workspace=@forti/mobile",
     "test:e2e": "npm run test:e2e --workspace=@forti/web",
     "api:index": "npm run api:index --workspace=@forti/web",
     "api:index:check": "npm run api:index:check --workspace=@forti/web",
@@ -27,6 +29,7 @@
     "merge-exercises": "npm run merge-exercises --workspace=@forti/web",
     "local-db": "npm run local-db --workspace=@forti/web",
     "knip": "npm run knip --workspace=@forti/web",
+    "check:mobile": "npm run check --workspace=@forti/mobile",
     "check": "npm run check --workspace=@forti/web",
     "prepare": "husky"
   },

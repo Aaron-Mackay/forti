@@ -1,50 +1,51 @@
-# Welcome to your Expo app 👋
+# Forti mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo client for the Forti mobile foundation. This workspace is intentionally pre-restyle: it validates native auth, protected routing, bearer-token API access, shared contracts, and CI checks before product UI work begins.
 
-## Get started
+## Current scope
 
-1. Install dependencies
+- Native Google sign-in via `expo-auth-session`
+- Secure token storage and refresh-aware session lifecycle
+- Protected Expo Router shell with placeholder tabs for home, plans, check-ins, and account
+- Typed mobile API client using bearer auth against the existing Forti web API
+- Shared profile/settings contracts consumed by both web routes and mobile clients
 
-   ```bash
-   npm install
-   ```
+## Local setup
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+1. Install dependencies from the repo root:
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Copy the example env file and provide Forti API + Google OAuth values:
 
-## Learn more
+```bash
+cp apps/mobile/.env.example apps/mobile/.env
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+3. Start the mobile app from the repo root:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm run dev:mobile
+```
 
-## Join the community
+## Required configuration
 
-Join our community of developers creating universal apps.
+- `EXPO_PUBLIC_API_BASE_URL`
+  - Local device or Expo Go: use your machine's LAN URL, for example `http://192.168.1.10:3000`
+  - Shared tunnel: use the tunnel URL exposed by Expo
+- `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
+- `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`
+- `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The backend must also have the mobile auth server env configured, especially `MOBILE_JWT_SECRET` and `GOOGLE_MOBILE_CLIENT_IDS`.
+
+## Verification
+
+Run the mobile workspace checks from the repo root:
+
+```bash
+npm run test:mobile
+npm run check:mobile
+```

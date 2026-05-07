@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import type { StoredAuthSession } from './storedSession';
 
 const ACCESS_TOKEN_KEY = 'forti.accessToken';
 const ACCESS_TOKEN_EXP_KEY = 'forti.accessTokenExpiresAt';
@@ -35,14 +36,6 @@ const nativeStorage: Storage = {
 };
 
 const storage: Storage = Platform.OS === 'web' ? webStorage : nativeStorage;
-
-export type StoredAuthSession = {
-  accessToken: string;
-  accessTokenExpiresAt: string;
-  refreshToken: string;
-  refreshTokenExpiresAt: string;
-  user: { id: string; email: string; name: string | null };
-};
 
 export async function readStoredSession(): Promise<StoredAuthSession | null> {
   const [accessToken, accessTokenExpiresAt, refreshToken, refreshTokenExpiresAt, userJson] =

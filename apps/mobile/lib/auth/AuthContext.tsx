@@ -1,6 +1,5 @@
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -8,149 +7,49 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { AppState } from 'react-native';
 
-import {
-  AuthApiError,
-  exchangeGoogleIdToken,
-  refreshAccessToken,
-  signOutMobileSession,
-} from './authClient';
-import {
-  clearStoredSession,
-  readStoredSession,
-  writeStoredSession,
-  type StoredAuthSession,
-} from './secureStorage';
-
-type AuthUser = StoredAuthSession['user'];
-
-type AuthState =
-  | { status: 'loading'; user: null }
-  | { status: 'signed-out'; user: null }
-  | { status: 'signed-in'; user: AuthUser };
+import { createDefaultAuthSessionController } from './createDefaultAuthSessionController';
+import { type AuthState } from './sessionTypes';
 
 type AuthContextValue = AuthState & {
   signInWithGoogleIdToken: (idToken: string) => Promise<void>;
   signOut: () => Promise<void>;
-  getAccessToken: () => Promise<string | null>;
+  getAccessToken: (options?: { forceRefresh?: boolean }) => Promise<string | null>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const REFRESH_LEEWAY_MS = 60_000; // refresh 1 min before access expiry
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const sessionRef = useRef<StoredAuthSession | null>(null);
-  const refreshPromiseRef = useRef<Promise<StoredAuthSession | null> | null>(null);
-  const [state, setState] = useState<AuthState>({ status: 'loading', user: null });
-
-  const applySession = useCallback(async (session: StoredAuthSession) => {
-    sessionRef.current = session;
-    await writeStoredSession(session);
-    setState({ status: 'signed-in', user: session.user });
-  }, []);
-
-  const clearSession = useCallback(async () => {
-    sessionRef.current = null;
-    await clearStoredSession();
-    setState({ status: 'signed-out', user: null });
-  }, []);
+  const controllerRef = useRef(createDefaultAuthSessionController());
+  const [state, setState] = useState<AuthState>(controllerRef.current.getState());
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const stored = await readStoredSession();
-      if (cancelled) return;
-      if (!stored) {
-        setState({ status: 'signed-out', user: null });
-        return;
-      }
-      sessionRef.current = stored;
-      setState({ status: 'signed-in', user: stored.user });
-    })();
+    const controller = controllerRef.current;
+    const unsubscribe = controller.subscribe(setState);
+    void controller.load();
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState !== 'active') return;
+      void controller.getAccessToken().catch(() => {
+        // Leave network and server errors to the next foreground request.
+      });
+    });
+
     return () => {
-      cancelled = true;
+      unsubscribe();
+      subscription.remove();
     };
   }, []);
-
-  const refreshIfNeeded = useCallback(async (): Promise<StoredAuthSession | null> => {
-    const current = sessionRef.current;
-    if (!current) return null;
-
-    const accessExpiresAt = Date.parse(current.accessTokenExpiresAt);
-    if (Number.isFinite(accessExpiresAt) && accessExpiresAt - Date.now() > REFRESH_LEEWAY_MS) {
-      return current;
-    }
-
-    if (refreshPromiseRef.current) {
-      return refreshPromiseRef.current;
-    }
-
-    const promise = (async () => {
-      try {
-        const refreshed = await refreshAccessToken(current.refreshToken);
-        const next: StoredAuthSession = {
-          accessToken: refreshed.accessToken,
-          accessTokenExpiresAt: refreshed.accessTokenExpiresAt,
-          refreshToken: refreshed.refreshToken,
-          refreshTokenExpiresAt: refreshed.refreshTokenExpiresAt,
-          user: refreshed.user,
-        };
-        await applySession(next);
-        return next;
-      } catch (err) {
-        if (err instanceof AuthApiError && (err.status === 401 || err.status === 403)) {
-          await clearSession();
-        }
-        throw err;
-      } finally {
-        refreshPromiseRef.current = null;
-      }
-    })();
-
-    refreshPromiseRef.current = promise;
-    return promise;
-  }, [applySession, clearSession]);
-
-  const signInWithGoogleIdToken = useCallback(
-    async (idToken: string) => {
-      const result = await exchangeGoogleIdToken(idToken);
-      await applySession({
-        accessToken: result.accessToken,
-        accessTokenExpiresAt: result.accessTokenExpiresAt,
-        refreshToken: result.refreshToken,
-        refreshTokenExpiresAt: result.refreshTokenExpiresAt,
-        user: result.user,
-      });
-    },
-    [applySession],
-  );
-
-  const signOut = useCallback(async () => {
-    const current = sessionRef.current;
-    if (current) {
-      try {
-        await signOutMobileSession(current.refreshToken);
-      } catch {
-        // best-effort; clear local state regardless
-      }
-    }
-    await clearSession();
-  }, [clearSession]);
-
-  const getAccessToken = useCallback(async () => {
-    const session = await refreshIfNeeded();
-    return session?.accessToken ?? null;
-  }, [refreshIfNeeded]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       ...state,
-      signInWithGoogleIdToken,
-      signOut,
-      getAccessToken,
+      signInWithGoogleIdToken: (idToken) => controllerRef.current.signInWithGoogleIdToken(idToken),
+      signOut: () => controllerRef.current.signOut(),
+      getAccessToken: (options) => controllerRef.current.getAccessToken(options),
     }),
-    [state, signInWithGoogleIdToken, signOut, getAccessToken],
+    [state],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

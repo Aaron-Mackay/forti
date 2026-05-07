@@ -4,8 +4,11 @@ import prisma from '@lib/prisma';
 import { Prisma } from '@/generated/prisma/browser';
 import { parseDashboardSettings, Settings } from '@/types/settingsTypes';
 import { errorResponse, validationErrorResponse } from '@lib/apiResponses';
-import { UserSettingsUpdateRequestSchema } from '@lib/contracts/userSettings';
 import { generateUniqueCoachCode } from '@lib/coachCode';
+import {
+  UserSettingsResponseSchema,
+  UserSettingsUpdateRequestSchema,
+} from '@forti/shared';
 
 export async function GET() {
   const session = await requireSession();
@@ -17,7 +20,7 @@ export async function GET() {
   });
 
   const settings = parseDashboardSettings(user?.settings);
-  return NextResponse.json({ settings });
+  return NextResponse.json(UserSettingsResponseSchema.parse({ settings }));
 }
 
 export async function PATCH(req: NextRequest) {
@@ -48,5 +51,5 @@ export async function PATCH(req: NextRequest) {
     },
   });
 
-  return NextResponse.json({ settings: merged });
+  return NextResponse.json(UserSettingsResponseSchema.parse({ settings: merged }));
 }

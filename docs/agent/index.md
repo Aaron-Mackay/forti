@@ -36,6 +36,13 @@ Code in `src/lib/` is intended to be portable to a future React Native client. S
 - `src/lib/fetchWrapper.ts` + `src/lib/clientApi.ts` — platform-agnostic; reusable as-is.
 - Auth: `src/lib/auth.ts` / `src/lib/requireSession.ts` / `src/lib/getLoggedInUser.ts` are server-side (NextAuth + `next/navigation`). The browser-side session is consumed via NextAuth's `useSession` (web-only). RN will need its own token storage/refresh layer.
 
+## Mobile app foundation
+
+- `apps/mobile/app/_layout.tsx` — root Expo Router layout, auth gate, and protected app entry.
+- `apps/mobile/lib/auth/AuthContext.tsx` + `apps/mobile/lib/auth/createAuthSessionController.ts` — mobile session lifecycle, token refresh policy, sign-out reasons, and app-resume refresh behavior.
+- `apps/mobile/lib/api/mobileApiClient.ts` + `apps/mobile/lib/api/accountApi.ts` — authenticated bearer-token client and the first typed Forti mobile API surface.
+- `packages/shared/src/contracts/userProfile.ts` + `packages/shared/src/contracts/userSettings.ts` — cross-platform DTOs shared by the web API and Expo client.
+
 ## Maintenance rule (required)
 
 - Update this file whenever you add a major feature area or a new top-level domain (for example: a new `src/app/<domain>/...` surface or a new `src/lib/contracts/<domain>.ts` contract group).
