@@ -4,9 +4,10 @@ import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const repoRoot = path.resolve(__dirname, '..');
-const apiRoot = path.join(repoRoot, 'src', 'app', 'api');
-const outputPath = path.join(repoRoot, 'docs', 'agent', 'api-index.md');
+const webRoot = path.resolve(__dirname, '..');
+const monorepoRoot = path.resolve(webRoot, '..', '..');
+const apiRoot = path.join(webRoot, 'src', 'app', 'api');
+const outputPath = path.join(monorepoRoot, 'docs', 'agent', 'api-index.md');
 
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'];
 
