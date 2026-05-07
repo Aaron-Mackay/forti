@@ -15,7 +15,7 @@ const ANGLE_FIELD: Record<Angle, 'frontPhotoUrl' | 'backPhotoUrl' | 'sidePhotoUr
 };
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ checkInId: string; angle: string }> }
 ) {
   let session;
@@ -85,11 +85,27 @@ export async function GET(
   }
 
   const contentType = upstream.blob.contentType ?? 'image/jpeg';
+  const uploadedAt = upstream.blob.uploadedAt instanceof Date
+    ? upstream.blob.uploadedAt.getTime()
+    : new Date(upstream.blob.uploadedAt as unknown as string).getTime();
+  const etag = `"${pathname ?? blobReference}-${uploadedAt}-${upstream.blob.size}"`;
+
+  if (req.headers.get('if-none-match') === etag) {
+    return new NextResponse(null, {
+      status: 304,
+      headers: {
+        ETag: etag,
+        'Cache-Control': 'private, max-age=0, must-revalidate',
+      },
+    });
+  }
+
   return new NextResponse(upstream.stream, {
     status: 200,
     headers: {
       'Content-Type': contentType,
-      'Cache-Control': 'private, no-store',
+      'Cache-Control': 'private, max-age=0, must-revalidate',
+      ETag: etag,
       'X-Content-Type-Options': 'nosniff',
     },
   });

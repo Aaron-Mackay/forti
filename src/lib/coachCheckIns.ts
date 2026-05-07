@@ -188,3 +188,46 @@ export async function getCoachCheckInById(coachId: string, checkInId: number) {
     activePlanId,
   };
 }
+
+export async function getCoachClientPhotoHistory(coachId: string, checkInId: number) {
+  const access = await getCoachCheckInAccess(coachId);
+
+  if (!access.coachModeActive) {
+    return { status: 'forbidden' as const };
+  }
+
+  const current = await prisma.weeklyCheckIn.findUnique({
+    where: { id: checkInId },
+    select: { userId: true },
+  });
+
+  if (!current || !access.clientIds.includes(current.userId)) {
+    return { status: 'not_found' as const };
+  }
+
+  const rows = await prisma.weeklyCheckIn.findMany({
+    where: {
+      userId: current.userId,
+      id: { not: checkInId },
+      completedAt: { not: null },
+      OR: [
+        { frontPhotoUrl: { not: null } },
+        { sidePhotoUrl: { not: null } },
+        { backPhotoUrl: { not: null } },
+      ],
+    },
+    select: {
+      id: true,
+      weekStartDate: true,
+      frontPhotoUrl: true,
+      sidePhotoUrl: true,
+      backPhotoUrl: true,
+    },
+    orderBy: { weekStartDate: 'desc' },
+  });
+
+  return {
+    status: 'ok' as const,
+    entries: rows.map(mapCoachCheckIn),
+  };
+}

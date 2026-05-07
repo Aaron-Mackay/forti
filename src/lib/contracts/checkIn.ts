@@ -77,6 +77,18 @@ export const CheckInHistoryResponseSchema = z.object({
 });
 export type CheckInHistoryResponse = z.infer<typeof CheckInHistoryResponseSchema>;
 
+export const PhotoHistoryEntrySchema = z.object({
+  id: z.number().int(),
+  weekStartDate: z.coerce.date(),
+  ...CheckInPhotoUrlsSchema.shape,
+});
+export type PhotoHistoryEntry = z.infer<typeof PhotoHistoryEntrySchema>;
+
+export const PhotoHistoryResponseSchema = z.object({
+  entries: z.array(PhotoHistoryEntrySchema),
+});
+export type PhotoHistoryResponse = z.infer<typeof PhotoHistoryResponseSchema>;
+
 export const CurrentCheckInResponseSchema = z.object({
   checkIn: WeeklyCheckInSchema,
   currentWeek: z.array(CheckInMetricSchema),
