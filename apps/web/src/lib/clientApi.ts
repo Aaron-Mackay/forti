@@ -1,6 +1,12 @@
 import {fetchJsonWithSchema} from './fetchWrapper';
 import {UserPrisma, PlanPrisma} from "@/types/dataTypes";
 import {
+  UserSettingsResponseSchema,
+  UserSettingsUpdateRequestSchema,
+  type UserSettingsResponse,
+  type UserSettingsUpdateRequest,
+} from '@forti/shared';
+import {
   ActivePlanGetResponseSchema,
   ActivePlanSuccessSchema,
   type ActivePlanGetResponse,
@@ -9,7 +15,12 @@ import {
 import { PlanUploadSuccessSchema, type PlanUploadSuccess } from './contracts/plan';
 import { SaveUserWorkoutDataSuccessSchema, type SaveUserWorkoutDataSuccess } from './contracts/saveUserWorkoutData';
 import { CalendarDataResponseSchema, type CalendarDataResponse } from './contracts/calendarData';
-import { NotificationsListResponseSchema, type NotificationsListResponse } from './contracts/notifications';
+import {
+  NotificationMutationResponseSchema,
+  NotificationsListResponseSchema,
+  type NotificationMutationResponse,
+  type NotificationsListResponse,
+} from './contracts/notifications';
 import {
   CheckInHistoryResponseSchema,
   CurrentCheckInResponseSchema,
@@ -55,6 +66,34 @@ export async function getCalendarData(): Promise<CalendarDataResponse> {
 
 export async function getNotifications(): Promise<NotificationsListResponse> {
   return fetchJsonWithSchema('/api/notifications', NotificationsListResponseSchema);
+}
+
+export async function markNotificationRead(id: number): Promise<NotificationMutationResponse> {
+  return fetchJsonWithSchema(`/api/notifications/${id}/read`, NotificationMutationResponseSchema, {
+    method: 'PATCH',
+  });
+}
+
+export async function markAllNotificationsRead(): Promise<NotificationMutationResponse> {
+  return fetchJsonWithSchema('/api/notifications/read-all', NotificationMutationResponseSchema, {
+    method: 'PATCH',
+  });
+}
+
+export async function getUserSettings(options?: Pick<RequestInit, 'cache' | 'signal'>): Promise<UserSettingsResponse> {
+  return fetchJsonWithSchema('/api/user/settings', UserSettingsResponseSchema, options);
+}
+
+export async function updateUserSettings(
+  settings: UserSettingsUpdateRequest['settings'],
+  options?: Pick<RequestInit, 'signal'>,
+): Promise<UserSettingsResponse> {
+  return fetchJsonWithSchema('/api/user/settings', UserSettingsResponseSchema, {
+    method: 'PATCH',
+    body: JSON.stringify(UserSettingsUpdateRequestSchema.parse({ settings })),
+    headers: {'Content-Type': 'application/json'},
+    ...options,
+  });
 }
 
 export interface CheckInHistoryOptions {

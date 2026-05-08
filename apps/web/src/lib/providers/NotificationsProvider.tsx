@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
 import type { Notification } from '@/generated/prisma/browser';
+import { getNotifications, markAllNotificationsRead, markNotificationRead } from '@lib/clientApi';
 
 interface NotificationsContextValue {
   notifications: Notification[];
@@ -20,12 +21,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const res = await fetch('/api/notifications');
-      if (res.ok) {
-        const json = await res.json() as { notifications: Notification[]; unreadCount: number };
-        setNotifications(json.notifications);
-        setUnreadCount(json.unreadCount);
-      }
+      const json = await getNotifications();
+      setNotifications(json.notifications);
+      setUnreadCount(json.unreadCount);
     } catch {
       // non-blocking — silently ignore fetch errors
     } finally {
@@ -58,7 +56,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, readAt: new Date() } : n));
     setUnreadCount(prev => Math.max(0, prev - 1));
     try {
-      await fetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
+      await markNotificationRead(id);
     } catch {
       void fetchNotifications();
     }
@@ -68,7 +66,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     setNotifications(prev => prev.map(n => ({ ...n, readAt: n.readAt ?? new Date() })));
     setUnreadCount(0);
     try {
-      await fetch('/api/notifications/read-all', { method: 'PATCH' });
+      await markAllNotificationsRead();
     } catch {
       void fetchNotifications();
     }

@@ -18,3 +18,8 @@ export const NotificationsListResponseSchema = z.object({
   unreadCount: z.number().int().nonnegative(),
 });
 export type NotificationsListResponse = z.infer<typeof NotificationsListResponseSchema>;
+
+export const NotificationMutationResponseSchema = z.object({
+  ok: z.literal(true),
+});
+export type NotificationMutationResponse = z.infer<typeof NotificationMutationResponseSchema>;

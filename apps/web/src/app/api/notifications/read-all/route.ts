@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
+import { NotificationMutationResponseSchema } from '@lib/contracts/notifications';
 
 /** PATCH /api/notifications/read-all — mark all unread notifications as read */
 export async function PATCH() {
@@ -12,5 +13,5 @@ export async function PATCH() {
     data: { readAt: new Date() },
   });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json(NotificationMutationResponseSchema.parse({ ok: true }));
 }

@@ -186,6 +186,61 @@ describe('API functions', () => {
     });
   });
 
+  describe('settings client API', () => {
+    it('gets user settings through the typed response schema', async () => {
+      const mockResponse = { settings: { showNextWorkout: true } };
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      const options = { cache: 'no-store' as const };
+      const result = await clientApi.getUserSettings(options);
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenCalledWith('/api/user/settings', expect.anything(), options);
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('patches user settings through the typed request and response schemas', async () => {
+      const mockResponse = { settings: { showNextWorkout: false } };
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      const controller = new AbortController();
+      const result = await clientApi.updateUserSettings({ showNextWorkout: false }, { signal: controller.signal });
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenCalledWith('/api/user/settings', expect.anything(), {
+        method: 'PATCH',
+        body: JSON.stringify({ settings: { showNextWorkout: false } }),
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+      });
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('notifications client API', () => {
+    it('marks one notification as read through the typed mutation schema', async () => {
+      const mockResponse = { ok: true };
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      const result = await clientApi.markNotificationRead(42);
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenCalledWith('/api/notifications/42/read', expect.anything(), {
+        method: 'PATCH',
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('marks all notifications as read through the typed mutation schema', async () => {
+      const mockResponse = { ok: true };
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      const result = await clientApi.markAllNotificationsRead();
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenCalledWith('/api/notifications/read-all', expect.anything(), {
+        method: 'PATCH',
+      });
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
   describe('saveUserPlan', () => {
     it('sets the new plan active when it is the user’s first plan', async () => {
       const tx = {

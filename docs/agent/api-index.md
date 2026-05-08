@@ -61,8 +61,8 @@
 - /api/metric | methods=POST | auth=none | contracts=-
 - /api/metric-history | methods=GET | auth=session | contracts=@lib/contracts/metricHistory
 - /api/notifications | methods=GET | auth=session | contracts=@lib/contracts/notifications
-- /api/notifications/[id]/read | methods=PATCH | auth=session | contracts=-
-- /api/notifications/read-all | methods=PATCH | auth=session | contracts=-
+- /api/notifications/[id]/read | methods=PATCH | auth=session | contracts=@lib/contracts/notifications
+- /api/notifications/read-all | methods=PATCH | auth=session | contracts=@lib/contracts/notifications
 - /api/plan | methods=POST | auth=none | contracts=@lib/contracts/plan
 - /api/plan/active | methods=GET,PATCH | auth=session | contracts=@lib/contracts/activePlan
 - /api/plan/ai-import | methods=POST | auth=session | contracts=@lib/contracts/aiImport

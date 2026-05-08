@@ -21,6 +21,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { CHECK_IN_DAY_NAMES } from '@/types/checkInTypes';
 import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
+import { updateUserSettings } from '@lib/clientApi';
 
 const TOTAL_STEPS = 3; // steps 0–2, then a done screen at step 3
 
@@ -263,21 +264,14 @@ function OnboardingWizardInner({ userId, initialName, initialImage }: Props) {
       }
 
       // 2. Persist settings
-      const settingsRes = await fetch('/api/user/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          settings: {
-            weightUnit,
-            checkInDay,
-            coachModeActive,
-            registrationComplete: true,
-            onboardingSeenWelcome: true,
-            onboardingDismissed: true,
-          },
-        }),
+      await updateUserSettings({
+        weightUnit,
+        checkInDay,
+        coachModeActive,
+        registrationComplete: true,
+        onboardingSeenWelcome: true,
+        onboardingDismissed: true,
       });
-      if (!settingsRes.ok) throw new Error('Failed to save onboarding settings');
 
       // 3. Save initial body weight (today's day metric)
       const parsedWeight = parseFloat(initialWeight);

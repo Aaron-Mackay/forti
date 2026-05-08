@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { Settings, DEFAULT_SETTINGS, parseDashboardSettings, CustomMetricDef, ExerciseUnitOverride, TrackedE1rmExercise } from '@/types/settingsTypes';
+import { getUserSettings, updateUserSettings } from '@lib/clientApi';
 
 interface SettingsContextValue {
   settings: Settings;
@@ -39,8 +40,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => { settingsRef.current = settings; }, [settings]);
 
   useEffect(() => {
-    fetch('/api/user/settings', { cache: 'no-store' })
-      .then(res => res.ok ? res.json() : Promise.reject(res))
+    getUserSettings({ cache: 'no-store' })
       .then(data => {
         setSettings(parseDashboardSettings(data.settings));
         setLoading(false);
@@ -61,13 +61,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSettings(s => ({ ...s, [key]: value }));
     setError(null);
     try {
-      const res = await fetch('/api/user/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings: { [key]: value } }),
-        signal: controller.signal,
-      });
-      if (!res.ok) throw new Error();
+      await updateUserSettings({ [key]: value }, { signal: controller.signal });
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
       setSettings(prev);
@@ -84,13 +78,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSettings(s => ({ ...s, customMetrics: defs }));
     setError(null);
     try {
-      const res = await fetch('/api/user/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings: { customMetrics: defs } }),
-        signal: controller.signal,
-      });
-      if (!res.ok) throw new Error();
+      await updateUserSettings({ customMetrics: defs }, { signal: controller.signal });
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
       setSettings(prev);
@@ -107,13 +95,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSettings(s => ({ ...s, trackedE1rmExercises: exercises }));
     setError(null);
     try {
-      const res = await fetch('/api/user/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings: { trackedE1rmExercises: exercises } }),
-        signal: controller.signal,
-      });
-      if (!res.ok) throw new Error();
+      await updateUserSettings({ trackedE1rmExercises: exercises }, { signal: controller.signal });
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
       setSettings(prev);
@@ -136,13 +118,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSettings(s => ({ ...s, exerciseUnitOverrides: next }));
     setError(null);
     try {
-      const res = await fetch('/api/user/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings: { exerciseUnitOverrides: next } }),
-        signal: controller.signal,
-      });
-      if (!res.ok) throw new Error();
+      await updateUserSettings({ exerciseUnitOverrides: next }, { signal: controller.signal });
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
       setSettings(prev);
