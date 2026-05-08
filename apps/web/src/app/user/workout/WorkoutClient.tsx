@@ -3,7 +3,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useSearchParams} from 'next/navigation';
 import {useWorkoutSession} from './useWorkoutSession';
-import {UserPrisma} from '@/types/dataTypes';
+import type {WorkoutDataResponse} from '@lib/contracts/workoutData';
 
 import WeeksListView from './WeeksListView';
 import WorkoutsListView from './WorkoutsListView';
@@ -18,7 +18,7 @@ import {Alert, Collapse} from '@mui/material';
 import type {PreviousExerciseHistory} from '@lib/contracts/exerciseHistory';
 import {groupWorkoutExercises} from './groupWorkoutExercises';
 
-export default function WorkoutClient({userData}: {userData: UserPrisma}) {
+export default function WorkoutClient({userData}: {userData: WorkoutDataResponse}) {
   const searchParams = useSearchParams();
   const workoutIdParam = searchParams.get('workoutId');
   const initialWorkoutId = workoutIdParam ? Number(workoutIdParam) : null;

@@ -1,4 +1,5 @@
-import type {MetricPrisma, EventPrisma, UserPrisma} from '@/types/dataTypes';
+import type {MetricPrisma, EventPrisma} from '@/types/dataTypes';
+import type {WorkoutDataResponse} from '@lib/contracts/workoutData';
 
 interface OfflineRequest {
   id?: number;
@@ -117,12 +118,12 @@ async function readFromCache<T>(storeName: string, userId: string): Promise<Cach
 
 // ── Typed cache exports ───────────────────────────────────────────────────────
 
-export async function saveUserDataCache(userId: string, data: UserPrisma): Promise<void> {
+export async function saveUserDataCache(userId: string, data: WorkoutDataResponse): Promise<void> {
   return saveToCache('userDataCache', {userId, data, savedAt: Date.now()});
 }
 
-export async function getUserDataCache(userId: string): Promise<CacheEntry<UserPrisma> | undefined> {
-  return readFromCache<UserPrisma>('userDataCache', userId);
+export async function getUserDataCache(userId: string): Promise<CacheEntry<WorkoutDataResponse> | undefined> {
+  return readFromCache<WorkoutDataResponse>('userDataCache', userId);
 }
 
 export async function saveEventsCache(userId: string, data: EventPrisma[]): Promise<void> {

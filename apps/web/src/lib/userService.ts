@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { UserPrisma } from '@/types/dataTypes';
 import type { Prisma } from '@/generated/prisma/browser';
+import { WORKOUT_DATA_SELECT, type WorkoutDataResponse } from '@lib/contracts/workoutData';
 
 export async function getUsers() {
   return prisma.user.findMany();
@@ -42,8 +43,11 @@ export async function getUserData(userId: string): Promise<UserPrisma | null> {
   return user;
 }
 
-export async function getWorkoutData(userId: string): Promise<UserPrisma | null> {
-  return getUserData(userId);
+export async function getWorkoutData(userId: string): Promise<WorkoutDataResponse | null> {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: WORKOUT_DATA_SELECT,
+  });
 }
 
 const ACTIVE_PLAN_TREE_INCLUDE = {

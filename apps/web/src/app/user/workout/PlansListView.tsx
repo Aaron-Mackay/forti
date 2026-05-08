@@ -18,17 +18,17 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { UserPrisma } from '@/types/dataTypes';
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import ProgressIcon from '@/lib/ProgressIcon';
 import { getPlanStatus } from '@/lib/workoutProgress';
 import { setActivePlan } from '@lib/clientApi';
+import type {WorkoutDataResponse} from '@lib/contracts/workoutData';
 
 export default function PlansListView({
   userData,
   onSelectPlan,
 }: {
-  userData: UserPrisma;
+  userData: WorkoutDataResponse;
   onSelectPlan: (planId: number) => void;
 }) {
   useAppBar({ title: 'Training' });

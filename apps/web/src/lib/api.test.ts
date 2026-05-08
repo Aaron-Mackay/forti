@@ -130,7 +130,7 @@ describe('API functions', () => {
 
   describe('getWorkoutData', () => {
     it('loads workout data through the typed workout read model schema', async () => {
-      const mockResponse = { id: 'user-1', plans: [], userExerciseNotes: [] };
+      const mockResponse = { id: 'user-1', activePlanId: null, plans: [], userExerciseNotes: [] };
       (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
       const result = await clientApi.getWorkoutData();

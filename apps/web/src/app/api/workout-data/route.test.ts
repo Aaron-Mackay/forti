@@ -30,7 +30,7 @@ describe('GET /api/workout-data', () => {
   it('returns the workout read model for the authenticated user', async () => {
     const workoutData = {
       id: 'user-1',
-      name: 'Workout User',
+      activePlanId: null,
       plans: [],
       userExerciseNotes: [],
     };

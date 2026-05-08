@@ -12,7 +12,7 @@ Use these contracts when touching nutrition, check-in, workout, or dashboard UX.
 - `POST /api/check-in` → `SubmitCheckInRequestSchema` / `SubmitCheckInResponseSchema` (`src/lib/contracts/checkIn.ts`)
 
 ## Workout
-- `GET /api/workout-data` → `WorkoutDataResponseSchema` (`src/lib/contracts/workoutData.ts`). Workout screens still consume the editable `UserPrisma` tree while the read model is narrowed in follow-up slices.
+- `GET /api/workout-data` → `WorkoutDataResponseSchema` (`src/lib/contracts/workoutData.ts`). Workout screens consume a narrowed top-level read model (`id`, `activePlanId`, `plans`, `userExerciseNotes`) with the editable plan tree preserved behind the seam for offline mutations.
 
 ## Dashboard
 - `GET /api/check-in?limit=1` (Getting Started card) → `CheckInHistoryResponseSchema` (`src/lib/contracts/checkIn.ts`)

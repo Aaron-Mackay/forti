@@ -2,6 +2,9 @@ import {PlanPrisma, SetPrisma, UserPrisma, WeekPrisma, WorkoutExercisePrisma, Wo
 import {Exercise, ExerciseCategory} from "@/generated/prisma/browser";
 import {CreateUuid, Dir} from "@lib/useWorkoutEditor";
 
+type PlanTreeUser = Pick<UserPrisma, 'plans'>;
+type ExerciseNotesUser = Pick<UserPrisma, 'id' | 'userExerciseNotes'>;
+
 // ─── BFR preset constants ────────────────────────────────────────────────────
 
 export const BFR_SET_COUNT = 4;
@@ -89,11 +92,11 @@ export function parseExerciseCategory(
 
 // ─── Immutable tree-traversal helpers ────────────────────────────────────────
 
-function updatePlan(user: UserPrisma, planId: number, updateFn: (plan: PlanPrisma) => PlanPrisma): UserPrisma {
+function updatePlan<T extends PlanTreeUser>(user: T, planId: number, updateFn: (plan: PlanPrisma) => PlanPrisma): T {
   return {
     ...user,
     plans: user.plans.map(plan => (plan.id === planId ? updateFn(plan) : plan)),
-  };
+  } as T;
 }
 
 function updateWeek(plan: PlanPrisma, weekId: number, updateFn: (week: WeekPrisma) => WeekPrisma): PlanPrisma {
@@ -135,6 +138,17 @@ function withWorkout(
   );
 }
 
+function withWorkoutTree<T extends PlanTreeUser>(
+  user: T, planId: number, weekId: number, workoutId: number,
+  fn: (workout: WorkoutPrisma) => WorkoutPrisma
+): T {
+  return updatePlan(user, planId, plan =>
+    updateWeek(plan, weekId, week =>
+      updateWorkout(week, workoutId, fn)
+    )
+  );
+}
+
 function withExercise(
   user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number,
   fn: (exercise: WorkoutExercisePrisma) => WorkoutExercisePrisma
@@ -150,6 +164,17 @@ function withSet(
 ): UserPrisma {
   return withExercise(user, planId, weekId, workoutId, exerciseId, exercise =>
     updateSet(exercise, setId, fn)
+  );
+}
+
+function withSetTree<T extends PlanTreeUser>(
+  user: T, planId: number, weekId: number, workoutId: number, exerciseId: number, setId: number,
+  fn: (set: SetPrisma) => SetPrisma
+): T {
+  return withWorkoutTree(user, planId, weekId, workoutId, workout =>
+    updateExercise(workout, exerciseId, exercise =>
+      updateSet(exercise, setId, fn)
+    )
   );
 }
 
@@ -318,8 +343,8 @@ function duplicateExerciseData(exercise: WorkoutExercisePrisma, createUuid: Crea
   };
 }
 
-export function removeExercise(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number): UserPrisma {
-  return withWorkout(user, planId, weekId, workoutId, workout => ({
+export function removeExercise<T extends PlanTreeUser>(user: T, planId: number, weekId: number, workoutId: number, exerciseId: number): T {
+  return withWorkoutTree(user, planId, weekId, workoutId, workout => ({
     ...workout,
     exercises: reindex(workout.exercises.filter(ex => ex.id !== exerciseId)),
   }));
@@ -455,8 +480,8 @@ export function updateSetReps(user: UserPrisma, planId: number, weekId: number, 
   return withSet(user, planId, weekId, workoutId, exerciseId, setId, set => ({...set, reps}));
 }
 
-export function updateSetEffort(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, setId: number, field: 'rpe' | 'rir', value: number | null): UserPrisma {
-  return withSet(user, planId, weekId, workoutId, exerciseId, setId, set => ({...set, [field]: value}));
+export function updateSetEffort<T extends PlanTreeUser>(user: T, planId: number, weekId: number, workoutId: number, exerciseId: number, setId: number, field: 'rpe' | 'rir', value: number | null): T {
+  return withSetTree(user, planId, weekId, workoutId, exerciseId, setId, set => ({...set, [field]: value}));
 }
 
 export function updateTargetEffort(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, field: 'targetRpe' | 'targetRir', value: number | null): UserPrisma {
@@ -501,112 +526,116 @@ export function updateWorkoutName(user: UserPrisma, planId: number, weekId: numb
   return withWorkout(user, planId, weekId, workoutId, workout => ({...workout, name}));
 }
 
-export function updateWorkoutNotes(user: UserPrisma, planId: number, weekId: number, workoutId: number, notes: string): UserPrisma {
-  return withWorkout(user, planId, weekId, workoutId, workout => ({...workout, notes}));
+export function updateWorkoutNotes<T extends PlanTreeUser>(user: T, planId: number, weekId: number, workoutId: number, notes: string): T {
+  return withWorkoutTree(user, planId, weekId, workoutId, workout => ({...workout, notes}));
 }
 
-export function updateWorkoutDateCompleted(user: UserPrisma, planId: number, weekId: number, workoutId: number, dateCompleted: Date | null): UserPrisma {
-  return withWorkout(user, planId, weekId, workoutId, workout => ({...workout, dateCompleted}));
+export function updateWorkoutDateCompleted<T extends PlanTreeUser>(user: T, planId: number, weekId: number, workoutId: number, dateCompleted: Date | null): T {
+  return withWorkoutTree(user, planId, weekId, workoutId, workout => ({...workout, dateCompleted}));
 }
 
 export function updateWorkoutExerciseNotes(user: UserPrisma, planId: number, weekId: number, workoutId: number, exerciseId: number, notes: string): UserPrisma {
   return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({...exercise, notes}));
 }
 
-export function updateCardioData(
-  user: UserPrisma,
+export function updateCardioData<T extends PlanTreeUser>(
+  user: T,
   planId: number,
   weekId: number,
   workoutId: number,
   exerciseId: number,
   field: 'cardioDuration' | 'cardioDistance' | 'cardioResistance',
   value: number | null
-): UserPrisma {
-  return withExercise(user, planId, weekId, workoutId, exerciseId,
-    ex => ({...ex, [field]: value})
+): T {
+  return withWorkoutTree(user, planId, weekId, workoutId, workout =>
+    updateExercise(workout, exerciseId, ex => ({...ex, [field]: value}))
   );
 }
 
-export function updateUserExerciseNote(user: UserPrisma, exerciseId: number, note: string): UserPrisma {
+export function updateUserExerciseNote<T extends ExerciseNotesUser>(user: T, exerciseId: number, note: string): T {
   const exists = user.userExerciseNotes.some(n => n.exerciseId === exerciseId);
   return {
     ...user,
     userExerciseNotes: exists
       ? user.userExerciseNotes.map(n => n.exerciseId === exerciseId ? {...n, note} : n)
       : [...user.userExerciseNotes, {id: -1, userId: user.id, exerciseId, note}],
-  };
+  } as T;
 }
 
-export function substituteExercise(
-  user: UserPrisma,
+export function substituteExercise<T extends PlanTreeUser>(
+  user: T,
   planId: number,
   weekId: number,
   workoutId: number,
   workoutExerciseId: number,
   newExercise: Exercise,
   originalExerciseId: number
-): UserPrisma {
-  return withExercise(user, planId, weekId, workoutId, workoutExerciseId, ex => {
-    const clearedSets = ex.sets.map(set => ({
-      ...set,
-      reps: null,
-      weight: null,
-      e1rm: null,
-      rpe: null,
-      rir: null,
-      isDropSet: false,
-      parentSetId: null,
-    }));
-    const replacementBase = {
-      ...ex,
-      exercise: newExercise,
-      exerciseId: newExercise.id,
-      sets: clearedSets,
-      cardioDuration: null,
-      cardioDistance: null,
-      cardioResistance: null,
-      isBfr: false,
-    };
+): T {
+  return withWorkoutTree(user, planId, weekId, workoutId, workout =>
+    updateExercise(workout, workoutExerciseId, ex => {
+      const clearedSets = ex.sets.map(set => ({
+        ...set,
+        reps: null,
+        weight: null,
+        e1rm: null,
+        rpe: null,
+        rir: null,
+        isDropSet: false,
+        parentSetId: null,
+      }));
+      const replacementBase = {
+        ...ex,
+        exercise: newExercise,
+        exerciseId: newExercise.id,
+        sets: clearedSets,
+        cardioDuration: null,
+        cardioDistance: null,
+        cardioResistance: null,
+        isBfr: false,
+      };
 
-    if (ex.isAdded) {
+      if (ex.isAdded) {
+        return {
+          ...replacementBase,
+          substitutedForId: null,
+          substitutedFor: null,
+        };
+      }
+
+      const isRevertingToOriginal = ex.substitutedForId != null && newExercise.id === ex.substitutedForId;
       return {
         ...replacementBase,
-        substitutedForId: null,
-        substitutedFor: null,
+        substitutedForId: isRevertingToOriginal ? null : (ex.substitutedForId ?? originalExerciseId),
+        substitutedFor: isRevertingToOriginal ? null : (ex.substitutedFor ?? ex.exercise),
       };
-    }
-
-    const isRevertingToOriginal = ex.substitutedForId != null && newExercise.id === ex.substitutedForId;
-    return {
-      ...replacementBase,
-      substitutedForId: isRevertingToOriginal ? null : (ex.substitutedForId ?? originalExerciseId),
-      substitutedFor: isRevertingToOriginal ? null : (ex.substitutedFor ?? ex.exercise),
-    };
-  });
+    })
+  );
 }
 
-export function addExerciseToWorkout(
-  user: UserPrisma,
+export function addExerciseToWorkout<T extends PlanTreeUser>(
+  user: T,
   planId: number,
   weekId: number,
   workoutId: number,
   newWorkoutExercise: WorkoutExercisePrisma
-): UserPrisma {
-  return withWorkout(user, planId, weekId, workoutId, workout => ({
+): T {
+  return withWorkoutTree(user, planId, weekId, workoutId, workout => ({
     ...workout,
     exercises: [...workout.exercises, newWorkoutExercise],
   }));
 }
 
-export function updateUserSets(
-  user: UserPrisma,
+export function updateUserSets<T extends PlanTreeUser>(
+  user: T,
   planId: number,
   weekId: number,
   workoutId: number,
   exerciseId: number,
   newSets: SetPrisma[]
-): UserPrisma {
-  return withExercise(user, planId, weekId, workoutId, exerciseId, exercise => ({...exercise, sets: newSets}));
+): T {
+  return withWorkoutTree(user, planId, weekId, workoutId, workout =>
+    updateExercise(workout, exerciseId, exercise => ({...exercise, sets: newSets}))
+  );
 }
 
 export function addExercise(

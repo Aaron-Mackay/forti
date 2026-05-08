@@ -4,7 +4,8 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {cancelQueuedRequest, queueOrSendRequest, queueOrSendRequestJson, syncQueuedRequests} from '@/utils/offlineSync';
 import {getUserDataCache, saveUserDataCache} from '@/utils/clientDb';
 import {useOfflineCache} from '@lib/hooks/useOfflineCache';
-import {UserPrisma, WorkoutExercisePrisma, WorkoutPrisma} from '@/types/dataTypes';
+import {WorkoutExercisePrisma, WorkoutPrisma} from '@/types/dataTypes';
+import type {WorkoutDataResponse} from '@lib/contracts/workoutData';
 import {
   addExerciseToWorkout,
   removeExercise,
@@ -39,7 +40,7 @@ type SubstituteTarget = {
 
 // Returns true if the plan structure changed in a way the user should know about
 // (plans added/removed, workouts added/removed, exercises added/removed per workout).
-function detectStructuralChange(prev: UserPrisma, next: UserPrisma): boolean {
+function detectStructuralChange(prev: WorkoutDataResponse, next: WorkoutDataResponse): boolean {
   if (prev.plans.length !== next.plans.length) return true;
   for (let i = 0; i < prev.plans.length; i++) {
     if (prev.plans[i].id !== next.plans[i].id) return true;
@@ -53,7 +54,7 @@ function detectStructuralChange(prev: UserPrisma, next: UserPrisma): boolean {
   return false;
 }
 
-function findWorkoutContext(userData: UserPrisma, workoutId: number) {
+function findWorkoutContext(userData: WorkoutDataResponse, workoutId: number) {
   for (const plan of userData.plans) {
     for (const week of plan.weeks) {
       for (const workout of week.workouts) {
@@ -66,7 +67,7 @@ function findWorkoutContext(userData: UserPrisma, workoutId: number) {
   return null;
 }
 
-export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number | null) {
+export function useWorkoutSession(userData: WorkoutDataResponse, initialWorkoutId: number | null) {
   const initialContext = initialWorkoutId
     ? findWorkoutContext(userData, initialWorkoutId)
     : null;
@@ -79,7 +80,7 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
   const [completionModal, setCompletionModal] = useState<CompletionModal | null>(null);
   const [snackbar, setSnackbar] = useState<SnackbarState>({open: false, message: '', severity: 'success'});
   const [userDataState, setUserData] = useState(userData);
-  const latestUserDataRef = useRef<UserPrisma>(userDataState);
+  const latestUserDataRef = useRef<WorkoutDataResponse>(userDataState);
   const [planUpdatedBanner, setPlanUpdatedBanner] = useState(false);
 
   // Substitute dialog state
