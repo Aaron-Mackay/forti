@@ -9,12 +9,14 @@ const {
   queueOrSendRequestJson,
   syncQueuedRequests,
   saveUserDataCache,
+  getWorkoutData,
 } = vi.hoisted(() => ({
   cancelQueuedRequest: vi.fn(),
   queueOrSendRequest: vi.fn(),
   queueOrSendRequestJson: vi.fn(),
   syncQueuedRequests: vi.fn(),
   saveUserDataCache: vi.fn(),
+  getWorkoutData: vi.fn(),
 }));
 
 vi.mock('@/utils/offlineSync', () => ({
@@ -35,6 +37,10 @@ vi.mock('@lib/hooks/useOfflineCache', () => ({
 
 vi.mock('@lib/firstWeekEvents', () => ({
   trackFirstWeekEvent: vi.fn(),
+}));
+
+vi.mock('@lib/clientApi', () => ({
+  getWorkoutData,
 }));
 
 function buildUserData() {
@@ -60,10 +66,8 @@ describe('useWorkoutSession', () => {
     queueOrSendRequestJson.mockResolvedValue({queued: false, data: null});
     syncQueuedRequests.mockResolvedValue(undefined);
     saveUserDataCache.mockResolvedValue(undefined);
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue(buildUserData()),
-    } as Response);
+    getWorkoutData.mockResolvedValue(buildUserData());
+    global.fetch = vi.fn();
   });
 
   afterEach(() => {
@@ -226,7 +230,7 @@ describe('useWorkoutSession', () => {
     });
 
     expect(syncQueuedRequests).toHaveBeenCalledTimes(1);
-    expect(global.fetch).toHaveBeenCalledWith('/api/user-data');
+    expect(getWorkoutData).toHaveBeenCalledTimes(1);
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       'Failed to sync queued workout requests on reconnect',
       expect.any(Error)

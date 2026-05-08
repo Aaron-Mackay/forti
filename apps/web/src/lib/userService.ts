@@ -42,6 +42,10 @@ export async function getUserData(userId: string): Promise<UserPrisma | null> {
   return user;
 }
 
+export async function getWorkoutData(userId: string): Promise<UserPrisma | null> {
+  return getUserData(userId);
+}
+
 const ACTIVE_PLAN_TREE_INCLUDE = {
   weeks: {
     orderBy: { order: 'asc' },

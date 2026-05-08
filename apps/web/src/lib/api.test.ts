@@ -128,6 +128,18 @@ describe('API functions', () => {
     });
   });
 
+  describe('getWorkoutData', () => {
+    it('loads workout data through the typed workout read model schema', async () => {
+      const mockResponse = { id: 'user-1', plans: [], userExerciseNotes: [] };
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      const result = await clientApi.getWorkoutData();
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenCalledWith('/api/workout-data', expect.anything());
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
   describe('getUserMetrics', () => {
     it('returns metrics ordered by date ascending', async () => {
       const mockMetrics = [

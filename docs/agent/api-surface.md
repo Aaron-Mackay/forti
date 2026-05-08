@@ -49,6 +49,7 @@ Use this document when touching API behavior, contracts, route auth, or cross-ro
 | `api/saveUserWorkoutData` | Bulk save workout session data |
 | `api/sets/[setId]` | Update individual exercise sets |
 | `api/user-data` | GET full user data dump |
+| `api/workout-data` | GET workout screen read model |
 | `api/export/training-data` | GET training plans as CSV |
 | `api/export/metrics` | GET daily metrics as CSV |
 | `api/export/check-ins` | GET weekly check-in history as CSV |

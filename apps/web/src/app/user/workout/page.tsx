@@ -1,4 +1,4 @@
-import {getUserData} from '@lib/userService'; // Server-side data fetching
+import { getWorkoutData } from '@lib/userService';
 import WorkoutClient from './WorkoutClient';
 import {notFound} from "next/navigation";
 import NetworkStatusBanner from "./_components/NetworkStatusBanner";
@@ -8,7 +8,7 @@ import {Suspense} from "react";
 
 export default async function DashboardPage() {
   const userId = (await getLoggedInUser()).id
-  const userData = await getUserData(userId);
+  const userData = await getWorkoutData(userId);
   if (!userData) {
     return notFound()
   }

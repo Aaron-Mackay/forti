@@ -19,6 +19,7 @@ import {
 import {Exercise} from '@/generated/prisma/browser';
 import {AddExerciseConfig} from './AddExerciseConfigDialog';
 import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
+import { getWorkoutData } from '@lib/clientApi';
 
 type SnackbarState = {
   open: boolean;
@@ -132,9 +133,7 @@ export function useWorkoutSession(userData: UserPrisma, initialWorkoutId: number
       }
 
       try {
-        const response = await fetch('/api/user-data');
-        if (!response.ok) return;
-        const freshData: UserPrisma = await response.json();
+        const freshData = await getWorkoutData();
         const hadStructuralChange = detectStructuralChange(latestUserDataRef.current, freshData);
         setUserData(freshData);
         await saveUserDataCache(freshData.id, freshData).catch(console.error);

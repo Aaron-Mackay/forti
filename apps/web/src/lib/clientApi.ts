@@ -28,6 +28,7 @@ import {
   type CurrentCheckInResponse,
 } from './contracts/checkIn';
 import { SessionsListResponseSchema, type SessionsListResponse } from './contracts/sessions';
+import { WorkoutDataResponseSchema, type WorkoutDataResponse } from './contracts/workoutData';
 
 export async function saveUserWorkoutData(userData: UserPrisma): Promise<SaveUserWorkoutDataSuccess> {
   return fetchJsonWithSchema('/api/saveUserWorkoutData', SaveUserWorkoutDataSuccessSchema, {
@@ -35,6 +36,10 @@ export async function saveUserWorkoutData(userData: UserPrisma): Promise<SaveUse
     body: JSON.stringify(userData),
     headers: {'Content-Type': 'application/json'},
   });
+}
+
+export async function getWorkoutData(): Promise<WorkoutDataResponse> {
+  return fetchJsonWithSchema('/api/workout-data', WorkoutDataResponseSchema);
 }
 
 export async function savePlan(plan: PlanPrisma): Promise<PlanUploadSuccess> {
