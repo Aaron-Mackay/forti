@@ -56,38 +56,90 @@ export async function GET(req: NextRequest) {
     backPhotoUrl: c.backPhotoUrl ? `/api/check-in/photos/${c.id}/back` : null,
     sidePhotoUrl: c.sidePhotoUrl ? `/api/check-in/photos/${c.id}/side` : null,
   }));
-  const mappedCheckIns = await Promise.all(mappedCheckInsBase.map(async (checkIn) => {
+
+  const checkInWindows = mappedCheckInsBase.map((checkIn) => {
     const weekStart = new Date(checkIn.weekStartDate);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 7);
-    const lastCompletedWorkoutForWindow = await prisma.workout.findFirst({
+    return { checkIn, weekStart, weekEnd };
+  });
+
+  const rangeStart = checkInWindows.reduce<Date | null>(
+    (min, window) => (min === null || window.weekStart < min ? window.weekStart : min),
+    null,
+  );
+  const rangeEnd = checkInWindows.reduce<Date | null>(
+    (max, window) => (max === null || window.weekEnd > max ? window.weekEnd : max),
+    null,
+  );
+
+  const completedWorkoutsForRange = rangeStart === null || rangeEnd === null
+    ? []
+    : await prisma.workout.findMany({
       where: {
         week: { plan: { userId } },
-        dateCompleted: { gte: weekStart, lt: weekEnd },
+        dateCompleted: { gte: rangeStart, lt: rangeEnd },
       },
       orderBy: { dateCompleted: 'desc' },
-      select: { weekId: true },
-    });
-    const targetWeekId = lastCompletedWorkoutForWindow?.weekId ?? null;
-    const plannedWorkouts = targetWeekId === null ? [] : await prisma.workout.findMany({
-      where: { weekId: targetWeekId },
       select: {
         id: true,
-        name: true,
         dateCompleted: true,
-        week: { select: { order: true, planId: true } },
-        exercises: {
-          select: {
-            sets: { select: { id: true, reps: true, isDropSet: true, parentSetId: true, order: true } },
-            exercise: { select: { category: true, primaryMuscles: true } },
+        weekId: true,
+        week: { select: { planId: true } },
+      },
+    });
+
+  const lastCompletedWorkoutByCheckInId = new Map<number, (typeof completedWorkoutsForRange)[number]>();
+  for (const window of checkInWindows) {
+    const lastCompletedWorkout = completedWorkoutsForRange.find(workout =>
+      workout.dateCompleted !== null &&
+      workout.dateCompleted >= window.weekStart &&
+      workout.dateCompleted < window.weekEnd
+    );
+    if (lastCompletedWorkout) {
+      lastCompletedWorkoutByCheckInId.set(window.checkIn.id, lastCompletedWorkout);
+    }
+  }
+
+  const targetWeekIds = Array.from(new Set(
+    Array.from(lastCompletedWorkoutByCheckInId.values()).map(workout => workout.weekId)
+  ));
+
+  const plannedWorkoutsForWeeks = targetWeekIds.length === 0
+    ? []
+    : await prisma.workout.findMany({
+        where: { weekId: { in: targetWeekIds } },
+        select: {
+          id: true,
+          name: true,
+          dateCompleted: true,
+          weekId: true,
+          week: { select: { order: true, planId: true } },
+          exercises: {
+            select: {
+              sets: { select: { id: true, reps: true, isDropSet: true, parentSetId: true, order: true } },
+              exercise: { select: { category: true, primaryMuscles: true } },
+            },
           },
         },
-      },
-      orderBy: [
-        { week: { order: 'asc' } },
-        { order: 'asc' },
-      ],
-    });
+        orderBy: [
+          { week: { order: 'asc' } },
+          { order: 'asc' },
+        ],
+      });
+
+  const plannedWorkoutsByWeekId = new Map<number, typeof plannedWorkoutsForWeeks>();
+  for (const workout of plannedWorkoutsForWeeks) {
+    const workouts = plannedWorkoutsByWeekId.get(workout.weekId) ?? [];
+    workouts.push(workout);
+    plannedWorkoutsByWeekId.set(workout.weekId, workouts);
+  }
+
+  const mappedCheckIns = checkInWindows.map(({ checkIn }) => {
+    const lastCompletedWorkoutForWindow = lastCompletedWorkoutByCheckInId.get(checkIn.id) ?? null;
+    const plannedWorkouts = lastCompletedWorkoutForWindow === null
+      ? []
+      : (plannedWorkoutsByWeekId.get(lastCompletedWorkoutForWindow.weekId) ?? []);
     const workoutSummaries = plannedWorkouts.map(workout => {
       const plannedSets = workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
       const completedSets = workout.exercises.reduce(
@@ -124,17 +176,14 @@ export async function GET(req: NextRequest) {
         })),
       };
     });
-    const lastCompletedWorkout = plannedWorkouts
-      .filter(w => w.dateCompleted !== null && w.dateCompleted >= weekStart && w.dateCompleted < weekEnd)
-      .sort((a, b) => (b.dateCompleted?.getTime() ?? 0) - (a.dateCompleted?.getTime() ?? 0))[0];
-    const activePlanId = lastCompletedWorkout?.week.planId ?? null;
+    const activePlanId = lastCompletedWorkoutForWindow?.week.planId ?? null;
 
     return {
       ...checkIn,
       workoutSummaries,
       activePlanId,
     };
-  }));
+  });
 
   return NextResponse.json(CheckInHistoryResponseSchema.parse({ checkIns: mappedCheckIns, total }));
 }
