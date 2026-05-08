@@ -56,5 +56,5 @@
 - `tests/e2e/coachLink.test.ts`
 
 ## Coverage gaps called out upfront
-- No dedicated E2E specs currently target: coach check-in template editor, coach client nutrition/plans/supplements routes, coach learning plan editor route, onboarding route, notifications route.
-- These gaps are flagged in `docs/redesign-surface-inventory.csv` and should be scheduled as test additions before or during Wave 6.
+- Dedicated smoke coverage for the previously listed gaps lives in `tests/e2e/redesign-regression.test.ts`.
+- Keep `docs/redesign-surface-inventory.csv` updated when new restyle surfaces are added or when route-level coverage changes.

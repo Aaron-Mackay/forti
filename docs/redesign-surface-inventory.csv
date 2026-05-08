@@ -10,22 +10,22 @@ page,/user/nutrition,NutritionPage; NutritionClient; MacroTargetsPanel; MetricsD
 page,/user/check-in,CheckInPage; CheckInClient; CheckInForm; CheckInHistoryCard,High,High,High,"E2E: check-in.test.ts; Unit: CheckInHistoryCard.test.tsx",Wave 5 - Check-in
 page,/user/settings,SettingsPage; SettingsClient; CoachingSettings,High,High,Medium,"E2E: settings.test.ts, coachClients.test.ts",Wave 1 - Navigation Shell
 page,/user/supplements,SupplementsPage; SupplementsClient,Medium,Medium,Medium,"E2E: supplements.test.ts",Wave 4 - Nutrition
-page,/user/notifications,NotificationsPage,Medium,Medium,High,"No dedicated e2e/unit spec found",Wave 1 - Navigation Shell
+page,/user/notifications,NotificationsPage,Medium,Medium,High,"E2E: redesign-regression.test.ts",Wave 1 - Navigation Shell
 page,/user/feedback,FeedbackPage,Low,Medium,Medium,"Indirect E2E via AppBar.test.ts navigation check",Wave 1 - Navigation Shell
-page,/user/onboarding,OnboardingPage; OnboardingWizard,Medium,High,High,"No dedicated e2e/unit spec found",Wave 2 - Dashboard
+page,/user/onboarding,OnboardingPage; OnboardingWizard,Medium,High,High,"E2E: redesign-regression.test.ts",Wave 2 - Dashboard
 page,/user/learning-plans,LearningPlansPage; LearningPlansClient,Medium,Medium,Medium,"E2E: learningPlans.test.ts",Wave 6 - Coach & Learning
 page,/user/coach/clients,CoachClientsPage,Medium,High,Medium,"E2E: coachClients.test.ts",Wave 6 - Coach & Learning
 page,/user/coach/clients/[clientId],ClientOverviewPage; DashboardCards; DashboardChart,High,High,Medium,"No dedicated e2e for client overview",Wave 6 - Coach & Learning
-page,/user/coach/clients/[clientId]/plans,ClientPlansPage; PlansListCard,Medium,High,Low,"No dedicated e2e for coach client plans",Wave 6 - Coach & Learning
-page,/user/coach/clients/[clientId]/nutrition,ClientNutritionPage; NutritionClient,High,High,Medium,"No dedicated e2e for coach client nutrition",Wave 6 - Coach & Learning
-page,/user/coach/clients/[clientId]/supplements,ClientSupplementsPage; SupplementsClient,Medium,Medium,Medium,"No dedicated e2e for coach client supplements",Wave 6 - Coach & Learning
+page,/user/coach/clients/[clientId]/plans,ClientPlansPage; PlansListCard,Medium,High,Low,"E2E: redesign-regression.test.ts",Wave 6 - Coach & Learning
+page,/user/coach/clients/[clientId]/nutrition,ClientNutritionPage; NutritionClient,High,High,Medium,"E2E: redesign-regression.test.ts",Wave 6 - Coach & Learning
+page,/user/coach/clients/[clientId]/supplements,ClientSupplementsPage; SupplementsClient,Medium,Medium,Medium,"E2E: redesign-regression.test.ts",Wave 6 - Coach & Learning
 page,/user/coach/clients/[clientId]/check-ins,ClientCheckInsPage; CoachCheckInsClient,High,High,Medium,"Partial E2E via coach-review.test.ts (non-client-scoped)",Wave 6 - Coach & Learning
 page,/user/coach/clients/[clientId]/check-ins/[id],ClientCheckInDetailPage; CoachCheckInDetailPageClient,High,High,Medium,"Partial E2E via coach-review.test.ts (coach global route)",Wave 6 - Coach & Learning
 page,/user/coach/check-ins,CoachCheckInsPage; CoachCheckInsClient,High,High,Medium,"E2E: coach-review.test.ts",Wave 6 - Coach & Learning
 page,/user/coach/check-ins/[id],CoachCheckInDetailPage; CoachCheckInDetailPageClient,High,High,Medium,"E2E: coach-review.test.ts",Wave 6 - Coach & Learning
-page,/user/coach/check-in-template,CheckInTemplatePage; CheckInTemplateEditor,Medium,Medium,Medium,"No dedicated e2e/unit spec found",Wave 6 - Coach & Learning
+page,/user/coach/check-in-template,CheckInTemplatePage; CheckInTemplateEditor,Medium,Medium,Medium,"E2E: redesign-regression.test.ts",Wave 6 - Coach & Learning
 page,/user/coach/learning-plans,CoachLearningPlansPage; CoachLearningPlansClient,Medium,Medium,Medium,"No dedicated coach e2e; related user coverage in learningPlans.test.ts",Wave 6 - Coach & Learning
-page,/user/coach/learning-plans/[planId],CoachPlanEditorPage; PlanEditorClient,High,Medium,Low,"No dedicated e2e/unit spec found",Wave 6 - Coach & Learning
+page,/user/coach/learning-plans/[planId],CoachPlanEditorPage; PlanEditorClient,High,Medium,Low,"E2E: redesign-regression.test.ts",Wave 6 - Coach & Learning
 shared_component,shared nav shell,CustomAppBar; AppBarTitle,High,High,High,"E2E: AppBar.test.ts + route smoke across most specs",Wave 1 - Navigation Shell
 shared_component,shared loading/infra,Loading; ServiceWorkerRegistrar; NetworkStatusBanner,Low,Medium,High,"Indirect coverage only; no dedicated e2e",Wave 1 - Navigation Shell
 shared_component,/user/check-in + coach check-in views,CheckInCustomCard; CustomCheckInResponseDisplay; CheckInPhotoTile,Medium,High,High,"E2E: check-in.test.ts, coach-review.test.ts",Wave 5 - Check-in
