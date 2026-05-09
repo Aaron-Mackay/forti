@@ -19,6 +19,7 @@ import { test, expect } from './fixtures';
 
 - Avoid brittle broad locators; Playwright strict mode fails when selectors match multiple nodes.
 - State-mutating E2E suites should run serial and chromium-only to avoid shared TestUser DB conflicts.
+- If local auth or seeded-data E2E runs fail with Prisma `ECONNREFUSED`, verify the active `DATABASE_URL` first. In this repo, `.env` and `.env.remote` point at different Neon databases; local parity checks may need the `.env.remote` URL when the default dev database is unavailable.
 
 ### Seed-data caveat
 - Do not rely on Jeff/Todd user-specific seeded data in E2E tests.
