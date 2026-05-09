@@ -3,11 +3,18 @@ import {redirect} from "next/navigation";
 import {headers} from "next/headers";
 import {authOptions} from "@/lib/auth";
 import { SettingsProvider } from "@lib/providers/SettingsProvider";
-import { AppBarProvider } from "@lib/providers/AppBarProvider";
 import { CoachClientsProvider } from "@lib/providers/CoachClientsProvider";
 import { NotificationsProvider } from "@lib/providers/NotificationsProvider";
+import { SignalShellSwitch } from "@/components/signal/SignalShellSwitch";
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
+
+function computeInitials(input: string | null | undefined): string {
+  if (!input) return '·';
+  const parts = input.split(/[\s@.]+/).filter(Boolean).slice(0, 2);
+  const initials = parts.map((p) => p[0]?.toUpperCase() ?? '').join('');
+  return initials || '·';
+}
 
 export default async function ProtectedLayout({children}: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -19,30 +26,36 @@ export default async function ProtectedLayout({children}: { children: React.Reac
   const headersList = await headers();
   const isCoachDomain = headersList.get('x-is-coach-domain') === '1';
 
-  if (isCoachDomain) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { settings: true },
-    });
-    const settings = parseDashboardSettings(user?.settings);
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { settings: true },
+  });
+  const settings = parseDashboardSettings(user?.settings);
 
-    if (!settings.coachModeActive) {
-      const host = headersList.get('host') ?? '';
-      const protocol = headersList.get('x-forwarded-proto') ?? 'https';
-      if (host.includes('coach.')) {
-        redirect(`${protocol}://${host.replace('coach.', '')}/user/settings`);
-      }
-      redirect('/user/settings');
+  if (isCoachDomain && !settings.coachModeActive) {
+    const host = headersList.get('host') ?? '';
+    const protocol = headersList.get('x-forwarded-proto') ?? 'https';
+    if (host.includes('coach.')) {
+      redirect(`${protocol}://${host.replace('coach.', '')}/user/settings`);
     }
+    redirect('/user/settings');
   }
+
+  const userLabel = session.user.name ?? session.user.email ?? undefined;
+  const userInitials = computeInitials(session.user.name ?? session.user.email);
 
   return (
     <SettingsProvider>
       <NotificationsProvider>
         <CoachClientsProvider>
-          <AppBarProvider isCoachDomain={isCoachDomain}>
+          <SignalShellSwitch
+            signalEnabled={settings.signalUiEnabled}
+            isCoachDomain={isCoachDomain}
+            userLabel={userLabel}
+            userInitials={userInitials}
+          >
             {children}
-          </AppBarProvider>
+          </SignalShellSwitch>
         </CoachClientsProvider>
       </NotificationsProvider>
     </SettingsProvider>

@@ -45,6 +45,7 @@ export const UserSettingsSchema = z.object({
   effortMetric: z.enum(['none', 'rpe', 'rir']),
   showWarmupSuggestions: z.boolean(),
   showPlateCalculator: z.boolean(),
+  signalUiEnabled: z.boolean(),
 });
 export type UserSettings = z.infer<typeof UserSettingsSchema>;
 

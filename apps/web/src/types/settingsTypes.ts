@@ -52,6 +52,8 @@ export interface Settings {
   showWarmupSuggestions: boolean;
   // Show the plate calculator icon on barbell sets during a workout. Off by default.
   showPlateCalculator: boolean;
+  // Opt-in to the Stage 5 "Signal" UI shell during the side-by-side cutover. Off by default.
+  signalUiEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -77,6 +79,7 @@ export const DEFAULT_SETTINGS: Settings = {
   effortMetric: 'none',
   showWarmupSuggestions: false,
   showPlateCalculator: false,
+  signalUiEnabled: false,
 };
 
 function parseCustomMetrics(raw: unknown): CustomMetricDef[] {
@@ -168,6 +171,7 @@ export function parseDashboardSettings(raw: unknown): Settings {
     effortMetric:            (s.effortMetric === 'rpe' || s.effortMetric === 'rir') ? s.effortMetric : 'none',
     showWarmupSuggestions:   typeof s.showWarmupSuggestions === 'boolean' ? s.showWarmupSuggestions : false,
     showPlateCalculator:     typeof s.showPlateCalculator === 'boolean' ? s.showPlateCalculator : false,
+    signalUiEnabled:         typeof s.signalUiEnabled === 'boolean' ? s.signalUiEnabled : false,
   };
   return UserSettingsSchema.parse(settings);
 }

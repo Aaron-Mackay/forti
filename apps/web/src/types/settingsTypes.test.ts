@@ -63,6 +63,7 @@ describe('parseDashboardSettings', () => {
       effortMetric: 'none' as const,
       showWarmupSuggestions: false,
       showPlateCalculator: false,
+      signalUiEnabled: false,
     };
     expect(parseDashboardSettings(allFalse)).toEqual(allFalse);
   });
