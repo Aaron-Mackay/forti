@@ -44,7 +44,7 @@
 - /api/event/[id]/export | methods=GET | auth=session | contracts=-
 - /api/event/export | methods=GET | auth=session | contracts=-
 - /api/exerciseNote/[exerciseId] | methods=PUT | auth=session | contracts=@lib/contracts/exerciseNote
-- /api/exercises | methods=GET,POST | auth=session | contracts=-
+- /api/exercises | methods=GET,POST | auth=session | contracts=@lib/contracts/exercises
 - /api/exercises/[exerciseId]/e1rm-history | methods=GET | auth=session | contracts=@lib/contracts/exerciseHistory
 - /api/exercises/[exerciseId]/previous-cardio | methods=GET | auth=session | contracts=-
 - /api/exercises/[exerciseId]/previous-sets | methods=GET | auth=session | contracts=@lib/contracts/exerciseHistory

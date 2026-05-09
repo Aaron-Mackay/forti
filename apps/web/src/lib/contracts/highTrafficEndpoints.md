@@ -12,6 +12,7 @@ Use these contracts when touching nutrition, check-in, workout, or dashboard UX.
 - `POST /api/check-in` → `SubmitCheckInRequestSchema` / `SubmitCheckInResponseSchema` (`src/lib/contracts/checkIn.ts`)
 
 ## Workout
+- `GET /api/exercises` → `ExerciseListQuerySchema` (`src/lib/contracts/exercises.ts`). Response remains the bare exercise array; `search`, `take`, and `skip` are optional.
 - `GET /api/workout-data` → `WorkoutDataResponseSchema` (`src/lib/contracts/workoutData.ts`). Workout screens consume a narrowed top-level read model (`id`, `activePlanId`, `plans`, `userExerciseNotes`) with the editable plan tree preserved behind the seam for offline mutations.
 
 ## Dashboard

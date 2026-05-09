@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
 import { z } from 'zod';
 import prisma from '@lib/prisma';
-import { ExerciseCategory } from '@/generated/prisma/browser';
+import { ExerciseCategory, Prisma } from '@/generated/prisma/browser';
 import { EXERCISE_EQUIPMENT, EXERCISE_MUSCLES } from '@/types/dataTypes';
+import { validationErrorResponse } from '@lib/apiResponses';
+import { ExerciseListQuerySchema } from '@lib/contracts/exercises';
 
 const CreateExerciseSchema = z.object({
   name: z.string().min(1, 'Exercise name is required'),
@@ -14,13 +16,39 @@ const CreateExerciseSchema = z.object({
   secondaryMuscles: z.array(z.enum(EXERCISE_MUSCLES)).default([]),
 });
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const session = await requireSession();
     const userId = session.user.id;
+    const { searchParams } = new URL(req.url);
+    const parsed = ExerciseListQuerySchema.safeParse({
+      search: searchParams.get('search') ?? undefined,
+      take: searchParams.get('take') ?? undefined,
+      skip: searchParams.get('skip') ?? undefined,
+    });
+
+    if (!parsed.success) {
+      return validationErrorResponse(parsed.error);
+    }
+
+    const query = parsed.data;
+    const visibleExerciseWhere: Prisma.ExerciseWhereInput = {
+      OR: [{ createdByUserId: null }, { createdByUserId: userId }],
+    };
+    const where: Prisma.ExerciseWhereInput = query.search
+      ? {
+          AND: [
+            visibleExerciseWhere,
+            { name: { contains: query.search, mode: 'insensitive' } },
+          ],
+        }
+      : visibleExerciseWhere;
+
     const exercises = await prisma.exercise.findMany({
-      where: { OR: [{ createdByUserId: null }, { createdByUserId: userId }] },
+      where,
       orderBy: { name: 'asc' },
+      ...(query.take !== undefined ? { take: query.take } : {}),
+      ...(query.skip !== undefined ? { skip: query.skip } : {}),
     });
     return NextResponse.json(exercises);
   } catch (err: unknown) {
