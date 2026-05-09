@@ -290,6 +290,54 @@ describe('API functions', () => {
     });
   });
 
+  describe('target-template client API', () => {
+    it('gets active target templates through the typed response schema', async () => {
+      const mockResponse = { template: null };
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      const result = await clientApi.getTargetTemplate('2026-05-04');
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenCalledWith('/api/target-templates?weekStart=2026-05-04', expect.anything());
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('saves target templates through the typed request and response schemas', async () => {
+      const mockResponse = {
+        id: 1,
+        userId: 'user-1',
+        effectiveFrom: new Date('2026-05-04'),
+        stepsTarget: null,
+        sleepMinsTarget: null,
+        createdAt: new Date('2026-05-04'),
+        days: [],
+      };
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      const payload = {
+        effectiveFrom: '2026-05-04',
+        stepsTarget: null,
+        sleepMinsTarget: null,
+        days: {
+          1: { caloriesTarget: 2200, proteinTarget: 180, carbsTarget: 240, fatTarget: 70 },
+        },
+        targetUserId: 'user-1',
+      };
+      const result = await clientApi.saveTargetTemplate(payload);
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenCalledWith(
+        '/api/target-templates',
+        expect.anything(),
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+      const [, , options] = (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(JSON.parse((options as RequestInit).body as string)).toEqual(payload);
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
   describe('saveUserPlan', () => {
     it('sets the new plan active when it is the user’s first plan', async () => {
       const tx = {

@@ -42,6 +42,7 @@ import CheckInPhotoCompare from './_components/CheckInPhotoCompare';
 import CustomCheckInResponseDisplay from '@/components/checkin/CustomCheckInResponseDisplay';
 import SupplementsClient from '@/app/user/supplements/SupplementsClient';
 import {getLoomEmbedUrl} from '@lib/loom';
+import {saveTargetTemplate} from '@lib/clientApi';
 
 interface Props {
   checkIn: CheckInWithUser;
@@ -236,18 +237,12 @@ export default function CoachCheckInDetailClient({
             throw new Error(data?.error ?? 'Failed to save review');
           }
         }),
-        fetch('/api/target-templates', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            effectiveFrom: weekStartIso,
-            stepsTarget: toIntOrNull(targetValues.steps),
-            sleepMinsTarget: toIntOrNull(targetValues.sleep),
-            days,
-            targetUserId: checkIn.user.id,
-          }),
-        }).then(res => {
-          if (!res.ok) throw new Error('Failed to save targets');
+        saveTargetTemplate({
+          effectiveFrom: weekStartIso,
+          stepsTarget: toIntOrNull(targetValues.steps),
+          sleepMinsTarget: toIntOrNull(targetValues.sleep),
+          days,
+          targetUserId: checkIn.user.id,
         }),
       ]);
 

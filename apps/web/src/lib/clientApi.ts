@@ -31,6 +31,14 @@ import {
   type SubmitCheckInRequest,
   type SubmitCheckInResponse,
 } from './contracts/checkIn';
+import {
+  GetTargetTemplateResponseSchema,
+  TargetTemplateRequestSchema,
+  TargetTemplateResponseSchema,
+  type GetTargetTemplateResponse,
+  type TargetTemplateRequest,
+  type TargetTemplateResponse,
+} from './contracts/targetTemplates';
 import { SessionsListResponseSchema, type SessionsListResponse } from './contracts/sessions';
 import { WorkoutDataResponseSchema, type WorkoutDataResponse } from './contracts/workoutData';
 
@@ -129,6 +137,19 @@ export async function submitCheckIn(payload: SubmitCheckInRequest): Promise<Subm
   return fetchJsonWithSchema('/api/check-in', SubmitCheckInResponseSchema, {
     method: 'POST',
     body: JSON.stringify(SubmitCheckInRequestSchema.parse(payload)),
+    headers: {'Content-Type': 'application/json'},
+  });
+}
+
+export async function getTargetTemplate(weekStart: string): Promise<GetTargetTemplateResponse> {
+  const params = new URLSearchParams({ weekStart });
+  return fetchJsonWithSchema(`/api/target-templates?${params.toString()}`, GetTargetTemplateResponseSchema);
+}
+
+export async function saveTargetTemplate(payload: TargetTemplateRequest): Promise<TargetTemplateResponse> {
+  return fetchJsonWithSchema('/api/target-templates', TargetTemplateResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(TargetTemplateRequestSchema.parse(payload)),
     headers: {'Content-Type': 'application/json'},
   });
 }

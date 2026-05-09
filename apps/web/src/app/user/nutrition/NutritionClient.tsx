@@ -37,8 +37,7 @@ import {
   isMacroPercentSplitValid,
 } from '@lib/macroTargets';
 import MacroTargetsPanel, {type MacroPercentValues} from '@/components/inputs/MacroTargetsPanel';
-import { fetchJsonWithSchema } from '@lib/fetchWrapper';
-import { GetTargetTemplateResponseSchema, TargetTemplateRequestSchema, TargetTemplateResponseSchema } from '@lib/contracts/targetTemplates';
+import { getTargetTemplate, saveTargetTemplate } from '@lib/clientApi';
 import { useSettings } from '@lib/providers/SettingsProvider';
 import { bodyweightDisplayToKg, kgToBodyweightDisplay } from '@/lib/units';
 
@@ -226,7 +225,7 @@ export default function NutritionClient({
 
     setTemplateLoading(true);
     const weekMonday = convertDateToDateString(weekStart);
-    fetchJsonWithSchema(`/api/target-templates?weekStart=${weekMonday}`, GetTargetTemplateResponseSchema)
+    getTargetTemplate(weekMonday)
       .then(({ template }) =>
         setActiveTemplate(template ?? null),
       )
@@ -369,21 +368,13 @@ export default function NutritionClient({
       const days: Record<number, typeof macro> = {};
       for (let dow = 1; dow <= 7; dow++) days[dow] = macro;
 
-      const payload = TargetTemplateRequestSchema.parse({
+      const updated = await saveTargetTemplate({
         effectiveFrom: convertDateToDateString(weekStart),
         stepsTarget: activeTemplate?.stepsTarget ?? null,
         sleepMinsTarget: activeTemplate?.sleepMinsTarget ?? null,
         days,
         targetUserId: userId,
       });
-
-      const res = await fetch('/api/target-templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error('Failed to save targets');
-      const updated = TargetTemplateResponseSchema.parse(await res.json());
       setActiveTemplate(updated);
       trackFirstWeekEvent('first_nutrition_target_set', { source: 'nutrition_week_targets' });
       setTargetsPanelOpen(false);
