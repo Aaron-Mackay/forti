@@ -509,6 +509,28 @@ export default function SettingsClient({
 
       <Divider sx={{my: 3}}/>
 
+      <Typography variant="overline" color="text.secondary">Experimental UI</Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        Opt in to the in-progress Signal redesign. Shell, check-in review, workout logging,
+        and plan editor are migrated — other surfaces still use the current design.
+      </Typography>
+      {loading ? (
+        <Skeleton variant="rounded" width={140} height={32} sx={{ mb: 1 }} />
+      ) : (
+        <FormControlLabel
+          control={
+            <Switch
+              checked={settings.signalUiEnabled}
+              onChange={() => handleToggle('signalUiEnabled')}
+            />
+          }
+          label="Use Signal UI"
+          sx={{ mb: 1 }}
+        />
+      )}
+
+      <Divider sx={{my: 3}}/>
+
       <Typography variant="overline" color="text.secondary">Export Data</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Download your data as CSV files, compatible with Excel and Google Sheets.
