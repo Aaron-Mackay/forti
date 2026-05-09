@@ -22,15 +22,33 @@ import {
   type NotificationsListResponse,
 } from './contracts/notifications';
 import {
+  CheckInTemplateResponseSchema,
   CheckInHistoryResponseSchema,
   CurrentCheckInResponseSchema,
+  PhotoHistoryResponseSchema,
   SubmitCheckInRequestSchema,
   SubmitCheckInResponseSchema,
+  type CheckInTemplateResponse,
   type CheckInHistoryResponse,
   type CurrentCheckInResponse,
+  type PhotoHistoryResponse,
   type SubmitCheckInRequest,
   type SubmitCheckInResponse,
 } from './contracts/checkIn';
+import {
+  CoachCheckInDetailResponseSchema,
+  CoachCheckInNotesRequestSchema,
+  CoachCheckInNotesResponseSchema,
+  CoachCheckInsResponseSchema,
+  CoachClientsResponseSchema,
+  CoachMutationSuccessResponseSchema,
+  type CoachCheckInDetailResponse,
+  type CoachCheckInNotesRequest,
+  type CoachCheckInNotesResponse,
+  type CoachCheckInsResponse,
+  type CoachClientsResponse,
+  type CoachMutationSuccessResponse,
+} from './contracts/coach';
 import {
   GetTargetTemplateResponseSchema,
   TargetTemplateRequestSchema,
@@ -167,6 +185,61 @@ export async function submitCheckIn(payload: SubmitCheckInRequest): Promise<Subm
     method: 'POST',
     body: JSON.stringify(SubmitCheckInRequestSchema.parse(payload)),
     headers: {'Content-Type': 'application/json'},
+  });
+}
+
+export async function getCoachClients(): Promise<CoachClientsResponse> {
+  return fetchJsonWithSchema('/api/coach/clients', CoachClientsResponseSchema);
+}
+
+export interface CoachCheckInsOptions {
+  clientId?: string;
+  from?: string;
+  to?: string;
+  unread?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export async function listCoachCheckIns(opts: CoachCheckInsOptions = {}): Promise<CoachCheckInsResponse> {
+  const params = new URLSearchParams();
+  if (opts.clientId) params.set('clientId', opts.clientId);
+  if (opts.from) params.set('from', opts.from);
+  if (opts.to) params.set('to', opts.to);
+  if (opts.unread) params.set('unread', 'true');
+  if (opts.limit !== undefined) params.set('limit', String(opts.limit));
+  if (opts.offset !== undefined) params.set('offset', String(opts.offset));
+  const qs = params.toString();
+  const url = qs ? `/api/coach/check-ins?${qs}` : '/api/coach/check-ins';
+  return fetchJsonWithSchema(url, CoachCheckInsResponseSchema);
+}
+
+export async function getCoachCheckInDetail(checkInId: number): Promise<CoachCheckInDetailResponse> {
+  return fetchJsonWithSchema(`/api/coach/check-ins/${checkInId}`, CoachCheckInDetailResponseSchema);
+}
+
+export async function saveCoachCheckInNotes(
+  checkInId: number,
+  payload: CoachCheckInNotesRequest,
+): Promise<CoachCheckInNotesResponse> {
+  return fetchJsonWithSchema(`/api/coach/check-ins/${checkInId}/notes`, CoachCheckInNotesResponseSchema, {
+    method: 'PATCH',
+    body: JSON.stringify(CoachCheckInNotesRequestSchema.parse(payload)),
+    headers: {'Content-Type': 'application/json'},
+  });
+}
+
+export async function getCoachCheckInPhotoHistory(checkInId: number): Promise<PhotoHistoryResponse> {
+  return fetchJsonWithSchema(`/api/coach/check-ins/${checkInId}/photo-history`, PhotoHistoryResponseSchema);
+}
+
+export async function getCoachCheckInTemplate(): Promise<CheckInTemplateResponse> {
+  return fetchJsonWithSchema('/api/coach/check-in-template', CheckInTemplateResponseSchema);
+}
+
+export async function removeCoachClient(clientId: string): Promise<CoachMutationSuccessResponse> {
+  return fetchJsonWithSchema(`/api/coach/clients/${clientId}`, CoachMutationSuccessResponseSchema, {
+    method: 'DELETE',
   });
 }
 

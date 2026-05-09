@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import CheckInPhotoTile from '@/components/checkin/CheckInPhotoTile';
 import PhotoViewerDialog, { type PhotoAngle, type PhotoViewerHistory } from '@/components/checkin/PhotoViewerDialog';
-import type { PhotoHistoryEntry } from '@/lib/contracts/checkIn';
+import { getCoachCheckInPhotoHistory } from '@lib/clientApi';
 
 interface CurrentCheckIn {
   id: number;
@@ -75,11 +75,7 @@ export default function CheckInPhotoCompare({ currentCheckIn }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/coach/check-ins/${currentCheckIn.id}/photo-history`)
-      .then(async res => {
-        if (!res.ok) throw new Error('Failed to load photo history');
-        return res.json() as Promise<{ entries: PhotoHistoryEntry[] }>;
-      })
+    getCoachCheckInPhotoHistory(currentCheckIn.id)
       .then(data => {
         if (cancelled) return;
         const parsed: Entry[] = data.entries.map(e => ({

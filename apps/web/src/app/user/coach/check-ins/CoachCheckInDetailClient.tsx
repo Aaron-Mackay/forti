@@ -42,7 +42,7 @@ import CheckInPhotoCompare from './_components/CheckInPhotoCompare';
 import CustomCheckInResponseDisplay from '@/components/checkin/CustomCheckInResponseDisplay';
 import SupplementsClient from '@/app/user/supplements/SupplementsClient';
 import {getLoomEmbedUrl} from '@lib/loom';
-import {saveTargetTemplate} from '@lib/clientApi';
+import {saveCoachCheckInNotes, saveTargetTemplate} from '@lib/clientApi';
 
 interface Props {
   checkIn: CheckInWithUser;
@@ -227,16 +227,7 @@ export default function CoachCheckInDetailClient({
       const weekStartIso = new Date(checkIn.weekStartDate).toISOString().slice(0, 10);
 
       await Promise.all([
-        fetch(`/api/coach/check-ins/${checkIn.id}/notes`, {
-          method: 'PATCH',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({coachNotes: notes, coachResponseUrl}),
-        }).then(async res => {
-          if (!res.ok) {
-            const data = await res.json().catch(() => null) as { error?: string } | null;
-            throw new Error(data?.error ?? 'Failed to save review');
-          }
-        }),
+        saveCoachCheckInNotes(checkIn.id, {coachNotes: notes, coachResponseUrl}),
         saveTargetTemplate({
           effectiveFrom: weekStartIso,
           stepsTarget: toIntOrNull(targetValues.steps),

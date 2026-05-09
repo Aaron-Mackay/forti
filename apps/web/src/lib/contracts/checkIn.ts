@@ -21,6 +21,11 @@ export const CheckInTemplateUpdateRequestSchema = z.object({
 });
 export type CheckInTemplateUpdateRequest = z.infer<typeof CheckInTemplateUpdateRequestSchema>;
 
+export const CheckInTemplateResponseSchema = z.object({
+  template: CheckInTemplateSchema.nullable(),
+});
+export type CheckInTemplateResponse = z.infer<typeof CheckInTemplateResponseSchema>;
+
 export const CheckInPhotoUrlsSchema = z.object({
   frontPhotoUrl: z.string().nullable(),
   backPhotoUrl: z.string().nullable(),

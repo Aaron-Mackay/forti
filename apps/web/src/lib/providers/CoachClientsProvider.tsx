@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useSettings } from '@lib/providers/SettingsProvider';
+import { getCoachClients } from '@lib/clientApi';
 
 interface CoachClient {
   id: string;
@@ -33,8 +34,7 @@ export function CoachClientsProvider({ children }: { children: ReactNode }) {
       return;
     }
     setLoading(true);
-    fetch('/api/coach/clients')
-      .then(res => res.ok ? res.json() : Promise.reject(res))
+    getCoachClients()
       .then(data => setClients(data.clients ?? []))
       .catch(() => setClients([]))
       .finally(() => setLoading(false));

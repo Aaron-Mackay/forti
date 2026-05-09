@@ -290,6 +290,60 @@ describe('API functions', () => {
     });
   });
 
+  describe('coach client API', () => {
+    it('loads coach clients and check-in lists through typed response schemas', async () => {
+      const mockClients = { clients: [{ id: 'client-1', name: 'Client One', email: 'client@example.com' }] };
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockClients);
+
+      const clients = await clientApi.getCoachClients();
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenCalledWith('/api/coach/clients', expect.anything());
+      expect(clients).toEqual(mockClients);
+
+      const mockCheckIns = { checkIns: [], total: 0, clients: [] };
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockCheckIns);
+
+      const checkIns = await clientApi.listCoachCheckIns({
+        clientId: 'client-1',
+        from: '2026-05-01',
+        to: '2026-05-08',
+        unread: true,
+        limit: 20,
+        offset: 40,
+      });
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenCalledWith(
+        '/api/coach/check-ins?clientId=client-1&from=2026-05-01&to=2026-05-08&unread=true&limit=20&offset=40',
+        expect.anything(),
+      );
+      expect(checkIns).toEqual(mockCheckIns);
+    });
+
+    it('loads coach check-in detail, photo history, and template through typed schemas', async () => {
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({});
+
+      await clientApi.getCoachCheckInDetail(7);
+      await clientApi.getCoachCheckInPhotoHistory(7);
+      await clientApi.getCoachCheckInTemplate();
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenNthCalledWith(1, '/api/coach/check-ins/7', expect.anything());
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenNthCalledWith(2, '/api/coach/check-ins/7/photo-history', expect.anything());
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenNthCalledWith(3, '/api/coach/check-in-template', expect.anything());
+    });
+
+    it('saves coach notes through typed request and response schemas', async () => {
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({});
+
+      await clientApi.saveCoachCheckInNotes(7, { coachNotes: 'Good week', coachResponseUrl: null });
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenCalledWith('/api/coach/check-ins/7/notes', expect.anything(), {
+        method: 'PATCH',
+        body: JSON.stringify({ coachNotes: 'Good week', coachResponseUrl: null }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+  });
+
   describe('target-template client API', () => {
     it('gets active target templates through the typed response schema', async () => {
       const mockResponse = { template: null };

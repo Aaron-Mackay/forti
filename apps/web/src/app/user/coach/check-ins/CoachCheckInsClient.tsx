@@ -22,23 +22,13 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import { useRouter } from 'next/navigation';
 import type { CheckInWithUser } from '@/types/checkInTypes';
 import CoachCheckInListItem from './CoachCheckInListItem';
-
-interface Client {
-  id: string;
-  name: string;
-  email: string;
-}
-
-interface ApiResponse {
-  checkIns: CheckInWithUser[];
-  total: number;
-  clients: Client[];
-}
+import { listCoachCheckIns } from '@lib/clientApi';
+import type { CoachClient } from '@lib/contracts/coach';
 
 export default function CoachCheckInsClient({ lockedClientId }: { lockedClientId?: string }) {
   const router = useRouter();
   const [tab, setTab] = useState<0 | 1>(lockedClientId ? 1 : 0); // default Browse when locked to a client
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<CoachClient[]>([]);
   const [newCheckIns, setNewCheckIns] = useState<CheckInWithUser[]>([]);
   const [browseCheckIns, setBrowseCheckIns] = useState<CheckInWithUser[]>([]);
   const [browseTotal, setBrowseTotal] = useState(0);
@@ -51,11 +41,7 @@ export default function CoachCheckInsClient({ lockedClientId }: { lockedClientId
   const [error, setError] = useState<string | null>(null);
 
   const fetchNew = useCallback(async () => {
-    const params = new URLSearchParams({ unread: 'true', limit: '20', offset: '0' });
-    if (lockedClientId) params.set('clientId', lockedClientId);
-    const res = await fetch(`/api/coach/check-ins?${params}`);
-    if (!res.ok) throw new Error('Failed to load check-ins');
-    const data = await res.json() as ApiResponse;
+    const data = await listCoachCheckIns({ unread: true, limit: 20, offset: 0, clientId: lockedClientId });
     setNewCheckIns(data.checkIns);
     setClients(data.clients);
   }, [lockedClientId]);
@@ -80,13 +66,13 @@ export default function CoachCheckInsClient({ lockedClientId }: { lockedClientId
     setBrowseLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ limit: '20', offset: String(offset) });
-      if (filterClientId) params.set('clientId', filterClientId);
-      if (filterFrom) params.set('from', filterFrom);
-      if (filterTo) params.set('to', filterTo);
-      const res = await fetch(`/api/coach/check-ins?${params}`);
-      if (!res.ok) throw new Error();
-      const data = await res.json() as ApiResponse;
+      const data = await listCoachCheckIns({
+        limit: 20,
+        offset,
+        clientId: filterClientId || undefined,
+        from: filterFrom || undefined,
+        to: filterTo || undefined,
+      });
       if (append) {
         setBrowseCheckIns(prev => [...prev, ...data.checkIns]);
       } else {

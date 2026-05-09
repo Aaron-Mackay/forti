@@ -8,34 +8,12 @@ import type { CustomMetricDef } from '@/types/settingsTypes';
 import type { TargetTemplateWithDays } from '@lib/targetTemplates';
 import type { CheckInTemplate } from '@/types/checkInTemplateTypes';
 import CoachCheckInDetailClient from './CoachCheckInDetailClient';
+import { getCoachCheckInDetail, getCoachCheckInTemplate } from '@lib/clientApi';
+import type { CoachCheckInDetailResponse } from '@lib/contracts/coach';
 
 interface Props {
   checkInId: number;
   lockedClientId?: string;
-}
-
-interface ApiResponse {
-  checkIn: CheckInWithUser;
-  currentWeek: Metric[];
-  weekPrior: Metric[];
-  weekTargets: WeekTargets | null;
-  activeTemplate: TargetTemplateWithDays | null;
-  customMetricDefs: CustomMetricDef[];
-  workoutSummaries: Array<{
-    workoutId: number;
-    workoutName: string;
-    completedSets: number;
-    plannedSets: number;
-    muscleDoneSets: Array<{
-      muscle: string;
-      doneSets: number;
-    }>;
-  }>;
-  activePlanId: number | null;
-}
-
-interface CoachTemplateApiResponse {
-  template: CheckInTemplate | null;
 }
 
 export default function CoachCheckInDetailPageClient({ checkInId, lockedClientId }: Props) {
@@ -45,7 +23,7 @@ export default function CoachCheckInDetailPageClient({ checkInId, lockedClientId
   const [weekTargets, setWeekTargets] = useState<WeekTargets | null>(null);
   const [activeTemplate, setActiveTemplate] = useState<TargetTemplateWithDays | null>(null);
   const [customMetricDefs, setCustomMetricDefs] = useState<CustomMetricDef[]>([]);
-  const [workoutSummaries, setWorkoutSummaries] = useState<ApiResponse['workoutSummaries']>([]);
+  const [workoutSummaries, setWorkoutSummaries] = useState<CoachCheckInDetailResponse['workoutSummaries']>([]);
   const [activePlanId, setActivePlanId] = useState<number | null>(null);
   const [coachTemplate, setCoachTemplate] = useState<CheckInTemplate | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,23 +37,13 @@ export default function CoachCheckInDetailPageClient({ checkInId, lockedClientId
       setError(null);
 
       try {
-        const [checkInRes, templateRes] = await Promise.all([
-          fetch(`/api/coach/check-ins/${checkInId}`),
-          fetch('/api/coach/check-in-template'),
+        const [data, templateData] = await Promise.all([
+          getCoachCheckInDetail(checkInId),
+          getCoachCheckInTemplate().catch(() => ({ template: null })),
         ]);
-
-        if (!checkInRes.ok) {
-          throw new Error('Failed to load check-in');
-        }
-
-        const data = await checkInRes.json() as ApiResponse;
         if (lockedClientId && data.checkIn.user.id !== lockedClientId) {
           throw new Error('Check-in does not belong to this client');
         }
-
-        const templateData = templateRes.ok
-          ? await templateRes.json() as CoachTemplateApiResponse
-          : { template: null };
 
         if (!cancelled) {
           setCheckIn(data.checkIn);
