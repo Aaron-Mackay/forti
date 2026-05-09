@@ -1,9 +1,9 @@
 'use client';
 
 import {useEffect, useState} from 'react';
-import {fetchJson} from '@lib/fetchWrapper';
 import {storage} from '@lib/storage';
 import {Exercise} from '@/generated/prisma/browser';
+import {listExercises} from '@lib/clientApi';
 
 type ExerciseCacheRecord = {exercises?: Exercise[]; savedAt?: number};
 
@@ -78,7 +78,7 @@ export function useExerciseList(enabled: boolean): ExerciseListState {
 
     setLoading(true);
 
-    const request = inFlightRequest ?? fetchJson<Exercise[]>('/api/exercises');
+    const request = inFlightRequest ?? listExercises();
     inFlightRequest = request;
 
     request

@@ -6,12 +6,12 @@ import Link from 'next/link';
 import { Box, Card, CardContent, Divider, IconButton, Skeleton, Typography } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { format } from 'date-fns';
-import { E1rmHistoryResponseSchema, type E1rmHistoryPoint } from '@lib/contracts/exerciseHistory';
-import { fetchJsonWithSchema } from '@lib/fetchWrapper';
+import { type E1rmHistoryPoint } from '@lib/contracts/exerciseHistory';
 import type { TrackedE1rmExercise } from '@/types/settingsTypes';
 import type { WeightUnit } from '@/lib/units';
 import { formatWeight } from '@/lib/units';
 import { PRIMARY_COLOUR } from '@lib/theme';
+import { getExerciseE1rmHistory } from '@lib/clientApi';
 
 const Chart = dynamic(
   () => import('react-apexcharts').catch(() => ({ default: () => null })),
@@ -22,7 +22,7 @@ function ExerciseRow({ exercise, weightUnit }: { exercise: TrackedE1rmExercise; 
   const [history, setHistory] = useState<E1rmHistoryPoint[] | null>(null);
 
   useEffect(() => {
-    fetchJsonWithSchema(`/api/exercises/${exercise.id}/e1rm-history`, E1rmHistoryResponseSchema)
+    getExerciseE1rmHistory(exercise.id)
       .then(setHistory)
       .catch(() => setHistory([]));
   }, [exercise.id]);

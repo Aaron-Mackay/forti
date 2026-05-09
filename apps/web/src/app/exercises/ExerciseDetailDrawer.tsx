@@ -16,10 +16,10 @@ import LinkIcon from '@mui/icons-material/Link';
 import {Exercise} from '@/generated/prisma/browser';
 import {format} from 'date-fns';
 import MuscleHighlight from '@/components/fitness/MuscleHighlight';
-import {E1rmHistoryResponseSchema, type E1rmHistoryPoint} from '@lib/contracts/exerciseHistory';
-import {fetchJsonWithSchema} from '@lib/fetchWrapper';
+import {type E1rmHistoryPoint} from '@lib/contracts/exerciseHistory';
 import {PRIMARY_COLOUR} from '@lib/theme';
 import type {ExerciseCoachNote} from './types';
+import {getExerciseE1rmHistory, updateExerciseNote} from '@lib/clientApi';
 
 const Chart = dynamic(
   () => import('react-apexcharts').catch(() => ({default: () => null})),
@@ -34,7 +34,7 @@ function E1rmChart({exercise}: {exercise: Exercise}) {
   const [history, setHistory] = useState<E1rmHistoryPoint[] | null>(null);
 
   useEffect(() => {
-    fetchJsonWithSchema(`/api/exercises/${exercise.id}/e1rm-history`, E1rmHistoryResponseSchema)
+    getExerciseE1rmHistory(exercise.id)
       .then(setHistory)
       .catch(() => setHistory([]));
   }, [exercise.id]);
@@ -158,14 +158,8 @@ export default function ExerciseDetailDrawer({
     if (!exercise) return;
     setUserSaving(true);
     try {
-      const res = await fetch(`/api/exerciseNote/${exercise.id}`, {
-        method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({note: userNoteDraft}),
-      });
-      if (res.ok) {
-        onUserExerciseNoteSave(exercise.id, userNoteDraft);
-      }
+      await updateExerciseNote(exercise.id, {note: userNoteDraft});
+      onUserExerciseNoteSave(exercise.id, userNoteDraft);
     } finally {
       setUserSaving(false);
     }

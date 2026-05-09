@@ -16,6 +16,7 @@ import {
 import {EQUIPMENT_NAMES, EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, ExerciseEquipment, ExerciseMuscle, MUSCLE_NAMES} from '@/types/dataTypes';
 import MuscleHighlight from '@/components/fitness/MuscleHighlight';
 import {Exercise} from '@/generated/prisma/browser';
+import {createExercise} from '@lib/clientApi';
 
 interface AddExerciseFormProps {
   open: boolean;
@@ -62,30 +63,14 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, initialName}: A
     setError(null);
 
     try {
-      const response = await fetch('/api/exercises', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          name: name.trim(),
-          category: null,
-          description: description.trim() || null,
-          equipment,
-          primaryMuscles,
-          secondaryMuscles,
-        }),
+      const createdExercise = await createExercise({
+        name: name.trim(),
+        category: null,
+        description: description.trim() || null,
+        equipment,
+        primaryMuscles,
+        secondaryMuscles,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        if (response.status === 409) {
-          setError('An exercise with this name already exists');
-        } else {
-          setError(errorData.error || 'Failed to add exercise');
-        }
-        return;
-      }
-
-      const createdExercise: Exercise = await response.json();
       handleClose();
       if (onExerciseAdded) onExerciseAdded(createdExercise);
     } catch (err) {

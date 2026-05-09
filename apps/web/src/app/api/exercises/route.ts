@@ -1,20 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
-import { z } from 'zod';
 import prisma from '@lib/prisma';
 import { ExerciseCategory, Prisma } from '@/generated/prisma/browser';
-import { EXERCISE_EQUIPMENT, EXERCISE_MUSCLES } from '@/types/dataTypes';
 import { validationErrorResponse } from '@lib/apiResponses';
-import { ExerciseListQuerySchema } from '@lib/contracts/exercises';
-
-const CreateExerciseSchema = z.object({
-  name: z.string().min(1, 'Exercise name is required'),
-  category: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  equipment: z.array(z.enum(EXERCISE_EQUIPMENT)).min(1, 'At least one piece of equipment is required'),
-  primaryMuscles: z.array(z.enum(EXERCISE_MUSCLES)).min(1, 'At least one primary muscle is required'),
-  secondaryMuscles: z.array(z.enum(EXERCISE_MUSCLES)).default([]),
-});
+import { CreateExerciseRequestSchema, ExerciseListQuerySchema } from '@lib/contracts/exercises';
 
 export async function GET(req: NextRequest) {
   try {
@@ -64,7 +53,7 @@ export async function POST(req: NextRequest) {
     const userId = session.user.id;
 
     const json = await req.json();
-    const parsed = CreateExerciseSchema.safeParse(json);
+    const parsed = CreateExerciseRequestSchema.safeParse(json);
 
     if (!parsed.success) {
       return NextResponse.json(

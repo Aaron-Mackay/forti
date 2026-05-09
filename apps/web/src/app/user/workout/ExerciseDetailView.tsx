@@ -21,13 +21,11 @@ import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 import ExerciseSlide from './ExerciseSlide';
 import CardioSlide from './CardioSlide';
 import {
-  E1rmHistoryResponseSchema,
-  PreviousCardioResponseSchema,
   type E1rmHistoryPoint,
   type PreviousCardioResponse,
   type PreviousExerciseHistory,
 } from '@lib/contracts/exerciseHistory';
-import { fetchJsonWithSchema } from '@lib/fetchWrapper';
+import { getExerciseE1rmHistory, getPreviousCardio } from '@lib/clientApi';
 import {groupWorkoutExercises} from './groupWorkoutExercises';
 import GroupedExerciseSlide from './GroupedExerciseSlide';
 
@@ -82,20 +80,14 @@ export default function ExerciseDetailView({
   const fetchE1rmHistory = useCallback((exerciseId: number) => {
     if (e1rmHistoryMap.has(exerciseId)) return;
     setE1rmHistoryMap(prev => new Map(prev).set(exerciseId, null));
-    fetchJsonWithSchema(
-      `/api/exercises/${exerciseId}/e1rm-history?currentWorkoutId=${currentWorkoutId}`,
-      E1rmHistoryResponseSchema,
-    )
+    getExerciseE1rmHistory(exerciseId, {currentWorkoutId})
       .then(data => setE1rmHistoryMap(prev => new Map(prev).set(exerciseId, data)))
       .catch(() => setE1rmHistoryMap(prev => new Map(prev).set(exerciseId, [])));
   }, [currentWorkoutId, e1rmHistoryMap]);
 
   const fetchPreviousCardio = useCallback((exerciseId: number) => {
     if (previousCardioMap.has(exerciseId)) return;
-    fetchJsonWithSchema(
-      `/api/exercises/${exerciseId}/previous-cardio?currentWorkoutId=${currentWorkoutId}`,
-      PreviousCardioResponseSchema,
-    )
+    getPreviousCardio(exerciseId, {currentWorkoutId})
       .then(data => setPreviousCardioMap(prev => new Map(prev).set(exerciseId, data)))
       .catch(() => {/* ignore fetch errors — previous data is optional */});
   }, [currentWorkoutId, previousCardioMap]);

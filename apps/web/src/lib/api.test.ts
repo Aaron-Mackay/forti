@@ -338,6 +338,75 @@ describe('API functions', () => {
     });
   });
 
+  describe('exercise client API', () => {
+    it('lists exercises through the typed response schema', async () => {
+      const mockResponse = [{ id: 1, name: 'Bench Press' }];
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      const result = await clientApi.listExercises({ search: ' bench ', take: 10, skip: 5 });
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenCalledWith('/api/exercises?search=bench&take=10&skip=5', expect.anything());
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('creates exercises through the typed request and response schemas', async () => {
+      const mockResponse = { id: 1, name: 'New Lift' };
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      const payload = {
+        name: 'New Lift',
+        category: null,
+        description: null,
+        equipment: ['barbell'] as const,
+        primaryMuscles: ['sternal-pec'] as const,
+        secondaryMuscles: [],
+      };
+      const result = await clientApi.createExercise(payload);
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenCalledWith('/api/exercises', expect.anything(), {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('gets exercise history endpoints through typed response schemas', async () => {
+      const mockResponse = [];
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      await clientApi.getExerciseE1rmHistory(7, { currentWorkoutId: 11 });
+      await clientApi.getPreviousCardio(7, { currentWorkoutId: 11 });
+      await clientApi.getPreviousExerciseHistory(7, { currentWorkoutId: 11, currentWorkoutExerciseId: 13 });
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenNthCalledWith(1, '/api/exercises/7/e1rm-history?currentWorkoutId=11', expect.anything());
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenNthCalledWith(2, '/api/exercises/7/previous-cardio?currentWorkoutId=11', expect.anything());
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenNthCalledWith(
+        3,
+        '/api/exercises/7/previous-sets?currentWorkoutId=11&currentWorkoutExerciseId=13',
+        expect.anything(),
+      );
+    });
+
+    it('updates exercise notes and enriches exercises through typed contracts', async () => {
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({});
+
+      await clientApi.updateExerciseNote(7, { note: 'Brace' });
+      await clientApi.enrichExercises({ exercises: [{ name: 'Incline Press' }] });
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenNthCalledWith(1, '/api/exerciseNote/7', expect.anything(), {
+        method: 'PUT',
+        body: JSON.stringify({ note: 'Brace' }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenNthCalledWith(2, '/api/exercises/enrich', expect.anything(), {
+        method: 'POST',
+        body: JSON.stringify({ exercises: [{ name: 'Incline Press' }] }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+  });
+
   describe('saveUserPlan', () => {
     it('sets the new plan active when it is the user’s first plan', async () => {
       const tx = {

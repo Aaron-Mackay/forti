@@ -39,6 +39,35 @@ import {
   type TargetTemplateRequest,
   type TargetTemplateResponse,
 } from './contracts/targetTemplates';
+import {
+  CreateExerciseRequestSchema,
+  ExerciseListQuerySchema,
+  ExerciseListResponseSchema,
+  ExerciseSchema,
+  type CreateExerciseRequest,
+  type ExerciseListQuery,
+  type ExerciseListResponse,
+} from './contracts/exercises';
+import {
+  E1rmHistoryResponseSchema,
+  PreviousCardioResponseSchema,
+  PreviousExerciseHistorySchema,
+  type E1rmHistoryResponse,
+  type PreviousCardioResponse,
+  type PreviousExerciseHistory,
+} from './contracts/exerciseHistory';
+import {
+  ExerciseNoteResponseSchema,
+  ExerciseNoteUpdateRequestSchema,
+  type ExerciseNoteResponse,
+  type ExerciseNoteUpdateRequest,
+} from './contracts/exerciseNote';
+import {
+  EnrichResponseSchema,
+  ExerciseEnrichRequestSchema,
+  type EnrichResponse,
+  type ExerciseEnrichRequest,
+} from './contracts/exerciseEnrich';
 import { SessionsListResponseSchema, type SessionsListResponse } from './contracts/sessions';
 import { WorkoutDataResponseSchema, type WorkoutDataResponse } from './contracts/workoutData';
 
@@ -150,6 +179,77 @@ export async function saveTargetTemplate(payload: TargetTemplateRequest): Promis
   return fetchJsonWithSchema('/api/target-templates', TargetTemplateResponseSchema, {
     method: 'POST',
     body: JSON.stringify(TargetTemplateRequestSchema.parse(payload)),
+    headers: {'Content-Type': 'application/json'},
+  });
+}
+
+export async function listExercises(query: ExerciseListQuery = {}): Promise<ExerciseListResponse> {
+  const parsed = ExerciseListQuerySchema.parse(query);
+  const params = new URLSearchParams();
+  if (parsed.search) params.set('search', parsed.search);
+  if (parsed.take !== undefined) params.set('take', String(parsed.take));
+  if (parsed.skip !== undefined) params.set('skip', String(parsed.skip));
+  const qs = params.toString();
+  const url = qs ? `/api/exercises?${qs}` : '/api/exercises';
+  return fetchJsonWithSchema(url, ExerciseListResponseSchema);
+}
+
+export async function createExercise(payload: CreateExerciseRequest): Promise<ExerciseListResponse[number]> {
+  return fetchJsonWithSchema('/api/exercises', ExerciseSchema, {
+    method: 'POST',
+    body: JSON.stringify(CreateExerciseRequestSchema.parse(payload)),
+    headers: {'Content-Type': 'application/json'},
+  });
+}
+
+export async function getExerciseE1rmHistory(
+  exerciseId: number,
+  options: { currentWorkoutId?: number } = {},
+): Promise<E1rmHistoryResponse> {
+  const params = new URLSearchParams();
+  if (options.currentWorkoutId !== undefined) params.set('currentWorkoutId', String(options.currentWorkoutId));
+  const qs = params.toString();
+  const url = qs ? `/api/exercises/${exerciseId}/e1rm-history?${qs}` : `/api/exercises/${exerciseId}/e1rm-history`;
+  return fetchJsonWithSchema(url, E1rmHistoryResponseSchema);
+}
+
+export async function getPreviousCardio(
+  exerciseId: number,
+  options: { currentWorkoutId?: number } = {},
+): Promise<PreviousCardioResponse> {
+  const params = new URLSearchParams();
+  if (options.currentWorkoutId !== undefined) params.set('currentWorkoutId', String(options.currentWorkoutId));
+  const qs = params.toString();
+  const url = qs ? `/api/exercises/${exerciseId}/previous-cardio?${qs}` : `/api/exercises/${exerciseId}/previous-cardio`;
+  return fetchJsonWithSchema(url, PreviousCardioResponseSchema);
+}
+
+export async function getPreviousExerciseHistory(
+  exerciseId: number,
+  options: { currentWorkoutId: number; currentWorkoutExerciseId: number },
+): Promise<PreviousExerciseHistory> {
+  const params = new URLSearchParams({
+    currentWorkoutId: String(options.currentWorkoutId),
+    currentWorkoutExerciseId: String(options.currentWorkoutExerciseId),
+  });
+  return fetchJsonWithSchema(`/api/exercises/${exerciseId}/previous-sets?${params.toString()}`, PreviousExerciseHistorySchema);
+}
+
+export async function updateExerciseNote(
+  exerciseId: number,
+  payload: ExerciseNoteUpdateRequest,
+): Promise<ExerciseNoteResponse> {
+  return fetchJsonWithSchema(`/api/exerciseNote/${exerciseId}`, ExerciseNoteResponseSchema, {
+    method: 'PUT',
+    body: JSON.stringify(ExerciseNoteUpdateRequestSchema.parse(payload)),
+    headers: {'Content-Type': 'application/json'},
+  });
+}
+
+export async function enrichExercises(payload: ExerciseEnrichRequest): Promise<EnrichResponse> {
+  return fetchJsonWithSchema('/api/exercises/enrich', EnrichResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(ExerciseEnrichRequestSchema.parse(payload)),
     headers: {'Content-Type': 'application/json'},
   });
 }

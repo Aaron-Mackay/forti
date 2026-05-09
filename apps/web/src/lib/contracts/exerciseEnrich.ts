@@ -14,19 +14,25 @@ export const EnrichedExerciseSchema = z.object({
 });
 export type EnrichedExercise = z.infer<typeof EnrichedExerciseSchema>;
 
-export type MatchSuggestion = {
-  inputName: string;
-  suggestedName: string;
-  category: EnrichedExercise['category'];
-  primaryMuscles: EnrichedExercise['primaryMuscles'];
-  secondaryMuscles: EnrichedExercise['secondaryMuscles'];
-  matchType: 'exact' | 'whole_alias' | 'token_alias';
-};
+export const MatchSuggestionSchema = z.object({
+  inputName: z.string(),
+  suggestedName: z.string(),
+  category: EnrichedExerciseSchema.shape.category,
+  primaryMuscles: EnrichedExerciseSchema.shape.primaryMuscles,
+  secondaryMuscles: EnrichedExerciseSchema.shape.secondaryMuscles,
+  matchType: z.enum(['exact', 'whole_alias', 'token_alias']),
+});
+export type MatchSuggestion = z.infer<typeof MatchSuggestionSchema>;
 
 export const EnrichToolResponseSchema = z.object({
   exercises: z.array(EnrichedExerciseSchema),
 });
 
-export type EnrichResponse =
-  | { exercises: EnrichedExercise[]; matchSuggestions?: MatchSuggestion[] }
-  | { error: string };
+export const EnrichResponseSchema = z.union([
+  z.object({
+    exercises: z.array(EnrichedExerciseSchema),
+    matchSuggestions: z.array(MatchSuggestionSchema).optional(),
+  }),
+  z.object({ error: z.string() }),
+]);
+export type EnrichResponse = z.infer<typeof EnrichResponseSchema>;

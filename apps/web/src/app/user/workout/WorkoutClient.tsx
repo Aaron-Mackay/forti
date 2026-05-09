@@ -17,6 +17,7 @@ import {StopwatchProvider} from '@/app/user/workout/StopwatchContext';
 import {Alert, Collapse} from '@mui/material';
 import type {PreviousExerciseHistory} from '@lib/contracts/exerciseHistory';
 import {groupWorkoutExercises} from './groupWorkoutExercises';
+import {getPreviousExerciseHistory} from '@lib/clientApi';
 
 export default function WorkoutClient({userData}: {userData: WorkoutDataResponse}) {
   const searchParams = useSearchParams();
@@ -74,10 +75,7 @@ export default function WorkoutClient({userData}: {userData: WorkoutDataResponse
 
     previousSetsInFlightRef.current.add(workoutExerciseId);
     try {
-      const res = await fetch(
-        `/api/exercises/${exerciseId}/previous-sets?currentWorkoutId=${currentWorkoutId}&currentWorkoutExerciseId=${workoutExerciseId}`
-      );
-      const history: PreviousExerciseHistory = res.ok ? await res.json() : {workouts: []};
+      const history = await getPreviousExerciseHistory(exerciseId, {currentWorkoutId, currentWorkoutExerciseId: workoutExerciseId});
       previousSetsExerciseIdRef.current.set(workoutExerciseId, exerciseId);
       setPreviousSetsMap(prev => new Map(prev).set(workoutExerciseId, history));
     } catch {

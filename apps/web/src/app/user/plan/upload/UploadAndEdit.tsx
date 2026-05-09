@@ -30,6 +30,7 @@ import {useAppBar} from '@lib/providers/AppBarProvider'
 import {ExerciseCategory} from '@/generated/prisma/browser'
 import type {AiImportResponse} from '@lib/contracts/aiImport'
 import type {MatchSuggestion} from '@lib/contracts/exerciseEnrich'
+import {enrichExercises, listExercises} from '@lib/clientApi'
 import {
   applyReviewedExercisesToPlan,
   calculateMuscleVolumes,
@@ -170,13 +171,7 @@ export const UploadAndEdit = () => {
 
     async function loadExercises() {
       try {
-        const response = await fetch('/api/exercises')
-        if (!response.ok) return
-        const exercises = await response.json() as Array<{
-          name: string
-          primaryMuscles: string[]
-          secondaryMuscles: string[]
-        }>
+        const exercises = await listExercises()
         if (cancelled) return
         setExistingExerciseMetadata(new Map(
           exercises.map((exercise) => [
@@ -374,13 +369,9 @@ export const UploadAndEdit = () => {
       }> = []
 
       for (const namesBatch of chunkArray(newExerciseNames, ENRICH_BATCH_SIZE)) {
-        const enrichResponse = await fetch('/api/exercises/enrich', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({exercises: namesBatch.map((name) => ({name}))}),
-        })
+        const enrichResponse = await enrichExercises({exercises: namesBatch.map((name) => ({name}))})
 
-        if (!enrichResponse.ok) {
+        if ('error' in enrichResponse) {
           setReviewedExercises([])
           setPhase(0)
           setChunkProgress(null)
@@ -389,7 +380,7 @@ export const UploadAndEdit = () => {
           return
         }
 
-        enrichResponses.push(await enrichResponse.json() as {
+        enrichResponses.push(enrichResponse as {
           exercises?: Array<{
             name: string;
             category: ExerciseCategory;

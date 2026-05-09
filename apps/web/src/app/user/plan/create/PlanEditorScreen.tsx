@@ -32,7 +32,7 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import CheckIcon from '@mui/icons-material/Check'
 import { useNewPlan } from './useNewPlan'
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext'
-import { savePlan } from '@lib/clientApi'
+import { enrichExercises, savePlan } from '@lib/clientApi'
 import { useRouter } from 'next/navigation'
 import { Exercise, ExerciseCategory } from '@/generated/prisma/browser'
 import type { EnrichedExercise, MatchSuggestion } from '@lib/contracts/exerciseEnrich'
@@ -301,17 +301,12 @@ export const PlanEditorScreen = ({
 
     setEnrichPhase('enriching')
     try {
-      const res = await fetch('/api/exercises/enrich', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ exercises: newExercises }),
-      })
-      if (!res.ok) {
+      const data = await enrichExercises({ exercises: newExercises })
+      if ('error' in data) {
         setMatchSuggestions(new Map())
         setEnrichPhase(null)
         return doSave(planToPersist)
       }
-      const data = await res.json() as { exercises?: EnrichedExercise[]; matchSuggestions?: MatchSuggestion[] }
       setEnrichedExercises(data.exercises ?? [])
       setMatchSuggestions(new Map((data.matchSuggestions ?? []).map((suggestion) => [suggestion.inputName, suggestion])))
       setEditingExerciseName(data.exercises?.[0]?.name ?? null)
