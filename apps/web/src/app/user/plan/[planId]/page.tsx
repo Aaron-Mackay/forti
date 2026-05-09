@@ -3,9 +3,10 @@ import {getUserFromPlan} from "@lib/planService";
 import {getUserData} from "@lib/userService";
 import {PlanTable} from "../PlanTable";
 import {WorkoutEditorProvider} from "@/context/WorkoutEditorContext";
-import React from "react";
 import {notFound} from "next/navigation";
 import getLoggedInUser from "@lib/getLoggedInUser";
+import { SignalSurface } from "@/components/signal/SignalSurface";
+import { loadSignalFlag } from "@lib/signal/loadSignalFlag";
 
 const PlanPage = async ({
   params,
@@ -29,14 +30,17 @@ const PlanPage = async ({
     return notFound()
   }
   const {allExercises} = await getExercisesAndCategories()
+  const signalEnabled = await loadSignalFlag()
 
   return (
+    <SignalSurface signalEnabled={signalEnabled} surface="planning">
       <WorkoutEditorProvider userData={userData} allExercises={allExercises}>
-      <PlanTable
-        planId={planId}
-        backHref={userDetails.id === loggedInUserId ? clientBackHref : `/user/coach/clients/${userDetails.id}/plans`}
-      />
-    </WorkoutEditorProvider>
+        <PlanTable
+          planId={planId}
+          backHref={userDetails.id === loggedInUserId ? clientBackHref : `/user/coach/clients/${userDetails.id}/plans`}
+        />
+      </WorkoutEditorProvider>
+    </SignalSurface>
   )
 };
 
