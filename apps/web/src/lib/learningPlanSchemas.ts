@@ -33,16 +33,23 @@ export const LearningPlanAssignSchema = z.object({
   startDate: z.coerce.date(),
 });
 
+const IsoTimestampSchema = z.string().datetime({ offset: true });
+
 /**
  * Shape of the stepProgress JSON field on LearningPlanAssignment.
  * Keys are step IDs (as strings). Values track delivery and completion.
  */
 export const StepProgressSchema = z.record(
-  z.string(),
+  z.string().regex(/^\d+$/),
   z.object({
-    notifiedAt: z.string().nullable(),
-    completedAt: z.string().nullable(),
+    notifiedAt: IsoTimestampSchema.nullable(),
+    completedAt: IsoTimestampSchema.nullable(),
   })
 );
 
 export type StepProgressMap = z.infer<typeof StepProgressSchema>;
+
+export function parseStepProgress(raw: unknown): StepProgressMap {
+  const parsed = StepProgressSchema.safeParse(raw ?? {});
+  return parsed.success ? parsed.data : {};
+}

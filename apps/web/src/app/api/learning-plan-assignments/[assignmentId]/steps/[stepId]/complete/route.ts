@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { notFoundResponse, forbiddenResponse } from '@lib/apiResponses';
-import { StepProgressSchema, type StepProgressMap } from '@lib/learningPlanSchemas';
+import { parseStepProgress } from '@lib/learningPlanSchemas';
 
 /**
  * PATCH /api/learning-plan-assignments/[assignmentId]/steps/[stepId]/complete
@@ -31,8 +31,7 @@ export async function PATCH(
 
   const { completed } = await req.json() as { completed: boolean };
 
-  const parsed = StepProgressSchema.safeParse(assignment.stepProgress ?? {});
-  const progress: StepProgressMap = parsed.success ? parsed.data : {};
+  const progress = parseStepProgress(assignment.stepProgress);
 
   const existing = progress[String(stepId)] ?? { notifiedAt: null, completedAt: null };
   progress[String(stepId)] = {

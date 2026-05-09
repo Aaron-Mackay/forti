@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@lib/prisma';
 import { notifyClientLearningPlanStep } from '@lib/notifications';
-import { StepProgressSchema, type StepProgressMap } from '@lib/learningPlanSchemas';
+import { parseStepProgress } from '@lib/learningPlanSchemas';
 import { validateCronRequest } from '@lib/cronAuth';
 
 /**
@@ -28,8 +28,7 @@ export async function GET(req: NextRequest) {
   let delivered = 0;
 
   for (const assignment of assignments) {
-    const parsed = StepProgressSchema.safeParse(assignment.stepProgress ?? {});
-    const progress: StepProgressMap = parsed.success ? parsed.data : {};
+    const progress = parseStepProgress(assignment.stepProgress);
     let changed = false;
 
     const startDate = new Date(assignment.startDate);

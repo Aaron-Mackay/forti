@@ -2,6 +2,7 @@ import type { DataVizCard, DataVizTimeRange, RelativeWeeks } from './datavizType
 import { RELATIVE_WEEK_OPTIONS } from './datavizTypes';
 import { BUILTIN_METRIC_KEYS } from './metricTypes';
 import type { BuiltInMetricKey } from './metricTypes';
+import { z } from 'zod';
 export type { DataVizCard };
 
 // Types for coach-customisable check-in templates.
@@ -481,6 +482,17 @@ export function parseCustomResponses(raw: unknown): CustomCheckInResponses {
   }
   return result;
 }
+
+export const CustomCheckInResponsesSchema = z.custom<CustomCheckInResponses>(
+  (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
+    && Object.values(value as Record<string, unknown>).every(
+      val => typeof val === 'string' || typeof val === 'number' || val === null,
+    ),
+);
+
+export const CheckInTemplateJsonSchema = z.custom<CheckInTemplate>(
+  (value) => parseCheckInTemplate(value) !== null,
+);
 
 /** Evaluate whether an input field should be visible given current responses. */
 export function isFieldVisible(

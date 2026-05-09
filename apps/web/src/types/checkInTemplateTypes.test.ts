@@ -12,6 +12,8 @@ import {
   MAX_RATING_SCALE,
   MIN_RATING_SCALE,
   resolveMetricCardConfig,
+  CheckInTemplateJsonSchema,
+  CustomCheckInResponsesSchema,
 } from './checkInTemplateTypes';
 import type { CheckInTemplate, CustomCard } from './checkInTemplateTypes';
 
@@ -844,5 +846,19 @@ describe('validateTemplate — dataviz cards', () => {
       cards: [{ kind: 'dataviz', id: 'dv-1', metric: 'weight', timeRange: { mode: 'absolute', startDate: '2025-06-01', endDate: '2025-01-01' }, columnSpan: 1 }],
     };
     expect(validateTemplate(template)).toMatch(/startDate/i);
+  });
+});
+
+describe('check-in JSON schemas', () => {
+  it('accepts only normalized custom response records', () => {
+    expect(CustomCheckInResponsesSchema.safeParse({ rating: 4, note: 'Good', skipped: null }).success).toBe(true);
+    expect(CustomCheckInResponsesSchema.safeParse({ nested: { bad: true } }).success).toBe(false);
+    expect(CustomCheckInResponsesSchema.safeParse([]).success).toBe(false);
+  });
+
+  it('accepts parseable v1 and v2 template JSON values', () => {
+    expect(CheckInTemplateJsonSchema.safeParse(DEFAULT_TEMPLATE).success).toBe(true);
+    expect(CheckInTemplateJsonSchema.safeParse({ version: 1, fields: [] }).success).toBe(true);
+    expect(CheckInTemplateJsonSchema.safeParse({ version: 3, cards: [] }).success).toBe(false);
   });
 });

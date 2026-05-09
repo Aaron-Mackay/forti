@@ -329,4 +329,14 @@ describe('parseDashboardSettings', () => {
       expect(parseDashboardSettings({ customMetrics: null }).customMetrics).toEqual([]);
     });
   });
+
+  describe('stored settings schema hardening', () => {
+    it('normalizes checkInDay to a supported weekday index', () => {
+      expect(parseDashboardSettings({ checkInDay: 6 }).checkInDay).toBe(6);
+      expect(parseDashboardSettings({ checkInDay: -1 }).checkInDay).toBe(0);
+      expect(parseDashboardSettings({ checkInDay: 7 }).checkInDay).toBe(0);
+      expect(parseDashboardSettings({ checkInDay: 1.5 }).checkInDay).toBe(0);
+      expect(parseDashboardSettings({ checkInDay: '1' }).checkInDay).toBe(0);
+    });
+  });
 });

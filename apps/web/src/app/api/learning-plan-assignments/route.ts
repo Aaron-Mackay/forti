@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
+import { parseStepProgress } from '@lib/learningPlanSchemas';
 
 /**
  * GET /api/learning-plan-assignments
@@ -31,5 +32,10 @@ export async function GET() {
     },
   });
 
-  return NextResponse.json({ assignments });
+  return NextResponse.json({
+    assignments: assignments.map(assignment => ({
+      ...assignment,
+      stepProgress: parseStepProgress(assignment.stepProgress),
+    })),
+  });
 }

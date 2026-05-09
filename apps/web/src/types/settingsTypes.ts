@@ -1,4 +1,5 @@
 import type { BodyweightUnit, WeightUnit } from '@/lib/units';
+import { UserSettingsSchema } from '@forti/shared';
 export type { WeightUnit };
 export type { BodyweightUnit };
 
@@ -132,12 +133,16 @@ function parseExerciseUnitOverrides(raw: unknown): Record<string, ExerciseUnitOv
   return result;
 }
 
+function parseCheckInDay(raw: unknown): Settings['checkInDay'] {
+  return typeof raw === 'number' && Number.isInteger(raw) && raw >= 0 && raw <= 6 ? raw : 0;
+}
+
 export function parseDashboardSettings(raw: unknown): Settings {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     return { ...DEFAULT_SETTINGS };
   }
   const s = raw as Record<string, unknown>;
-  return {
+  const settings: Settings = {
     showNextWorkout:    typeof s.showNextWorkout    === 'boolean' ? s.showNextWorkout    : true,
     showTodaysMetrics:  typeof s.showTodaysMetrics  === 'boolean' ? s.showTodaysMetrics  : true,
     showWeeklyTraining: typeof s.showWeeklyTraining === 'boolean' ? s.showWeeklyTraining : true,
@@ -147,7 +152,7 @@ export function parseDashboardSettings(raw: unknown): Settings {
     showStopwatch:      typeof s.showStopwatch      === 'boolean' ? s.showStopwatch      : true,
     coachModeActive:    typeof s.coachModeActive    === 'boolean' ? s.coachModeActive    : false,
     showSupplements:    typeof s.showSupplements    === 'boolean' ? s.showSupplements    : false,
-    checkInDay:              typeof s.checkInDay              === 'number'  ? s.checkInDay              : 0,
+    checkInDay:              parseCheckInDay(s.checkInDay),
     customMetrics:           parseCustomMetrics(s.customMetrics),
     onboardingDismissed:     typeof s.onboardingDismissed     === 'boolean' ? s.onboardingDismissed     : false,
     onboardingSeenWelcome:   typeof s.onboardingSeenWelcome   === 'boolean' ? s.onboardingSeenWelcome   : false,
@@ -164,4 +169,5 @@ export function parseDashboardSettings(raw: unknown): Settings {
     showWarmupSuggestions:   typeof s.showWarmupSuggestions === 'boolean' ? s.showWarmupSuggestions : false,
     showPlateCalculator:     typeof s.showPlateCalculator === 'boolean' ? s.showPlateCalculator : false,
   };
+  return UserSettingsSchema.parse(settings);
 }

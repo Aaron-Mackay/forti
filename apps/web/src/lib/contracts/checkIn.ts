@@ -1,9 +1,16 @@
 import { z } from 'zod';
 import type { Prisma } from '@/generated/prisma/browser';
 import type { CheckInTemplate } from '@/types/checkInTemplateTypes';
+import { CustomCheckInResponsesSchema, parseCheckInTemplate } from '@/types/checkInTemplateTypes';
 
 const NullableRatingSchema = z.number().int().min(1).max(5).nullable();
 const JsonValueSchema = z.custom<Prisma.JsonValue>((value) => value !== undefined);
+const CustomResponsesJsonValueSchema = z.custom<Prisma.JsonValue>(
+  (value) => value === null || CustomCheckInResponsesSchema.safeParse(value).success,
+);
+const TemplateSnapshotJsonValueSchema = z.custom<Prisma.JsonValue>(
+  (value) => value === null || parseCheckInTemplate(value) !== null,
+);
 const CheckInTemplateSchema = z.custom<CheckInTemplate>((value) => value !== undefined);
 
 // PUT /api/coach/check-in-template — wraps a CheckInTemplate object whose
@@ -65,8 +72,8 @@ export const WeeklyCheckInSchema = z.object({
   coachNotes: z.string().nullable(),
   coachReviewedAt: z.coerce.date().nullable(),
   coachResponseUrl: z.string().nullable(),
-  customResponses: JsonValueSchema.nullable(),
-  templateSnapshot: JsonValueSchema.nullable(),
+  customResponses: CustomResponsesJsonValueSchema.nullable(),
+  templateSnapshot: TemplateSnapshotJsonValueSchema.nullable(),
   ...CheckInPhotoUrlsSchema.shape,
 }).passthrough();
 export type WeeklyCheckInDto = z.infer<typeof WeeklyCheckInSchema>;
