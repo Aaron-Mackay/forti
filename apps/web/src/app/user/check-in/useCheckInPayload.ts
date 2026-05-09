@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { CheckInTemplate, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
+import type { SubmitCheckInRequest } from '@lib/contracts/checkIn';
 
 interface LegacyFormState {
   energyLevel: number | null;
@@ -25,14 +26,14 @@ export function useCheckInPayload({
   legacyForm: LegacyFormState;
   completedWorkoutsCount: number;
   plannedWorkoutsCount: number;
-}) {
+}): SubmitCheckInRequest {
   return useMemo(() => {
     if (activeTemplate !== null) {
       return {
         customResponses,
         completedWorkouts: completedWorkoutsCount,
         plannedWorkouts: plannedWorkoutsCount,
-      } as Record<string, unknown>;
+      };
     }
 
     return {
@@ -48,6 +49,6 @@ export function useCheckInPayload({
       weekReview: legacyForm.weekReview || undefined,
       coachMessage: legacyForm.coachMessage || undefined,
       goalsNextWeek: legacyForm.goalsNextWeek || undefined,
-    } as Record<string, unknown>;
+    };
   }, [activeTemplate, customResponses, completedWorkoutsCount, plannedWorkoutsCount, legacyForm]);
 }

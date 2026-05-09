@@ -23,11 +23,12 @@ import ProgressPhotoSection from './ProgressPhotoSection';
 import type { PreviousPhotos, WeekTargets } from '@/types/checkInTypes';
 import type { CheckInTemplate, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
 import { parseCustomResponses, isFieldVisible, getAllInputFields } from '@/types/checkInTemplateTypes';
-import { SubmitCheckInResponseSchema } from '@lib/contracts/checkIn';
+import type { SubmitCheckInRequest } from '@lib/contracts/checkIn';
 import { useCheckInPayload } from './useCheckInPayload';
 import { useCheckInPhotos } from './useCheckInPhotos';
 import { useCheckInMetricsEditor } from './useCheckInMetricsEditor';
 import { useCheckInAutosave } from './useCheckInAutosave';
+import { submitCheckIn } from '@lib/clientApi';
 
 interface Props {
   currentWeek: Metric[];
@@ -132,17 +133,8 @@ export default function CheckInForm({
     plannedWorkoutsCount,
   });
 
-  async function persistCheckIn(payload: Record<string, unknown>) {
-    const res = await fetch('/api/check-in', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const data = await res.json() as { error?: string };
-      throw new Error(data.error ?? 'Submission failed');
-    }
-    SubmitCheckInResponseSchema.parse(await res.json());
+  async function persistCheckIn(payload: SubmitCheckInRequest) {
+    await submitCheckIn(payload);
   }
 
   async function handleSubmit() {

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import type { SubmitCheckInRequest } from '@lib/contracts/checkIn';
 
 export function useCheckInAutosave({
   isEditing,
@@ -7,8 +8,8 @@ export function useCheckInAutosave({
   setError,
 }: {
   isEditing: boolean;
-  payload: Record<string, unknown>;
-  persistCheckIn: (payload: Record<string, unknown>) => Promise<void>;
+  payload: SubmitCheckInRequest;
+  persistCheckIn: (payload: SubmitCheckInRequest) => Promise<void>;
   setError: (value: string) => void;
 }) {
   const checkInSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);

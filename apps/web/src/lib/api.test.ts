@@ -253,6 +253,43 @@ describe('API functions', () => {
     });
   });
 
+  describe('check-in client API', () => {
+    it('gets current check-in through the typed response schema', async () => {
+      const mockResponse = { checkIn: { id: 1 }, currentWeek: [], weekPrior: [] };
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      const result = await clientApi.getCurrentCheckIn();
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenCalledWith('/api/check-in/current', expect.anything());
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('gets paginated check-in history through the typed response schema', async () => {
+      const mockResponse = { checkIns: [], total: 0 };
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      const result = await clientApi.getCheckInHistory({ limit: 10, offset: 20, excludeCurrent: true });
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenCalledWith('/api/check-in?limit=10&offset=20&excludeCurrent=true', expect.anything());
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('submits check-in payloads through the typed request and response schemas', async () => {
+      const mockResponse = { checkIn: { id: 1 } };
+      (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      const payload = { energyLevel: 4, weekReview: 'Solid' };
+      const result = await clientApi.submitCheckIn(payload);
+
+      expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenCalledWith('/api/check-in', expect.anything(), {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
   describe('saveUserPlan', () => {
     it('sets the new plan active when it is the user’s first plan', async () => {
       const tx = {

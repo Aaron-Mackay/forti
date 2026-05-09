@@ -20,12 +20,12 @@ import type { WeeklyCheckIn } from '@/generated/prisma/browser';
 import CheckInForm from './CheckInForm';
 import CheckInHistoryCard, { CheckInDetails } from './CheckInHistoryCard';
 import { usePushSubscription } from '@lib/usePushSubscription';
-import { CheckInHistoryResponseSchema, CurrentCheckInResponseSchema, type CurrentCheckInResponse } from '@lib/contracts/checkIn';
+import type { CurrentCheckInResponse } from '@lib/contracts/checkIn';
 import { useSettings } from '@lib/providers/SettingsProvider';
 import MetricsSystemCard from '@/components/checkin/MetricsSystemCard';
-import { fetchJsonWithSchema } from '@lib/fetchWrapper';
 import { checkInHasCustomResponses } from '@/lib/checkInUtils';
 import { parseCheckInTemplate } from '@/types/checkInTemplateTypes';
+import { getCheckInHistory, getCurrentCheckIn } from '@lib/clientApi';
 
 type CurrentData = CurrentCheckInResponse;
 
@@ -56,16 +56,13 @@ export default function CheckInClient() {
   const { permission, subscribing, subscribe } = usePushSubscription();
 
   const loadCurrent = async () => {
-    const data = await fetchJsonWithSchema('/api/check-in/current', CurrentCheckInResponseSchema);
+    const data = await getCurrentCheckIn();
     return normalizeCurrentCheckInResponse(data);
   };
 
   const loadHistory = async (offset: number) => {
     // Fetch past check-ins only; current week is excluded server-side
-    return fetchJsonWithSchema(
-      `/api/check-in?limit=10&offset=${offset}&excludeCurrent=true`,
-      CheckInHistoryResponseSchema,
-    );
+    return getCheckInHistory({ limit: 10, offset, excludeCurrent: true });
   };
 
   useEffect(() => {

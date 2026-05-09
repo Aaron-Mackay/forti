@@ -24,8 +24,12 @@ import {
 import {
   CheckInHistoryResponseSchema,
   CurrentCheckInResponseSchema,
+  SubmitCheckInRequestSchema,
+  SubmitCheckInResponseSchema,
   type CheckInHistoryResponse,
   type CurrentCheckInResponse,
+  type SubmitCheckInRequest,
+  type SubmitCheckInResponse,
 } from './contracts/checkIn';
 import { SessionsListResponseSchema, type SessionsListResponse } from './contracts/sessions';
 import { WorkoutDataResponseSchema, type WorkoutDataResponse } from './contracts/workoutData';
@@ -119,6 +123,14 @@ export async function getCheckInHistory(opts: CheckInHistoryOptions = {}): Promi
 
 export async function getCurrentCheckIn(): Promise<CurrentCheckInResponse> {
   return fetchJsonWithSchema('/api/check-in/current', CurrentCheckInResponseSchema);
+}
+
+export async function submitCheckIn(payload: SubmitCheckInRequest): Promise<SubmitCheckInResponse> {
+  return fetchJsonWithSchema('/api/check-in', SubmitCheckInResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(SubmitCheckInRequestSchema.parse(payload)),
+    headers: {'Content-Type': 'application/json'},
+  });
 }
 
 export interface SessionsListOptions {
