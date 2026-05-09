@@ -35,6 +35,42 @@ export const CoachCheckInsResponseSchema = z.object({
 });
 export type CoachCheckInsResponse = z.infer<typeof CoachCheckInsResponseSchema>;
 
+export const CoachHomeSubmittedCheckInSchema = z.object({
+  checkInId: z.number().int(),
+  clientId: z.string(),
+  clientName: z.string().nullable(),
+  weekStartDate: z.coerce.date(),
+  completedAt: z.coerce.date(),
+});
+export type CoachHomeSubmittedCheckIn = z.infer<typeof CoachHomeSubmittedCheckInSchema>;
+
+export const CoachHomeMaintenanceItemSchema = z.object({
+  clientId: z.string(),
+  clientName: z.string().nullable(),
+  planId: z.number().int().nullable(),
+  planName: z.string().nullable(),
+  kind: z.enum(['block_ending', 'plan_stale', 'no_active_plan']),
+  blockEndDate: z.coerce.date().nullable(),
+  daysUntilBlockEnd: z.number().int().nullable(),
+  lastPlanActivityDate: z.coerce.date().nullable(),
+  staleDays: z.number().int().nullable(),
+});
+export type CoachHomeMaintenanceItem = z.infer<typeof CoachHomeMaintenanceItemSchema>;
+
+export const CoachHomeSummarySchema = z.object({
+  clientCount: z.number().int().nonnegative(),
+  submittedCheckInCount: z.number().int().nonnegative(),
+  maintenanceCount: z.number().int().nonnegative(),
+});
+export type CoachHomeSummary = z.infer<typeof CoachHomeSummarySchema>;
+
+export const CoachHomeResponseSchema = z.object({
+  summary: CoachHomeSummarySchema,
+  submittedCheckIns: z.array(CoachHomeSubmittedCheckInSchema),
+  planMaintenance: z.array(CoachHomeMaintenanceItemSchema),
+});
+export type CoachHomeResponse = z.infer<typeof CoachHomeResponseSchema>;
+
 const CoachWorkoutSummarySchema = z.object({
   workoutId: z.number().int(),
   workoutName: z.string(),

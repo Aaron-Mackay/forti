@@ -25,6 +25,7 @@
 - /api/coach/clients/[clientId]/supplements/[supplementId] | methods=PATCH,DELETE | auth=session | contracts=-
 - /api/coach/clients/health-summary | methods=GET | auth=session | contracts=-
 - /api/coach/exercise-description/[exerciseId] | methods=PUT,DELETE | auth=session | contracts=@lib/contracts/coach
+- /api/coach/home | methods=GET | auth=session | contracts=-
 - /api/coach/invite | methods=POST | auth=session | contracts=-
 - /api/coach/learning-plans | methods=GET,POST | auth=session | contracts=-
 - /api/coach/learning-plans/[planId] | methods=GET,PATCH,DELETE | auth=session | contracts=-

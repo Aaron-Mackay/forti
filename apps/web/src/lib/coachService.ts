@@ -17,6 +17,35 @@ export type CoachClientHealthSummary = {
   riskFlags: string[];
 };
 
+export type CoachHomeData = {
+  summary: {
+    clientCount: number;
+    submittedCheckInCount: number;
+    maintenanceCount: number;
+  };
+  submittedCheckIns: {
+    checkInId: number;
+    clientId: string;
+    clientName: string | null;
+    weekStartDate: Date;
+    completedAt: Date;
+  }[];
+  planMaintenance: {
+    clientId: string;
+    clientName: string | null;
+    planId: number | null;
+    planName: string | null;
+    kind: 'block_ending' | 'plan_stale' | 'no_active_plan';
+    blockEndDate: Date | null;
+    daysUntilBlockEnd: number | null;
+    lastPlanActivityDate: Date | null;
+    staleDays: number | null;
+  }[];
+};
+
+const PLAN_STALE_AFTER_DAYS = 14;
+const BLOCK_ENDING_SOON_DAYS = 7;
+
 export async function getCoachClients(coachId: string): Promise<{ id: string; name: string | null }[]> {
   return prisma.user.findMany({
     where: { coachId },
@@ -129,6 +158,194 @@ export async function getCoachClientHealthSummary(coachId: string): Promise<Coac
       riskFlags,
     };
   });
+}
+
+function startOfDay(date: Date): Date {
+  const normalized = new Date(date);
+  normalized.setHours(0, 0, 0, 0);
+  return normalized;
+}
+
+function diffInDays(from: Date, to: Date): number {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  return Math.round((startOfDay(to).getTime() - startOfDay(from).getTime()) / msPerDay);
+}
+
+export async function getCoachHomeData(coachId: string): Promise<CoachHomeData> {
+  const today = startOfDay(new Date());
+  const staleBefore = new Date(today);
+  staleBefore.setDate(staleBefore.getDate() - PLAN_STALE_AFTER_DAYS);
+  const blockEndingCutoff = new Date(today);
+  blockEndingCutoff.setDate(blockEndingCutoff.getDate() + BLOCK_ENDING_SOON_DAYS);
+
+  const clients = await prisma.user.findMany({
+    where: { coachId },
+    select: {
+      id: true,
+      name: true,
+      activePlan: {
+        select: {
+          id: true,
+          name: true,
+          lastActivityDate: true,
+        },
+      },
+    },
+    orderBy: { name: 'asc' },
+  });
+
+  if (clients.length === 0) {
+    return {
+      summary: {
+        clientCount: 0,
+        submittedCheckInCount: 0,
+        maintenanceCount: 0,
+      },
+      submittedCheckIns: [],
+      planMaintenance: [],
+    };
+  }
+
+  const clientIds = clients.map(client => client.id);
+  const [submittedCheckIns, currentBlocks] = await Promise.all([
+    prisma.weeklyCheckIn.findMany({
+      where: {
+        userId: { in: clientIds },
+        completedAt: { not: null },
+        coachReviewedAt: null,
+      },
+      select: {
+        id: true,
+        userId: true,
+        weekStartDate: true,
+        completedAt: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: { completedAt: 'desc' },
+    }),
+    prisma.event.findMany({
+      where: {
+        userId: { in: clientIds },
+        eventType: 'BlockEvent',
+        startDate: { lte: today },
+        endDate: { gte: today },
+      },
+      select: {
+        userId: true,
+        endDate: true,
+      },
+      orderBy: [
+        { userId: 'asc' },
+        { endDate: 'asc' },
+      ],
+    }),
+  ]);
+
+  const earliestBlockByClientId = new Map<string, Date>();
+  currentBlocks.forEach(block => {
+    if (!earliestBlockByClientId.has(block.userId)) {
+      earliestBlockByClientId.set(block.userId, block.endDate);
+    }
+  });
+
+  const planMaintenance = clients
+    .map(client => {
+      if (!client.activePlan) {
+        return {
+          clientId: client.id,
+          clientName: client.name,
+          planId: null,
+          planName: null,
+          kind: 'no_active_plan' as const,
+          blockEndDate: null,
+          daysUntilBlockEnd: null,
+          lastPlanActivityDate: null,
+          staleDays: null,
+        };
+      }
+
+      const blockEndDate = earliestBlockByClientId.get(client.id) ?? null;
+      const daysUntilBlockEnd = blockEndDate ? diffInDays(today, blockEndDate) : null;
+      const lastPlanActivityDate = client.activePlan.lastActivityDate ?? null;
+      const staleDays = lastPlanActivityDate ? diffInDays(lastPlanActivityDate, today) : null;
+
+      if (blockEndDate && blockEndDate <= blockEndingCutoff) {
+        return {
+          clientId: client.id,
+          clientName: client.name,
+          planId: client.activePlan.id,
+          planName: client.activePlan.name,
+          kind: 'block_ending' as const,
+          blockEndDate,
+          daysUntilBlockEnd,
+          lastPlanActivityDate,
+          staleDays,
+        };
+      }
+
+      if (!lastPlanActivityDate || lastPlanActivityDate < staleBefore) {
+        return {
+          clientId: client.id,
+          clientName: client.name,
+          planId: client.activePlan.id,
+          planName: client.activePlan.name,
+          kind: 'plan_stale' as const,
+          blockEndDate,
+          daysUntilBlockEnd,
+          lastPlanActivityDate,
+          staleDays,
+        };
+      }
+
+      return null;
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+    .sort((left, right) => {
+      const rank = (kind: CoachHomeData['planMaintenance'][number]['kind']) => {
+        switch (kind) {
+          case 'no_active_plan':
+            return 0;
+          case 'block_ending':
+            return 1;
+          case 'plan_stale':
+            return 2;
+        }
+      };
+
+      const kindRank = rank(left.kind) - rank(right.kind);
+      if (kindRank !== 0) return kindRank;
+
+      if (left.kind === 'block_ending' && right.kind === 'block_ending') {
+        return (left.daysUntilBlockEnd ?? Number.MAX_SAFE_INTEGER) - (right.daysUntilBlockEnd ?? Number.MAX_SAFE_INTEGER);
+      }
+
+      if (left.kind === 'plan_stale' && right.kind === 'plan_stale') {
+        return (right.staleDays ?? -1) - (left.staleDays ?? -1);
+      }
+
+      return (left.clientName ?? '').localeCompare(right.clientName ?? '');
+    });
+
+  return {
+    summary: {
+      clientCount: clients.length,
+      submittedCheckInCount: submittedCheckIns.length,
+      maintenanceCount: planMaintenance.length,
+    },
+    submittedCheckIns: submittedCheckIns.map(checkIn => ({
+      checkInId: checkIn.id,
+      clientId: checkIn.user.id,
+      clientName: checkIn.user.name,
+      weekStartDate: checkIn.weekStartDate,
+      completedAt: checkIn.completedAt ?? checkIn.weekStartDate,
+    })),
+    planMaintenance,
+  };
 }
 
 async function getUnreadClientNotificationsByClient(coachId: string): Promise<Map<string, number>> {

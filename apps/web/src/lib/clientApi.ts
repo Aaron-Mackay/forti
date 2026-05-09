@@ -41,12 +41,14 @@ import {
   CoachCheckInNotesResponseSchema,
   CoachCheckInsResponseSchema,
   CoachClientsResponseSchema,
+  CoachHomeResponseSchema,
   CoachMutationSuccessResponseSchema,
   type CoachCheckInDetailResponse,
   type CoachCheckInNotesRequest,
   type CoachCheckInNotesResponse,
   type CoachCheckInsResponse,
   type CoachClientsResponse,
+  type CoachHomeResponse,
   type CoachMutationSuccessResponse,
 } from './contracts/coach';
 import {
@@ -190,6 +192,10 @@ export async function submitCheckIn(payload: SubmitCheckInRequest): Promise<Subm
 
 export async function getCoachClients(): Promise<CoachClientsResponse> {
   return fetchJsonWithSchema('/api/coach/clients', CoachClientsResponseSchema);
+}
+
+export async function getCoachHome(): Promise<CoachHomeResponse> {
+  return fetchJsonWithSchema('/api/coach/home', CoachHomeResponseSchema);
 }
 
 export interface CoachCheckInsOptions {
