@@ -5,6 +5,14 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 import { recordSignInAuditEvent } from '@lib/recordSignInAuditEvent';
 
+async function findUserByEmail(email: string) {
+  // The generated Prisma client has intermittently thrown opaque "Invalid
+  // findUnique invocation" errors in the NextAuth credentials callback path
+  // under local E2E runtime. `email` is still unique at the schema level, so
+  // `findFirst` preserves behavior while avoiding the failing selector path.
+  return prisma.user.findFirst({ where: { email } });
+}
+
 function isAllowedDevTunnelHost(hostname: string) {
   if (process.env.NODE_ENV === 'production') return false;
   return hostname.endsWith('.trycloudflare.com');
@@ -36,7 +44,7 @@ export const authOptions: AuthOptions = {
       async authorize() {
         const demoEmail = "jeff@example.com";
 
-        let user = await prisma.user.findUnique({where: {email: demoEmail}});
+        let user = await findUserByEmail(demoEmail);
 
         if (!user) {
           console.error('Demo user not found')
@@ -59,7 +67,7 @@ export const authOptions: AuthOptions = {
       async authorize() {
         const coachEmail = "todd@example.com";
 
-        let user = await prisma.user.findUnique({where: {email: coachEmail}});
+        let user = await findUserByEmail(coachEmail);
 
         if (!user) {
           console.error('Demo coach user not found')
@@ -83,7 +91,7 @@ export const authOptions: AuthOptions = {
         async authorize() {
           const testEmail = "testuser@example.com";
 
-          let user = await prisma.user.findUnique({where: {email: testEmail}});
+          let user = await findUserByEmail(testEmail);
 
           if (!user) {
             console.error('TestUser not found')
