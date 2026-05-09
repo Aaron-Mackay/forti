@@ -1,4 +1,3 @@
-import React from "react";
 import getLoggedInUser from "@lib/getLoggedInUser";
 import {HEIGHT_EXC_APPBAR} from "@/components/shell/CustomAppBar";
 import AppBarTitle from "@/components/shell/AppBarTitle";
@@ -13,6 +12,7 @@ import {Event as PrismaEvent, EventType} from "@/generated/prisma/browser";
 import prisma from "@lib/prisma";
 import {parseDashboardSettings} from "@/types/settingsTypes";
 import {redirect} from "next/navigation";
+import { SignalHome } from "./_components/SignalHome";
 
 export default async function UserPage() {
   const user = await getLoggedInUser()
@@ -27,6 +27,19 @@ export default async function UserPage() {
 
   if (!settings.registrationComplete) {
     redirect('/user/onboarding');
+  }
+
+  if (settings.signalUiEnabled) {
+    return (
+      <SignalHome
+        userName={user.name}
+        activePlanData={activePlanData}
+        metrics={userMetrics}
+        events={allEvents}
+        settings={settings}
+        today={new Date()}
+      />
+    );
   }
 
   return (
