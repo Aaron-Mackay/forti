@@ -19,7 +19,7 @@ import type {PreviousExerciseHistory} from '@lib/contracts/exerciseHistory';
 import {groupWorkoutExercises} from './groupWorkoutExercises';
 import {getPreviousExerciseHistory} from '@lib/clientApi';
 
-export default function WorkoutClient({userData}: {userData: WorkoutDataResponse}) {
+export default function WorkoutClient({userData, signalEnabled = false}: {userData: WorkoutDataResponse; signalEnabled?: boolean}) {
   const searchParams = useSearchParams();
   const workoutIdParam = searchParams.get('workoutId');
   const initialWorkoutId = workoutIdParam ? Number(workoutIdParam) : null;
@@ -128,6 +128,7 @@ export default function WorkoutClient({userData}: {userData: WorkoutDataResponse
         onRemoveExercise={handleRemoveExercise}
         snackbar={snackbar}
         handleSnackbarClose={handleSnackbarClose}
+        signalEnabled={signalEnabled}
       />
     );
   } else if (selectedPlan && selectedWeek && selectedWorkout) {

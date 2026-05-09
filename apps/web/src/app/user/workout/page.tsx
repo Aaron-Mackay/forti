@@ -5,6 +5,8 @@ import NetworkStatusBanner from "./_components/NetworkStatusBanner";
 import getLoggedInUser from "@lib/getLoggedInUser";
 import {Loading} from "@/components/shell/Loading";
 import {Suspense} from "react";
+import { SignalSurface } from '@/components/signal/SignalSurface';
+import { loadSignalFlag } from '@lib/signal/loadSignalFlag';
 
 export default async function DashboardPage() {
   const userId = (await getLoggedInUser()).id
@@ -13,10 +15,14 @@ export default async function DashboardPage() {
     return notFound()
   }
 
+  const signalEnabled = await loadSignalFlag();
+
   return <>
     <NetworkStatusBanner/>
     <Suspense fallback={<Loading/>}>
-      <WorkoutClient userData={userData}/>
+      <SignalSurface signalEnabled={signalEnabled} surface="gym">
+        <WorkoutClient userData={userData} signalEnabled={signalEnabled}/>
+      </SignalSurface>
     </Suspense>
   </>
 }

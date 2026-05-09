@@ -20,6 +20,7 @@ import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 import ExerciseSlide from './ExerciseSlide';
 import CardioSlide from './CardioSlide';
+import { SignalExerciseSlide } from './signal/SignalExerciseSlide';
 import {
   type E1rmHistoryPoint,
   type PreviousCardioResponse,
@@ -46,6 +47,7 @@ export default function ExerciseDetailView({
   onRemoveExercise,
   snackbar,
   handleSnackbarClose,
+  signalEnabled = false,
 }: {
   workout: WorkoutPrisma;
   currentWorkoutId: number;
@@ -63,9 +65,11 @@ export default function ExerciseDetailView({
   onRemoveExercise: (workoutExerciseId: number) => void;
   snackbar: { open: boolean; message: string; severity: 'success' | 'info' };
   handleSnackbarClose: () => void;
+  signalEnabled?: boolean;
 }) {
   useAppBar({ title: 'Exercises', showBack: true, onBack });
   const paginationRef = useRef<HTMLDivElement | null>(null);
+  const swiperRef = useRef<SwiperType | null>(null);
   const exerciseGroups = groupWorkoutExercises(workout.exercises);
   // Frozen on mount — activeExerciseId only changes here via user swipes, never via
   // external navigation, so useRef is safe. Passing a live value causes Swiper v12's
@@ -147,6 +151,7 @@ export default function ExerciseDetailView({
       >
         <Swiper
           initialSlide={initialSlide}
+          onSwiper={(swiper) => { swiperRef.current = swiper; }}
           onSlideChange={handleSlideChange}
           modules={[Pagination]}
           pagination={{
@@ -164,7 +169,7 @@ export default function ExerciseDetailView({
             width: '100%',
           }}
         >
-          {exerciseGroups.map((group) => (
+          {exerciseGroups.map((group, groupIdx) => (
             <SwiperSlide key={group.key} style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
               {group.items.length === 1 ? (
                 group.items[0].exercise.category === 'cardio' ? (
@@ -174,6 +179,35 @@ export default function ExerciseDetailView({
                     onFormCueBlur={onFormCueBlur}
                     onCardioUpdate={(field, value) => onCardioUpdate(group.items[0].id, field, value)}
                     previousCardio={previousCardioMap.get(group.items[0].exerciseId)}
+                  />
+                ) : signalEnabled ? (
+                  <SignalExerciseSlide
+                    ex={group.items[0]}
+                    userExerciseNote={userExerciseNotes.find(n => n.exerciseId === group.items[0].exerciseId)}
+                    onFormCueBlur={onFormCueBlur}
+                    handleSetUpdate={handleSetUpdate}
+                    previousWorkout={previousSetsMap.get(group.items[0].id)}
+                    history={e1rmHistoryMap.get(group.items[0].exerciseId) ?? null}
+                    nextExerciseName={
+                      groupIdx + 1 < exerciseGroups.length
+                        ? exerciseGroups[groupIdx + 1].items[0].exercise.name
+                        : null
+                    }
+                    onAdvance={() => {
+                      (document.activeElement as HTMLElement | null)?.blur?.();
+                      if (groupIdx + 1 < exerciseGroups.length) {
+                        swiperRef.current?.slideNext();
+                      } else {
+                        onBack();
+                      }
+                    }}
+                    onSkip={() => {
+                      if (groupIdx + 1 < exerciseGroups.length) {
+                        swiperRef.current?.slideNext();
+                      } else {
+                        onBack();
+                      }
+                    }}
                   />
                 ) : (
                   <ExerciseSlide
