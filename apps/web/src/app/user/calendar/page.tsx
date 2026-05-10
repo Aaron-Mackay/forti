@@ -5,6 +5,8 @@ import {notFound} from "next/navigation";
 import Calendar from "./Calendar";
 import {getServerSession} from "next-auth/next";
 import {authOptions} from "@lib/auth";
+import {loadSignalFlag} from "@lib/signal/loadSignalFlag";
+import {SignalSurface} from "@/components/signal/SignalSurface";
 
 const CalendarPage = async () => {
   const session = await getServerSession(authOptions);
@@ -13,14 +15,19 @@ const CalendarPage = async () => {
     return notFound()
   }
 
-  const userEvents = await getUserEvents(userId)
-  const userMetrics = await getUserMetrics(userId)
+  const [userEvents, userMetrics, signalEnabled] = await Promise.all([
+    getUserEvents(userId),
+    getUserMetrics(userId),
+    loadSignalFlag(),
+  ]);
   if (!(userEvents && userMetrics)) {
     return notFound()
   }
 
   return (
-    <Calendar events={userEvents} metrics={userMetrics} userId={userId}/>
+    <SignalSurface signalEnabled={signalEnabled} surface="planning">
+      <Calendar events={userEvents} metrics={userMetrics} userId={userId} signalEnabled={signalEnabled}/>
+    </SignalSurface>
   )
 };
 

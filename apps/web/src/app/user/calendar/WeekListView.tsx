@@ -14,12 +14,16 @@ import {
 import { EventPrisma } from '@/types/dataTypes';
 import { EventType } from '@/generated/prisma/browser';
 import { getEventColor } from './utils';
+import { signalTokens } from '@lib/signal/tokens';
+
+const planningPalette = signalTokens.surface.planning;
 
 type Props = {
   events: EventPrisma[];
   onWeekClick: (weekStart: Date) => void;
   height: string;
   active: boolean;
+  signalEnabled?: boolean;
 };
 
 type WeekGroup = {
@@ -61,7 +65,7 @@ function groupWeeksByMonth(weeks: Date[]): WeekGroup[] {
   return groups;
 }
 
-export default function WeekListView({ events, onWeekClick, height, active }: Props) {
+export default function WeekListView({ events, onWeekClick, height, active, signalEnabled = false }: Props) {
   const today = startOfDay(new Date());
   const currentWeekStart = startOfISOWeek(today);
 
@@ -123,7 +127,7 @@ export default function WeekListView({ events, onWeekClick, height, active }: Pr
   }, [events, weeks]);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const currentWeekRef = useRef<HTMLDivElement>(null);
+  const currentWeekRef = useRef<HTMLElement>(null);
   const scrolledRef = useRef(false);
 
   // Scroll to current week the first time the view becomes visible.
@@ -140,6 +144,94 @@ export default function WeekListView({ events, onWeekClick, height, active }: Pr
     const elTop = el.getBoundingClientRect().top;
     container.scrollTop += elTop - containerTop - container.clientHeight / 2 + el.clientHeight / 2;
   }, [active]);
+
+  if (signalEnabled) {
+    return (
+      <div ref={containerRef} style={{ overflowY: 'auto', height, paddingBottom: 80, background: planningPalette.bg }}>
+        {groups.map(({ monthKey, monthLabel, weeks: monthWeeks }) => (
+          <div key={monthKey}>
+            <div
+              style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 10,
+                padding: '8px 16px',
+                background: planningPalette.bg,
+                color: planningPalette.inkLight,
+                fontFamily: signalTokens.fontVar.mono,
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                borderBottom: `1px solid ${planningPalette.border}`,
+              }}
+            >
+              {monthLabel}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '8px 12px' }}>
+              {monthWeeks.map(weekStart => {
+                const weekEnd = addDays(weekStart, 7);
+                const isCurrentWeek = isSameDay(weekStart, currentWeekStart);
+                const weekEvents = eventsByWeekStart.get(weekStart.toISOString());
+                const blockEvents = weekEvents?.blockEvents ?? [];
+                const customEvents = weekEvents?.customEvents ?? [];
+                const primaryBlock = blockEvents[0] ?? null;
+                const blockColor = primaryBlock ? getEventColor(primaryBlock) : undefined;
+                const weekNum = getISOWeek(weekStart);
+                const dateRange = `${format(weekStart, 'MMM d')} – ${format(addDays(weekEnd, -1), 'MMM d')}`;
+
+                return (
+                  <button
+                    key={weekStart.toISOString()}
+                    ref={isCurrentWeek ? (currentWeekRef as React.RefObject<HTMLButtonElement>) : undefined}
+                    type="button"
+                    onClick={() => onWeekClick(weekStart)}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 2,
+                      padding: '12px 14px',
+                      background: isCurrentWeek ? planningPalette.surfaceAlt : planningPalette.surface,
+                      border: `1px solid ${isCurrentWeek ? planningPalette.borderStrong : planningPalette.border}`,
+                      borderLeft: `3px solid ${blockColor ?? (isCurrentWeek ? signalTokens.signal.deep : 'transparent')}`,
+                      borderRadius: signalTokens.radii.card,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      color: planningPalette.ink,
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: planningPalette.inkLight, fontWeight: 600 }}>
+                        W{weekNum}
+                      </span>
+                      <span style={{ fontFamily: signalTokens.fontVar.body, fontSize: 13, fontWeight: isCurrentWeek ? 700 : 500 }}>
+                        {dateRange}
+                      </span>
+                      {isCurrentWeek && (
+                        <span style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 10, color: signalTokens.signal.deep, fontWeight: 700, letterSpacing: '0.04em' }}>
+                          THIS WEEK
+                        </span>
+                      )}
+                    </span>
+                    {primaryBlock && (
+                      <span style={{ fontSize: 12, color: planningPalette.inkMid }}>
+                        {primaryBlock.name}
+                      </span>
+                    )}
+                    {customEvents.map(e => (
+                      <span key={e.id} style={{ fontSize: 12, color: planningPalette.inkMid }}>
+                        · {e.name}
+                      </span>
+                    ))}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <Box ref={containerRef} sx={{ overflowY: 'auto', height, pb: 10 }}>

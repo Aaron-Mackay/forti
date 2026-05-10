@@ -25,19 +25,23 @@ import {useOfflineCache} from '@lib/hooks/useOfflineCache';
 import WeekListView from "@/app/user/calendar/WeekListView";
 import {useSettings} from '@lib/providers/SettingsProvider';
 import {useCalendarController} from "@/app/user/calendar/useCalendarController";
+import {signalTokens} from '@lib/signal/tokens';
 
+const planningPalette = signalTokens.surface.planning;
 const TOGGLE_HEIGHT = 44;
+const SIGNAL_HERO_HEIGHT = 84;
 
 export type BottomDrawerView = 'list' | 'details' | 'event-form' | 'daymetric-form';
 
 type Props = {
   events: EventPrisma[];
   metrics: MetricPrisma[];
-  userId: string
+  userId: string;
+  signalEnabled?: boolean;
 };
 
 
-export default function Calendar({events, metrics, userId}: Props) {
+export default function Calendar({events, metrics, userId, signalEnabled = false}: Props) {
   useAppBar({ title: 'Calendar' });
   const calendarRef = useRef<FullCalendar | null>(null);
   const { settings } = useSettings();
@@ -86,6 +90,10 @@ export default function Calendar({events, metrics, userId}: Props) {
 
   const fullCalendarEvents = useMemo(() => parsedEvents(eventsInState), [eventsInState]);
 
+  const gridHeight = signalEnabled
+    ? `calc(100dvh - ${APPBAR_HEIGHT}px - ${TOGGLE_HEIGHT}px - ${SIGNAL_HERO_HEIGHT}px)`
+    : `calc(100dvh - ${APPBAR_HEIGHT}px - ${TOGGLE_HEIGHT}px)`;
+
   const handleFabCreateClick = () => {
     openEventForm();
   }
@@ -133,6 +141,27 @@ export default function Calendar({events, metrics, userId}: Props) {
           Your calendar was updated while you were offline — showing the latest version.
         </Alert>
       </Collapse>
+      {/* Signal hero — only when flagged */}
+      {signalEnabled && (
+        <Box sx={{
+          height: SIGNAL_HERO_HEIGHT,
+          background: planningPalette.surface,
+          borderBottom: `1px solid ${planningPalette.border}`,
+          px: 2,
+          py: 1.75,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+        }}>
+          <Box sx={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: planningPalette.inkLight, mb: 0.5 }}>
+            Calendar
+          </Box>
+          <Box sx={{ fontFamily: signalTokens.fontVar.cond, fontSize: 26, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, color: planningPalette.ink }}>
+            Schedule
+          </Box>
+        </Box>
+      )}
+
       {/* View toggle */}
       <Box sx={{
         display: 'flex',
@@ -140,22 +169,63 @@ export default function Calendar({events, metrics, userId}: Props) {
         alignItems: 'center',
         height: TOGGLE_HEIGHT,
         borderBottom: '1px solid',
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
+        borderColor: signalEnabled ? planningPalette.border : 'divider',
+        bgcolor: signalEnabled ? planningPalette.surface : 'background.paper',
       }}>
-        <ToggleButtonGroup
-          value={viewMode}
-          exclusive
-          onChange={(_e, val) => { if (val) setViewMode(val); }}
-          size="small"
-        >
-          <ToggleButton value="calendar" aria-label="Calendar view">
-            <CalendarMonthIcon fontSize="small"/>
-          </ToggleButton>
-          <ToggleButton value="weeks" aria-label="Weeks view">
-            <ViewListIcon fontSize="small"/>
-          </ToggleButton>
-        </ToggleButtonGroup>
+        {signalEnabled ? (
+          <div
+            role="group"
+            aria-label="View"
+            style={{
+              display: 'flex',
+              gap: 2,
+              padding: 2,
+              background: planningPalette.surfaceAlt,
+              border: `1px solid ${planningPalette.border}`,
+              borderRadius: signalTokens.radii.cell + 1,
+            }}
+          >
+            {(['calendar', 'weeks'] as const).map((m) => {
+              const active = m === viewMode;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  aria-label={`${m === 'calendar' ? 'Calendar' : 'Weeks'} view`}
+                  aria-pressed={active}
+                  onClick={() => setViewMode(m)}
+                  style={{
+                    padding: '6px 16px',
+                    background: active ? planningPalette.ink : 'transparent',
+                    color: active ? planningPalette.surface : planningPalette.inkMid,
+                    borderRadius: signalTokens.radii.cell,
+                    border: 'none',
+                    fontFamily: signalTokens.fontVar.body,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {m === 'calendar' ? 'Month' : 'Weeks'}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_e, val) => { if (val) setViewMode(val); }}
+            size="small"
+          >
+            <ToggleButton value="calendar" aria-label="Calendar view">
+              <CalendarMonthIcon fontSize="small"/>
+            </ToggleButton>
+            <ToggleButton value="weeks" aria-label="Weeks view">
+              <ViewListIcon fontSize="small"/>
+            </ToggleButton>
+          </ToggleButtonGroup>
+        )}
       </Box>
 
       {/* Calendar view (kept mounted to preserve state) */}
@@ -166,7 +236,7 @@ export default function Calendar({events, metrics, userId}: Props) {
           initialView="multiMonthYear"
           firstDay={1}
           multiMonthMaxColumns={1}
-          height={`calc(100dvh - ${APPBAR_HEIGHT}px - ${TOGGLE_HEIGHT}px)`}
+          height={gridHeight}
           selectable={true}
           selectLongPressDelay={400}
           dateClick={(dateInfo) => openDay(dateInfo)}
@@ -197,8 +267,9 @@ export default function Calendar({events, metrics, userId}: Props) {
         <WeekListView
           events={eventsInState}
           onWeekClick={handleWeekClick}
-          height={`calc(100dvh - ${APPBAR_HEIGHT}px - ${TOGGLE_HEIGHT}px)`}
+          height={gridHeight}
           active={viewMode === 'weeks'}
+          signalEnabled={signalEnabled}
         />
       </Box>
       <Box sx={{
