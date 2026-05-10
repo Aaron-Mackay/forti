@@ -148,6 +148,14 @@
 - The flagged path now uses the planning surface and a rebuilt assigned-learning-plans composition instead of the older plain accordion/card list.
 - The legacy path remains intact, and the client assignment fetch / step completion behavior is preserved unchanged.
 
+### Signal user supplements route
+
+- Intended commit: `Build Signal supplements slice`
+- Route:
+  - `/user/supplements`
+- The flagged path now uses the planning surface and a rebuilt protocol-tracker composition instead of the older plain active/history list.
+- The legacy path remains intact, and the supplements gate plus CRUD/version-history behavior are preserved unchanged.
+
 ## What changed
 
 - Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to both check-ins list pages.
@@ -303,6 +311,21 @@
   - per-assignment expand/collapse state
   - empty-state behavior when no assignments exist
 - Added focused Playwright coverage for the flagged user learning-plans route.
+- Added route-level `SignalSurface(planning)` to `/user/supplements` while preserving the existing `showSupplements` gate derived from the already-loaded settings object.
+- Passed `signalEnabled` into `SupplementsClient`.
+- Rebuilt the flagged branch with:
+  - planning-surface hero (mono "Supplements" label + condensed "Protocol tracker" heading)
+  - summary cells for active count, history count, and overall status
+  - planning-style supplement cards for active and historical entries
+  - preserved change-history expansion, dialog-based add/edit flow, and delete actions inside the new shell
+  - a proper loading panel and a clearer Signal add-supplement CTA
+- Preserved existing behavior:
+  - supplements visibility gate via `showSupplements`
+  - `/api/supplements` fetch
+  - create / edit / delete flows
+  - active vs history categorisation
+  - version history timeline and diffs
+- Added focused Playwright coverage for the flagged supplements route.
 
 ## Preserved behavior
 

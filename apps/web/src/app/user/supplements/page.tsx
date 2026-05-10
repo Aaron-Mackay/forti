@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import SupplementsClient from './SupplementsClient';
+import { SignalSurface } from '@/components/signal/SignalSurface';
 
 export default async function SupplementsPage() {
   const session = await getServerSession(authOptions);
@@ -19,6 +20,16 @@ export default async function SupplementsPage() {
 
   const settings = parseDashboardSettings(user.settings);
   if (!settings.showSupplements) return notFound();
+
+  const signalEnabled = settings.signalUiEnabled;
+
+  if (signalEnabled) {
+    return (
+      <SignalSurface signalEnabled surface="planning">
+        <SupplementsClient signalEnabled />
+      </SignalSurface>
+    );
+  }
 
   return <SupplementsClient />;
 }
