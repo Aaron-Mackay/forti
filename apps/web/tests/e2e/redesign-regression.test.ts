@@ -35,6 +35,13 @@ async function signInAsDemoCoach(page: Page) {
   await enableCoachMode(page);
 }
 
+async function configureSignalCoach(page: Page) {
+  await signInWithCredentialsProvider(page, 'demo-coach');
+  await page.request.patch('/api/user/settings', {
+    data: { settings: { coachModeActive: true, signalUiEnabled: true } },
+  });
+}
+
 async function firstDemoCoachClientId(page: Page) {
   const response = await page.request.get('/api/coach/clients');
   expect(response.ok()).toBeTruthy();
@@ -88,6 +95,16 @@ test.describe('Restyle regression gap coverage', () => {
     await page.getByRole('button', { name: 'Start from default check-in' }).click();
     await expect(page.getByRole('button', { name: 'Preview' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Save Template' })).toBeVisible();
+  });
+
+  test('flagged coach sees the Signal check-in template workspace', async ({ page }) => {
+    await configureSignalCoach(page);
+    await page.goto('/user/coach/check-in-template');
+
+    await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
+    await expect(page.getByText('Coach Check-in Template')).toBeVisible();
+    await expect(page.getByText('Template workspace')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Start from default check-in' })).toBeVisible();
   });
 
   test('coach client plans, nutrition, and supplements routes load for a linked demo client', async ({ page }) => {

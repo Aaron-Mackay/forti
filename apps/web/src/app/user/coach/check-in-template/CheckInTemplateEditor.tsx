@@ -93,6 +93,8 @@ import CustomCheckInField from '@/app/user/check-in/CustomCheckInField';
 import {HEIGHT_EXC_APPBAR} from "@/components/shell/CustomAppBar";
 import { DEFAULT_CHECK_IN_TEMPLATE_PREVIEW_DATA } from '@/components/checkin/checkInTemplatePreviewData';
 import { resolveMetricCardConfig } from '@/types/checkInTemplateTypes';
+import { signalFontVariablesClassName } from '@lib/signal/fonts';
+import { signalTokens } from '@lib/signal/tokens';
 
 // Motion-wrapped MUI Box — accepts both `sx` and Framer Motion props
 const MotionBox = motion.create(Box);
@@ -1211,7 +1213,7 @@ function ensureUniqueCardIds(cards: CheckInCard[]): CheckInCard[] {
   });
 }
 
-export default function CheckInTemplateEditor() {
+export default function CheckInTemplateEditor({ signalEnabled = false }: { signalEnabled?: boolean }) {
   const [cards, setCards] = useState<CheckInCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -1334,7 +1336,7 @@ export default function CheckInTemplateEditor() {
     );
   }
 
-  return (
+  const editorContent = (
     <Box sx={{ pt: 2 }}>
       {error && (
         <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
@@ -1462,5 +1464,113 @@ export default function CheckInTemplateEditor() {
         <TemplatePreview cards={cards} onClose={() => setPreviewOpen(false)} />
       )}
     </Box>
+  );
+
+  if (!signalEnabled) {
+    return editorContent;
+  }
+
+  const palette = signalTokens.surface.planning;
+
+  return (
+    <div
+      className={signalFontVariablesClassName}
+      style={{
+        minHeight: '100%',
+        background: palette.bg,
+        color: palette.ink,
+        fontFamily: signalTokens.fontVar.body,
+        paddingTop: 14,
+      }}
+    >
+      <section
+        style={{
+          background: palette.surface,
+          border: `1px solid ${palette.borderStrong}`,
+          borderRadius: signalTokens.radii.cardLarge,
+          padding: '20px 20px 18px',
+          marginBottom: 18,
+        }}
+      >
+        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: cards.length > 0 ? signalTokens.signal.deep : palette.inkLight, marginBottom: 6 }}>
+          Coach Check-in Template
+        </div>
+        <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 32, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 10 }}>
+          Template workspace
+        </div>
+        <div style={{ fontSize: 14, color: palette.inkMid, lineHeight: 1.5, maxWidth: 680 }}>
+          Shape the check-in flow your clients complete each week. System cards keep progress photos, metrics, and training anchored while custom cards let you ask for the context you actually coach from.
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginTop: 18 }}>
+          <SignalMetricPill label="Cards" value={cards.length} />
+          <SignalMetricPill label="Inputs" value={allInputFields.length} />
+          <SignalMetricPill label="System" value={cards.filter(card => card.kind === 'system').length} />
+        </div>
+      </section>
+
+      <section
+        style={{
+          background: palette.surface,
+          border: `1px solid ${palette.border}`,
+          borderRadius: signalTokens.radii.cardLarge,
+          padding: '4px 18px 18px',
+          marginBottom: 16,
+        }}
+      >
+        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginTop: 14, marginBottom: 4 }}>
+          Builder
+        </div>
+        <div style={{ fontSize: 14, color: palette.inkMid, lineHeight: 1.5, marginBottom: 2 }}>
+          Start from the default check-in, then add or remove cards before previewing the client experience.
+        </div>
+
+        <Box
+          sx={{
+            '& .MuiButton-root': {
+              borderRadius: `${signalTokens.radii.card}px`,
+              textTransform: 'none',
+              fontWeight: 600,
+            },
+            '& .MuiButton-contained': {
+              bgcolor: palette.ink,
+              color: palette.bg,
+              '&:hover': {
+                bgcolor: palette.borderStrong,
+              },
+            },
+            '& .MuiButton-outlined': {
+              borderColor: palette.borderStrong,
+              color: palette.ink,
+            },
+            '& .MuiPaper-root': {
+              borderRadius: `${signalTokens.radii.cardLarge}px`,
+            },
+            '& .MuiDialog-paper': {
+              borderRadius: `${signalTokens.radii.cardLarge}px`,
+            },
+          }}
+        >
+          {editorContent}
+        </Box>
+      </section>
+    </div>
+  );
+}
+
+function SignalMetricPill({ label, value }: { label: string; value: number }) {
+  const palette = signalTokens.surface.planning;
+  return (
+    <div
+      style={{
+        border: `1px solid ${palette.border}`,
+        borderRadius: signalTokens.radii.card,
+        padding: '10px 12px',
+        background: palette.surfaceAlt,
+      }}
+    >
+      <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 24, fontWeight: 700, lineHeight: 1 }}>{value}</div>
+    </div>
   );
 }
