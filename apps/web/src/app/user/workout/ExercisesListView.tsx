@@ -35,6 +35,9 @@ import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 import ScrollEdgeFades from '@/components/shell/ScrollEdgeFades';
 import {useScrollEdgeFades} from '@lib/hooks/useScrollEdgeFades';
 import {groupWorkoutExercises} from './groupWorkoutExercises';
+import { signalTokens } from '@lib/signal/tokens';
+
+const gymPalette = signalTokens.surface.gym;
 
 export default function ExercisesListView({
                                             workout,
@@ -45,6 +48,7 @@ export default function ExercisesListView({
                                             onCompleteWorkout,
                                             onAddExercise,
                                             onRemoveExercise,
+                                            signalEnabled = false,
                                           }: {
   workout: WorkoutPrisma;
   onEnter?: () => void | Promise<void>;
@@ -54,6 +58,7 @@ export default function ExercisesListView({
   onCompleteWorkout: (completed: boolean, date?: Date) => void;
   onAddExercise: () => void;
   onRemoveExercise?: (workoutExerciseId: number) => void;
+  signalEnabled?: boolean;
 }) {
   useAppBar({title: workout.name, showBack: true, onBack});
   useEffect(() => {
@@ -104,6 +109,236 @@ export default function ExercisesListView({
     ? new Date(workout.dateCompleted).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'})
     : null;
   const exerciseGroups = groupWorkoutExercises(workout.exercises);
+
+  if (signalEnabled) {
+    return (
+      <>
+        <div
+          style={{
+            height: HEIGHT_EXC_APPBAR,
+            background: gymPalette.bg,
+            color: gymPalette.ink,
+            fontFamily: signalTokens.fontVar.body,
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '14px 16px 0',
+          }}
+        >
+          <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: gymPalette.inkLight, marginBottom: 4 }}>
+            {workout.name}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 24, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1 }}>
+              Exercises
+            </div>
+            <button
+              type="button"
+              onClick={onAddExercise}
+              aria-label="Add exercise"
+              style={{
+                background: 'transparent',
+                border: `1px solid ${gymPalette.border}`,
+                borderRadius: signalTokens.radii.card,
+                color: gymPalette.inkMid,
+                padding: '6px 12px',
+                fontFamily: signalTokens.fontVar.mono,
+                fontSize: 11,
+                cursor: 'pointer',
+              }}
+            >
+              + add
+            </button>
+          </div>
+
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', marginBottom: 12 }}>
+            {exerciseGroups.map((group) => {
+              const first = group.items[0];
+              const allLogged = group.items.every(ex =>
+                ex.exercise.category === 'cardio'
+                  ? (ex.cardioDuration != null || ex.cardioDistance != null)
+                  : ex.sets.some(s => s.reps != null)
+              );
+              return (
+                <button
+                  key={group.key}
+                  type="button"
+                  onClick={() => onSelectExercise(first.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                    background: gymPalette.surface,
+                    border: `1px solid ${gymPalette.border}`,
+                    borderRadius: signalTokens.radii.card,
+                    padding: '12px 14px',
+                    color: gymPalette.ink,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    marginBottom: 2,
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: signalTokens.fontVar.body, fontSize: 14, fontWeight: 500, marginBottom: 2 }}>
+                      {first.exercise.name}
+                      {group.items.length > 1 && (
+                        <span style={{ marginLeft: 6, fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: gymPalette.inkLight }}>
+                          +{group.items.length - 1} more
+                        </span>
+                      )}
+                    </div>
+                    {first.exercise.category !== 'cardio' && first.repRange && (
+                      <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: gymPalette.inkLight }}>
+                        {first.repRange} reps{first.restTime ? ` · ${first.restTime}s rest` : ''}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexShrink: 0 }}>
+                    {first.exercise.category === 'cardio' ? (
+                      <span style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: allLogged ? signalTokens.signal.deep : gymPalette.inkLight }}>
+                        {allLogged ? 'done' : 'log'}
+                      </span>
+                    ) : (
+                      first.sets.map((set, si) => (
+                        <span
+                          key={si}
+                          style={{
+                            display: 'block',
+                            width: set.isDropSet ? 7 : 9,
+                            height: set.isDropSet ? 7 : 9,
+                            borderRadius: '50%',
+                            background: set.reps != null ? signalTokens.signal.deep : 'transparent',
+                            border: `1.5px solid ${set.reps != null ? signalTokens.signal.deep : gymPalette.borderStrong}`,
+                          }}
+                        />
+                      ))
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Notes toggle */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              cursor: 'pointer',
+              marginBottom: notesOpen ? 8 : 12,
+              color: notesOpen || hasNote ? signalTokens.signal.deep : gymPalette.inkLight,
+            }}
+            onClick={() => setNotesOpen(o => !o)}
+          >
+            <span style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11 }}>
+              {notesOpen ? '▾' : '▸'} Workout notes
+            </span>
+          </div>
+          {notesOpen && (
+            <textarea
+              rows={3}
+              placeholder="Workout notes..."
+              value={noteValue}
+              onChange={e => setNoteValue(e.target.value)}
+              onBlur={() => onWorkoutNoteBlur(noteValue)}
+              style={{
+                width: '100%',
+                background: gymPalette.surface,
+                border: `1px solid ${gymPalette.border}`,
+                borderRadius: signalTokens.radii.card,
+                color: gymPalette.ink,
+                fontFamily: signalTokens.fontVar.body,
+                fontSize: 14,
+                padding: '10px 12px',
+                resize: 'none',
+                marginBottom: 12,
+                boxSizing: 'border-box',
+              }}
+            />
+          )}
+
+          {/* Complete CTA */}
+          <span
+            onPointerDown={handleCompleteBtnPointerDown}
+            onPointerUp={clearLongPress}
+            onPointerLeave={clearLongPress}
+            onPointerCancel={clearLongPress}
+            style={{ display: 'block', marginBottom: 'max(16px, calc(16px + env(safe-area-inset-bottom)))' }}
+          >
+            <button
+              type="button"
+              onClick={handleCompleteBtnClick}
+              style={{
+                width: '100%',
+                padding: '14px',
+                borderRadius: signalTokens.radii.card,
+                border: `1px solid ${isCompleted ? signalTokens.signal.deep : gymPalette.borderStrong}`,
+                background: isCompleted ? signalTokens.signal.deep : 'transparent',
+                color: isCompleted ? gymPalette.bg : gymPalette.inkMid,
+                fontFamily: signalTokens.fontVar.body,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              {isCompleted ? `Completed ${completedDate}` : 'Mark as complete'}
+            </button>
+          </span>
+        </div>
+
+        {/* Dialogs preserved unchanged */}
+        <Dialog open={datePickerOpen} onClose={() => setDatePickerOpen(false)}>
+          <DialogTitle>Complete Workout</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" sx={{mb: 2}}>Select a completion date:</Typography>
+            <DatePicker
+              value={pickedDate}
+              onChange={setPickedDate}
+              disableFuture
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDatePickerOpen(false)}>Cancel</Button>
+            <Button
+              variant="contained"
+              color="success"
+              onClick={() => {
+                setDatePickerOpen(false);
+                if (pickedDate) onCompleteWorkout(true, pickedDate);
+              }}
+            >
+              Complete
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog open={pendingRemoveExerciseId !== null} onClose={() => setPendingRemoveExerciseId(null)}>
+          <DialogTitle>Remove exercise?</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2">
+              This will remove this added exercise block from the workout.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setPendingRemoveExerciseId(null)}>Cancel</Button>
+            <Button
+              color="error"
+              onClick={() => {
+                if (pendingRemoveExerciseId != null && onRemoveExercise) {
+                  onRemoveExercise(pendingRemoveExerciseId);
+                }
+                setPendingRemoveExerciseId(null);
+              }}
+            >
+              Remove
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <AppBarStopwatch/>
+      </>
+    );
+  }
 
   return (
     <Box sx={{

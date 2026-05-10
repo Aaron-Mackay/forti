@@ -7,17 +7,71 @@ import ProgressIcon from '@/lib/ProgressIcon';
 import { getWorkoutStatus } from '@/lib/workoutProgress';
 import WeekMuscleSummary from './WeekMuscleSummary';
 import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
+import { signalTokens } from '@lib/signal/tokens';
+
+const gymPalette = signalTokens.surface.gym;
 
 export default function WorkoutsListView({
   week,
   onBack,
   onSelectWorkout,
+  signalEnabled = false,
 }: {
   week: WeekPrisma;
   onBack: () => void;
   onSelectWorkout: (workoutId: number) => void;
+  signalEnabled?: boolean;
 }) {
   useAppBar({ title: `Week ${week.order}`, showBack: true, onBack });
+
+  if (signalEnabled) {
+    return (
+      <div style={{ minHeight: '100dvh', background: gymPalette.bg, color: gymPalette.ink, fontFamily: signalTokens.fontVar.body, padding: '14px 16px 28px' }}>
+        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: gymPalette.inkLight, marginBottom: 6 }}>
+          Week {week.order}
+        </div>
+        <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 26, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 18 }}>
+          Select a workout
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {week.workouts.map((workout) => {
+            const setCount = workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+            const status = getWorkoutStatus(workout);
+            const done = status === 'completed';
+            return (
+              <button
+                key={workout.id}
+                type="button"
+                onClick={() => onSelectWorkout(workout.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  background: gymPalette.surface,
+                  border: `1px solid ${gymPalette.border}`,
+                  borderRadius: signalTokens.radii.card,
+                  padding: '14px 16px',
+                  color: gymPalette.ink,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  gap: 12,
+                }}
+              >
+                <span style={{ fontFamily: signalTokens.fontVar.body, fontSize: 15, fontWeight: 500, flex: 1, minWidth: 0 }}>
+                  {workout.name}
+                </span>
+                <span style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: done ? signalTokens.signal.deep : gymPalette.inkLight, flexShrink: 0 }}>
+                  {done ? 'done' : `${setCount} sets`}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Box sx={{ maxHeight: HEIGHT_EXC_APPBAR, bgcolor: 'background.default', color: 'text.primary' }}>
       <Container sx={{ pt: 1 }}>

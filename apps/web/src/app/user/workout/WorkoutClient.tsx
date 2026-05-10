@@ -142,6 +142,7 @@ export default function WorkoutClient({userData, signalEnabled = false}: {userDa
         onCompleteWorkout={handleCompleteWorkout}
         onAddExercise={() => setShowAddExercise(true)}
         onRemoveExercise={handleRemoveExercise}
+        signalEnabled={signalEnabled}
       />
     );
   } else if (selectedPlan && selectedWeek) {
@@ -150,6 +151,7 @@ export default function WorkoutClient({userData, signalEnabled = false}: {userDa
         week={selectedWeek}
         onBack={navigateBack}
         onSelectWorkout={setSelectedWorkoutId}
+        signalEnabled={signalEnabled}
       />
     );
   } else if (selectedPlan) {
@@ -158,10 +160,11 @@ export default function WorkoutClient({userData, signalEnabled = false}: {userDa
         plan={selectedPlan}
         onBack={navigateBack}
         onSelectWeek={setSelectedWeekId}
+        signalEnabled={signalEnabled}
       />
     );
   } else {
-    view = <PlansListView userData={userDataState} onSelectPlan={setSelectedPlanId}/>;
+    view = <PlansListView userData={userDataState} onSelectPlan={setSelectedPlanId} signalEnabled={signalEnabled}/>;
   }
 
   return (

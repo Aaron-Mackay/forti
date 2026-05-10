@@ -60,6 +60,18 @@
 - The flagged path now uses the planning surface and a rebuilt import workspace for the existing spreadsheet-to-editor flow.
 - The legacy path stays on the current MUI wizard, and the importer logic remains unchanged.
 
+### Signal workout route list views
+
+- Intended commit: `Build Signal workout slice`
+- Route:
+  - `/user/workout`
+- The workout route already had `SignalSurface(gym)` wrapping and `SignalExerciseSlide` for the exercise logging screen. This slice adds gym-surface Signal rendering to all four upstream navigation views.
+- `PlansListView` — gym dark plan rows with chartreuse active-plan indicator and toggle dot.
+- `WeeksListView` — gym dark week rows with done/session-count status label.
+- `WorkoutsListView` — gym dark workout rows with set count or done label.
+- `ExercisesListView` — gym dark exercise rows with set-completion dots, notes toggle, and Mark as complete CTA.
+- All existing behavior (set active plan, complete workout, notes, add/remove exercise, date picker, long-press, snackbar dialogs) is preserved; only presentation changes when flagged.
+
 ### Signal user plan editor workspace
 
 - Intended commit: `Build Signal plan editor slice`
@@ -177,6 +189,10 @@
 - coach-for-client plan creation still uses the existing `forUserId` authorization and target-user lookup
 - spreadsheet import chunking, clarification prompts, enrichment, and retry behavior are unchanged
 - the summary step still uses the existing muscle-volume calculation and editor handoff
+- workout navigation still uses the existing `useWorkoutSession` state machine and its plan/week/workout/exercise drill-down
+- set active plan still uses the existing `/api/plan/active` PATCH flow
+- complete workout still uses the existing `handleCompleteWorkout` with the long-press date picker
+- add/remove exercise dialogs (`ExercisePickerDialog`, `AddExerciseConfigDialog`) remain the existing implementation
 - plan editing still uses the existing reducer (`useWorkoutEditor` / `WorkoutEditorProvider`) and its sheet/classic/multi-week presentations
 - the plan editor's view-mode toggle, arrange mode, zoom controls, rep-range validation, fixed save button, and save snackbar remain the existing implementation
 
@@ -191,6 +207,7 @@
 - `BASE_URL=http://127.0.0.1:3008 npx playwright test tests/e2e/planCreate.test.ts --project=chromium --no-deps`
 - `BASE_URL=http://127.0.0.1:3009 npx playwright test tests/e2e/planUpload.test.ts --project=chromium --no-deps`
 - `BASE_URL=http://localhost:3010 npx playwright test tests/e2e/planEditor.test.ts --project=chromium`
+- `BASE_URL=http://localhost:3010 npx playwright test tests/e2e/workoutSignal.test.ts --project=chromium`
 
 ## Known residuals
 
@@ -211,14 +228,13 @@ Likely next Stage 5 slice outside the coach routes:
 
 Most natural next slice now:
 
-- `/user/workout`
+- `/user/check-in`
 
 Reason:
 
 - the main coach screens called out in the handover are now covered
-- `/user/progress`, `/user/plan/create`, `/user/plan/upload`, and `/user/plan/[planId]` now all use the Signal planning surface
-- the workout-logging route is the next core user surface in the Stage 5 brief and uses the gym (dark) palette rather than planning, so it's a meaningful next palette to exercise behind the flag
-- `/user/check-in` is the natural follow-on once the workout shell is in place
+- `/user/progress`, `/user/plan/create`, `/user/plan/upload`, `/user/plan/[planId]`, and the full `/user/workout` drill-down (plans → weeks → workouts → exercises → exercise slide) now all use Signal surfaces
+- `/user/check-in` is the next major user surface using the calm palette, and it is straightforward to wrap with a shell/composition pass since the existing `CheckInForm` is already identified as reusable in the review doc
 
 ## Handover Prompt
 
@@ -236,10 +252,10 @@ Current shipped state to preserve:
 - Do not reintroduce cached loadSignalFlag behavior; current live lookup is intentional.
 - Preserve route-level SignalSurface usage and avoid duplicate settings reads when a route already needs settings.
 - Coach slices already shipped: home, client overview, clients roster, check-in review, check-ins desk, check-in template, learning plans list, learning plan editor.
-- User slices already shipped: progress route, plan create entry, plan upload workspace, plan editor workspace.
+- User slices already shipped: progress route, plan create entry, plan upload workspace, plan editor workspace, workout route (all four list views + existing exercise slide).
 
 Most natural next slice:
-- /user/workout
+- /user/check-in
 
 Constraints:
 - Preserve existing reducer/editor behavior unless the slice explicitly requires otherwise.
