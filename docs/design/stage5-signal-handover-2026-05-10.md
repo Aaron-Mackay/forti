@@ -164,10 +164,22 @@
 - The flagged path now uses the calm surface and a rebuilt feedback form composition instead of the older plain centered MUI form.
 - The legacy path remains intact, and the submit + upload behavior is preserved unchanged.
 
+### Signal user nutrition route
+
+- Intended commit: `Build Signal nutrition slice`
+- Route:
+  - `/user/nutrition`
+- The flagged path now uses the planning surface and a rebuilt nutrition composition around the existing weekly summary, week targets, and daily log flows.
+- The legacy path remains intact, and the metrics fetch / template fetch / day edit / week target save behavior is preserved unchanged.
+- Mobile scrollability is intentional in the Signal shell; the flagged page keeps the content in the main document flow so the week navigator and daily log remain reachable on smaller screens.
+
 ## What changed
 
 - Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to both check-ins list pages.
 - Passed `signalEnabled` into the shared `CoachCheckInsClient` so both routes stay on one behavior path.
+- Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to `/user/nutrition`.
+- Split the route into a server wrapper plus `NutritionClient` so the Signal flag is resolved at the route level while the legacy branch keeps the existing nutrition app-bar wiring.
+- Kept the nutrition metrics, week template, and daily editor behavior intact while rebuilding the flagged presentation as a Signal planning surface that stays scrollable on mobile.
 - Rebuilt the flagged branch inside `CoachCheckInsClient` with:
   - planning-surface hero
   - queue metrics

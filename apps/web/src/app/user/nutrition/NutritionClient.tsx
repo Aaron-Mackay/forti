@@ -40,6 +40,8 @@ import MacroTargetsPanel, {type MacroPercentValues} from '@/components/inputs/Ma
 import { getTargetTemplate, saveTargetTemplate } from '@lib/clientApi';
 import { useSettings } from '@lib/providers/SettingsProvider';
 import { bodyweightDisplayToKg, kgToBodyweightDisplay } from '@/lib/units';
+import { signalFontVariablesClassName } from '@lib/signal/fonts';
+import { signalTokens } from '@lib/signal/tokens';
 
 interface Props {
   userId: string;
@@ -50,6 +52,7 @@ interface Props {
   initialTemplate?: TargetTemplateWithDays | null;
   /** Pre-loaded template history for coach view — enables client-side backwards lookup */
   initialTemplates?: TargetTemplateWithDays[];
+  signalEnabled?: boolean;
 }
 
 type EditValues = {
@@ -157,6 +160,33 @@ function isoWeekday(date: Date): number {
   return d === 0 ? 7 : d;
 }
 
+function LegacyNutritionAppBar() {
+  useAppBar({ title: 'Nutrition' });
+  return null;
+}
+
+function SignalSummaryCell({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div
+      style={{
+        border: `1px solid ${signalTokens.surface.planning.border}`,
+        borderRadius: signalTokens.radii.card,
+        padding: '12px 12px 11px',
+        background: signalTokens.surface.planning.surface,
+      }}
+    >
+      <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: signalTokens.surface.planning.inkLight, marginBottom: 4 }}>
+        {label}
+      </div>
+      <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 24, fontWeight: 700, lineHeight: 1, marginBottom: 6 }}>
+        {value}
+      </div>
+      <div style={{ fontSize: 13, color: signalTokens.surface.planning.inkMid, lineHeight: 1.45 }}>
+        {detail}
+      </div>
+    </div>
+  );
+}
 
 export default function NutritionClient({
   userId,
@@ -166,8 +196,8 @@ export default function NutritionClient({
   canEditTargets = true,
   initialTemplate,
   initialTemplates,
+  signalEnabled = false,
 }: Props) {
-  useAppBar({ title: 'Nutrition' });
   const { settings } = useSettings();
   const today = useMemo(() => new Date(), []);
 
@@ -398,8 +428,419 @@ export default function NutritionClient({
 
   const weekLabel = `${format(weekStart, 'MMM yyyy')} · Week ${getISOWeek(weekStart)}`;
 
+  if (signalEnabled) {
+    const loggedDays = dayMetrics.filter((metric) => (
+      metric.calories !== null || metric.protein !== null || metric.carbs !== null || metric.fat !== null || metric.weight !== null
+    )).length;
+    const targetDays = activeTemplate?.days.filter((day) => (
+      day.caloriesTarget !== null || day.proteinTarget !== null || day.carbsTarget !== null || day.fatTarget !== null
+    )).length ?? 0;
+    const currentBlockLabel = activeBlock
+      ? `Phase: ${activeBlock.name}${activeBlock.blockSubtype ? ` (${activeBlock.blockSubtype})` : ''}`
+      : 'No active block';
+
+    return (
+      <div
+        className={signalFontVariablesClassName}
+        style={{
+          minHeight: '100%',
+          background: signalTokens.surface.planning.bg,
+          color: signalTokens.surface.planning.ink,
+          fontFamily: signalTokens.fontVar.body,
+          padding: '14px 16px 28px',
+        }}
+      >
+        <style>{`
+          @media (min-width: 960px) {
+            [data-signal-nutrition-shell] {
+              max-width: 1080px;
+              margin: 0 auto;
+            }
+            [data-signal-nutrition-summary] {
+              grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            [data-signal-nutrition-grid] {
+              grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+            }
+          }
+        `}</style>
+
+        <div data-signal-nutrition-shell>
+          <section
+            style={{
+              background: signalTokens.surface.planning.surface,
+              border: `1px solid ${signalTokens.surface.planning.borderStrong}`,
+              borderRadius: signalTokens.radii.cardLarge,
+              padding: '20px 20px 18px',
+            }}
+          >
+            <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: signalTokens.signal.deep, marginBottom: 6 }}>
+              Nutrition
+            </div>
+            <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 32, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 10 }}>
+              Training fuel
+            </div>
+            <div style={{ fontSize: 14, color: signalTokens.surface.planning.inkMid, lineHeight: 1.5, maxWidth: 700 }}>
+              Review this week&apos;s averages, step through each day, and update the current target template without changing how your log or editor works.
+            </div>
+
+            <div
+              data-signal-nutrition-summary
+              style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', marginTop: 18 }}
+            >
+              <SignalSummaryCell label="Logged days" value={String(loggedDays)} detail="Days with actual nutrition entries this week." />
+              <SignalSummaryCell label="Target days" value={String(targetDays)} detail={activeTemplate ? 'Days carrying the active weekly template.' : 'No active template loaded yet.'} />
+              <SignalSummaryCell label="Block" value={currentBlockLabel} detail={activeBlock ? 'Your active phase anchors the weekly summary.' : 'No phase is active on the calendar.'} />
+            </div>
+          </section>
+
+          <div data-signal-nutrition-grid style={{ display: 'grid', gap: 14, marginTop: 18 }}>
+            <section
+              style={{
+                background: signalTokens.surface.planning.surface,
+                border: `1px solid ${signalTokens.surface.planning.border}`,
+                borderRadius: signalTokens.radii.cardLarge,
+                padding: '18px 16px 16px',
+              }}
+            >
+              <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: signalTokens.surface.planning.inkLight, marginBottom: 6 }}>
+                This week
+              </div>
+              <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 26, fontWeight: 700, lineHeight: 1.03, letterSpacing: '-0.01em', marginBottom: 12 }}>
+                Weekly average
+              </div>
+
+              {activeBlock && (
+                <Chip
+                  label={`Phase: ${activeBlock.name}${activeBlock.blockSubtype ? ` (${activeBlock.blockSubtype})` : ''}`}
+                  size="small"
+                  sx={{
+                    mb: 1.5,
+                    backgroundColor: activeBlock.blockSubtype
+                      ? getDefinedBlockColor(activeBlock.blockSubtype)
+                      : (activeBlock.customColor ?? 'grey.500'),
+                    color: 'common.white',
+                    fontWeight: 600,
+                  }}
+                />
+              )}
+
+              <Stack spacing={1.5}>
+                {MACROS.map(({ key, label, unit, colorToken }) => {
+                  const actual = weeklyAvgActuals[key];
+                  const target = weeklyAvgTargets[key];
+                  const pct = actual !== null && target ? Math.min(100, Math.round((actual / target) * 100)) : null;
+                  return (
+                    <Box key={key}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="baseline">
+                        <Typography variant="body2" fontWeight={500}>{label}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {actual !== null ? `${actual} ${unit}` : '—'}
+                          {target !== null ? ` / ${target} ${unit}` : ''}
+                        </Typography>
+                      </Stack>
+                      {pct !== null && (
+                        <LinearProgress
+                          variant="determinate"
+                          value={pct}
+                          sx={{
+                            mt: 0.5,
+                            height: 6,
+                            borderRadius: 3,
+                            backgroundColor: 'action.hover',
+                            '& .MuiLinearProgress-bar': { backgroundColor: colorToken },
+                          }}
+                        />
+                      )}
+                    </Box>
+                  );
+                })}
+              </Stack>
+            </section>
+
+            <section
+              style={{
+                background: signalTokens.surface.planning.surface,
+                border: `1px solid ${signalTokens.surface.planning.border}`,
+                borderRadius: signalTokens.radii.cardLarge,
+                padding: '18px 16px 16px',
+              }}
+            >
+              <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: signalTokens.surface.planning.inkLight, marginBottom: 6 }}>
+                Week
+              </div>
+              <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 26, fontWeight: 700, lineHeight: 1.03, letterSpacing: '-0.01em', marginBottom: 12 }}>
+                {weekLabel}
+              </div>
+
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                <IconButton
+                  size="small"
+                  onClick={() => setWeekStart((d) => addDays(d, -7))}
+                  aria-label="Previous week"
+                  sx={TOUCH_TARGET_SX}
+                >
+                  <ChevronLeftIcon />
+                </IconButton>
+                <Typography variant="body2" fontWeight={500}>{weekLabel}</Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => setWeekStart((d) => addDays(d, 7))}
+                  aria-label="Next week"
+                  sx={TOUCH_TARGET_SX}
+                >
+                  <ChevronRightIcon />
+                </IconButton>
+              </Stack>
+
+              {canEditTargets && (
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={openTargetsPanel}
+                    disabled={templateLoading}
+                  >
+                    {isPastWeek ? 'View week targets' : 'Set week targets'}
+                  </Button>
+                </Box>
+              )}
+
+              {canEditTargets && targetsPanelOpen && (
+                <Card variant="outlined" sx={{ mb: 0 }}>
+                  <CardContent>
+                    <Typography variant="h6" sx={{ mb: 1.5 }}>Week Targets</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {isPastWeek
+                        ? 'This week has passed - targets are read-only.'
+                        : `Targets apply from ${format(weekStart, 'EEE d MMM')} until changed.`}
+                    </Typography>
+
+                    <MacroTargetsPanel values={tmplMacros} onChange={setTmplMacros} disabled={isPastWeek} />
+                    {hasInvalidMacroSplit && (
+                      <Typography variant="caption" color="error.main" sx={{ mt: 1, display: 'block' }}>
+                        Protein + Carbs + Fat must equal 100%.
+                      </Typography>
+                    )}
+
+                    <Divider sx={{ my: 2 }} />
+
+                    <Stack direction="row" spacing={1.5} justifyContent="flex-end" sx={{ mt: 2 }}>
+                      <Button onClick={() => setTargetsPanelOpen(false)}>
+                        {isPastWeek ? 'Close' : 'Cancel'}
+                      </Button>
+                      {!isPastWeek && (
+                        <Button
+                          variant="contained"
+                          onClick={saveWeekTargets}
+                          disabled={savingTargets || hasInvalidMacroSplit}
+                          startIcon={savingTargets ? <CircularProgress size={16} /> : undefined}
+                        >
+                          Save Targets
+                        </Button>
+                      )}
+                    </Stack>
+                  </CardContent>
+                </Card>
+              )}
+            </section>
+
+            <section
+              style={{
+                background: signalTokens.surface.planning.surface,
+                border: `1px solid ${signalTokens.surface.planning.border}`,
+                borderRadius: signalTokens.radii.cardLarge,
+                padding: '18px 16px 16px',
+              }}
+            >
+              <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: signalTokens.surface.planning.inkLight, marginBottom: 6 }}>
+                Daily log
+              </div>
+              <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 26, fontWeight: 700, lineHeight: 1.03, letterSpacing: '-0.01em', marginBottom: 12 }}>
+                Day cards
+              </div>
+
+              {!canEditActuals && canEditTargets && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  Coach view: daily logs are read-only, but weekly targets can be updated.
+                </Typography>
+              )}
+
+              <Stack spacing={1}>
+                {weekDays.map((day) => {
+                  const dateStr = convertDateToDateString(day);
+                  const metric = metricsByDate.get(dateStr);
+                  const isEditing = editingDate === dateStr;
+                  const isToday = dateStr === todayStr;
+                  const dow = isoWeekday(day);
+                  const dayTemplateMacros = activeTemplate?.days.find((d) => d.dayOfWeek === dow) ?? null;
+
+                  const hasActuals = metric && (
+                    metric.calories !== null || metric.protein !== null ||
+                    metric.carbs !== null || metric.fat !== null
+                  );
+                  const hasTargets = dayTemplateMacros !== null && (
+                    dayTemplateMacros.caloriesTarget !== null ||
+                    dayTemplateMacros.proteinTarget !== null ||
+                    dayTemplateMacros.carbsTarget !== null ||
+                    dayTemplateMacros.fatTarget !== null
+                  );
+
+                  return (
+                    <Card
+                      key={dateStr}
+                      variant="outlined"
+                      sx={isToday ? { borderColor: 'primary.main', backgroundColor: 'action.selected' } : undefined}
+                    >
+                      <CardContent sx={{ pb: isEditing ? undefined : '12px !important', pt: 1.5, px: 2 }}>
+                        <Stack direction="row" alignItems="center" justifyContent="space-between">
+                          <Typography variant="subtitle2" fontWeight={600}>
+                            {format(day, 'EEE d MMM')}
+                          </Typography>
+                          {canEditActuals && !isEditing && (
+                            <IconButton size="small" onClick={() => openEditor(dateStr)} aria-label="Edit" sx={TOUCH_TARGET_SX}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          )}
+                          {isEditing && (
+                            <Stack direction="row" spacing={0.5}>
+                              <IconButton size="small" onClick={closeEditor} aria-label="Cancel" sx={TOUCH_TARGET_SX}>
+                                <CloseIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                onClick={() => saveDay(dateStr)}
+                                disabled={savingDay}
+                                aria-label="Save"
+                                sx={TOUCH_TARGET_SX}
+                              >
+                                {savingDay ? <CircularProgress size={16} /> : <CheckIcon fontSize="small" />}
+                              </IconButton>
+                            </Stack>
+                          )}
+                        </Stack>
+
+                        {!isEditing && (
+                          <>
+                            {hasActuals ? (
+                              <Stack direction="row" spacing={1} sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
+                                {MACROS.map(({ key, unit }) =>
+                                  metric[key] !== null ? (
+                                    <Typography key={key} variant="body2" color="text.secondary">
+                                      {metric[key]}{unit !== 'kcal' ? unit : ' kcal'}
+                                      {dayTemplateMacros?.[TARGET_MACRO_KEY[key]] != null
+                                        ? ` / ${dayTemplateMacros[TARGET_MACRO_KEY[key]]}${unit !== 'kcal' ? unit : ''}`
+                                        : ''}
+                                    </Typography>
+                                  ) : null
+                                )}
+                              </Stack>
+                            ) : (
+                              <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5 }}>
+                                No data
+                              </Typography>
+                            )}
+                            {hasTargets && !hasActuals && (
+                              <Stack direction="row" spacing={1} sx={{ mt: 0.25, flexWrap: 'wrap', gap: 0.5 }}>
+                                {MACROS.map(({ key, unit }) => {
+                                  const tVal = dayTemplateMacros?.[TARGET_MACRO_KEY[key]];
+                                  return tVal != null ? (
+                                    <Typography key={key} variant="caption" color="text.disabled">
+                                      target: {tVal}{unit !== 'kcal' ? unit : ' kcal'}
+                                    </Typography>
+                                  ) : null;
+                                })}
+                              </Stack>
+                            )}
+                          </>
+                        )}
+
+                        {isEditing && (
+                          <Box sx={{ mt: 1.5 }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                              NUTRITION
+                            </Typography>
+                            <Box
+                              sx={{
+                                mt: 1,
+                                display: 'grid',
+                                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+                                gap: 1,
+                              }}
+                            >
+                              {MACROS.map(({ key, label, unit }) => (
+                                (() => {
+                                  const errorText = getNumericFieldError(editValues[key], key === 'calories' ? 10000 : 1000);
+                                  return (
+                                    <TextField
+                                      key={key}
+                                      label={`${label} (${unit})`}
+                                      size="small"
+                                      type="number"
+                                      value={editValues[key]}
+                                      onChange={(e) => setEditValues((v) => ({ ...v, [key]: e.target.value }))}
+                                      fullWidth
+                                      inputProps={{ min: 0 }}
+                                      error={!!errorText}
+                                      helperText={errorText}
+                                    />
+                                  );
+                                })()
+                              ))}
+                            </Box>
+
+                            <Divider sx={{ my: 1.5 }} />
+                            <Box
+                              sx={{
+                                mt: 1,
+                                display: 'grid',
+                                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+                                gap: 1,
+                              }}
+                            >
+                              <TextField
+                                label={`Weight (${settings.bodyweightUnit})`}
+                                size="small"
+                                type="number"
+                                value={editValues.weight}
+                                onChange={(e) => setEditValues((v) => ({ ...v, weight: e.target.value }))}
+                                fullWidth
+                                inputProps={{ min: 0, step: 0.1 }}
+                                error={!!getNumericFieldError(editValues.weight, 500)}
+                                helperText={getNumericFieldError(editValues.weight, 500)}
+                              />
+                            </Box>
+                          </Box>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </Stack>
+            </section>
+          </div>
+        </div>
+
+        <Snackbar
+          open={daySaveNotice !== null}
+          autoHideDuration={3000}
+          onClose={() => setDaySaveNotice(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          {daySaveNotice ? (
+            <Alert onClose={() => setDaySaveNotice(null)} severity={daySaveNotice.type} variant="filled" sx={{ width: '100%' }}>
+              {daySaveNotice.message}
+            </Alert>
+          ) : <span />}
+        </Snackbar>
+      </div>
+    );
+  }
+
   return (
     <>
+      <LegacyNutritionAppBar />
       <Box sx={{ px: 2, py: 2, pb: 6 }}>
 
         <>
