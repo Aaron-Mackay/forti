@@ -52,6 +52,14 @@
 - The flagged path now uses the planning surface and a rebuilt Stage 5 entry composition for starting plan creation.
 - The legacy path stays on the existing MUI card list, and the downstream template, AI, upload, and editor flows remain the current implementation.
 
+### Signal plan-import workspace
+
+- Commit: `Build Signal plan upload slice`
+- Route:
+  - `/user/plan/upload`
+- The flagged path now uses the planning surface and a rebuilt import workspace for the existing spreadsheet-to-editor flow.
+- The legacy path stays on the current MUI wizard, and the importer logic remains unchanged.
+
 ## What changed
 
 - Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to both check-ins list pages.
@@ -111,6 +119,25 @@
   - desktop two-column grid and mobile single-column stack
 - Left template browser, AI form, upload route, import hydration, and editor flow behavior unchanged in this slice.
 - Added focused Playwright coverage for the flagged plan-create entry route.
+- Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to `/user/plan/upload`.
+- Passed `signalEnabled` into `UploadAndEdit`.
+- Rebuilt the flagged upload shell with:
+  - planning-surface hero
+  - custom three-step import rail
+  - two-column upload/status composition on desktop
+  - Signal-styled review cards for new exercises
+  - Signal-styled summary stats and panels before the editor handoff
+- Extracted shared render helpers for:
+  - upload picker
+  - paste field
+  - import status panel
+- Preserved all importer state and transitions:
+  - upload or paste
+  - AI parse/chunk/retry flow
+  - review new exercises
+  - summary before the editor
+  - `sessionStorage` handoff back into `/user/plan/create`
+- Added focused Playwright coverage for the flagged plan-import route.
 
 ## Preserved behavior
 
@@ -132,6 +159,8 @@
 - plan creation still uses the existing `PlanBuilder` state machine: `entry`, `templates`, `ai`, `editor`
 - spreadsheet import still routes through `/user/plan/upload` and hydrates the editor from `sessionStorage`
 - coach-for-client plan creation still uses the existing `forUserId` authorization and target-user lookup
+- spreadsheet import chunking, clarification prompts, enrichment, and retry behavior are unchanged
+- the summary step still uses the existing muscle-volume calculation and editor handoff
 
 ## Verification completed
 
@@ -142,6 +171,7 @@
 - `BASE_URL=http://127.0.0.1:3006 npx playwright test tests/e2e/redesign-regression.test.ts --project=chromium --grep "flagged coach sees the Signal learning plan editor workspace"`
 - `BASE_URL=http://127.0.0.1:3007 npx playwright test tests/e2e/progress.test.ts --project=chromium --no-deps`
 - `BASE_URL=http://127.0.0.1:3008 npx playwright test tests/e2e/planCreate.test.ts --project=chromium --no-deps`
+- `BASE_URL=http://127.0.0.1:3009 npx playwright test tests/e2e/planUpload.test.ts --project=chromium --no-deps`
 
 ## Known residuals
 
@@ -157,15 +187,49 @@ Next coach-only routes still outside the newer Signal pattern:
 
 Likely next Stage 5 slice outside the coach routes:
 
-- `/user/plan/upload`
+- `/user/plan/[planId]`
 
 Most natural next slice now:
 
-- `/user/plan/upload`
+- `/user/plan/[planId]`
 
 Reason:
 
 - the main coach screens called out in the handover are now covered
 - `/user/progress` now exists as a dedicated route in both legacy and Signal modes
 - `/user/plan/create` now has the Stage 5 entry composition
-- the next obvious adjacent user surface is the spreadsheet import flow that feeds this create route
+- `/user/plan/upload` now has the Signal import workspace
+- the next obvious adjacent user surface is the main plan editor route itself
+
+## Handover Prompt
+
+Use this as the next-agent handoff prompt:
+
+```text
+Continue Stage 5 Signal from the current repo state.
+
+First read:
+- docs/design/stage5-signal-handover-2026-05-10.md
+- docs/design/stage5-signal-review.md
+
+Current shipped state to preserve:
+- Signal remains side-by-side behind User.settings.signalUiEnabled.
+- Do not reintroduce cached loadSignalFlag behavior; current live lookup is intentional.
+- Preserve route-level SignalSurface usage and avoid duplicate settings reads when a route already needs settings.
+- Coach slices already shipped: home, client overview, clients roster, check-in review, check-ins desk, check-in template, learning plans list, learning plan editor.
+- User slices already shipped: progress route, plan create entry, plan upload workspace.
+
+Most natural next slice:
+- /user/plan/[planId]
+
+Constraints:
+- Preserve existing reducer/editor behavior unless the slice explicitly requires otherwise.
+- Prefer shell/composition rebuilds first; do not mix schema or business-logic rewrites into a UI slice unless absolutely necessary.
+- Add focused Playwright coverage for the flagged route you touch.
+- Update docs/design/stage5-signal-handover-2026-05-10.md when done.
+- Commit atomically and stop any local servers after verification.
+
+Known repo notes:
+- Existing repo-wide lint warnings are tolerated by pre-commit.
+- apps/web/playwright/ is an untracked artifact that already exists; do not commit it.
+```

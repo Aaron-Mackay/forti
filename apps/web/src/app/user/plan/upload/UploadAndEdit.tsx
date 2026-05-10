@@ -41,9 +41,11 @@ import {
 import type {ParsedPlan} from '@/utils/aiPlanParser'
 import {EXERCISE_MUSCLES, ExerciseMuscle, MUSCLE_NAMES,} from '@/types/dataTypes'
 import MuscleVolumeDiagram from './MuscleVolumeDiagram'
+import { signalTokens } from '@lib/signal/tokens'
 
 const WIZARD_STEPS = ['Upload or paste', 'Review new exercises', 'Summary']
 const CATEGORY_OPTIONS: ExerciseCategory[] = ['resistance', 'cardio']
+const signalPalette = signalTokens.surface.planning
 
 // Mirror of MAX_INPUT_BYTES_SPREADSHEET in src/app/api/plan/ai-import/route.ts
 const MAX_INPUT_BYTES = 225_000
@@ -148,7 +150,7 @@ function reviewStepDescription(reviewedExercises: ReviewedExercise[], detectedNe
   return `${reviewedExercises.length} new exercises need a quick check.`
 }
 
-export const UploadAndEdit = () => {
+export const UploadAndEdit = ({ signalEnabled = false }: { signalEnabled?: boolean }) => {
   const [text, setText] = useState('')
   const [fileName, setFileName] = useState<string | null>(null)
   const [phase, setPhase] = useState(0)
@@ -451,135 +453,117 @@ export const UploadAndEdit = () => {
   useAppBar({title: 'Import from Spreadsheet', showBack: true})
 
   return (
-    <Box sx={{height: HEIGHT_EXC_APPBAR, overflowY: 'auto', bgcolor: 'background.default'}}>
-      <Box sx={{maxWidth: 960, mx: 'auto', px: {xs: 2, sm: 3}, py: 3}}>
-        <Stepper alternativeLabel activeStep={activeStep} sx={{mb: 4}}>
-          {WIZARD_STEPS.map((label, index) => (
-            <Step
-              key={label}
-              completed={index < activeStep || (index === 1 && activeStep === 2 && reviewedExercises.length === 0)}
-            >
-              <StepLabel optional={index === 1 ? <Typography variant="caption">Only if needed</Typography> : undefined}>
-                {label}
-              </StepLabel>
-            </Step>
-          ))}
-        </Stepper>
+    <Box
+      sx={{
+        height: HEIGHT_EXC_APPBAR,
+        overflowY: 'auto',
+        bgcolor: signalEnabled ? 'transparent' : 'background.default',
+      }}
+    >
+      <Box sx={{maxWidth: signalEnabled ? 1120 : 960, mx: 'auto', px: {xs: 2, sm: 3}, py: signalEnabled ? 2 : 3}}>
+        {signalEnabled && (
+          <SignalImportHero />
+        )}
+
+        {signalEnabled ? (
+          <SignalWizardSteps
+            activeStep={activeStep}
+            reviewedExercisesLength={reviewedExercises.length}
+          />
+        ) : (
+          <Stepper alternativeLabel activeStep={activeStep} sx={{mb: 4}}>
+            {WIZARD_STEPS.map((label, index) => (
+              <Step
+                key={label}
+                completed={index < activeStep || (index === 1 && activeStep === 2 && reviewedExercises.length === 0)}
+              >
+                <StepLabel optional={index === 1 ? <Typography variant="caption">Only if needed</Typography> : undefined}>
+                  {label}
+                </StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        )}
 
         {activeStep === 0 && (
-          <Stack spacing={3}>
-            <Box>
-              <Typography variant="h5" sx={{fontWeight: 700, mb: 1}}>
-                Upload or paste your training sheet
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Bring in a CSV or raw spreadsheet export. Forti will parse the weeks, sessions, and sets, then stop for
-                review before opening the plan editor.
-              </Typography>
-            </Box>
+          signalEnabled ? (
+            <SignalUploadStep
+              fileName={fileName}
+              fileInputRef={fileInputRef}
+              handleFileChange={handleFileChange}
+              text={text}
+              setText={setText}
+              loading={loading}
+              isOverLimit={isOverLimit}
+              inputBytes={inputBytes}
+              error={error}
+              parseIssues={parseIssues}
+              phase={phase}
+              chunkProgress={chunkProgress}
+              handleSubmit={handleSubmit}
+            />
+          ) : (
+            <Stack spacing={3}>
+              <Box>
+                <Typography variant="h5" sx={{fontWeight: 700, mb: 1}}>
+                  Upload or paste your training sheet
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Bring in a CSV or raw spreadsheet export. Forti will parse the weeks, sessions, and sets, then stop for
+                  review before opening the plan editor.
+                </Typography>
+              </Box>
 
-            <Alert severity="warning">
-              AI imports can miss or misread values. Check names, rep schemes, and week-to-week changes before saving
-              the finished plan.
-            </Alert>
+              <Alert severity="warning">
+                AI imports can miss or misread values. Check names, rep schemes, and week-to-week changes before saving
+                the finished plan.
+              </Alert>
 
-            <Card variant="outlined" sx={{borderRadius: 3}}>
-              <CardContent sx={{p: {xs: 2, sm: 3}}}>
-                <Stack spacing={2.5}>
-                  <Box>
-                    <Button
-                      variant="outlined"
-                      startIcon={<UploadFileIcon/>}
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={loading}
-                    >
-                      Upload CSV file
-                    </Button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".csv,text/csv,text/plain"
-                      style={{display: 'none'}}
-                      onChange={handleFileChange}
+              <Card variant="outlined" sx={{borderRadius: 3}}>
+                <CardContent sx={{p: {xs: 2, sm: 3}}}>
+                  <Stack spacing={2.5}>
+                    <UploadPicker
+                      fileName={fileName}
+                      fileInputRef={fileInputRef}
+                      handleFileChange={handleFileChange}
+                      loading={loading}
                     />
-                    <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1}}>
-                      {fileName ?? 'No file selected'}
-                    </Typography>
-                  </Box>
 
-                  <Divider>
-                    <Typography variant="body2" color="text.secondary">or</Typography>
-                  </Divider>
+                    <Divider>
+                      <Typography variant="body2" color="text.secondary">or</Typography>
+                    </Divider>
 
-                  <TextField
-                    value={text}
-                    onChange={(event) => setText(event.target.value)}
-                    label="Paste in your training sheet"
-                    multiline
-                    minRows={10}
-                    fullWidth
-                    disabled={loading}
-                    error={isOverLimit}
-                    helperText={
-                      text.length > 0
-                        ? `${inputBytes.toLocaleString()} / ~225,000 bytes${isOverLimit ? ' — too large' : ''}`
-                        : 'Paste a block exactly as exported from your sheet or coaching doc.'
-                    }
-                  />
+                    <ImportTextField
+                      text={text}
+                      setText={setText}
+                      loading={loading}
+                      isOverLimit={isOverLimit}
+                      inputBytes={inputBytes}
+                    />
 
-                  {(loading || error || parseIssues.length > 0) && (
-                    <Box sx={{borderRadius: 2, border: '1px solid', borderColor: 'divider', p: 2}}>
-                      {loading && (
-                        <Stack spacing={1.25}>
-                          <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                            <CircularProgress size={18}/>
-                            <Typography variant="body2" sx={{fontWeight: 600}}>
-                              {phase === 1 && 'Uploading spreadsheet…'}
-                              {phase === 2 && 'Analysing your spreadsheet with AI…'}
-                              {phase === 3 && 'Preparing review data…'}
-                            </Typography>
-                          </Box>
-                          <LinearProgress/>
-                          <Typography variant="caption" color="text.secondary">
-                            This may take a few minutes for larger sheets.
-                            {chunkProgress && chunkProgress.total > 1
-                              ? ` Processing part ${chunkProgress.current} of ${chunkProgress.total}.`
-                              : ''}
-                          </Typography>
-                        </Stack>
-                      )}
+                    <ImportStatusPanel
+                      loading={loading}
+                      error={error}
+                      parseIssues={parseIssues}
+                      phase={phase}
+                      chunkProgress={chunkProgress}
+                    />
 
-                      {error && !loading && (
-                        <Alert severity="error">
-                          {error}
-                          {parseIssues.length > 0 && (
-                            <Box component="ul" sx={{mt: 1, mb: 0, pl: 2}}>
-                              {parseIssues.map((issue, index) => (
-                                <li key={index}>
-                                  <Typography variant="caption">{issue}</Typography>
-                                </li>
-                              ))}
-                            </Box>
-                          )}
-                        </Alert>
-                      )}
+                    <Box sx={{display: 'flex', justifyContent: 'flex-end'}}>
+                      <Button
+                        variant="contained"
+                        onClick={handleSubmit}
+                        disabled={loading || !text.trim()}
+                        endIcon={<ArrowForwardIcon/>}
+                      >
+                        Analyse import
+                      </Button>
                     </Box>
-                  )}
-
-                  <Box sx={{display: 'flex', justifyContent: 'flex-end'}}>
-                    <Button
-                      variant="contained"
-                      onClick={handleSubmit}
-                      disabled={loading || !text.trim()}
-                      endIcon={<ArrowForwardIcon/>}
-                    >
-                      Analyse import
-                    </Button>
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Stack>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Stack>
+          )
         )}
 
         {activeStep === 1 && importedPlan && (
@@ -594,7 +578,7 @@ export const UploadAndEdit = () => {
             </Box>
 
             {reviewedExercises.length === 0 ? (
-              <Alert severity="info">
+              <Alert severity="info" sx={signalEnabled ? signalPanelSx : undefined}>
                 {detectedNewExerciseCount === 0
                   ? 'Every exercise in this import already exists in your library. You can skip straight to the summary.'
                   : `${detectedNewExerciseCount} new exercises were detected, but their metadata could not be prefilled here. You can continue to the editor to review them there.`}
@@ -602,7 +586,11 @@ export const UploadAndEdit = () => {
             ) : (
               <Stack spacing={2}>
                 {reviewedExercises.map((exercise) => (
-                  <Card key={exercise.originalName} variant="outlined" sx={{borderRadius: 3}}>
+                  <Card
+                    key={exercise.originalName}
+                    variant="outlined"
+                    sx={signalEnabled ? signalReviewCardSx : {borderRadius: 3}}
+                  >
                     <CardContent sx={{p: {xs: 2, sm: 3}}}>
                       <Box
                         sx={{
@@ -641,18 +629,18 @@ export const UploadAndEdit = () => {
                                   gap: 1,
                                   alignItems: 'center',
                                   border: '1px solid',
-                                  borderColor: 'divider',
+                                  borderColor: signalEnabled ? signalPalette.border : 'divider',
                                   borderRadius: 2,
                                   px: 1.25,
                                   py: 0.5,
-                                  bgcolor: 'background.default',
+                                  bgcolor: signalEnabled ? signalPalette.surfaceAlt : 'background.default',
                                   minHeight: 44,
                                 }}
                               >
                                 <Box sx={{minWidth: 0}}>
-                                  <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', fontWeight: 700, lineHeight: 1}}>
-                                    Suggested match
-                                  </Typography>
+                                <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', fontWeight: 700, lineHeight: 1}}>
+                                  Suggested match
+                                </Typography>
                                   <Typography variant="body2" sx={{fontWeight: 600, lineHeight: 1.2, mt: 0.125}}>
                                     {exercise.suggestedMatchName}
                                   </Typography>
@@ -725,8 +713,8 @@ export const UploadAndEdit = () => {
                               justifyContent: 'center',
                               borderRadius: 2,
                               border: '1px solid',
-                              borderColor: 'divider',
-                              bgcolor: 'background.default',
+                              borderColor: signalEnabled ? signalPalette.border : 'divider',
+                              bgcolor: signalEnabled ? signalPalette.surfaceAlt : 'background.default',
                               p: 1.5,
                             }}
                           >
@@ -755,13 +743,14 @@ export const UploadAndEdit = () => {
             )}
 
             <Box sx={{display: 'flex', justifyContent: 'space-between', gap: 2}}>
-              <Button onClick={() => setActiveStep(0)} startIcon={<ArrowBackIcon/>}>
+              <Button onClick={() => setActiveStep(0)} startIcon={<ArrowBackIcon/>} sx={signalEnabled ? signalSecondaryButtonSx : undefined}>
                 Back
               </Button>
               <Button
                 variant="contained"
                 onClick={handleContinueToSummary}
                 endIcon={<ArrowForwardIcon/>}
+                sx={signalEnabled ? signalPrimaryButtonSx : undefined}
               >
                 Continue to summary
               </Button>
@@ -793,7 +782,7 @@ export const UploadAndEdit = () => {
                 {label: 'Exercises', value: exerciseCount(reviewedPlan)},
                 {label: 'New exercises', value: detectedNewExerciseCount},
               ].map((item) => (
-                <Card key={item.label} variant="outlined" sx={{borderRadius: 3}}>
+                <Card key={item.label} variant="outlined" sx={signalEnabled ? signalSummaryStatSx : {borderRadius: 3}}>
                   <CardContent>
                     <Typography variant="caption" color="text.secondary">{item.label}</Typography>
                     <Typography variant="h4" sx={{fontWeight: 700, mt: 1}}>{item.value}</Typography>
@@ -807,7 +796,7 @@ export const UploadAndEdit = () => {
               gap: 2,
               gridTemplateColumns: {xs: '1fr', lg: 'minmax(0, 1.1fr) minmax(320px, 0.9fr)'}
             }}>
-              <Card variant="outlined" sx={{borderRadius: 3}}>
+              <Card variant="outlined" sx={signalEnabled ? signalPanelSx : {borderRadius: 3}}>
                 <CardContent sx={{p: {xs: 2, sm: 3}}}>
                   <Typography variant="h6" sx={{fontWeight: 700, mb: 1.5}}>
                     Plan structure
@@ -838,7 +827,7 @@ export const UploadAndEdit = () => {
                         ))}
                       </Box>
                     </Box>
-                    <Alert severity="info" icon={<CheckCircleIcon fontSize="inherit"/>}>
+                    <Alert severity="info" icon={<CheckCircleIcon fontSize="inherit"/>} sx={signalEnabled ? signalAlertSx : undefined}>
                       {detectedNewExerciseCount === 0
                         ? 'No new exercises were introduced by this import, so the editor can focus on plan structure and set details.'
                         : reviewedExercises.length > 0
@@ -849,7 +838,7 @@ export const UploadAndEdit = () => {
                 </CardContent>
               </Card>
 
-              <Card variant="outlined" sx={{borderRadius: 3}}>
+              <Card variant="outlined" sx={signalEnabled ? signalPanelSx : {borderRadius: 3}}>
                 <CardContent sx={{p: {xs: 2, sm: 3}}}>
                   <Typography variant="h6" sx={{fontWeight: 700, mb: 1.5}}>
                     Muscle balance
@@ -882,6 +871,7 @@ export const UploadAndEdit = () => {
               <Button
                 onClick={() => setActiveStep(detectedNewExerciseCount > 0 ? 1 : 0)}
                 startIcon={<ArrowBackIcon/>}
+                sx={signalEnabled ? signalSecondaryButtonSx : undefined}
               >
                 Back
               </Button>
@@ -889,6 +879,7 @@ export const UploadAndEdit = () => {
                 variant="contained"
                 onClick={handleContinueToEditor}
                 endIcon={<ArrowForwardIcon/>}
+                sx={signalEnabled ? signalPrimaryButtonSx : undefined}
               >
                 Continue to editor
               </Button>
@@ -899,3 +890,382 @@ export const UploadAndEdit = () => {
     </Box>
   )
 }
+
+function UploadPicker({
+  fileName,
+  fileInputRef,
+  handleFileChange,
+  loading,
+}: {
+  fileName: string | null
+  fileInputRef: React.RefObject<HTMLInputElement | null>
+  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  loading: boolean
+}) {
+  return (
+    <Box>
+      <Button
+        variant="outlined"
+        startIcon={<UploadFileIcon/>}
+        onClick={() => fileInputRef.current?.click()}
+        disabled={loading}
+      >
+        Upload CSV file
+      </Button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv,text/csv,text/plain"
+        style={{display: 'none'}}
+        onChange={handleFileChange}
+      />
+      <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1}}>
+        {fileName ?? 'No file selected'}
+      </Typography>
+    </Box>
+  )
+}
+
+function ImportTextField({
+  text,
+  setText,
+  loading,
+  isOverLimit,
+  inputBytes,
+}: {
+  text: string
+  setText: (value: string) => void
+  loading: boolean
+  isOverLimit: boolean
+  inputBytes: number
+}) {
+  return (
+    <TextField
+      value={text}
+      onChange={(event) => setText(event.target.value)}
+      label="Paste in your training sheet"
+      multiline
+      minRows={10}
+      fullWidth
+      disabled={loading}
+      error={isOverLimit}
+      helperText={
+        text.length > 0
+          ? `${inputBytes.toLocaleString()} / ~225,000 bytes${isOverLimit ? ' — too large' : ''}`
+          : 'Paste a block exactly as exported from your sheet or coaching doc.'
+      }
+    />
+  )
+}
+
+function ImportStatusPanel({
+  loading,
+  error,
+  parseIssues,
+  phase,
+  chunkProgress,
+}: {
+  loading: boolean
+  error: string | null
+  parseIssues: string[]
+  phase: number
+  chunkProgress: { current: number; total: number } | null
+}) {
+  if (!(loading || error || parseIssues.length > 0)) return null
+
+  return (
+    <Box sx={{borderRadius: 2, border: '1px solid', borderColor: 'divider', p: 2}}>
+      {loading && (
+        <Stack spacing={1.25}>
+          <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+            <CircularProgress size={18}/>
+            <Typography variant="body2" sx={{fontWeight: 600}}>
+              {phase === 1 && 'Uploading spreadsheet…'}
+              {phase === 2 && 'Analysing your spreadsheet with AI…'}
+              {phase === 3 && 'Preparing review data…'}
+            </Typography>
+          </Box>
+          <LinearProgress/>
+          <Typography variant="caption" color="text.secondary">
+            This may take a few minutes for larger sheets.
+            {chunkProgress && chunkProgress.total > 1
+              ? ` Processing part ${chunkProgress.current} of ${chunkProgress.total}.`
+              : ''}
+          </Typography>
+        </Stack>
+      )}
+
+      {error && !loading && (
+        <Alert severity="error">
+          {error}
+          {parseIssues.length > 0 && (
+            <Box component="ul" sx={{mt: 1, mb: 0, pl: 2}}>
+              {parseIssues.map((issue, index) => (
+                <li key={index}>
+                  <Typography variant="caption">{issue}</Typography>
+                </li>
+              ))}
+            </Box>
+          )}
+        </Alert>
+      )}
+    </Box>
+  )
+}
+
+function SignalImportHero() {
+  return (
+    <Box
+      sx={{
+        mb: 2,
+        border: '1px solid',
+        borderColor: 'text.primary',
+        borderRadius: 1.5,
+        bgcolor: 'background.paper',
+        px: { xs: 2, sm: 2.5 },
+        py: { xs: 2.25, sm: 2.5 },
+      }}
+    >
+      <Typography
+        sx={{
+          fontFamily: signalTokens.font.mono,
+          fontSize: 11,
+          color: signalTokens.signal.deep,
+          mb: 0.75,
+        }}
+      >
+        Plan import
+      </Typography>
+      <Typography
+        sx={{
+          fontFamily: signalTokens.font.cond,
+          fontSize: { xs: 30, sm: 34 },
+          fontWeight: 700,
+          letterSpacing: '-0.015em',
+          lineHeight: 1,
+          mb: 1,
+        }}
+      >
+        Turn a spreadsheet into an editable plan
+      </Typography>
+      <Typography sx={{ fontSize: 14, color: 'text.secondary', lineHeight: 1.55, maxWidth: 720 }}>
+        Parse first, review second, edit third. Forti will chunk larger sheets, flag new exercises, and stop before the full editor so you can catch bad reads early.
+      </Typography>
+    </Box>
+  )
+}
+
+function SignalWizardSteps({
+  activeStep,
+  reviewedExercisesLength,
+}: {
+  activeStep: number
+  reviewedExercisesLength: number
+}) {
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        gap: 1,
+        gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
+        mb: 3,
+      }}
+    >
+      {WIZARD_STEPS.map((label, index) => {
+        const completed = index < activeStep || (index === 1 && activeStep === 2 && reviewedExercisesLength === 0)
+        const active = index === activeStep
+
+        return (
+          <Box
+            key={label}
+            sx={{
+              border: '1px solid',
+              borderColor: active ? 'text.primary' : 'divider',
+              bgcolor: active ? 'background.paper' : signalPalette.surfaceAlt,
+              borderRadius: 1.5,
+              px: 1.5,
+              py: 1.25,
+            }}
+          >
+            <Typography sx={{ fontFamily: signalTokens.font.mono, fontSize: 11, color: active ? signalTokens.signal.deep : 'text.secondary', mb: 0.25 }}>
+              {completed ? 'Complete' : active ? 'Current step' : `Step ${index + 1}`}
+            </Typography>
+            <Typography sx={{ fontFamily: signalTokens.font.cond, fontSize: 22, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.05 }}>
+              {label}
+            </Typography>
+            {index === 1 && (
+              <Typography variant="caption" color="text.secondary">
+                Only if needed
+              </Typography>
+            )}
+          </Box>
+        )
+      })}
+    </Box>
+  )
+}
+
+function SignalUploadStep({
+  fileName,
+  fileInputRef,
+  handleFileChange,
+  text,
+  setText,
+  loading,
+  isOverLimit,
+  inputBytes,
+  error,
+  parseIssues,
+  phase,
+  chunkProgress,
+  handleSubmit,
+}: {
+  fileName: string | null
+  fileInputRef: React.RefObject<HTMLInputElement | null>
+  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  text: string
+  setText: (value: string) => void
+  loading: boolean
+  isOverLimit: boolean
+  inputBytes: number
+  error: string | null
+  parseIssues: string[]
+  phase: number
+  chunkProgress: { current: number; total: number } | null
+  handleSubmit: () => void
+}) {
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        gap: 2,
+        gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.25fr) minmax(280px, 0.75fr)' },
+      }}
+    >
+      <Card variant="outlined" sx={signalPanelSx}>
+        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+          <Stack spacing={2.5}>
+            <Box>
+              <Typography sx={{ fontFamily: signalTokens.font.cond, fontSize: 30, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1.02, mb: 0.75 }}>
+                Upload or paste your training sheet
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Bring in a CSV or raw spreadsheet export. Forti will parse the weeks, sessions, and sets, then stop for review before opening the plan editor.
+              </Typography>
+            </Box>
+
+            <UploadPicker
+              fileName={fileName}
+              fileInputRef={fileInputRef}
+              handleFileChange={handleFileChange}
+              loading={loading}
+            />
+
+            <Divider>
+              <Typography sx={{ fontFamily: signalTokens.font.mono, fontSize: 11, color: 'text.secondary' }}>or</Typography>
+            </Divider>
+
+            <ImportTextField
+              text={text}
+              setText={setText}
+              loading={loading}
+              isOverLimit={isOverLimit}
+              inputBytes={inputBytes}
+            />
+
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button
+                variant="contained"
+                onClick={handleSubmit}
+                disabled={loading || !text.trim()}
+                endIcon={<ArrowForwardIcon/>}
+                sx={signalPrimaryButtonSx}
+              >
+                Analyse import
+              </Button>
+            </Box>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      <Stack spacing={2}>
+        <Alert severity="warning" sx={signalAlertSx}>
+          AI imports can miss or misread values. Check names, rep schemes, and week-to-week changes before saving the finished plan.
+        </Alert>
+
+        <Card variant="outlined" sx={signalPanelSx}>
+          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+            <Typography sx={{ fontFamily: signalTokens.font.cond, fontSize: 24, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.05, mb: 1 }}>
+              Import status
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Large sheets may be processed in multiple parts before review is ready.
+            </Typography>
+            <ImportStatusPanel
+              loading={loading}
+              error={error}
+              parseIssues={parseIssues}
+              phase={phase}
+              chunkProgress={chunkProgress}
+            />
+            {!loading && !error && parseIssues.length === 0 && (
+              <Typography variant="body2" color="text.secondary">
+                Nothing running yet. Start the analysis when your sheet is pasted or uploaded.
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
+      </Stack>
+    </Box>
+  )
+}
+
+const signalPanelSx = {
+  borderRadius: 1.5,
+  borderColor: 'divider',
+  bgcolor: 'background.paper',
+} as const
+
+const signalReviewCardSx = {
+  borderRadius: 1.5,
+  borderColor: 'divider',
+  bgcolor: 'background.paper',
+} as const
+
+const signalSummaryStatSx = {
+  borderRadius: 1.5,
+  borderColor: 'divider',
+  bgcolor: signalPalette.surfaceAlt,
+} as const
+
+const signalAlertSx = {
+  borderRadius: 1.5,
+  borderColor: 'divider',
+  bgcolor: signalPalette.surfaceAlt,
+  '& .MuiAlert-icon': {
+    color: 'text.primary',
+  },
+} as const
+
+const signalPrimaryButtonSx = {
+  backgroundColor: 'text.primary',
+  color: signalPalette.bg,
+  borderRadius: 1.5,
+  textTransform: 'none',
+  '&:hover': {
+    backgroundColor: '#2a2823',
+  },
+} as const
+
+const signalSecondaryButtonSx = {
+  color: 'text.primary',
+  borderRadius: 1.5,
+  textTransform: 'none',
+  border: '1px solid',
+  borderColor: 'divider',
+  backgroundColor: 'background.paper',
+  '&:hover': {
+    backgroundColor: signalPalette.surfaceAlt,
+    borderColor: 'divider',
+  },
+} as const
