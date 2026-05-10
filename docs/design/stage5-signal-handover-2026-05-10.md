@@ -80,6 +80,18 @@
 - The flagged path now uses the planning surface and a Signal workspace shell around the existing plan editor.
 - The reducer-driven sheet, classic, and multi-week editor internals are intentionally preserved in this slice; this is a shell/composition pass.
 
+### Signal user check-in route
+
+- Commit: `Build Signal check-in slice`
+- Route:
+  - `/user/check-in`
+- The flagged path now uses the calm surface and a rebuilt calm-palette composition around the existing `CheckInForm`, completion view, and history.
+- Calm hero: mono "Check-in" label, condensed "Weekly check-in" heading, current week date in mono.
+- Current-week section: four states (template form, editing submitted, completed view, legacy form) each wrapped in a calm-surface card; `CheckInForm` and `CheckInDetails` + `MetricsSystemCard` internals are preserved unchanged.
+- History section: `SignalHistoryRow` — calm expandable rows with week label, submitted date, and a chevron toggle; expands to show `CheckInDetails` with photo viewer.
+- Push-notification prompt and error alerts are preserved in both flag states.
+- The legacy path stays on the existing MUI Paper + `CheckInHistoryCard` accordion layout.
+
 ## What changed
 
 - Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to both check-ins list pages.
@@ -166,6 +178,19 @@
   - weeks / workouts / exercise-slot metric pills
 - Centered the editor body inside a max-width planning container when flagged, keeping the existing classic/sheet/multi-week views, view-toggle controls, save bar, and snackbar untouched.
 - Added focused Playwright coverage for the flagged plan editor route.
+- Added route-level `loadSignalFlag()` + `SignalSurface(calm)` to `/user/check-in`.
+- Passed `signalEnabled` into `CheckInClient`.
+- Added `SignalHistoryRow` as a module-level client component in `CheckInClient.tsx` with:
+  - calm-surface card container
+  - week label + submitted date
+  - expand/collapse toggle with chevron animation
+  - `CheckInDetails` and `PhotoViewerDialog` preserved inside expanded state
+- Rebuilt the flagged branch inside `CheckInClient` with:
+  - calm-palette hero (mono label + condensed heading + week date)
+  - all four current-week states (loading, template form, editing, completed, legacy form) in calm-surface cards
+  - Signal history rows replacing the MUI Accordion history list
+  - Load more as a plain calm-styled button
+- Added focused Playwright coverage for the flagged check-in route.
 
 ## Preserved behavior
 
@@ -195,6 +220,9 @@
 - add/remove exercise dialogs (`ExercisePickerDialog`, `AddExerciseConfigDialog`) remain the existing implementation
 - plan editing still uses the existing reducer (`useWorkoutEditor` / `WorkoutEditorProvider`) and its sheet/classic/multi-week presentations
 - the plan editor's view-mode toggle, arrange mode, zoom controls, rep-range validation, fixed save button, and save snackbar remain the existing implementation
+- check-in form submission, autosave, photo capture, and custom template flows remain the existing `CheckInForm` / `useCheckInAutosave` / `useCheckInPhotos` implementations
+- check-in history expansion and photo viewer remain available via `CheckInDetails` + `PhotoViewerDialog` inside `SignalHistoryRow`
+- push-notification subscription flow (`usePushSubscription`) remains unchanged in both flag states
 
 ## Verification completed
 
@@ -208,6 +236,7 @@
 - `BASE_URL=http://127.0.0.1:3009 npx playwright test tests/e2e/planUpload.test.ts --project=chromium --no-deps`
 - `BASE_URL=http://localhost:3010 npx playwright test tests/e2e/planEditor.test.ts --project=chromium`
 - `BASE_URL=http://localhost:3010 npx playwright test tests/e2e/workoutSignal.test.ts --project=chromium`
+- `BASE_URL=http://localhost:3011 npx playwright test tests/e2e/checkInSignal.test.ts --project=chromium`
 
 ## Known residuals
 
@@ -217,24 +246,21 @@
 
 ## Recommended next slice
 
-Next coach-only routes still outside the newer Signal pattern:
+All major user and coach routes from the Stage 5 set are now on Signal surfaces. The remaining work shifts to:
 
-- no major coach route from the Stage 5 coach set remains on the old shell
-
-Likely next Stage 5 slice outside the coach routes:
-
-- `/user/workout`
-- `/user/check-in`
+- navigation/shell restructure (`CustomAppBar` → Signal sidebar + bottom nav, mode-switch pill)
+- `/user` home command centre (replaces current dashboard)
+- any remaining utility or settings surfaces not yet wrapped
 
 Most natural next slice now:
 
-- `/user/check-in`
+- `/user` home command centre
 
 Reason:
 
-- the main coach screens called out in the handover are now covered
-- `/user/progress`, `/user/plan/create`, `/user/plan/upload`, `/user/plan/[planId]`, and the full `/user/workout` drill-down (plans → weeks → workouts → exercises → exercise slide) now all use Signal surfaces
-- `/user/check-in` is the next major user surface using the calm palette, and it is straightforward to wrap with a shell/composition pass since the existing `CheckInForm` is already identified as reusable in the review doc
+- all major route surfaces (workout, check-in, plan create/upload/editor, progress, all coach slices) now use Signal palettes
+- the home dashboard is the last high-traffic user surface still on the old MUI shell
+- the review doc identifies it as a "behaviour change, not a reskin" — the current stat/chart dashboard becomes a command centre with one primary CTA — so plan carefully before starting
 
 ## Handover Prompt
 
@@ -252,10 +278,11 @@ Current shipped state to preserve:
 - Do not reintroduce cached loadSignalFlag behavior; current live lookup is intentional.
 - Preserve route-level SignalSurface usage and avoid duplicate settings reads when a route already needs settings.
 - Coach slices already shipped: home, client overview, clients roster, check-in review, check-ins desk, check-in template, learning plans list, learning plan editor.
-- User slices already shipped: progress route, plan create entry, plan upload workspace, plan editor workspace, workout route (all four list views + existing exercise slide).
+- User slices already shipped: progress route, plan create entry, plan upload workspace, plan editor workspace, workout route (all four list views + existing exercise slide), check-in route.
 
 Most natural next slice:
-- /user/check-in
+- /user home command centre (replaces dashboard with Signal planning surface + single primary CTA)
+  Note: this is a behaviour change not a reskin — read the review doc clarifications before coding.
 
 Constraints:
 - Preserve existing reducer/editor behavior unless the slice explicitly requires otherwise.
