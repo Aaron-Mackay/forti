@@ -61,6 +61,19 @@ async function openNav(page: import('@playwright/test').Page) {
   await expect(drawer.getByRole('link', { name: 'Home' })).toBeVisible({ timeout: 15_000 });
 }
 
+async function signInAsDemoCoach(page: import('@playwright/test').Page) {
+  await page.goto('/login');
+  await page.getByRole('button', { name: 'Try Demo (Coach)' }).click();
+  await expect(page).toHaveURL('/user');
+}
+
+async function configureSignalCoach(page: import('@playwright/test').Page) {
+  await signInAsDemoCoach(page);
+  await page.request.patch('/api/user/settings', {
+    data: { settings: { coachModeActive: true, signalUiEnabled: true } },
+  });
+}
+
 test.describe('Coach client navigation', () => {
   test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile,
     'serial: desktop chromium only');
@@ -121,5 +134,39 @@ test.describe('Coach client navigation', () => {
     await setCoachMode(page, true);
     await page.goto('/user/plan');
     await expect(page.getByText('Client Plans')).not.toBeVisible();
+  });
+});
+
+test.describe('Coach clients — Signal roster', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile,
+    'Signal coach clients coverage runs on desktop chromium only; demo-coach state is shared');
+
+  test.beforeEach(async ({ page }) => {
+    await configureSignalCoach(page);
+  });
+
+  test('flagged coach sees the Signal client roster surface', async ({ page }) => {
+    const response = await page.request.get('/api/coach/clients/health-summary');
+    expect(response.ok()).toBeTruthy();
+    const payload = await response.json() as {
+      clients: Array<{ clientId: string; clientName: string | null }>;
+    };
+
+    await page.goto('/user/coach/clients');
+
+    await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
+    await expect(page.getByText('Client roster')).toBeVisible();
+    await expect(page.getByText('Coach Clients')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Open check-ins' })).toBeVisible();
+
+    if (payload.clients.length === 0) {
+      await expect(page.getByText('No clients yet')).toBeVisible();
+      return;
+    }
+
+    const firstClientName = payload.clients[0].clientName ?? payload.clients[0].clientId;
+    await expect(page.getByText(firstClientName).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Open overview' }).first()).toBeVisible();
   });
 });
