@@ -173,6 +173,18 @@
 - The legacy path remains intact, and the metrics fetch / template fetch / day edit / week target save behavior is preserved unchanged.
 - Mobile scrollability is intentional in the Signal shell; the flagged page keeps the content in the main document flow so the week navigator and daily log remain reachable on smaller screens.
 
+### Signal coach client detail surfaces
+
+- Intended commit: `Build Signal coach client detail surfaces`
+- Routes:
+  - `/user/coach/clients/[clientId]/nutrition`
+  - `/user/coach/clients/[clientId]/supplements`
+  - `/user/coach/clients/[clientId]/plans`
+  - `/user/coach/clients/[clientId]/check-ins/[id]`
+- The flagged coach nutrition, supplements, and plans routes now use the planning surface and rebuilt client-detail compositions instead of the older MUI-only page bodies.
+- The locked client check-in detail route already had a Signal calm wrapper in place; this slice preserves that path and keeps the detail review composition unchanged while the surrounding coach client routes move over.
+- The legacy paths remain intact, and the underlying nutrition, supplement, plan, and check-in behaviors are preserved unchanged.
+
 ## What changed
 
 - Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to both check-ins list pages.
@@ -180,6 +192,8 @@
 - Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to `/user/nutrition`.
 - Split the route into a server wrapper plus `NutritionClient` so the Signal flag is resolved at the route level while the legacy branch keeps the existing nutrition app-bar wiring.
 - Kept the nutrition metrics, week template, and daily editor behavior intact while rebuilding the flagged presentation as a Signal planning surface that stays scrollable on mobile.
+- Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to the coach client nutrition, supplements, and plans detail routes.
+- Reused the existing nutrition and supplements clients directly, and rebuilt the coach client plans list into a Signal planning surface while preserving active-plan toggles and editor navigation.
 - Rebuilt the flagged branch inside `CoachCheckInsClient` with:
   - planning-surface hero
   - queue metrics
@@ -430,7 +444,7 @@
 
 All major user and coach route surfaces, plus the shell chrome, are now on Signal palettes:
 
-- coach: home, client overview, clients roster, check-in review, check-ins desk, check-in template, learning plans list, learning plan editor
+- coach: home, client overview, clients roster, check-in review, check-ins desk, check-in template, learning plans list, learning plan editor, client nutrition/supplements/plans detail surfaces
 - user: home command centre, progress, plan create entry, plan upload workspace, plan editor, workout drill-down (4 list views + exercise slide), check-in
 - shell: SignalAppShell + SignalSidebar / SignalBottomNav / SignalTopBar / SignalModeSwitch / SignalNotificationsBell
 
@@ -438,19 +452,19 @@ Remaining Stage 5 work:
 
 - subdomain collapse — review doc clarification 1: "Subdomain split — collapse." The mode pill currently still cross-navs via `coach.*` host on production. Collapsing the split needs middleware, cookie scoping, and `protected-layout` changes; this is more an infra slice than a UI slice.
 - `Plan` `clientCanEdit` flag — review doc clarification 5: schema/API addition to back the "Allow plan editing" toggle on the plan editor.
-- secondary surfaces still on MUI inside the Signal shell: `/user/calendar`, `/user/notifications`, `/user/nutrition`, `/user/supplements`, `/user/learning-plans`, `/user/feedback`, `/user/settings`, `/user/coach/clients/[clientId]/{nutrition,supplements,plans}`, `/user/coach/clients/[clientId]/check-ins/[id]`. These render inside SignalAppShell (so they get the gym/planning chrome) but their own page content is still MUI.
+- secondary surfaces still on MUI inside the Signal shell: `/user/calendar`, `/user/notifications`, `/user/learning-plans`, `/user/feedback`, `/user/settings`. These render inside SignalAppShell (so they get the gym/planning chrome) but their own page content is still MUI.
 - the four-item BottomNav and the four-item Sidebar nav route to `home / plan / progress / more` (user) and `home / clients / library / more` (coach). `more` currently points at `/user/settings`. There's no in-shell affordance for Calendar / Check-in / Nutrition / Supplements / Education in user mode — these are reached via the home command centre or direct URL only. If product wants a richer "more" sheet, that's a future slice.
 
 Most natural next slice now:
 
-- `/user/notifications` — the bell now points there, so it's the most-clicked currently-MUI surface. Planning or calm palette, normal shell/composition pass.
+- `/user/calendar` — the remaining major user-facing surface; the shell is there, but the FullCalendar grid itself is still legacy.
 
 Alternate slices, in roughly decreasing return:
 
 - `/user/settings` — the "More" nav target. Planning palette.
-- `/user/nutrition`, `/user/supplements`, `/user/learning-plans`, `/user/feedback` — straightforward shell/composition passes once notifications + settings are done.
+- `/user/notifications`, `/user/learning-plans`, `/user/feedback` — straightforward shell/composition passes.
+- `/user/calendar` — multi-day rebuild or a Signal-native calendar primitive if the grid itself gets reskinned.
 - subdomain collapse — only do this when product is ready to commit to the in-app mode pill end-to-end; touches auth, middleware, and cookies.
-- FullCalendar grid reskin — multi-day rebuild or swap to a Signal-native calendar primitive. Separate from the shell pass.
 
 ## Handover Prompt
 

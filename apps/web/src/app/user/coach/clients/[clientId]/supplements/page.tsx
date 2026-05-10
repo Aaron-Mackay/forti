@@ -3,6 +3,8 @@ import getLoggedInUser from '@lib/getLoggedInUser';
 import prisma from '@lib/prisma';
 import SupplementsClient from '@/app/user/supplements/SupplementsClient';
 import { supplementWithVersions } from '@lib/supplementVersions';
+import { loadSignalFlag } from '@lib/signal/loadSignalFlag';
+import { SignalSurface } from '@/components/signal/SignalSurface';
 
 interface Props {
   params: Promise<{ clientId: string }>;
@@ -11,6 +13,7 @@ interface Props {
 export default async function ClientSupplementsPage({ params }: Props) {
   const { clientId } = await params;
   const user = await getLoggedInUser();
+  const signalEnabled = await loadSignalFlag();
 
   const client = await prisma.user.findUnique({
     where: { id: clientId },
@@ -26,6 +29,28 @@ export default async function ClientSupplementsPage({ params }: Props) {
     orderBy: { startDate: 'desc' },
     include: supplementWithVersions,
   });
+
+  if (signalEnabled) {
+    return (
+      <SignalSurface signalEnabled={signalEnabled} surface="planning">
+        <SupplementsClient
+          apiBase={`/api/coach/clients/${clientId}/supplements`}
+          initialSupplements={supplements.map(s => ({
+            ...s,
+            startDate: s.startDate.toISOString(),
+            endDate: s.endDate?.toISOString() ?? null,
+            createdAt: s.createdAt.toISOString(),
+            updatedAt: s.updatedAt.toISOString(),
+            versions: s.versions.map(v => ({
+              ...v,
+              effectiveFrom: v.effectiveFrom.toISOString(),
+            })),
+          }))}
+          signalEnabled
+        />
+      </SignalSurface>
+    );
+  }
 
   return (
     <SupplementsClient
