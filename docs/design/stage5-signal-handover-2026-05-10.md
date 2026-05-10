@@ -44,6 +44,14 @@
 - The flagged path uses the planning surface and a dedicated Signal progress composition around the existing chart and tracked-lift primitives.
 - The legacy path stays on the existing MUI/dashboard primitives so `/user/progress` works during the side-by-side cutover.
 
+### Signal plan-create entry route
+
+- Commit: `Build Signal plan create entry slice`
+- Route:
+  - `/user/plan/create`
+- The flagged path now uses the planning surface and a rebuilt Stage 5 entry composition for starting plan creation.
+- The legacy path stays on the existing MUI card list, and the downstream template, AI, upload, and editor flows remain the current implementation.
+
 ## What changed
 
 - Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to both check-ins list pages.
@@ -94,6 +102,15 @@
   - settings/home actions
 - Kept settings reads to a single query on this route and derived `signalEnabled` from the parsed settings object instead of issuing a second flag lookup.
 - Added focused Playwright coverage for the flagged progress route.
+- Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to `/user/plan/create`.
+- Passed `signalEnabled` through `PlanBuilderWithContext` into `PlanBuilder`.
+- Rebuilt the flagged `EntryScreen` branch with:
+  - planning-surface hero
+  - four Stage 5 start-path cards
+  - preserved test ids and click targets for template, AI, upload, and scratch
+  - desktop two-column grid and mobile single-column stack
+- Left template browser, AI form, upload route, import hydration, and editor flow behavior unchanged in this slice.
+- Added focused Playwright coverage for the flagged plan-create entry route.
 
 ## Preserved behavior
 
@@ -112,6 +129,9 @@
 - progress charts still use the existing `DashboardChart` implementation
 - tracked-lift rendering still uses the existing `E1rmProgressCard` implementation
 - the progress route still relies on `trackedE1rmExercises` in `User.settings`; the Stage 5 `progress.focusExerciseIds` schema addition remains deferred
+- plan creation still uses the existing `PlanBuilder` state machine: `entry`, `templates`, `ai`, `editor`
+- spreadsheet import still routes through `/user/plan/upload` and hydrates the editor from `sessionStorage`
+- coach-for-client plan creation still uses the existing `forUserId` authorization and target-user lookup
 
 ## Verification completed
 
@@ -121,6 +141,7 @@
 - `BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/learningPlans.test.ts --project=chromium --grep "flagged coach sees the Signal learning plans library"`
 - `BASE_URL=http://127.0.0.1:3006 npx playwright test tests/e2e/redesign-regression.test.ts --project=chromium --grep "flagged coach sees the Signal learning plan editor workspace"`
 - `BASE_URL=http://127.0.0.1:3007 npx playwright test tests/e2e/progress.test.ts --project=chromium --no-deps`
+- `BASE_URL=http://127.0.0.1:3008 npx playwright test tests/e2e/planCreate.test.ts --project=chromium --no-deps`
 
 ## Known residuals
 
@@ -136,14 +157,15 @@ Next coach-only routes still outside the newer Signal pattern:
 
 Likely next Stage 5 slice outside the coach routes:
 
-- `/user/plan/create`
+- `/user/plan/upload`
 
 Most natural next slice now:
 
-- `/user/plan/create`
+- `/user/plan/upload`
 
 Reason:
 
 - the main coach screens called out in the handover are now covered
 - `/user/progress` now exists as a dedicated route in both legacy and Signal modes
-- the next obvious remaining Stage 5 user surface is the plan-creation entry composition
+- `/user/plan/create` now has the Stage 5 entry composition
+- the next obvious adjacent user surface is the spreadsheet import flow that feeds this create route

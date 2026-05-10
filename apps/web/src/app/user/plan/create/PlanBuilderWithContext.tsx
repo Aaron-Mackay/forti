@@ -5,10 +5,11 @@ import {Exercise} from "@/generated/prisma/browser";
 
 export const PLACEHOLDER_ID = -1
 
-export default function PlanBuilderWithContext({userData, allExercises, clientId}: {
+export default function PlanBuilderWithContext({userData, allExercises, clientId, signalEnabled = false}: {
   userData: UserPrisma,
   allExercises: Exercise[],
   clientId?: string,
+  signalEnabled?: boolean,
 }) {
   const maxOrder = userData.plans
     .reduce((max, obj) => Math.max(max, obj.order), -Infinity)
@@ -43,7 +44,7 @@ export default function PlanBuilderWithContext({userData, allExercises, clientId
   return (
     <WorkoutEditorProvider allExercises={allExercises}
                            userData={{...userData, plans: [...userData.plans, placeholderPlan]}}>
-      <PlanBuilder blankPlan={placeholderPlan} clientId={clientId}/>
+      <PlanBuilder blankPlan={placeholderPlan} clientId={clientId} signalEnabled={signalEnabled}/>
     </WorkoutEditorProvider>
   );
 }

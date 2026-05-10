@@ -17,7 +17,7 @@ import { applyReviewedExercisesToPlan, PendingUploadPlan } from '@/app/user/plan
 type View = 'entry' | 'templates' | 'ai' | 'editor'
 type EditorSource = 'scratch' | 'template' | 'ai' | 'import'
 
-export const PlanBuilder = ({ blankPlan, clientId }: { blankPlan: PlanPrisma, clientId?: string }) => {
+export const PlanBuilder = ({ blankPlan, clientId, signalEnabled = false }: { blankPlan: PlanPrisma, clientId?: string, signalEnabled?: boolean }) => {
   const [view, setView] = useState<View>('entry')
   const [weekCount, setWeekCount] = useState('6')
   const [editorInitialViewMode, setEditorInitialViewMode] = useState<'classic' | 'sheet'>('sheet')
@@ -71,6 +71,8 @@ export const PlanBuilder = ({ blankPlan, clientId }: { blankPlan: PlanPrisma, cl
 
       {view === 'entry' && (
         <EntryScreen
+          signalEnabled={signalEnabled}
+          clientId={clientId}
           onSelectTemplates={() => setView('templates')}
           onSelectAi={() => setView('ai')}
           onSelectScratch={() => {
