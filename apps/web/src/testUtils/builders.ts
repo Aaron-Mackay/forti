@@ -68,6 +68,7 @@ export class PlanBuilder {
       order,
       name: "Test Plan",
       description: "",
+      clientCanEdit: true,
       lastActivityDate: null,
       weeks: [],
     };

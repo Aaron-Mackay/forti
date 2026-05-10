@@ -274,6 +274,10 @@
   - mono "Plan editor" label
   - condensed plan name
   - weeks / workouts / exercise-slot metric pills
+- Added a client-editing control to the Signal plan editor:
+  - `clientCanEdit` now persists on `Plan`
+  - coach route shows an allow/lock switch
+  - client route shows a lock banner and disables save when editing is locked
 - Centered the editor body inside a max-width planning container when flagged, keeping the existing classic/sheet/multi-week views, view-toggle controls, save bar, and snackbar untouched.
 - Added focused Playwright coverage for the flagged plan editor route.
 - Added route-level `loadSignalFlag()` + `SignalSurface(calm)` to `/user/check-in`.
@@ -445,26 +449,22 @@
 
 All major user and coach route surfaces, plus the shell chrome, are now on Signal palettes:
 
-- coach: home, client overview, clients roster, check-in review, check-ins desk, check-in template, learning plans list, learning plan editor, client nutrition/supplements/plans detail surfaces
-- user: home command centre, progress, plan create entry, plan upload workspace, plan editor, workout drill-down (4 list views + exercise slide), check-in
+- coach: home, client overview, clients roster, check-in review, check-ins desk, check-in template, learning plans list, learning plan editor, client nutrition/supplements/plans detail surfaces, client check-in detail
+- user: home command centre, progress, plan create entry, plan upload workspace, plan editor, workout drill-down (4 list views + exercise slide), check-in, calendar, notifications, settings, learning plans, supplements, feedback, nutrition
 - shell: SignalAppShell + SignalSidebar / SignalBottomNav / SignalTopBar / SignalModeSwitch / SignalNotificationsBell
 
 Remaining Stage 5 work:
 
 - subdomain collapse — review doc clarification 1: "Subdomain split — collapse." The mode pill currently still cross-navs via `coach.*` host on production. Collapsing the split needs middleware, cookie scoping, and `protected-layout` changes; this is more an infra slice than a UI slice.
-- `Plan` `clientCanEdit` flag — review doc clarification 5: schema/API addition to back the "Allow plan editing" toggle on the plan editor.
-- secondary surfaces still on MUI inside the Signal shell: `/user/notifications`, `/user/learning-plans`, `/user/feedback`, `/user/settings`. These render inside SignalAppShell (so they get the gym/planning chrome) but their own page content is still MUI.
-- the four-item BottomNav and the four-item Sidebar nav route to `home / plan / progress / more` (user) and `home / clients / library / more` (coach). `more` currently points at `/user/settings`. There's no in-shell affordance for Calendar / Check-in / Nutrition / Supplements / Education in user mode — these are reached via the home command centre or direct URL only. If product wants a richer "more" sheet, that's a future slice.
+- optional deeper `FullCalendar` grid reskin if product wants the month view itself rebuilt rather than just wrapped in Signal chrome.
 
 Most natural next slice now:
 
-- `/user/settings` — the "More" nav target. Planning palette.
+- FullCalendar grid internals — multi-day rebuild or a Signal-native calendar primitive if product wants the month grid itself reskinned.
 
 Alternate slices, in roughly decreasing return:
 
-- `/user/notifications`, `/user/learning-plans`, `/user/feedback` — straightforward shell/composition passes.
-- FullCalendar grid internals — multi-day rebuild or a Signal-native calendar primitive if product wants the month grid itself reskinned.
-- subdomain collapse — only do this when product is ready to commit to the in-app mode pill end-to-end; touches auth, middleware, and cookies.
+- subdomain collapse — only when product commits; infra-leaning, not a UI slice.
 
 ## Handover Prompt
 
@@ -481,18 +481,15 @@ Current shipped state to preserve:
 - Signal remains side-by-side behind User.settings.signalUiEnabled.
 - Do not reintroduce cached loadSignalFlag behavior; current live lookup is intentional.
 - Preserve route-level SignalSurface usage and avoid duplicate settings reads when a route already needs settings.
-- Coach slices already shipped: home, client overview, clients roster, check-in review, check-ins desk, check-in template, learning plans list, learning plan editor.
-- User slices already shipped: home command centre, progress route, plan create entry, plan upload workspace, plan editor workspace, workout route (all four list views + existing exercise slide), check-in route, calendar route.
+- Coach slices already shipped: home, client overview, clients roster, check-in review, check-ins desk, check-in template, learning plans list, learning plan editor, client nutrition detail, client supplements detail, client plans detail, client check-in detail.
+- User slices already shipped: home command centre, progress route, plan create entry, plan upload workspace, plan editor workspace, workout route (all four list views + existing exercise slide), check-in route, calendar route, notifications route, settings route, learning-plans route, supplements route, feedback route, nutrition route.
 - Shell: SignalAppShell + SignalSidebar / SignalBottomNav / SignalTopBar / SignalModeSwitch / SignalNotificationsBell are all wired in via `protected-layout.tsx` → `SignalShellSwitch`. The bell links to `/user/notifications` and renders a chartreuse dot when `useNotifications().unreadCount > 0`.
 - Subdomain split is NOT yet collapsed. The mode pill cross-navigates via the `coach.*` host on production. Do not attempt the collapse without explicit go-ahead from product — it touches auth, middleware, and cookie scoping.
 
 Most natural next slice:
-- /user/notifications — the bell now points here, so it's the most-clicked still-MUI surface. Planning or calm palette, normal shell/composition pass.
+- FullCalendar grid internals — separate, multi-day, or swap primitive.
 
 Alternate next slices:
-- /user/settings — the "More" nav target.
-- /user/nutrition, /user/supplements, /user/learning-plans, /user/feedback — straightforward shell/composition passes.
-- FullCalendar grid reskin — separate, multi-day, or swap primitive.
 - subdomain collapse — only when product commits; infra-leaning, not a UI slice.
 
 Constraints:

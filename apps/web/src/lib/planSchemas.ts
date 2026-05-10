@@ -56,6 +56,7 @@ export const PlanInputSchema = z.object({
   id: z.number().int().optional(),
   name: z.string(),
   description: z.string().nullable().optional(),
+  clientCanEdit: z.boolean().optional().default(true),
   order: z.number().int(),
   weeks: z.array(WeekInputSchema),
 });

@@ -8,6 +8,7 @@ export enum Dir {'UP', 'DOWN'}
 
 export type WorkoutEditorAction =
   | { type: 'UPDATE_PLAN_NAME'; planId: number; name: string }
+  | { type: 'UPDATE_PLAN_CLIENT_CAN_EDIT'; planId: number; enabled: boolean }
   | { type: 'ADD_WEEK'; planId: number }
   | { type: 'REMOVE_WEEK'; planId: number, weekId: number }
   | { type: 'DUPLICATE_WEEK'; planId: number, weekId: number }
@@ -178,6 +179,13 @@ export function reducer(userDataState: UserPrisma, action: WorkoutEditorAction, 
       const plan = getNestedOrWarn({planId});
       if (!plan) return userDataState;
       return userPlanMutators.updatePlanName(userDataState, planId, name);
+    }
+
+    case 'UPDATE_PLAN_CLIENT_CAN_EDIT': {
+      const { planId, enabled } = action;
+      const plan = getNestedOrWarn({planId});
+      if (!plan) return userDataState;
+      return userPlanMutators.updatePlanClientCanEdit(userDataState, planId, enabled);
     }
 
     case 'DUPLICATE_WEEK': {

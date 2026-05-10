@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { redirect, useRouter } from "next/navigation";
 import { useWorkoutEditorContext } from "@/context/WorkoutEditorContext";
 import { saveUserWorkoutData } from "@lib/clientApi";
-import { Alert, Box, Button, CircularProgress, Snackbar, ToggleButton, ToggleButtonGroup, Tooltip, useMediaQuery, useTheme } from "@mui/material";
+import { Alert, Box, Button, Chip, CircularProgress, FormControlLabel, Snackbar, Switch, ToggleButton, ToggleButtonGroup, Tooltip, useMediaQuery, useTheme } from "@mui/material";
 import GridOnIcon from '@mui/icons-material/GridOn';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import OpenWithIcon from '@mui/icons-material/OpenWith';
@@ -22,14 +22,15 @@ export const PlanTable: React.FC<{
   planId?: string;
   backHref?: string;
   signalEnabled?: boolean;
-}> = ({ planId, backHref, signalEnabled = false }) => {
+  canManageClientEditing?: boolean;
+}> = ({ planId, backHref, signalEnabled = false, canManageClientEditing = false }) => {
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
     severity: 'success',
   });
   const [saving, setSaving] = useState(false);
-  const { state: userDataState } = useWorkoutEditorContext();
+  const { state: userDataState, dispatch } = useWorkoutEditorContext();
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -50,6 +51,7 @@ export const PlanTable: React.FC<{
   const plan = planId
     ? userDataState.plans.find(p => p.id === parseInt(planId))
     : userDataState.plans[0];
+  const clientEditingLocked = signalEnabled && plan?.clientCanEdit === false && !canManageClientEditing;
 
   useAppBar({
     title: plan?.name ?? 'Plan',
@@ -70,6 +72,14 @@ export const PlanTable: React.FC<{
 
   const handleSave = () => {
     setSaveAttempted(true);
+    if (clientEditingLocked) {
+      setSnackbar({
+        open: true,
+        severity: 'error',
+        message: 'This plan is locked for client editing.',
+      });
+      return;
+    }
     if (invalidRepRangeIds.size > 0) {
       setSnackbar({
         open: true,
@@ -160,6 +170,64 @@ export const PlanTable: React.FC<{
               <SignalPlanMetric label="Workouts" value={workoutCount} />
               <SignalPlanMetric label="Exercise slots" value={exerciseSlotCount} />
             </Box>
+            <Box
+              sx={{
+                mt: 1.75,
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 1.5,
+              }}
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <Box sx={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: planningPalette.inkLight, mb: 0.4 }}>
+                  Client editing
+                </Box>
+                <Box sx={{ fontSize: 13, color: planningPalette.inkMid, lineHeight: 1.45 }}>
+                  {canManageClientEditing
+                    ? 'Toggle whether the client can edit this plan.'
+                    : plan.clientCanEdit
+                      ? 'Clients can edit this plan.'
+                      : 'Clients cannot edit this plan right now.'}
+                </Box>
+              </Box>
+              {canManageClientEditing ? (
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={plan.clientCanEdit}
+                      onChange={(_, enabled) => dispatch({ type: 'UPDATE_PLAN_CLIENT_CAN_EDIT', planId: plan.id, enabled })}
+                    />
+                  }
+                  label={plan.clientCanEdit ? 'Allow editing' : 'Editing locked'}
+                  sx={{
+                    m: 0,
+                    '& .MuiFormControlLabel-label': {
+                      fontSize: 13,
+                      color: planningPalette.ink,
+                    },
+                  }}
+                />
+              ) : (
+                <Chip
+                  label={plan.clientCanEdit ? 'Editing allowed' : 'Editing locked'}
+                  size="small"
+                  sx={{
+                    fontFamily: signalTokens.fontVar.mono,
+                    backgroundColor: plan.clientCanEdit ? planningPalette.surfaceAlt : 'rgba(231, 104, 84, 0.12)',
+                    color: plan.clientCanEdit ? planningPalette.ink : '#8a352a',
+                    borderColor: plan.clientCanEdit ? planningPalette.border : '#e3b2a8',
+                  }}
+                  variant="outlined"
+                />
+              )}
+            </Box>
+            {clientEditingLocked && (
+              <Alert severity="warning" sx={{ mt: 1.75 }}>
+                Your coach has locked this plan for editing. You can still review it here, but saving changes is disabled.
+              </Alert>
+            )}
           </Box>
         </Box>
       )}
@@ -262,7 +330,7 @@ export const PlanTable: React.FC<{
         <Button
           onClick={handleSave}
           variant="contained"
-          disabled={saving || visibleInvalidRepRangeIds.size > 0}
+          disabled={saving || visibleInvalidRepRangeIds.size > 0 || clientEditingLocked}
           startIcon={saving ? <CircularProgress size={16} color="inherit" /> : undefined}
           sx={{ minWidth: 160 }}
         >

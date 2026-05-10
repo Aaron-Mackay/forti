@@ -28,6 +28,7 @@ export function parsedPlanToPlanPrisma(
     userId: currentPlan.userId,
     name: parsed.name,
     description: parsed.description ?? null,
+    clientCanEdit: currentPlan.clientCanEdit,
     order: currentPlan.order,
     lastActivityDate: currentPlan.lastActivityDate ?? null,
     weeks: parsed.weeks.map((week): WeekPrisma => {

@@ -13,6 +13,7 @@ type SetInput = ExerciseInput['sets'][number];
 type ExistingTree = {
   plans: Array<{
     id: number;
+    clientCanEdit: boolean;
     weeks: Array<{
       id: number;
       planId: number;
@@ -67,6 +68,13 @@ export async function syncPlanTree(
     const existingPlan = incomingPlan.id != null
       ? existing.plans.find((p) => p.id === incomingPlan.id)
       : undefined;
+    const lockedForClient = !!existingPlan && existingPlan.clientCanEdit === false && !options.actorIsAssignedCoach;
+
+    if (existingPlan && lockedForClient) {
+      kept.plans.add(existingPlan.id);
+      keepExistingPlanTree(existingPlan, kept);
+      continue;
+    }
 
     let planId: number;
     if (existingPlan) {
@@ -76,6 +84,7 @@ export async function syncPlanTree(
           order: incomingPlan.order,
           name: incomingPlan.name,
           description: incomingPlan.description ?? null,
+          clientCanEdit: incomingPlan.clientCanEdit ?? true,
         },
         select: { id: true },
       });
@@ -87,6 +96,7 @@ export async function syncPlanTree(
           order: incomingPlan.order,
           name: incomingPlan.name,
           description: incomingPlan.description ?? null,
+          clientCanEdit: incomingPlan.clientCanEdit ?? true,
         },
         select: { id: true },
       });
@@ -108,6 +118,7 @@ async function loadExistingTree(
     where: { userId },
     select: {
       id: true,
+      clientCanEdit: true,
       weeks: {
         select: {
           id: true,
@@ -130,6 +141,27 @@ async function loadExistingTree(
     },
   });
   return { plans };
+}
+
+function keepExistingPlanTree(existingPlan: ExistingTree['plans'][number], kept: {
+  plans: Set<number>;
+  weeks: Set<number>;
+  workouts: Set<number>;
+  workoutExercises: Set<number>;
+  sets: Set<number>;
+}) {
+  for (const week of existingPlan.weeks) {
+    kept.weeks.add(week.id);
+    for (const workout of week.workouts) {
+      kept.workouts.add(workout.id);
+      for (const exercise of workout.exercises) {
+        kept.workoutExercises.add(exercise.id);
+        for (const set of exercise.sets) {
+          kept.sets.add(set.id);
+        }
+      }
+    }
+  }
 }
 
 async function syncWeeks(

@@ -22,6 +22,7 @@ import {
   parseExerciseCategory,
   updateCategory,
   updateExerciseInUser,
+  updatePlanClientCanEdit,
   updatePlanName,
   updateRepRange,
   updateRestTime,
@@ -78,6 +79,14 @@ describe('updatePlanName', () => {
     const result = updatePlanName(user, 2, 'Changed');
     expect(result.plans[0].name).toBe('Test Plan');
     expect(result.plans[1].name).toBe('Changed');
+  });
+});
+
+describe('updatePlanClientCanEdit', () => {
+  it('toggles client editing on the target plan', () => {
+    const user = buildBaseUser();
+    const result = updatePlanClientCanEdit(user, 1, false);
+    expect(result.plans[0].clientCanEdit).toBe(false);
   });
 });
 

@@ -218,6 +218,15 @@ export function updatePlanName(user: UserPrisma, planId: number, name: string): 
   };
 }
 
+export function updatePlanClientCanEdit(user: UserPrisma, planId: number, clientCanEdit: boolean): UserPrisma {
+  return {
+    ...user,
+    plans: user.plans.map(plan =>
+      plan.id === planId ? { ...plan, clientCanEdit } : plan,
+    ),
+  };
+}
+
 export function moveWorkout(user: UserPrisma, planId: number, weekId: number, index: number, dir: Dir): UserPrisma {
   return updatePlan(user, planId, plan =>
     updateWeek(plan, weekId, week => moveWorkoutInWeek(week, index, dir))

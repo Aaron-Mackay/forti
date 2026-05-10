@@ -207,6 +207,7 @@ model Plan {
   order       Int
   name        String
   description String?
+  clientCanEdit Boolean @default(true)
   lastActivityDate DateTime? @db.Date
   weeks       Week[]
   activeForUsers User[] @relation("ActivePlan")

@@ -19,6 +19,7 @@ type Tx = Parameters<typeof syncPlanTree>[0];
 
 interface ExistingPlan {
   id: number;
+  clientCanEdit?: boolean;
   weeks: Array<{
     id: number;
     planId: number;
@@ -176,6 +177,7 @@ describe('syncPlanTree', () => {
   it('updates an existing plan in place when ids match (no recreation)', async () => {
     const existing: ExistingPlan = {
       id: 42,
+      clientCanEdit: true,
       weeks: [
         {
           id: 7,
@@ -243,6 +245,56 @@ describe('syncPlanTree', () => {
     expect(mocks.exerciseSet.update).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: 31 },
     }));
+  });
+
+  it('skips locked plans for client saves but keeps their existing tree', async () => {
+    const existing: ExistingPlan = {
+      id: 42,
+      clientCanEdit: false,
+      weeks: [
+        {
+          id: 7,
+          planId: 42,
+          workouts: [
+            {
+              id: 11,
+              weekId: 7,
+              exercises: [
+                {
+                  id: 21,
+                  workoutId: 11,
+                  sets: [{ id: 31, isDropSet: false }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const { tx, mocks } = createTx([existing]);
+
+    await syncPlanTree(
+      tx,
+      'user-1',
+      [
+        {
+          id: 42,
+          order: 0,
+          name: 'Changed',
+          weeks: [],
+        },
+      ],
+      { actorIsAssignedCoach: false },
+    );
+
+    expect(mocks.plan.update).not.toHaveBeenCalled();
+    expect(mocks.plan.create).not.toHaveBeenCalled();
+    expect(mocks.week.create).not.toHaveBeenCalled();
+    expect(mocks.week.update).not.toHaveBeenCalled();
+    expect(mocks.workout.create).not.toHaveBeenCalled();
+    expect(mocks.workout.update).not.toHaveBeenCalled();
+    expect(mocks.workoutExercise.create).not.toHaveBeenCalled();
+    expect(mocks.workoutExercise.update).not.toHaveBeenCalled();
   });
 
   it('inserts only the new set when one is added to an existing exercise', async () => {

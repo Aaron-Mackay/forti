@@ -1,0 +1,2 @@
+ALTER TABLE "Plan"
+ADD COLUMN "clientCanEdit" BOOLEAN NOT NULL DEFAULT true;
