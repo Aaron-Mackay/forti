@@ -132,6 +132,14 @@
 - The flagged path now uses the calm surface and a rebuilt inbox composition for the existing notifications provider instead of the older plain MUI list.
 - The legacy path stays on the current MUI list, and the notification fetch / mark-read / mark-all-read behavior is preserved unchanged.
 
+### Signal user settings route
+
+- Intended commit: `Build Signal settings slice`
+- Route:
+  - `/user/settings`
+- The flagged path now uses the planning surface and a rebuilt settings composition for the main user settings route instead of the older single-column MUI paper stack.
+- The legacy path remains intact, and the coach-domain settings route intentionally stays on the current coaching-settings presentation in this slice.
+
 ## What changed
 
 - Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to both check-ins list pages.
@@ -260,6 +268,20 @@
   - route navigation via each notification URL
 - Added `LearningPlanStepDelivered` handling to the notification icon mapping so that seeded and live learning-plan notifications render correctly in both flag states.
 - Added focused Playwright coverage for the flagged notifications route.
+- Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to the normal `/user/settings` route while leaving the coach-domain settings route on the legacy path for now.
+- Passed `signalEnabled` into `SettingsClient`.
+- Rebuilt the flagged branch inside `SettingsClient` with:
+  - planning-surface hero (mono "Settings" label + condensed "Preferences" heading)
+  - summary cells for profile, training toggles, and coach-mode status
+  - dedicated planning cards for dashboard, workout, features, custom metrics, tracked lifts, check-in timing, units, onboarding reset, Signal opt-in, export links, and coaching settings
+  - preserved MUI controls and existing provider/update flows inside the new shell
+- Preserved existing behavior:
+  - name save flow via `/api/user/profile`
+  - settings mutations via `SettingsProvider`
+  - custom metrics and tracked-lift editor behavior
+  - export links and coaching settings actions
+- Kept the flagged route mobile-scrollable inside the Signal shell by avoiding fixed inner heights and leaving the page content to scroll within the shell `<main>` container.
+- Added focused Playwright coverage for the flagged settings route that verifies the mobile route can scroll to lower settings content.
 
 ## Preserved behavior
 
