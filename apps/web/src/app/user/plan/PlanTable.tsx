@@ -14,11 +14,15 @@ import PlanMultiWeekTable from "./PlanMultiWeekTable";
 import PlanSheetView from "./PlanSheetView";
 import { usePlanViewControls } from "./usePlanViewControls";
 import { usePlanRepRangeValidation } from "./usePlanRepRangeValidation";
+import { signalTokens } from "@lib/signal/tokens";
+
+const planningPalette = signalTokens.surface.planning;
 
 export const PlanTable: React.FC<{
   planId?: string;
   backHref?: string;
-}> = ({ planId, backHref }) => {
+  signalEnabled?: boolean;
+}> = ({ planId, backHref, signalEnabled = false }) => {
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -83,9 +87,96 @@ export const PlanTable: React.FC<{
       .finally(() => setSaving(false));
   };
 
+  const weekCount = plan.weeks.length;
+  const workoutCount = plan.weeks.reduce((sum, week) => sum + week.workouts.length, 0);
+  const exerciseSlotCount = plan.weeks.reduce(
+    (sum, week) => sum + week.workouts.reduce((wSum, workout) => wSum + workout.exercises.length, 0),
+    0,
+  );
+
   return (
     <>
-      <Box sx={{ p: 1.5, overflow: 'auto' }}>
+      {signalEnabled && (
+        <Box
+          sx={{
+            px: { xs: 2, sm: 3 },
+            pt: 2,
+            pb: 0,
+            maxWidth: 1280,
+            mx: 'auto',
+          }}
+        >
+          <Box
+            sx={{
+              background: planningPalette.surface,
+              border: `1px solid ${planningPalette.borderStrong}`,
+              borderRadius: `${signalTokens.radii.cardLarge}px`,
+              p: { xs: 2, sm: '20px 20px 18px' },
+            }}
+          >
+            <Box
+              sx={{
+                fontFamily: signalTokens.fontVar.mono,
+                fontSize: 11,
+                color: signalTokens.signal.deep,
+                mb: 0.75,
+              }}
+            >
+              Plan editor
+            </Box>
+            <Box
+              sx={{
+                fontFamily: signalTokens.fontVar.cond,
+                fontSize: { xs: 26, sm: 32 },
+                fontWeight: 700,
+                letterSpacing: '-0.015em',
+                lineHeight: 1,
+                mb: 1.25,
+                color: planningPalette.ink,
+              }}
+            >
+              {plan.name}
+            </Box>
+            <Box
+              sx={{
+                fontSize: 14,
+                color: planningPalette.inkMid,
+                lineHeight: 1.55,
+                maxWidth: 680,
+              }}
+            >
+              Adjust weeks, workouts, and sets in the existing editor. Switch between sheet and classic views as the
+              shape of the plan changes.
+            </Box>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: 'repeat(3, minmax(0, 1fr))', sm: 'repeat(3, minmax(0, 1fr))' },
+                gap: 1,
+                mt: 2,
+              }}
+            >
+              <SignalPlanMetric label="Weeks" value={weekCount} />
+              <SignalPlanMetric label="Workouts" value={workoutCount} />
+              <SignalPlanMetric label="Exercise slots" value={exerciseSlotCount} />
+            </Box>
+          </Box>
+        </Box>
+      )}
+      <Box
+        sx={{
+          p: 1.5,
+          overflow: 'auto',
+          ...(signalEnabled
+            ? {
+                maxWidth: 1280,
+                mx: 'auto',
+                px: { xs: 2, sm: 3 },
+                pt: 1.5,
+              }
+            : null),
+        }}
+      >
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, mb: 1.5 }}>
           {/* Arrange mode toggle — only visible in sheet mode on non-mobile */}
           {viewMode === 'sheet' && (
@@ -192,3 +283,37 @@ export const PlanTable: React.FC<{
     </>
   );
 };
+
+const SignalPlanMetric: React.FC<{ label: string; value: number }> = ({ label, value }) => (
+  <Box
+    sx={{
+      border: `1px solid ${planningPalette.border}`,
+      borderRadius: `${signalTokens.radii.card}px`,
+      px: 1.25,
+      py: 1,
+      background: planningPalette.surfaceAlt,
+    }}
+  >
+    <Box
+      sx={{
+        fontFamily: signalTokens.fontVar.mono,
+        fontSize: 11,
+        color: planningPalette.inkLight,
+        mb: 0.5,
+      }}
+    >
+      {label}
+    </Box>
+    <Box
+      sx={{
+        fontFamily: signalTokens.fontVar.cond,
+        fontSize: 24,
+        fontWeight: 700,
+        lineHeight: 1,
+        color: planningPalette.ink,
+      }}
+    >
+      {value}
+    </Box>
+  </Box>
+);

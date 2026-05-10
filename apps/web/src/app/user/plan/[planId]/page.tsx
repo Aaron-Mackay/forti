@@ -38,6 +38,7 @@ const PlanPage = async ({
         <PlanTable
           planId={planId}
           backHref={userDetails.id === loggedInUserId ? clientBackHref : `/user/coach/clients/${userDetails.id}/plans`}
+          signalEnabled={signalEnabled}
         />
       </WorkoutEditorProvider>
     </SignalSurface>

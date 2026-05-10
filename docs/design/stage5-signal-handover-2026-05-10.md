@@ -60,6 +60,14 @@
 - The flagged path now uses the planning surface and a rebuilt import workspace for the existing spreadsheet-to-editor flow.
 - The legacy path stays on the current MUI wizard, and the importer logic remains unchanged.
 
+### Signal user plan editor workspace
+
+- Intended commit: `Build Signal plan editor slice`
+- Route:
+  - `/user/plan/[planId]`
+- The flagged path now uses the planning surface and a Signal workspace shell around the existing plan editor.
+- The reducer-driven sheet, classic, and multi-week editor internals are intentionally preserved in this slice; this is a shell/composition pass.
+
 ## What changed
 
 - Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to both check-ins list pages.
@@ -138,6 +146,14 @@
   - summary before the editor
   - `sessionStorage` handoff back into `/user/plan/create`
 - Added focused Playwright coverage for the flagged plan-import route.
+- Threaded `signalEnabled` from `/user/plan/[planId]/page.tsx` into `PlanTable`.
+- Added a Signal hero above the plan editor with:
+  - planning-surface card
+  - mono "Plan editor" label
+  - condensed plan name
+  - weeks / workouts / exercise-slot metric pills
+- Centered the editor body inside a max-width planning container when flagged, keeping the existing classic/sheet/multi-week views, view-toggle controls, save bar, and snackbar untouched.
+- Added focused Playwright coverage for the flagged plan editor route.
 
 ## Preserved behavior
 
@@ -161,6 +177,8 @@
 - coach-for-client plan creation still uses the existing `forUserId` authorization and target-user lookup
 - spreadsheet import chunking, clarification prompts, enrichment, and retry behavior are unchanged
 - the summary step still uses the existing muscle-volume calculation and editor handoff
+- plan editing still uses the existing reducer (`useWorkoutEditor` / `WorkoutEditorProvider`) and its sheet/classic/multi-week presentations
+- the plan editor's view-mode toggle, arrange mode, zoom controls, rep-range validation, fixed save button, and save snackbar remain the existing implementation
 
 ## Verification completed
 
@@ -172,6 +190,7 @@
 - `BASE_URL=http://127.0.0.1:3007 npx playwright test tests/e2e/progress.test.ts --project=chromium --no-deps`
 - `BASE_URL=http://127.0.0.1:3008 npx playwright test tests/e2e/planCreate.test.ts --project=chromium --no-deps`
 - `BASE_URL=http://127.0.0.1:3009 npx playwright test tests/e2e/planUpload.test.ts --project=chromium --no-deps`
+- `BASE_URL=http://localhost:3010 npx playwright test tests/e2e/planEditor.test.ts --project=chromium`
 
 ## Known residuals
 
@@ -187,19 +206,19 @@ Next coach-only routes still outside the newer Signal pattern:
 
 Likely next Stage 5 slice outside the coach routes:
 
-- `/user/plan/[planId]`
+- `/user/workout`
+- `/user/check-in`
 
 Most natural next slice now:
 
-- `/user/plan/[planId]`
+- `/user/workout`
 
 Reason:
 
 - the main coach screens called out in the handover are now covered
-- `/user/progress` now exists as a dedicated route in both legacy and Signal modes
-- `/user/plan/create` now has the Stage 5 entry composition
-- `/user/plan/upload` now has the Signal import workspace
-- the next obvious adjacent user surface is the main plan editor route itself
+- `/user/progress`, `/user/plan/create`, `/user/plan/upload`, and `/user/plan/[planId]` now all use the Signal planning surface
+- the workout-logging route is the next core user surface in the Stage 5 brief and uses the gym (dark) palette rather than planning, so it's a meaningful next palette to exercise behind the flag
+- `/user/check-in` is the natural follow-on once the workout shell is in place
 
 ## Handover Prompt
 
@@ -217,10 +236,10 @@ Current shipped state to preserve:
 - Do not reintroduce cached loadSignalFlag behavior; current live lookup is intentional.
 - Preserve route-level SignalSurface usage and avoid duplicate settings reads when a route already needs settings.
 - Coach slices already shipped: home, client overview, clients roster, check-in review, check-ins desk, check-in template, learning plans list, learning plan editor.
-- User slices already shipped: progress route, plan create entry, plan upload workspace.
+- User slices already shipped: progress route, plan create entry, plan upload workspace, plan editor workspace.
 
 Most natural next slice:
-- /user/plan/[planId]
+- /user/workout
 
 Constraints:
 - Preserve existing reducer/editor behavior unless the slice explicitly requires otherwise.
