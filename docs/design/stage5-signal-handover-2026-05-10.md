@@ -102,6 +102,16 @@
 - `SignalHome` internals (hero / week strip / today's metrics tiles / block progress rule) are preserved unchanged.
 - The legacy path keeps `AppBarTitle` + the existing `DashboardCards` / `DashboardChart` / `E1rmProgressCard` composition.
 
+### Signal shell — close notifications + bell-link gaps
+
+- Intended commit: `Wire Signal shell notifications and add focused E2E coverage`
+- Routes affected: every flagged route (the shell wraps the entire flagged tree from `protected-layout.tsx`).
+- The Signal shell stack (`SignalAppShell` / `SignalSidebar` / `SignalBottomNav` / `SignalTopBar` / `SignalModeSwitch`) was already built and wired into `protected-layout.tsx` via `SignalShellSwitch`. This slice closes three concrete gaps:
+  - The `hasUnreadNotifications` prop on `SignalAppShell` was always undefined in production because `SignalShellSwitch` didn't read it. The badge dot never showed. Now `SignalShellSwitch` reads `useNotifications()` and threads `unreadCount > 0` through.
+  - The bell in `SignalTopBar` was a `<button>` with no click handler — dead. The bell didn't exist at all in `SignalSidebar`, so the desktop chrome had no path to `/user/notifications`. New shared `SignalNotificationsBell` component renders a `<Link href="/user/notifications">` with the chartreuse dot when there's unread mail; it's used by both `SignalTopBar` (mobile) and the new `SignalSidebar` header (desktop).
+- The `/dev/signal-shell` harness already passed `hasUnreadNotifications` directly so it's unaffected.
+- `SignalShellSwitch` now depends on `useNotifications()` — that's safe because `protected-layout.tsx` already wraps the switch in `NotificationsProvider`.
+
 ## What changed
 
 - Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to both check-ins list pages.
@@ -204,6 +214,11 @@
 - Wrapped the `/user` page's flagged branch in `SignalSurface(gym)` and lifted the `signalUiEnabled` check up to the always-wrap pattern used by every other Signal route.
 - Left the `SignalHome` component itself unchanged — its internal gym-palette container, `signalFontVariablesClassName`, hero / week strip / metric tiles / block progress rule are preserved as shipped in `eda7d53`.
 - Added focused Playwright coverage for the flagged user home route.
+- Added `SignalNotificationsBell` — a shared gym-palette `<Link>` to `/user/notifications` with an optional chartreuse dot, used by both `SignalTopBar` (mobile) and `SignalSidebar` (desktop header).
+- `SignalTopBar` now uses `SignalNotificationsBell` in place of the dead `<button>`. `SignalSidebar` accepts `hasUnreadNotifications` and renders the bell next to the wordmark in a flex row.
+- `SignalAppShell` forwards `hasUnreadNotifications` into `SignalSidebar` (it already forwarded it to `SignalTopBar`).
+- `SignalShellSwitch` now reads `useNotifications()` and passes `hasUnreadNotifications: unreadCount > 0` into `SignalAppShell`.
+- Added focused Playwright coverage for the Signal shell verifying sidebar, mode pill, and bell click navigation.
 
 ## Preserved behavior
 
@@ -239,6 +254,9 @@
 - `/user` server-side data loading (`getUserMetrics`, `getUserEvents`, `getActivePlanWithStats`, settings read) is unchanged and feeds both branches
 - `SignalHome`'s server-resolved focus workout (resume vs. start) and four-state hero (no-plan / all-done / resume / start) remain the existing implementation
 - legacy dashboard composition (`DashboardCards`, `DashboardChart`, `E1rmProgressCard`) is preserved exactly when the flag is off
+- `SignalAppShell`, `SignalSidebar`, `SignalBottomNav`, `SignalTopBar`, `SignalModeSwitch`, `SignalIcons`, `ForftiWordmark`, the `/dev/signal-shell` harness, and the cross-domain navigation (`useCrossDomainUrl`, `modeSwitchActions`) all remain the existing implementation
+- legacy `CustomAppBar` + `AppBarProvider` + `useAppBar` continue to render unchanged when the flag is off (selected by `SignalShellSwitch`)
+- `NotificationsProvider`'s 60s polling and `unreadCount` API are unchanged; the Signal shell only consumes them
 
 ## Verification completed
 
@@ -254,6 +272,7 @@
 - `BASE_URL=http://localhost:3010 npx playwright test tests/e2e/workoutSignal.test.ts --project=chromium`
 - `BASE_URL=http://localhost:3011 npx playwright test tests/e2e/checkInSignal.test.ts --project=chromium`
 - `BASE_URL=http://localhost:3012 npx playwright test tests/e2e/userHomeSignal.test.ts --project=chromium`
+- `BASE_URL=http://localhost:3013 npx playwright test tests/e2e/signalShell.test.ts --project=chromium`
 
 ## Known residuals
 
@@ -263,28 +282,28 @@
 
 ## Recommended next slice
 
-All major user and coach route surfaces are now on Signal palettes:
+All major user and coach route surfaces, plus the shell chrome, are now on Signal palettes:
 
 - coach: home, client overview, clients roster, check-in review, check-ins desk, check-in template, learning plans list, learning plan editor
 - user: home command centre, progress, plan create entry, plan upload workspace, plan editor, workout drill-down (4 list views + exercise slide), check-in
+- shell: SignalAppShell + SignalSidebar / SignalBottomNav / SignalTopBar / SignalModeSwitch / SignalNotificationsBell
 
-Remaining Stage 5 work outside the per-route reskin:
+Remaining Stage 5 work:
 
-- navigation/shell restructure (`CustomAppBar` → Signal sidebar + bottom nav, mode-switch pill) — the largest still-open architectural item; review doc clarification 1 says "subdomain split — collapse" so the in-app pill becomes real
-- secondary surfaces still on MUI: `/user/calendar`, `/user/notifications`, `/user/nutrition`, `/user/supplements`, `/user/learning-plans`, `/user/feedback`, `/user/settings`, `/user/coach/clients/[clientId]/{nutrition,supplements,plans}`, `/user/coach/clients/[clientId]/check-ins/[id]`
-- `Plan` `clientCanEdit` flag work (review doc clarification 5) — schema/API addition to back the design's "Allow plan editing" toggle on the plan editor
+- subdomain collapse — review doc clarification 1: "Subdomain split — collapse." The mode pill currently still cross-navs via `coach.*` host on production. Collapsing the split needs middleware, cookie scoping, and `protected-layout` changes; this is more an infra slice than a UI slice.
+- `Plan` `clientCanEdit` flag — review doc clarification 5: schema/API addition to back the "Allow plan editing" toggle on the plan editor.
+- secondary surfaces still on MUI inside the Signal shell: `/user/calendar`, `/user/notifications`, `/user/nutrition`, `/user/supplements`, `/user/learning-plans`, `/user/feedback`, `/user/settings`, `/user/coach/clients/[clientId]/{nutrition,supplements,plans}`, `/user/coach/clients/[clientId]/check-ins/[id]`. These render inside SignalAppShell (so they get the gym/planning chrome) but their own page content is still MUI.
+- the four-item BottomNav and the four-item Sidebar nav route to `home / plan / progress / more` (user) and `home / clients / library / more` (coach). `more` currently points at `/user/settings`. There's no in-shell affordance for Calendar / Check-in / Nutrition / Supplements / Education in user mode — these are reached via the home command centre or direct URL only. If product wants a richer "more" sheet, that's a future slice.
 
 Most natural next slice now:
 
-- shell/nav restructure (`CustomAppBar` → SignalSidebar + SignalBottomNav with in-app mode pill)
+- `/user/calendar` — highest-traffic of the remaining secondary surfaces, and a clean shell/composition pass with planning palette.
 
-Reason:
+Alternate slices, in roughly decreasing return:
 
-- per-route Signal coverage has hit the high-traffic surfaces; further per-route slices are increasingly low-traffic
-- the shell is the visible discontinuity left between flagged routes and is a prerequisite for collapsing the coach subdomain split
-- it's a single, contained surface that affects every flagged route uniformly, so it's a good unit of work
-
-If preferred, an alternate next slice is `/user/calendar` — it's the highest-traffic of the remaining secondary surfaces and is a normal shell/composition pass.
+- `/user/notifications` — the bell now points there, so it's the most-clicked currently-MUI surface. Calm or planning palette.
+- `/user/settings` — the "more" target, calm palette.
+- subdomain collapse — only do this when product is ready to commit to the in-app mode pill end-to-end; touches auth, middleware, and cookies.
 
 ## Handover Prompt
 
@@ -303,12 +322,16 @@ Current shipped state to preserve:
 - Preserve route-level SignalSurface usage and avoid duplicate settings reads when a route already needs settings.
 - Coach slices already shipped: home, client overview, clients roster, check-in review, check-ins desk, check-in template, learning plans list, learning plan editor.
 - User slices already shipped: home command centre, progress route, plan create entry, plan upload workspace, plan editor workspace, workout route (all four list views + existing exercise slide), check-in route.
+- Shell: SignalAppShell + SignalSidebar / SignalBottomNav / SignalTopBar / SignalModeSwitch / SignalNotificationsBell are all wired in via `protected-layout.tsx` → `SignalShellSwitch`. The bell links to `/user/notifications` and renders a chartreuse dot when `useNotifications().unreadCount > 0`.
+- Subdomain split is NOT yet collapsed. The mode pill cross-navigates via the `coach.*` host on production. Do not attempt the collapse without explicit go-ahead from product — it touches auth, middleware, and cookie scoping.
 
 Most natural next slice:
-- shell/nav restructure: replace CustomAppBar with SignalSidebar (220px desktop) + SignalBottomNav (4-item mobile) and an in-app mode-switch pill. Plan to collapse the coach subdomain split (review doc clarification 1) so the pill is real. This is the largest still-open architectural item and a prerequisite for finishing Stage 5.
+- /user/calendar — highest-traffic of the remaining secondary surfaces inside the Signal shell, planning palette, normal shell/composition pass.
 
-Alternate next slice if shell/nav is too large for one pass:
-- /user/calendar — highest-traffic of the remaining secondary surfaces, normal shell/composition pass.
+Alternate next slices:
+- /user/notifications — the bell now points here, so it's the most-clicked still-MUI surface.
+- /user/settings — the "More" nav target.
+- subdomain collapse — only when product commits; infra-leaning, not a UI slice.
 
 Constraints:
 - Preserve existing reducer/editor behavior unless the slice explicitly requires otherwise.

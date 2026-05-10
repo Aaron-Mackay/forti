@@ -63,6 +63,7 @@ export function SignalAppShell({
             activeOverride={activeNavOverride}
             userLabel={userLabel}
             userInitials={userInitials}
+            hasUnreadNotifications={hasUnreadNotifications}
           />
         </div>
 

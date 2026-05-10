@@ -1,0 +1,53 @@
+import { test, expect } from './fixtures';
+
+test.describe.configure({ mode: 'serial' });
+
+test.describe('Signal Shell', () => {
+  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile,
+    'Signal shell coverage runs on desktop chromium only; user settings are shared');
+
+  test.beforeEach(async ({ page }) => {
+    await page.request.patch('/api/user/settings', {
+      data: {
+        settings: {
+          signalUiEnabled: true,
+          coachModeActive: false,
+        },
+      },
+    });
+  });
+
+  test.afterEach(async ({ page }) => {
+    await page.request.patch('/api/user/settings', {
+      data: {
+        settings: {
+          signalUiEnabled: false,
+        },
+      },
+    });
+  });
+
+  test('flagged user sees the Signal sidebar with mode pill and a working notifications bell', async ({ page }) => {
+    await page.goto('/user');
+
+    // SignalAppShell root carries the mode + outer surface
+    await expect(page.locator('[data-signal-mode="user"]').first()).toBeVisible();
+
+    // Sidebar is visible on desktop
+    const sidebar = page.locator('[data-signal-shell-sidebar]').first();
+    await expect(sidebar).toBeVisible();
+
+    // Mode pill — both labels rendered, "My Training" pressed
+    await expect(sidebar.getByRole('button', { name: 'My Training' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(sidebar.getByRole('button', { name: 'Coach' })).toHaveAttribute('aria-pressed', 'false');
+
+    // Bell links to /user/notifications
+    const bell = sidebar.getByRole('link', { name: /Notifications/ });
+    await expect(bell).toBeVisible();
+    await expect(bell).toHaveAttribute('href', '/user/notifications');
+
+    // Click navigates
+    await bell.click();
+    await expect(page).toHaveURL(/\/user\/notifications$/);
+  });
+});

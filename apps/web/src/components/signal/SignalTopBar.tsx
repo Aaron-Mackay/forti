@@ -2,8 +2,8 @@
 
 import { signalTokens, type SignalNavMode } from '@lib/signal/tokens';
 import { ForftiWordmark } from './ForftiWordmark';
-import { SignalIcon } from './SignalIcons';
 import { SignalModeSwitch } from './SignalModeSwitch';
+import { SignalNotificationsBell } from './SignalNotificationsBell';
 
 type Props = {
   mode: SignalNavMode;
@@ -36,38 +36,7 @@ export function SignalTopBar({ mode, hasUnreadNotifications, showModeSwitch = tr
           </div>
         )}
       </div>
-      <button
-        type="button"
-        aria-label="Notifications"
-        style={{
-          position: 'relative',
-          width: 36,
-          height: 36,
-          display: 'grid',
-          placeItems: 'center',
-          background: 'transparent',
-          border: 'none',
-          color: palette.ink,
-          cursor: 'pointer',
-          padding: 0,
-        }}
-      >
-        <SignalIcon name="bell" size={18} color={palette.ink} />
-        {hasUnreadNotifications && (
-          <span
-            aria-hidden
-            style={{
-              position: 'absolute',
-              top: 6,
-              right: 6,
-              width: 7,
-              height: 7,
-              borderRadius: '50%',
-              background: signalTokens.signal.base,
-            }}
-          />
-        )}
-      </button>
+      <SignalNotificationsBell hasUnread={hasUnreadNotifications} />
     </header>
   );
 }

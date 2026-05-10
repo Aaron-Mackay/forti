@@ -6,6 +6,7 @@ import { signalTokens, type SignalNavMode } from '@lib/signal/tokens';
 import { ForftiWordmark } from './ForftiWordmark';
 import { SignalIcon } from './SignalIcons';
 import { SignalModeSwitch } from './SignalModeSwitch';
+import { SignalNotificationsBell } from './SignalNotificationsBell';
 import { activeNavId, navItemsFor, type NavItemId } from './navItems';
 
 type Props = {
@@ -13,9 +14,10 @@ type Props = {
   activeOverride?: NavItemId;
   userLabel?: string;
   userInitials?: string;
+  hasUnreadNotifications?: boolean;
 };
 
-export function SignalSidebar({ mode, activeOverride, userLabel, userInitials }: Props) {
+export function SignalSidebar({ mode, activeOverride, userLabel, userInitials, hasUnreadNotifications }: Props) {
   const palette = signalTokens.surface.gym;
   const pathname = usePathname();
   const items = navItemsFor(mode);
@@ -35,8 +37,19 @@ export function SignalSidebar({ mode, activeOverride, userLabel, userInitials }:
         fontFamily: signalTokens.fontVar.body,
       }}
     >
-      <div style={{ padding: '20px 18px 14px', borderBottom: `1px solid ${palette.border}` }}>
-        <ForftiWordmark size={22} color={palette.ink} glyphColor={signalTokens.signal.base} />
+      <div
+        style={{
+          padding: '14px 12px 12px 18px',
+          borderBottom: `1px solid ${palette.border}`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <ForftiWordmark size={22} color={palette.ink} glyphColor={signalTokens.signal.base} />
+        </div>
+        <SignalNotificationsBell hasUnread={hasUnreadNotifications} />
       </div>
 
       <div style={{ padding: '14px 14px 10px' }}>
