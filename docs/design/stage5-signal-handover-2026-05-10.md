@@ -124,6 +124,14 @@
 - The FullCalendar grid itself is intentionally not deeply restyled in this slice — it's a 3rd-party widget with its own CSS and would be a multi-day rebuild. It still picks up the planning ThemeProvider (so `Today`, `prev/next` toolbar buttons render with the planning palette's primary color) and sits inside the planning hero/toggle chrome.
 - The bottom drawer (event details, event creation, day metric form), right drawer (events / blocks list), and FAB buttons are unchanged in this slice — they continue to use MUI components and pick up the planning ThemeProvider for their colors.
 
+### Signal user notifications route
+
+- Intended commit: `Build Signal notifications slice`
+- Route:
+  - `/user/notifications`
+- The flagged path now uses the calm surface and a rebuilt inbox composition for the existing notifications provider instead of the older plain MUI list.
+- The legacy path stays on the current MUI list, and the notification fetch / mark-read / mark-all-read behavior is preserved unchanged.
+
 ## What changed
 
 - Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to both check-ins list pages.
@@ -238,6 +246,20 @@
 - Adjusted FullCalendar / WeekListView grid height calc to subtract `SIGNAL_HERO_HEIGHT` when flagged.
 - Loosened `currentWeekRef` to `useRef<HTMLElement>(null)` so it can attach to the Signal `<button>` row or the legacy `<Box>` row without a hack cast.
 - Added focused Playwright coverage for the flagged calendar route.
+- Added route-level `loadSignalFlag()` + `SignalSurface(calm)` to `/user/notifications`.
+- Split the route into a server wrapper plus `NotificationsClient` so the Signal flag is resolved at the route level while the legacy branch keeps the existing app-bar wiring.
+- Rebuilt the flagged branch with:
+  - calm hero (mono "Notifications" label + condensed "Your inbox" heading)
+  - summary cells for unread / history / total counts
+  - unread and read sections rendered as calm Signal cards
+  - accessible clickable notification rows with type labels, mono timestamps, and unread pill + chartreuse dot treatment
+- Preserved the existing provider-driven behavior:
+  - live notifications fetch
+  - mark one read on open
+  - mark all read
+  - route navigation via each notification URL
+- Added `LearningPlanStepDelivered` handling to the notification icon mapping so that seeded and live learning-plan notifications render correctly in both flag states.
+- Added focused Playwright coverage for the flagged notifications route.
 
 ## Preserved behavior
 
