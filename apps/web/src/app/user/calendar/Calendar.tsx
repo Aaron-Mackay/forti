@@ -298,7 +298,7 @@ export default function Calendar({events, metrics, userId, signalEnabled = false
       </Box>
 
       {/* Calendar view (kept mounted to preserve state) */}
-      <Box sx={{display: viewMode === 'calendar' ? 'block' : 'none'}}>
+      <Box className={signalEnabled ? 'signal-calendar' : undefined} sx={{display: viewMode === 'calendar' ? 'block' : 'none'}}>
         <FullCalendar
           ref={calendarRef}
           plugins={[multiMonthPlugin, interactionPlugin, rrulePlugin]}

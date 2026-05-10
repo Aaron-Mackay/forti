@@ -445,24 +445,38 @@
 - The Signal progress E2E intentionally accepts either the chart or the route-level empty-state copy because the shared remote DB does not guarantee metric history for the test user.
 - The Signal calendar shell wraps FullCalendar, but the month grid internals keep their existing `.calendar.css` look. If/when product wants a fully-Signal calendar grid, it's a dedicated slice or a swap to a different calendar primitive.
 
+### Signal FullCalendar grid internals
+
+- Intended commit: `Build Signal FullCalendar grid internals slice`
+- Route:
+  - `/user/calendar` (month grid only)
+- The FullCalendar month grid now renders with Signal planning palette when `signalEnabled`.
+  - Added `signal-calendar` class to the FullCalendar wrapper `<Box>` in `Calendar.tsx` when flagged.
+  - Added `.signal-calendar .fc { ... }` CSS custom property block in `calendar.css` covering all FullCalendar theming vars: borders, backgrounds, today tint, button colours, highlight.
+  - Toolbar buttons (Today, prev, next) use planning palette ink/bone treatment instead of the default chartreuse that the MUI planning ThemeProvider would otherwise inject.
+  - Day numbers use mono font (`var(--signal-font-mono)`), inkMid colour; today's number gets the chartreuse signal.deep colour.
+  - Day column headers (Mon Tue…) use mono font, uppercase, inkLight.
+  - Month section titles use condensed font (`var(--signal-font-cond)`).
+  - Row height tightened from 70 px → 62 px for the Signal aesthetic.
+  - Block event labels pick up bone/ink treatment inside the planning surface.
+  - The WeekListView Signal branch, hero, toggle, and both drawers are all preserved unchanged.
+  - Legacy path (no class, no scoped CSS) is completely untouched.
+- Added focused Playwright coverage for the Signal month grid: verifies `.signal-calendar` is present, `.fc-day-today` is visible, toolbar Today button is reachable, and toggling to Weeks hides the grid then toggling back restores it.
+
 ## Recommended next slice
 
-All major user and coach route surfaces, plus the shell chrome, are now on Signal palettes:
+All major user and coach route surfaces, the shell chrome, and the calendar month grid internals are now on Signal palettes:
 
 - coach: home, client overview, clients roster, check-in review, check-ins desk, check-in template, learning plans list, learning plan editor, client nutrition/supplements/plans detail surfaces, client check-in detail
-- user: home command centre, progress, plan create entry, plan upload workspace, plan editor, workout drill-down (4 list views + exercise slide), check-in, calendar, notifications, settings, learning plans, supplements, feedback, nutrition
+- user: home command centre, progress, plan create entry, plan upload workspace, plan editor, workout drill-down (4 list views + exercise slide), check-in, calendar (hero + toggle + WeekListView + month grid internals), notifications, settings, learning plans, supplements, feedback, nutrition
 - shell: SignalAppShell + SignalSidebar / SignalBottomNav / SignalTopBar / SignalModeSwitch / SignalNotificationsBell
 
 Remaining Stage 5 work:
 
 - subdomain collapse — review doc clarification 1: "Subdomain split — collapse." The mode pill currently still cross-navs via `coach.*` host on production. Collapsing the split needs middleware, cookie scoping, and `protected-layout` changes; this is more an infra slice than a UI slice.
-- optional deeper `FullCalendar` grid reskin if product wants the month view itself rebuilt rather than just wrapped in Signal chrome.
+- No more UI route surfaces to add. Signal coverage is complete across all user and coach routes.
 
 Most natural next slice now:
-
-- FullCalendar grid internals — multi-day rebuild or a Signal-native calendar primitive if product wants the month grid itself reskinned.
-
-Alternate slices, in roughly decreasing return:
 
 - subdomain collapse — only when product commits; infra-leaning, not a UI slice.
 
@@ -482,15 +496,13 @@ Current shipped state to preserve:
 - Do not reintroduce cached loadSignalFlag behavior; current live lookup is intentional.
 - Preserve route-level SignalSurface usage and avoid duplicate settings reads when a route already needs settings.
 - Coach slices already shipped: home, client overview, clients roster, check-in review, check-ins desk, check-in template, learning plans list, learning plan editor, client nutrition detail, client supplements detail, client plans detail, client check-in detail.
-- User slices already shipped: home command centre, progress route, plan create entry, plan upload workspace, plan editor workspace, workout route (all four list views + existing exercise slide), check-in route, calendar route, notifications route, settings route, learning-plans route, supplements route, feedback route, nutrition route.
+- User slices already shipped: home command centre, progress route, plan create entry, plan upload workspace, plan editor workspace, workout route (all four list views + existing exercise slide), check-in route, calendar route (hero + toggle + WeekListView + FullCalendar month grid internals with Signal CSS), notifications route, settings route, learning-plans route, supplements route, feedback route, nutrition route.
 - Shell: SignalAppShell + SignalSidebar / SignalBottomNav / SignalTopBar / SignalModeSwitch / SignalNotificationsBell are all wired in via `protected-layout.tsx` → `SignalShellSwitch`. The bell links to `/user/notifications` and renders a chartreuse dot when `useNotifications().unreadCount > 0`.
+- FullCalendar grid: `.signal-calendar` class on the month grid wrapper activates Signal planning palette CSS via scoped rules in `calendar.css`. Legacy path is untouched.
 - Subdomain split is NOT yet collapsed. The mode pill cross-navigates via the `coach.*` host on production. Do not attempt the collapse without explicit go-ahead from product — it touches auth, middleware, and cookie scoping.
 
-Most natural next slice:
-- FullCalendar grid internals — separate, multi-day, or swap primitive.
-
-Alternate next slices:
-- subdomain collapse — only when product commits; infra-leaning, not a UI slice.
+Signal UI route coverage is now complete. All remaining Stage 5 work is infra:
+- subdomain collapse — only when product commits.
 
 Constraints:
 - Preserve existing reducer/editor behavior unless the slice explicitly requires otherwise.

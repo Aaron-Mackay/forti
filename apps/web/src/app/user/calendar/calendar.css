@@ -60,3 +60,120 @@
 .fc-daygrid-event-harness {
     pointer-events: none;
 }
+
+/* ── Signal planning palette for FullCalendar grid ───────────────────────── */
+/* Scoped to .signal-calendar so the legacy path is completely untouched.     */
+
+/* CSS custom properties that FullCalendar reads for colours/borders          */
+.signal-calendar .fc {
+    --fc-border-color: #dcd7c8;
+    --fc-page-bg-color: #f4f2ec;
+    --fc-neutral-bg-color: #faf8f2;
+    --fc-neutral-text-color: #8c887d;
+    --fc-today-bg-color: rgba(155, 196, 26, 0.07);
+    --fc-highlight-color: rgba(155, 196, 26, 0.13);
+    --fc-button-text-color: #15140f;
+    --fc-button-bg-color: #ffffff;
+    --fc-button-border-color: #dcd7c8;
+    --fc-button-hover-bg-color: #faf8f2;
+    --fc-button-hover-border-color: #2a2823;
+    --fc-button-active-bg-color: #15140f;
+    --fc-button-active-border-color: #15140f;
+    --fc-more-link-color: #9bc41a;
+    --fc-more-link-bg-color: rgba(155, 196, 26, 0.10);
+    --fc-bg-event-opacity: 0.40;
+}
+
+/* Toolbar buttons — override the global rule that tints them chartreuse via  */
+/* --primary-color. Planning palette: bone bg, dark ink, hairline border.     */
+.signal-calendar .fc .fc-button-primary {
+    background-color: #ffffff;
+    border: 1px solid #dcd7c8;
+    color: #15140f;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    box-shadow: none;
+}
+
+.signal-calendar .fc .fc-button-primary:hover:not(:disabled) {
+    background-color: #faf8f2;
+    border-color: #2a2823;
+    color: #15140f;
+}
+
+.signal-calendar .fc .fc-button-primary:not(:disabled).fc-button-active,
+.signal-calendar .fc .fc-button-primary:not(:disabled):active {
+    background-color: #15140f;
+    border-color: #15140f;
+    color: #faf8f2;
+    box-shadow: none;
+}
+
+/* Toolbar title — condensed heading, tighter tracking */
+.signal-calendar .fc .fc-toolbar-title {
+    font-family: var(--signal-font-cond, 'Archivo Narrow', system-ui, sans-serif);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #15140f;
+}
+
+/* Month section titles inside multimonth view */
+.signal-calendar .fc-multimonth-title {
+    font-family: var(--signal-font-cond, 'Archivo Narrow', system-ui, sans-serif);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #15140f;
+}
+
+/* Day column headers (Mon Tue Wed …) — mono, uppercase, muted */
+.signal-calendar .fc .fc-col-header-cell-cushion {
+    font-family: var(--signal-font-mono, 'JetBrains Mono', ui-monospace, monospace);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: #8c887d;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+/* Day numbers — mono, inkMid; override the legacy 0.8rem rule */
+.signal-calendar .fc .fc-daygrid-day-number {
+    font-family: var(--signal-font-mono, 'JetBrains Mono', ui-monospace, monospace);
+    font-size: 10px;
+    font-weight: 500;
+    color: #5e5b53;
+    padding: 4px 4px 2px 4px;
+}
+
+/* Today's day number — chartreuse signal colour */
+.signal-calendar .fc .fc-day-today .fc-daygrid-day-number {
+    color: #9bc41a;
+    font-weight: 700;
+}
+
+/* Tighter row height; the grid was 70px, signal uses 62px */
+.signal-calendar .fc-multimonth-daygrid-table tr {
+    height: 62px !important;
+}
+
+/* Block event labels — bone bg + ink text to match planning surface */
+.signal-calendar .fc .fc-bg-event .fc-event-title {
+    background-color: #ffffff;
+    color: #15140f;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+/* Custom event chips — slightly tighter radius */
+.signal-calendar .fc .fc-event {
+    border-radius: 2px;
+}
+
+/* Section header border — use planning border instead of #ddd */
+.signal-calendar .fc .fc-multimonth-header {
+    border-top-color: #dcd7c8;
+}
