@@ -8,6 +8,7 @@
  * All API calls are mocked to avoid dependency on seeded DB state
  * or the TestUser having a coach relationship.
  */
+import type { Page } from '@playwright/test';
 import { test, expect } from './fixtures';
 
 const UNREVIEWED_CHECK_IN = {
@@ -29,6 +30,11 @@ const UNREVIEWED_CHECK_IN = {
   coachNotes: null,
   coachResponseUrl: null,
   coachReviewedAt: null,
+  customResponses: null,
+  templateSnapshot: null,
+  frontPhotoUrl: null,
+  sidePhotoUrl: null,
+  backPhotoUrl: null,
   user: { id: 'client-1', name: 'Alice Smith' },
 };
 
@@ -46,6 +52,12 @@ const CHECK_IN_10_ROUTE = /\/api\/coach\/check-ins\/10(?:\?.*)?$/;
 const CHECK_IN_10_NOTES_ROUTE = /\/api\/coach\/check-ins\/10\/notes(?:\?.*)?$/;
 const CHECK_IN_11_ROUTE = /\/api\/coach\/check-ins\/11(?:\?.*)?$/;
 
+async function signInAsDemoCoach(page: Page) {
+  await page.goto('/login');
+  await page.getByRole('button', { name: 'Try Demo (Coach)' }).click();
+  await expect(page).toHaveURL('/user');
+}
+
 function makeApiResponse(checkIns: typeof UNREVIEWED_CHECK_IN[]) {
   return { checkIns, total: checkIns.length, clients: CLIENTS };
 }
@@ -58,7 +70,8 @@ function makeDetailApiResponse(checkIn: typeof UNREVIEWED_CHECK_IN) {
     weekTargets: null,
     activeTemplate: null,
     customMetricDefs: [],
-    weekWorkouts: [],
+    workoutSummaries: [],
+    activePlanId: null,
   };
 }
 
@@ -229,6 +242,54 @@ test.describe('Coach check-ins — reviewed state', () => {
   });
 });
 
+test.describe('Coach check-ins — Signal review surface', () => {
+  test.describe.configure({ mode: 'serial' });
+  test.use({ storageState: { cookies: [], origins: [] } });
+  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile,
+    'Signal review layout coverage runs on desktop chromium only; settings state is shared');
+
+  test.beforeEach(async ({ page }) => {
+    await signInAsDemoCoach(page);
+    await page.request.patch('/api/user/settings', {
+      data: { settings: { coachModeActive: true, signalUiEnabled: true } },
+    });
+    await expect.poll(async () => {
+      const response = await page.request.get('/api/user/settings');
+      const payload = await response.json() as { settings?: { signalUiEnabled?: boolean } };
+      return payload.settings?.signalUiEnabled;
+    }, { timeout: 10_000 }).toBe(true);
+    await page.route(CHECK_IN_10_ROUTE, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(makeDetailApiResponse(UNREVIEWED_CHECK_IN)),
+      }),
+    );
+  });
+
+  test.afterEach(async ({ page }) => {
+    await page.request.patch('/api/user/settings', {
+      data: { settings: { coachModeActive: true, signalUiEnabled: false } },
+    });
+    await expect.poll(async () => {
+      const response = await page.request.get('/api/user/settings');
+      const payload = await response.json() as { settings?: { signalUiEnabled?: boolean } };
+      return payload.settings?.signalUiEnabled;
+    }, { timeout: 10_000 }).toBe(false);
+  });
+
+  test('flagged check-in review shows the Signal calm review composition', async ({ page }) => {
+    await page.goto('/user/coach/check-ins/10');
+
+    await expect(page.getByText('Client check-in')).toBeVisible();
+    await expect(page.getByText('Coach response')).toBeVisible();
+    await expect(page.getByText('Week targets')).toBeVisible();
+    await expect(page.getByText('Support')).toBeVisible();
+    await expect(page.getByRole('link', { name: /Open current plan/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Send review/i })).toBeVisible();
+  });
+});
+
 test.describe('Coach check-ins — progress photo compare', () => {
   const PIXEL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9ZL5UusAAAAASUVORK5CYII=';
 
@@ -284,8 +345,9 @@ test.describe('Coach check-ins — progress photo compare', () => {
 
     await page.goto('/user/coach/check-ins/10');
 
-    const select = page.locator('[role="combobox"]').filter({ hasText: 'Week of 2 Mar 2026' });
+    const select = page.getByRole('combobox');
     await expect(select).toBeVisible();
+    await expect(select).toContainText('Week of 2 Mar 2026');
 
     await select.click();
     await expect(page.getByRole('option', { name: /Week of 2 Mar 2026/ })).toBeVisible();
@@ -316,7 +378,7 @@ test.describe('Coach check-ins — progress photo compare', () => {
     await expect(dialog).toBeVisible();
     const prevBtn = dialog.getByRole('button', { name: 'Previous week' });
     await expect(prevBtn).toBeEnabled();
-    await prevBtn.click();
+    await prevBtn.click({ force: true });
     await expect(dialog.getByText('2 Mar 2026')).toBeVisible();
   });
 });

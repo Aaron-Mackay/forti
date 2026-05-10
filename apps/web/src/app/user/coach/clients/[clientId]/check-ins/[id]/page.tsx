@@ -29,7 +29,7 @@ export default async function ClientCheckInDetailPage({ params }: Props) {
       />
       <SignalSurface signalEnabled={signalEnabled} surface="calm">
         <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 }, minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
-          <CoachCheckInDetailPageClient checkInId={checkInId} lockedClientId={clientId} />
+          <CoachCheckInDetailPageClient checkInId={checkInId} lockedClientId={clientId} signalEnabled={signalEnabled} />
         </Box>
       </SignalSurface>
     </>

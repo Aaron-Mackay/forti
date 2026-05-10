@@ -14,9 +14,10 @@ import type { CoachCheckInDetailResponse } from '@lib/contracts/coach';
 interface Props {
   checkInId: number;
   lockedClientId?: string;
+  signalEnabled?: boolean;
 }
 
-export default function CoachCheckInDetailPageClient({ checkInId, lockedClientId }: Props) {
+export default function CoachCheckInDetailPageClient({ checkInId, lockedClientId, signalEnabled = false }: Props) {
   const [checkIn, setCheckIn] = useState<CheckInWithUser | null>(null);
   const [currentWeek, setCurrentWeek] = useState<Metric[]>([]);
   const [weekPrior, setWeekPrior] = useState<Metric[]>([]);
@@ -106,6 +107,7 @@ export default function CoachCheckInDetailPageClient({ checkInId, lockedClientId
       workoutSummaries={workoutSummaries}
       activePlanId={activePlanId}
       coachTemplate={coachTemplate}
+      signalEnabled={signalEnabled}
     />
   );
 }

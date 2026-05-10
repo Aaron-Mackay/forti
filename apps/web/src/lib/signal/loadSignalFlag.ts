@@ -1,10 +1,9 @@
-import { cache } from 'react';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@lib/auth';
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 
-export const loadSignalFlag = cache(async (): Promise<boolean> => {
+export async function loadSignalFlag(): Promise<boolean> {
   const session = await getServerSession(authOptions);
   if (!session) return false;
   const user = await prisma.user.findUnique({
@@ -12,4 +11,4 @@ export const loadSignalFlag = cache(async (): Promise<boolean> => {
     select: { settings: true },
   });
   return parseDashboardSettings(user?.settings).signalUiEnabled;
-});
+}
