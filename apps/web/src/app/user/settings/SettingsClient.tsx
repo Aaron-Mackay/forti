@@ -292,12 +292,10 @@ function SignalToggleList({
 export default function SettingsClient({
   initialName,
   initialImage,
-  isCoachDomain,
   signalEnabled = false,
 }: {
   initialName: string;
   initialImage: string | null;
-  isCoachDomain: boolean;
   signalEnabled?: boolean;
 }) {
   const { settings, loading, error, clearError, updateSetting } = useSettings();
@@ -342,14 +340,6 @@ export default function SettingsClient({
   const handleToggle = (key: BooleanSettingKey) => {
     updateSetting(key, !settings[key]);
   };
-
-  if (isCoachDomain) {
-    return (
-      <Box sx={{pt: 2, pb: 4, maxWidth: 480}}>
-        <CoachingSettings mode="coachPortal" />
-      </Box>
-    );
-  }
 
   if (signalEnabled) {
     const dashboardEnabledCount = CARD_LABELS.filter(({ key }) => settings[key]).length;

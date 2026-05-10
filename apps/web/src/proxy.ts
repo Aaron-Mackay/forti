@@ -3,11 +3,6 @@ import {NextResponse} from "next/server";
 
 export async function proxy(req: NextRequest) {
   const {pathname} = req.nextUrl;
-  const host = req.headers.get('host') ?? '';
-  const isVercelApp = host.endsWith('.vercel.app');
-  const devCoachCookie = req.cookies.get('__dev_coach_mode')?.value;
-  const isCoachDomain = host.includes('coach.')
-    || (process.env.VERCEL_ENV === 'preview' && isVercelApp && devCoachCookie === '1');
 
   // Allow public assets and auth routes
   if (
@@ -40,14 +35,11 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // On the coach subdomain, redirect the root to the clients list
-  if (isCoachDomain && pathname === '/') {
-    return NextResponse.redirect(new URL('/user/coach/clients', req.url));
-  }
-
-  // Forward the coach-domain hint to server components via a request header
+  // Forward a coach-route hint to server components so the guard in protected-layout
+  // can redirect users without coachModeActive away from /user/coach/* paths.
+  const isCoachRoute = pathname.startsWith('/user/coach/');
   const requestHeaders = new Headers(req.headers);
-  requestHeaders.set('x-is-coach-domain', isCoachDomain ? '1' : '0');
+  requestHeaders.set('x-is-coach-domain', isCoachRoute ? '1' : '0');
 
   return NextResponse.next({
     request: { headers: requestHeaders },

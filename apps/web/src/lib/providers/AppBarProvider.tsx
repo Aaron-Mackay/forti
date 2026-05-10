@@ -17,7 +17,7 @@ interface AppBarContextValue {
 
 const AppBarContext = createContext<AppBarContextValue | null>(null);
 
-export function AppBarProvider({ children, isCoachDomain = false }: { children: ReactNode; isCoachDomain?: boolean }) {
+export function AppBarProvider({ children }: { children: ReactNode }) {
   const [title, setTitle] = useState('Forti');
   const [showBack, setShowBack] = useState(false);
   const onBackRef = useRef<(() => void) | undefined>(undefined);
@@ -42,7 +42,6 @@ export function AppBarProvider({ children, isCoachDomain = false }: { children: 
       showBack={showBack}
       onBack={showBack ? onBackRef.current : undefined}
       noSpacer={mounted}
-      isCoachDomain={isCoachDomain}
     />
   );
 

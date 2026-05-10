@@ -46,7 +46,6 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import SchoolIcon from '@mui/icons-material/School';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ChecklistIcon2 from '@mui/icons-material/AssignmentTurnedIn';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {signOut} from "next-auth/react";
 import {useSettings} from '@lib/providers/SettingsProvider';
 import {useCoachClients} from '@lib/providers/CoachClientsProvider';
@@ -63,23 +62,19 @@ export default function CustomAppBar(
     onBack,
     showBack = false,
     noSpacer = false,
-    isCoachDomain = false,
   }: {
     title: string;
     onBack?: () => void;
     showBack?: boolean;
     /** When true, omits the spacer <Toolbar> that pushes content below the fixed bar. */
     noSpacer?: boolean;
-    /** True when served from the coach.* subdomain. */
-    isCoachDomain?: boolean;
   }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
-  // URL of the opposite domain (null on localhost / until hydrated)
-  const [crossDomainUrl, setCrossDomainUrl] = useState<string | null>(null);
 
   const pathname = usePathname();
+  const isCoachDomain = pathname?.startsWith('/user/coach/') ?? false;
   const { settings, loading: settingsLoading } = useSettings();
   const { clients } = useCoachClients();
   const { unreadCount } = useNotifications();
@@ -118,41 +113,12 @@ export default function CustomAppBar(
     }
   }
 
-  // Compute the URL for the opposite domain after hydration.
-  // Only applies on the custom domain — localhost and *.vercel.app are left as-is.
-  useEffect(() => {
-    const host = window.location.hostname;
-    if (!host.includes('forti-training.co.uk')) return;
-
-    if (isCoachDomain) {
-      // coach.forti-training.co.uk → forti-training.co.uk
-      // preview.coach.forti-training.co.uk → preview.forti-training.co.uk
-      setCrossDomainUrl(window.location.origin.replace('coach.', ''));
-    } else {
-      // forti-training.co.uk → coach.forti-training.co.uk
-      // preview.forti-training.co.uk → preview.coach.forti-training.co.uk
-      const url = new URL(window.location.origin);
-      url.hostname = url.hostname.replace('forti-training.co.uk', 'coach.forti-training.co.uk');
-      setCrossDomainUrl(url.origin);
-    }
-  }, [isCoachDomain]);
-
   function handleCoachPortalClick() {
-    if (crossDomainUrl) {
-      window.location.href = crossDomainUrl + '/user/coach/clients';
-    } else {
-      document.cookie = '__dev_coach_mode=1; path=/; max-age=86400';
-      window.location.href = '/user/coach/clients';
-    }
+    router.push('/user/coach/clients');
   }
 
   function handleBackToFortiClick() {
-    if (crossDomainUrl) {
-      window.location.href = crossDomainUrl + '/user';
-    } else {
-      document.cookie = '__dev_coach_mode=; path=/; max-age=0';
-      window.location.href = '/user';
-    }
+    router.push('/user');
   }
 
   useEffect(() => {
@@ -394,7 +360,7 @@ export default function CustomAppBar(
               {!settingsLoading && settings.coachModeActive && (
                 <ListItem disablePadding>
                   <ListItemButton onClick={handleCoachPortalClick}>
-                    <ListItemIcon><OpenInNewIcon/></ListItemIcon>
+                    <ListItemIcon><GroupIcon/></ListItemIcon>
                     <ListItemText primary="Coach Portal"/>
                   </ListItemButton>
                 </ListItem>

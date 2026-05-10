@@ -33,11 +33,6 @@ export default async function ProtectedLayout({children}: { children: React.Reac
   const settings = parseDashboardSettings(user?.settings);
 
   if (isCoachDomain && !settings.coachModeActive) {
-    const host = headersList.get('host') ?? '';
-    const protocol = headersList.get('x-forwarded-proto') ?? 'https';
-    if (host.includes('coach.')) {
-      redirect(`${protocol}://${host.replace('coach.', '')}/user/settings`);
-    }
     redirect('/user/settings');
   }
 
@@ -50,7 +45,6 @@ export default async function ProtectedLayout({children}: { children: React.Reac
         <CoachClientsProvider>
           <SignalShellSwitch
             signalEnabled={settings.signalUiEnabled}
-            isCoachDomain={isCoachDomain}
             userLabel={userLabel}
             userInitials={userInitials}
           >

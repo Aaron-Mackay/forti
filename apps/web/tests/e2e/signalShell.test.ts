@@ -11,7 +11,7 @@ test.describe('Signal Shell', () => {
       data: {
         settings: {
           signalUiEnabled: true,
-          coachModeActive: false,
+          coachModeActive: true,
         },
       },
     });
@@ -22,9 +22,32 @@ test.describe('Signal Shell', () => {
       data: {
         settings: {
           signalUiEnabled: false,
+          coachModeActive: false,
         },
       },
     });
+  });
+
+  test('mode pill navigates to coach portal on same domain', async ({ page }) => {
+    await page.goto('/user');
+    const sidebar = page.locator('[data-signal-shell-sidebar]').first();
+
+    // My Training is pressed by default
+    await expect(sidebar.getByRole('button', { name: 'My Training' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(sidebar.getByRole('button', { name: 'Coach' })).toHaveAttribute('aria-pressed', 'false');
+
+    // Click Coach — should navigate within the same domain
+    await sidebar.getByRole('button', { name: 'Coach' }).click();
+    await expect(page).toHaveURL('/user/coach/clients');
+
+    // Coach pill is now pressed
+    await expect(sidebar.getByRole('button', { name: 'Coach' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(sidebar.getByRole('button', { name: 'My Training' })).toHaveAttribute('aria-pressed', 'false');
+
+    // Click My Training — navigate back
+    await sidebar.getByRole('button', { name: 'My Training' }).click();
+    await expect(page).toHaveURL('/user');
+    await expect(sidebar.getByRole('button', { name: 'My Training' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('flagged user sees the Signal sidebar with mode pill and a working notifications bell', async ({ page }) => {

@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { AppBarProvider } from '@lib/providers/AppBarProvider';
 import { useNotifications } from '@lib/providers/NotificationsProvider';
 import { SignalAppShell } from './SignalAppShell';
@@ -8,7 +9,6 @@ import type { SignalNavMode, SignalSurfaceMode } from '@lib/signal/tokens';
 
 type Props = {
   signalEnabled: boolean;
-  isCoachDomain: boolean;
   userLabel?: string;
   userInitials?: string;
   children: ReactNode;
@@ -16,15 +16,16 @@ type Props = {
 
 export function SignalShellSwitch({
   signalEnabled,
-  isCoachDomain,
   userLabel,
   userInitials,
   children,
 }: Props) {
   const { unreadCount } = useNotifications();
+  const pathname = usePathname();
+  const isCoachDomain = pathname?.startsWith('/user/coach/') ?? false;
 
   if (!signalEnabled) {
-    return <AppBarProvider isCoachDomain={isCoachDomain}>{children}</AppBarProvider>;
+    return <AppBarProvider>{children}</AppBarProvider>;
   }
 
   const mode: SignalNavMode = isCoachDomain ? 'coach' : 'user';

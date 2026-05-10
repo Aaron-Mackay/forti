@@ -1,7 +1,7 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { signalTokens, type SignalNavMode, type SignalSurfaceMode } from '@lib/signal/tokens';
-import { useCrossDomainUrl } from './useCrossDomainUrl';
 import { navigateToMode } from './modeSwitchActions';
 import { useSettings } from '@lib/providers/SettingsProvider';
 
@@ -12,8 +12,7 @@ type Props = {
 
 export function SignalModeSwitch({ mode, surface }: Props) {
   const { settings, loading } = useSettings();
-  const isCoach = mode === 'coach';
-  const crossDomainUrl = useCrossDomainUrl(isCoach);
+  const router = useRouter();
   const palette = signalTokens.surface[surface];
 
   if (!loading && !settings.coachModeActive && mode !== 'coach') {
@@ -22,7 +21,7 @@ export function SignalModeSwitch({ mode, surface }: Props) {
 
   function handleClick(next: SignalNavMode) {
     if (next === mode) return;
-    navigateToMode(next, crossDomainUrl);
+    navigateToMode(next, router.push.bind(router));
   }
 
   const cellBase = {
