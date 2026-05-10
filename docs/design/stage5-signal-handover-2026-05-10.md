@@ -140,6 +140,14 @@
 - The flagged path now uses the planning surface and a rebuilt settings composition for the main user settings route instead of the older single-column MUI paper stack.
 - The legacy path remains intact, and the coach-domain settings route intentionally stays on the current coaching-settings presentation in this slice.
 
+### Signal user learning plans route
+
+- Intended commit: `Build Signal user learning plans slice`
+- Route:
+  - `/user/learning-plans`
+- The flagged path now uses the planning surface and a rebuilt assigned-learning-plans composition instead of the older plain accordion/card list.
+- The legacy path remains intact, and the client assignment fetch / step completion behavior is preserved unchanged.
+
 ## What changed
 
 - Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to both check-ins list pages.
@@ -282,6 +290,19 @@
   - export links and coaching settings actions
 - Kept the flagged route mobile-scrollable inside the Signal shell by avoiding fixed inner heights and leaving the page content to scroll within the shell `<main>` container.
 - Added focused Playwright coverage for the flagged settings route that verifies the mobile route can scroll to lower settings content.
+- Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to `/user/learning-plans`.
+- Passed `signalEnabled` into `LearningPlansClient`.
+- Rebuilt the flagged branch with:
+  - planning-surface hero (mono "Learning plans" label + condensed "Assigned coaching" heading)
+  - summary cells for assigned plans, completed steps, and locked steps
+  - planning-style assignment cards with built-in progress rails and expandable step lists
+  - preserved locked-step copy, release dates, completion checkboxes, and asset links inside the new shell
+- Preserved existing behavior:
+  - `/api/learning-plan-assignments` fetch
+  - `/api/learning-plan-assignments/[assignmentId]/steps/[stepId]/complete` PATCH flow
+  - per-assignment expand/collapse state
+  - empty-state behavior when no assignments exist
+- Added focused Playwright coverage for the flagged user learning-plans route.
 
 ## Preserved behavior
 
