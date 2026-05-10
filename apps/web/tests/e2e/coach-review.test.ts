@@ -290,6 +290,55 @@ test.describe('Coach check-ins — Signal review surface', () => {
   });
 });
 
+test.describe('Coach check-ins — Signal list surface', () => {
+  test.describe.configure({ mode: 'serial' });
+  test.use({ storageState: { cookies: [], origins: [] } });
+  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile,
+    'Signal check-in list coverage runs on desktop chromium only; demo-coach state is shared');
+
+  test.beforeEach(async ({ page }) => {
+    await signInAsDemoCoach(page);
+    await page.request.patch('/api/user/settings', {
+      data: { settings: { coachModeActive: true, signalUiEnabled: true } },
+    });
+    await expect.poll(async () => {
+      const response = await page.request.get('/api/user/settings');
+      const payload = await response.json() as { settings?: { signalUiEnabled?: boolean } };
+      return payload.settings?.signalUiEnabled;
+    }, { timeout: 10_000 }).toBe(true);
+    await page.route(CHECK_INS_ROUTE, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(makeApiResponse([UNREVIEWED_CHECK_IN])),
+      }),
+    );
+  });
+
+  test.afterEach(async ({ page }) => {
+    await page.request.patch('/api/user/settings', {
+      data: { settings: { coachModeActive: true, signalUiEnabled: false } },
+    });
+    await expect.poll(async () => {
+      const response = await page.request.get('/api/user/settings');
+      const payload = await response.json() as { settings?: { signalUiEnabled?: boolean } };
+      return payload.settings?.signalUiEnabled;
+    }, { timeout: 10_000 }).toBe(false);
+  });
+
+  test('flagged check-in list shows the Signal planning desk', async ({ page }) => {
+    await page.goto('/user/coach/check-ins');
+
+    await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
+    await expect(page.getByText('Check-ins desk')).toBeVisible();
+    await expect(page.getByText('Coach Check-ins')).toBeVisible();
+    await expect(page.getByRole('tab', { name: /Needs review/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /Browse archive/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Configure template' })).toBeVisible();
+    await expect(page.getByText('Alice Smith').first()).toBeVisible();
+  });
+});
+
 test.describe('Coach check-ins — progress photo compare', () => {
   const PIXEL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9ZL5UusAAAAASUVORK5CYII=';
 
