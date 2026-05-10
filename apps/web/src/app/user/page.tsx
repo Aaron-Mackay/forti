@@ -13,6 +13,7 @@ import prisma from "@lib/prisma";
 import {parseDashboardSettings} from "@/types/settingsTypes";
 import {redirect} from "next/navigation";
 import { SignalHome } from "./_components/SignalHome";
+import { SignalSurface } from "@/components/signal/SignalSurface";
 
 export default async function UserPage() {
   const user = await getLoggedInUser()
@@ -29,41 +30,43 @@ export default async function UserPage() {
     redirect('/user/onboarding');
   }
 
-  if (settings.signalUiEnabled) {
-    return (
-      <SignalHome
-        userName={user.name}
-        activePlanData={activePlanData}
-        metrics={userMetrics}
-        events={allEvents}
-        settings={settings}
-        today={new Date()}
-      />
-    );
-  }
+  const signalEnabled = settings.signalUiEnabled;
 
   return (
-    <>
-      <AppBarTitle title="Dashboard" />
-      <Paper sx={{px: 2, minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto'}}>
-        <Typography variant={'h4'} sx={{paddingTop: 2, paddingBottom: 2}}>
-          {`Welcome ${user.name?.split(' ')[0]}`}
-        </Typography>
-        <DashboardCards
+    <SignalSurface signalEnabled={signalEnabled} surface="gym">
+      {signalEnabled ? (
+        <SignalHome
+          userName={user.name}
           activePlanData={activePlanData}
           metrics={userMetrics}
           events={allEvents}
-          today={new Date()}
-          userId={user.id}
           settings={settings}
+          today={new Date()}
         />
-        {settings.showMetricsChart
-          && userMetrics.length > 0
-          && <DashboardChart metrics={userMetrics} blocks={userBlocks} bodyweightUnit={settings.bodyweightUnit}/>}
-        {settings.showE1rmProgress
-          && settings.trackedE1rmExercises.length > 0
-          && <E1rmProgressCard exercises={settings.trackedE1rmExercises} weightUnit={settings.weightUnit}/>}
-      </Paper>
-    </>
+      ) : (
+        <>
+          <AppBarTitle title="Dashboard" />
+          <Paper sx={{px: 2, minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto'}}>
+            <Typography variant={'h4'} sx={{paddingTop: 2, paddingBottom: 2}}>
+              {`Welcome ${user.name?.split(' ')[0]}`}
+            </Typography>
+            <DashboardCards
+              activePlanData={activePlanData}
+              metrics={userMetrics}
+              events={allEvents}
+              today={new Date()}
+              userId={user.id}
+              settings={settings}
+            />
+            {settings.showMetricsChart
+              && userMetrics.length > 0
+              && <DashboardChart metrics={userMetrics} blocks={userBlocks} bodyweightUnit={settings.bodyweightUnit}/>}
+            {settings.showE1rmProgress
+              && settings.trackedE1rmExercises.length > 0
+              && <E1rmProgressCard exercises={settings.trackedE1rmExercises} weightUnit={settings.weightUnit}/>}
+          </Paper>
+        </>
+      )}
+    </SignalSurface>
   );
 }

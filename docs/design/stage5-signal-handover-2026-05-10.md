@@ -92,6 +92,16 @@
 - Push-notification prompt and error alerts are preserved in both flag states.
 - The legacy path stays on the existing MUI Paper + `CheckInHistoryCard` accordion layout.
 
+### Signal user home command centre
+
+- Intended commit: `Wrap Signal user home in SignalSurface(gym) and add E2E coverage`
+- Route:
+  - `/user`
+- The home command centre (`SignalHome`) was originally shipped in commit `eda7d53` ("Slice 6: My Training command-centre Home"). This slice formalises it under the standard SignalSurface pattern and adds focused Playwright coverage.
+- The flagged path now wraps `SignalHome` in `SignalSurface(gym)` so the route exposes a `[data-signal-surface="gym"]` attribute alongside the gym ThemeProvider, matching every other Signal slice.
+- `SignalHome` internals (hero / week strip / today's metrics tiles / block progress rule) are preserved unchanged.
+- The legacy path keeps `AppBarTitle` + the existing `DashboardCards` / `DashboardChart` / `E1rmProgressCard` composition.
+
 ## What changed
 
 - Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to both check-ins list pages.
@@ -191,6 +201,9 @@
   - Signal history rows replacing the MUI Accordion history list
   - Load more as a plain calm-styled button
 - Added focused Playwright coverage for the flagged check-in route.
+- Wrapped the `/user` page's flagged branch in `SignalSurface(gym)` and lifted the `signalUiEnabled` check up to the always-wrap pattern used by every other Signal route.
+- Left the `SignalHome` component itself unchanged — its internal gym-palette container, `signalFontVariablesClassName`, hero / week strip / metric tiles / block progress rule are preserved as shipped in `eda7d53`.
+- Added focused Playwright coverage for the flagged user home route.
 
 ## Preserved behavior
 
@@ -223,6 +236,9 @@
 - check-in form submission, autosave, photo capture, and custom template flows remain the existing `CheckInForm` / `useCheckInAutosave` / `useCheckInPhotos` implementations
 - check-in history expansion and photo viewer remain available via `CheckInDetails` + `PhotoViewerDialog` inside `SignalHistoryRow`
 - push-notification subscription flow (`usePushSubscription`) remains unchanged in both flag states
+- `/user` server-side data loading (`getUserMetrics`, `getUserEvents`, `getActivePlanWithStats`, settings read) is unchanged and feeds both branches
+- `SignalHome`'s server-resolved focus workout (resume vs. start) and four-state hero (no-plan / all-done / resume / start) remain the existing implementation
+- legacy dashboard composition (`DashboardCards`, `DashboardChart`, `E1rmProgressCard`) is preserved exactly when the flag is off
 
 ## Verification completed
 
@@ -237,6 +253,7 @@
 - `BASE_URL=http://localhost:3010 npx playwright test tests/e2e/planEditor.test.ts --project=chromium`
 - `BASE_URL=http://localhost:3010 npx playwright test tests/e2e/workoutSignal.test.ts --project=chromium`
 - `BASE_URL=http://localhost:3011 npx playwright test tests/e2e/checkInSignal.test.ts --project=chromium`
+- `BASE_URL=http://localhost:3012 npx playwright test tests/e2e/userHomeSignal.test.ts --project=chromium`
 
 ## Known residuals
 
@@ -246,21 +263,28 @@
 
 ## Recommended next slice
 
-All major user and coach routes from the Stage 5 set are now on Signal surfaces. The remaining work shifts to:
+All major user and coach route surfaces are now on Signal palettes:
 
-- navigation/shell restructure (`CustomAppBar` → Signal sidebar + bottom nav, mode-switch pill)
-- `/user` home command centre (replaces current dashboard)
-- any remaining utility or settings surfaces not yet wrapped
+- coach: home, client overview, clients roster, check-in review, check-ins desk, check-in template, learning plans list, learning plan editor
+- user: home command centre, progress, plan create entry, plan upload workspace, plan editor, workout drill-down (4 list views + exercise slide), check-in
+
+Remaining Stage 5 work outside the per-route reskin:
+
+- navigation/shell restructure (`CustomAppBar` → Signal sidebar + bottom nav, mode-switch pill) — the largest still-open architectural item; review doc clarification 1 says "subdomain split — collapse" so the in-app pill becomes real
+- secondary surfaces still on MUI: `/user/calendar`, `/user/notifications`, `/user/nutrition`, `/user/supplements`, `/user/learning-plans`, `/user/feedback`, `/user/settings`, `/user/coach/clients/[clientId]/{nutrition,supplements,plans}`, `/user/coach/clients/[clientId]/check-ins/[id]`
+- `Plan` `clientCanEdit` flag work (review doc clarification 5) — schema/API addition to back the design's "Allow plan editing" toggle on the plan editor
 
 Most natural next slice now:
 
-- `/user` home command centre
+- shell/nav restructure (`CustomAppBar` → SignalSidebar + SignalBottomNav with in-app mode pill)
 
 Reason:
 
-- all major route surfaces (workout, check-in, plan create/upload/editor, progress, all coach slices) now use Signal palettes
-- the home dashboard is the last high-traffic user surface still on the old MUI shell
-- the review doc identifies it as a "behaviour change, not a reskin" — the current stat/chart dashboard becomes a command centre with one primary CTA — so plan carefully before starting
+- per-route Signal coverage has hit the high-traffic surfaces; further per-route slices are increasingly low-traffic
+- the shell is the visible discontinuity left between flagged routes and is a prerequisite for collapsing the coach subdomain split
+- it's a single, contained surface that affects every flagged route uniformly, so it's a good unit of work
+
+If preferred, an alternate next slice is `/user/calendar` — it's the highest-traffic of the remaining secondary surfaces and is a normal shell/composition pass.
 
 ## Handover Prompt
 
@@ -278,11 +302,13 @@ Current shipped state to preserve:
 - Do not reintroduce cached loadSignalFlag behavior; current live lookup is intentional.
 - Preserve route-level SignalSurface usage and avoid duplicate settings reads when a route already needs settings.
 - Coach slices already shipped: home, client overview, clients roster, check-in review, check-ins desk, check-in template, learning plans list, learning plan editor.
-- User slices already shipped: progress route, plan create entry, plan upload workspace, plan editor workspace, workout route (all four list views + existing exercise slide), check-in route.
+- User slices already shipped: home command centre, progress route, plan create entry, plan upload workspace, plan editor workspace, workout route (all four list views + existing exercise slide), check-in route.
 
 Most natural next slice:
-- /user home command centre (replaces dashboard with Signal planning surface + single primary CTA)
-  Note: this is a behaviour change not a reskin — read the review doc clarifications before coding.
+- shell/nav restructure: replace CustomAppBar with SignalSidebar (220px desktop) + SignalBottomNav (4-item mobile) and an in-app mode-switch pill. Plan to collapse the coach subdomain split (review doc clarification 1) so the pill is real. This is the largest still-open architectural item and a prerequisite for finishing Stage 5.
+
+Alternate next slice if shell/nav is too large for one pass:
+- /user/calendar — highest-traffic of the remaining secondary surfaces, normal shell/composition pass.
 
 Constraints:
 - Preserve existing reducer/editor behavior unless the slice explicitly requires otherwise.
