@@ -156,6 +156,14 @@
 - The flagged path now uses the planning surface and a rebuilt protocol-tracker composition instead of the older plain active/history list.
 - The legacy path remains intact, and the supplements gate plus CRUD/version-history behavior are preserved unchanged.
 
+### Signal user feedback route
+
+- Intended commit: `Build Signal feedback slice`
+- Route:
+  - `/user/feedback`
+- The flagged path now uses the calm surface and a rebuilt feedback form composition instead of the older plain centered MUI form.
+- The legacy path remains intact, and the submit + upload behavior is preserved unchanged.
+
 ## What changed
 
 - Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to both check-ins list pages.
@@ -326,6 +334,18 @@
   - active vs history categorisation
   - version history timeline and diffs
 - Added focused Playwright coverage for the flagged supplements route.
+- Added route-level `loadSignalFlag()` + `SignalSurface(calm)` to `/user/feedback`.
+- Split the route into a server wrapper plus `FeedbackClient` so the Signal flag is resolved at the route level while the legacy branch keeps the existing app-bar form.
+- Rebuilt the flagged branch with:
+  - calm hero (mono "Feedback" label + condensed "Tell us what broke" heading)
+  - section cards for feedback type, description, screenshot upload, and submit action
+  - preserved submit/reset behavior with the same `/api/feedback` POST flow
+  - clearer feedback copy and a calmer success/error presentation
+- Preserved existing behavior:
+  - upload handling
+  - form reset after success
+  - error handling on failed submit
+- Added focused Playwright coverage for the flagged feedback route.
 
 ## Preserved behavior
 
