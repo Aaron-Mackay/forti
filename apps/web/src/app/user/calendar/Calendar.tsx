@@ -33,6 +33,33 @@ const SIGNAL_HERO_HEIGHT = 84;
 
 export type BottomDrawerView = 'list' | 'details' | 'event-form' | 'daymetric-form';
 
+function LegacyCalendarAppBar() {
+  useAppBar({ title: 'Calendar' });
+  return null;
+}
+
+function SignalMetricPill({ label, value }: { label: string; value: string }) {
+  return (
+    <Box
+      sx={{
+        border: `1px solid ${planningPalette.border}`,
+        borderRadius: signalTokens.radii.card,
+        bgcolor: planningPalette.surfaceAlt,
+        px: 1.25,
+        py: 1,
+        minHeight: 56,
+      }}
+    >
+      <Box sx={{ fontFamily: signalTokens.fontVar.mono, fontSize: 10, color: planningPalette.inkLight, mb: 0.5, letterSpacing: '0.06em' }}>
+        {label}
+      </Box>
+      <Box sx={{ fontFamily: signalTokens.fontVar.cond, fontSize: 20, fontWeight: 700, lineHeight: 1, color: planningPalette.ink }}>
+        {value}
+      </Box>
+    </Box>
+  );
+}
+
 type Props = {
   events: EventPrisma[];
   metrics: MetricPrisma[];
@@ -42,7 +69,6 @@ type Props = {
 
 
 export default function Calendar({events, metrics, userId, signalEnabled = false}: Props) {
-  useAppBar({ title: 'Calendar' });
   const calendarRef = useRef<FullCalendar | null>(null);
   const { settings } = useSettings();
   const theme = useTheme();
@@ -89,6 +115,18 @@ export default function Calendar({events, metrics, userId, signalEnabled = false
   }, [setCalendarUpdatedBanner, setDayMetricsState, setEventsInState, userId]);
 
   const fullCalendarEvents = useMemo(() => parsedEvents(eventsInState), [eventsInState]);
+  const blockCount = useMemo(
+    () => eventsInState.filter((event) => event.eventType === EventType.BlockEvent).length,
+    [eventsInState],
+  );
+  const customEventCount = useMemo(
+    () => eventsInState.filter((event) => event.eventType === EventType.CustomEvent).length,
+    [eventsInState],
+  );
+  const loggedMetricCount = useMemo(
+    () => dayMetricsState.filter((metric) => metric.weight != null || metric.calories != null || metric.steps != null || metric.sleepMins != null).length,
+    [dayMetricsState],
+  );
 
   const gridHeight = signalEnabled
     ? `calc(100dvh - ${APPBAR_HEIGHT}px - ${TOGGLE_HEIGHT}px - ${SIGNAL_HERO_HEIGHT}px)`
@@ -141,26 +179,47 @@ export default function Calendar({events, metrics, userId, signalEnabled = false
           Your calendar was updated while you were offline — showing the latest version.
         </Alert>
       </Collapse>
-      {/* Signal hero — only when flagged */}
-      {signalEnabled && (
+      {signalEnabled ? (
         <Box sx={{
-          height: SIGNAL_HERO_HEIGHT,
-          background: planningPalette.surface,
-          borderBottom: `1px solid ${planningPalette.border}`,
           px: 2,
-          py: 1.75,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
+          pt: 2,
+          pb: 1.5,
+          background: planningPalette.bg,
         }}>
-          <Box sx={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: planningPalette.inkLight, mb: 0.5 }}>
-            Calendar
-          </Box>
-          <Box sx={{ fontFamily: signalTokens.fontVar.cond, fontSize: 26, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, color: planningPalette.ink }}>
-            Schedule
+          <Box
+            sx={{
+              background: planningPalette.surface,
+              border: `1px solid ${planningPalette.borderStrong}`,
+              borderRadius: signalTokens.radii.cardLarge,
+              px: 2,
+              py: 1.75,
+            }}
+          >
+            <Box sx={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: planningPalette.inkLight, mb: 0.5, letterSpacing: '0.08em' }}>
+              Calendar
+            </Box>
+            <Box sx={{ fontFamily: signalTokens.fontVar.cond, fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1, color: planningPalette.ink }}>
+              Schedule
+            </Box>
+            <Box sx={{ mt: 1, color: planningPalette.inkMid, fontSize: 14, lineHeight: 1.5, maxWidth: 720 }}>
+              Flip between month and week views, then open events or blocks from the drawers below.
+            </Box>
+            <Box
+              sx={{
+                mt: 1.5,
+                display: 'grid',
+                gap: 1,
+                gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' },
+              }}
+            >
+              <SignalMetricPill label="Blocks" value={String(blockCount)} />
+              <SignalMetricPill label="Events" value={String(customEventCount)} />
+              <SignalMetricPill label="Logged" value={String(loggedMetricCount)} />
+              <SignalMetricPill label="View" value={viewMode === 'calendar' ? 'Month' : 'Weeks'} />
+            </Box>
           </Box>
         </Box>
-      )}
+      ) : null}
 
       {/* View toggle */}
       <Box sx={{
@@ -173,44 +232,54 @@ export default function Calendar({events, metrics, userId, signalEnabled = false
         bgcolor: signalEnabled ? planningPalette.surface : 'background.paper',
       }}>
         {signalEnabled ? (
-          <div
-            role="group"
+          <ToggleButtonGroup
+            exclusive
+            value={viewMode}
+            onChange={(_e, val) => { if (val) setViewMode(val); }}
             aria-label="View"
             style={{
-              display: 'flex',
-              gap: 2,
-              padding: 2,
               background: planningPalette.surfaceAlt,
-              border: `1px solid ${planningPalette.border}`,
-              borderRadius: signalTokens.radii.cell + 1,
             }}
           >
-            {(['calendar', 'weeks'] as const).map((m) => {
-              const active = m === viewMode;
-              return (
-                <button
-                  key={m}
-                  type="button"
-                  aria-label={`${m === 'calendar' ? 'Calendar' : 'Weeks'} view`}
-                  aria-pressed={active}
-                  onClick={() => setViewMode(m)}
-                  style={{
-                    padding: '6px 16px',
-                    background: active ? planningPalette.ink : 'transparent',
-                    color: active ? planningPalette.surface : planningPalette.inkMid,
-                    borderRadius: signalTokens.radii.cell,
-                    border: 'none',
-                    fontFamily: signalTokens.fontVar.body,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {m === 'calendar' ? 'Month' : 'Weeks'}
-                </button>
-              );
-            })}
-          </div>
+            <ToggleButton
+              value="calendar"
+              aria-label="Calendar view"
+              sx={{
+                px: 2,
+                py: 0.5,
+                fontFamily: signalTokens.fontVar.body,
+                fontSize: 12,
+                fontWeight: 600,
+                color: planningPalette.inkMid,
+                borderColor: planningPalette.border,
+                '&.Mui-selected': {
+                  bgcolor: planningPalette.ink,
+                  color: planningPalette.surface,
+                },
+              }}
+            >
+              Month
+            </ToggleButton>
+            <ToggleButton
+              value="weeks"
+              aria-label="Weeks view"
+              sx={{
+                px: 2,
+                py: 0.5,
+                fontFamily: signalTokens.fontVar.body,
+                fontSize: 12,
+                fontWeight: 600,
+                color: planningPalette.inkMid,
+                borderColor: planningPalette.border,
+                '&.Mui-selected': {
+                  bgcolor: planningPalette.ink,
+                  color: planningPalette.surface,
+                },
+              }}
+            >
+              Weeks
+            </ToggleButton>
+          </ToggleButtonGroup>
         ) : (
           <ToggleButtonGroup
             value={viewMode}
@@ -299,9 +368,10 @@ export default function Calendar({events, metrics, userId, signalEnabled = false
            sx={{position: "absolute", bottom: 25, right: 25}}>
         <AddIcon/>
       </Fab>
-      <CalendarBottomDrawer
-        setEventsInState={setEventsInState}
-        open={bottomDrawerOpen}
+        <CalendarBottomDrawer
+          signalEnabled={signalEnabled}
+          setEventsInState={setEventsInState}
+          open={bottomDrawerOpen}
         drawerView={bottomDrawerView}
         setDrawerView={setBottomDrawerView}
         selectedDate={selectedDate}
@@ -335,6 +405,7 @@ export default function Calendar({events, metrics, userId, signalEnabled = false
         customMetricDefs={settings.customMetrics}
       />
       <CalendarRightDrawer
+        signalEnabled={signalEnabled}
         rightDrawerOpen={rightDrawerOpen}
         setRightDrawerOpen={(open) => {
           if (!open) controller.closeRightDrawer();
@@ -349,6 +420,7 @@ export default function Calendar({events, metrics, userId, signalEnabled = false
         year={calendarRef.current?.getApi().view.currentStart.getFullYear()}
         scrollToDate={scrollToDate}
       />
+      {!signalEnabled && <LegacyCalendarAppBar />}
     </>
   )
 }

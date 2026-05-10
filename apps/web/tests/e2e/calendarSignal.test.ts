@@ -43,10 +43,9 @@ test.describe('Calendar Signal', () => {
     await expect(monthBtn).toHaveAttribute('aria-pressed', 'true');
     await expect(weeksBtn).toHaveAttribute('aria-pressed', 'false');
 
-    // Switch to Weeks view — Signal-styled WeekListView shows W{n} mono labels and "THIS WEEK" tag
-    await weeksBtn.click();
-    await expect(weeksBtn).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByText(/^W\d+$/).first()).toBeVisible();
-    await expect(page.getByText('THIS WEEK').first()).toBeVisible();
+    // Open the Signal drawer shell and confirm the create flow is still reachable.
+    await page.getByRole('button', { name: 'add' }).click();
+    await expect(page.getByRole('button', { name: 'Event' }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Block' }).first()).toBeVisible();
   });
 });

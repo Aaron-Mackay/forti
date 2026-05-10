@@ -118,11 +118,11 @@
 - Route:
   - `/user/calendar`
 - The flagged path now uses the planning surface and a Signal hero + segmented view toggle around the existing FullCalendar widget and a rebuilt planning-surface `WeekListView`.
-- Planning hero: mono "Calendar" label + condensed "Schedule" heading.
-- View toggle: when flagged, renders as a planning-palette segmented pill with "Month" / "Weeks" buttons that mirror the `SignalModeSwitch` styling (ink-on-surface for active, mono mid-ink for inactive). The legacy MUI `ToggleButtonGroup` stays when the flag is off.
+- Planning hero: mono "Calendar" label + condensed "Schedule" heading, plus summary pills for blocks, events, logged metrics, and the active view.
+- View toggle: when flagged, renders as a planning-palette MUI toggle group with "Month" / "Weeks" buttons styled in the Signal palette. The legacy MUI `ToggleButtonGroup` stays when the flag is off.
 - `WeekListView` Signal branch: planning-surface week cards with mono `W{n}` labels, condensed heading-style date ranges, chartreuse `THIS WEEK` mono pill on the current week, and a chartreuse left border replacing the legacy MUI `borderLeft: 4px ${blockColor}` indicator.
+- The bottom drawer and right drawer now pick up Signal styling shells and card treatment while preserving the existing event creation, event details, and export flows.
 - The FullCalendar grid itself is intentionally not deeply restyled in this slice — it's a 3rd-party widget with its own CSS and would be a multi-day rebuild. It still picks up the planning ThemeProvider (so `Today`, `prev/next` toolbar buttons render with the planning palette's primary color) and sits inside the planning hero/toggle chrome.
-- The bottom drawer (event details, event creation, day metric form), right drawer (events / blocks list), and FAB buttons are unchanged in this slice — they continue to use MUI components and pick up the planning ThemeProvider for their colors.
 
 ### Signal user notifications route
 
@@ -299,10 +299,11 @@
 - Added focused Playwright coverage for the Signal shell verifying sidebar, mode pill, and bell click navigation.
 - Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to `/user/calendar`.
 - Threaded `signalEnabled` from `page.tsx` into `Calendar` and from there into `WeekListView`.
-- Added a planning-surface hero (mono "Calendar" + condensed "Schedule") and a planning-palette segmented "Month / Weeks" pill in `Calendar.tsx`.
+- Added a planning-surface hero card (mono "Calendar" + condensed "Schedule"), summary pills, and a Signal-styled "Month / Weeks" toggle in `Calendar.tsx`.
 - Added a Signal branch to `WeekListView.tsx` that renders planning-palette week cards with mono `W{n}` labels, chartreuse `THIS WEEK` indicator, and event names in inkMid.
 - Adjusted FullCalendar / WeekListView grid height calc to subtract `SIGNAL_HERO_HEIGHT` when flagged.
 - Loosened `currentWeekRef` to `useRef<HTMLElement>(null)` so it can attach to the Signal `<button>` row or the legacy `<Box>` row without a hack cast.
+- Added Signal-styled drawer shells for the bottom event drawer and the right events/blocks drawer while preserving event creation, details, and export flows.
 - Added focused Playwright coverage for the flagged calendar route.
 - Added route-level `loadSignalFlag()` + `SignalSurface(calm)` to `/user/notifications`.
 - Split the route into a server wrapper plus `NotificationsClient` so the Signal flag is resolved at the route level while the legacy branch keeps the existing app-bar wiring.
@@ -410,8 +411,8 @@
 - `SignalAppShell`, `SignalSidebar`, `SignalBottomNav`, `SignalTopBar`, `SignalModeSwitch`, `SignalIcons`, `ForftiWordmark`, the `/dev/signal-shell` harness, and the cross-domain navigation (`useCrossDomainUrl`, `modeSwitchActions`) all remain the existing implementation
 - legacy `CustomAppBar` + `AppBarProvider` + `useAppBar` continue to render unchanged when the flag is off (selected by `SignalShellSwitch`)
 - `NotificationsProvider`'s 60s polling and `unreadCount` API are unchanged; the Signal shell only consumes them
-- calendar event creation, editing, and detail flows (`CalendarBottomDrawer`, `EventCreationForm`, `EventDetails`, `BlockOverlapConfirmationDialog`) remain the existing implementation
-- calendar drawers (`CalendarBottomDrawer` bottom, `CalendarRightDrawer` right) and the Add / Events / Blocks FABs remain MUI; they pick up the planning ThemeProvider's primary color when flagged
+  - calendar event creation, editing, and detail flows (`CalendarBottomDrawer`, `EventCreationForm`, `EventDetails`, `BlockOverlapConfirmationDialog`) remain the existing implementation, now wrapped in Signal-styled drawer shells
+  - calendar drawers (`CalendarBottomDrawer` bottom, `CalendarRightDrawer` right) and the Add / Events / Blocks FABs keep the same behavior path, but their flagged presentation now picks up the planning palette
 - `useCalendarController` state machine, offline cache (`useOfflineCache`), `online` reconnect refresh, and `parsedEvents` are unchanged
 - FullCalendar's date-click, drag-select, today/prev/next toolbar, multimonth view, and rrule recurrence handling remain the existing implementation
 - legacy `WeekListView` rendering (MUI Box rows with elevation + borderLeft block color) is preserved when the flag is off
@@ -438,7 +439,7 @@
 - `tests/e2e/coach-review.test.ts` still contains the older legacy photo-dialog navigation failure documented in the previous handover.
 - That failure is unrelated to this new Signal desk slice.
 - The Signal progress E2E intentionally accepts either the chart or the route-level empty-state copy because the shared remote DB does not guarantee metric history for the test user.
-- The Signal calendar shell wraps FullCalendar but does not restyle FullCalendar's grid internals — that's a 3rd-party widget with its own CSS and would be a multi-day rebuild. The grid keeps its existing `.calendar.css` look. If/when product wants a fully-Signal calendar grid, it's a dedicated slice or a swap to a different calendar primitive.
+- The Signal calendar shell wraps FullCalendar, but the month grid internals keep their existing `.calendar.css` look. If/when product wants a fully-Signal calendar grid, it's a dedicated slice or a swap to a different calendar primitive.
 
 ## Recommended next slice
 
@@ -452,18 +453,17 @@ Remaining Stage 5 work:
 
 - subdomain collapse — review doc clarification 1: "Subdomain split — collapse." The mode pill currently still cross-navs via `coach.*` host on production. Collapsing the split needs middleware, cookie scoping, and `protected-layout` changes; this is more an infra slice than a UI slice.
 - `Plan` `clientCanEdit` flag — review doc clarification 5: schema/API addition to back the "Allow plan editing" toggle on the plan editor.
-- secondary surfaces still on MUI inside the Signal shell: `/user/calendar`, `/user/notifications`, `/user/learning-plans`, `/user/feedback`, `/user/settings`. These render inside SignalAppShell (so they get the gym/planning chrome) but their own page content is still MUI.
+- secondary surfaces still on MUI inside the Signal shell: `/user/notifications`, `/user/learning-plans`, `/user/feedback`, `/user/settings`. These render inside SignalAppShell (so they get the gym/planning chrome) but their own page content is still MUI.
 - the four-item BottomNav and the four-item Sidebar nav route to `home / plan / progress / more` (user) and `home / clients / library / more` (coach). `more` currently points at `/user/settings`. There's no in-shell affordance for Calendar / Check-in / Nutrition / Supplements / Education in user mode — these are reached via the home command centre or direct URL only. If product wants a richer "more" sheet, that's a future slice.
 
 Most natural next slice now:
 
-- `/user/calendar` — the remaining major user-facing surface; the shell is there, but the FullCalendar grid itself is still legacy.
+- `/user/settings` — the "More" nav target. Planning palette.
 
 Alternate slices, in roughly decreasing return:
 
-- `/user/settings` — the "More" nav target. Planning palette.
 - `/user/notifications`, `/user/learning-plans`, `/user/feedback` — straightforward shell/composition passes.
-- `/user/calendar` — multi-day rebuild or a Signal-native calendar primitive if the grid itself gets reskinned.
+- FullCalendar grid internals — multi-day rebuild or a Signal-native calendar primitive if product wants the month grid itself reskinned.
 - subdomain collapse — only do this when product is ready to commit to the in-app mode pill end-to-end; touches auth, middleware, and cookies.
 
 ## Handover Prompt

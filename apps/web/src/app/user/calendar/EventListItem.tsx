@@ -1,9 +1,50 @@
-import {Divider, Paper, styled} from "@mui/material";
+import {Divider, Paper, styled, Typography, Box} from "@mui/material";
 import {dateAndWeek, toInclusiveEndDate, withOpacity} from "@/app/user/calendar/utils";
 import React from "react";
 import {EventPrisma} from "@/types/dataTypes";
+import {signalTokens} from '@lib/signal/tokens';
 
-export function EventListItem(props: { onClick: () => void, event: EventPrisma, bgColor?: string }) {
+export function EventListItem(props: { onClick: () => void, event: EventPrisma, bgColor?: string, signalEnabled?: boolean }) {
+  if (props.signalEnabled) {
+    return (
+      <Box
+        component="button"
+        type="button"
+        onClick={props.onClick}
+        sx={{
+          width: '100%',
+          textAlign: 'left',
+          border: `1px solid ${signalTokens.surface.planning.border}`,
+          borderRadius: signalTokens.radii.card,
+          background: signalTokens.surface.planning.surface,
+          color: signalTokens.surface.planning.ink,
+          px: 1.5,
+          py: 1.25,
+          cursor: 'pointer',
+        }}
+      >
+        <Typography
+          sx={{
+            fontFamily: signalTokens.fontVar.cond,
+            fontSize: 18,
+            fontWeight: 700,
+            lineHeight: 1.1,
+            mb: 0.75,
+          }}
+        >
+          {props.event.name}
+        </Typography>
+        <Typography variant="body2" sx={{ color: signalTokens.surface.planning.inkMid }}>
+          {props.event.startDate && dateAndWeek(props.event.startDate)}
+        </Typography>
+        <Divider sx={{ my: 1 }} />
+        <Typography variant="body2" sx={{ color: signalTokens.surface.planning.inkMid }}>
+          {props.event.endDate && dateAndWeek(toInclusiveEndDate(props.event.endDate))}
+        </Typography>
+      </Box>
+    );
+  }
+
   return (<Item
     onClick={props.onClick}
     sx={{

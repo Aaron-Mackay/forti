@@ -13,6 +13,7 @@ import {TRANSITION_MS, useAnimatedDrawerHeight} from "./useAnimatedDrawerHeight"
 import {EventDetails} from "@/app/user/calendar/EventDetails";
 import {CustomMetricDef} from "@/types/settingsTypes";
 import {useSettings} from "@lib/providers/SettingsProvider";
+import {signalTokens} from '@lib/signal/tokens';
 
 type CalendarDrawerProps = {
   open: boolean,
@@ -30,6 +31,7 @@ type CalendarDrawerProps = {
   prefilledDateRange: { start: Date | null; endExcl: Date | null },
   setPrefilledDateRange: (value: { start: Date | null; endExcl: Date | null }) => void,
   customMetricDefs?: CustomMetricDef[],
+  signalEnabled?: boolean,
 };
 
 const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
@@ -48,6 +50,7 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
                                                                prefilledDateRange,
                                                                setPrefilledDateRange,
                                                                customMetricDefs = [],
+                                                               signalEnabled = false,
                                                              }) => {
   const { settings } = useSettings();
   const bodyweightUnit = settings.bodyweightUnit;
@@ -77,11 +80,13 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
       paper: {
         ref: drawerPaperRef,
         sx: {
-          borderTopLeftRadius: 16,
-          borderTopRightRadius: 16,
+          borderTopLeftRadius: signalEnabled ? 18 : 16,
+          borderTopRightRadius: signalEnabled ? 18 : 16,
           overflow: 'hidden',
           height: height ? `${height}px` : undefined,
           transition: height ? `height ${TRANSITION_MS}ms ease` : 'none',
+          bgcolor: signalEnabled ? signalTokens.surface.planning.bg : undefined,
+          color: signalEnabled ? signalTokens.surface.planning.ink : undefined,
         }
       }
     }}
@@ -97,10 +102,18 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
       }}
     >
       {/* Main Panel */}
-      <Box ref={mainPanelRef} sx={{width: '50%', p: 2}}>
+      <Box ref={mainPanelRef} sx={{width: '50%', p: signalEnabled ? 1.5 : 2, bgcolor: signalEnabled ? signalTokens.surface.planning.bg : undefined}}>
         {drawerView === 'list' && (
           <>
-            <Box mb={2}>
+            <Box
+              mb={2}
+              sx={signalEnabled ? {
+                p: 1.5,
+                border: `1px solid ${signalTokens.surface.planning.border}`,
+                borderRadius: signalTokens.radii.cardLarge,
+                bgcolor: signalTokens.surface.planning.surface,
+              } : undefined}
+            >
               <MetricsBar
                 dateMetric={dateMetric}
                 setSelectedMetric={setSelectedMetric}
@@ -108,12 +121,24 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
                 customMetricDefs={customMetricDefs}
                 bodyweightUnit={bodyweightUnit}
               />
-              <Typography variant="h6">{selectedDate?.toDateString()}</Typography>
+              <Typography
+                variant={signalEnabled ? 'overline' : 'h6'}
+                sx={signalEnabled ? {
+                  mt: 0.5,
+                  fontFamily: signalTokens.fontVar.mono,
+                  color: signalTokens.surface.planning.inkLight,
+                  letterSpacing: '0.08em',
+                } : undefined}
+              >
+                {selectedDate?.toDateString()}
+              </Typography>
             </Box>
             <EventsList
               eventsOnSelectedDate={eventsOnSelectedDate}
               setSelectedEvent={setSelectedEvent}
-              setDrawerView={setDrawerView}/>
+              setDrawerView={setDrawerView}
+              signalEnabled={signalEnabled}
+            />
           </>
         )}
 
@@ -142,10 +167,11 @@ const CalendarBottomDrawer: React.FC<CalendarDrawerProps> = ({
         aria-hidden={!selectedMetric}
         sx={{
           width: '50%',
-          p: 2,
+          p: signalEnabled ? 1.5 : 2,
           position: 'relative',
           pointerEvents: selectedMetric ? 'auto' : 'none',
           visibility: selectedMetric ? 'visible' : 'hidden',
+          bgcolor: signalEnabled ? signalTokens.surface.planning.bg : undefined,
         }}
       >
         {selectedMetric && (
