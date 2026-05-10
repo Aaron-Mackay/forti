@@ -114,10 +114,12 @@ export default function CustomAppBar(
   }
 
   function handleCoachPortalClick() {
-    router.push('/user/coach/clients');
+    document.cookie = 'preferred_mode=coach; path=/; max-age=2592000; SameSite=Lax';
+    router.push('/user/coach');
   }
 
   function handleBackToFortiClick() {
+    document.cookie = 'preferred_mode=user; path=/; max-age=2592000; SameSite=Lax';
     router.push('/user');
   }
 
