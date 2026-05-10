@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   Accordion,
   AccordionDetails,
@@ -39,6 +40,8 @@ import { useApiGet } from '@lib/hooks/api/useApiGet';
 import { useApiMutation } from '@lib/hooks/useApiMutation';
 import type { LibraryAssetType } from '@/generated/prisma/browser';
 import type { StepProgressMap } from '@lib/learningPlanSchemas';
+import { signalFontVariablesClassName } from '@lib/signal/fonts';
+import { signalTokens } from '@lib/signal/tokens';
 
 interface AssetSummary {
   id: string;
@@ -255,7 +258,7 @@ function AssignmentAccordion({
 
 // ─── Main component ──────────────────────────────────────────────────────────
 
-export default function PlanEditorClient() {
+export default function PlanEditorClient({ signalEnabled = false }: { signalEnabled?: boolean }) {
   const { planId } = useParams<{ planId: string }>();
   const planUrl = `/api/coach/learning-plans/${planId}`;
 
@@ -346,7 +349,7 @@ export default function PlanEditorClient() {
     return <Alert severity="error" sx={{ m: 2 }}>Failed to load plan.</Alert>;
   }
 
-  return (
+  const editorContent = (
     <Box sx={{ p: 2, pb: 8 }}>
       {/* Plan title */}
       {titleEditing ? (
@@ -523,5 +526,149 @@ export default function PlanEditorClient() {
         saving={savingStep}
       />
     </Box>
+  );
+
+  if (!signalEnabled) {
+    return editorContent;
+  }
+
+  const palette = signalTokens.surface.planning;
+  const totalSteps = plan.steps.length;
+  const totalAssignments = plan.assignments.length;
+  const completedAssignments = plan.assignments.filter((assignment) => {
+    const progress = assignment.stepProgress ?? {};
+    return plan.steps.length > 0 && plan.steps.every((step) => !!progress[String(step.id)]?.completedAt);
+  }).length;
+
+  return (
+    <div
+      className={signalFontVariablesClassName}
+      style={{
+        minHeight: '100%',
+        background: palette.bg,
+        color: palette.ink,
+        fontFamily: signalTokens.fontVar.body,
+        padding: '14px 16px 28px',
+        maxWidth: 1080,
+        margin: '0 auto',
+      }}
+    >
+      <section
+        style={{
+          background: palette.surface,
+          border: `1px solid ${palette.borderStrong}`,
+          borderRadius: signalTokens.radii.cardLarge,
+          padding: '20px 20px 18px',
+          marginBottom: 18,
+        }}
+      >
+        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: totalSteps > 0 ? signalTokens.signal.deep : palette.inkLight, marginBottom: 6 }}>
+          Coach Learning Plan Editor
+        </div>
+        <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 32, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 10 }}>
+          {plan.title}
+        </div>
+        <div style={{ fontSize: 14, color: palette.inkMid, lineHeight: 1.5, maxWidth: 680 }}>
+          Tune the learning path, update the delivery cadence, and assign or unassign clients without leaving the coach planning surface.
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginTop: 18 }}>
+          <SignalMetricPill label="Steps" value={totalSteps} />
+          <SignalMetricPill label="Assignments" value={totalAssignments} />
+          <SignalMetricPill label="Completed" value={completedAssignments} />
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 18 }}>
+          <Link
+            href="/user/coach/learning-plans"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 40,
+              padding: '0 14px',
+              borderRadius: signalTokens.radii.card,
+              textDecoration: 'none',
+              fontSize: 14,
+              fontWeight: 600,
+              color: palette.ink,
+              background: palette.surfaceAlt,
+              border: `1px solid ${palette.border}`,
+            }}
+          >
+            Back to library
+          </Link>
+        </div>
+      </section>
+
+      <section
+        style={{
+          background: palette.surface,
+          border: `1px solid ${palette.border}`,
+          borderRadius: signalTokens.radii.cardLarge,
+          padding: '4px 18px 18px',
+        }}
+      >
+        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginTop: 14, marginBottom: 4 }}>
+          Editor
+        </div>
+        <div style={{ fontSize: 14, color: palette.inkMid, lineHeight: 1.5, marginBottom: 2 }}>
+          Manage the plan title, description, steps, assets, and assignments in the existing editor flow.
+        </div>
+
+        <Box
+          sx={{
+            '& .MuiButton-root': {
+              borderRadius: `${signalTokens.radii.card}px`,
+              textTransform: 'none',
+              fontWeight: 600,
+            },
+            '& .MuiButton-contained': {
+              bgcolor: palette.ink,
+              color: palette.bg,
+              '&:hover': {
+                bgcolor: palette.borderStrong,
+              },
+            },
+            '& .MuiButton-outlined': {
+              borderColor: palette.borderStrong,
+              color: palette.ink,
+            },
+            '& .MuiPaper-root': {
+              borderRadius: `${signalTokens.radii.cardLarge}px`,
+            },
+            '& .MuiDialog-paper': {
+              borderRadius: `${signalTokens.radii.cardLarge}px`,
+            },
+            '& .MuiAccordion-root': {
+              borderRadius: `${signalTokens.radii.card}px !important`,
+              overflow: 'hidden',
+            },
+            '& .MuiChip-root': {
+              borderRadius: 999,
+            },
+          }}
+        >
+          {editorContent}
+        </Box>
+      </section>
+    </div>
+  );
+}
+
+function SignalMetricPill({ label, value }: { label: string; value: number }) {
+  const palette = signalTokens.surface.planning;
+  return (
+    <div
+      style={{
+        border: `1px solid ${palette.border}`,
+        borderRadius: signalTokens.radii.card,
+        padding: '10px 12px',
+        background: palette.surfaceAlt,
+      }}
+    >
+      <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 24, fontWeight: 700, lineHeight: 1 }}>{value}</div>
+    </div>
   );
 }

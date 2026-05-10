@@ -145,4 +145,27 @@ test.describe('Restyle regression gap coverage', () => {
       await page.request.delete(`/api/coach/learning-plans/${plan.id}`);
     }
   });
+
+  test('flagged coach sees the Signal learning plan editor workspace', async ({ page }) => {
+    await configureSignalCoach(page);
+
+    const createResponse = await page.request.post('/api/coach/learning-plans', {
+      data: { title: 'Signal Editor Plan', description: 'Signal editor coverage plan' },
+    });
+    expect(createResponse.ok()).toBeTruthy();
+
+    const { plan } = await createResponse.json() as { plan: { id: number } };
+
+    try {
+      await page.goto(`/user/coach/learning-plans/${plan.id}`);
+
+      await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
+      await expect(page.getByText('Coach Learning Plan Editor')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Signal Editor Plan' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Add Step' })).toBeVisible();
+      await expect(page.getByText('Assigned Clients')).toBeVisible();
+    } finally {
+      await page.request.delete(`/api/coach/learning-plans/${plan.id}`);
+    }
+  });
 });
