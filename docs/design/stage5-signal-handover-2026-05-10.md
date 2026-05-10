@@ -13,11 +13,19 @@
 
 ### Signal coach check-in template workspace
 
-- Intended commit: `Build Signal coach check-in template slice`
+- Commit: `738dfcd` `Build Signal coach check-in template slice`
 - Route:
   - `/user/coach/check-in-template`
 - The flagged path now uses the planning surface and a Signal workspace shell around the existing drag/drop editor.
 - The template-builder internals are intentionally preserved in this slice; this is a shell/composition pass, not a ground-up editor rebuild.
+
+### Signal coach learning plans library
+
+- Intended commit: `Build Signal coach learning plans slice`
+- Route:
+  - `/user/coach/learning-plans`
+- The flagged path now uses the planning surface and a rebuilt library/list presentation for coach learning plans.
+- The create dialog and navigation into the existing plan editor route are preserved.
 
 ## What changed
 
@@ -39,6 +47,14 @@
   - builder framing and action styling
   - preserved editor behaviors and preview/save flow
 - Added focused Playwright coverage for the flagged template workspace.
+- Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to the learning-plans page.
+- Passed `signalEnabled` into `CoachLearningPlansClient`.
+- Rebuilt the flagged list branch with:
+  - planning-surface hero
+  - plan/step/assignment counts
+  - Signal plan rows
+  - preserved new-plan dialog and FAB behavior
+- Added focused Playwright coverage for the flagged learning-plans library.
 
 ## Preserved behavior
 
@@ -50,12 +66,15 @@
 - template load/save/delete still use the existing `/api/coach/check-in-template` flow
 - drag/drop editor behavior remains the existing implementation
 - preview flow remains the existing implementation
+- learning-plan creation still uses the existing `/api/coach/learning-plans` POST flow
+- list items still navigate into the existing `/user/coach/learning-plans/[planId]` editor route
 
 ## Verification completed
 
 - `rtk npm run build` in `apps/web`
 - `BASE_URL=http://127.0.0.1:3003 npx playwright test tests/e2e/coach-review.test.ts --project=chromium --grep "flagged check-in list shows the Signal planning desk"`
 - `BASE_URL=http://127.0.0.1:3004 npx playwright test tests/e2e/redesign-regression.test.ts --project=chromium --grep "flagged coach sees the Signal check-in template workspace"`
+- `BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/learningPlans.test.ts --project=chromium --grep "flagged coach sees the Signal learning plans library"`
 
 ## Known residuals
 
@@ -66,14 +85,14 @@
 
 Next coach-only routes still outside the newer Signal pattern:
 
-- `/user/coach/learning-plans`
+- `/user/coach/learning-plans/[planId]`
 
 Most natural next slice now:
 
-- `/user/coach/learning-plans`
+- `/user/coach/learning-plans/[planId]`
 
 Reason:
 
-- it is the next coach route still living on the older utility shell
-- it is adjacent to the template/editor planning work
-- it likely benefits from the same planning-surface treatment before any deeper information architecture changes
+- it is now the main remaining coach learning-plans surface still living on the older utility/editor shell
+- it sits directly behind the newly rebuilt learning-plans library
+- it likely benefits from the same shell-level Signal treatment before any deeper editor redesign

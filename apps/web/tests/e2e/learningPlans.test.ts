@@ -31,6 +31,32 @@ async function setCoachMode(page: import('@playwright/test').Page, active: boole
   throw new Error(`Failed to apply coach mode state: ${active}`);
 }
 
+async function setSignalCoachMode(page: import('@playwright/test').Page, active: boolean) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.request.patch('/api/user/settings', {
+      data: { settings: { coachModeActive: active, signalUiEnabled: active } },
+    });
+
+    const applied = await expect.poll(async () => {
+      const settingsResponse = await page.request.get('/api/user/settings');
+      if (!settingsResponse.ok()) return null;
+      const payload = await settingsResponse.json();
+      return {
+        coachModeActive: payload?.settings?.coachModeActive,
+        signalUiEnabled: payload?.settings?.signalUiEnabled,
+      };
+    }, { timeout: 10_000 }).toEqual({
+      coachModeActive: active,
+      signalUiEnabled: active,
+    }).then(() => true).catch(() => false);
+
+    if (applied) return;
+    await page.waitForTimeout(300);
+  }
+
+  throw new Error(`Failed to apply signal coach mode state: ${active}`);
+}
+
 async function waitForCoachLearningPlansAccess(page: import('@playwright/test').Page) {
   await expect.poll(async () => {
     const response = await page.request.get('/api/coach/learning-plans');
@@ -50,8 +76,10 @@ test.describe('Learning Plans', () => {
       await page.request.delete(`/api/coach/learning-plans/${createdPlanId}`);
       createdPlanId = 0;
     }
-    // Deactivate coach mode
-    await setCoachMode(page, false);
+    // Deactivate coach mode and reset Signal flag
+    await page.request.patch('/api/user/settings', {
+      data: { settings: { coachModeActive: false, signalUiEnabled: false } },
+    });
   });
 
   test('client learning plans page shows empty state when no plans are assigned', async ({ page }) => {
@@ -164,5 +192,25 @@ test.describe('Learning Plans', () => {
     await page.goto('/user/coach/learning-plans');
     // The page will load but the API will return 403, showing an error state — no crash
     await expect(page.locator('body')).toBeVisible();
+  });
+
+  test('flagged coach sees the Signal learning plans library', async ({ page }) => {
+    await setSignalCoachMode(page, true);
+    await waitForCoachLearningPlansAccess(page);
+
+    const res = await page.request.post('/api/coach/learning-plans', {
+      data: { title: 'Signal Listed Plan', description: 'visible in Signal list' },
+    });
+    expect(res.ok()).toBeTruthy();
+    const { plan } = await res.json() as { plan: { id: number } };
+    createdPlanId = plan.id;
+
+    await page.goto('/user/coach/learning-plans');
+
+    await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
+    await expect(page.getByText('Coach Learning Plans')).toBeVisible();
+    await expect(page.getByText('Coach curriculum')).toBeVisible();
+    await expect(page.getByText('Signal Listed Plan').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'New plan', exact: true }).first()).toBeVisible();
   });
 });

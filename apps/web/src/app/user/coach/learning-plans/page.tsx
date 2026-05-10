@@ -1,10 +1,16 @@
 import AppBarTitle from '@/components/shell/AppBarTitle';
+import { SignalSurface } from '@/components/signal/SignalSurface';
+import { loadSignalFlag } from '@lib/signal/loadSignalFlag';
 
-export default function CoachLearningPlansPage() {
+export default async function CoachLearningPlansPage() {
+  const signalEnabled = await loadSignalFlag();
+
   return (
     <>
       <AppBarTitle title="Learning Plans" />
-      <CoachLearningPlansClient />
+      <SignalSurface signalEnabled={signalEnabled} surface="planning">
+        <CoachLearningPlansClient signalEnabled={signalEnabled} />
+      </SignalSurface>
     </>
   );
 }
