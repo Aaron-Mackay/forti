@@ -4,6 +4,7 @@ import { signalTokens, type SignalNavMode } from '@lib/signal/tokens';
 import { ForftiWordmark } from './ForftiWordmark';
 import { SignalModeSwitch } from './SignalModeSwitch';
 import { SignalNotificationsBell } from './SignalNotificationsBell';
+import { useSettings } from '@lib/providers/SettingsProvider';
 
 type Props = {
   mode: SignalNavMode;
@@ -11,8 +12,12 @@ type Props = {
   showModeSwitch?: boolean;
 };
 
-export function SignalTopBar({ mode, hasUnreadNotifications, showModeSwitch = true }: Props) {
+export function SignalTopBar({ mode, hasUnreadNotifications, showModeSwitch: showModeSwitchProp = true }: Props) {
+  const { settings, loading } = useSettings();
   const palette = signalTokens.surface.gym;
+
+  const showModeSwitch = showModeSwitchProp && !loading && (settings.coachModeActive || mode === 'coach');
+
   return (
     <header
       style={{

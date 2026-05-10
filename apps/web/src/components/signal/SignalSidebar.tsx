@@ -8,6 +8,7 @@ import { SignalIcon } from './SignalIcons';
 import { SignalModeSwitch } from './SignalModeSwitch';
 import { SignalNotificationsBell } from './SignalNotificationsBell';
 import { activeNavId, navItemsFor, type NavItemId } from './navItems';
+import { useSettings } from '@lib/providers/SettingsProvider';
 
 type Props = {
   mode: SignalNavMode;
@@ -18,10 +19,13 @@ type Props = {
 };
 
 export function SignalSidebar({ mode, activeOverride, userLabel, userInitials, hasUnreadNotifications }: Props) {
+  const { settings, loading } = useSettings();
   const palette = signalTokens.surface.gym;
   const pathname = usePathname();
   const items = navItemsFor(mode);
   const active = activeOverride ?? activeNavId(items, pathname) ?? 'home';
+
+  const showModeSwitch = !loading && (settings.coachModeActive || mode === 'coach');
 
   return (
     <aside
@@ -52,9 +56,11 @@ export function SignalSidebar({ mode, activeOverride, userLabel, userInitials, h
         <SignalNotificationsBell hasUnread={hasUnreadNotifications} />
       </div>
 
-      <div style={{ padding: '14px 14px 10px' }}>
-        <SignalModeSwitch mode={mode} surface="gym" />
-      </div>
+      {showModeSwitch && (
+        <div style={{ padding: '14px 14px 10px' }}>
+          <SignalModeSwitch mode={mode} surface="gym" />
+        </div>
+      )}
 
       <nav style={{ padding: '6px 8px', flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
         {items.map((item) => {

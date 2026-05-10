@@ -1,6 +1,5 @@
 import React from "react";
-import Link from "next/link";
-import Button from "@mui/material/Button";
+import LinkButton from "@/components/LinkButton";
 import {getServerSession} from "next-auth/next";
 import {redirect} from "next/navigation";
 
@@ -10,13 +9,12 @@ export default async function PublicPage() {
   return (
     <>
       <h1 className="text-2xl font-bold mb-4">{"Public Page for non-signed in users"}</h1>
-      <Button
-        component={Link}
+      <LinkButton
         href={'/login'}
         variant="contained"
       >
         Go to Login
-      </Button>
+      </LinkButton>
     </>
   );
 }

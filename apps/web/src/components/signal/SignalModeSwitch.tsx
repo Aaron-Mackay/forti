@@ -3,6 +3,7 @@
 import { signalTokens, type SignalNavMode, type SignalSurfaceMode } from '@lib/signal/tokens';
 import { useCrossDomainUrl } from './useCrossDomainUrl';
 import { navigateToMode } from './modeSwitchActions';
+import { useSettings } from '@lib/providers/SettingsProvider';
 
 type Props = {
   mode: SignalNavMode;
@@ -10,9 +11,14 @@ type Props = {
 };
 
 export function SignalModeSwitch({ mode, surface }: Props) {
+  const { settings, loading } = useSettings();
   const isCoach = mode === 'coach';
   const crossDomainUrl = useCrossDomainUrl(isCoach);
   const palette = signalTokens.surface[surface];
+
+  if (!loading && !settings.coachModeActive && mode !== 'coach') {
+    return null;
+  }
 
   function handleClick(next: SignalNavMode) {
     if (next === mode) return;

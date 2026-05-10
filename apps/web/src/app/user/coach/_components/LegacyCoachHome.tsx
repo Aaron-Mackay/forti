@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import type { CoachHomeData } from '@lib/coachService';
 import AppBarTitle from '@/components/shell/AppBarTitle';
 import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
-import { Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
+import { Box, Chip, Paper, Stack, Typography } from '@mui/material';
+import LinkButton from '@/components/LinkButton';
 
 type Props = {
   data: CoachHomeData;
@@ -24,9 +24,9 @@ export function LegacyCoachHome({ data }: Props) {
               {data.summary.clientCount} client{data.summary.clientCount === 1 ? '' : 's'} linked.
             </Typography>
             <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: 'wrap' }} useFlexGap>
-              <Button component={Link} href="/user/coach/check-ins" variant="contained">Check-ins</Button>
-              <Button component={Link} href="/user/coach/clients" variant="outlined">Clients</Button>
-              <Button component={Link} href="/user/coach/check-in-template" variant="outlined">Template</Button>
+              <LinkButton href="/user/coach/check-ins" variant="contained">Check-ins</LinkButton>
+              <LinkButton href="/user/coach/clients" variant="outlined">Clients</LinkButton>
+              <LinkButton href="/user/coach/check-in-template" variant="outlined">Template</LinkButton>
             </Stack>
           </Box>
 
@@ -45,7 +45,7 @@ export function LegacyCoachHome({ data }: Props) {
                           Week of {item.weekStartDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                         </Typography>
                       </Box>
-                      <Button component={Link} href={`/user/coach/check-ins/${item.checkInId}`} size="small">Review</Button>
+                      <LinkButton href={`/user/coach/check-ins/${item.checkInId}`} size="small">Review</LinkButton>
                     </Stack>
                   </Box>
                 ))
@@ -86,13 +86,12 @@ export function LegacyCoachHome({ data }: Props) {
                               : 'Assign a plan to this client'}
                         </Typography>
                       </Box>
-                      <Button
-                        component={Link}
+                      <LinkButton
                         href={item.planId ? `/user/coach/clients/${item.clientId}/plans` : `/user/coach/clients/${item.clientId}`}
                         size="small"
                       >
                         Open
-                      </Button>
+                      </LinkButton>
                     </Stack>
                   </Box>
                 ))
