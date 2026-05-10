@@ -35,6 +35,15 @@
 - The flagged path now uses the planning surface and a Signal editor shell around the existing learning plan editor.
 - The step and assignment editor behavior is intentionally preserved in this slice; this is a shell/composition pass.
 
+### Signal user progress route
+
+- Commit: `Build Signal progress route slice`
+- Route:
+  - `/user/progress`
+- The app now has a real progress route for both flag states instead of only surfacing progress widgets on `/user`.
+- The flagged path uses the planning surface and a dedicated Signal progress composition around the existing chart and tracked-lift primitives.
+- The legacy path stays on the existing MUI/dashboard primitives so `/user/progress` works during the side-by-side cutover.
+
 ## What changed
 
 - Added route-level `loadSignalFlag()` + `SignalSurface(planning)` to both check-ins list pages.
@@ -71,6 +80,20 @@
   - editor framing and action styling
   - preserved step, assignment, and asset flows
 - Added focused Playwright coverage for the flagged learning-plan editor workspace.
+- Added a new `/user/progress` page.
+- Reused the existing user metrics, events, active-plan stats, and tracked-e1RM settings data already feeding the dashboard.
+- Added a dedicated legacy progress branch with:
+  - app-bar title
+  - stat cards for latest weight, tracked lifts, weekly training, and current block
+  - existing `DashboardChart`
+  - existing `E1rmProgressCard`
+- Added a dedicated flagged Signal progress branch with:
+  - planning-surface hero
+  - four progress summary cells
+  - dedicated metrics and tracked-lifts panels
+  - settings/home actions
+- Kept settings reads to a single query on this route and derived `signalEnabled` from the parsed settings object instead of issuing a second flag lookup.
+- Added focused Playwright coverage for the flagged progress route.
 
 ## Preserved behavior
 
@@ -86,6 +109,9 @@
 - list items still navigate into the existing `/user/coach/learning-plans/[planId]` editor route
 - editor mutations still use the existing learning-plan, step, and assignment API routes
 - step and assignment flows remain the existing implementation
+- progress charts still use the existing `DashboardChart` implementation
+- tracked-lift rendering still uses the existing `E1rmProgressCard` implementation
+- the progress route still relies on `trackedE1rmExercises` in `User.settings`; the Stage 5 `progress.focusExerciseIds` schema addition remains deferred
 
 ## Verification completed
 
@@ -94,11 +120,13 @@
 - `BASE_URL=http://127.0.0.1:3004 npx playwright test tests/e2e/redesign-regression.test.ts --project=chromium --grep "flagged coach sees the Signal check-in template workspace"`
 - `BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/learningPlans.test.ts --project=chromium --grep "flagged coach sees the Signal learning plans library"`
 - `BASE_URL=http://127.0.0.1:3006 npx playwright test tests/e2e/redesign-regression.test.ts --project=chromium --grep "flagged coach sees the Signal learning plan editor workspace"`
+- `BASE_URL=http://127.0.0.1:3007 npx playwright test tests/e2e/progress.test.ts --project=chromium --no-deps`
 
 ## Known residuals
 
 - `tests/e2e/coach-review.test.ts` still contains the older legacy photo-dialog navigation failure documented in the previous handover.
 - That failure is unrelated to this new Signal desk slice.
+- The Signal progress E2E intentionally accepts either the chart or the route-level empty-state copy because the shared remote DB does not guarantee metric history for the test user.
 
 ## Recommended next slice
 
@@ -108,14 +136,14 @@ Next coach-only routes still outside the newer Signal pattern:
 
 Likely next Stage 5 slice outside the coach routes:
 
-- `/user/progress`
+- `/user/plan/create`
 
 Most natural next slice now:
 
-- `/user/progress`
+- `/user/plan/create`
 
 Reason:
 
 - the main coach screens called out in the handover are now covered
-- progress is still listed as a remaining medium-priority Signal surface
-- it likely needs its own route-level rebuild rather than more coach-shell work
+- `/user/progress` now exists as a dedicated route in both legacy and Signal modes
+- the next obvious remaining Stage 5 user surface is the plan-creation entry composition
