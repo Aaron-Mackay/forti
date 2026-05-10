@@ -445,6 +445,16 @@
 - The Signal progress E2E intentionally accepts either the chart or the route-level empty-state copy because the shared remote DB does not guarantee metric history for the test user.
 - The Signal calendar shell wraps FullCalendar, but the month grid internals keep their existing `.calendar.css` look. If/when product wants a fully-Signal calendar grid, it's a dedicated slice or a swap to a different calendar primitive.
 
+### Coach subdomain collapse
+
+- Commit: `6a78491` `Collapse coach subdomain into single-domain path-based routing`
+- `proxy.ts`: replaced host-based `isCoachDomain` detection with `pathname.startsWith('/user/coach/')`. Header `x-is-coach-domain` is preserved so the guard in `protected-layout.tsx` still fires on full-page loads to coach routes.
+- `SignalShellSwitch` and `CustomAppBar`: compute `isCoachDomain` from `usePathname()` — both nav and surface switch reactively on SPA navigation without a page reload.
+- `SignalModeSwitch` / `modeSwitchActions`: mode switch now calls `router.push()` (SPA nav) instead of `window.location.assign()` (full-page cross-domain reload). No cookies, no cross-domain URL.
+- `useCrossDomainUrl.ts`: deleted.
+- `SettingsClient`: coach-domain-only settings view (coaching-only settings page on `coach.*`) removed; settings now always shows the full settings page.
+- `auth.ts` cookie domain config: left intact for backward compat; the DNS-level `coach.*` redirect can be retired by infra independently.
+
 ### Signal FullCalendar grid internals
 
 - Intended commit: `Build Signal FullCalendar grid internals slice`
@@ -473,12 +483,9 @@ All major user and coach route surfaces, the shell chrome, and the calendar mont
 
 Remaining Stage 5 work:
 
-- subdomain collapse — review doc clarification 1: "Subdomain split — collapse." The mode pill currently still cross-navs via `coach.*` host on production. Collapsing the split needs middleware, cookie scoping, and `protected-layout` changes; this is more an infra slice than a UI slice.
-- No more UI route surfaces to add. Signal coverage is complete across all user and coach routes.
+**None. Stage 5 is complete.**
 
-Most natural next slice now:
-
-- subdomain collapse — only when product commits; infra-leaning, not a UI slice.
+- subdomain collapse — shipped (`6a78491`). See section below.
 
 ## Handover Prompt
 
@@ -499,10 +506,9 @@ Current shipped state to preserve:
 - User slices already shipped: home command centre, progress route, plan create entry, plan upload workspace, plan editor workspace, workout route (all four list views + existing exercise slide), check-in route, calendar route (hero + toggle + WeekListView + FullCalendar month grid internals with Signal CSS), notifications route, settings route, learning-plans route, supplements route, feedback route, nutrition route.
 - Shell: SignalAppShell + SignalSidebar / SignalBottomNav / SignalTopBar / SignalModeSwitch / SignalNotificationsBell are all wired in via `protected-layout.tsx` → `SignalShellSwitch`. The bell links to `/user/notifications` and renders a chartreuse dot when `useNotifications().unreadCount > 0`.
 - FullCalendar grid: `.signal-calendar` class on the month grid wrapper activates Signal planning palette CSS via scoped rules in `calendar.css`. Legacy path is untouched.
-- Subdomain split is NOT yet collapsed. The mode pill cross-navigates via the `coach.*` host on production. Do not attempt the collapse without explicit go-ahead from product — it touches auth, middleware, and cookie scoping.
+- Subdomain collapse is complete (`6a78491`). The mode pill now uses same-domain `router.push()`. The `coach.*` DNS entry can be retired by infra independently — the auth cookie domain config in `auth.ts` is left intact for backward compat.
 
-Signal UI route coverage is now complete. All remaining Stage 5 work is infra:
-- subdomain collapse — only when product commits.
+**Stage 5 is complete. No remaining work.**
 
 Constraints:
 - Preserve existing reducer/editor behavior unless the slice explicitly requires otherwise.
