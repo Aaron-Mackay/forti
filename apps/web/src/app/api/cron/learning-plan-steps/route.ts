@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@lib/prisma';
 import { notifyClientLearningPlanStep } from '@lib/notifications';
-import { parseStepProgress } from '@lib/learningPlanSchemas';
+import { parseStepProgress } from '@lib/contracts/learningPlans';
 import { validateCronRequest } from '@lib/cronAuth';
 
 /**

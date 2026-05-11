@@ -3,7 +3,7 @@ import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import { errorResponse, notFoundResponse, forbiddenResponse, validationErrorResponse } from '@lib/apiResponses';
-import { LearningPlanStepReorderSchema } from '@lib/learningPlanSchemas';
+import { LearningPlanStepReorderSchema } from '@lib/contracts/learningPlans';
 
 /**
  * PUT /api/coach/learning-plans/[planId]/steps/reorder

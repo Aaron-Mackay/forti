@@ -23,7 +23,7 @@ import {
   createEvent,
   reconcileEventMutation
 } from "@lib/events";
-import {RecurrenceFrequency} from "@lib/apiSchemas";
+import {RecurrenceFrequency} from "@lib/contracts/events";
 import {BlockOverlapConfirmationDialog} from "@/app/user/calendar/BlockOverlapConfirmationDialog";
 import {toExclusiveEndDate, toInclusiveEndDate} from "@/app/user/calendar/utils";
 

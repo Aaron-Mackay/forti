@@ -1,7 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {updateUserMetric} from '@/lib/metricService';
 import confirmPermission from "@lib/confirmPermission";
-import {MetricSchema} from "@lib/apiSchemas";
+import {MetricSchema} from "@lib/contracts/metrics";
 import {errorResponse, validationErrorResponse} from "@lib/apiResponses";
 import {Prisma} from "@/generated/prisma/browser";
 import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSession";

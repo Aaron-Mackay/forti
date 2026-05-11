@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { notFoundResponse, forbiddenResponse } from '@lib/apiResponses';
-import { parseStepProgress } from '@lib/learningPlanSchemas';
+import { parseStepProgress } from '@lib/contracts/learningPlans';
 
 /**
  * PATCH /api/learning-plan-assignments/[assignmentId]/steps/[stepId]/complete

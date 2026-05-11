@@ -1,6 +1,6 @@
 import {NextRequest, NextResponse} from 'next/server';
 import confirmPermission from '@lib/confirmPermission';
-import {EventSchema} from '@lib/apiSchemas';
+import {EventSchema} from '@lib/contracts/events';
 import {errorResponse, validationErrorResponse} from '@lib/apiResponses';
 import {authenticationErrorResponse, isAuthenticationError} from '@lib/requireSession';
 import prisma from '@lib/prisma';

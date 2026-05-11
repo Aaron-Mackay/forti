@@ -33,7 +33,7 @@ import {
   reconcileEventMutation,
   updateEvent
 } from "@lib/events";
-import {RecurrenceFrequency} from "@lib/apiSchemas";
+import {RecurrenceFrequency} from "@lib/contracts/events";
 import {EventType} from "@/generated/prisma/browser";
 import {BlockOverlapConfirmationDialog} from "@/app/user/calendar/BlockOverlapConfirmationDialog";
 

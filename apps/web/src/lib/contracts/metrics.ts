@@ -3,6 +3,22 @@ import type { Prisma } from '@/generated/prisma/browser';
 
 const JsonValueSchema = z.custom<Prisma.JsonValue>((value) => value !== undefined);
 
+export const MetricSchema = z.object({
+  userId: z.string(),
+  date: z.coerce.date(),
+  weight: z.number().optional().nullable(),
+  steps: z.number().int().optional().nullable(),
+  sleepMins: z.number().int().optional().nullable(),
+  calories: z.number().int().optional().nullable(),
+  protein: z.number().int().optional().nullable(),
+  carbs: z.number().int().optional().nullable(),
+  fat: z.number().int().optional().nullable(),
+  customMetrics: z.record(z.string(), z.object({
+    value: z.number().nullable(),
+    target: z.number().nullable(),
+  })).optional().nullable(),
+});
+
 export const MetricResponseSchema = z.object({
   id: z.number().int(),
   userId: z.string(),

@@ -39,7 +39,7 @@ import { useParams } from 'next/navigation';
 import { useApiGet } from '@lib/hooks/api/useApiGet';
 import { useApiMutation } from '@lib/hooks/useApiMutation';
 import type { LibraryAssetType } from '@/generated/prisma/browser';
-import type { StepProgressMap } from '@lib/learningPlanSchemas';
+import type { StepProgressMap } from '@lib/contracts/learningPlans';
 import { signalFontVariablesClassName } from '@lib/signal/fonts';
 import { signalTokens } from '@lib/signal/tokens';
 

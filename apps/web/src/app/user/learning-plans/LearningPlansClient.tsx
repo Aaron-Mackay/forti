@@ -21,7 +21,7 @@ import LockIcon from '@mui/icons-material/Lock';
 import { useApiGet } from '@lib/hooks/api/useApiGet';
 import { useApiMutation } from '@lib/hooks/useApiMutation';
 import type { LibraryAssetType } from '@/generated/prisma/browser';
-import type { StepProgressMap } from '@lib/learningPlanSchemas';
+import type { StepProgressMap } from '@lib/contracts/learningPlans';
 import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 import { signalFontVariablesClassName } from '@lib/signal/fonts';
 import { signalTokens } from '@lib/signal/tokens';

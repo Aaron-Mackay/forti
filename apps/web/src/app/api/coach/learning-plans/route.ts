@@ -3,7 +3,7 @@ import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import { errorResponse, validationErrorResponse } from '@lib/apiResponses';
-import { LearningPlanCreateSchema } from '@lib/learningPlanSchemas';
+import { LearningPlanCreateSchema } from '@lib/contracts/learningPlans';
 
 async function requireCoach(userId: string) {
   const user = await prisma.user.findUnique({

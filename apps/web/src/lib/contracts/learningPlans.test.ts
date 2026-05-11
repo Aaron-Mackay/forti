@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseStepProgress, StepProgressSchema } from './learningPlanSchemas';
+import { parseStepProgress, StepProgressSchema } from './learningPlans';
 
 describe('stepProgress JSON schema', () => {
   it('accepts numeric step ids with nullable ISO timestamps', () => {

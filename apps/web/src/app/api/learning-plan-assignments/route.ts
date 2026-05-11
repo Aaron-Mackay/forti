@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
-import { parseStepProgress } from '@lib/learningPlanSchemas';
+import { parseStepProgress } from '@lib/contracts/learningPlans';
 
 /**
  * GET /api/learning-plan-assignments
