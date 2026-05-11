@@ -46,13 +46,27 @@ export async function proxy(req: NextRequest) {
 
   // Forward a coach-route hint to server components so the guard in protected-layout
   // can redirect users without coachModeActive away from /user/coach/* paths.
-  const isCoachRoute = pathname.startsWith('/user/coach/');
+  const isCoachRoute = pathname === '/user/coach' || pathname.startsWith('/user/coach/');
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set('x-is-coach-domain', isCoachRoute ? '1' : '0');
 
-  return NextResponse.next({
-    request: { headers: requestHeaders },
-  });
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+
+  // Sync preferred_mode cookie to the current route so that notification deep-links
+  // (and any other cross-mode navigation) keep the root redirect correct.
+  if (!pathname.startsWith('/api/')) {
+    const currentPref = req.cookies.get('preferred_mode')?.value;
+    const routePref = isCoachRoute ? 'coach' : 'user';
+    if (currentPref !== routePref) {
+      response.cookies.set('preferred_mode', routePref, {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30,
+        sameSite: 'lax',
+      });
+    }
+  }
+
+  return response;
 }
 
 // Protect all pages and API routes except login and assets
