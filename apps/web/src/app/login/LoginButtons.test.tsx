@@ -61,7 +61,10 @@ describe('LoginButtons', () => {
   it('calls signIn with "demo" when clicking Try Demo', () => {
     render(<LoginButtons />);
     fireEvent.click(screen.getByRole('button', { name: /^try demo$/i }));
-    expect(mockSignIn).toHaveBeenCalledWith('demo', { callbackUrl: `${window.location.origin}/user` });
+    expect(mockSignIn).toHaveBeenCalledWith('demo', {
+      callbackUrl: `${window.location.origin}/user`,
+      email: 'jeff@example.com',
+    });
   });
 
   it('calls signIn with "google" when clicking Continue with Google', () => {
@@ -73,14 +76,20 @@ describe('LoginButtons', () => {
   it('calls signIn with "demo-coach" when clicking Try Demo (Coach)', () => {
     render(<LoginButtons />);
     fireEvent.click(screen.getByRole('button', { name: /try demo \(coach\)/i }));
-    expect(mockSignIn).toHaveBeenCalledWith('demo-coach', { callbackUrl: `${window.location.origin}/user` });
+    expect(mockSignIn).toHaveBeenCalledWith('demo-coach', {
+      callbackUrl: `${window.location.origin}/user`,
+      email: 'todd@example.com',
+    });
   });
 
   it('falls back to /user when callbackUrl points back to /login', () => {
     mockUseSearchParams.mockReturnValue(new URLSearchParams('callbackUrl=/login'));
     render(<LoginButtons />);
     fireEvent.click(screen.getByRole('button', { name: /^try demo$/i }));
-    expect(mockSignIn).toHaveBeenCalledWith('demo', { callbackUrl: `${window.location.origin}/user` });
+    expect(mockSignIn).toHaveBeenCalledWith('demo', {
+      callbackUrl: `${window.location.origin}/user`,
+      email: 'jeff@example.com',
+    });
   });
 
   it('keeps same-origin callbackUrls on the current host', () => {
@@ -89,6 +98,7 @@ describe('LoginButtons', () => {
     fireEvent.click(screen.getByRole('button', { name: /^try demo$/i }));
     expect(mockSignIn).toHaveBeenCalledWith('demo', {
       callbackUrl: `${window.location.origin}/user/calendar?view=week`,
+      email: 'jeff@example.com',
     });
   });
 });
