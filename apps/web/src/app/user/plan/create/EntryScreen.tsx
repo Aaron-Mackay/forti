@@ -69,7 +69,7 @@ export const EntryScreen = ({ signalEnabled = false, clientId, onSelectTemplates
             description="Browse proven program structures"
             note="Fastest if you want a starting framework"
             icon={<ListAltIcon sx={{ fontSize: 30 }} />}
-            accent={signalTokens.signal.deep}
+            accent={palette.inkMid}
             onClick={onSelectTemplates}
           />
           <SignalEntryCard
@@ -78,7 +78,7 @@ export const EntryScreen = ({ signalEnabled = false, clientId, onSelectTemplates
             description="Answer a few questions"
             note="Best for goal-led plan drafting"
             icon={<AutoAwesomeIcon sx={{ fontSize: 30 }} />}
-            accent={signalTokens.signal.base}
+            accent={palette.inkMid}
             onClick={onSelectAi}
           />
           <SignalEntryCard
@@ -87,7 +87,7 @@ export const EntryScreen = ({ signalEnabled = false, clientId, onSelectTemplates
             description="Upload CSV or paste training data"
             note="Best if the plan already exists elsewhere"
             icon={<UploadFileIcon sx={{ fontSize: 30 }} />}
-            accent={palette.inkLight}
+            accent={palette.inkMid}
             onClick={() => router.push('/user/plan/upload')}
           />
           <SignalEntryCard
@@ -96,7 +96,7 @@ export const EntryScreen = ({ signalEnabled = false, clientId, onSelectTemplates
             description="Full manual control"
             note="Best for custom coaching builds"
             icon={<EditIcon sx={{ fontSize: 30 }} />}
-            accent={palette.ink}
+            accent={palette.inkMid}
             onClick={onSelectScratch}
           />
         </div>
