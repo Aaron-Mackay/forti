@@ -7,7 +7,7 @@ export default async function CoachLearningPlansPage() {
 
   return (
     <>
-      <AppBarTitle title="Learning Plans" />
+      {!signalEnabled && <AppBarTitle title="Learning Plans" />}
       <SignalSurface signalEnabled={signalEnabled} surface="planning">
         <CoachLearningPlansClient signalEnabled={signalEnabled} />
       </SignalSurface>

@@ -41,7 +41,7 @@ const CoachClientsPage = async () => {
 
   return (
     <>
-      <AppBarTitle title="Clients" />
+      {!signalEnabled && <AppBarTitle title="Clients" />}
       <SignalSurface signalEnabled={signalEnabled} surface="planning">
         {signalEnabled ? (
           <SignalCoachClients coachName={user.name} clients={clients} />

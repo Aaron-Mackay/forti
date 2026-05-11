@@ -11,7 +11,7 @@ export default async function CoachCheckInsPage() {
 
   return (
     <>
-      <AppBarTitle title="Client Check-ins" />
+      {!signalEnabled && <AppBarTitle title="Client Check-ins" />}
       <SignalSurface signalEnabled={signalEnabled} surface="planning">
         <Paper sx={{ minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
           <Box sx={{ px: { xs: 2, sm: 3 } }}>

@@ -107,8 +107,7 @@ export function SignalCoachHome({ coachName, data, today }: Props) {
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 18 }}>
-          <ActionLink href="/user/coach/check-ins" label="Open check-ins" />
-          <ActionLink href="/user/coach/clients" label="View clients" secondary />
+          <ActionLink href="/user/coach/clients" label="View clients" />
         </div>
       </section>
 
@@ -117,12 +116,12 @@ export function SignalCoachHome({ coachName, data, today }: Props) {
           eyebrow="Submitted"
           title="Check-ins waiting on you"
           emptyLabel="Nothing is waiting for review."
-          footerHref="/user/coach/check-ins"
-          footerLabel="Browse all check-ins"
+          footerHref="/user/coach/clients"
+          footerLabel="View all clients"
           items={data.submittedCheckIns.map(item => (
             <Link
               key={item.checkInId}
-              href={`/user/coach/check-ins/${item.checkInId}`}
+              href={`/user/coach/clients/${item.clientId}/check-ins/${item.checkInId}`}
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr auto',

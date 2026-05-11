@@ -4,6 +4,7 @@ import { Box } from '@mui/material';
 import { notFound } from 'next/navigation';
 import CoachCheckInDetailPageClient from '../CoachCheckInDetailPageClient';
 import { SignalSurface } from '@/components/signal/SignalSurface';
+import { SignalBackLink } from '@/components/signal/SignalBackLink';
 import { loadSignalFlag } from '@lib/signal/loadSignalFlag';
 
 interface Props {
@@ -22,8 +23,9 @@ export default async function CoachCheckInDetailPage({ params }: Props) {
 
   return (
     <>
-      <AppBarTitle title="Check-in Review" showBack backHref="/user/coach/check-ins" />
+      {!signalEnabled && <AppBarTitle title="Check-in Review" showBack backHref="/user/coach" />}
       <SignalSurface signalEnabled={signalEnabled} surface="calm">
+        {signalEnabled && <SignalBackLink href="/user/coach" label="Coach home" surface="calm" />}
         <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 }, minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
           <CoachCheckInDetailPageClient checkInId={checkInId} signalEnabled={signalEnabled} />
         </Box>
