@@ -95,8 +95,7 @@ export function SignalCoachClients({ coachName, clients }: Props) {
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 18 }}>
-          <ActionLink href="/user/coach/check-ins" label="Open check-ins" />
-          <ActionLink href="/user/coach" label="Open coach home" secondary />
+          <ActionLink href="/user/coach" label="Open coach home" />
         </div>
       </section>
 
@@ -169,7 +168,13 @@ export function SignalCoachClients({ coachName, clients }: Props) {
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 <ActionLink href={`/user/coach/clients/${client.clientId}`} label="Open overview" />
-                <ActionLink href={`/user/coach/clients/${client.clientId}/check-ins`} label="Check-ins" secondary />
+                <ActionLink
+                  href={client.pendingCheckInId
+                    ? `/user/coach/clients/${client.clientId}/check-ins/${client.pendingCheckInId}`
+                    : `/user/coach/clients/${client.clientId}/check-ins`}
+                  label="Check-ins"
+                  secondary
+                />
                 <ActionLink href={`/user/coach/clients/${client.clientId}/plans`} label="Plans" secondary />
               </div>
             </section>

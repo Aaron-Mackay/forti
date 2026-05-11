@@ -13,6 +13,7 @@ export type CoachClientHealthSummary = {
   currentWeekCheckInStatus: 'submitted' | 'pending';
   latestCoachReviewStatus: 'reviewed' | 'awaiting_review' | 'no_checkins';
   latestCoachReviewAt: Date | null;
+  pendingCheckInId: number | null;
   unreadClientNotifications: number;
   riskFlags: string[];
 };
@@ -113,6 +114,7 @@ export async function getCoachClientHealthSummary(coachId: string): Promise<Coac
       ],
       distinct: ['userId'],
       select: {
+        id: true,
         userId: true,
         coachReviewedAt: true,
       },
@@ -154,6 +156,7 @@ export async function getCoachClientHealthSummary(coachId: string): Promise<Coac
       currentWeekCheckInStatus,
       latestCoachReviewStatus,
       latestCoachReviewAt: latestCompletedCheckIn?.coachReviewedAt ?? null,
+      pendingCheckInId: latestCompletedCheckIn && !latestCompletedCheckIn.coachReviewedAt ? latestCompletedCheckIn.id : null,
       unreadClientNotifications: unreadCheckInNotifications.get(client.id) ?? 0,
       riskFlags,
     };
