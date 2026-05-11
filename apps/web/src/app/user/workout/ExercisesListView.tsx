@@ -71,6 +71,7 @@ export default function ExercisesListView({
     useScrollEdgeFades<HTMLUListElement>({axis: 'y', threshold: 4});
 
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [warnUnloggedOpen, setWarnUnloggedOpen] = useState(false);
   const [pickedDate, setPickedDate] = useState<Date | null>(null);
   const [pendingRemoveExerciseId, setPendingRemoveExerciseId] = useState<number | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -100,11 +101,20 @@ export default function ExercisesListView({
       didLongPress.current = false;
       return;
     }
+    if (!isCompleted && unloggedCount > 0) {
+      setPickedDate(null);
+      setWarnUnloggedOpen(true);
+      return;
+    }
     onCompleteWorkout(!isCompleted);
   };
 
   const hasNote = noteValue.trim().length > 0;
   const isCompleted = !!workout.dateCompleted;
+  const unloggedCount = workout.exercises.reduce((count, ex) => {
+    if (ex.exercise.category === 'cardio') return count;
+    return count + ex.sets.filter(s => s.reps == null).length;
+  }, 0);
   const completedDate = workout.dateCompleted
     ? new Date(workout.dateCompleted).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'})
     : null;
@@ -306,7 +316,12 @@ export default function ExercisesListView({
               color="success"
               onClick={() => {
                 setDatePickerOpen(false);
-                if (pickedDate) onCompleteWorkout(true, pickedDate);
+                if (!pickedDate) return;
+                if (unloggedCount > 0) {
+                  setWarnUnloggedOpen(true);
+                } else {
+                  onCompleteWorkout(true, pickedDate);
+                }
               }}
             >
               Complete
@@ -332,6 +347,27 @@ export default function ExercisesListView({
               }}
             >
               Remove
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog open={warnUnloggedOpen} onClose={() => setWarnUnloggedOpen(false)}>
+          <DialogTitle>Unlogged sets</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2">
+              {unloggedCount} {unloggedCount === 1 ? 'set was' : 'sets were'} unlogged. Complete anyway?
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setWarnUnloggedOpen(false)}>Cancel</Button>
+            <Button
+              variant="contained"
+              color="success"
+              onClick={() => {
+                setWarnUnloggedOpen(false);
+                onCompleteWorkout(true, pickedDate ?? undefined);
+              }}
+            >
+              Complete
             </Button>
           </DialogActions>
         </Dialog>
@@ -561,7 +597,12 @@ export default function ExercisesListView({
               color="success"
               onClick={() => {
                 setDatePickerOpen(false);
-                if (pickedDate) onCompleteWorkout(true, pickedDate);
+                if (!pickedDate) return;
+                if (unloggedCount > 0) {
+                  setWarnUnloggedOpen(true);
+                } else {
+                  onCompleteWorkout(true, pickedDate);
+                }
               }}
             >
               Complete
@@ -587,6 +628,27 @@ export default function ExercisesListView({
               }}
             >
               Remove
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog open={warnUnloggedOpen} onClose={() => setWarnUnloggedOpen(false)}>
+          <DialogTitle>Unlogged sets</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2">
+              {unloggedCount} {unloggedCount === 1 ? 'set was' : 'sets were'} unlogged. Complete anyway?
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setWarnUnloggedOpen(false)}>Cancel</Button>
+            <Button
+              variant="contained"
+              color="success"
+              onClick={() => {
+                setWarnUnloggedOpen(false);
+                onCompleteWorkout(true, pickedDate ?? undefined);
+              }}
+            >
+              Complete
             </Button>
           </DialogActions>
         </Dialog>

@@ -157,6 +157,7 @@ export function useWorkoutSession(userData: WorkoutDataResponse, initialWorkoutI
 
   const prevDepthRef = useRef<number | null>(null);
   const isPopStateNavRef = useRef(false);
+  const pendingNavDepthRef = useRef<number | null>(null);
 
   const goBack = useCallback(() => {
     if (selectedExerciseId) setSelectedExerciseId(null);
@@ -193,6 +194,10 @@ export function useWorkoutSession(userData: WorkoutDataResponse, initialWorkoutI
 
   useEffect(() => {
     const handlePopState = () => {
+      if (pendingNavDepthRef.current !== null) {
+        pendingNavDepthRef.current = null;
+        return;
+      }
       isPopStateNavRef.current = true;
       goBackRef.current();
     };
@@ -204,6 +209,17 @@ export function useWorkoutSession(userData: WorkoutDataResponse, initialWorkoutI
   // history and React state stay in sync (no ghost entries).
   const navigateBack = useCallback(() => {
     if (depth > 0) history.back();
+  }, [depth]);
+
+  // Navigate to the workouts list (depth 2) from exercise detail or exercises list.
+  // Uses history.go to keep the browser back stack correct rather than direct state mutation.
+  const navigateToWorkoutsList = useCallback(() => {
+    const stepsBack = depth - 2;
+    if (stepsBack <= 0) return;
+    setSelectedExerciseId(null);
+    setSelectedWorkoutId(null);
+    pendingNavDepthRef.current = 2;
+    history.go(-stepsBack);
   }, [depth]);
 
   const handleSetUpdate = (workoutExerciseId: number, setIdx: number, field: Field, value: string) => {
@@ -531,6 +547,7 @@ export function useWorkoutSession(userData: WorkoutDataResponse, initialWorkoutI
     pendingExercise, setPendingExercise,
     // Handlers
     navigateBack,
+    navigateToWorkoutsList,
     handleSetUpdate,
     handleEffortUpdate,
     handleWorkoutNoteBlur,

@@ -13,6 +13,7 @@ import ExercisePickerDialog from './ExercisePickerDialog';
 import AddExerciseConfigDialog from './AddExerciseConfigDialog';
 import PlansListView from '@/app/user/workout/PlansListView';
 import WorkoutCompletionModal from '@/app/user/workout/WorkoutCompletionModal';
+import { SignalCompletionSheet } from '@/app/user/workout/SignalCompletionSheet';
 import {StopwatchProvider} from '@/app/user/workout/StopwatchContext';
 import {Alert, Collapse} from '@mui/material';
 import type {PreviousExerciseHistory} from '@lib/contracts/exerciseHistory';
@@ -42,6 +43,7 @@ export default function WorkoutClient({userData, signalEnabled = false}: {userDa
     showAddExercise, setShowAddExercise,
     pendingExercise, setPendingExercise,
     navigateBack,
+    navigateToWorkoutsList,
     handleSetUpdate,
     handleEffortUpdate,
     handleWorkoutNoteBlur,
@@ -128,6 +130,7 @@ export default function WorkoutClient({userData, signalEnabled = false}: {userDa
         onRemoveExercise={handleRemoveExercise}
         snackbar={snackbar}
         handleSnackbarClose={handleSnackbarClose}
+        onCompleteWorkout={handleCompleteWorkout}
         signalEnabled={signalEnabled}
       />
     );
@@ -179,15 +182,28 @@ export default function WorkoutClient({userData, signalEnabled = false}: {userDa
         </Alert>
       </Collapse>
       {view}
-      {completionModal && (
+      {completionModal && (signalEnabled ? (
+        <SignalCompletionSheet
+          workout={completionModal.workout}
+          weekWorkoutsCompleted={completionModal.done}
+          weekWorkoutsTotal={completionModal.total}
+          onClose={() => {
+            setCompletionModal(null);
+            navigateToWorkoutsList();
+          }}
+        />
+      ) : (
         <WorkoutCompletionModal
           open={!!completionModal}
-          onClose={() => setCompletionModal(null)}
+          onClose={() => {
+            setCompletionModal(null);
+            navigateToWorkoutsList();
+          }}
           workout={completionModal.workout}
           weekWorkoutsCompleted={completionModal.done}
           weekWorkoutsTotal={completionModal.total}
         />
-      )}
+      ))}
       <ExercisePickerDialog
         open={substituteTarget !== null}
         title="Substitute Exercise"

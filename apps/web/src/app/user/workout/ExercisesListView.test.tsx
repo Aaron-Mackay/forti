@@ -101,8 +101,9 @@ describe('ExercisesListView', () => {
     expect(screen.getByRole('button', {name: /completed/i})).toBeInTheDocument();
   });
 
-  it('calls onCompleteWorkout(true) when clicking Mark as Complete', () => {
-    renderView({workout: buildWorkout({dateCompleted: null}), onBack, onSelectExercise, onWorkoutNoteBlur, onCompleteWorkout, onAddExercise});
+  it('calls onCompleteWorkout(true) when clicking Mark as Complete with all sets logged', () => {
+    const loggedSets = [{id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100, e1rm: null, rpe: null, rir: null, isDropSet: false, parentSetId: null}, {id: 2, workoutExerciseId: 10, order: 2, reps: 10, weight: 95, e1rm: null, rpe: null, rir: null, isDropSet: false, parentSetId: null}];
+    renderView({workout: buildWorkout({dateCompleted: null, exercises: [baseExercise({sets: loggedSets})]}), onBack, onSelectExercise, onWorkoutNoteBlur, onCompleteWorkout, onAddExercise});
     fireEvent.click(screen.getByRole('button', {name: /mark as complete/i}));
     expect(onCompleteWorkout).toHaveBeenCalledWith(true);
   });
@@ -234,9 +235,10 @@ describe('ExercisesListView', () => {
     expect(screen.getByText('Complete Workout')).toBeInTheDocument();
   });
 
-  it('calls onCompleteWorkout with true and a Date on dialog confirm', async () => {
+  it('calls onCompleteWorkout with true and a Date on dialog confirm when all sets are logged', async () => {
     vi.useFakeTimers();
-    renderView({workout: buildWorkout({dateCompleted: null}), onBack, onSelectExercise, onWorkoutNoteBlur, onCompleteWorkout, onAddExercise});
+    const loggedSets = [{id: 1, workoutExerciseId: 10, order: 1, reps: 8, weight: 100, e1rm: null, rpe: null, rir: null, isDropSet: false, parentSetId: null}, {id: 2, workoutExerciseId: 10, order: 2, reps: 10, weight: 95, e1rm: null, rpe: null, rir: null, isDropSet: false, parentSetId: null}];
+    renderView({workout: buildWorkout({dateCompleted: null, exercises: [baseExercise({sets: loggedSets})]}), onBack, onSelectExercise, onWorkoutNoteBlur, onCompleteWorkout, onAddExercise});
     const btn = screen.getByRole('button', {name: /mark as complete/i});
     fireEvent.pointerDown(btn);
     act(() => { vi.advanceTimersByTime(650); });

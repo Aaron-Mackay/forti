@@ -4,8 +4,14 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {
   Alert,
   Box,
+  Button,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Snackbar,
+  Typography,
 } from '@mui/material';
 import {Swiper, SwiperSlide} from 'swiper/react';
 import {Pagination} from 'swiper/modules';
@@ -21,6 +27,8 @@ import AppBarStopwatch from "@/app/user/workout/AppBarStopwatch";
 import ExerciseSlide from './ExerciseSlide';
 import CardioSlide from './CardioSlide';
 import { SignalExerciseSlide } from './signal/SignalExerciseSlide';
+import { SignalGroupedExerciseSlide } from './signal/SignalGroupedExerciseSlide';
+import { SignalCardioSlide } from './signal/SignalCardioSlide';
 import {
   type E1rmHistoryPoint,
   type PreviousCardioResponse,
@@ -47,6 +55,7 @@ export default function ExerciseDetailView({
   onRemoveExercise,
   snackbar,
   handleSnackbarClose,
+  onCompleteWorkout,
   signalEnabled = false,
 }: {
   workout: WorkoutPrisma;
@@ -65,9 +74,15 @@ export default function ExerciseDetailView({
   onRemoveExercise: (workoutExerciseId: number) => void;
   snackbar: { open: boolean; message: string; severity: 'success' | 'info' };
   handleSnackbarClose: () => void;
+  onCompleteWorkout?: (completed: boolean, date?: Date) => void;
   signalEnabled?: boolean;
 }) {
   useAppBar({ title: 'Exercises', showBack: true, onBack });
+  const [warnUnloggedOpen, setWarnUnloggedOpen] = useState(false);
+  const unloggedCount = workout.exercises.reduce((count, ex) => {
+    if (ex.exercise.category === 'cardio') return count;
+    return count + ex.sets.filter(s => s.reps == null).length;
+  }, 0);
   const paginationRef = useRef<HTMLDivElement | null>(null);
   const swiperRef = useRef<SwiperType | null>(null);
   const exerciseGroups = groupWorkoutExercises(workout.exercises);
@@ -173,13 +188,45 @@ export default function ExerciseDetailView({
             <SwiperSlide key={group.key} style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
               {group.items.length === 1 ? (
                 group.items[0].exercise.category === 'cardio' ? (
-                  <CardioSlide
-                    ex={group.items[0]}
-                    userExerciseNote={userExerciseNotes.find(n => n.exerciseId === group.items[0].exerciseId)}
-                    onFormCueBlur={onFormCueBlur}
-                    onCardioUpdate={(field, value) => onCardioUpdate(group.items[0].id, field, value)}
-                    previousCardio={previousCardioMap.get(group.items[0].exerciseId)}
-                  />
+                  signalEnabled ? (
+                    <SignalCardioSlide
+                      ex={group.items[0]}
+                      onCardioUpdate={(field, value) => onCardioUpdate(group.items[0].id, field, value)}
+                      previousCardio={previousCardioMap.get(group.items[0].exerciseId)}
+                      nextExerciseName={
+                        groupIdx + 1 < exerciseGroups.length
+                          ? exerciseGroups[groupIdx + 1].items[0].exercise.name
+                          : null
+                      }
+                      onAdvance={() => {
+                        (document.activeElement as HTMLElement | null)?.blur?.();
+                        if (groupIdx + 1 < exerciseGroups.length) {
+                          swiperRef.current?.slideNext();
+                        } else if (onCompleteWorkout) {
+                          onCompleteWorkout(true);
+                        } else {
+                          onBack();
+                        }
+                      }}
+                      onSkip={() => {
+                        if (groupIdx + 1 < exerciseGroups.length) {
+                          swiperRef.current?.slideNext();
+                        } else if (onCompleteWorkout) {
+                          onCompleteWorkout(true);
+                        } else {
+                          onBack();
+                        }
+                      }}
+                    />
+                  ) : (
+                    <CardioSlide
+                      ex={group.items[0]}
+                      userExerciseNote={userExerciseNotes.find(n => n.exerciseId === group.items[0].exerciseId)}
+                      onFormCueBlur={onFormCueBlur}
+                      onCardioUpdate={(field, value) => onCardioUpdate(group.items[0].id, field, value)}
+                      previousCardio={previousCardioMap.get(group.items[0].exerciseId)}
+                    />
+                  )
                 ) : signalEnabled ? (
                   <SignalExerciseSlide
                     ex={group.items[0]}
@@ -197,6 +244,12 @@ export default function ExerciseDetailView({
                       (document.activeElement as HTMLElement | null)?.blur?.();
                       if (groupIdx + 1 < exerciseGroups.length) {
                         swiperRef.current?.slideNext();
+                      } else if (onCompleteWorkout) {
+                        if (unloggedCount > 0) {
+                          setWarnUnloggedOpen(true);
+                        } else {
+                          onCompleteWorkout(true);
+                        }
                       } else {
                         onBack();
                       }
@@ -204,6 +257,8 @@ export default function ExerciseDetailView({
                     onSkip={() => {
                       if (groupIdx + 1 < exerciseGroups.length) {
                         swiperRef.current?.slideNext();
+                      } else if (onCompleteWorkout) {
+                        onCompleteWorkout(true);
                       } else {
                         onBack();
                       }
@@ -221,6 +276,39 @@ export default function ExerciseDetailView({
                     onSubstitute={() => onSubstituteExercise(group.items[0].id)}
                   />
                 )
+              ) : signalEnabled ? (
+                <SignalGroupedExerciseSlide
+                  group={group}
+                  handleSetUpdate={handleSetUpdate}
+                  nextExerciseName={
+                    groupIdx + 1 < exerciseGroups.length
+                      ? exerciseGroups[groupIdx + 1].items[0].exercise.name
+                      : null
+                  }
+                  onAdvance={() => {
+                    (document.activeElement as HTMLElement | null)?.blur?.();
+                    if (groupIdx + 1 < exerciseGroups.length) {
+                      swiperRef.current?.slideNext();
+                    } else if (onCompleteWorkout) {
+                      if (unloggedCount > 0) {
+                        setWarnUnloggedOpen(true);
+                      } else {
+                        onCompleteWorkout(true);
+                      }
+                    } else {
+                      onBack();
+                    }
+                  }}
+                  onSkip={() => {
+                    if (groupIdx + 1 < exerciseGroups.length) {
+                      swiperRef.current?.slideNext();
+                    } else if (onCompleteWorkout) {
+                      onCompleteWorkout(true);
+                    } else {
+                      onBack();
+                    }
+                  }}
+                />
               ) : (
                 <GroupedExerciseSlide
                   group={group}
@@ -261,6 +349,27 @@ export default function ExerciseDetailView({
           {snackbar.message}
         </Alert>
       </Snackbar>
+      <Dialog open={warnUnloggedOpen} onClose={() => setWarnUnloggedOpen(false)}>
+        <DialogTitle>Unlogged sets</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            {unloggedCount} {unloggedCount === 1 ? 'set was' : 'sets were'} unlogged. Complete anyway?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setWarnUnloggedOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="success"
+            onClick={() => {
+              setWarnUnloggedOpen(false);
+              onCompleteWorkout?.(true);
+            }}
+          >
+            Complete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
