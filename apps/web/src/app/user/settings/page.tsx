@@ -25,7 +25,16 @@ export default async function SettingsPage() {
   return (
     <>
       <AppBarTitle title="Settings" />
-      <Paper sx={{px: 2, minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto'}}>
+      <Paper
+        sx={{
+          px: 2,
+          height: HEIGHT_EXC_APPBAR,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          boxSizing: 'border-box',
+          pb: 'calc(16px + env(safe-area-inset-bottom))',
+        }}
+      >
         <SettingsClient
           initialName={user.name ?? ''}
           initialImage={user.image ?? null}
