@@ -55,7 +55,7 @@ Updated as items are fixed. Use this as the working punch list.
 |---|------|--------|-------|
 | PR-1 | Progress is split into clear sections | ✅ | Metrics and "Focus exercises" panels clearly labelled; each dismissable |
 | PR-2 | Focus exercises are prominent | ✅ | Strength panel titled "Focus exercises"; inline "Edit in Settings →" link |
-| PR-3 | Non-focus exercises remain accessible | ❌ | No browse path for non-tracked exercises; only link is to Settings to change tracked list |
+| PR-3 | Non-focus exercises remain accessible | ✅ | "Browse all →" in Focus exercises panel opens a search sheet; default view sorted by most recently logged |
 | PR-4 | Missing data is not treated as zero | ✅ | DashboardChart filters nulls out; E1rmProgressCard shows "No data yet" |
 | PR-5 | Excluded progression entries filtered from E1RM/previous | ❌ | No `excluded`/`isExcluded` field on ExerciseSet; concept not implemented |
 | PR-6 | Progress does not become chart landfill | ✅ | Each panel has a "hide" button; hidden panels show "Re-enable in Settings →" notice |
@@ -107,7 +107,7 @@ Updated as items are fixed. Use this as the working punch list.
 | CW-1 | Pending check-in opens review directly | ✅ | "Check-ins" button routes to `/check-ins/{id}` when `pendingCheckInId` present; list otherwise |
 | CW-2 | Otherwise opens Client Overview | ✅ | "Open overview" button navigates to `/user/coach/clients/[id]` |
 | CW-3 | Scoped nav exists within client workspace | ✅ | SignalClientNav tab strip on overview, check-ins, plans, nutrition pages |
-| CW-4 | Overview shows plan, training, metrics, check-in, targets, supplements, notes | ⚠️ | Added: targets summary panel. Still missing: supplements, coach notes |
+| CW-4 | Overview shows plan, training, metrics, check-in, targets, supplements, notes | ✅ | Supplements tab added to nav; coach notes panel added to Overview (editable, `PATCH /api/coach/clients/[clientId]/notes`) |
 
 ---
 
@@ -136,19 +136,12 @@ Updated as items are fixed. Use this as the working punch list.
 
 | Status | Count |
 |--------|-------|
-| ✅ Pass | 41 |
-| ⚠️ Partial | 1 |
-| ❌ Missing | 2 |
+| ✅ Pass | 44 |
+| ⚠️ Partial | 0 |
+| ❌ Missing | 1 |
 
 ### Confirmed gaps to fix
 
 | ID | Item |
 |----|------|
-| PR-3 | No way to browse non-focus exercises from Progress |
 | PR-5 | Excluded set entries concept not implemented |
-
-### Partial — need a decision on scope
-
-| ID | Item | Issue |
-|----|------|-------|
-| CW-4 | Client overview completeness | Targets summary added. Still missing: supplements tab, coach notes field |

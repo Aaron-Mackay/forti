@@ -16,6 +16,7 @@ export const ExerciseListQuerySchema = z.object({
   search: optionalTrimmedSearch,
   take: z.coerce.number().int().min(1).max(100).optional(),
   skip: z.coerce.number().int().min(0).optional(),
+  sortBy: z.enum(['name', 'recent']).optional(),
 });
 export type ExerciseListQuery = z.infer<typeof ExerciseListQuerySchema>;
 

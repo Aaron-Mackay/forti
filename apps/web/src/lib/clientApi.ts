@@ -268,6 +268,7 @@ export async function listExercises(query: ExerciseListQuery = {}): Promise<Exer
   if (parsed.search) params.set('search', parsed.search);
   if (parsed.take !== undefined) params.set('take', String(parsed.take));
   if (parsed.skip !== undefined) params.set('skip', String(parsed.skip));
+  if (parsed.sortBy) params.set('sortBy', parsed.sortBy);
   const qs = params.toString();
   const url = qs ? `/api/exercises?${qs}` : '/api/exercises';
   return fetchJsonWithSchema(url, ExerciseListResponseSchema);

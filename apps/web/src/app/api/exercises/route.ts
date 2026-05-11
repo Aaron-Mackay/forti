@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
       search: searchParams.get('search') ?? undefined,
       take: searchParams.get('take') ?? undefined,
       skip: searchParams.get('skip') ?? undefined,
+      sortBy: searchParams.get('sortBy') ?? undefined,
     });
 
     if (!parsed.success) {
@@ -32,6 +33,28 @@ export async function GET(req: NextRequest) {
           ],
         }
       : visibleExerciseWhere;
+
+    if (query.sortBy === 'recent') {
+      const recentWorkoutExercises = await prisma.workoutExercise.findMany({
+        where: {
+          workout: {
+            dateCompleted: { not: null },
+            week: { plan: { userId } },
+          },
+        },
+        orderBy: { workout: { dateCompleted: 'desc' } },
+        distinct: ['exerciseId'],
+        select: { exerciseId: true },
+        ...(query.take !== undefined ? { take: query.take } : { take: 25 }),
+      });
+      const exerciseIds = recentWorkoutExercises.map((we) => we.exerciseId);
+      if (exerciseIds.length === 0) return NextResponse.json([]);
+      const exerciseRecords = await prisma.exercise.findMany({
+        where: { id: { in: exerciseIds }, ...visibleExerciseWhere },
+      });
+      const byId = new Map(exerciseRecords.map((e) => [e.id, e]));
+      return NextResponse.json(exerciseIds.map((id) => byId.get(id)).filter(Boolean));
+    }
 
     const exercises = await prisma.exercise.findMany({
       where,

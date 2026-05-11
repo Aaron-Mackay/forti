@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import DashboardChart from '@/app/user/(dashboard)/DashboardChart';
 import E1rmProgressCard from '@/app/user/(dashboard)/E1rmProgressCard';
+import { ExerciseBrowseSheet } from './ExerciseBrowseSheet';
 import { EventType } from '@/generated/prisma/browser';
 import { signalFontVariablesClassName } from '@lib/signal/fonts';
 import { signalTokens } from '@lib/signal/tokens';
@@ -190,6 +191,7 @@ export function SignalProgress({ userName, metrics, events, activePlanData, sett
 
   const [metricsVisible, setMetricsVisible] = useState(true);
   const [strengthVisible, setStrengthVisible] = useState(true);
+  const [browseOpen, setBrowseOpen] = useState(false);
 
   return (
     <div
@@ -328,12 +330,21 @@ export function SignalProgress({ userName, metrics, events, activePlanData, sett
             eyebrow="Strength"
             title="Focus exercises"
             action={
-              <Link
-                href="/user/settings"
-                style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: signalTokens.signal.deep, textDecoration: 'none', whiteSpace: 'nowrap' }}
-              >
-                Edit in Settings →
-              </Link>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => setBrowseOpen(true)}
+                  style={{ appearance: 'none', background: 'none', border: 'none', cursor: 'pointer', fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: signalTokens.signal.deep, padding: 0, whiteSpace: 'nowrap' }}
+                >
+                  Browse all →
+                </button>
+                <Link
+                  href="/user/settings"
+                  style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, textDecoration: 'none', whiteSpace: 'nowrap' }}
+                >
+                  Edit in Settings →
+                </Link>
+              </div>
             }
             onDismiss={() => setStrengthVisible(false)}
           >
@@ -354,6 +365,12 @@ export function SignalProgress({ userName, metrics, events, activePlanData, sett
           <HiddenPanelNotice label="Strength" />
         )}
       </div>
+
+      <ExerciseBrowseSheet
+        open={browseOpen}
+        onClose={() => setBrowseOpen(false)}
+        weightUnit={settings.weightUnit}
+      />
     </div>
   );
 }

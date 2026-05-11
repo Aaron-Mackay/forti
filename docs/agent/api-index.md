@@ -20,6 +20,7 @@
 - /api/coach/check-ins/[id]/photo-history | methods=GET | auth=session | contracts=-
 - /api/coach/clients | methods=GET | auth=session | contracts=-
 - /api/coach/clients/[clientId] | methods=DELETE | auth=session | contracts=-
+- /api/coach/clients/[clientId]/notes | methods=PATCH | auth=session | contracts=-
 - /api/coach/clients/[clientId]/nutrition | methods=GET | auth=session | contracts=-
 - /api/coach/clients/[clientId]/supplements | methods=GET,POST | auth=session | contracts=-
 - /api/coach/clients/[clientId]/supplements/[supplementId] | methods=PATCH,DELETE | auth=session | contracts=-
