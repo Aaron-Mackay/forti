@@ -54,4 +54,28 @@ test.describe('Workout Signal', () => {
     await expect(page.getByRole('button', { name: /add exercise/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /mark as complete|completed/i })).toBeVisible();
   });
+
+  test('exercise detail sheet exposes the history exclusion toggle', async ({ page }) => {
+    await page.goto('/user/workout');
+
+    // Navigate to exercises list
+    await page.locator('button').filter({ hasText: 'Plan 1' }).first().click();
+    await page.locator('button').filter({ hasText: 'Week 1' }).first().click();
+    await page.locator('button').filter({ hasText: 'Workout A' }).first().click();
+
+    // Click the first exercise row to enter the slide
+    await expect(page.getByText('Exercises').first()).toBeVisible();
+    await page.locator('[data-signal-surface="gym"] button').filter({ hasNotText: /add exercise|mark as complete|completed/i }).first().click();
+
+    // Slide is visible — click the exercise name button to open the detail sheet
+    const nameBtn = page.locator('button[aria-haspopup="dialog"]').first();
+    await expect(nameBtn).toBeVisible();
+    await nameBtn.click();
+
+    // Detail sheet appears with the Progress section and the exclusion toggle
+    const sheet = page.getByRole('dialog');
+    await expect(sheet).toBeVisible();
+    await expect(sheet.getByText('Progress')).toBeVisible();
+    await expect(sheet.getByRole('button', { name: /exclude this session from history/i })).toBeVisible();
+  });
 });

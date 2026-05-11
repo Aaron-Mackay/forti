@@ -61,4 +61,30 @@ test.describe('Coach Client Overview', () => {
     await page.getByRole('link', { name: 'Check-ins' }).click();
     await expect(page).toHaveURL(`/user/coach/clients/${clientId}/check-ins`);
   });
+
+  test('coach notes panel is visible and editable on the client overview', async ({ page }) => {
+    const clientId = await firstCoachClientId(page);
+    await page.goto(`/user/coach/clients/${clientId}`);
+
+    // Notes section label is rendered
+    await expect(page.getByText('Coach notes').first()).toBeVisible();
+
+    // Read state: either "No notes yet" or existing notes + Edit button
+    await expect(
+      page.getByText('No notes yet.').first()
+        .or(page.getByRole('button', { name: 'Edit' }).first()),
+    ).toBeVisible();
+
+    // Open edit mode — button text is "Edit" or "Add notes" depending on state
+    const editBtn = page.getByRole('button', { name: /^(Edit|Add notes)$/ }).first();
+    await expect(editBtn).toBeVisible();
+    await editBtn.click();
+
+    // Textarea appears
+    await expect(page.getByRole('textbox')).toBeVisible();
+
+    // Cancel returns to read state without saving
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await expect(page.getByRole('textbox')).not.toBeVisible();
+  });
 });

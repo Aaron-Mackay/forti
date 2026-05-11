@@ -1,5 +1,4 @@
 import { test, expect } from './fixtures';
-import { Exercise } from '@prisma/client';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -12,7 +11,7 @@ test.describe('Progress', () => {
   test.beforeEach(async ({ page }) => {
     const exercisesResponse = await page.request.get('/api/exercises');
     expect(exercisesResponse.ok()).toBeTruthy();
-    const exercises = await exercisesResponse.json() as Exercise[];
+    const exercises = await exercisesResponse.json() as Array<{ id: number; name: string }>;
     trackedExercise = { id: exercises[0].id, name: exercises[0].name };
 
     await page.request.patch('/api/user/settings', {
@@ -56,5 +55,32 @@ test.describe('Progress', () => {
       ),
     ).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText(trackedExercise?.name ?? '').first()).toBeVisible();
+  });
+
+  test('Browse all link opens the exercise browse sheet with a searchable list', async ({ page }) => {
+    await page.goto('/user/progress');
+
+    // Focus exercises panel has a "Browse all" link
+    const browseLink = page.getByRole('button', { name: /browse all/i });
+    await expect(browseLink).toBeVisible();
+    await browseLink.click();
+
+    // Sheet dialog opens with exercise list
+    const sheet = page.getByRole('dialog', { name: /browse exercises/i });
+    await expect(sheet).toBeVisible();
+    await expect(sheet.getByText('All exercises')).toBeVisible();
+
+    // Search box is present
+    await expect(sheet.getByPlaceholder(/search exercises/i)).toBeVisible();
+
+    // Exercise list loads (at least one exercise row or empty state)
+    await expect(
+      sheet.getByText('No exercises found')
+        .or(sheet.locator('button').nth(2)),
+    ).toBeVisible({ timeout: 8_000 });
+
+    // Close with ×
+    await sheet.getByRole('button', { name: 'Close' }).click();
+    await expect(page.getByRole('dialog', { name: /browse exercises/i })).not.toBeVisible();
   });
 });
