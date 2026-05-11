@@ -30,7 +30,7 @@ const ClientOverviewPage = async ({ params }: Props) => {
 
   const clientRecord = await prisma.user.findUnique({
     where: { id: clientId },
-    select: { id: true, name: true, coachId: true, settings: true },
+    select: { id: true, name: true, coachId: true, settings: true, coachClientNotes: true },
   });
 
   if (!clientRecord || clientRecord.coachId !== user.id) {
@@ -106,6 +106,7 @@ const ClientOverviewPage = async ({ params }: Props) => {
           latestCheckIn={latestCheckIn}
           pendingReviewCheckIn={pendingReviewCheckIn}
           targetsSummary={targetsSummary}
+          coachClientNotes={clientRecord.coachClientNotes}
           bodyweightUnit={clientSettings.bodyweightUnit}
           today={today}
         />

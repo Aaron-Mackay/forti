@@ -31,9 +31,10 @@ model User {
   checkInTemplate Json? // CheckInTemplate | null — stored on the coach's User row
 
   // self relation (coach <-> clients)
-  coachId String?
-  coach   User?   @relation("CoachClients", fields: [coachId], references: [id])
-  clients User[]  @relation("CoachClients")
+  coachId      String?
+  coach        User?   @relation("CoachClients", fields: [coachId], references: [id])
+  clients      User[]  @relation("CoachClients")
+  coachClientNotes String? // free-text notes the coach has written about this client
 
   // coach linking system
   coachCode             String?        @unique // 8-digit string, generated once on activation

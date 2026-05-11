@@ -4,6 +4,7 @@ import type { ActivePlanWithStats, ActivePlanTree } from '@lib/userService';
 import { kgToBodyweightDisplay, type BodyweightUnit } from '@/lib/units';
 import { signalFontVariablesClassName } from '@lib/signal/fonts';
 import { signalTokens } from '@lib/signal/tokens';
+import { CoachNotesPanel } from './CoachNotesPanel';
 
 type OverviewCheckIn = Pick<WeeklyCheckIn, 'id' | 'weekStartDate' | 'completedAt' | 'coachReviewedAt'> | null;
 
@@ -23,6 +24,7 @@ type Props = {
   latestCheckIn: OverviewCheckIn;
   pendingReviewCheckIn: OverviewCheckIn;
   targetsSummary: TargetsSummary;
+  coachClientNotes: string | null;
   bodyweightUnit: BodyweightUnit;
   today: Date;
 };
@@ -128,6 +130,7 @@ export function SignalClientOverview({
   latestCheckIn,
   pendingReviewCheckIn,
   targetsSummary,
+  coachClientNotes,
   bodyweightUnit,
   today,
 }: Props) {
@@ -286,6 +289,8 @@ export function SignalClientOverview({
           </div>
         )}
       </section>
+
+      <CoachNotesPanel clientId={clientId} initialNotes={coachClientNotes} />
     </div>
   );
 }

@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { label: 'Check-ins', segment: 'check-ins' },
   { label: 'Plans', segment: 'plans' },
   { label: 'Nutrition', segment: 'nutrition' },
+  { label: 'Supplements', segment: 'supplements' },
 ] as const;
 
 export function SignalClientNav({ clientId }: { clientId: string }) {
