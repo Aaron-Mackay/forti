@@ -21,6 +21,7 @@ type Props = {
   nextExerciseName: string | null;
   onAdvance: () => void;
   onSkip: () => void;
+  onExcludeFromHistoryChange?: (workoutExerciseId: number, excluded: boolean) => void;
 };
 
 export function SignalExerciseSlide({
@@ -33,6 +34,7 @@ export function SignalExerciseSlide({
   nextExerciseName,
   onAdvance,
   onSkip,
+  onExcludeFromHistoryChange,
 }: Props) {
   const palette = signalTokens.surface.gym;
   const { settings } = useSettings();
@@ -158,6 +160,7 @@ export function SignalExerciseSlide({
         formCue={formCue}
         onFormCueChange={setFormCue}
         onFormCueCommit={(value) => onFormCueBlur(ex.exerciseId, value)}
+        onExcludeFromHistoryChange={onExcludeFromHistoryChange}
       />
     </div>
   );

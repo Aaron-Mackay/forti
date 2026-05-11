@@ -41,7 +41,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
   if (!parsed.success) return validationErrorResponse(parsed.error);
 
   const body = parsed.data;
-  const {notes, cardioDuration, cardioDistance, cardioResistance, exerciseId, targetRpe, targetRir, isBfr, requiresRecording} = body;
+  const {notes, cardioDuration, cardioDistance, cardioResistance, exerciseId, targetRpe, targetRir, isBfr, requiresRecording, excludeFromHistory} = body;
 
   try {
     const workoutExerciseId = Number(params.workoutExerciseId);
@@ -70,6 +70,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
       substitutedForId?: number | null;
       isBfr?: boolean;
       requiresRecording?: boolean;
+      excludeFromHistory?: boolean;
     } = {};
 
     if (notes !== undefined) updateData.notes = notes;
@@ -87,6 +88,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
 
     if (isBfr !== undefined) updateData.isBfr = isBfr;
     if (requiresRecording !== undefined) updateData.requiresRecording = requiresRecording;
+    if (excludeFromHistory !== undefined) updateData.excludeFromHistory = excludeFromHistory;
 
     if (exerciseId !== undefined && exerciseId !== workoutExercise.exerciseId) {
       const exercise = await prisma.exercise.findUnique({where: {id: exerciseId}});

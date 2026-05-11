@@ -55,6 +55,7 @@ export default function WorkoutClient({userData, signalEnabled = false}: {userDa
     handleSubstituteConfirm,
     handleAddExercise,
     handleRemoveExercise,
+    handleExcludeFromHistoryChange,
   } = useWorkoutSession(userData, initialWorkoutId);
 
   useEffect(() => {
@@ -131,6 +132,7 @@ export default function WorkoutClient({userData, signalEnabled = false}: {userDa
         snackbar={snackbar}
         handleSnackbarClose={handleSnackbarClose}
         onCompleteWorkout={handleCompleteWorkout}
+        onExcludeFromHistoryChange={handleExcludeFromHistoryChange}
         signalEnabled={signalEnabled}
       />
     );

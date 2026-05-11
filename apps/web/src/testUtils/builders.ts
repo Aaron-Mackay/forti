@@ -195,6 +195,7 @@ export class ExerciseBuilder {
       isAdded: false,
       isBfr: false,
       requiresRecording: false,
+      excludeFromHistory: false,
     };
   }
   addSet(set: SetPrisma) {

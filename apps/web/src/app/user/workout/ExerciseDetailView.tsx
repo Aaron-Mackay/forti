@@ -56,6 +56,7 @@ export default function ExerciseDetailView({
   snackbar,
   handleSnackbarClose,
   onCompleteWorkout,
+  onExcludeFromHistoryChange,
   signalEnabled = false,
 }: {
   workout: WorkoutPrisma;
@@ -75,6 +76,7 @@ export default function ExerciseDetailView({
   snackbar: { open: boolean; message: string; severity: 'success' | 'info' };
   handleSnackbarClose: () => void;
   onCompleteWorkout?: (completed: boolean, date?: Date) => void;
+  onExcludeFromHistoryChange?: (workoutExerciseId: number, excluded: boolean) => void;
   signalEnabled?: boolean;
 }) {
   useAppBar({ title: 'Exercises', showBack: true, onBack });
@@ -263,6 +265,7 @@ export default function ExerciseDetailView({
                         onBack();
                       }
                     }}
+                    onExcludeFromHistoryChange={onExcludeFromHistoryChange}
                   />
                 ) : (
                   <ExerciseSlide

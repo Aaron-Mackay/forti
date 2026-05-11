@@ -62,6 +62,7 @@ function makeEmptyWorkoutExercise(id: number, workoutId: number, order: number):
     isAdded: false,
     isBfr: false,
     requiresRecording: false,
+    excludeFromHistory: false,
   };
 }
 
@@ -76,6 +77,22 @@ export function toggleRequiresRecording(
   return withExercise(user, planId, weekId, workoutId, workoutExerciseId, (exercise) => ({
     ...exercise,
     requiresRecording: enabled,
+  }));
+}
+
+export function updateExcludeFromHistory<T extends PlanTreeUser>(
+  user: T,
+  planId: number,
+  weekId: number,
+  workoutId: number,
+  workoutExerciseId: number,
+  excluded: boolean,
+): T {
+  return withWorkoutTree(user, planId, weekId, workoutId, (workout) => ({
+    ...workout,
+    exercises: workout.exercises.map((exercise) =>
+      exercise.id === workoutExerciseId ? { ...exercise, excludeFromHistory: excluded } : exercise
+    ),
   }));
 }
 

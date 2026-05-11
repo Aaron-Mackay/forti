@@ -23,6 +23,7 @@ export async function GET(req: NextRequest, props: {params: Promise<{exerciseId:
     const workoutExercises = await prisma.workoutExercise.findMany({
       where: {
         exerciseId,
+        excludeFromHistory: false,
         workout: buildPreviousWorkoutFilter(user.id, currentWorkoutId, completedAt, false),
       },
       select: {

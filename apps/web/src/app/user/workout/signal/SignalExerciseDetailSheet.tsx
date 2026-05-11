@@ -21,6 +21,7 @@ type Props = {
   formCue: string;
   onFormCueChange: (value: string) => void;
   onFormCueCommit: (value: string) => void;
+  onExcludeFromHistoryChange?: (workoutExerciseId: number, excluded: boolean) => void;
 };
 
 export function SignalExerciseDetailSheet({
@@ -33,6 +34,7 @@ export function SignalExerciseDetailSheet({
   formCue,
   onFormCueChange,
   onFormCueCommit,
+  onExcludeFromHistoryChange,
 }: Props) {
   const palette = signalTokens.surface.gym;
   const todayBestE1rm = getTodayBestE1rm(ex);
@@ -109,13 +111,50 @@ export function SignalExerciseDetailSheet({
         </Section>
 
         <Section title="Progress">
-          <div style={{ background: palette.surface, border: `1px solid ${palette.border}`, borderRadius: signalTokens.radii.card, padding: 10 }}>
-            <E1rmHistorySection
-              exerciseId={ex.exerciseId}
-              history={history}
-              todayE1RM={todayBestE1rm}
-            />
-          </div>
+          {ex.excludeFromHistory ? (
+            <div
+              style={{
+                border: `1px dashed ${palette.border}`,
+                borderRadius: signalTokens.radii.card,
+                padding: '16px',
+                fontFamily: signalTokens.fontVar.mono,
+                fontSize: 11,
+                color: palette.inkLight,
+                lineHeight: 1.5,
+              }}
+            >
+              This session is excluded from your E1RM history trend.
+            </div>
+          ) : (
+            <div style={{ background: palette.surface, border: `1px solid ${palette.border}`, borderRadius: signalTokens.radii.card, padding: 10 }}>
+              <E1rmHistorySection
+                exerciseId={ex.exerciseId}
+                history={history}
+                todayE1RM={todayBestE1rm}
+              />
+            </div>
+          )}
+          {onExcludeFromHistoryChange && (
+            <button
+              type="button"
+              onClick={() => onExcludeFromHistoryChange(ex.id, !ex.excludeFromHistory)}
+              style={{
+                marginTop: 10,
+                background: 'transparent',
+                border: `1px solid ${palette.border}`,
+                borderRadius: signalTokens.radii.card,
+                color: ex.excludeFromHistory ? signalTokens.signal.deep : palette.inkMid,
+                fontFamily: signalTokens.fontVar.mono,
+                fontSize: 11,
+                padding: '8px 12px',
+                cursor: 'pointer',
+                width: '100%',
+                textAlign: 'left',
+              }}
+            >
+              {ex.excludeFromHistory ? '✓ Excluded from history — tap to include' : 'Exclude this session from history'}
+            </button>
+          )}
         </Section>
 
         <Section title="Muscles">

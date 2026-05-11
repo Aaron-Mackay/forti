@@ -97,6 +97,7 @@ export function parsedPlanToPlanPrisma(
                 substitutedFor: null,
                 isAdded: false,
                 isBfr,
+                excludeFromHistory: false,
               }
             }),
           }

@@ -308,9 +308,10 @@ model WorkoutExercise {
   cardioResistance Float? // average resistance / incline
   substitutedForId Int? // original Exercise.id before substitution
   substitutedFor   Exercise?     @relation("SubstitutedExercises", fields: [substitutedForId], references: [id])
-  isAdded          Boolean       @default(false) // true if added during workout (not in original plan)
-  isBfr            Boolean       @default(false) // true if this is a BFR (Blood Flow Restriction) exercise
+  isAdded           Boolean       @default(false) // true if added during workout (not in original plan)
+  isBfr             Boolean       @default(false) // true if this is a BFR (Blood Flow Restriction) exercise
   requiresRecording Boolean       @default(false) // coach requested client upload a recording for this specific assignment
+  excludeFromHistory Boolean      @default(false) // user marked this instance as non-representative (different equipment, etc.)
 
   @@unique([workoutId, order])
   @@index([exerciseId])

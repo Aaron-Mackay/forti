@@ -57,7 +57,7 @@ Updated as items are fixed. Use this as the working punch list.
 | PR-2 | Focus exercises are prominent | ✅ | Strength panel titled "Focus exercises"; inline "Edit in Settings →" link |
 | PR-3 | Non-focus exercises remain accessible | ✅ | "Browse all →" in Focus exercises panel opens a search sheet; default view sorted by most recently logged |
 | PR-4 | Missing data is not treated as zero | ✅ | DashboardChart filters nulls out; E1rmProgressCard shows "No data yet" |
-| PR-5 | Excluded progression entries filtered from E1RM/previous | ❌ | No `excluded`/`isExcluded` field on ExerciseSet; concept not implemented |
+| PR-5 | Excluded progression entries filtered from E1RM/previous | ✅ | `excludeFromHistory` on `WorkoutExercise`; toggle in detail sheet Progress section; e1rm-history route filters `excludeFromHistory: false` |
 | PR-6 | Progress does not become chart landfill | ✅ | Each panel has a "hide" button; hidden panels show "Re-enable in Settings →" notice |
 
 ---
@@ -136,12 +136,6 @@ Updated as items are fixed. Use this as the working punch list.
 
 | Status | Count |
 |--------|-------|
-| ✅ Pass | 44 |
+| ✅ Pass | 45 |
 | ⚠️ Partial | 0 |
-| ❌ Missing | 1 |
-
-### Confirmed gaps to fix
-
-| ID | Item |
-|----|------|
-| PR-5 | Excluded set entries concept not implemented |
+| ❌ Missing | 0 |

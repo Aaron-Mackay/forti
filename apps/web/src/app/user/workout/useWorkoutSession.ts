@@ -11,6 +11,7 @@ import {
   removeExercise,
   substituteExercise,
   updateCardioData,
+  updateExcludeFromHistory,
   updateSetEffort,
   updateUserExerciseNote,
   updateUserSets,
@@ -349,6 +350,14 @@ export function useWorkoutSession(userData: WorkoutDataResponse, initialWorkoutI
     networkTimers.current.set(timerKey, timer);
   };
 
+  const handleExcludeFromHistoryChange = (workoutExerciseId: number, excluded: boolean) => {
+    if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
+    setUserData(prev =>
+      updateExcludeFromHistory(prev, selectedPlanId, selectedWeekId, selectedWorkoutId, workoutExerciseId, excluded)
+    );
+    queueOrSendRequest(`/api/workoutExercise/${workoutExerciseId}`, 'PATCH', {excludeFromHistory: excluded});
+  };
+
   const handleFormCueBlur = (exerciseId: number, note: string) => {
     const prevUserData = userDataState;
     setUserData(prev => updateUserExerciseNote(prev, exerciseId, note));
@@ -441,7 +450,8 @@ export function useWorkoutSession(userData: WorkoutDataResponse, initialWorkoutI
       substitutedFor: null,
       isAdded: true,
       isBfr: false,
-      requiresRecording: false
+      requiresRecording: false,
+      excludeFromHistory: false,
     };
 
     setUserData(prev =>
@@ -559,5 +569,6 @@ export function useWorkoutSession(userData: WorkoutDataResponse, initialWorkoutI
     handleSubstituteConfirm,
     handleAddExercise,
     handleRemoveExercise,
+    handleExcludeFromHistoryChange,
   };
 }
