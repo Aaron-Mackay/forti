@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { signalTokens } from '@lib/signal/tokens';
-import { listExercises, getExerciseE1rmHistory } from '@lib/clientApi';
+import { listExercises, getExerciseE1rmHistory, getExcludedSessions, reincludeSession } from '@lib/clientApi';
 import type { ExerciseListResponse } from '@lib/contracts/exercises';
-import type { E1rmHistoryPoint } from '@lib/contracts/exerciseHistory';
+import type { E1rmHistoryPoint, ExcludedSession } from '@lib/contracts/exerciseHistory';
 import type { WeightUnit } from '@/lib/units';
 import { formatWeight } from '@/lib/units';
 import E1rmSparkline from '@/app/user/workout/E1rmSparkline';
@@ -25,6 +25,7 @@ export function ExerciseBrowseSheet({
   const [exercises, setExercises] = useState<ExerciseListResponse | null>(null);
   const [selected, setSelected] = useState<Exercise | null>(null);
   const [history, setHistory] = useState<E1rmHistoryPoint[] | null>(null);
+  const [excludedSessions, setExcludedSessions] = useState<ExcludedSession[] | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -39,6 +40,7 @@ export function ExerciseBrowseSheet({
       setSelected(null);
       setHistory(null);
       setExercises(null);
+      setExcludedSessions(null);
     }
   }, [open]);
 
@@ -56,11 +58,15 @@ export function ExerciseBrowseSheet({
   }, [open, search]);
 
   useEffect(() => {
-    if (!selected) { setHistory(null); return; }
+    if (!selected) { setHistory(null); setExcludedSessions(null); return; }
     setHistory(null);
+    setExcludedSessions(null);
     getExerciseE1rmHistory(selected.id)
       .then(setHistory)
       .catch(() => setHistory([]));
+    getExcludedSessions(selected.id)
+      .then(setExcludedSessions)
+      .catch(() => setExcludedSessions([]));
   }, [selected]);
 
   if (!open) return null;
@@ -138,7 +144,16 @@ export function ExerciseBrowseSheet({
         </div>
 
         {selected ? (
-          <ExerciseDetail exercise={selected} history={history} weightUnit={weightUnit} />
+          <ExerciseDetail
+            exercise={selected}
+            history={history}
+            weightUnit={weightUnit}
+            excludedSessions={excludedSessions}
+            onReinclude={(id) => {
+              reincludeSession(id).catch(console.error);
+              setExcludedSessions((prev) => prev?.filter((s) => s.id !== id) ?? null);
+            }}
+          />
         ) : (
           <ExerciseList search={search} onSearchChange={setSearch} exercises={exercises} onSelect={setSelected} />
         )}
@@ -232,10 +247,14 @@ function ExerciseDetail({
   exercise,
   history,
   weightUnit,
+  excludedSessions,
+  onReinclude,
 }: {
   exercise: Exercise;
   history: E1rmHistoryPoint[] | null;
   weightUnit: WeightUnit;
+  excludedSessions: ExcludedSession[] | null;
+  onReinclude: (workoutExerciseId: number) => void;
 }) {
   const hasData = history !== null && history.length > 0;
   const mostRecent = hasData ? history[history.length - 1].bestE1rm : null;
@@ -266,6 +285,58 @@ function ExerciseDetail({
             <E1rmSparkline exerciseId={exercise.id} history={history} todayE1RM={null} />
           </div>
         </>
+      )}
+
+      {excludedSessions !== null && excludedSessions.length > 0 && (
+        <div style={{ marginTop: 18 }}>
+          <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 10, color: palette.inkLight, marginBottom: 8 }}>
+            {excludedSessions.length} session{excludedSessions.length !== 1 ? 's' : ''} excluded from trend
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {excludedSessions.map((s) => (
+              <div
+                key={s.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: palette.surfaceAlt,
+                  border: `1px solid ${palette.border}`,
+                  borderRadius: signalTokens.radii.card,
+                  padding: '10px 12px',
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: palette.ink }}>{s.workoutName}</div>
+                  <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 10, color: palette.inkLight, marginTop: 2 }}>
+                    {s.dateCompleted
+                      ? new Date(s.dateCompleted).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+                      : 'Unknown date'}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onReinclude(s.id)}
+                  style={{
+                    appearance: 'none',
+                    background: 'transparent',
+                    border: `1px solid ${palette.border}`,
+                    borderRadius: signalTokens.radii.card,
+                    color: palette.inkMid,
+                    fontFamily: signalTokens.fontVar.mono,
+                    fontSize: 10,
+                    padding: '5px 10px',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  Re-include
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

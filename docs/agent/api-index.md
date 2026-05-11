@@ -48,6 +48,7 @@
 - /api/exerciseNote/[exerciseId] | methods=PUT | auth=session | contracts=@lib/contracts/exerciseNote
 - /api/exercises | methods=GET,POST | auth=session | contracts=@lib/contracts/exercises
 - /api/exercises/[exerciseId]/e1rm-history | methods=GET | auth=session | contracts=@lib/contracts/exerciseHistory
+- /api/exercises/[exerciseId]/excluded-sessions | methods=GET | auth=session | contracts=-
 - /api/exercises/[exerciseId]/previous-cardio | methods=GET | auth=session | contracts=-
 - /api/exercises/[exerciseId]/previous-sets | methods=GET | auth=session | contracts=@lib/contracts/exerciseHistory
 - /api/exercises/enrich | methods=POST | auth=session | contracts=@lib/contracts/exerciseEnrich

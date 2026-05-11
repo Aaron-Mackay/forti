@@ -32,3 +32,13 @@ export const PreviousExerciseHistorySchema = z.object({
   workouts: z.array(PreviousWorkoutSummarySchema),
 });
 export type PreviousExerciseHistory = z.infer<typeof PreviousExerciseHistorySchema>;
+
+export const ExcludedSessionSchema = z.object({
+  id: z.number().int(),
+  dateCompleted: z.string().nullable(),
+  workoutName: z.string(),
+});
+export type ExcludedSession = z.infer<typeof ExcludedSessionSchema>;
+
+export const ExcludedSessionsResponseSchema = z.array(ExcludedSessionSchema);
+export type ExcludedSessionsResponse = z.infer<typeof ExcludedSessionsResponseSchema>;

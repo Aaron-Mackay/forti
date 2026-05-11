@@ -70,9 +70,11 @@ import {
 } from './contracts/exercises';
 import {
   E1rmHistoryResponseSchema,
+  ExcludedSessionsResponseSchema,
   PreviousCardioResponseSchema,
   PreviousExerciseHistorySchema,
   type E1rmHistoryResponse,
+  type ExcludedSessionsResponse,
   type PreviousCardioResponse,
   type PreviousExerciseHistory,
 } from './contracts/exerciseHistory';
@@ -291,6 +293,18 @@ export async function getExerciseE1rmHistory(
   const qs = params.toString();
   const url = qs ? `/api/exercises/${exerciseId}/e1rm-history?${qs}` : `/api/exercises/${exerciseId}/e1rm-history`;
   return fetchJsonWithSchema(url, E1rmHistoryResponseSchema);
+}
+
+export async function getExcludedSessions(exerciseId: number): Promise<ExcludedSessionsResponse> {
+  return fetchJsonWithSchema(`/api/exercises/${exerciseId}/excluded-sessions`, ExcludedSessionsResponseSchema);
+}
+
+export async function reincludeSession(workoutExerciseId: number): Promise<void> {
+  await fetch(`/api/workoutExercise/${workoutExerciseId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ excludeFromHistory: false }),
+  });
 }
 
 export async function getPreviousCardio(
