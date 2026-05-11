@@ -1,14 +1,16 @@
 import prisma from '../src/lib/prisma';
 import { NotificationType } from '../src/generated/prisma/browser';
-import { getWeekStart, toDateOnly } from '../src/lib/checkInUtils';
+import { toDateOnly } from '../src/lib/checkInUtils';
 import { defaultSettingsForDemoUser } from '../src/lib/demoUsers';
 import { seedDemoClientData } from './lib/jeffDemoSeedData';
-
-function atDay(base: Date, deltaDays: number): Date {
-  const d = new Date(base);
-  d.setDate(base.getDate() + deltaDays);
-  return d;
-}
+import {
+  assertNonProductionSeed,
+  atDay,
+  completeSeed,
+  failSeed,
+  upsertSignalQaUser,
+  weekStartFor,
+} from './lib/signalQaSeedUtils';
 
 async function resetCoachScenario(coachId: string, clientIds: string[]) {
   await prisma.notification.deleteMany({ where: { userId: coachId } });
@@ -20,40 +22,24 @@ async function resetCoachScenario(coachId: string, clientIds: string[]) {
 }
 
 async function main() {
+  assertNonProductionSeed('seed-signal-coach');
+
   const today = new Date();
   const coachEmail = 'signal-coach@example.com';
 
-  const coach = await prisma.user.upsert({
-    where: { email: coachEmail },
-    update: {
-      name: 'Signal Coach',
-      coachCode: '87654321',
-      settings: defaultSettingsForDemoUser(coachEmail),
-    },
-    create: {
-      email: coachEmail,
-      name: 'Signal Coach',
+  const coach = await upsertSignalQaUser(coachEmail, 'Signal Coach');
+  await prisma.user.update({
+    where: { id: coach.id },
+    data: {
       coachCode: '87654321',
       settings: defaultSettingsForDemoUser(coachEmail),
     },
   });
 
   const clients = await Promise.all([
-    prisma.user.upsert({
-      where: { email: 'signal-review-new@example.com' },
-      update: { name: 'Review New' },
-      create: { email: 'signal-review-new@example.com', name: 'Review New' },
-    }),
-    prisma.user.upsert({
-      where: { email: 'signal-review-archived@example.com' },
-      update: { name: 'Review Archived' },
-      create: { email: 'signal-review-archived@example.com', name: 'Review Archived' },
-    }),
-    prisma.user.upsert({
-      where: { email: 'signal-review-empty@example.com' },
-      update: { name: 'Review Empty' },
-      create: { email: 'signal-review-empty@example.com', name: 'Review Empty' },
-    }),
+    upsertSignalQaUser('signal-review-new@example.com', 'Review New'),
+    upsertSignalQaUser('signal-review-archived@example.com', 'Review Archived'),
+    upsertSignalQaUser('signal-review-empty@example.com', 'Review Empty'),
   ]);
 
   await resetCoachScenario(coach.id, clients.map((client) => client.id));
@@ -75,7 +61,7 @@ async function main() {
   await prisma.weeklyCheckIn.deleteMany({ where: { userId: emptyClient.id } });
   await prisma.notification.deleteMany({ where: { userId: emptyClient.id } });
 
-  const currentWeek = toDateOnly(getWeekStart(today));
+  const currentWeek = weekStartFor(today);
   await prisma.weeklyCheckIn.upsert({
     where: { userId_weekStartDate: { userId: clients[0].id, weekStartDate: currentWeek } },
     update: {
@@ -114,7 +100,7 @@ async function main() {
       title: 'Signal Coach Review Guide',
       description: 'Seeded coach asset for library and learning plan checks.',
       type: 'LINK',
-      url: 'https://example.com/coach-review-guide',
+      url: '/forti-icon.svg',
       isCoachAsset: true,
     },
   });
@@ -175,12 +161,9 @@ async function main() {
     ],
   });
 
-  console.log('✅ Seeded Signal Coach review account: signal-coach@example.com');
+  completeSeed('Seeded Signal Coach review account: signal-coach@example.com');
 }
 
 main()
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  })
+  .catch(failSeed)
   .finally(() => prisma.$disconnect());
