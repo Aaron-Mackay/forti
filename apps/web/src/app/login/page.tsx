@@ -28,7 +28,13 @@ const betaPillDesktopSx = {
   display: "inline-block",
 };
 
+function isProductionAuthEnvironment() {
+  return process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+}
+
 export default function LoginPage() {
+  const enableDemoUserPicker = !isProductionAuthEnvironment();
+
   return (
     <Box
       sx={{
@@ -99,7 +105,7 @@ export default function LoginPage() {
             </Typography>
 
             {/* Client component with actual buttons */}
-            <LoginButtons/>
+            <LoginButtons enableDemoUserPicker={enableDemoUserPicker}/>
           </CardContent>
         </Card>
       </Box>
