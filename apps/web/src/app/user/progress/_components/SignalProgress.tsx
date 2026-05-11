@@ -1,5 +1,7 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
 import DashboardChart from '@/app/user/(dashboard)/DashboardChart';
 import E1rmProgressCard from '@/app/user/(dashboard)/E1rmProgressCard';
 import { EventType } from '@/generated/prisma/browser';
@@ -99,11 +101,15 @@ function StatCell({ label, value, note }: { label: string; value: string; note: 
 function Panel({
   eyebrow,
   title,
+  action,
+  onDismiss,
   children,
 }: {
   eyebrow: string;
   title: string;
-  children: ReactNode;
+  action?: React.ReactNode;
+  onDismiss?: () => void;
+  children: React.ReactNode;
 }) {
   return (
     <section
@@ -114,14 +120,66 @@ function Panel({
         padding: '18px 18px 16px',
       }}
     >
-      <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginBottom: 6 }}>
-        {eyebrow}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight }}>
+          {eyebrow}
+        </div>
+        {onDismiss && (
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label="Hide panel"
+            style={{
+              appearance: 'none',
+              background: 'none',
+              border: 'none',
+              padding: '2px 6px',
+              cursor: 'pointer',
+              fontFamily: signalTokens.fontVar.mono,
+              fontSize: 11,
+              color: palette.inkLight,
+              borderRadius: signalTokens.radii.card,
+            }}
+          >
+            hide
+          </button>
+        )}
       </div>
-      <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 28, fontWeight: 700, lineHeight: 1.02, letterSpacing: '-0.015em', marginBottom: 14 }}>
-        {title}
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 14 }}>
+        <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 28, fontWeight: 700, lineHeight: 1.02, letterSpacing: '-0.015em' }}>
+          {title}
+        </div>
+        {action}
       </div>
       {children}
     </section>
+  );
+}
+
+function HiddenPanelNotice({ label }: { label: string }) {
+  return (
+    <div
+      style={{
+        background: palette.surface,
+        border: `1px solid ${palette.border}`,
+        borderRadius: signalTokens.radii.cardLarge,
+        padding: '14px 18px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+      }}
+    >
+      <span style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight }}>
+        {label} panel hidden
+      </span>
+      <Link
+        href="/user/settings"
+        style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: signalTokens.signal.deep, textDecoration: 'none' }}
+      >
+        Re-enable in Settings →
+      </Link>
+    </div>
   );
 }
 
@@ -129,6 +187,9 @@ export function SignalProgress({ userName, metrics, events, activePlanData, sett
   const firstName = userName?.split(' ')[0] ?? 'You';
   const blockEvents = events.filter((event) => event.eventType === EventType.BlockEvent);
   const currentBlock = activeBlock(events, today);
+
+  const [metricsVisible, setMetricsVisible] = useState(true);
+  const [strengthVisible, setStrengthVisible] = useState(true);
 
   return (
     <div
@@ -184,7 +245,7 @@ export function SignalProgress({ userName, metrics, events, activePlanData, sett
             note={currentBlock ? `${currentBlock.name}. ${cardNoteForBlock(currentBlock)}` : 'No active block on the calendar.'}
           />
           <StatCell
-            label="Tracked lifts"
+            label="Focus exercises"
             value={String(settings.trackedE1rmExercises.length)}
             note={settings.trackedE1rmExercises.length > 0 ? 'Using the current tracked-exercise setting.' : 'Add tracked lifts in settings.'}
           />
@@ -213,7 +274,7 @@ export function SignalProgress({ userName, metrics, events, activePlanData, sett
               border: `1px solid ${palette.ink}`,
             }}
           >
-            Edit tracked lifts
+            Edit focus exercises
           </Link>
           <Link
             href="/user"
@@ -238,36 +299,60 @@ export function SignalProgress({ userName, metrics, events, activePlanData, sett
       </section>
 
       <div data-signal-progress-grid style={{ display: 'grid', gap: 14, marginTop: 18 }}>
-        <Panel eyebrow="Metrics" title="Bodyweight, calories, and steps">
-          {settings.showMetricsChart && metrics.length > 0 ? (
-            <div style={{ background: palette.bg, borderRadius: signalTokens.radii.card, padding: 12 }}>
-              <DashboardChart
-                metrics={metrics}
-                blocks={blockEvents}
-                bodyweightUnit={settings.bodyweightUnit}
-              />
-            </div>
-          ) : (
-            <div style={{ fontSize: 14, color: palette.inkMid, lineHeight: 1.6 }}>
-              No chart to show yet. Log daily metrics or re-enable charts in settings.
-            </div>
-          )}
-        </Panel>
+        {metricsVisible ? (
+          <Panel
+            eyebrow="Metrics"
+            title="Bodyweight, calories, and steps"
+            onDismiss={() => setMetricsVisible(false)}
+          >
+            {settings.showMetricsChart && metrics.length > 0 ? (
+              <div style={{ background: palette.bg, borderRadius: signalTokens.radii.card, padding: 12 }}>
+                <DashboardChart
+                  metrics={metrics}
+                  blocks={blockEvents}
+                  bodyweightUnit={settings.bodyweightUnit}
+                />
+              </div>
+            ) : (
+              <div style={{ fontSize: 14, color: palette.inkMid, lineHeight: 1.6 }}>
+                No chart to show yet. Log daily metrics or re-enable charts in settings.
+              </div>
+            )}
+          </Panel>
+        ) : (
+          <HiddenPanelNotice label="Metrics" />
+        )}
 
-        <Panel eyebrow="Strength" title="Tracked lifting trends">
-          {settings.showE1rmProgress && settings.trackedE1rmExercises.length > 0 ? (
-            <div style={{ background: palette.bg, borderRadius: signalTokens.radii.card, padding: 12 }}>
-              <E1rmProgressCard
-                exercises={settings.trackedE1rmExercises}
-                weightUnit={settings.weightUnit}
-              />
-            </div>
-          ) : (
-            <div style={{ fontSize: 14, color: palette.inkMid, lineHeight: 1.6 }}>
-              Add up to five tracked lifts in <Link href="/user/settings">settings</Link> to surface e1RM history here.
-            </div>
-          )}
-        </Panel>
+        {strengthVisible ? (
+          <Panel
+            eyebrow="Strength"
+            title="Focus exercises"
+            action={
+              <Link
+                href="/user/settings"
+                style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: signalTokens.signal.deep, textDecoration: 'none', whiteSpace: 'nowrap' }}
+              >
+                Edit in Settings →
+              </Link>
+            }
+            onDismiss={() => setStrengthVisible(false)}
+          >
+            {settings.showE1rmProgress && settings.trackedE1rmExercises.length > 0 ? (
+              <div style={{ background: palette.bg, borderRadius: signalTokens.radii.card, padding: 12 }}>
+                <E1rmProgressCard
+                  exercises={settings.trackedE1rmExercises}
+                  weightUnit={settings.weightUnit}
+                />
+              </div>
+            ) : (
+              <div style={{ fontSize: 14, color: palette.inkMid, lineHeight: 1.6 }}>
+                Add up to five tracked lifts in <Link href="/user/settings">settings</Link> to surface e1RM history here.
+              </div>
+            )}
+          </Panel>
+        ) : (
+          <HiddenPanelNotice label="Strength" />
+        )}
       </div>
     </div>
   );
