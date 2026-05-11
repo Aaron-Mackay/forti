@@ -4,6 +4,13 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 import { recordSignInAuditEvent } from '@lib/recordSignInAuditEvent';
+import {
+  DEFAULT_DEMO_COACH_EMAIL,
+  DEFAULT_DEMO_EMAIL,
+  defaultSettingsForDemoUser,
+  findDemoUserOption,
+  resolveDemoUserEmail,
+} from '@lib/demoUsers';
 
 async function findUserByEmail(email: string) {
   // The generated Prisma client has intermittently thrown opaque "Invalid
@@ -27,6 +34,31 @@ function shouldEnableTestUserProvider() {
   return !isProductionAuthEnvironment();
 }
 
+function selectedDemoEmail(credentials: Record<string, unknown> | undefined, fallbackEmail: string) {
+  if (isProductionAuthEnvironment()) return fallbackEmail;
+  const requestedEmail = typeof credentials?.email === 'string' ? credentials.email : null;
+  return resolveDemoUserEmail(requestedEmail, fallbackEmail);
+}
+
+async function findOrCreateDemoUser(email: string) {
+  const option = findDemoUserOption(email);
+  const fallbackName = option?.role === 'coach' ? 'Todd Coach' : 'Jeff Demo';
+  let user = await findUserByEmail(email);
+
+  if (!user) {
+    console.error(`Demo user not found: ${email}`);
+    user = await prisma.user.create({
+      data: {
+        name: option?.name ?? fallbackName,
+        email,
+        settings: defaultSettingsForDemoUser(email),
+      },
+    });
+  }
+
+  return user;
+}
+
 export const authOptions: AuthOptions = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   adapter: PrismaAdapter(prisma as any),
@@ -36,49 +68,31 @@ export const authOptions: AuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
 
-    // Demo login — public "Try Demo" button, logs in as Jeff Demo
+    // Demo login — public "Try Demo" button, logs in as Jeff Demo in production.
+    // Outside production, the login page can pass a whitelisted scenario email.
     CredentialsProvider({
       id: "demo",
       name: "Demo",
-      credentials: {},
-      async authorize() {
-        const demoEmail = "jeff@example.com";
-
-        let user = await findUserByEmail(demoEmail);
-
-        if (!user) {
-          console.error('Demo user not found')
-          user = await prisma.user.create({
-            data: {
-              name: "Jeff Demo",
-              email: demoEmail,
-            },
-          });
-        }
-        return user;
+      credentials: {
+        email: { label: 'Demo user email', type: 'text' },
+      },
+      async authorize(credentials) {
+        const demoEmail = selectedDemoEmail(credentials, DEFAULT_DEMO_EMAIL);
+        return findOrCreateDemoUser(demoEmail);
       },
     }),
 
-    // Demo Coach login — public "Try Demo (Coach)" button, logs in as Todd
+    // Demo Coach login — public "Try Demo (Coach)" button, logs in as Todd in production.
+    // Outside production, the login page can pass a whitelisted scenario email.
     CredentialsProvider({
       id: "demo-coach",
       name: "Demo Coach",
-      credentials: {},
-      async authorize() {
-        const coachEmail = "todd@example.com";
-
-        let user = await findUserByEmail(coachEmail);
-
-        if (!user) {
-          console.error('Demo coach user not found')
-          user = await prisma.user.create({
-            data: {
-              name: "Todd",
-              email: coachEmail,
-            },
-          });
-        }
-        return user;
+      credentials: {
+        email: { label: 'Demo coach email', type: 'text' },
+      },
+      async authorize(credentials) {
+        const coachEmail = selectedDemoEmail(credentials, DEFAULT_DEMO_COACH_EMAIL);
+        return findOrCreateDemoUser(coachEmail);
       },
     }),
 
