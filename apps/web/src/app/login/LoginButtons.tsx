@@ -1,16 +1,42 @@
 "use client";
 
-import { useState, Suspense } from "react";
-import { Button, Box, CircularProgress } from "@mui/material";
+import { useMemo, useState, Suspense } from "react";
+import {
+  Button,
+  Box,
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Typography,
+} from "@mui/material";
+import type { SelectChangeEvent } from "@mui/material/Select";
 import GoogleIcon from "@mui/icons-material/Google";
 import PersonIcon from "@mui/icons-material/Person";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import {
+  DEFAULT_DEMO_COACH_EMAIL,
+  DEFAULT_DEMO_EMAIL,
+  DEMO_USER_OPTIONS,
+  findDemoUserOption,
+} from "@lib/demoUsers";
 
-function LoginButtonsInner() {
-  const [loading, setLoading] = useState<"google" | "demo" | "demo-coach" | null>(null);
+type DemoProvider = "demo" | "demo-coach";
+
+type LoginButtonsProps = {
+  enableDemoUserPicker?: boolean;
+};
+
+function LoginButtonsInner({ enableDemoUserPicker = false }: LoginButtonsProps) {
+  const [loading, setLoading] = useState<"google" | DemoProvider | null>(null);
+  const [selectedDemoEmail, setSelectedDemoEmail] = useState(DEFAULT_DEMO_EMAIL);
   const searchParams = useSearchParams();
   const rawCallbackUrl = searchParams.get("callbackUrl");
+
+  const selectedDemoUser = useMemo(() => findDemoUserOption(selectedDemoEmail), [selectedDemoEmail]);
+  const selectedProvider: DemoProvider = selectedDemoUser?.role === "coach" ? "demo-coach" : "demo";
 
   const callbackUrl = (() => {
     const fallbackPath = "/user";
@@ -45,9 +71,14 @@ function LoginButtonsInner() {
     }
   })();
 
-  const handleSignIn = async (provider: "google" | "demo" | "demo-coach") => {
+  const handleSignIn = async (provider: DemoProvider | "google", email?: string) => {
     setLoading(provider);
-    await signIn(provider, { callbackUrl });
+    await signIn(provider, email ? { callbackUrl, email } : { callbackUrl });
+  };
+
+  const handleDemoSelection = (event: SelectChangeEvent<string>) => {
+    const nextEmail = event.target.value;
+    setSelectedDemoEmail(nextEmail);
   };
 
   return (
@@ -68,45 +99,88 @@ function LoginButtonsInner() {
         Continue with Google
       </Button>
 
-      <Button
-        fullWidth
-        variant="contained"
-        startIcon={loading === "demo" ? <CircularProgress size={18} color="inherit" /> : <PersonIcon />}
-        disabled={loading !== null}
-        sx={{
-          py: 1.2,
-          textTransform: "none",
-          fontSize: "1rem",
-          borderRadius: 2,
-        }}
-        onClick={() => handleSignIn("demo")}
-      >
-        Try Demo
-      </Button>
+      {enableDemoUserPicker ? (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <FormControl fullWidth size="small">
+            <InputLabel id="demo-user-select-label">Demo scenario</InputLabel>
+            <Select
+              labelId="demo-user-select-label"
+              value={selectedDemoEmail}
+              label="Demo scenario"
+              onChange={handleDemoSelection}
+              disabled={loading !== null}
+            >
+              {DEMO_USER_OPTIONS.map((option) => (
+                <MenuItem key={option.email} value={option.email}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {selectedDemoUser ? (
+            <Typography variant="caption" color="text.secondary" textAlign="left">
+              {selectedDemoUser.description}
+            </Typography>
+          ) : null}
+          <Button
+            fullWidth
+            variant="contained"
+            startIcon={loading === selectedProvider ? <CircularProgress size={18} color="inherit" /> : <PersonIcon />}
+            disabled={loading !== null}
+            sx={{
+              py: 1.2,
+              textTransform: "none",
+              fontSize: "1rem",
+              borderRadius: 2,
+            }}
+            onClick={() => handleSignIn(selectedProvider, selectedDemoEmail)}
+          >
+            Try selected demo
+          </Button>
+        </Box>
+      ) : (
+        <>
+          <Button
+            fullWidth
+            variant="contained"
+            startIcon={loading === "demo" ? <CircularProgress size={18} color="inherit" /> : <PersonIcon />}
+            disabled={loading !== null}
+            sx={{
+              py: 1.2,
+              textTransform: "none",
+              fontSize: "1rem",
+              borderRadius: 2,
+            }}
+            onClick={() => handleSignIn("demo", DEFAULT_DEMO_EMAIL)}
+          >
+            Try Demo
+          </Button>
 
-      <Button
-        fullWidth
-        variant="outlined"
-        startIcon={loading === "demo-coach" ? <CircularProgress size={18} color="inherit" /> : <PersonIcon />}
-        disabled={loading !== null}
-        sx={{
-          py: 1.2,
-          textTransform: "none",
-          fontSize: "1rem",
-          borderRadius: 2,
-        }}
-        onClick={() => handleSignIn("demo-coach")}
-      >
-        Try Demo (Coach)
-      </Button>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={loading === "demo-coach" ? <CircularProgress size={18} color="inherit" /> : <PersonIcon />}
+            disabled={loading !== null}
+            sx={{
+              py: 1.2,
+              textTransform: "none",
+              fontSize: "1rem",
+              borderRadius: 2,
+            }}
+            onClick={() => handleSignIn("demo-coach", DEFAULT_DEMO_COACH_EMAIL)}
+          >
+            Try Demo (Coach)
+          </Button>
+        </>
+      )}
     </Box>
   );
 }
 
-export default function LoginButtons() {
+export default function LoginButtons(props: LoginButtonsProps) {
   return (
     <Suspense fallback={null}>
-      <LoginButtonsInner />
+      <LoginButtonsInner {...props} />
     </Suspense>
   );
 }
