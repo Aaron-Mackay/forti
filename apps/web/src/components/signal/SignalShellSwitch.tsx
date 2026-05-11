@@ -22,7 +22,7 @@ export function SignalShellSwitch({
 }: Props) {
   const { unreadCount } = useNotifications();
   const pathname = usePathname();
-  const isCoachDomain = pathname?.startsWith('/user/coach/') ?? false;
+  const isCoachDomain = pathname === '/user/coach' || (pathname?.startsWith('/user/coach/') ?? false);
 
   if (!signalEnabled) {
     return <AppBarProvider>{children}</AppBarProvider>;

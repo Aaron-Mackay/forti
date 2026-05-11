@@ -22,7 +22,7 @@ export function SignalSidebar({ mode, activeOverride, userLabel, userInitials, h
   const { settings, loading } = useSettings();
   const palette = signalTokens.surface.gym;
   const pathname = usePathname();
-  const items = navItemsFor(mode);
+  const items = navItemsFor(mode, !loading && settings.coachModeActive);
   const active = activeOverride ?? activeNavId(items, pathname) ?? 'home';
 
   const showModeSwitch = !loading && (settings.coachModeActive || mode === 'coach');

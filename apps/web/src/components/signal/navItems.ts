@@ -1,7 +1,7 @@
 import type { SignalNavMode } from '@lib/signal/tokens';
 import type { SignalIconName } from './SignalIcons';
 
-export type NavItemId = 'home' | 'plan' | 'progress' | 'more' | 'clients' | 'library';
+export type NavItemId = 'home' | 'plan' | 'progress' | 'more' | 'clients' | 'library' | 'check-in';
 
 export type SignalNavItem = {
   id: NavItemId;
@@ -18,6 +18,14 @@ const userNav: SignalNavItem[] = [
   { id: 'more', label: 'More', icon: 'more', href: '/user/settings', matchPrefixes: ['/user/settings'] },
 ];
 
+const coachedUserNav: SignalNavItem[] = [
+  { id: 'home', label: 'Home', icon: 'home', href: '/user', matchPrefixes: ['/user'] },
+  { id: 'plan', label: 'Plan', icon: 'plan', href: '/user/plan', matchPrefixes: ['/user/plan'] },
+  { id: 'progress', label: 'Progress', icon: 'progress', href: '/user/progress', matchPrefixes: ['/user/progress'] },
+  { id: 'check-in', label: 'Check-in', icon: 'checkin', href: '/user/check-in', matchPrefixes: ['/user/check-in'] },
+  { id: 'more', label: 'More', icon: 'more', href: '/user/settings', matchPrefixes: ['/user/settings'] },
+];
+
 const coachNav: SignalNavItem[] = [
   { id: 'home', label: 'Home', icon: 'home', href: '/user/coach', matchPrefixes: ['/user/coach'] },
   { id: 'clients', label: 'Clients', icon: 'clients', href: '/user/coach/clients', matchPrefixes: ['/user/coach/clients'] },
@@ -25,8 +33,9 @@ const coachNav: SignalNavItem[] = [
   { id: 'more', label: 'More', icon: 'more', href: '/user/settings', matchPrefixes: ['/user/settings'] },
 ];
 
-export function navItemsFor(mode: SignalNavMode): SignalNavItem[] {
-  return mode === 'coach' ? coachNav : userNav;
+export function navItemsFor(mode: SignalNavMode, coachModeActive = false): SignalNavItem[] {
+  if (mode === 'coach') return coachNav;
+  return coachModeActive ? coachedUserNav : userNav;
 }
 
 export function activeNavId(items: SignalNavItem[], pathname: string | null): NavItemId | null {

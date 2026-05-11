@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { signalTokens, type SignalNavMode } from '@lib/signal/tokens';
 import { SignalIcon } from './SignalIcons';
 import { activeNavId, navItemsFor, type NavItemId } from './navItems';
+import { useSettings } from '@lib/providers/SettingsProvider';
 
 type Props = {
   mode: SignalNavMode;
@@ -14,7 +15,8 @@ type Props = {
 export function SignalBottomNav({ mode, activeOverride }: Props) {
   const palette = signalTokens.surface.gym;
   const pathname = usePathname();
-  const items = navItemsFor(mode);
+  const { settings, loading } = useSettings();
+  const items = navItemsFor(mode, !loading && settings.coachModeActive);
   const active = activeOverride ?? activeNavId(items, pathname) ?? 'home';
 
   return (
