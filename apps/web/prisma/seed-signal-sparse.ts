@@ -1,44 +1,25 @@
 import prisma from '../src/lib/prisma';
 import { BlockSubtype, EventType, NotificationType } from '../src/generated/prisma/browser';
-import { getWeekStart, toDateOnly } from '../src/lib/checkInUtils';
-import { defaultSettingsForDemoUser } from '../src/lib/demoUsers';
-
-function atDay(base: Date, deltaDays: number): Date {
-  const d = new Date(base);
-  d.setDate(base.getDate() + deltaDays);
-  return d;
-}
-
-async function requireExercise(name: string) {
-  const exercise = await prisma.exercise.findFirst({ where: { name } });
-  if (!exercise) throw new Error(`Missing exercise "${name}". Run npm run seed:demo first.`);
-  return exercise;
-}
-
-async function resetUserData(userId: string) {
-  await prisma.user.update({ where: { id: userId }, data: { activePlanId: null } });
-  await prisma.learningPlanAssignment.deleteMany({ where: { clientId: userId } });
-  await prisma.userExerciseNote.deleteMany({ where: { userId } });
-  await prisma.event.deleteMany({ where: { userId } });
-  await prisma.metric.deleteMany({ where: { userId } });
-  await prisma.weeklyCheckIn.deleteMany({ where: { userId } });
-  await prisma.targetTemplate.deleteMany({ where: { userId } });
-  await prisma.notification.deleteMany({ where: { userId } });
-  await prisma.auditEvent.deleteMany({ where: { actorUserId: userId } });
-  await prisma.supplement.deleteMany({ where: { userId } });
-  await prisma.plan.deleteMany({ where: { userId } });
-}
+import { toDateOnly } from '../src/lib/checkInUtils';
+import {
+  assertNonProductionSeed,
+  atDay,
+  completeSeed,
+  failSeed,
+  requireExercise,
+  resetSignalQaUserData,
+  upsertSignalQaUser,
+  weekStartFor,
+} from './lib/signalQaSeedUtils';
 
 async function main() {
+  assertNonProductionSeed('seed-signal-sparse');
+
   const today = new Date();
   const email = 'signal-sparse@example.com';
-  const user = await prisma.user.upsert({
-    where: { email },
-    update: { name: 'Signal Sparse', settings: defaultSettingsForDemoUser(email) },
-    create: { email, name: 'Signal Sparse', settings: defaultSettingsForDemoUser(email) },
-  });
+  const user = await upsertSignalQaUser(email, 'Signal Sparse');
 
-  await resetUserData(user.id);
+  await resetSignalQaUserData(user.id);
 
   const bench = await requireExercise('Bench Press');
   const squat = await requireExercise('Squat');
@@ -110,7 +91,7 @@ async function main() {
     })),
   });
 
-  const weekStart = toDateOnly(getWeekStart(today));
+  const weekStart = weekStartFor(today);
   await prisma.weeklyCheckIn.create({
     data: {
       userId: user.id,
@@ -145,12 +126,9 @@ async function main() {
     ],
   });
 
-  console.log('✅ Seeded Signal Sparse user: signal-sparse@example.com');
+  completeSeed('Seeded Signal Sparse user: signal-sparse@example.com');
 }
 
 main()
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  })
+  .catch(failSeed)
   .finally(() => prisma.$disconnect());
