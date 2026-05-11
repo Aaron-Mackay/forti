@@ -5,8 +5,10 @@ import { loadSignalFlag } from '@lib/signal/loadSignalFlag';
 import AppBarTitle from '@/components/shell/AppBarTitle';
 import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 import { SignalSurface } from '@/components/signal/SignalSurface';
+import { SignalBackLink } from '@/components/signal/SignalBackLink';
 import { Box, Paper } from '@mui/material';
 import CoachCheckInsClient from '@/app/user/coach/check-ins/CoachCheckInsClient';
+import { SignalClientNav } from '../_components/SignalClientNav';
 
 interface Props {
   params: Promise<{ clientId: string }>;
@@ -28,8 +30,10 @@ export default async function ClientCheckInsPage({ params }: Props) {
 
   return (
     <>
-      <AppBarTitle title="Check-ins" showBack backHref={`/user/coach/clients/${clientId}`} />
+      {!signalEnabled && <AppBarTitle title="Check-ins" showBack backHref={`/user/coach/clients/${clientId}`} />}
       <SignalSurface signalEnabled={signalEnabled} surface="planning">
+        {signalEnabled && <SignalBackLink href="/user/coach/clients" label="Clients" />}
+        {signalEnabled && <SignalClientNav clientId={clientId} />}
         <Paper sx={{ minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
           <Box sx={{ px: { xs: 2, sm: 3 } }}>
             <CoachCheckInsClient lockedClientId={clientId} signalEnabled={signalEnabled} />

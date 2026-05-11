@@ -7,6 +7,13 @@ import { signalTokens } from '@lib/signal/tokens';
 
 type OverviewCheckIn = Pick<WeeklyCheckIn, 'id' | 'weekStartDate' | 'completedAt' | 'coachReviewedAt'> | null;
 
+type TargetsSummary = {
+  caloriesTarget: number | null;
+  proteinTarget: number | null;
+  stepsTarget: number | null;
+  sleepMinsTarget: number | null;
+} | null;
+
 type Props = {
   clientId: string;
   clientName: string | null;
@@ -15,6 +22,7 @@ type Props = {
   activeBlock: PrismaEvent | null;
   latestCheckIn: OverviewCheckIn;
   pendingReviewCheckIn: OverviewCheckIn;
+  targetsSummary: TargetsSummary;
   bodyweightUnit: BodyweightUnit;
   today: Date;
 };
@@ -119,6 +127,7 @@ export function SignalClientOverview({
   activeBlock,
   latestCheckIn,
   pendingReviewCheckIn,
+  targetsSummary,
   bodyweightUnit,
   today,
 }: Props) {
@@ -189,22 +198,6 @@ export function SignalClientOverview({
         </Link>
       )}
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
-          gap: 6,
-          marginBottom: 16,
-          overflowX: 'auto',
-        }}
-      >
-        <SurfaceTab href={`/user/coach/clients/${clientId}`} label="Overview" active />
-        <SurfaceTab href={`/user/coach/clients/${clientId}/check-ins`} label="Check-ins" />
-        <SurfaceTab href={`/user/coach/clients/${clientId}/plans`} label="Plans" />
-        <SurfaceTab href={`/user/coach/clients/${clientId}/nutrition`} label="Nutrition" />
-        <SurfaceTab href={`/user/coach/clients/${clientId}/supplements`} label="Supplements" />
-      </div>
-
       <div data-signal-client-overview-grid style={{ display: 'grid', gap: 10, marginBottom: 16 }}>
         <SnapshotCard
           label="Plan"
@@ -264,33 +257,36 @@ export function SignalClientOverview({
           <div style={{ fontSize: 14, color: palette.inkMid }}>{block.detail}</div>
         </section>
       )}
-    </div>
-  );
-}
 
-function SurfaceTab({ href, label, active = false }: { href: string; label: string; active?: boolean }) {
-  return (
-    <Link
-      href={href}
-      aria-current={active ? 'page' : undefined}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: 40,
-        padding: '0 12px',
-        textDecoration: 'none',
-        fontSize: 13,
-        fontWeight: active ? 700 : 600,
-        color: active ? palette.ink : palette.inkMid,
-        background: active ? palette.surface : palette.surfaceAlt,
-        border: `1px solid ${active ? palette.borderStrong : palette.border}`,
-        borderRadius: signalTokens.radii.card,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {label}
-    </Link>
+      <section
+        style={{
+          background: palette.surface,
+          border: `1px solid ${palette.border}`,
+          borderRadius: signalTokens.radii.cardLarge,
+          padding: '18px',
+          marginTop: 14,
+        }}
+      >
+        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginBottom: 8 }}>
+          Targets
+        </div>
+        {targetsSummary ? (
+          <div data-signal-client-metrics style={{ display: 'grid', gap: 8 }}>
+            <MetricStrip label="Calories" value={targetsSummary.caloriesTarget != null ? `${targetsSummary.caloriesTarget} kcal` : '—'} />
+            <MetricStrip label="Protein" value={targetsSummary.proteinTarget != null ? `${targetsSummary.proteinTarget} g` : '—'} />
+            <MetricStrip label="Steps" value={targetsSummary.stepsTarget != null ? targetsSummary.stepsTarget.toLocaleString() : '—'} />
+            <MetricStrip label="Sleep" value={targetsSummary.sleepMinsTarget != null ? `${(targetsSummary.sleepMinsTarget / 60).toFixed(1)} h` : '—'} />
+          </div>
+        ) : (
+          <div style={{ fontSize: 14, color: palette.inkMid, lineHeight: 1.5 }}>
+            No targets set. Set targets on the{' '}
+            <Link href={`/user/coach/clients/${clientId}/nutrition`} style={{ color: signalTokens.signal.deep, textDecoration: 'none' }}>
+              nutrition tab
+            </Link>.
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
 

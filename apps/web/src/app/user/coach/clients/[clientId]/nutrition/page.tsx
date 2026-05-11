@@ -3,6 +3,8 @@ import getLoggedInUser from '@lib/getLoggedInUser';
 import { getCoachClientNutritionData } from '@lib/coachNutrition';
 import { loadSignalFlag } from '@lib/signal/loadSignalFlag';
 import { SignalSurface } from '@/components/signal/SignalSurface';
+import { SignalBackLink } from '@/components/signal/SignalBackLink';
+import { SignalClientNav } from '../_components/SignalClientNav';
 import NutritionClient from '@/app/user/nutrition/NutritionClient';
 
 interface Props {
@@ -22,6 +24,8 @@ export default async function ClientNutritionPage({ params }: Props) {
   if (signalEnabled) {
     return (
       <SignalSurface signalEnabled={signalEnabled} surface="planning">
+        <SignalBackLink href="/user/coach/clients" label="Clients" />
+        <SignalClientNav clientId={clientId} />
         <NutritionClient
           userId={clientId}
           initialMetrics={nutritionData.metrics}

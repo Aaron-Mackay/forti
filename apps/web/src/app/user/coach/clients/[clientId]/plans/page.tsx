@@ -5,6 +5,8 @@ import AppBarTitle from '@/components/shell/AppBarTitle';
 import PlansListCard from '@/app/user/plan/PlansListCard';
 import { loadSignalFlag } from '@lib/signal/loadSignalFlag';
 import { SignalSurface } from '@/components/signal/SignalSurface';
+import { SignalBackLink } from '@/components/signal/SignalBackLink';
+import { SignalClientNav } from '../_components/SignalClientNav';
 
 interface Props {
   params: Promise<{ clientId: string }>;
@@ -52,6 +54,8 @@ export default async function ClientPlansPage({ params }: Props) {
   if (signalEnabled) {
     return (
       <SignalSurface signalEnabled={signalEnabled} surface="planning">
+        <SignalBackLink href="/user/coach/clients" label="Clients" />
+        <SignalClientNav clientId={clientId} />
         <PlansListCard
           title={`${client.name ?? 'Client'}'s Plans`}
           emptyMessage="No plans yet."

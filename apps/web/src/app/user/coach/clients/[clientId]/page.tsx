@@ -4,10 +4,12 @@ import prisma from '@lib/prisma';
 import { loadSignalFlag } from '@lib/signal/loadSignalFlag';
 import AppBarTitle from '@/components/shell/AppBarTitle';
 import { SignalSurface } from '@/components/signal/SignalSurface';
+import { SignalBackLink } from '@/components/signal/SignalBackLink';
 import { getUserEvents } from '@lib/eventService';
 import { getUserMetrics } from '@lib/metricService';
 import { getActivePlanWithStats } from '@lib/userService';
 import { parseDashboardSettings } from '@/types/settingsTypes';
+import { getActiveTemplateForWeek } from '@lib/targetTemplates';
 import DashboardCards from '@/app/user/(dashboard)/DashboardCards';
 import DashboardChart from '@/app/user/(dashboard)/DashboardChart';
 import E1rmProgressCard from '@/app/user/(dashboard)/E1rmProgressCard';
@@ -16,6 +18,7 @@ import { Paper } from '@mui/material';
 import { HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 import { Event as PrismaEvent, EventType } from '@/generated/prisma/browser';
 import { SignalClientOverview } from './_components/SignalClientOverview';
+import { SignalClientNav } from './_components/SignalClientNav';
 
 interface Props {
   params: Promise<{ clientId: string }>;
@@ -34,7 +37,8 @@ const ClientOverviewPage = async ({ params }: Props) => {
     notFound();
   }
 
-  const [signalEnabled, activePlanData, metrics, events, pendingReviewCheckIn, latestCheckIn] = await Promise.all([
+  const today = new Date();
+  const [signalEnabled, activePlanData, metrics, events, pendingReviewCheckIn, latestCheckIn, activeTargetTemplate] = await Promise.all([
     loadSignalFlag(),
     getActivePlanWithStats(clientId),
     getUserMetrics(clientId),
@@ -66,13 +70,13 @@ const ClientOverviewPage = async ({ params }: Props) => {
         coachReviewedAt: true,
       },
     }),
+    getActiveTemplateForWeek(clientId, today),
   ]);
 
   const clientSettings = parseDashboardSettings(clientRecord.settings);
   const latestMetric = metrics[metrics.length - 1] ?? null;
   const activeBlock = events.find((event: PrismaEvent) => {
     if (event.eventType !== EventType.BlockEvent) return false;
-    const today = new Date();
     const start = new Date(event.startDate);
     const end = new Date(event.endDate);
     start.setHours(0, 0, 0, 0);
@@ -80,9 +84,19 @@ const ClientOverviewPage = async ({ params }: Props) => {
     return start <= today && end >= today;
   }) ?? null;
 
+  const mondayDay = activeTargetTemplate?.days.find(d => d.dayOfWeek === 1) ?? activeTargetTemplate?.days[0] ?? null;
+  const targetsSummary = activeTargetTemplate ? {
+    caloriesTarget: mondayDay?.caloriesTarget ?? null,
+    proteinTarget: mondayDay?.proteinTarget ?? null,
+    stepsTarget: activeTargetTemplate.stepsTarget ?? null,
+    sleepMinsTarget: activeTargetTemplate.sleepMinsTarget ?? null,
+  } : null;
+
   if (signalEnabled) {
     return (
       <SignalSurface signalEnabled={signalEnabled} surface="planning">
+        <SignalBackLink href="/user/coach/clients" label="Clients" />
+        <SignalClientNav clientId={clientId} />
         <SignalClientOverview
           clientId={clientId}
           clientName={clientRecord.name}
@@ -91,8 +105,9 @@ const ClientOverviewPage = async ({ params }: Props) => {
           activeBlock={activeBlock}
           latestCheckIn={latestCheckIn}
           pendingReviewCheckIn={pendingReviewCheckIn}
+          targetsSummary={targetsSummary}
           bodyweightUnit={clientSettings.bodyweightUnit}
-          today={new Date()}
+          today={today}
         />
       </SignalSurface>
     );
