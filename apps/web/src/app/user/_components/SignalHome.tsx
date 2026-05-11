@@ -5,6 +5,7 @@ import { signalFontVariablesClassName } from '@lib/signal/fonts';
 import type { ActivePlanWithStats, ActivePlanTree } from '@lib/userService';
 import type { Settings } from '@/types/settingsTypes';
 import { kgToBodyweightDisplay } from '@/lib/units';
+import { CompleteWeekButton } from './CompleteWeekButton';
 
 type Props = {
   userName: string | null | undefined;
@@ -13,6 +14,7 @@ type Props = {
   events: PrismaEvent[];
   settings: Settings;
   today: Date;
+  checkInPending?: boolean;
 };
 
 type WorkoutState = 'done' | 'today' | 'planned' | 'inProgress';
@@ -132,7 +134,7 @@ function formatDateHeader(d: Date): string {
   return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-export function SignalHome({ userName, activePlanData, metrics, settings, today }: Props) {
+export function SignalHome({ userName, activePlanData, metrics, settings, today, checkInPending }: Props) {
   const resolved = resolve(activePlanData?.activePlan ?? null);
   const tiles = todayMetricsRow(metrics, today, settings);
   const firstName = userName?.split(' ')[0] ?? null;
@@ -160,6 +162,8 @@ export function SignalHome({ userName, activePlanData, metrics, settings, today 
           {firstName}
         </div>
       )}
+
+      {checkInPending && <CheckInPrompt />}
 
       <Hero hero={resolved.hero} />
 
@@ -247,71 +251,89 @@ function Hero({ hero }: { hero: HeroState }) {
           background: palette.surface,
           border: `1px solid ${palette.border}`,
           borderRadius: signalTokens.radii.cardLarge,
-          padding: '20px 20px 18px',
+          overflow: 'hidden',
         }}
       >
-        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: signalTokens.signal.base, marginBottom: 6 }}>
-          Week complete
+        <div style={{ padding: '20px 20px 18px' }}>
+          <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: signalTokens.signal.base, marginBottom: 6 }}>
+            Week complete
+          </div>
+          <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 28, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 10 }}>
+            Nothing left to log this week
+          </div>
+          <div style={{ fontSize: 13, color: palette.inkMid, lineHeight: 1.5 }}>
+            {hero.planName} · week {hero.weekIndex} of {hero.weekTotal} done. Take the win.
+          </div>
         </div>
-        <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 28, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 10 }}>
-          Nothing left to log this week
-        </div>
-        <div style={{ fontSize: 13, color: palette.inkMid, lineHeight: 1.5 }}>
-          {hero.planName} · week {hero.weekIndex} of {hero.weekTotal} done. Take the win.
-        </div>
+        <CompleteWeekButton />
       </div>
     );
   }
 
   const isResume = hero.kind === 'resume';
   return (
-    <Link
-      href={`/user/workout?workoutId=${hero.workoutId}`}
-      aria-label={`${isResume ? 'Resume' : 'Start'} workout: ${hero.workoutName}`}
-      style={{
-        display: 'block',
-        background: palette.ink,
-        color: palette.bg,
-        borderRadius: signalTokens.radii.cardLarge,
-        textDecoration: 'none',
-        overflow: 'hidden',
-      }}
-    >
-      <div style={{ padding: '20px 20px 18px' }}>
+    <div>
+      <Link
+        href={`/user/workout?workoutId=${hero.workoutId}`}
+        aria-label={`${isResume ? 'Resume' : 'Start'} workout: ${hero.workoutName}`}
+        style={{
+          display: 'block',
+          background: palette.ink,
+          color: palette.bg,
+          borderRadius: signalTokens.radii.cardLarge,
+          textDecoration: 'none',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ padding: '20px 20px 18px' }}>
+          <div
+            style={{
+              fontFamily: signalTokens.fontVar.mono,
+              fontSize: 11,
+              color: signalTokens.signal.base,
+              marginBottom: 6,
+            }}
+          >
+            {isResume ? 'In progress' : `Next planned · ${hero.planName} · wk ${hero.weekIndex}`}
+          </div>
+          <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 32, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 14, color: palette.bg }}>
+            {hero.workoutName}
+          </div>
+          <div style={{ display: 'flex', gap: 14, fontFamily: signalTokens.fontVar.mono, fontSize: 12, color: 'rgba(243,239,231,0.6)', marginBottom: 0 }}>
+            <span><span style={{ color: palette.bg, fontWeight: 600 }}>{hero.exerciseCount}</span> exercises</span>
+            <span><span style={{ color: palette.bg, fontWeight: 600 }}>{hero.setCount}</span> sets</span>
+          </div>
+        </div>
         <div
+          style={{
+            background: signalTokens.signal.base,
+            color: palette.ink,
+            padding: '14px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: 16,
+            fontWeight: 600,
+          }}
+        >
+          <span>{isResume ? 'Resume workout' : 'Start workout'}</span>
+          <ArrowRight stroke={palette.ink} strokeWidth={2.4} />
+        </div>
+      </Link>
+      <div style={{ marginTop: 10, textAlign: 'center' }}>
+        <Link
+          href="/user/workout"
           style={{
             fontFamily: signalTokens.fontVar.mono,
             fontSize: 11,
-            color: signalTokens.signal.base,
-            marginBottom: 6,
+            color: palette.inkMid,
+            textDecoration: 'none',
           }}
         >
-          {isResume ? 'In progress' : `Next planned · ${hero.planName} · wk ${hero.weekIndex}`}
-        </div>
-        <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 32, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 14, color: palette.bg }}>
-          {hero.workoutName}
-        </div>
-        <div style={{ display: 'flex', gap: 14, fontFamily: signalTokens.fontVar.mono, fontSize: 12, color: 'rgba(243,239,231,0.6)', marginBottom: 0 }}>
-          <span><span style={{ color: palette.bg, fontWeight: 600 }}>{hero.exerciseCount}</span> exercises</span>
-          <span><span style={{ color: palette.bg, fontWeight: 600 }}>{hero.setCount}</span> sets</span>
-        </div>
+          Choose another workout
+        </Link>
       </div>
-      <div
-        style={{
-          background: signalTokens.signal.base,
-          color: palette.ink,
-          padding: '14px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          fontSize: 16,
-          fontWeight: 600,
-        }}
-      >
-        <span>{isResume ? 'Resume workout' : 'Start workout'}</span>
-        <ArrowRight stroke={palette.ink} strokeWidth={2.4} />
-      </div>
-    </Link>
+    </div>
   );
 }
 
@@ -371,6 +393,38 @@ function MetricTile({ label, value, unit }: { label: string; value: string | nul
       <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 10, color: palette.inkLight, marginTop: 3 }}>
         {isEmpty ? 'tap to log' : unit}
       </div>
+    </Link>
+  );
+}
+
+function CheckInPrompt() {
+  return (
+    <Link
+      href="/user/check-in"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+        background: palette.surface,
+        border: `1px solid ${palette.borderStrong}`,
+        borderLeft: `3px solid ${signalTokens.signal.base}`,
+        borderRadius: signalTokens.radii.card,
+        padding: '12px 14px',
+        textDecoration: 'none',
+        color: palette.ink,
+        marginBottom: 12,
+      }}
+    >
+      <div>
+        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: signalTokens.signal.base, marginBottom: 2 }}>
+          Check-in due
+        </div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: palette.ink }}>
+          Submit this week&apos;s check-in
+        </div>
+      </div>
+      <ArrowRight stroke={palette.inkMid} strokeWidth={1.8} />
     </Link>
   );
 }

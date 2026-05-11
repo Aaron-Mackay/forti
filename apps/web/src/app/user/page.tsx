@@ -14,6 +14,7 @@ import {parseDashboardSettings} from "@/types/settingsTypes";
 import {redirect} from "next/navigation";
 import { SignalHome } from "./_components/SignalHome";
 import { SignalSurface } from "@/components/signal/SignalSurface";
+import { getCheckInWeekStart, toDateOnly } from "@lib/checkInUtils";
 
 export default async function UserPage() {
   const user = await getLoggedInUser()
@@ -32,6 +33,17 @@ export default async function UserPage() {
 
   const signalEnabled = settings.signalUiEnabled;
 
+  // For coached users in Signal mode, determine if this week's check-in is still pending
+  let checkInPending = false;
+  if (signalEnabled && settings.coachModeActive) {
+    const weekStart = toDateOnly(getCheckInWeekStart(new Date(), settings.checkInDay));
+    const checkIn = await prisma.weeklyCheckIn.findUnique({
+      where: { userId_weekStartDate: { userId: user.id, weekStartDate: weekStart } },
+      select: { completedAt: true },
+    });
+    checkInPending = checkIn?.completedAt == null;
+  }
+
   return (
     <SignalSurface signalEnabled={signalEnabled} surface="gym">
       {signalEnabled ? (
@@ -42,6 +54,7 @@ export default async function UserPage() {
           events={allEvents}
           settings={settings}
           today={new Date()}
+          checkInPending={checkInPending}
         />
       ) : (
         <>
