@@ -376,6 +376,10 @@ test.describe('Spreadsheet import', () => {
     ].join('\n'));
 
     await page.getByRole('button', { name: /analyse import/i }).click();
+    const reviewNewExercises = page.getByRole('heading', { name: /review new exercises/i });
+    if (await reviewNewExercises.isVisible({ timeout: 15_000 }).catch(() => false)) {
+      await page.getByRole('button', { name: /continue to summary/i }).click();
+    }
     await expect(page.getByRole('heading', { name: /summary before the editor/i })).toBeVisible();
     await expect.poll(() => chunkInputs.length).toBe(2);
     expect(chunkInputs[0]).toContain('WEEK 1');

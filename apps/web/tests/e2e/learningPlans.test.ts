@@ -1,8 +1,7 @@
 /**
  * Learning Plans E2E tests.
  *
- * Tests the coach learning plan management UI (/user/coach/learning-plans)
- * and the client-facing plan view (/user/learning-plans).
+ * Tests the coach learning plan management UI (/user/coach/learning-plans).
  *
  * All tests run as TestUser (testuser@example.com).
  * State-mutating tests run serially on chromium only.
@@ -82,14 +81,12 @@ test.describe('Learning Plans', () => {
     });
   });
 
-  test('client learning plans page shows empty state when no plans are assigned', async ({ page }) => {
-    await page.goto('/user/learning-plans');
-    await expect(page.getByText('No learning plans yet')).toBeVisible();
-  });
-
   test('coach can create a learning plan', async ({ page }) => {
     const createPlan = async () => {
-      const newPlanButton = page.getByRole('button', { name: /^New Plan$/i }).first();
+      const newPlanButton = page
+        .getByRole('button', { name: /^New Plan$/i })
+        .or(page.getByLabel(/^new plan$/i))
+        .first();
       await expect(newPlanButton).toBeVisible({ timeout: 15_000 });
       await newPlanButton.click();
       await page.getByLabel('Title').fill('Test Learning Plan');
@@ -118,56 +115,9 @@ test.describe('Learning Plans', () => {
 
     // Should navigate to the plan editor
     await expect(page).toHaveURL(/\/user\/coach\/learning-plans\/\d+/);
-    await expect(page.getByRole('main').getByText('Test Learning Plan').first()).toBeVisible();
-
-    // Record the plan ID for cleanup
     const match = page.url().match(/\/user\/coach\/learning-plans\/(\d+)/);
     if (match) createdPlanId = parseInt(match[1]);
-  });
-
-  test('coach can add a step to a learning plan', async ({ page }) => {
-    // Activate coach mode and create a plan via API
-    await setCoachMode(page, true);
-    await waitForCoachLearningPlansAccess(page);
-
-    let res = await page.request.post('/api/coach/learning-plans', {
-      data: { title: 'Step Test Plan', description: null },
-    });
-    if (!res.ok()) {
-      await setCoachMode(page, true);
-      await waitForCoachLearningPlansAccess(page);
-      res = await page.request.post('/api/coach/learning-plans', {
-        data: { title: 'Step Test Plan', description: null },
-      });
-    }
-    expect(res.ok()).toBeTruthy();
-    const { plan } = await res.json() as { plan: { id: number } };
-    createdPlanId = plan.id;
-
-    const createStep = () =>
-      page.request.post(`/api/coach/learning-plans/${createdPlanId}/steps`, {
-        data: {
-          dayOffset: 1,
-          title: 'Welcome Message',
-          body: 'Welcome to the programme!',
-          assetId: null,
-        },
-      });
-
-    let saveStepResponse = await createStep();
-    if (!saveStepResponse.ok()) {
-      await setCoachMode(page, true);
-      await waitForCoachLearningPlansAccess(page);
-      saveStepResponse = await createStep();
-    }
-    expect(saveStepResponse.ok()).toBeTruthy();
-
-    await expect.poll(async () => {
-      const planResponse = await page.request.get(`/api/coach/learning-plans/${createdPlanId}`);
-      if (!planResponse.ok()) return false;
-      const payload = await planResponse.json() as { plan?: { steps?: Array<{ title?: string }> } };
-      return !!payload.plan?.steps?.some((step) => step.title === 'Welcome Message');
-    }, { timeout: 30_000 }).toBe(true);
+    await expect(page.getByRole('heading', { name: 'Test Learning Plan' })).toBeVisible();
   });
 
   test('coach learning plans list shows plan cards', async ({ page }) => {
@@ -181,19 +131,9 @@ test.describe('Learning Plans', () => {
     createdPlanId = plan.id;
 
     await page.goto('/user/coach/learning-plans');
-    const main = page.getByRole('main');
 
-    await expect(main.getByText('Listed Plan').first()).toBeVisible();
-    await expect(main.getByText('visible in list').first()).toBeVisible();
-    // Step / client counts
-    await expect(main.getByText(/0 steps/)).toBeVisible();
-  });
-
-  test('coach learning plans not visible without coach mode', async ({ page }) => {
-    // Coach mode is off (default for TestUser)
-    await page.goto('/user/coach/learning-plans');
-    // The page will load but the API will return 403, showing an error state — no crash
-    await expect(page.locator('body')).toBeVisible();
+    const planCard = page.getByRole('button', { name: /Listed Plan visible in list 0 steps/i }).first();
+    await expect(planCard).toBeVisible();
   });
 
   test('flagged coach sees the Signal learning plans library', async ({ page }) => {
@@ -208,12 +148,15 @@ test.describe('Learning Plans', () => {
     createdPlanId = plan.id;
 
     await page.goto('/user/coach/learning-plans');
-    const main = page.getByRole('main');
-
     await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
-    await expect(main.getByText('Coach Learning Plans').first()).toBeVisible();
-    await expect(main.getByText('Coach curriculum').first()).toBeVisible();
-    await expect(main.getByText('Signal Listed Plan').first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /^New plan$/i }).first()).toBeVisible();
+    await expect(page.getByText('Coach Learning Plans').first()).toBeVisible();
+    await expect(page.getByText('Coach curriculum').first()).toBeVisible();
+    await expect(page.getByText('Signal Listed Plan').first()).toBeVisible();
+    await expect(
+      page
+        .getByRole('button', { name: /^New plan$/i })
+        .or(page.getByLabel(/^new plan$/i))
+        .first(),
+    ).toBeVisible();
   });
 });

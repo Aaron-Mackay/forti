@@ -2,10 +2,13 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: true,
+  // Most E2E specs share the seeded demo/TestUser records and mutate
+  // User.settings. Running files in parallel lets one spec reset flags while
+  // another is loading, which shows up as auth/session and feature-flag flakes.
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  workers: 1,
   reporter: process.env.CI
     ? [
         ['github'],

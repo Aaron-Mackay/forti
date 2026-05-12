@@ -102,22 +102,12 @@ test.describe('Coach check-ins page — basic rendering', () => {
     await page.goto('/user/coach/check-ins');
   });
 
-  test('renders the coach check-ins tabs', async ({ page }) => {
+  test('renders the tabs, badge, and unreviewed client row', async ({ page }) => {
     await expect(page.getByRole('tablist')).toBeVisible();
-  });
-
-  test('shows New and Browse tabs', async ({ page }) => {
     await expect(page.getByRole('tab', { name: /New/i })).toBeVisible();
     await expect(page.getByRole('tab', { name: /Browse/i })).toBeVisible();
-  });
-
-  test('New tab shows a badge chip with unreviewed count', async ({ page }) => {
-    // The badge chip renders the count of unreviewed check-ins
     await expect(page.getByRole('tab', { name: /New/i })
       .locator('.MuiChip-root')).toContainText('1');
-  });
-
-  test('shows check-in list item for the unreviewed client check-in', async ({ page }) => {
     await expect(page.getByText('Alice Smith').first()).toBeVisible();
   });
 });
@@ -351,7 +341,7 @@ test.describe('Coach check-ins — progress photo compare', () => {
   const PHOTO_HISTORY_ROUTE = /\/api\/coach\/check-ins\/10\/photo-history(?:\?.*)?$/;
 
   test.beforeEach(async ({ page }) => {
-    await signInAsDemoCoach(page);
+    await signInAsLegacyCoach(page);
     await page.route(CHECK_IN_10_ROUTE, (route) =>
       route.fulfill({
         status: 200,
@@ -372,11 +362,10 @@ test.describe('Coach check-ins — progress photo compare', () => {
 
     await page.goto('/user/coach/check-ins/10');
 
-    const main = page.getByRole('main');
-    await expect(main.getByText('Progress photos').first()).toBeVisible();
-    await expect(main.getByText('This week').first()).toBeVisible();
-    await expect(main.getByText('Compare with').first()).toBeVisible();
-    await expect(main.getByText('No earlier photos yet').first()).toBeVisible();
+    await expect(page.getByText(/progress photos/i).first()).toBeVisible();
+    await expect(page.getByText('This week').first()).toBeVisible();
+    await expect(page.getByText('Compare with').first()).toBeVisible();
+    await expect(page.getByText('No earlier photos yet').first()).toBeVisible();
   });
 
   test('renders comparison week selector and switches photos when changed', async ({ page }) => {
@@ -447,13 +436,9 @@ test.describe('Coach check-ins — Browse tab', () => {
     await page.goto('/user/coach/check-ins');
   });
 
-  test('Browse tab shows filter controls', async ({ page }) => {
+  test('Browse tab shows filter controls and date fields', async ({ page }) => {
     await page.getByRole('tab', { name: /Browse/i }).click();
     await expect(page.getByRole('button', { name: /Search/i })).toBeVisible();
-  });
-
-  test('Browse tab shows date filter fields', async ({ page }) => {
-    await page.getByRole('tab', { name: /Browse/i }).click();
     await expect(page.locator('input[type="date"]').nth(0)).toBeVisible();
     await expect(page.locator('input[type="date"]').nth(1)).toBeVisible();
   });

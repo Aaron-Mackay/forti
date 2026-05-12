@@ -13,21 +13,27 @@ import { test as base } from '@playwright/test';
 export const test = base.extend({
   page: async ({ page, browserName }, use, testInfo) => {
     if (!testInfo.file.endsWith('auth.setup.ts')) {
-      // Reset the shared demo user into the legacy baseline so serial specs do
-      // not leak Signal/coach state into later tests. Individual Signal specs
-      // opt back in during their own beforeEach hooks.
-      await page.request.patch('/api/user/settings', {
-        data: {
-          settings: {
-            signalUiEnabled: false,
-            coachModeActive: false,
-            registrationComplete: true,
-            onboardingSeenWelcome: true,
-            onboardingDismissed: true,
-            effortMetric: 'none',
+      const sessionResponse = await page.request.get('/api/auth/session');
+      const session = await sessionResponse.json().catch(() => null) as { user?: unknown } | null;
+
+      if (session?.user) {
+        // Reset the shared demo user into the legacy baseline so serial specs do
+        // not leak Signal/coach state into later tests. Specs that intentionally
+        // start logged out must not make authenticated settings calls before
+        // they sign in, because that can poison the login redirect path.
+        await page.request.patch('/api/user/settings', {
+          data: {
+            settings: {
+              signalUiEnabled: false,
+              coachModeActive: false,
+              registrationComplete: true,
+              onboardingSeenWelcome: true,
+              onboardingDismissed: true,
+              effortMetric: 'none',
+            },
           },
-        },
-      });
+        });
+      }
     }
 
     const pageErrors: Error[] = [];
