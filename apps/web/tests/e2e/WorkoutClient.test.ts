@@ -17,6 +17,13 @@ async function clearActivePlan(page: import('@playwright/test').Page) {
   expect(response.ok()).toBe(true);
 }
 
+async function disableSignalUi(page: import('@playwright/test').Page) {
+  const response = await page.request.patch('/api/user/settings', {
+    data: { settings: { signalUiEnabled: false } },
+  });
+  expect(response.ok()).toBe(true);
+}
+
 function addedLegPressWorkoutExercise() {
   return {
     id: 9999,
@@ -56,6 +63,7 @@ function addedLegPressWorkoutExercise() {
 
 test.describe('Workout page', () => {
   test.beforeEach(async ({ page }) => {
+    await disableSignalUi(page);
     await clearActivePlan(page);
     await page.goto('/user/workout');
   });
@@ -670,6 +678,7 @@ test.describe('Workout page', () => {
             workouts: [
               {
                 completedAt: '2026-01-14T12:00:00.000Z',
+                workoutName: 'Leg day',
                 sets: [
                   { order: 1, weight: 65, reps: 10, e1rm: 86.7 },
                   { order: 2, weight: 70, reps: 8, e1rm: 88.7 },
@@ -677,6 +686,7 @@ test.describe('Workout page', () => {
               },
               {
                 completedAt: '2026-01-07T12:00:00.000Z',
+                workoutName: 'Leg day',
                 sets: [
                   { order: 1, weight: 60, reps: 10, e1rm: 80 },
                 ],
@@ -710,6 +720,7 @@ test.describe('Workout page', () => {
             workouts: [
               {
                 completedAt: '2026-01-14T12:00:00.000Z',
+                workoutName: 'Leg day',
                 sets: [
                   { order: 1, weight: null, reps: 10, e1rm: null },
                   { order: 2, weight: 65, reps: null, e1rm: null },

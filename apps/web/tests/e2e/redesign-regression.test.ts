@@ -26,7 +26,7 @@ async function signInWithCredentialsProvider(page: Page, provider: 'demo-coach')
 
 async function enableCoachMode(page: Page) {
   await page.request.patch('/api/user/settings', {
-    data: { settings: { coachModeActive: true } },
+    data: { settings: { coachModeActive: true, signalUiEnabled: false } },
   });
 }
 
