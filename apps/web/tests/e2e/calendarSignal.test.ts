@@ -56,13 +56,13 @@ test.describe('Calendar Signal', () => {
     await page.getByRole('button', { name: 'Calendar view' }).click();
 
     // FullCalendar wrapper receives the signal-calendar class in Signal mode
-    await expect(page.locator('.signal-calendar')).toBeVisible();
+    await expect(page.locator('.signal-calendar').first()).toBeVisible();
 
     // FullCalendar renders with the grid present
-    await expect(page.locator('.signal-calendar .fc')).toBeVisible();
+    await expect(page.locator('.signal-calendar .fc').first()).toBeVisible();
 
     // Today cell is rendered (always present in multimonth year view)
-    await expect(page.locator('.signal-calendar .fc-day-today')).toBeVisible();
+    await expect(page.locator('.signal-calendar .fc-day-today').first()).toBeVisible();
 
     // Toolbar Today button is visible inside the signal wrapper
     const todayBtn = page.locator('.signal-calendar').getByRole('button', { name: 'Today' });
@@ -70,11 +70,11 @@ test.describe('Calendar Signal', () => {
 
     // Weeks toggle switches view; the signal-calendar div becomes hidden (display:none)
     await page.getByRole('button', { name: 'Weeks view' }).click();
-    await expect(page.locator('.signal-calendar')).not.toBeVisible();
+    await expect(page.locator('.signal-calendar').first()).not.toBeVisible();
 
     // Switching back to month restores the Signal-styled grid
     await page.getByRole('button', { name: 'Calendar view' }).click();
-    await expect(page.locator('.signal-calendar')).toBeVisible();
-    await expect(page.locator('.signal-calendar .fc-day-today')).toBeVisible();
+    await expect(page.locator('.signal-calendar').first()).toBeVisible();
+    await expect(page.locator('.signal-calendar .fc-day-today').first()).toBeVisible();
   });
 });

@@ -32,13 +32,14 @@ test.describe('Coach Home', () => {
 
   test('flagged coach sees the Signal Coach Home inbox surface', async ({ page }) => {
     await page.goto('/user/coach');
+    const main = page.getByRole('main');
 
     await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
-    await expect(page.getByText('Coach Home').first()).toBeVisible();
-    await expect(page.getByText('Check-ins waiting on you').first()).toBeVisible();
-    await expect(page.getByText('Plans that need a touch')).toBeVisible();
+    await expect(main.getByText('Coach Home').first()).toBeVisible();
+    await expect(main.getByText('Check-ins waiting on you').first()).toBeVisible();
+    await expect(main.getByText('Plans that need a touch').first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'View clients' })).toBeVisible();
-    await expect(page.getByText(/clients live/i)).toBeVisible();
+    await expect(main.getByText(/clients live/i)).toBeVisible();
   });
 
   test('coach home actions route into check-ins and clients', async ({ page }) => {

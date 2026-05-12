@@ -289,11 +289,12 @@ test.describe('Coach check-ins — Signal review surface', () => {
 
   test('flagged check-in review shows the Signal calm review composition', async ({ page }) => {
     await page.goto('/user/coach/check-ins/10');
+    const main = page.getByRole('main');
 
-    await expect(page.getByText('Client check-in')).toBeVisible();
-    await expect(page.getByText('Coach response')).toBeVisible();
-    await expect(page.getByText('Week targets')).toBeVisible();
-    await expect(page.getByText('Support')).toBeVisible();
+    await expect(main.getByText('Client check-in').first()).toBeVisible();
+    await expect(main.getByText('Coach response').first()).toBeVisible();
+    await expect(main.getByText('Week targets').first()).toBeVisible();
+    await expect(main.getByText('Support').first()).toBeVisible();
     await expect(page.getByRole('link', { name: /Open current plan/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /Send review/i })).toBeVisible();
   });
@@ -371,10 +372,11 @@ test.describe('Coach check-ins — progress photo compare', () => {
 
     await page.goto('/user/coach/check-ins/10');
 
-    await expect(page.getByText('Progress photos')).toBeVisible();
-    await expect(page.getByText('This week')).toBeVisible();
-    await expect(page.getByText('Compare with')).toBeVisible();
-    await expect(page.getByText('No earlier photos yet')).toBeVisible();
+    const main = page.getByRole('main');
+    await expect(main.getByText('Progress photos').first()).toBeVisible();
+    await expect(main.getByText('This week').first()).toBeVisible();
+    await expect(main.getByText('Compare with').first()).toBeVisible();
+    await expect(main.getByText('No earlier photos yet').first()).toBeVisible();
   });
 
   test('renders comparison week selector and switches photos when changed', async ({ page }) => {

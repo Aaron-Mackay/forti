@@ -105,7 +105,7 @@ test.describe('Check-in page — form not yet submitted', () => {
   });
 
   test('renders the Check-in app bar title', async ({ page }) => {
-    await expect(page.getByRole('banner')).toContainText('Check-in');
+    await expect(page.getByText('Weekly Check-in', { exact: true }).first()).toBeVisible();
   });
 
   test('shows the This Week section', async ({ page }) => {

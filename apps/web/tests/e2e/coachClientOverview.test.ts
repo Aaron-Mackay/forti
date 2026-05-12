@@ -44,6 +44,7 @@ test.describe('Coach Client Overview', () => {
     const clientId = await firstCoachClientId(page);
 
     await page.goto(`/user/coach/clients/${clientId}`);
+    const main = page.getByRole('main');
 
     await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
@@ -51,8 +52,8 @@ test.describe('Coach Client Overview', () => {
     await expect(page.getByRole('link', { name: 'Plans' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Nutrition' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Supplements' })).toBeVisible();
-    await expect(page.getByText('Latest metrics').first()).toBeVisible();
-    await expect(page.getByText('This week')).toBeVisible();
+    await expect(main.getByText('Latest metrics').first()).toBeVisible();
+    await expect(main.getByText('This week').first()).toBeVisible();
   });
 
   test('client overview tabs route into the coach client surfaces', async ({ page }) => {

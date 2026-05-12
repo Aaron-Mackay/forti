@@ -89,8 +89,9 @@ test.describe('Learning Plans', () => {
 
   test('coach can create a learning plan', async ({ page }) => {
     const createPlan = async () => {
-      await expect(page.getByRole('button', { name: 'New Plan' })).toBeVisible({ timeout: 15_000 });
-      await page.getByRole('button', { name: 'New Plan' }).click();
+      const newPlanButton = page.getByRole('button', { name: /^New Plan$/i }).first();
+      await expect(newPlanButton).toBeVisible({ timeout: 15_000 });
+      await newPlanButton.click();
       await page.getByLabel('Title').fill('Test Learning Plan');
       await page.getByLabel('Description (optional)').fill('A plan for E2E testing');
       const createResponsePromise = page.waitForResponse((response) =>
@@ -117,7 +118,7 @@ test.describe('Learning Plans', () => {
 
     // Should navigate to the plan editor
     await expect(page).toHaveURL(/\/user\/coach\/learning-plans\/\d+/);
-    await expect(page.getByText('Test Learning Plan')).toBeVisible();
+    await expect(page.getByRole('main').getByText('Test Learning Plan').first()).toBeVisible();
 
     // Record the plan ID for cleanup
     const match = page.url().match(/\/user\/coach\/learning-plans\/(\d+)/);
@@ -180,11 +181,12 @@ test.describe('Learning Plans', () => {
     createdPlanId = plan.id;
 
     await page.goto('/user/coach/learning-plans');
+    const main = page.getByRole('main');
 
-    await expect(page.getByText('Listed Plan').first()).toBeVisible();
-    await expect(page.getByText('visible in list').first()).toBeVisible();
+    await expect(main.getByText('Listed Plan').first()).toBeVisible();
+    await expect(main.getByText('visible in list').first()).toBeVisible();
     // Step / client counts
-    await expect(page.getByText(/0 steps/)).toBeVisible();
+    await expect(main.getByText(/0 steps/)).toBeVisible();
   });
 
   test('coach learning plans not visible without coach mode', async ({ page }) => {
@@ -206,11 +208,12 @@ test.describe('Learning Plans', () => {
     createdPlanId = plan.id;
 
     await page.goto('/user/coach/learning-plans');
+    const main = page.getByRole('main');
 
     await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
-    await expect(page.getByText('Coach Learning Plans')).toBeVisible();
-    await expect(page.getByText('Coach curriculum')).toBeVisible();
-    await expect(page.getByText('Signal Listed Plan').first()).toBeVisible();
-    await expect(page.getByRole('button', { name: 'New plan', exact: true }).first()).toBeVisible();
+    await expect(main.getByText('Coach Learning Plans').first()).toBeVisible();
+    await expect(main.getByText('Coach curriculum').first()).toBeVisible();
+    await expect(main.getByText('Signal Listed Plan').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /^New plan$/i }).first()).toBeVisible();
   });
 });

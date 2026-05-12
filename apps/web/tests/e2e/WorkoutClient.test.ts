@@ -621,9 +621,10 @@ test.describe('Workout page', () => {
       });
 
       await navigateToSquat(page);
+      const activeSlide = page.locator('.swiper-slide-active');
 
-      // Click the "8" chip on the first set's RPE row
-      const chip8 = page.getByRole('button', { name: '8' }).first(); // first RPE row
+      // Click the "8" chip on the visible set row
+      const chip8 = activeSlide.getByRole('button', { name: '8' }).first();
       await chip8.click();
 
       // Chip should now be filled (selected) — MUI filled chip uses contained style
@@ -645,11 +646,12 @@ test.describe('Workout page', () => {
       });
 
       await navigateToSquat(page);
-      const chip8 = page.getByRole('button', { name: '8' }).first();
+      const activeSlide = page.locator('.swiper-slide-active');
+      const chip8 = activeSlide.getByRole('button', { name: '8' }).first();
       await chip8.click();
 
       // Chip row must still be visible — not collapsed after rating
-      await expect(page.getByText('RPE', { exact: true }).first()).toBeVisible();
+      await expect(activeSlide.getByText('RPE', { exact: true }).first()).toBeVisible();
 
       // Reset setting
       await page.request.patch('/api/user/settings', { data: { settings: { effortMetric: 'none' } } });

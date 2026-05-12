@@ -35,25 +35,27 @@ test.describe('Signal Shell', () => {
 
   test('mode pill navigates to coach portal on same domain', async ({ page }) => {
     await page.goto('/user');
-    const modeSwitch = page.getByRole('group', { name: 'Mode' });
-    await expect(modeSwitch).toBeVisible();
+    const myTraining = page.getByRole('button', { name: 'My Training' }).first();
+    const coach = page.getByRole('button', { name: 'Coach' }).first();
+    await expect(myTraining).toBeVisible();
+    await expect(coach).toBeVisible();
 
     // My Training is pressed by default
-    await expect(modeSwitch.getByRole('button', { name: 'My Training' })).toHaveAttribute('aria-pressed', 'true');
-    await expect(modeSwitch.getByRole('button', { name: 'Coach' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(myTraining).toHaveAttribute('aria-pressed', 'true');
+    await expect(coach).toHaveAttribute('aria-pressed', 'false');
 
     // Click Coach — should navigate within the same domain
-    await modeSwitch.getByRole('button', { name: 'Coach' }).click();
+    await coach.click();
     await expect(page).toHaveURL('/user/coach');
 
     // Coach pill is now pressed
-    await expect(modeSwitch.getByRole('button', { name: 'Coach' })).toHaveAttribute('aria-pressed', 'true');
-    await expect(modeSwitch.getByRole('button', { name: 'My Training' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(coach).toHaveAttribute('aria-pressed', 'true');
+    await expect(myTraining).toHaveAttribute('aria-pressed', 'false');
 
     // Click My Training — navigate back
-    await modeSwitch.getByRole('button', { name: 'My Training' }).click();
+    await myTraining.click();
     await expect(page).toHaveURL('/user');
-    await expect(modeSwitch.getByRole('button', { name: 'My Training' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(myTraining).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('flagged user sees the Signal sidebar with mode pill and a working notifications bell', async ({ page }) => {

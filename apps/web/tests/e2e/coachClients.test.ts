@@ -154,19 +154,20 @@ test.describe('Coach clients — Signal roster', () => {
     };
 
     await page.goto('/user/coach/clients');
+    const main = page.getByRole('main');
 
     await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
-    await expect(page.getByText('Client roster')).toBeVisible();
-    await expect(page.getByText('Coach Clients')).toBeVisible();
+    await expect(main.getByText('Client roster').first()).toBeVisible();
+    await expect(main.getByText('Coach Clients').first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Open coach home' })).toBeVisible();
 
     if (payload.clients.length === 0) {
-      await expect(page.getByText('No clients yet')).toBeVisible();
+      await expect(main.getByText('No clients yet').first()).toBeVisible();
       return;
     }
 
     const firstClientName = payload.clients[0].clientName ?? payload.clients[0].clientId;
-    await expect(page.getByText(firstClientName).first()).toBeVisible();
+    await expect(main.getByText(firstClientName).first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Open overview' }).first()).toBeVisible();
   });
 });
