@@ -344,7 +344,7 @@ test.describe('Workout page', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify([
-            {id: 1, name: 'Squat', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+            {id: 1, name: 'Squat', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [], createdByUserId: null},
           ]),
         });
       });
@@ -400,7 +400,7 @@ test.describe('Workout page', () => {
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify([
-              {id: 1, name: 'Squat', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+              {id: 1, name: 'Squat', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [], createdByUserId: null},
             ]),
           });
         } else {
@@ -417,14 +417,14 @@ test.describe('Workout page', () => {
     });
 
     test('creating a new exercise via the picker auto-selects it', async ({page}) => {
-      const newExercise = {id: 99, name: 'Nordic Curl', category: 'resistance', description: null, equipment: ['bodyweight'], primaryMuscles: ['hamstrings'], secondaryMuscles: []};
+      const newExercise = {id: 99, name: 'Nordic Curl', category: 'resistance', description: null, equipment: ['bodyweight'], primaryMuscles: ['hamstrings'], secondaryMuscles: [], createdByUserId: null};
       await page.route('**/api/exercises', async (route) => {
         if (route.request().method() === 'POST') {
           await route.fulfill({status: 201, contentType: 'application/json', body: JSON.stringify(newExercise)});
         } else {
           await route.fulfill({
             status: 200, contentType: 'application/json',
-            body: JSON.stringify([{id: 1, name: 'Squat', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []}]),
+            body: JSON.stringify([{id: 1, name: 'Squat', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [], createdByUserId: null}]),
           });
         }
       });
@@ -468,7 +468,7 @@ test.describe('Workout page', () => {
               substitutedForId: null,
               substitutedFor: null,
               sets: [],
-              exercise: {id: 1, name: 'Squat', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+              exercise: {id: 1, name: 'Squat', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [], createdByUserId: null},
             }),
           });
         } else {
@@ -493,8 +493,8 @@ test.describe('Workout page', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify([
-            {id: 1, name: 'Squat', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
-            {id: 999, name: 'Leg Press', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: []},
+            {id: 1, name: 'Squat', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [], createdByUserId: null},
+            {id: 999, name: 'Leg Press', category: 'resistance', description: null, equipment: [], primaryMuscles: [], secondaryMuscles: [], createdByUserId: null},
           ]),
         });
       });

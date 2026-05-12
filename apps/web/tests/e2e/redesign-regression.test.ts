@@ -57,10 +57,19 @@ test.describe('Restyle regression gap coverage', () => {
     'Focused smoke coverage runs on chromium only to avoid shared demo-user session races');
 
   test('onboarding wizard exposes each setup step without completing registration', async ({ page }) => {
+    await page.request.patch('/api/user/settings', {
+      data: {
+        settings: {
+          registrationComplete: false,
+          onboardingSeenWelcome: false,
+          onboardingDismissed: false,
+        },
+      },
+    });
     await page.goto('/user/onboarding');
 
     await expect(page.getByRole('heading', { name: 'Welcome to Forti!' })).toBeVisible();
-    await expect(page.getByLabel('Your name')).toBeVisible();
+    await expect(page.locator('input[autocomplete="name"]:visible')).toBeVisible();
 
     await page.getByRole('button', { name: 'Next' }).click();
     await expect(page.getByRole('heading', { name: 'Your stats' })).toBeVisible();
@@ -74,6 +83,16 @@ test.describe('Restyle regression gap coverage', () => {
     await page.getByRole('button', { name: 'Next' }).click();
     await expect(page.getByRole('heading', { name: "You're all set!" })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Get Started' })).toBeVisible();
+
+    await page.request.patch('/api/user/settings', {
+      data: {
+        settings: {
+          registrationComplete: true,
+          onboardingSeenWelcome: true,
+          onboardingDismissed: true,
+        },
+      },
+    });
   });
 
   test('notifications route renders the shell title and an empty or populated state', async ({ page }) => {

@@ -255,11 +255,12 @@ test.describe('Add Exercise dialog', () => {
           body: JSON.stringify({
             id: 9999,
             name: 'E2E Test Exercise',
-            category: 'Test',
+            category: 'resistance',
             description: null,
             equipment: ['barbell'],
             primaryMuscles: ['biceps'],
             secondaryMuscles: [],
+            createdByUserId: 'testuser-id',
           }),
         });
       } else {
