@@ -66,14 +66,23 @@ jobs:
       - name: Seed database
         run: npm run seed
 
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p \"require('./apps/web/package.json').devDependencies['@playwright/test']\")" >> "$GITHUB_OUTPUT"
+
       - name: Cache Playwright browsers
+        id: playwright-cache
         uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-all-browsers
+
+      - name: Install Playwright system dependencies
+        run: npm exec -w @forti/web -- playwright install-deps
 
       - name: Install Playwright browsers
-        run: npm exec -w @forti/web -- playwright install --with-deps
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npm exec -w @forti/web -- playwright install
 
       - name: Build Next.js app
         # Use a production build so Next.js serves routes via webpack, not

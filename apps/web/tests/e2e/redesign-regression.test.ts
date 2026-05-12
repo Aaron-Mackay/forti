@@ -99,9 +99,8 @@ test.describe('Restyle regression gap coverage', () => {
     await page.goto('/user/notifications');
 
     await expect(page.getByRole('banner')).toContainText('Notifications');
-    await expect(
-      page.getByText('No notifications yet').or(page.locator('.MuiListItem-root').first()),
-    ).toBeVisible();
+    await expect(page.locator('[data-signal-notifications-empty], [data-signal-notification-row]').first())
+      .toBeVisible();
   });
 
   test('coach check-in template editor exposes default, preview, and save controls', async ({ page }) => {
