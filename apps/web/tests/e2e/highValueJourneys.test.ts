@@ -370,6 +370,8 @@ test('client submits weekly check-in with photos upload mocked', async ({ page }
 });
 
 test('coach reviews a client check-in', async ({ page }) => {
+  await setCoachMode(page, true);
+
   await page.route(CHECK_INS_ROUTE, (route) =>
     route.fulfill({
       status: 200,
@@ -394,6 +396,11 @@ test('coach reviews a client check-in', async ({ page }) => {
           coachNotes: null,
           coachResponseUrl: null,
           coachReviewedAt: null,
+          customResponses: null,
+          templateSnapshot: null,
+          frontPhotoUrl: null,
+          backPhotoUrl: null,
+          sidePhotoUrl: null,
           user: { id: 'client-1', name: 'Alice Smith' },
         }],
         total: 1,
@@ -412,9 +419,25 @@ test('coach reviews a client check-in', async ({ page }) => {
           userId: 'client-1',
           weekStartDate: '2026-03-09T00:00:00.000Z',
           completedAt: '2026-03-14T10:00:00.000Z',
+          energyLevel: 4,
+          moodRating: 4,
+          stressLevel: 2,
+          sleepQuality: 4,
+          recoveryRating: 3,
+          adherenceRating: 5,
+          completedWorkouts: 3,
+          plannedWorkouts: 4,
           weekReview: 'Solid week',
+          coachMessage: null,
+          goalsNextWeek: null,
           coachNotes: null,
           coachResponseUrl: null,
+          coachReviewedAt: null,
+          customResponses: null,
+          templateSnapshot: null,
+          frontPhotoUrl: null,
+          backPhotoUrl: null,
+          sidePhotoUrl: null,
           user: { id: 'client-1', name: 'Alice Smith' },
         },
         currentWeek: [],
@@ -422,7 +445,8 @@ test('coach reviews a client check-in', async ({ page }) => {
         weekTargets: null,
         activeTemplate: null,
         customMetricDefs: [],
-        weekWorkouts: [],
+        workoutSummaries: [],
+        activePlanId: null,
       }),
     }),
   );
@@ -438,6 +462,7 @@ test('coach reviews a client check-in', async ({ page }) => {
   });
 
   await page.goto('/user/coach/check-ins');
+  await expect(page.getByRole('link', { name: /Alice Smith/i })).toBeVisible();
   await page.getByRole('link', { name: /Alice Smith/i }).click();
   await page.getByPlaceholder(/Leave feedback for your client/i).fill('Great week.');
   await page.getByRole('button', { name: /Send Review/i }).click();

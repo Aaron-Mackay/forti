@@ -157,7 +157,7 @@ test.describe('Restyle regression gap coverage', () => {
       await page.goto(`/user/coach/learning-plans/${plan.id}`);
 
       await expect(page.getByText('Restyle Smoke Learning Plan')).toBeVisible();
-      await expect(page.getByText('Steps')).toBeVisible();
+    await expect(page.getByText('Steps').first()).toBeVisible();
       await expect(page.getByRole('button', { name: 'Add Step' })).toBeVisible();
       await expect(page.getByText('Assigned Clients')).toBeVisible();
     } finally {

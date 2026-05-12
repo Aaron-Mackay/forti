@@ -11,7 +11,25 @@
 import { test as base } from '@playwright/test';
 
 export const test = base.extend({
-  page: async ({ page, browserName }, use) => {
+  page: async ({ page, browserName }, use, testInfo) => {
+    if (!testInfo.file.endsWith('auth.setup.ts')) {
+      // Reset the shared demo user into the legacy baseline so serial specs do
+      // not leak Signal/coach state into later tests. Individual Signal specs
+      // opt back in during their own beforeEach hooks.
+      await page.request.patch('/api/user/settings', {
+        data: {
+          settings: {
+            signalUiEnabled: false,
+            coachModeActive: false,
+            registrationComplete: true,
+            onboardingSeenWelcome: true,
+            onboardingDismissed: true,
+            effortMetric: 'none',
+          },
+        },
+      });
+    }
+
     const pageErrors: Error[] = [];
     page.on('pageerror', (err) => {
       // Playwright's WebKit (Mobile Safari) fires window.onerror for same-origin

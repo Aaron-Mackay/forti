@@ -210,6 +210,20 @@ test.describe('Accessibility must-not-regress guardrails', () => {
   });
 
   test('coach review action preserves explicit stateful save feedback', async ({ page }) => {
+    await page.request.patch('/api/user/settings', {
+      data: {
+        settings: {
+          coachModeActive: true,
+          signalUiEnabled: false,
+        },
+      },
+    });
+    await expect.poll(async () => {
+      const response = await page.request.get('/api/user/settings');
+      const payload = await response.json() as { settings?: { coachModeActive?: boolean; signalUiEnabled?: boolean } };
+      return payload.settings?.coachModeActive && payload.settings?.signalUiEnabled === false;
+    }, { timeout: 10_000 }).toBe(true);
+
     await page.route(/\/api\/coach\/check-ins\/10(?:\?.*)?$/, (route) =>
       route.fulfill({
         status: 200,
@@ -234,6 +248,11 @@ test.describe('Accessibility must-not-regress guardrails', () => {
             coachNotes: null,
             coachResponseUrl: null,
             coachReviewedAt: null,
+            customResponses: null,
+            templateSnapshot: null,
+            frontPhotoUrl: null,
+            backPhotoUrl: null,
+            sidePhotoUrl: null,
             user: { id: 'client-1', name: 'Alice Smith' },
           },
           currentWeek: [],
@@ -241,7 +260,8 @@ test.describe('Accessibility must-not-regress guardrails', () => {
           weekTargets: null,
           activeTemplate: null,
           customMetricDefs: [],
-          weekWorkouts: [],
+          workoutSummaries: [],
+          activePlanId: null,
         }),
       }),
     );

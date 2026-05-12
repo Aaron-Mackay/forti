@@ -65,7 +65,7 @@ test.describe('Workout Signal', () => {
 
     // Click the first exercise row to enter the slide
     await expect(page.getByText('Exercises').first()).toBeVisible();
-    await page.locator('[data-signal-surface="gym"] button').filter({ hasNotText: /add exercise|mark as complete|completed/i }).first().click();
+    await page.getByRole('button', { name: /Bench Press/i }).click();
 
     // Slide is visible — click the exercise name button to open the detail sheet
     const nameBtn = page.locator('button[aria-haspopup="dialog"]').first();

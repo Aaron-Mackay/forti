@@ -113,8 +113,8 @@ test.describe('Coach client navigation', () => {
     await expect(coachPortalButton).toBeVisible({ timeout: 30_000 });
     await coachPortalButton.click();
 
-    await expect(page).toHaveURL('/user/coach/clients');
-    await expect(page.getByRole('heading', { name: /clients/i })).toBeVisible();
+    await expect(page).toHaveURL('/user/coach');
+    await expect(page.getByRole('heading', { name: /coach home/i })).toBeVisible();
   });
 
   test('clients page shows empty state when coach has no clients', async ({ page }) => {
@@ -158,7 +158,7 @@ test.describe('Coach clients — Signal roster', () => {
     await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
     await expect(page.getByText('Client roster')).toBeVisible();
     await expect(page.getByText('Coach Clients')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Open check-ins' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Open coach home' })).toBeVisible();
 
     if (payload.clients.length === 0) {
       await expect(page.getByText('No clients yet')).toBeVisible();

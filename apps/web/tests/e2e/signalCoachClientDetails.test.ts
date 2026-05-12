@@ -21,6 +21,11 @@ async function configureSignalCoach(page: import('@playwright/test').Page) {
   await page.request.patch('/api/user/settings', {
     data: { settings: { coachModeActive: true, signalUiEnabled: true } },
   });
+  await expect.poll(async () => {
+    const response = await page.request.get('/api/user/settings');
+    const payload = await response.json() as { settings?: { coachModeActive?: boolean; signalUiEnabled?: boolean } };
+    return payload.settings?.coachModeActive && payload.settings?.signalUiEnabled;
+  }, { timeout: 10_000 }).toBe(true);
 }
 
 async function firstDemoCoachClientId(page: import('@playwright/test').Page) {
@@ -47,11 +52,11 @@ test.describe('Coach client detail surfaces', () => {
     await page.goto(`/user/coach/clients/${clientId}/nutrition`);
     await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
     await expect(page.getByText('Training fuel').first()).toBeVisible();
-    await expect(page.getByText('Daily log', { exact: true })).toBeVisible();
+    await expect(page.getByText('Daily log', { exact: true }).first()).toBeVisible();
 
     await page.goto(`/user/coach/clients/${clientId}/supplements`);
     await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
-    await expect(page.getByText('Protocol tracker')).toBeVisible();
+    await expect(page.getByText('Protocol tracker').first()).toBeVisible();
     await expect(page.getByRole('button', { name: /Add supplement/i })).toBeVisible();
 
     await page.goto(`/user/coach/clients/${clientId}/plans`);

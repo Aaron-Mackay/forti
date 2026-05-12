@@ -15,6 +15,11 @@ async function configureSignalCoach(page: Page) {
   await page.request.patch('/api/user/settings', {
     data: { settings: { coachModeActive: true, signalUiEnabled: true } },
   });
+  await expect.poll(async () => {
+    const response = await page.request.get('/api/user/settings');
+    const payload = await response.json() as { settings?: { coachModeActive?: boolean; signalUiEnabled?: boolean } };
+    return payload.settings?.coachModeActive && payload.settings?.signalUiEnabled;
+  }, { timeout: 10_000 }).toBe(true);
 }
 
 async function firstCoachClientId(page: Page) {
@@ -46,7 +51,7 @@ test.describe('Coach Client Overview', () => {
     await expect(page.getByRole('link', { name: 'Plans' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Nutrition' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Supplements' })).toBeVisible();
-    await expect(page.getByText('Latest metrics')).toBeVisible();
+    await expect(page.getByText('Latest metrics').first()).toBeVisible();
     await expect(page.getByText('This week')).toBeVisible();
   });
 

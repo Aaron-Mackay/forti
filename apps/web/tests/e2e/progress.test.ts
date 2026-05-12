@@ -47,8 +47,8 @@ test.describe('Progress', () => {
     await expect(page.getByText('Progress').first()).toBeVisible();
     await expect(page.getByText('Review your trend lines')).toBeVisible();
     await expect(page.getByText('Bodyweight, calories, and steps')).toBeVisible();
-    await expect(page.getByText('Tracked lifting trends')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Edit tracked lifts' })).toBeVisible();
+    await expect(page.getByText('Focus exercises').first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Edit focus exercises' })).toBeVisible();
     await expect(
       page.locator('.apexcharts-canvas').first().or(
         page.getByText('No chart to show yet. Log daily metrics or re-enable charts in settings.'),

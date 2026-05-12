@@ -15,6 +15,11 @@ test.describe('Signal Shell', () => {
         },
       },
     });
+    await expect.poll(async () => {
+      const response = await page.request.get('/api/user/settings');
+      const payload = await response.json() as { settings?: { coachModeActive?: boolean; signalUiEnabled?: boolean } };
+      return payload.settings?.coachModeActive && payload.settings?.signalUiEnabled;
+    }, { timeout: 10_000 }).toBe(true);
   });
 
   test.afterEach(async ({ page }) => {
@@ -38,7 +43,7 @@ test.describe('Signal Shell', () => {
 
     // Click Coach — should navigate within the same domain
     await sidebar.getByRole('button', { name: 'Coach' }).click();
-    await expect(page).toHaveURL('/user/coach/clients');
+    await expect(page).toHaveURL('/user/coach');
 
     // Coach pill is now pressed
     await expect(sidebar.getByRole('button', { name: 'Coach' })).toHaveAttribute('aria-pressed', 'true');

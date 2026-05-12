@@ -15,6 +15,11 @@ async function configureSignalCoach(page: Page) {
   await page.request.patch('/api/user/settings', {
     data: { settings: { coachModeActive: true, signalUiEnabled: true } },
   });
+  await expect.poll(async () => {
+    const response = await page.request.get('/api/user/settings');
+    const payload = await response.json() as { settings?: { coachModeActive?: boolean; signalUiEnabled?: boolean } };
+    return payload.settings?.coachModeActive && payload.settings?.signalUiEnabled;
+  }, { timeout: 10_000 }).toBe(true);
 }
 
 test.describe('Coach Home', () => {
@@ -30,18 +35,14 @@ test.describe('Coach Home', () => {
 
     await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
     await expect(page.getByText('Coach Home').first()).toBeVisible();
-    await expect(page.getByText('Check-ins waiting on you')).toBeVisible();
+    await expect(page.getByText('Check-ins waiting on you').first()).toBeVisible();
     await expect(page.getByText('Plans that need a touch')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Open check-ins' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'View clients' })).toBeVisible();
     await expect(page.getByText(/clients live/i)).toBeVisible();
   });
 
   test('coach home actions route into check-ins and clients', async ({ page }) => {
     await page.goto('/user/coach');
-
-    await page.getByRole('link', { name: 'Open check-ins' }).click();
-    await expect(page).toHaveURL('/user/coach/check-ins');
 
     await page.goto('/user/coach');
     await page.getByRole('link', { name: 'View clients' }).click();

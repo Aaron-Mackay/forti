@@ -124,10 +124,10 @@ test.describe('Settings page — state', () => {
     await page.request.post('/api/coach/activate', { data: { active: false } });
   });
 
-  test('shows 12 toggles; dashboard/workout switches are on and Enable coach features is off by default', async ({ page }) => {
+  test('shows 13 toggles; dashboard/workout switches are on and Enable coach features is off by default', async ({ page }) => {
     const switches = page.getByRole('switch');
     await expect(switches.first()).toBeVisible();
-    await expect(switches).toHaveCount(12);
+    await expect(switches).toHaveCount(13);
     // Dashboard card toggles and stopwatch are all on
     await expect(page.getByRole('switch', { name: 'Next Workout' })).toBeChecked();
     await expect(page.getByRole('switch', { name: "Today's Metrics" })).toBeChecked();
@@ -208,7 +208,7 @@ test.describe('Settings page — coaching section', () => {
     const input = page.getByLabel('Enter coach code');
     await input.fill('000000');
     await page.getByRole('button', { name: 'Link' }).click();
-    await expect(page.getByText('No coach found with that code')).toBeVisible();
+    await expect(page.getByText('Coach not found')).toBeVisible();
   });
 
   test('activating Enable coach features keeps invite tools out of Forti settings', async ({ page }) => {
