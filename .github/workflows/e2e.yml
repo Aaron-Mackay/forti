@@ -13,13 +13,13 @@ concurrency:
 
 jobs:
   e2e:
-    name: Playwright E2E (shard ${{ matrix.shard }}/3)
+    name: Playwright E2E (shard ${{ matrix.shard }}/6)
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5, 6]
     permissions:
       checks: write
       contents: read
@@ -84,13 +84,13 @@ jobs:
 
       - name: Run E2E tests
         working-directory: apps/web
-        run: npx start-server-and-test start http://localhost:3000 'npx playwright test --shard=${{ matrix.shard }}/3'
+        run: npx start-server-and-test start http://localhost:3000 'npx playwright test --shard=${{ matrix.shard }}/6'
 
       - name: Publish test results
         uses: dorny/test-reporter@v3
         if: always()
         with:
-          name: Playwright E2E Results (shard ${{ matrix.shard }}/3)
+          name: Playwright E2E Results (shard ${{ matrix.shard }}/6)
           path: apps/web/test-results/junit.xml
           reporter: java-junit
           fail-on-error: 'false'
