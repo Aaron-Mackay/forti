@@ -100,13 +100,14 @@ function LegacyNotificationsPage() {
       )}
 
       {loading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', pt: 6 }}>
+        <Box data-signal-notifications-loading sx={{ display: 'flex', justifyContent: 'center', pt: 6 }}>
           <CircularProgress />
         </Box>
       )}
 
       {!loading && notifications.length === 0 && (
         <Box
+          data-signal-notifications-empty
           sx={{
             display: 'flex',
             flexDirection: 'column',
@@ -130,6 +131,7 @@ function LegacyNotificationsPage() {
               <Box key={notification.id}>
                 <ListItem disablePadding sx={{ bgcolor: unread ? 'action.hover' : 'transparent' }}>
                   <ListItemButton
+                    data-signal-notification-row
                     onClick={() => void handleClick(notification)}
                     alignItems="flex-start"
                     sx={{ py: 1.5, gap: 0.5 }}
