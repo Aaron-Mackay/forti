@@ -8,12 +8,16 @@
 import {test, expect} from './fixtures';
 
 async function openNav(page: import('@playwright/test').Page) {
-  const menuButton = page.getByRole('button', { name: /menu/i });
-  if (await menuButton.count()) {
-    await expect(menuButton).toBeVisible();
-    await menuButton.click();
-  }
-  await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible();
+  const homeLink = page.getByRole('link', { name: 'Home' }).first();
+
+  const homeAlreadyVisible = await homeLink.waitFor({ state: 'visible', timeout: 5_000 })
+    .then(() => true).catch(() => false);
+  if (homeAlreadyVisible) return page.locator('body');
+
+  const menuButton = page.getByRole('button', { name: /menu/i }).first();
+  await expect(menuButton).toBeVisible();
+  await menuButton.click({ timeout: 10_000 });
+  await expect(homeLink).toBeVisible({ timeout: 15_000 });
   return page.locator('body');
 }
 

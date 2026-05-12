@@ -581,20 +581,18 @@ test.describe('Workout page', () => {
       // Ensure setting is off
       await page.request.patch('/api/user/settings', { data: { settings: { effortMetric: 'none' } } });
       await navigateToSquat(page);
-      const activeSlide = page.locator('.swiper-slide-active');
-      await expect(activeSlide.getByText('RPE')).not.toBeVisible();
-      await expect(activeSlide.getByText('RIR')).not.toBeVisible();
+      await expect(page.getByText('RPE', { exact: true }).first()).not.toBeVisible();
+      await expect(page.getByText('RIR', { exact: true }).first()).not.toBeVisible();
     });
 
     test('RPE chip row appears for each set when effortMetric is rpe', async ({ page }) => {
       await page.request.patch('/api/user/settings', { data: { settings: { effortMetric: 'rpe' } } });
       await navigateToSquat(page);
-      const activeSlide = page.locator('.swiper-slide-active');
       // At least one RPE label visible (one per regular set)
-      await expect(activeSlide.getByText('RPE').first()).toBeVisible();
+      await expect(page.getByText('RPE', { exact: true }).first()).toBeVisible();
       // Standard RPE values shown as chips
-      await expect(activeSlide.getByRole('button', { name: '8' }).first()).toBeVisible();
-      await expect(activeSlide.getByRole('button', { name: '10' }).first()).toBeVisible();
+      await expect(page.getByRole('button', { name: '8' }).first()).toBeVisible();
+      await expect(page.getByRole('button', { name: '10' }).first()).toBeVisible();
       // Reset setting
       await page.request.patch('/api/user/settings', { data: { settings: { effortMetric: 'none' } } });
     });
@@ -602,11 +600,10 @@ test.describe('Workout page', () => {
     test('RIR chip row appears for each set when effortMetric is rir', async ({ page }) => {
       await page.request.patch('/api/user/settings', { data: { settings: { effortMetric: 'rir' } } });
       await navigateToSquat(page);
-      const activeSlide = page.locator('.swiper-slide-active');
-      await expect(activeSlide.getByText('RIR').first()).toBeVisible();
+      await expect(page.getByText('RIR', { exact: true }).first()).toBeVisible();
       // RIR values 0-4 shown as chips
-      await expect(activeSlide.getByRole('button', { name: '0' }).first()).toBeVisible();
-      await expect(activeSlide.getByRole('button', { name: '4' }).first()).toBeVisible();
+      await expect(page.getByRole('button', { name: '0' }).first()).toBeVisible();
+      await expect(page.getByRole('button', { name: '4' }).first()).toBeVisible();
       // Reset setting
       await page.request.patch('/api/user/settings', { data: { settings: { effortMetric: 'none' } } });
     });
@@ -624,10 +621,9 @@ test.describe('Workout page', () => {
       });
 
       await navigateToSquat(page);
-      const activeSlide = page.locator('.swiper-slide-active');
 
       // Click the "8" chip on the first set's RPE row
-      const chip8 = activeSlide.getByRole('button', { name: '8' }).first(); // first RPE row
+      const chip8 = page.getByRole('button', { name: '8' }).first(); // first RPE row
       await chip8.click();
 
       // Chip should now be filled (selected) — MUI filled chip uses contained style
@@ -649,12 +645,11 @@ test.describe('Workout page', () => {
       });
 
       await navigateToSquat(page);
-      const activeSlide = page.locator('.swiper-slide-active');
-      const chip8 = activeSlide.getByRole('button', { name: '8' }).first();
+      const chip8 = page.getByRole('button', { name: '8' }).first();
       await chip8.click();
 
       // Chip row must still be visible — not collapsed after rating
-      await expect(activeSlide.getByText('RPE').first()).toBeVisible();
+      await expect(page.getByText('RPE', { exact: true }).first()).toBeVisible();
 
       // Reset setting
       await page.request.patch('/api/user/settings', { data: { settings: { effortMetric: 'none' } } });

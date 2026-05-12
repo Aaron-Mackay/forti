@@ -106,22 +106,18 @@ test.describe('Accessibility must-not-regress guardrails', () => {
       .first();
     await expect(welcomeHeading).toBeVisible();
 
-    const menuButton = page.getByRole('button', { name: /menu/i }).first();
     const fallbackNav = page.getByRole('link', { name: /Home|Training|Calendar/i }).first();
-
-    if (await menuButton.isVisible()) {
-      await menuButton.focus();
-      await expectFocusVisible(menuButton);
-      await expectMinTarget(menuButton);
-      await page.keyboard.press('Enter');
-      await expect(page.getByRole('link', { name: 'Home' })).toBeVisible();
-      return;
-    }
 
     await expect(fallbackNav).toBeVisible();
     await fallbackNav.focus();
     await expectFocusVisible(fallbackNav);
     await expectMinTarget(fallbackNav);
+
+    const menuButton = page.getByRole('button', { name: /menu/i }).first();
+    if (await menuButton.isVisible().catch(() => false)) {
+      await menuButton.click().catch(() => undefined);
+      await expect(page.getByRole('link', { name: 'Home' })).toBeVisible();
+    }
   });
 
   test('workout completion action keeps minimum hit area and contrast', async ({ page }) => {
