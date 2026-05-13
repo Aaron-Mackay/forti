@@ -12,6 +12,7 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspace=@forti/web",
+    "dev:lan": "npm run dev:lan --workspace=@forti/web",
     "dev:mobile": "npm run start --workspace=@forti/mobile",
     "build": "npm run build --workspace=@forti/web",
     "start": "npm run start --workspace=@forti/web",

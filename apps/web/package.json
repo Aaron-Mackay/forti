@@ -10,6 +10,7 @@
     "dev": "next dev",
     "dev:share": "./scripts/dev-share.sh",
     "dev:share:kill": "./scripts/dev-share-kill.sh",
+    "dev:lan": "./scripts/dev-lan.sh",
     "build": "next build",
     "postbuild": "if [ \"$VERCEL_ENV\" != \"\" ]; then prisma migrate deploy; fi",
     "postinstall": "prisma generate",
