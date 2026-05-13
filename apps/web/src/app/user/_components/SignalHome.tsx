@@ -49,7 +49,8 @@ type HeroState =
       setCount: number;
     };
 
-const palette = signalTokens.surface.gym;
+const pagePalette = signalTokens.surface.planning;
+const heroPalette = signalTokens.surface.gym;
 
 function workoutHasAnyLoggedSet(workout: ActivePlanTree['weeks'][number]['workouts'][number]): boolean {
   return workout.exercises.some((ex) => ex.sets.some((s) => s.weight != null || s.reps != null));
@@ -143,14 +144,14 @@ export function SignalHome({ userName, activePlanData, metrics, settings, today,
     <div
       className={signalFontVariablesClassName}
       style={{
-        background: palette.bg,
-        color: palette.ink,
+        background: pagePalette.bg,
+        color: pagePalette.ink,
         fontFamily: signalTokens.fontVar.body,
         minHeight: '100%',
-        padding: '14px 16px 28px',
+        padding: '18px 16px 32px',
       }}
     >
-      <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginBottom: 6, display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+      <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: pagePalette.inkLight, marginBottom: 6, display: 'flex', justifyContent: 'space-between', gap: 12 }}>
         <span>{formatDateHeader(today)}</span>
         {resolved.planName && resolved.weekIndex != null && (
           <span>{resolved.planName} · wk {resolved.weekIndex} / {resolved.weekTotal}</span>
@@ -158,7 +159,7 @@ export function SignalHome({ userName, activePlanData, metrics, settings, today,
       </div>
 
       {firstName && (
-        <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 22, fontWeight: 700, letterSpacing: '-0.01em', color: palette.inkMid, marginBottom: 12 }}>
+        <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 22, fontWeight: 700, letterSpacing: '-0.01em', color: pagePalette.inkMid, marginBottom: 12 }}>
           {firstName}
         </div>
       )}
@@ -169,12 +170,12 @@ export function SignalHome({ userName, activePlanData, metrics, settings, today,
 
       {resolved.weekWorkouts.length > 0 && (
         <section style={{ marginTop: 18 }}>
-          <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginBottom: 8 }}>This week</div>
+          <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: pagePalette.inkLight, marginBottom: 8 }}>This week</div>
           <div
             style={{
               display: 'grid',
               gridTemplateColumns: `repeat(${Math.min(resolved.weekWorkouts.length, 4)}, 1fr)`,
-              gap: 4,
+              gap: 6,
             }}
           >
             {resolved.weekWorkouts.slice(0, 4).map((w) => (
@@ -185,7 +186,7 @@ export function SignalHome({ userName, activePlanData, metrics, settings, today,
       )}
 
       <section style={{ marginTop: 18 }}>
-        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginBottom: 8 }}>Today&apos;s metrics</div>
+        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: pagePalette.inkLight, marginBottom: 8 }}>Today&apos;s metrics</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
           {tiles.map((tile) => (
             <MetricTile key={tile.label} {...tile} />
@@ -195,18 +196,18 @@ export function SignalHome({ userName, activePlanData, metrics, settings, today,
 
       {resolved.blockProgress && (
         <section style={{ marginTop: 18 }}>
-          <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: pagePalette.inkLight, marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
             <span>Block progress</span>
             <span>
               week {resolved.blockProgress.weekIndex} of {resolved.blockProgress.weekTotal}
             </span>
           </div>
-          <div style={{ height: 2, background: palette.inkGhost, borderRadius: 1 }}>
+          <div style={{ height: 2, background: pagePalette.inkGhost, borderRadius: 1 }}>
             <div
               style={{
                 width: `${Math.min(100, (resolved.blockProgress.weekIndex / Math.max(resolved.blockProgress.weekTotal, 1)) * 100)}%`,
                 height: '100%',
-                background: palette.ink,
+                background: pagePalette.ink,
                 borderRadius: 1,
               }}
             />
@@ -224,15 +225,15 @@ function Hero({ hero }: { hero: HeroState }) {
         href="/user/plan/create"
         style={{
           display: 'block',
-          background: palette.surface,
-          border: `1px dashed ${palette.borderStrong}`,
+          background: pagePalette.surface,
+          border: `1px dashed ${pagePalette.borderStrong}`,
           borderRadius: signalTokens.radii.cardLarge,
           padding: '20px 20px 18px',
           textDecoration: 'none',
-          color: palette.ink,
+          color: pagePalette.ink,
         }}
       >
-        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginBottom: 6 }}>No active plan</div>
+        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: pagePalette.inkLight, marginBottom: 6 }}>No active plan</div>
         <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 28, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 12 }}>
           Build your first plan
         </div>
@@ -248,8 +249,8 @@ function Hero({ hero }: { hero: HeroState }) {
     return (
       <div
         style={{
-          background: palette.surface,
-          border: `1px solid ${palette.border}`,
+          background: pagePalette.surface,
+          border: `1px solid ${pagePalette.border}`,
           borderRadius: signalTokens.radii.cardLarge,
           overflow: 'hidden',
         }}
@@ -261,7 +262,7 @@ function Hero({ hero }: { hero: HeroState }) {
           <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 28, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 10 }}>
             Nothing left to log this week
           </div>
-          <div style={{ fontSize: 13, color: palette.inkMid, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 13, color: pagePalette.inkMid, lineHeight: 1.5 }}>
             {hero.planName} · week {hero.weekIndex} of {hero.weekTotal} done. Take the win.
           </div>
         </div>
@@ -278,14 +279,15 @@ function Hero({ hero }: { hero: HeroState }) {
         aria-label={`${isResume ? 'Resume' : 'Start'} workout: ${hero.workoutName}`}
         style={{
           display: 'block',
-          background: palette.ink,
-          color: palette.bg,
+          background: heroPalette.surface,
+          color: heroPalette.ink,
+          border: `1px solid ${heroPalette.borderStrong}`,
           borderRadius: signalTokens.radii.cardLarge,
           textDecoration: 'none',
           overflow: 'hidden',
         }}
       >
-        <div style={{ padding: '20px 20px 18px' }}>
+        <div style={{ padding: '24px 20px 20px' }}>
           <div
             style={{
               fontFamily: signalTokens.fontVar.mono,
@@ -296,18 +298,18 @@ function Hero({ hero }: { hero: HeroState }) {
           >
             {isResume ? 'In progress' : `Next planned · ${hero.planName} · wk ${hero.weekIndex}`}
           </div>
-          <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 32, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 14, color: palette.bg }}>
+          <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 32, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 14, color: heroPalette.ink }}>
             {hero.workoutName}
           </div>
-          <div style={{ display: 'flex', gap: 14, fontFamily: signalTokens.fontVar.mono, fontSize: 12, color: 'rgba(243,239,231,0.6)', marginBottom: 0 }}>
-            <span><span style={{ color: palette.bg, fontWeight: 600 }}>{hero.exerciseCount}</span> exercises</span>
-            <span><span style={{ color: palette.bg, fontWeight: 600 }}>{hero.setCount}</span> sets</span>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontFamily: signalTokens.fontVar.mono, fontSize: 12, color: heroPalette.inkMid, marginBottom: 0 }}>
+            <span><span style={{ color: heroPalette.ink, fontWeight: 600 }}>{hero.exerciseCount}</span> exercises</span>
+            <span><span style={{ color: heroPalette.ink, fontWeight: 600 }}>{hero.setCount}</span> sets</span>
           </div>
         </div>
         <div
           style={{
             background: signalTokens.signal.base,
-            color: palette.ink,
+            color: heroPalette.bg,
             padding: '14px 20px',
             display: 'flex',
             alignItems: 'center',
@@ -317,7 +319,7 @@ function Hero({ hero }: { hero: HeroState }) {
           }}
         >
           <span>{isResume ? 'Resume workout' : 'Start workout'}</span>
-          <ArrowRight stroke={palette.ink} strokeWidth={2.4} />
+          <ArrowRight stroke={heroPalette.bg} strokeWidth={2.4} />
         </div>
       </Link>
       <div style={{ marginTop: 10, textAlign: 'center' }}>
@@ -326,7 +328,7 @@ function Hero({ hero }: { hero: HeroState }) {
           style={{
             fontFamily: signalTokens.fontVar.mono,
             fontSize: 11,
-            color: palette.inkMid,
+            color: pagePalette.inkMid,
             textDecoration: 'none',
           }}
         >
@@ -343,18 +345,18 @@ function WeekCell({ workout }: { workout: WeekWorkout }) {
   return (
     <div
       style={{
-        background: isToday ? palette.surfaceAlt : 'transparent',
-        border: `1px solid ${isToday ? palette.borderStrong : palette.border}`,
-        borderTop: isToday ? `2px solid ${signalTokens.signal.base}` : `1px solid ${palette.border}`,
-        padding: '8px 8px 9px',
+        background: pagePalette.surface,
+        border: `1px solid ${isToday ? pagePalette.borderStrong : pagePalette.border}`,
+        borderTop: isToday ? `2px solid ${signalTokens.signal.base}` : `1px solid ${pagePalette.border}`,
+        padding: '10px 10px 11px',
         borderRadius: signalTokens.radii.cell,
         opacity: isDone ? 0.7 : 1,
       }}
     >
-      <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 10, color: palette.inkLight, marginBottom: 3 }}>
+      <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 10, color: pagePalette.inkLight, marginBottom: 3 }}>
         {workout.order + 1}
       </div>
-      <div style={{ fontSize: 12, fontWeight: 600, color: workout.state === 'planned' ? palette.inkMid : palette.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: workout.state === 'planned' ? pagePalette.inkMid : pagePalette.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {workout.name}
       </div>
       {workout.state === 'inProgress' && (
@@ -364,7 +366,7 @@ function WeekCell({ workout }: { workout: WeekWorkout }) {
         <div style={{ marginTop: 5, fontFamily: signalTokens.fontVar.mono, fontSize: 9, color: signalTokens.signal.base, fontWeight: 600 }}>TODAY</div>
       )}
       {workout.state === 'done' && (
-        <div style={{ marginTop: 5, fontFamily: signalTokens.fontVar.mono, fontSize: 9, color: palette.inkLight }}>logged</div>
+        <div style={{ marginTop: 5, fontFamily: signalTokens.fontVar.mono, fontSize: 9, color: pagePalette.inkLight }}>logged</div>
       )}
     </div>
   );
@@ -378,19 +380,19 @@ function MetricTile({ label, value, unit }: { label: string; value: string | nul
       style={{
         display: 'block',
         textDecoration: 'none',
-        border: `1px ${isEmpty ? 'dashed' : 'solid'} ${palette.border}`,
-        background: isEmpty ? 'transparent' : palette.surface,
+        border: `1px ${isEmpty ? 'dashed' : 'solid'} ${pagePalette.border}`,
+        background: pagePalette.surface,
         borderRadius: signalTokens.radii.cell,
-        padding: '8px 6px 9px',
+        padding: '10px 8px 11px',
         textAlign: 'center',
-        color: palette.ink,
+        color: pagePalette.ink,
       }}
     >
-      <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 10, color: palette.inkLight, marginBottom: 3 }}>{label}</div>
-      <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 18, fontWeight: 700, color: isEmpty ? palette.inkGhost : palette.ink, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+      <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 10, color: pagePalette.inkLight, marginBottom: 3 }}>{label}</div>
+      <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 18, fontWeight: 700, color: isEmpty ? pagePalette.inkGhost : pagePalette.ink, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
         {value ?? '—'}
       </div>
-      <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 10, color: palette.inkLight, marginTop: 3 }}>
+      <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 10, color: pagePalette.inkLight, marginTop: 3 }}>
         {isEmpty ? 'tap to log' : unit}
       </div>
     </Link>
@@ -406,13 +408,13 @@ function CheckInPrompt() {
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: 12,
-        background: palette.surface,
-        border: `1px solid ${palette.borderStrong}`,
+        background: pagePalette.surface,
+        border: `1px solid ${pagePalette.border}`,
         borderLeft: `3px solid ${signalTokens.signal.base}`,
         borderRadius: signalTokens.radii.card,
         padding: '12px 14px',
         textDecoration: 'none',
-        color: palette.ink,
+        color: pagePalette.ink,
         marginBottom: 12,
       }}
     >
@@ -420,16 +422,16 @@ function CheckInPrompt() {
         <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: signalTokens.signal.base, marginBottom: 2 }}>
           Check-in due
         </div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: palette.ink }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: pagePalette.ink }}>
           Submit this week&apos;s check-in
         </div>
       </div>
-      <ArrowRight stroke={palette.inkMid} strokeWidth={1.8} />
+      <ArrowRight stroke={pagePalette.inkMid} strokeWidth={1.8} />
     </Link>
   );
 }
 
-function ArrowRight({ stroke = palette.bg, strokeWidth = 2.2 }: { stroke?: string; strokeWidth?: number }) {
+function ArrowRight({ stroke = pagePalette.ink, strokeWidth = 2.2 }: { stroke?: string; strokeWidth?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 12h14M13 6l6 6-6 6" />

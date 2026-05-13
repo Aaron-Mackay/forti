@@ -45,7 +45,7 @@ export default async function UserPage() {
   }
 
   return (
-    <SignalSurface signalEnabled={signalEnabled} surface="gym">
+    <SignalSurface signalEnabled={signalEnabled} surface="planning">
       {signalEnabled ? (
         <SignalHome
           userName={user.name}
