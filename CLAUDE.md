@@ -203,3 +203,25 @@ EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=
 
 - This file is intentionally compact; avoid adding long catalogs here.
 - Put detail-heavy guidance into `docs/agent/*` and link from the Deep Docs section.
+- 
+## Signal UI changes
+
+Before editing any Signal UI code, read and follow:
+
+- `docs/design/signal-agent-guardrails.md`
+
+This applies when touching:
+
+- `apps/web/src/components/signal/**`
+- `apps/web/src/lib/signal/**`
+- Signal branches inside `apps/web/src/app/user/**`
+- any route/component using `SignalAppShell`, `SignalSurface`, or `signalTokens`
+
+For Signal UI work:
+
+1. Identify the route/component being changed.
+2. Classify the change as page-local, shared-component, or token-level.
+3. Prefer the smallest page-local change.
+4. Do not introduce raw colours, arbitrary spacing, one-off card styles, or new design primitives.
+5. Do not change behaviour, data fetching, routing, feature flags, permissions, or APIs for visual-only requests.
+6. If a requested tweak seems to require a new shared primitive or token change, explain the proposal before implementing it.
