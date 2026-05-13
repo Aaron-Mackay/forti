@@ -8,6 +8,7 @@ const palette = signalTokens.surface.planning;
 
 const NAV_ITEMS = [
   { label: 'Overview', segment: '' },
+  { label: 'Calendar', segment: 'calendar' },
   { label: 'Check-ins', segment: 'check-ins' },
   { label: 'Plans', segment: 'plans' },
   { label: 'Nutrition', segment: 'nutrition' },

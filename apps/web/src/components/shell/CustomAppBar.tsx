@@ -287,6 +287,12 @@ export default function CustomAppBar(
                 isActive={pathname === `/user/coach/clients/${activeClientId}`}
               />
               <ListLink
+                icon={<CalendarIcon/>}
+                text="Calendar"
+                href={`/user/coach/clients/${activeClientId}/calendar`}
+                isActive={pathname.startsWith(`/user/coach/clients/${activeClientId}/calendar`)}
+              />
+              <ListLink
                 icon={<ChecklistIcon2/>}
                 text="Check-ins"
                 href={`/user/coach/clients/${activeClientId}/check-ins`}

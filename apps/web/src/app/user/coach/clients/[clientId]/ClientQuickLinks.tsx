@@ -2,6 +2,7 @@
 import { Grid, Button } from '@mui/material';
 import Link from 'next/link';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
 import MedicationIcon from '@mui/icons-material/Medication';
@@ -12,6 +13,7 @@ interface Props {
 
 export default function ClientQuickLinks({ clientId }: Props) {
   const links = [
+    { href: `/user/coach/clients/${clientId}/calendar`, label: 'Calendar', icon: <CalendarMonthIcon /> },
     { href: `/user/coach/clients/${clientId}/check-ins`, label: 'Check-ins', icon: <AssignmentTurnedInIcon /> },
     { href: `/user/coach/clients/${clientId}/plans`, label: 'Plans', icon: <ListAltIcon /> },
     { href: `/user/coach/clients/${clientId}/nutrition`, label: 'Nutrition', icon: <RestaurantRoundedIcon /> },

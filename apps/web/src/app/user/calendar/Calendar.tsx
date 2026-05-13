@@ -65,10 +65,19 @@ type Props = {
   metrics: MetricPrisma[];
   userId: string;
   signalEnabled?: boolean;
+  dataUrl?: string;
+  showLegacyAppBar?: boolean;
 };
 
 
-export default function Calendar({events, metrics, userId, signalEnabled = false}: Props) {
+export default function Calendar({
+  events,
+  metrics,
+  userId,
+  signalEnabled = false,
+  dataUrl = '/api/calendar-data',
+  showLegacyAppBar = true,
+}: Props) {
   const calendarRef = useRef<FullCalendar | null>(null);
   const { settings } = useSettings();
   const theme = useTheme();
@@ -92,7 +101,7 @@ export default function Calendar({events, metrics, userId, signalEnabled = false
     const handleOnline = async () => {
       try {
         const {events: freshEvents, metrics: freshMetrics} = await fetchJsonWithSchema(
-          '/api/calendar-data',
+          dataUrl,
           CalendarDataResponseSchema,
         );
         let eventsChanged = false;
@@ -112,7 +121,7 @@ export default function Calendar({events, metrics, userId, signalEnabled = false
     };
     window.addEventListener('online', handleOnline);
     return () => window.removeEventListener('online', handleOnline);
-  }, [setCalendarUpdatedBanner, setDayMetricsState, setEventsInState, userId]);
+  }, [dataUrl, setCalendarUpdatedBanner, setDayMetricsState, setEventsInState, userId]);
 
   const fullCalendarEvents = useMemo(() => parsedEvents(eventsInState), [eventsInState]);
   const blockCount = useMemo(
@@ -420,7 +429,7 @@ export default function Calendar({events, metrics, userId, signalEnabled = false
         year={calendarRef.current?.getApi().view.currentStart.getFullYear()}
         scrollToDate={scrollToDate}
       />
-      {!signalEnabled && <LegacyCalendarAppBar />}
+      {showLegacyAppBar && !signalEnabled && <LegacyCalendarAppBar />}
     </>
   )
 }
