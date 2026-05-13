@@ -1,17 +1,17 @@
 import Link from 'next/link';
-import type { Metric, Event as PrismaEvent } from '@/generated/prisma/browser';
+import type { Metric } from '@/generated/prisma/browser';
 import { signalTokens } from '@lib/signal/tokens';
 import { signalFontVariablesClassName } from '@lib/signal/fonts';
 import type { ActivePlanWithStats, ActivePlanTree } from '@lib/userService';
+import { estimateWorkoutMinutes } from '@lib/workoutDurationEstimate';
 import type { Settings } from '@/types/settingsTypes';
-import { kgToBodyweightDisplay } from '@/lib/units';
 import { CompleteWeekButton } from './CompleteWeekButton';
+import { SignalHomeMetricsCard } from './SignalHomeMetricsCard';
 
 type Props = {
-  userName: string | null | undefined;
+  userId: string;
   activePlanData: ActivePlanWithStats | null;
   metrics: Metric[];
-  events: PrismaEvent[];
   settings: Settings;
   today: Date;
   checkInPending?: boolean;
@@ -30,6 +30,7 @@ type ResolvedHome = {
   hero: HeroState;
   weekIndex: number | null;
   weekTotal: number;
+  weekCompletedCount: number;
   weekWorkouts: WeekWorkout[];
   blockProgress: { weekIndex: number; weekTotal: number } | null;
   planName: string | null;
@@ -46,6 +47,8 @@ type HeroState =
       workoutId: number;
       workoutName: string;
       exerciseCount: number;
+      exerciseNames: string[];
+      estimatedDurationSeconds: number;
       setCount: number;
     };
 
@@ -60,9 +63,9 @@ function totalSetsFor(workout: ActivePlanTree['weeks'][number]['workouts'][numbe
   return workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
 }
 
-function resolve(activePlan: ActivePlanTree | null): Pick<ResolvedHome, 'hero' | 'weekIndex' | 'weekTotal' | 'weekWorkouts' | 'planName' | 'blockProgress'> {
+function resolve(activePlan: ActivePlanTree | null): Pick<ResolvedHome, 'hero' | 'weekIndex' | 'weekTotal' | 'weekCompletedCount' | 'weekWorkouts' | 'planName' | 'blockProgress'> {
   if (!activePlan) {
-    return { hero: { kind: 'no-plan' }, weekIndex: null, weekTotal: 0, weekWorkouts: [], planName: null, blockProgress: null };
+    return { hero: { kind: 'no-plan' }, weekIndex: null, weekTotal: 0, weekCompletedCount: 0, weekWorkouts: [], planName: null, blockProgress: null };
   }
   const weeks = activePlan.weeks;
   const weekTotal = weeks.length;
@@ -81,12 +84,14 @@ function resolve(activePlan: ActivePlanTree | null): Pick<ResolvedHome, 'hero' |
     else if (focusWorkout && w.id === focusWorkout.id) state = inProgress ? 'inProgress' : 'today';
     return { id: w.id, name: w.name, state, order: w.order };
   });
+  const weekCompletedCount = weekWorkouts.filter((workout) => workout.state === 'done').length;
 
   if (!focusWorkout) {
     return {
       hero: { kind: 'all-done', planName: activePlan.name, weekIndex: activeWeekIdx + 1, weekTotal },
       weekIndex: activeWeekIdx + 1,
       weekTotal,
+      weekCompletedCount,
       weekWorkouts,
       planName: activePlan.name,
       blockProgress: { weekIndex: activeWeekIdx + 1, weekTotal },
@@ -102,43 +107,22 @@ function resolve(activePlan: ActivePlanTree | null): Pick<ResolvedHome, 'hero' |
       workoutId: focusWorkout.id,
       workoutName: focusWorkout.name,
       exerciseCount: focusWorkout.exercises.length,
+      exerciseNames: focusWorkout.exercises.map((exercise) => exercise.exercise.name),
+      estimatedDurationSeconds: estimateWorkoutMinutes(focusWorkout),
       setCount: totalSetsFor(focusWorkout),
     },
     weekIndex: activeWeekIdx + 1,
     weekTotal,
+    weekCompletedCount,
     weekWorkouts,
     planName: activePlan.name,
     blockProgress: { weekIndex: activeWeekIdx + 1, weekTotal },
   };
 }
 
-function todayMetricsRow(metrics: Metric[], today: Date, settings: Settings) {
-  const isoToday = today.toISOString().slice(0, 10);
-  const todayMetric = metrics.find((m) => m.date.toISOString().slice(0, 10) === isoToday) ?? metrics[metrics.length - 1] ?? null;
-  const bw = todayMetric?.weight ?? null;
-  const sleepMins = todayMetric?.sleepMins ?? null;
-  const steps = todayMetric?.steps ?? null;
-  const calories = todayMetric?.calories ?? null;
-
-  const bwUnit = settings.bodyweightUnit;
-  const bwDisplay = kgToBodyweightDisplay(bw, bwUnit);
-
-  return [
-    { label: 'Weight', value: bwDisplay == null ? null : bwDisplay.toFixed(1), unit: bwUnit },
-    { label: 'Sleep', value: sleepMins == null ? null : (sleepMins / 60).toFixed(1), unit: 'h' },
-    { label: 'Steps', value: steps == null ? null : steps.toLocaleString(), unit: '' },
-    { label: 'Cals', value: calories == null ? null : String(calories), unit: 'kcal' },
-  ];
-}
-
-function formatDateHeader(d: Date): string {
-  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-}
-
-export function SignalHome({ userName, activePlanData, metrics, settings, today, checkInPending }: Props) {
+export function SignalHome({ userId, activePlanData, metrics, settings, today, checkInPending }: Props) {
   const resolved = resolve(activePlanData?.activePlan ?? null);
-  const tiles = todayMetricsRow(metrics, today, settings);
-  const firstName = userName?.split(' ')[0] ?? null;
+  const dateLabel = today.toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: 'short' });
 
   return (
     <div
@@ -151,69 +135,124 @@ export function SignalHome({ userName, activePlanData, metrics, settings, today,
         padding: '18px 16px 32px',
       }}
     >
-      <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: pagePalette.inkLight, marginBottom: 6, display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        <span>{formatDateHeader(today)}</span>
-        {resolved.planName && resolved.weekIndex != null && (
-          <span>{resolved.planName} · wk {resolved.weekIndex} / {resolved.weekTotal}</span>
-        )}
-      </div>
+      <style>{`
+        @media (min-width: 1024px) {
+          [data-signal-home-header] {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 24px;
+          }
+          [data-signal-home-grid] {
+            display: grid;
+            grid-template-columns: minmax(0, 1.9fr) minmax(280px, 0.95fr);
+            gap: 26px;
+            align-items: start;
+          }
+        }
+      `}</style>
 
-      {firstName && (
-        <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 22, fontWeight: 700, letterSpacing: '-0.01em', color: pagePalette.inkMid, marginBottom: 12 }}>
-          {firstName}
-        </div>
-      )}
-
-      {checkInPending && <CheckInPrompt />}
-
-      <Hero hero={resolved.hero} />
-
-      {resolved.weekWorkouts.length > 0 && (
-        <section style={{ marginTop: 18 }}>
-          <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: pagePalette.inkLight, marginBottom: 8 }}>This week</div>
-          <div
+      <header data-signal-home-header style={{ marginBottom: 20 }}>
+        <div>
+          <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: pagePalette.inkLight, marginBottom: 8 }}>
+            My training · {dateLabel}
+          </div>
+          <h1
             style={{
-              display: 'grid',
-              gridTemplateColumns: `repeat(${Math.min(resolved.weekWorkouts.length, 4)}, 1fr)`,
-              gap: 6,
+              margin: 0,
+              fontFamily: signalTokens.fontVar.cond,
+              fontSize: 52,
+              lineHeight: 0.95,
+              letterSpacing: '-0.03em',
+              color: pagePalette.ink,
             }}
           >
-            {resolved.weekWorkouts.slice(0, 4).map((w) => (
-              <WeekCell key={w.id} workout={w} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section style={{ marginTop: 18 }}>
-        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: pagePalette.inkLight, marginBottom: 8 }}>Today&apos;s metrics</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-          {tiles.map((tile) => (
-            <MetricTile key={tile.label} {...tile} />
-          ))}
+            Today&apos;s session
+          </h1>
         </div>
-      </section>
+        {resolved.planName && resolved.weekIndex != null && (
+          <div style={{ marginTop: 8, fontFamily: signalTokens.fontVar.mono, fontSize: 12, color: pagePalette.inkMid, whiteSpace: 'nowrap' }}>
+            {resolved.planName} · wk {resolved.weekIndex} / {resolved.weekTotal}
+          </div>
+        )}
+      </header>
 
-      {resolved.blockProgress && (
-        <section style={{ marginTop: 18 }}>
-          <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: pagePalette.inkLight, marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
-            <span>Block progress</span>
-            <span>
-              week {resolved.blockProgress.weekIndex} of {resolved.blockProgress.weekTotal}
-            </span>
-          </div>
-          <div style={{ height: 2, background: pagePalette.inkGhost, borderRadius: 1 }}>
-            <div
+      <div data-signal-home-grid style={{ display: 'grid', gap: 20 }}>
+        <div>
+          {checkInPending && <CheckInPrompt />}
+          <Hero hero={resolved.hero} />
+
+          {resolved.weekWorkouts.length > 0 && (
+            <section style={{ marginTop: 22 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+                <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 18, fontWeight: 700, color: pagePalette.ink }}>
+                  Week {resolved.weekIndex} progress
+                </div>
+                <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: pagePalette.inkMid }}>
+                  {resolved.weekCompletedCount} of {resolved.weekWorkouts.length} done
+                </div>
+              </div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${Math.min(resolved.weekWorkouts.length, 4)}, 1fr)`,
+                  gap: 6,
+                  background: pagePalette.surface,
+                  border: `1px solid ${pagePalette.border}`,
+                  borderRadius: signalTokens.radii.cardLarge,
+                  padding: 10,
+                }}
+              >
+                {resolved.weekWorkouts.slice(0, 4).map((workout) => (
+                  <WeekCell key={workout.id} workout={workout} />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+
+        <div style={{ display: 'grid', gap: 18 }}>
+          <SignalHomeMetricsCard
+            userId={userId}
+            metrics={metrics}
+            today={today}
+            bodyweightUnit={settings.bodyweightUnit}
+          />
+
+          {resolved.blockProgress && (
+            <section
               style={{
-                width: `${Math.min(100, (resolved.blockProgress.weekIndex / Math.max(resolved.blockProgress.weekTotal, 1)) * 100)}%`,
-                height: '100%',
-                background: pagePalette.ink,
-                borderRadius: 1,
+                background: pagePalette.surface,
+                border: `1px solid ${pagePalette.border}`,
+                borderRadius: signalTokens.radii.cardLarge,
+                padding: '18px 18px 20px',
               }}
-            />
-          </div>
-        </section>
-      )}
+            >
+              <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: pagePalette.inkLight, marginBottom: 10 }}>
+                Block progress
+              </div>
+              {resolved.planName && (
+                <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 24, fontWeight: 700, color: pagePalette.ink, lineHeight: 1, marginBottom: 6 }}>
+                  {resolved.planName}
+                </div>
+              )}
+              <div style={{ fontSize: 14, color: pagePalette.inkMid, marginBottom: 14 }}>
+                Week {resolved.blockProgress.weekIndex} of {resolved.blockProgress.weekTotal}
+              </div>
+              <div style={{ height: 2, background: pagePalette.inkGhost, borderRadius: 1 }}>
+                <div
+                  style={{
+                    width: `${Math.min(100, (resolved.blockProgress.weekIndex / Math.max(resolved.blockProgress.weekTotal, 1)) * 100)}%`,
+                    height: '100%',
+                    background: pagePalette.ink,
+                    borderRadius: 1,
+                  }}
+                />
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -272,21 +311,19 @@ function Hero({ hero }: { hero: HeroState }) {
   }
 
   const isResume = hero.kind === 'resume';
+  const exerciseLine = hero.exerciseNames.slice(0, 6).join(' · ');
+  const estimatedMinutes = Math.round(hero.estimatedDurationSeconds / 60);
   return (
-    <div>
-      <Link
-        href={`/user/workout?workoutId=${hero.workoutId}`}
-        aria-label={`${isResume ? 'Resume' : 'Start'} workout: ${hero.workoutName}`}
-        style={{
-          display: 'block',
-          background: heroPalette.surface,
-          color: heroPalette.ink,
-          border: `1px solid ${heroPalette.borderStrong}`,
-          borderRadius: signalTokens.radii.cardLarge,
-          textDecoration: 'none',
-          overflow: 'hidden',
-        }}
-      >
+    <div
+      style={{
+        background: heroPalette.surface,
+        color: heroPalette.ink,
+        border: `1px solid ${heroPalette.borderStrong}`,
+        borderRadius: signalTokens.radii.cardLarge,
+        overflow: 'hidden',
+      }}
+    >
+      <div>
         <div style={{ padding: '24px 20px 20px' }}>
           <div
             style={{
@@ -301,39 +338,54 @@ function Hero({ hero }: { hero: HeroState }) {
           <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 32, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 14, color: heroPalette.ink }}>
             {hero.workoutName}
           </div>
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontFamily: signalTokens.fontVar.mono, fontSize: 12, color: heroPalette.inkMid, marginBottom: 0 }}>
+          {exerciseLine && (
+            <div style={{ fontSize: 14, lineHeight: 1.45, color: heroPalette.inkMid, marginBottom: 18 }}>
+              {exerciseLine}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontFamily: signalTokens.fontVar.mono, fontSize: 12, color: heroPalette.inkMid, marginBottom: 0 }}>
             <span><span style={{ color: heroPalette.ink, fontWeight: 600 }}>{hero.exerciseCount}</span> exercises</span>
             <span><span style={{ color: heroPalette.ink, fontWeight: 600 }}>{hero.setCount}</span> sets</span>
+            <span><span style={{ color: heroPalette.ink, fontWeight: 600 }}>~{estimatedMinutes}</span> min</span>
           </div>
         </div>
-        <div
-          style={{
-            background: signalTokens.signal.base,
-            color: heroPalette.bg,
-            padding: '14px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            fontSize: 16,
-            fontWeight: 600,
-          }}
-        >
-          <span>{isResume ? 'Resume workout' : 'Start workout'}</span>
-          <ArrowRight stroke={heroPalette.bg} strokeWidth={2.4} />
+        <div style={{ padding: '0 20px 20px', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <Link
+            href={`/user/workout?workoutId=${hero.workoutId}`}
+            aria-label={`${isResume ? 'Resume' : 'Start'} workout: ${hero.workoutName}`}
+            style={{
+              background: signalTokens.signal.base,
+              color: heroPalette.bg,
+              padding: '14px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontSize: 16,
+              fontWeight: 600,
+              flex: '1 1 220px',
+              textDecoration: 'none',
+            }}
+          >
+            <span>{isResume ? 'Resume workout' : 'Start workout'}</span>
+            <ArrowRight stroke={heroPalette.bg} strokeWidth={2.4} />
+          </Link>
+          <Link
+            href="/user/workout"
+            style={{
+              border: `1px solid ${heroPalette.borderStrong}`,
+              color: heroPalette.ink,
+              padding: '14px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              fontSize: 16,
+              flex: '0 1 auto',
+              minWidth: 160,
+              textDecoration: 'none',
+            }}
+          >
+            Choose another
+          </Link>
         </div>
-      </Link>
-      <div style={{ marginTop: 10, textAlign: 'center' }}>
-        <Link
-          href="/user/workout"
-          style={{
-            fontFamily: signalTokens.fontVar.mono,
-            fontSize: 11,
-            color: pagePalette.inkMid,
-            textDecoration: 'none',
-          }}
-        >
-          Choose another workout
-        </Link>
       </div>
     </div>
   );
@@ -369,33 +421,6 @@ function WeekCell({ workout }: { workout: WeekWorkout }) {
         <div style={{ marginTop: 5, fontFamily: signalTokens.fontVar.mono, fontSize: 9, color: pagePalette.inkLight }}>logged</div>
       )}
     </div>
-  );
-}
-
-function MetricTile({ label, value, unit }: { label: string; value: string | null; unit: string }) {
-  const isEmpty = value == null;
-  return (
-    <Link
-      href="/user/check-in"
-      style={{
-        display: 'block',
-        textDecoration: 'none',
-        border: `1px ${isEmpty ? 'dashed' : 'solid'} ${pagePalette.border}`,
-        background: pagePalette.surface,
-        borderRadius: signalTokens.radii.cell,
-        padding: '10px 8px 11px',
-        textAlign: 'center',
-        color: pagePalette.ink,
-      }}
-    >
-      <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 10, color: pagePalette.inkLight, marginBottom: 3 }}>{label}</div>
-      <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 18, fontWeight: 700, color: isEmpty ? pagePalette.inkGhost : pagePalette.ink, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-        {value ?? '—'}
-      </div>
-      <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 10, color: pagePalette.inkLight, marginTop: 3 }}>
-        {isEmpty ? 'tap to log' : unit}
-      </div>
-    </Link>
   );
 }
 

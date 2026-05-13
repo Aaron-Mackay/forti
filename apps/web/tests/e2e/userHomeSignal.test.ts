@@ -30,11 +30,11 @@ test.describe('User Home Signal', () => {
   test('flagged user sees the Signal command centre on the home route', async ({ page }) => {
     await page.goto('/user');
 
-    await expect(page.locator('[data-signal-surface="gym"]').first()).toBeVisible();
+    await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: "Today's session" })).toBeVisible();
 
-    // Today's metrics row is always rendered with the four canonical labels
     await expect(page.getByText("Today's metrics").first()).toBeVisible();
-    await expect(page.getByText('Weight', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Bodyweight', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('Sleep', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('Steps', { exact: true }).first()).toBeVisible();
 
@@ -43,5 +43,9 @@ test.describe('User Home Signal', () => {
       /Build your first plan|Resume workout|Start workout|Nothing left to log this week/,
     );
     await expect(heroCopy.first()).toBeVisible();
+
+    await page.getByRole('button', { name: /Bodyweight/i }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Save' })).toBeVisible();
   });
 });

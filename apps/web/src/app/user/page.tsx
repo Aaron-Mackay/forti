@@ -48,10 +48,9 @@ export default async function UserPage() {
     <SignalSurface signalEnabled={signalEnabled} surface="planning">
       {signalEnabled ? (
         <SignalHome
-          userName={user.name}
+          userId={user.id}
           activePlanData={activePlanData}
           metrics={userMetrics}
-          events={allEvents}
           settings={settings}
           today={new Date()}
           checkInPending={checkInPending}
