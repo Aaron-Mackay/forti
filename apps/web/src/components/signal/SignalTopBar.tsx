@@ -1,7 +1,7 @@
 'use client';
 
 import { signalTokens, type SignalNavMode } from '@lib/signal/tokens';
-import { ForftiWordmark } from './ForftiWordmark';
+import { SignalBrandMark } from './SignalBrandMark';
 import { SignalModeSwitch } from './SignalModeSwitch';
 import { SignalNotificationsBell } from './SignalNotificationsBell';
 import { useSettings } from '@lib/providers/SettingsProvider';
@@ -33,7 +33,7 @@ export function SignalTopBar({ mode, hasUnreadNotifications, showModeSwitch: sho
         fontFamily: signalTokens.fontVar.body,
       }}
     >
-      <ForftiWordmark size={18} color={palette.ink} glyphColor={signalTokens.signal.base} />
+      <SignalBrandMark size={28} />
       <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
         {showModeSwitch && (
           <div style={{ maxWidth: 240, width: '100%' }}>

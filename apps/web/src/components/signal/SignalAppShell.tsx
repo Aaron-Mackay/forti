@@ -39,16 +39,24 @@ export function SignalAppShell({
         data-signal-mode={mode}
         data-signal-surface={surface}
         style={{
+          height: '100dvh',
           minHeight: '100dvh',
           fontFamily: signalTokens.fontVar.body,
           color: contentPalette.ink,
           background: contentPalette.bg,
           display: 'flex',
+          overflow: 'hidden',
         }}
       >
         <style>{`
           @media (min-width: ${DESKTOP_BREAKPOINT_PX}px) {
-            [data-signal-shell-sidebar] { display: flex !important; }
+            [data-signal-shell-sidebar] {
+              display: flex !important;
+              position: sticky;
+              top: 0;
+              align-self: flex-start;
+              height: 100dvh;
+            }
             [data-signal-shell-mobile-frame] [data-signal-shell-topbar],
             [data-signal-shell-mobile-frame] [data-signal-shell-bottomnav] { display: none !important; }
           }
@@ -74,7 +82,9 @@ export function SignalAppShell({
             display: 'flex',
             flexDirection: 'column',
             minWidth: 0,
+            height: '100dvh',
             minHeight: '100dvh',
+            overflow: 'hidden',
           }}
         >
           <div data-signal-shell-topbar>
@@ -85,6 +95,7 @@ export function SignalAppShell({
             style={{
               flex: 1,
               minWidth: 0,
+              minHeight: 0,
               overflowY: 'auto',
               background: contentPalette.bg,
               color: contentPalette.ink,
@@ -93,7 +104,15 @@ export function SignalAppShell({
             {children}
           </main>
 
-          <div data-signal-shell-bottomnav>
+          <div
+            data-signal-shell-bottomnav
+            style={{
+              position: 'sticky',
+              bottom: 0,
+              zIndex: 20,
+              flexShrink: 0,
+            }}
+          >
             <SignalBottomNav mode={mode} activeOverride={activeNavOverride} />
           </div>
         </div>

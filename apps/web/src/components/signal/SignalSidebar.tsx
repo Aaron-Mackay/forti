@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signalTokens, type SignalNavMode } from '@lib/signal/tokens';
-import { ForftiWordmark } from './ForftiWordmark';
+import { SignalBrandMark } from './SignalBrandMark';
 import { SignalIcon } from './SignalIcons';
 import { SignalModeSwitch } from './SignalModeSwitch';
 import { SignalNotificationsBell } from './SignalNotificationsBell';
@@ -51,7 +51,7 @@ export function SignalSidebar({ mode, activeOverride, userLabel, userInitials, h
         }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>
-          <ForftiWordmark size={22} color={palette.ink} glyphColor={signalTokens.signal.base} />
+          <SignalBrandMark size={34} />
         </div>
         <SignalNotificationsBell hasUnread={hasUnreadNotifications} />
       </div>
