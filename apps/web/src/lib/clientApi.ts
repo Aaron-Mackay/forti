@@ -93,10 +93,37 @@ import {
 import { SessionsListResponseSchema, type SessionsListResponse } from './contracts/sessions';
 import { WorkoutDataResponseSchema, type WorkoutDataResponse } from './contracts/workoutData';
 
+function normalizeUserWorkoutDataForSave(userData: UserPrisma): UserPrisma {
+  if (!Array.isArray(userData.plans)) return userData;
+
+  return {
+    ...userData,
+    plans: userData.plans.map((plan) => ({
+      ...plan,
+      weeks: (plan.weeks ?? []).map((week) => ({
+        ...week,
+        workouts: (week.workouts ?? []).map((workout) => ({
+          ...workout,
+          exercises: (workout.exercises ?? []).map((exercise) => ({
+            ...exercise,
+            exercise: exercise.exercise
+              ? {
+                  ...exercise.exercise,
+                  category: exercise.exercise.category ?? 'resistance',
+                }
+              : exercise.exercise,
+          })),
+        })),
+      })),
+    })),
+  };
+}
+
 export async function saveUserWorkoutData(userData: UserPrisma): Promise<SaveUserWorkoutDataSuccess> {
+  const normalizedUserData = normalizeUserWorkoutDataForSave(userData);
   return fetchJsonWithSchema('/api/saveUserWorkoutData', SaveUserWorkoutDataSuccessSchema, {
     method: 'POST',
-    body: JSON.stringify(userData),
+    body: JSON.stringify(normalizedUserData),
     headers: {'Content-Type': 'application/json'},
   });
 }

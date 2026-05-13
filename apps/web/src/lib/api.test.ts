@@ -111,11 +111,58 @@ describe('API functions', () => {
       const mockResponse = { success: true };
       (fetchWrapper.fetchJsonWithSchema as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
-      const userData = { id: 1, name: 'Test User' } as unknown as UserPrisma;
+      const userData = {
+        id: 'user-1',
+        plans: [
+          {
+            weeks: [
+              {
+                workouts: [
+                  {
+                    exercises: [
+                      {
+                        exercise: {
+                          category: null,
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      } as unknown as UserPrisma;
       const result = await clientApi.saveUserWorkoutData(userData);
       expect(fetchWrapper.fetchJsonWithSchema).toHaveBeenCalledWith('/api/saveUserWorkoutData', expect.anything(), {
         method: 'POST',
-        body: JSON.stringify(userData),
+        body: JSON.stringify({
+          ...userData,
+          plans: [
+            {
+              ...userData.plans[0],
+              weeks: [
+                {
+                  ...userData.plans[0].weeks[0],
+                  workouts: [
+                    {
+                      ...userData.plans[0].weeks[0].workouts[0],
+                      exercises: [
+                        {
+                          ...userData.plans[0].weeks[0].workouts[0].exercises[0],
+                          exercise: {
+                            ...userData.plans[0].weeks[0].workouts[0].exercises[0].exercise,
+                            category: 'resistance',
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        }),
         headers: { 'Content-Type': 'application/json' },
       });
       expect(result).toEqual(mockResponse);
