@@ -35,6 +35,7 @@ npm run dev:mobile
 - `EXPO_PUBLIC_API_BASE_URL`
   - Local device or Expo Go: use your machine's LAN URL, for example `http://192.168.1.10:3000`
   - Shared tunnel: use the tunnel URL exposed by Expo
+  - Optional fallback: if `NEXT_PUBLIC_APP_URL` is set, `apps/mobile/app.config.js` will reuse it for `expo.extra.apiBaseUrl`
 - `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
 - `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`
 - `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`

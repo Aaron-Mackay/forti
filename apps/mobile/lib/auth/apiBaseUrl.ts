@@ -7,7 +7,7 @@ export function getApiBaseUrl(): string {
 
   if (!url) {
     throw new Error(
-      'API base URL is not configured. Set EXPO_PUBLIC_API_BASE_URL or app.json:expo.extra.apiBaseUrl.',
+      'API base URL is not configured. Set EXPO_PUBLIC_API_BASE_URL, NEXT_PUBLIC_APP_URL, or app.json:expo.extra.apiBaseUrl.',
     );
   }
 
