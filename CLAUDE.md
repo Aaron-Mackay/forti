@@ -71,6 +71,7 @@ Update route code/contracts and regenerate the index instead of manually editing
 - Cross-platform request/response contracts shared by web and mobile belong in `packages/shared/src/contracts/`.
 - Client code must not import from `apps/web/src/app/api/**/route.ts`.
 - Prefer shared zod schemas for route input and output; keep API error shapes standardized via `src/lib/apiResponses.ts`.
+- Use structured API logging from `src/lib/logger.ts`, `src/lib/apiLogging.ts`, and `withApiRoute()` in `src/lib/routeAuth.ts`; do not add ad hoc `console.*` logging in API routes.
 
 ### Cross-platform boundaries
 - Shared code intended for both web and mobile must not import `next/*`, `next-auth/react`, DOM globals, or React Native-only modules.
@@ -130,6 +131,7 @@ Update route code/contracts and regenerate the index instead of manually editing
 - `src/lib/clientApi.ts` + `src/lib/fetchWrapper.ts` — client API/fetch wrappers.
 - `src/lib/eventService.ts`, `src/lib/planService.ts`, `src/lib/userService.ts` — domain service modules.
 - `src/lib/apiResponses.ts` — standardized API error/response helpers.
+- `src/lib/logger.ts`, `src/lib/apiLogging.ts`, `src/lib/routeAuth.ts` — structured server logging, request context, and API route wrappers.
 - `src/lib/queries.ts` — ownership lookup helpers for nested resources.
 - `src/lib/targetTemplates.ts` — template lookup/upsert logic.
 - `src/lib/checkInUtils.ts` + `src/lib/checkInTemplate.ts` — check-in and template behavior.

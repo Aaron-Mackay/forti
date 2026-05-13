@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@lib/prisma';
 import { requireSession } from '@lib/requireSession';
 import { errorResponse, forbiddenResponse, notFoundResponse, validationErrorResponse } from '@lib/apiResponses';
-import { withRouteAuth } from '@lib/routeAuth';
+import { withApiRoute } from '@lib/routeAuth';
 import { ActivePlanRequestSchema, type ActivePlanGetResponse, type ActivePlanSuccess } from '@lib/contracts/activePlan';
 import { getActivePlanWithStats } from '@lib/userService';
+import { logInvalidJson, logUnexpectedError, logValidationError, summarizePayload, type RequestLogContext } from '@lib/apiLogging';
 
-export const GET = withRouteAuth(async function GET(req: NextRequest) {
+export const GET = withApiRoute({ route: '/api/plan/active' }, async function GET(_ctx: RequestLogContext, req: NextRequest) {
   const session = await requireSession();
   const sessionUserId = session.user.id;
 
@@ -29,16 +30,18 @@ export const GET = withRouteAuth(async function GET(req: NextRequest) {
   return NextResponse.json(data satisfies ActivePlanGetResponse);
 });
 
-export const PATCH = withRouteAuth(async function PATCH(req: NextRequest) {
+export const PATCH = withApiRoute({ route: '/api/plan/active' }, async function PATCH(ctx: RequestLogContext, req: NextRequest) {
   const session = await requireSession();
   const json = await req.json().catch(() => null);
   if (json == null) {
+    logInvalidJson(ctx);
     return errorResponse('Invalid JSON body', 400);
   }
 
   const parsed = ActivePlanRequestSchema.safeParse(json);
 
   if (!parsed.success) {
+    logValidationError(ctx, parsed.error, summarizePayload(json, ['planId', 'targetUserId']));
     return validationErrorResponse(parsed.error);
   }
 
@@ -88,7 +91,7 @@ export const PATCH = withRouteAuth(async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ success: true, activePlanId: updatedUser.activePlanId } satisfies ActivePlanSuccess);
   } catch (error) {
-    console.error(error);
+    logUnexpectedError(ctx, error, { userId, planId });
     return errorResponse('Failed to update active plan', 500);
   }
 });

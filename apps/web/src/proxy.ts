@@ -3,6 +3,19 @@ import {NextResponse} from "next/server";
 
 export async function proxy(req: NextRequest) {
   const {pathname} = req.nextUrl;
+  const isApiRoute = pathname.startsWith('/api/');
+  const requestHeaders = new Headers(req.headers);
+  const requestId = requestHeaders.get('x-request-id') ?? crypto.randomUUID();
+  if (isApiRoute) requestHeaders.set('x-request-id', requestId);
+
+  function attachRequestId(response: NextResponse) {
+    if (isApiRoute) response.headers.set('x-request-id', requestId);
+    return response;
+  }
+
+  function nextWithRequestHeaders() {
+    return attachRequestId(NextResponse.next({ request: { headers: requestHeaders } }));
+  }
 
   // Allow public assets and auth routes
   if (
@@ -11,7 +24,7 @@ export async function proxy(req: NextRequest) {
     pathname.startsWith("/api/auth") ||
     pathname.includes(".") // allow all files with an extension
   ) {
-    return NextResponse.next();
+    return isApiRoute ? nextWithRequestHeaders() : NextResponse.next();
   }
 
   // Redirect authenticated users away from the login page
@@ -34,7 +47,7 @@ export async function proxy(req: NextRequest) {
     if (!pathname.startsWith("/api/")) {
       loginUrl.searchParams.set("callbackUrl", pathname + (req.nextUrl.search || ""));
     }
-    return NextResponse.redirect(loginUrl);
+    return attachRequestId(NextResponse.redirect(loginUrl));
   }
 
   // Redirect root to the user's last-used mode home
@@ -47,10 +60,9 @@ export async function proxy(req: NextRequest) {
   // Forward a coach-route hint to server components so the guard in protected-layout
   // can redirect users without coachModeActive away from /user/coach/* paths.
   const isCoachRoute = pathname === '/user/coach' || pathname.startsWith('/user/coach/');
-  const requestHeaders = new Headers(req.headers);
   requestHeaders.set('x-is-coach-domain', isCoachRoute ? '1' : '0');
 
-  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  const response = nextWithRequestHeaders();
 
   // Sync preferred_mode cookie to the current route so that notification deep-links
   // (and any other cross-mode navigation) keep the root redirect correct.

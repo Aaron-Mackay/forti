@@ -6,17 +6,21 @@ import { recordAuditEvent } from '@lib/auditEvents';
 import confirmPermission from "@lib/confirmPermission";
 import { PlanUploadRequestSchema, type PlanUploadSuccess } from '@lib/contracts/plan';
 import { errorResponse, validationErrorResponse } from '@lib/apiResponses';
-import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSession";
+import {isAuthenticationError} from "@lib/requireSession";
 import { getSessionActorUserId } from '@lib/sessionActor';
+import { logInvalidJson, logUnexpectedError, logValidationError, summarizePayload, type RequestLogContext } from '@lib/apiLogging';
+import { withApiRoute } from '@lib/routeAuth';
 
-export async function POST(req: NextRequest) {
+export const POST = withApiRoute({ route: '/api/plan' }, async function POST(ctx: RequestLogContext, req: NextRequest) {
   const json = await req.json().catch(() => null);
   if (json == null) {
+    logInvalidJson(ctx);
     return errorResponse('Invalid JSON body', 400);
   }
 
   const parsed = PlanUploadRequestSchema.safeParse(json);
   if (!parsed.success) {
+    logValidationError(ctx, parsed.error, summarizePayload(json, ['userId', 'weeks']));
     return validationErrorResponse(parsed.error);
   }
 
@@ -49,8 +53,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, planId: uploadedPlanId } satisfies PlanUploadSuccess, { status: 200 });
   } catch (error) {
-    if (isAuthenticationError(error)) return authenticationErrorResponse();
-    console.error(error);
+    if (isAuthenticationError(error)) throw error;
+    logUnexpectedError(ctx, error, { userId: parsed.data.userId });
     return errorResponse('Failed to create plan', 500);
   }
-}
+});

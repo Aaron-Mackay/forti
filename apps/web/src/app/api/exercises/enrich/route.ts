@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
+import { requireSession } from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import { EXERCISE_MUSCLES } from '@/types/dataTypes';
 import { matchExercisesByAlias } from '@lib/exerciseAliasMatcher';
@@ -9,6 +9,8 @@ import {
   EnrichToolResponseSchema,
   ExerciseEnrichRequestSchema,
 } from '@lib/contracts/exerciseEnrich';
+import { logInvalidJson, logProviderError, logUnexpectedError, logValidationError, summarizePayload, type RequestLogContext } from '@lib/apiLogging';
+import { withApiRoute } from '@lib/routeAuth';
 
 export const maxDuration = 30;
 
@@ -52,14 +54,8 @@ const ENRICH_TOOL: Anthropic.Tool = {
   },
 };
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
-  let session: Awaited<ReturnType<typeof requireSession>>;
-  try {
-    session = await requireSession();
-  } catch (err) {
-    if (isAuthenticationError(err)) return authenticationErrorResponse();
-    throw err;
-  }
+export const POST = withApiRoute({ route: '/api/exercises/enrich' }, async function POST(ctx: RequestLogContext, req: NextRequest): Promise<NextResponse> {
+  const session = await requireSession();
 
   const userId = session.user.id;
 
@@ -67,6 +63,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     body = await req.json();
   } catch {
+    logInvalidJson(ctx, { userId });
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
@@ -74,6 +71,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     exercises: ExerciseEnrichRequestSchema.shape.exercises.min(1).max(MAX_EXERCISES),
   }).safeParse(body);
   if (!parsed.success) {
+    logValidationError(ctx, parsed.error, summarizePayload(body, ['exercises']));
     return NextResponse.json(
       { error: 'Invalid request', issues: parsed.error.flatten() },
       { status: 400 },
@@ -174,7 +172,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const validation = EnrichToolResponseSchema.safeParse(toolUseBlock.input);
     if (!validation.success) {
-      console.error('Enrich tool response validation failed:', validation.error);
+      logProviderError(ctx, validation.error, {
+        provider: 'anthropic',
+        operation: 'exercise_enrich_response_validation',
+      });
       return NextResponse.json({ error: 'AI returned invalid enrichment data' }, { status: 422 });
     }
 
@@ -202,16 +203,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     } satisfies EnrichResponse);
   } catch (err) {
     if (err instanceof Anthropic.APIError) {
+      logProviderError(ctx, err, {
+        provider: 'anthropic',
+        status: err.status,
+        operation: 'exercise_enrich',
+      });
       if (err.status === 429 || err.status === 529 || err.status === 503) {
         return NextResponse.json(
           { error: 'AI service temporarily unavailable, please try again shortly' },
           { status: 503 },
         );
       }
-      console.error('Anthropic API error:', err.status, err.message);
       return NextResponse.json({ error: 'AI service error' }, { status: 502 });
     }
-    console.error('Enrich unexpected error:', err);
+    logUnexpectedError(ctx, err, { userId, operation: 'exercise_enrich' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+});

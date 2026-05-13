@@ -1,23 +1,26 @@
 import prisma from '@/lib/prisma';
 import {NextResponse} from 'next/server';
-import {authenticationErrorResponse, requireSession} from '@lib/requireSession';
+import {requireSession} from '@lib/requireSession';
 import {extractErrorMessage} from '@lib/apiError';
 import {errorResponse, notFoundResponse, validationErrorResponse} from '@lib/apiResponses';
 import {SetCreateRequestSchema} from '@lib/contracts/sets';
+import { logInvalidJson, logUnexpectedError, logValidationError, summarizePayload, type RequestLogContext } from '@lib/apiLogging';
+import { withApiRoute } from '@lib/routeAuth';
 
-export async function POST(req: Request) {
-  let session: Awaited<ReturnType<typeof requireSession>>;
-  try {
-    session = await requireSession();
-  } catch {
-    return authenticationErrorResponse();
-  }
+export const POST = withApiRoute({ route: '/api/sets' }, async function POST(ctx: RequestLogContext, req: Request) {
+  const session = await requireSession();
 
   const json = await req.json().catch(() => null);
-  if (json == null) return errorResponse('Invalid JSON body', 400);
+  if (json == null) {
+    logInvalidJson(ctx);
+    return errorResponse('Invalid JSON body', 400);
+  }
 
   const parsed = SetCreateRequestSchema.safeParse(json);
-  if (!parsed.success) return validationErrorResponse(parsed.error);
+  if (!parsed.success) {
+    logValidationError(ctx, parsed.error, summarizePayload(json, ['workoutExerciseId', 'isDropSet', 'parentSetId']));
+    return validationErrorResponse(parsed.error);
+  }
 
   const { workoutExerciseId, weight, isDropSet, parentSetId } = parsed.data;
 
@@ -47,6 +50,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(set, {status: 201});
   } catch (err: unknown) {
+    logUnexpectedError(ctx, err, { workoutExerciseId });
     return errorResponse(extractErrorMessage(err), 500);
   }
-}
+});

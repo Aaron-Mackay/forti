@@ -10,6 +10,11 @@ Use this document when touching API behavior, contracts, route auth, or cross-ro
 - Client code must not import route-local types from `src/app/api/**/route.ts`.
 - Prefer shared zod schemas for request parsing and response validation.
 - Use standardized helpers from `src/lib/apiResponses.ts` for JSON error envelopes.
+- Use structured logging for API observability:
+  - Wrap new or substantially edited route handlers with `withApiRoute({ route }, handler)` from `src/lib/routeAuth.ts` when the handler receives a `Request`/`NextRequest`.
+  - Use `src/lib/apiLogging.ts` helpers for invalid JSON, Zod validation failures, provider failures, and unexpected errors.
+  - Do not add route-local `console.*` calls; log safe summaries and never raw request bodies.
+  - API request correlation is handled in `src/proxy.ts` via `x-request-id`, which `withApiRoute()` also echoes on responses.
 
 ## Route Catalog (`src/app/api/`)
 

@@ -2,19 +2,26 @@ import {NextRequest, NextResponse} from 'next/server';
 import confirmPermission from '@lib/confirmPermission';
 import {EventSchema} from '@lib/contracts/events';
 import {errorResponse, validationErrorResponse} from '@lib/apiResponses';
-import {authenticationErrorResponse, isAuthenticationError} from '@lib/requireSession';
+import {isAuthenticationError} from '@lib/requireSession';
 import prisma from '@lib/prisma';
 import {EventMutationResponse} from '@lib/blockOverlapResolution';
 import {EventType} from '@/generated/prisma/browser';
 import {executeEventBlockMutation} from '@lib/eventBlockMutation';
+import { logInvalidJson, logUnexpectedError, logValidationError, summarizePayload, type RequestLogContext } from '@lib/apiLogging';
+import { withApiRoute } from '@lib/routeAuth';
 
-export async function POST(req: NextRequest) {
+export const POST = withApiRoute({ route: '/api/event' }, async function POST(ctx: RequestLogContext, req: NextRequest) {
   try {
-    const json = await req.json();
+    const json = await req.json().catch(() => null);
+    if (json == null) {
+      logInvalidJson(ctx);
+      return errorResponse('Invalid JSON body', 400);
+    }
+
     const parsed = EventSchema.safeParse(json);
 
     if (!parsed.success) {
-      console.error(parsed.error);
+      logValidationError(ctx, parsed.error, summarizePayload(json, ['userId', 'eventType', 'startDate', 'endDate']));
       return validationErrorResponse(parsed.error);
     }
 
@@ -57,8 +64,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result.data);
   } catch (error) {
     if (error instanceof NextResponse) return error;
-    if (isAuthenticationError(error)) return authenticationErrorResponse();
-    console.error(error);
+    if (isAuthenticationError(error)) throw error;
+    logUnexpectedError(ctx, error);
     return errorResponse('Failed to create event', 500);
   }
-}
+});

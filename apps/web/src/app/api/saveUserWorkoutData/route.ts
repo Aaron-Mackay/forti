@@ -14,17 +14,21 @@ import {
 } from '@lib/contracts/saveUserWorkoutData';
 import { errorResponse, validationErrorResponse } from '@lib/apiResponses';
 import { syncPlanTree } from '@lib/savePlanTreeDiff';
+import { logInvalidJson, logUnexpectedError, logValidationError, summarizePayload, type RequestLogContext } from '@lib/apiLogging';
+import { withApiRoute } from '@lib/routeAuth';
 
 const SAVE_USER_WORKOUT_DATA_TRANSACTION_TIMEOUT_MS = 15_000;
 
-export async function POST(req: Request) {
+export const POST = withApiRoute({ route: '/api/saveUserWorkoutData' }, async function POST(ctx: RequestLogContext, req: Request) {
   const json = await req.json().catch(() => null);
   if (json == null) {
+    logInvalidJson(ctx);
     return errorResponse('Invalid JSON body', 400);
   }
 
   const parsed = SaveUserWorkoutDataRequestSchema.safeParse(json);
   if (!parsed.success) {
+    logValidationError(ctx, parsed.error, summarizePayload(json, ['id', 'activePlanId', 'plans']));
     return validationErrorResponse(parsed.error);
   }
 
@@ -123,7 +127,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({success: true} satisfies SaveUserWorkoutDataSuccess, {status: 200});
   } catch (err: unknown) {
-    console.error("Save error:", err);
+    logUnexpectedError(ctx, err, { userId });
     return errorResponse(extractErrorMessage(err), 500);
   }
-}
+});

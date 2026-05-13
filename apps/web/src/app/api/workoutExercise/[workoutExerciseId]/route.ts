@@ -6,8 +6,10 @@ import {getWorkoutExerciseWithOwner} from "@lib/queries";
 import {errorResponse, forbiddenResponse, notFoundResponse, validationErrorResponse} from "@lib/apiResponses";
 import { getCoachFromUser } from '@lib/coachService';
 import { WorkoutExerciseUpdateRequestSchema } from '@lib/contracts/workoutExercise';
+import { logInvalidJson, logUnexpectedError, logValidationError, summarizePayload, type RequestLogContext } from '@lib/apiLogging';
+import { withApiRoute } from '@lib/routeAuth';
 
-export async function DELETE(_req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
+export const DELETE = withApiRoute({ route: '/api/workoutExercise/[workoutExerciseId]' }, async function DELETE(ctx: RequestLogContext, _req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
   const params = await props.params;
   const session = await requireSession();
 
@@ -25,20 +27,29 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ worko
 
     return new NextResponse(null, {status: 204});
   } catch (err: unknown) {
-    console.error(err);
+    logUnexpectedError(ctx, err, { workoutExerciseId: params.workoutExerciseId });
     return errorResponse(extractErrorMessage(err), 500);
   }
-}
+});
 
-export async function PATCH(req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
+export const PATCH = withApiRoute({ route: '/api/workoutExercise/[workoutExerciseId]' }, async function PATCH(ctx: RequestLogContext, req: NextRequest, props: { params: Promise<{ workoutExerciseId: string }> }) {
   const params = await props.params;
   const session = await requireSession();
 
   const json = await req.json().catch(() => null);
-  if (json == null) return errorResponse('Invalid JSON body', 400);
+  if (json == null) {
+    logInvalidJson(ctx, { workoutExerciseId: params.workoutExerciseId });
+    return errorResponse('Invalid JSON body', 400);
+  }
 
   const parsed = WorkoutExerciseUpdateRequestSchema.safeParse(json);
-  if (!parsed.success) return validationErrorResponse(parsed.error);
+  if (!parsed.success) {
+    logValidationError(ctx, parsed.error, {
+      workoutExerciseId: params.workoutExerciseId,
+      payload: summarizePayload(json, ['exerciseId', 'requiresRecording', 'excludeFromHistory', 'isBfr']),
+    });
+    return validationErrorResponse(parsed.error);
+  }
 
   const body = parsed.data;
   const {notes, cardioDuration, cardioDistance, cardioResistance, exerciseId, targetRpe, targetRir, isBfr, requiresRecording, excludeFromHistory} = body;
@@ -136,7 +147,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ workout
 
     return NextResponse.json(updated);
   } catch (err: unknown) {
-    console.error(err);
+    logUnexpectedError(ctx, err, { workoutExerciseId: params.workoutExerciseId });
     return errorResponse(extractErrorMessage(err), 500);
   }
-}
+});

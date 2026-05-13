@@ -6,15 +6,23 @@ import { errorResponse, forbiddenResponse, notFoundResponse, validationErrorResp
 import { normalizeRepRange } from '@/lib/repRange';
 import { getCoachFromUser } from '@lib/coachService';
 import { WorkoutExerciseCreateRequestSchema } from '@lib/contracts/workoutExercise';
+import { logInvalidJson, logUnexpectedError, logValidationError, summarizePayload, type RequestLogContext } from '@lib/apiLogging';
+import { withApiRoute } from '@lib/routeAuth';
 
-export async function POST(req: NextRequest) {
+export const POST = withApiRoute({ route: '/api/workoutExercise' }, async function POST(ctx: RequestLogContext, req: NextRequest) {
   const session = await requireSession();
 
   const json = await req.json().catch(() => null);
-  if (json == null) return errorResponse('Invalid JSON body', 400);
+  if (json == null) {
+    logInvalidJson(ctx);
+    return errorResponse('Invalid JSON body', 400);
+  }
 
   const parsed = WorkoutExerciseCreateRequestSchema.safeParse(json);
-  if (!parsed.success) return validationErrorResponse(parsed.error);
+  if (!parsed.success) {
+    logValidationError(ctx, parsed.error, summarizePayload(json, ['workoutId', 'exerciseId', 'order', 'requiresRecording']));
+    return validationErrorResponse(parsed.error);
+  }
 
   const { workoutId, exerciseId, order, repRange, restTime, setCount, requiresRecording } = parsed.data;
   const requiresRecordingProvided = requiresRecording !== undefined;
@@ -73,7 +81,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(workoutExercise, {status: 201});
   } catch (err: unknown) {
-    console.error(err);
+    logUnexpectedError(ctx, err, { workoutId, exerciseId });
     return errorResponse(extractErrorMessage(err), 500);
   }
-}
+});

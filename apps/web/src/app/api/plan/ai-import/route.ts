@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { authenticationErrorResponse, isAuthenticationError, requireSession } from '@lib/requireSession';
+import { requireSession } from '@lib/requireSession';
 import { AI_CLARIFY_TOOL, AI_PLAN_TOOL, AiParseError, parseAiPlanResponse } from '@/utils/aiPlanParser';
 import prisma from '@lib/prisma';
 import type { AiImportResponse } from '@lib/contracts/aiImport';
+import { logInvalidJson, logProviderError, logUnexpectedError, type RequestLogContext } from '@lib/apiLogging';
+import { withApiRoute } from '@lib/routeAuth';
 
 export const maxDuration = 300; // 5 minutes — large spreadsheet imports can take a while
 
@@ -123,14 +125,8 @@ async function readBodyWithLimit(req: NextRequest): Promise<string | null> {
   );
 }
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
-  let session: Awaited<ReturnType<typeof requireSession>>;
-  try {
-    session = await requireSession();
-  } catch (err) {
-    if (isAuthenticationError(err)) return authenticationErrorResponse();
-    throw err;
-  }
+export const POST = withApiRoute({ route: '/api/plan/ai-import' }, async function POST(ctx: RequestLogContext, req: NextRequest): Promise<NextResponse> {
+  const session = await requireSession();
 
   const userId = session.user.id;
 
@@ -147,6 +143,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     body = JSON.parse(rawBody);
   } catch {
+    logInvalidJson(ctx, { userId });
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
@@ -297,7 +294,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ plan } satisfies AiImportResponse);
   } catch (err) {
     if (err instanceof AiParseError) {
-      console.error('AI plan parse error:', err.message, err.issues);
+      logProviderError(ctx, err, {
+        provider: 'anthropic',
+        operation: 'plan_parse',
+        issueCount: err.issues.length,
+      });
       const parseIssues = err.issues.slice(0, 5).map((issue) => {
         const path = formatAiIssuePath(issue.path);
         return path ? `${path}: ${issue.message}` : issue.message;
@@ -309,17 +310,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     if (err instanceof Anthropic.APIError) {
+      logProviderError(ctx, err, {
+        provider: 'anthropic',
+        status: err.status,
+        operation: 'plan_import',
+      });
       if (err.status === 429 || err.status === 529 || err.status === 503) {
         return NextResponse.json(
           { error: 'AI service temporarily unavailable, please try again shortly' },
           { status: 503 },
         );
       }
-      console.error('Anthropic API error:', err.status, err.message);
       return NextResponse.json({ error: 'AI service error' }, { status: 502 });
     }
 
-    console.error('AI import unexpected error:', err);
+    logUnexpectedError(ctx, err, { userId, operation: 'plan_import' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+});
