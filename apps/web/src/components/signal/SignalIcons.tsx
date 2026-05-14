@@ -9,7 +9,8 @@ type IconName =
   | 'library'
   | 'bell'
   | 'arrowRight'
-  | 'checkin';
+  | 'checkin'
+  | 'signOut';
 
 const stroke = (paths: ReactElement) => paths;
 
@@ -69,6 +70,13 @@ const ICONS: Record<IconName, ReactElement> = {
       <rect x="5" y="3" width="14" height="18" rx="1" />
       <path d="M9 7h6" />
       <path d="M8 13l2.5 2.5 5-5" />
+    </>
+  ),
+  signOut: stroke(
+    <>
+      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+      <path d="M16 17l5-5-5-5" />
+      <path d="M21 12H9" />
     </>
   ),
 };

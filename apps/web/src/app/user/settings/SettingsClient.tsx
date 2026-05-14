@@ -1,6 +1,7 @@
 'use client';
 
 import React, {useState} from 'react';
+import { signOut } from 'next-auth/react';
 import {
   Alert,
   Autocomplete,
@@ -682,6 +683,21 @@ export default function SettingsClient({
             <div data-span-full="true" data-signal-settings-scroll-anchor>
               <SignalSectionCard eyebrow="Coach" title="Connections and coaching">
                 <CoachingSettings mode="normal" />
+              </SignalSectionCard>
+            </div>
+
+            <div data-span-full="true">
+              <SignalSectionCard eyebrow="Account" title="Session">
+                <Typography variant="body2" sx={{ color: palette.inkMid, mb: 1.5 }}>
+                  Sign out of your Forti account on this device.
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => signOut({ callbackUrl: '/login' })}
+                >
+                  Sign out
+                </Button>
               </SignalSectionCard>
             </div>
           </div>

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import { signalTokens, type SignalNavMode } from '@lib/signal/tokens';
 import { SignalBrandMark } from './SignalBrandMark';
 import { SignalIcon } from './SignalIcons';
@@ -136,6 +137,24 @@ export function SignalSidebar({ mode, activeOverride, userLabel, userInitials, h
             {mode === 'coach' ? 'coach' : 'my training'}
           </div>
         </div>
+        <button
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          aria-label="Sign out"
+          title="Sign out"
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: 6,
+            cursor: 'pointer',
+            color: palette.inkLight,
+            display: 'grid',
+            placeItems: 'center',
+            borderRadius: signalTokens.radii.card,
+            flexShrink: 0,
+          }}
+        >
+          <SignalIcon name="signOut" size={16} color={palette.inkLight} />
+        </button>
       </div>
     </aside>
   );
