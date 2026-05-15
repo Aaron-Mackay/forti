@@ -737,7 +737,7 @@ async function main() {
 
         return { devUserId: devUser.id, summary };
       },
-      { maxWait: 10_000, timeout: 120_000 },
+      { maxWait: 10_000, timeout: 600_000 },
     );
 
     console.log("");
