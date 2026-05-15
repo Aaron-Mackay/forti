@@ -32,8 +32,8 @@ export default async function ProgressPage() {
       {signalEnabled ? (
         <SignalProgress
           userName={user.name}
+          userId={user.id}
           metrics={metrics}
-          events={events}
           settings={settings}
         />
       ) : (

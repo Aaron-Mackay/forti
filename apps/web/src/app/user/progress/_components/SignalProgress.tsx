@@ -1,18 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import DashboardChart from '@/app/user/(dashboard)/DashboardChart';
 import { signalFontVariablesClassName } from '@lib/signal/fonts';
 import { signalTokens } from '@lib/signal/tokens';
-import { EventType } from '@/generated/prisma/browser';
-import type { MetricPrisma, EventPrisma } from '@/types/dataTypes';
+import type { MetricPrisma } from '@/types/dataTypes';
 import type { Settings } from '@/types/settingsTypes';
 import { StrengthTab } from './StrengthTab';
+import { BodyweightTab } from './bodyweight/BodyweightTab';
 
 type Props = {
   userName: string | null | undefined;
+  userId: string;
   metrics: MetricPrisma[];
-  events: EventPrisma[];
   settings: Settings;
 };
 
@@ -20,7 +19,7 @@ type ProgressTab = 'strength' | 'metrics';
 
 const palette = signalTokens.surface.planning;
 
-export function SignalProgress({ metrics, events, settings }: Props) {
+export function SignalProgress({ userId, metrics, settings }: Props) {
   const [activeTab, setActiveTab] = useState<ProgressTab>('strength');
 
   const tabs: { value: ProgressTab; label: string }[] = [
@@ -111,27 +110,7 @@ export function SignalProgress({ metrics, events, settings }: Props) {
       )}
 
       {activeTab === 'metrics' && (
-        <div
-          style={{
-            margin: '16px 20px 40px',
-            background: palette.surface,
-            border: `1px solid ${palette.border}`,
-            borderRadius: signalTokens.radii.cardLarge,
-            padding: '18px 18px 16px',
-          }}
-        >
-          {settings.showMetricsChart && metrics.length > 0 ? (
-            <DashboardChart
-              metrics={metrics}
-              blocks={events.filter((e) => e.eventType === EventType.BlockEvent)}
-              bodyweightUnit={settings.bodyweightUnit}
-            />
-          ) : (
-            <div style={{ fontSize: 14, color: palette.inkMid, lineHeight: 1.6 }}>
-              No chart to show yet. Log daily metrics or re-enable charts in settings.
-            </div>
-          )}
-        </div>
+        <BodyweightTab metrics={metrics} settings={settings} userId={userId} />
       )}
     </div>
   );
