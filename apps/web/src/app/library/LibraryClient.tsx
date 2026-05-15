@@ -5,10 +5,6 @@ import {
   Box,
   Button,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   FormControlLabel,
   Grid,
@@ -26,11 +22,11 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import CloseIcon from '@mui/icons-material/Close';
 import { LibraryAsset, LibraryAssetType } from '@/generated/prisma/browser';
 import { useEffect, useMemo, useState } from 'react';
 import LibraryAssetCard from './LibraryAssetCard';
 import ImportLinksDialog from './ImportLinksDialog';
+import { Overlay } from '@/components/signal/overlay';
 import { APPBAR_HEIGHT, HEIGHT_EXC_APPBAR } from '@/components/shell/CustomAppBar';
 
 interface Props {
@@ -517,10 +513,20 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
         isCoach={isCoach}
       />
 
-      <Dialog open={addOpen} onClose={handleClose} fullWidth maxWidth="xs">
-        <DialogTitle>Add to Library</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2.5} mt={0.5}>
+      <Overlay
+        open={addOpen}
+        onClose={handleClose}
+        title="Add to Library"
+        size="sm"
+        dirty={!submitting && (form.title.trim().length > 0 || form.description.trim().length > 0 || form.url.trim().length > 0 || file !== null)}
+        primaryAction={{
+          label: submitting ? 'Uploading…' : 'Upload',
+          onClick: handleSubmit,
+          disabled: submitting || !isFormValid,
+        }}
+        ghostAction={{ label: 'Cancel', onClick: handleClose }}
+      >
+        <Stack spacing={2.5} mt={0.5} pb={1}>
             {submitError && <Alert severity="error">{submitError}</Alert>}
             <Box>
               <Typography variant="caption" color="text.secondary" display="block" mb={0.75}>
@@ -620,27 +626,23 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
                 label={<Typography variant="body2">Share with my clients</Typography>}
               />
             )}
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose} disabled={submitting}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={submitting || !isFormValid}
-            startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : undefined}
-          >
-            {submitting ? 'Uploading...' : 'Upload'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Stack>
+      </Overlay>
 
-      <Dialog open={Boolean(editingAsset)} onClose={handleEditClose} fullWidth maxWidth="xs">
-        <DialogTitle>Edit Asset</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2.5} mt={0.5}>
+      <Overlay
+        open={Boolean(editingAsset)}
+        onClose={handleEditClose}
+        title="Edit asset"
+        size="sm"
+        dirty={!editSubmitting && Boolean(editingAsset)}
+        primaryAction={{
+          label: editSubmitting ? 'Saving…' : 'Save',
+          onClick: handleEditSave,
+          disabled: editSubmitting || !isEditValid,
+        }}
+        ghostAction={{ label: 'Cancel', onClick: handleEditClose }}
+      >
+        <Stack spacing={2.5} mt={0.5} pb={1}>
             {editError && <Alert severity="error">{editError}</Alert>}
             <TextField
               label="Title"
@@ -661,55 +663,17 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
               multiline
               rows={3}
             />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleEditClose} disabled={editSubmitting}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleEditSave}
-            variant="contained"
-            disabled={editSubmitting || !isEditValid}
-            startIcon={editSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined}
-          >
-            {editSubmitting ? 'Saving...' : 'Save'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Stack>
+      </Overlay>
 
-      <Dialog
+      <Overlay
         open={Boolean(viewerAsset)}
         onClose={handleViewerClose}
-        fullWidth
-        maxWidth="lg"
-        sx={{
-          '& .MuiDialog-container': {
-            alignItems: { xs: 'center', md: 'flex-start' },
-          },
-          '& .MuiDialog-paper': {
-            mt: { xs: 2, md: `calc(${APPBAR_HEIGHT}px + 12px)` },
-            mb: 2,
-            maxHeight: {
-              xs: 'calc(100dvh - 32px)',
-              md: `calc(100dvh - ${APPBAR_HEIGHT}px - 28px)`,
-            },
-            width: 'calc(100% - 32px)',
-          },
-        }}
+        title={viewerAsset?.title ?? 'Preview'}
+        size="xl"
+        height="tall"
       >
-        <DialogTitle sx={{ pr: 7 }}>
-          {viewerAsset?.title}
-          <IconButton
-            aria-label="Close viewer"
-            onClick={handleViewerClose}
-            sx={{ position: 'absolute', right: 8, top: 8 }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2}>
+        <Stack spacing={2} pb={1}>
             {viewerAsset?.type === 'IMAGE' && viewerAsset.url && (
               <Box
                 component="img"
@@ -797,9 +761,8 @@ export default function LibraryClient({ ownAssets: initialOwn, coachAssets, coac
                 {viewerAsset.description}
               </Typography>
             )}
-          </Stack>
-        </DialogContent>
-      </Dialog>
+        </Stack>
+      </Overlay>
     </Paper>
   );
 }

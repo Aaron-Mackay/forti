@@ -7,7 +7,6 @@ import {
   Button,
   Chip,
   Skeleton,
-  SwipeableDrawer,
   TextField,
   Typography,
 } from '@mui/material';
@@ -18,6 +17,7 @@ import {format} from 'date-fns';
 import MuscleHighlight from '@/components/fitness/MuscleHighlight';
 import {type E1rmHistoryPoint} from '@lib/contracts/exerciseHistory';
 import {PRIMARY_COLOUR} from '@lib/theme';
+import {Overlay} from '@/components/signal/overlay';
 import type {ExerciseCoachNote} from './types';
 import {getExerciseE1rmHistory, updateExerciseNote} from '@lib/clientApi';
 
@@ -109,7 +109,6 @@ export default function ExerciseDetailDrawer({
   const [saving, setSaving] = useState(false);
   const [userSaving, setUserSaving] = useState(false);
 
-  // Sync draft when the selected exercise or its coach note changes
   useEffect(() => {
     setCoachDraft(coachNote?.note ?? '');
     setCoachUrlDraft(coachNote?.url ?? '');
@@ -166,28 +165,18 @@ export default function ExerciseDetailDrawer({
   };
 
   return (
-    <SwipeableDrawer
-      anchor="bottom"
+    <Overlay
       open={exercise !== null}
       onClose={onClose}
-      onOpen={() => {}}
-      PaperProps={{sx: {borderRadius: '16px 16px 0 0', maxHeight: '85dvh', overflowY: 'auto', p: 2}}}
-      disableDiscovery
-      disableSwipeToOpen
+      title={exercise?.name ?? 'Exercise'}
+      size="md"
+      height="tall"
     >
       {exercise && (
         <Box>
-          {/* Drag handle */}
-          <Box sx={{width: 40, height: 4, bgcolor: 'divider', borderRadius: 2, mx: 'auto', mb: 2}}/>
-
-          {/* Name */}
-          <Typography variant="h6" sx={{mb: 1}}>
-            {exercise.name}
-          </Typography>
-
           {/* Muscle chips */}
           {exercise.primaryMuscles.length > 0 && (
-            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5}}>
+            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5, pt: 1}}>
               {exercise.primaryMuscles.map(m => (
                 <Chip key={m} label={toTitleCase(m)} size="small" color="primary" variant="outlined" sx={{fontSize: '0.7rem'}}/>
               ))}
@@ -337,6 +326,6 @@ export default function ExerciseDetailDrawer({
           <E1rmChart exercise={exercise}/>
         </Box>
       )}
-    </SwipeableDrawer>
+    </Overlay>
   );
 }
