@@ -30,21 +30,24 @@ test.describe('Signal Settings', () => {
   test('flagged user can scroll the settings route on mobile', async ({ page }) => {
     await page.goto('/user/settings');
 
-    await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
-    await expect(page.getByText('Preferences', { exact: true })).toBeVisible();
+    const scrollArea = page.locator('[data-signal-shell-mobile-frame] main');
+    const main = scrollArea;
 
-    const metrics = await page.evaluate(() => ({
-      viewportHeight: window.innerHeight,
-      scrollHeight: document.documentElement.scrollHeight,
+    await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
+    await expect(main.getByText('Preferences', { exact: true })).toBeVisible();
+
+    const metrics = await scrollArea.evaluate((node) => ({
+      viewportHeight: node.clientHeight,
+      scrollHeight: node.scrollHeight,
     }));
 
     expect(metrics.scrollHeight).toBeGreaterThan(metrics.viewportHeight);
 
-    await page.evaluate(() => {
-      window.scrollTo(0, document.documentElement.scrollHeight);
+    await scrollArea.evaluate((node) => {
+      node.scrollTop = node.scrollHeight;
     });
 
-    await expect(page.getByText('Connections and coaching')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Download Check-in History' })).toBeVisible();
+    await expect(main.getByText('Connections and coaching', { exact: true })).toBeVisible();
+    await expect(main.getByRole('link', { name: 'Download Check-in History' })).toBeVisible();
   });
 });

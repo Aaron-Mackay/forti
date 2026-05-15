@@ -29,9 +29,11 @@ test.describe('Signal Feedback', () => {
   test('flagged user sees the Signal feedback form', async ({ page }) => {
     await page.goto('/user/feedback');
 
+    const main = page.getByRole('main');
+
     await expect(page.locator('[data-signal-surface="calm"]').first()).toBeVisible();
-    await expect(page.getByText('Tell us what broke')).toBeVisible();
-    await expect(page.getByLabel('Description')).toBeVisible();
+    await expect(main.getByText('Tell us what broke', { exact: true })).toBeVisible();
+    await expect(main.getByLabel('Description')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Submit feedback' })).toBeVisible();
   });
 });

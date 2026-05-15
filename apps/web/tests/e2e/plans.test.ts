@@ -377,7 +377,10 @@ test.describe('Spreadsheet import', () => {
 
     await page.getByRole('button', { name: /analyse import/i }).click();
     const reviewNewExercises = page.getByRole('heading', { name: /review new exercises/i });
-    if (await reviewNewExercises.isVisible({ timeout: 15_000 }).catch(() => false)) {
+    const summaryHeading = page.getByRole('heading', { name: /summary before the editor/i });
+
+    await expect(reviewNewExercises.or(summaryHeading)).toBeVisible({ timeout: 15_000 });
+    if (!(await summaryHeading.isVisible().catch(() => false))) {
       await page.getByRole('button', { name: /continue to summary/i }).click();
     }
     await expect(page.getByRole('heading', { name: /summary before the editor/i })).toBeVisible();

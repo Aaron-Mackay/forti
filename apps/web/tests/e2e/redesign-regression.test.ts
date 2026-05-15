@@ -71,16 +71,16 @@ test.describe('Restyle regression gap coverage', () => {
     await expect(page.getByRole('heading', { name: 'Welcome to Forti!' })).toBeVisible();
     await expect(page.locator('input[autocomplete="name"]:visible')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Your stats' })).toBeVisible();
     await expect(page.getByText('Weekly check-in day')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Coach setup' })).toBeVisible();
     await expect(page.getByLabel('Coach invite code')).toBeVisible();
     await expect(page.getByText('Enable coach mode')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
     await expect(page.getByRole('heading', { name: "You're all set!" })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Get Started' })).toBeVisible();
 

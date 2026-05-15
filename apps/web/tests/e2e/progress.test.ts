@@ -43,25 +43,24 @@ test.describe('Progress', () => {
   test('flagged user sees the Signal progress route', async ({ page }) => {
     await page.goto('/user/progress');
 
+    const main = page.getByRole('main');
+
     await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
-    await expect(page.getByText('Progress').first()).toBeVisible();
-    await expect(page.getByText('Review your trend lines')).toBeVisible();
-    await expect(page.getByText('Bodyweight, calories, and steps')).toBeVisible();
+    await expect(main.getByText('My training', { exact: true })).toBeVisible();
+    await expect(main.getByText('Progress', { exact: true })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Strength' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Bodyweight & metrics' })).toBeVisible();
     await expect(page.getByText('Focus exercises').first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Edit focus exercises' })).toBeVisible();
-    await expect(
-      page.locator('.apexcharts-canvas').first().or(
-        page.getByText('No chart to show yet. Log daily metrics or re-enable charts in settings.'),
-      ),
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: /search all exercises/i })).toBeVisible();
     await expect(page.getByText(trackedExercise?.name ?? '').first()).toBeVisible();
   });
 
   test('Browse all link opens the exercise browse sheet with a searchable list', async ({ page }) => {
     await page.goto('/user/progress');
 
-    // Focus exercises panel has a "Browse all" link
-    const browseLink = page.getByRole('button', { name: /browse all/i });
+    // Focus exercises panel exposes a browse action for the exercise sheet
+    const browseLink = page.getByRole('button', { name: /search all exercises/i });
     await expect(browseLink).toBeVisible();
     await browseLink.click();
 

@@ -30,9 +30,11 @@ test.describe('Signal User Learning Plans', () => {
   test('flagged user sees the Signal learning plans route', async ({ page }) => {
     await page.goto('/user/learning-plans');
 
+    const main = page.getByRole('main');
+
     await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
-    await expect(page.getByText('Assigned coaching')).toBeVisible();
-    await expect(page.getByText(/Work through the lessons your coach assigns/i)).toBeVisible();
+    await expect(main.getByText('Assigned coaching', { exact: true })).toBeVisible();
+    await expect(main.getByText(/Work through the lessons your coach assigns/i)).toBeVisible();
 
     await expect(
       page

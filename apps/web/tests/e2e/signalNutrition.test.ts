@@ -29,19 +29,22 @@ test.describe('Signal Nutrition', () => {
   test('flagged user can scroll the nutrition route on mobile', async ({ page }) => {
     await page.goto('/user/nutrition');
 
-    await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
-    await expect(page.getByText('Training fuel')).toBeVisible();
-    await expect(page.getByText('Daily log')).toBeVisible();
+    const scrollArea = page.locator('[data-signal-shell-mobile-frame] main');
+    const main = scrollArea;
 
-    const metrics = await page.evaluate(() => ({
-      viewportHeight: window.innerHeight,
-      scrollHeight: document.documentElement.scrollHeight,
+    await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
+    await expect(main.getByText('Training fuel', { exact: true })).toBeVisible();
+    await expect(main.getByText('Daily log', { exact: true })).toBeVisible();
+
+    const metrics = await scrollArea.evaluate((node) => ({
+      viewportHeight: node.clientHeight,
+      scrollHeight: node.scrollHeight,
     }));
 
     expect(metrics.scrollHeight).toBeGreaterThan(metrics.viewportHeight);
 
-    await page.evaluate(() => {
-      window.scrollTo(0, document.documentElement.scrollHeight);
+    await scrollArea.evaluate((node) => {
+      node.scrollTop = node.scrollHeight;
     });
 
     await expect(page.getByRole('button', { name: 'Next week' })).toBeVisible();
