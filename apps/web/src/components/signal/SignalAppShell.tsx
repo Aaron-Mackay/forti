@@ -7,6 +7,7 @@ import { signalTokens, type SignalNavMode, type SignalSurfaceMode } from '@lib/s
 import { SignalSidebar } from './SignalSidebar';
 import { SignalBottomNav } from './SignalBottomNav';
 import { SignalTopBar } from './SignalTopBar';
+import { SignalSurfaceProvider } from './SignalSurfaceContext';
 import type { NavItemId } from './navItems';
 
 type Props = {
@@ -34,6 +35,7 @@ export function SignalAppShell({
 
   return (
     <ThemeProvider theme={signalThemes[surface]}>
+      <SignalSurfaceProvider value={surface}>
       <div
         className={signalFontVariablesClassName}
         data-signal-mode={mode}
@@ -117,6 +119,7 @@ export function SignalAppShell({
           </div>
         </div>
       </div>
+      </SignalSurfaceProvider>
     </ThemeProvider>
   );
 }
