@@ -8,6 +8,7 @@ import {
   FormControl,
   InputLabel,
   MenuItem,
+  TextField,
   Select,
   Typography,
 } from "@mui/material";
@@ -24,16 +25,20 @@ import {
 } from "@lib/demoUsers";
 
 type DemoProvider = "demo" | "demo-coach";
+type LoadingProvider = "google" | DemoProvider | "local-user" | null;
 
 type LoginButtonsProps = {
   enableDemoUserPicker?: boolean;
 };
 
 function LoginButtonsInner({ enableDemoUserPicker = false }: LoginButtonsProps) {
-  const [loading, setLoading] = useState<"google" | DemoProvider | null>(null);
+  const [loading, setLoading] = useState<LoadingProvider>(null);
   const [selectedDemoEmail, setSelectedDemoEmail] = useState(DEFAULT_DEMO_EMAIL);
+  const [localUserEmail, setLocalUserEmail] = useState(process.env.NEXT_PUBLIC_LOCAL_USER_EMAIL ?? "");
   const searchParams = useSearchParams();
   const rawCallbackUrl = searchParams.get("callbackUrl");
+  const disableGoogleAuth = process.env.NEXT_PUBLIC_DISABLE_GOOGLE_AUTH === "true";
+  const enableLocalUserLogin = process.env.NEXT_PUBLIC_ENABLE_LOCAL_USER_LOGIN === "true";
 
   const selectedDemoUser = useMemo(() => findDemoUserOption(selectedDemoEmail), [selectedDemoEmail]);
   const selectedProvider: DemoProvider = selectedDemoUser?.role === "coach" ? "demo-coach" : "demo";
@@ -71,7 +76,7 @@ function LoginButtonsInner({ enableDemoUserPicker = false }: LoginButtonsProps) 
     }
   })();
 
-  const handleSignIn = async (provider: DemoProvider | "google", email?: string) => {
+  const handleSignIn = async (provider: DemoProvider | "google" | "local-user", email?: string) => {
     setLoading(provider);
     await signIn(provider, email ? { callbackUrl, email } : { callbackUrl });
   };
@@ -83,21 +88,51 @@ function LoginButtonsInner({ enableDemoUserPicker = false }: LoginButtonsProps) 
 
   return (
     <Box display="flex" flexDirection="column" gap={2}>
-      <Button
-        fullWidth
-        variant="outlined"
-        startIcon={loading === "google" ? <CircularProgress size={18} color="inherit" /> : <GoogleIcon />}
-        disabled={loading !== null}
-        sx={{
-          py: 1.2,
-          textTransform: "none",
-          fontSize: "1rem",
-          borderRadius: 2,
-        }}
-        onClick={() => handleSignIn("google")}
-      >
-        Continue with Google
-      </Button>
+      {!disableGoogleAuth ? (
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={loading === "google" ? <CircularProgress size={18} color="inherit" /> : <GoogleIcon />}
+          disabled={loading !== null}
+          sx={{
+            py: 1.2,
+            textTransform: "none",
+            fontSize: "1rem",
+            borderRadius: 2,
+          }}
+          onClick={() => handleSignIn("google")}
+        >
+          Continue with Google
+        </Button>
+      ) : null}
+
+      {enableLocalUserLogin ? (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Local user email"
+            value={localUserEmail}
+            disabled={loading !== null}
+            onChange={(event) => setLocalUserEmail(event.target.value)}
+          />
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={loading === "local-user" ? <CircularProgress size={18} color="inherit" /> : <PersonIcon />}
+            disabled={loading !== null}
+            sx={{
+              py: 1.2,
+              textTransform: "none",
+              fontSize: "1rem",
+              borderRadius: 2,
+            }}
+            onClick={() => handleSignIn("local-user", localUserEmail)}
+          >
+            Continue as local user
+          </Button>
+        </Box>
+      ) : null}
 
       {enableDemoUserPicker ? (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>

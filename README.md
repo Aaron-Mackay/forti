@@ -67,6 +67,8 @@ npm install
 
 # Start dev server
 npm run dev           # http://localhost:3000
+npm run dev:lan --workspace=@forti/web
+LOCAL_USER_EMAIL=aarongcmackay@gmail.com npm run dev:lan:local-user --workspace=@forti/web
 
 # Database
 npm run db:reset      # Force-reset DB, regenerate Prisma client, seed data
@@ -85,6 +87,8 @@ npm run lint          # ESLint
 
 - Error envelope and canonical auth error codes: `docs/api-error-contract.md`
 - Demo identities and seeded scenarios: `docs/demo-logins.md`
+- LAN local-user login: `npm run dev:lan:local-user --workspace=@forti/web`
+- LAN helper scripts live in `apps/web/scripts/`; `dev-lan-common.sh` is shared bootstrap only and is not intended to be run directly.
 
 ### Updating schema
 There is a github action to update the schema. First, update the `schema.prisma` file. 
