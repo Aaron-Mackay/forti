@@ -9,14 +9,12 @@ import {
   CardActionArea,
   CardContent,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Fab,
+  Stack,
   TextField,
   Typography,
 } from '@mui/material';
+import { Overlay } from '@/components/signal/overlay';
 import AddIcon from '@mui/icons-material/Add';
 import SchoolIcon from '@mui/icons-material/School';
 import { useRouter } from 'next/navigation';
@@ -147,9 +145,20 @@ export default function CoachLearningPlansClient({ signalEnabled = false }: { si
       )}
 
       {/* Create plan dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>New Learning Plan</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '16px !important' }}>
+      <Overlay
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        title="New learning plan"
+        size="md"
+        dirty={!creating && (title.trim().length > 0 || description.trim().length > 0)}
+        primaryAction={{
+          label: creating ? 'Creating…' : 'Create',
+          onClick: handleCreate,
+          disabled: !title.trim() || creating,
+        }}
+        ghostAction={{ label: 'Cancel', onClick: () => setDialogOpen(false) }}
+      >
+        <Stack spacing={2} sx={{ pt: 1, pb: 1 }}>
           <TextField
             label="Title"
             value={title}
@@ -167,18 +176,8 @@ export default function CoachLearningPlansClient({ signalEnabled = false }: { si
             rows={2}
             inputProps={{ maxLength: 1000 }}
           />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleCreate}
-            disabled={!title.trim() || creating}
-          >
-            {creating ? <CircularProgress size={20} /> : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Stack>
+      </Overlay>
 
     </Box>
   );
@@ -389,9 +388,20 @@ function SignalCoachLearningPlans({
         </Fab>
       )}
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>New Learning Plan</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '16px !important' }}>
+      <Overlay
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        title="New learning plan"
+        size="md"
+        dirty={!creating && (title.trim().length > 0 || description.trim().length > 0)}
+        primaryAction={{
+          label: creating ? 'Creating…' : 'Create',
+          onClick: () => void onCreate(),
+          disabled: !title.trim() || creating,
+        }}
+        ghostAction={{ label: 'Cancel', onClick: () => setDialogOpen(false) }}
+      >
+        <Stack spacing={2} sx={{ pt: 1, pb: 1 }}>
           <TextField
             label="Title"
             value={title}
@@ -409,18 +419,8 @@ function SignalCoachLearningPlans({
             rows={2}
             inputProps={{ maxLength: 1000 }}
           />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={() => void onCreate()}
-            disabled={!title.trim() || creating}
-          >
-            {creating ? <CircularProgress size={20} /> : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Stack>
+      </Overlay>
     </div>
   );
 }

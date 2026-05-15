@@ -11,10 +11,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   FormControl,
   IconButton,
@@ -26,6 +22,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { Overlay } from '@/components/signal/overlay';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -120,9 +117,20 @@ function StepFormDialog({
   }, [open, initial]);
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{initial?.id ? 'Edit Step' : 'Add Step'}</DialogTitle>
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '16px !important' }}>
+    <Overlay
+      open={open}
+      onClose={onClose}
+      title={initial?.id ? 'Edit step' : 'Add step'}
+      size="md"
+      dirty={!saving && (title.trim().length > 0 || body.trim().length > 0)}
+      primaryAction={{
+        label: saving ? 'Saving…' : 'Save',
+        onClick: () => onSave({ dayOffset, title: title.trim(), body: body.trim(), assetId: assetId || null }),
+        disabled: !title.trim() || !body.trim() || saving,
+      }}
+      ghostAction={{ label: 'Cancel', onClick: onClose }}
+    >
+      <Stack spacing={2} sx={{ pt: 1, pb: 1 }}>
         <TextField
           label="Day offset"
           type="number"
@@ -163,18 +171,8 @@ function StepFormDialog({
             ))}
           </Select>
         </FormControl>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button
-          variant="contained"
-          onClick={() => onSave({ dayOffset, title: title.trim(), body: body.trim(), assetId: assetId || null })}
-          disabled={!title.trim() || !body.trim() || saving}
-        >
-          {saving ? <CircularProgress size={20} /> : 'Save'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+      </Stack>
+    </Overlay>
   );
 }
 

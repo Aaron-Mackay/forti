@@ -8,9 +8,6 @@ import {
   Button,
   CircularProgress,
   Collapse,
-  Dialog,
-  DialogContent,
-  DialogTitle,
   Divider,
   FormControl,
   IconButton,
@@ -27,6 +24,7 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
+import { Overlay } from '@/components/signal/overlay';
 import AddIcon from '@mui/icons-material/Add';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import CloseIcon from '@mui/icons-material/Close';
@@ -90,7 +88,6 @@ import TemplateCardRenderer from '@/components/checkin/TemplateCardRenderer';
 import DataVizChartCard from '@/components/charts/DataVizChartCard';
 import MetricsSystemCard from '@/components/checkin/MetricsSystemCard';
 import CustomCheckInField from '@/app/user/check-in/CustomCheckInField';
-import {HEIGHT_EXC_APPBAR} from "@/components/shell/CustomAppBar";
 import { DEFAULT_CHECK_IN_TEMPLATE_PREVIEW_DATA } from '@/components/checkin/checkInTemplatePreviewData';
 import { resolveMetricCardConfig } from '@/types/checkInTemplateTypes';
 import { signalFontVariablesClassName } from '@lib/signal/fonts';
@@ -1078,35 +1075,30 @@ function TemplatePreview({ cards, onClose }: TemplatePreviewProps) {
   }, [cards]);
 
   return (
-    <Dialog
+    <Overlay
       open
       onClose={onClose}
-      fullScreen
-      slotProps={{ paper: { sx: { bgcolor: 'background.default', height: HEIGHT_EXC_APPBAR , pt: 5} } }}
+      title="Preview"
+      size="xl"
+      height="tall"
     >
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-        <Typography variant="h6">Preview</Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <ToggleButtonGroup
-            exclusive
-            size="small"
-            value={device}
-            onChange={(_e, v) => { if (v) setDevice(v as 'mobile' | 'desktop'); }}
-          >
-            <ToggleButton value="mobile" aria-label="Mobile view">
-              <PhoneAndroidIcon fontSize="small" />
-            </ToggleButton>
-            <ToggleButton value="desktop" aria-label="Desktop view">
-              <DesktopWindowsIcon fontSize="small" />
-            </ToggleButton>
-          </ToggleButtonGroup>
-          <IconButton onClick={onClose} aria-label="Close preview" edge="end">
-            <CloseIcon />
-          </IconButton>
-        </Box>
-      </DialogTitle>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1, pb: 1 }}>
+        <ToggleButtonGroup
+          exclusive
+          size="small"
+          value={device}
+          onChange={(_e, v) => { if (v) setDevice(v as 'mobile' | 'desktop'); }}
+        >
+          <ToggleButton value="mobile" aria-label="Mobile view">
+            <PhoneAndroidIcon fontSize="small" />
+          </ToggleButton>
+          <ToggleButton value="desktop" aria-label="Desktop view">
+            <DesktopWindowsIcon fontSize="small" />
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
 
-      <DialogContent sx={{ p: 0, overflow: 'auto' }}>
+      <Box sx={{ p: 0, overflow: 'auto' }}>
         <Box
           sx={{
             px: 3,
@@ -1193,8 +1185,8 @@ function TemplatePreview({ cards, onClose }: TemplatePreviewProps) {
             </Box>
           </Box>
         </Box>
-      </DialogContent>
-    </Dialog>
+      </Box>
+    </Overlay>
   );
 }
 
