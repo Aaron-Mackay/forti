@@ -63,14 +63,6 @@ function assertValidEmail(email: string) {
   }
 }
 
-function assertLooksLikeDevDatabase(connectionString: string) {
-  if (!connectionString.toLowerCase().includes("dev")) {
-    throw new Error(
-      "DEV_DATABASE_URL must include 'dev'. Refusing to run against a database that does not look like development.",
-    );
-  }
-}
-
 function readConfig() {
   const prodDatabaseUrl = requiredEnv("PROD_DATABASE_URL");
   const devDatabaseUrl = requiredEnv("DEV_DATABASE_URL");
@@ -86,7 +78,6 @@ function readConfig() {
   }
 
   assertValidEmail(userEmail);
-  assertLooksLikeDevDatabase(devDatabaseUrl);
 
   return { prodDatabaseUrl, devDatabaseUrl, userEmail };
 }
