@@ -6,7 +6,7 @@ export default async function NotificationsPage() {
   const signalEnabled = await loadSignalFlag();
 
   return (
-    <SignalSurface signalEnabled={signalEnabled} surface="calm">
+    <SignalSurface signalEnabled={signalEnabled} surface="planning">
       <NotificationsClient signalEnabled={signalEnabled} />
     </SignalSurface>
   );

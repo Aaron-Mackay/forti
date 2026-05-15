@@ -5,7 +5,7 @@ import { SignalAppShell } from '@/components/signal/SignalAppShell';
 import { signalTokens, type SignalNavMode, type SignalSurfaceMode } from '@lib/signal/tokens';
 import { navItemsFor, type NavItemId } from '@/components/signal/navItems';
 
-const SURFACES: SignalSurfaceMode[] = ['gym', 'planning', 'calm'];
+const SURFACES: SignalSurfaceMode[] = ['gym', 'planning'];
 const MODES: SignalNavMode[] = ['user', 'coach'];
 
 type Palette = (typeof signalTokens.surface)[SignalSurfaceMode];

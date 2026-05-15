@@ -30,7 +30,7 @@ import { parseCheckInTemplate } from '@/types/checkInTemplateTypes';
 import { getCheckInHistory, getCurrentCheckIn } from '@lib/clientApi';
 import { signalTokens } from '@lib/signal/tokens';
 
-const calmPalette = signalTokens.surface.calm;
+const palette = signalTokens.surface.planning;
 
 type CurrentData = CurrentCheckInResponse;
 
@@ -61,14 +61,14 @@ function SignalHistoryRow({ checkIn }: { checkIn: WeeklyCheckIn }) {
     : null;
 
   return (
-    <div style={{ border: `1px solid ${calmPalette.border}`, borderRadius: signalTokens.radii.card, overflow: 'hidden', background: calmPalette.surface }}>
+    <div style={{ border: `1px solid ${palette.border}`, borderRadius: signalTokens.radii.card, overflow: 'hidden', background: palette.surface }}>
       <button
         type="button"
         onClick={() => setExpanded(e => !e)}
         style={{
           display: 'flex', alignItems: 'center', width: '100%',
           background: 'transparent', border: 'none', padding: '12px 16px',
-          cursor: 'pointer', gap: 8, color: calmPalette.ink, textAlign: 'left',
+          cursor: 'pointer', gap: 8, color: palette.ink, textAlign: 'left',
         }}
       >
         {checkIn.completedAt && (
@@ -79,19 +79,19 @@ function SignalHistoryRow({ checkIn }: { checkIn: WeeklyCheckIn }) {
             Week of {weekLabel}
           </div>
           {submittedLabel && (
-            <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: calmPalette.inkLight }}>
+            <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight }}>
               Submitted {submittedLabel}
             </div>
           )}
         </div>
         <ExpandMoreIcon style={{
-          fontSize: 20, color: calmPalette.inkLight, flexShrink: 0,
+          fontSize: 20, color: palette.inkLight, flexShrink: 0,
           transform: expanded ? 'rotate(180deg)' : 'none',
           transition: 'transform 200ms ease',
         }} />
       </button>
       {expanded && (
-        <div style={{ padding: '0 16px 16px', borderTop: `1px solid ${calmPalette.border}` }}>
+        <div style={{ padding: '0 16px 16px', borderTop: `1px solid ${palette.border}` }}>
           <CheckInDetails checkIn={checkIn} onPhotoOpen={(src, alt) => setActivePhoto({ src, alt })} />
         </div>
       )}
@@ -170,44 +170,73 @@ export default function CheckInClient({ signalEnabled = false }: { signalEnabled
 
   if (signalEnabled) {
     return (
-      <div style={{ padding: '14px 16px 48px' }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>
-        )}
-
-        {permission === 'default' && (
-          <Alert
-            severity="info"
-            sx={{ mb: 2 }}
-            action={
-              <Button
-                color="inherit"
-                size="small"
-                disabled={subscribing}
-                onClick={subscribe}
-                startIcon={subscribing ? <CircularProgress size={14} color="inherit" /> : <NotificationsActiveIcon />}
-              >
-                Enable
-              </Button>
-            }
-          >
-            Get reminded on your check-in day
-          </Alert>
-        )}
-
-        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: calmPalette.inkLight, marginBottom: 6 }}>
-          Check-in
-        </div>
-        <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 26, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: loading || !currentData ? 18 : 4 }}>
-          Weekly check-in
-        </div>
-        {!loading && currentData && (
-          <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: calmPalette.inkMid, marginBottom: 18 }}>
-            {weekLabel}
+      <div
+        style={{
+          minHeight: '100%',
+          background: palette.bg,
+          color: palette.ink,
+          fontFamily: signalTokens.fontVar.body,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {/* White header: kicker + title + week date */}
+        <div
+          style={{
+            background: palette.surface,
+            borderBottom: `1px solid ${palette.border}`,
+            padding: '16px 20px',
+            flexShrink: 0,
+          }}
+        >
+          <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginBottom: 4 }}>
+            Check-in
           </div>
-        )}
+          <div
+            style={{
+              fontFamily: signalTokens.fontVar.cond,
+              fontSize: 28,
+              fontWeight: 700,
+              letterSpacing: '-0.015em',
+              lineHeight: 1,
+              marginBottom: !loading && currentData ? 6 : 0,
+            }}
+          >
+            Weekly check-in
+          </div>
+          {!loading && currentData && (
+            <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkMid }}>
+              {weekLabel}
+            </div>
+          )}
+        </div>
 
-        <div style={{ marginBottom: 28 }}>
+        <div style={{ padding: '14px 16px 48px' }}>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>
+          )}
+
+          {permission === 'default' && (
+            <Alert
+              severity="info"
+              sx={{ mb: 2 }}
+              action={
+                <Button
+                  color="inherit"
+                  size="small"
+                  disabled={subscribing}
+                  onClick={subscribe}
+                  startIcon={subscribing ? <CircularProgress size={14} color="inherit" /> : <NotificationsActiveIcon />}
+                >
+                  Enable
+                </Button>
+              }
+            >
+              Get reminded on your check-in day
+            </Alert>
+          )}
+
+          <div style={{ marginBottom: 28 }}>
           {loading ? (
             <Skeleton variant="rounded" height={120} />
           ) : !editingCurrent && !isCompleted && currentData?.template != null ? (
@@ -225,7 +254,7 @@ export default function CheckInClient({ signalEnabled = false }: { signalEnabled
               onSubmitted={() => setSubmitted(s => !s)}
             />
           ) : editingCurrent && currentData ? (
-            <div style={{ background: calmPalette.surface, border: `1px solid ${calmPalette.border}`, borderRadius: signalTokens.radii.card, padding: 16 }}>
+            <div style={{ background: palette.surface, border: `1px solid ${palette.border}`, borderRadius: signalTokens.radii.card, padding: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                 <span style={{ fontFamily: signalTokens.fontVar.body, fontSize: 15, fontWeight: 600 }}>Edit submitted check-in</span>
                 <IconButton
@@ -251,12 +280,12 @@ export default function CheckInClient({ signalEnabled = false }: { signalEnabled
               />
             </div>
           ) : isCompleted && currentData ? (
-            <div style={{ background: calmPalette.surface, border: `1px solid ${calmPalette.border}`, borderRadius: signalTokens.radii.card, padding: 16 }}>
+            <div style={{ background: palette.surface, border: `1px solid ${palette.border}`, borderRadius: signalTokens.radii.card, padding: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                 <CheckCircleIcon style={{ color: signalTokens.signal.deep }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600 }}>Check-in complete</div>
-                  <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 12, color: calmPalette.inkMid }}>Week of {weekLabel}</div>
+                  <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 12, color: palette.inkMid }}>Week of {weekLabel}</div>
                 </div>
                 <IconButton
                   size="small"
@@ -268,7 +297,7 @@ export default function CheckInClient({ signalEnabled = false }: { signalEnabled
                 </IconButton>
               </div>
               <CheckInDetails checkIn={currentData.checkIn} />
-              <div style={{ height: 1, background: calmPalette.border, margin: '12px 0' }} />
+              <div style={{ height: 1, background: palette.border, margin: '12px 0' }} />
               <MetricsSystemCard
                 currentWeek={currentData.currentWeek}
                 weekPrior={currentData.weekPrior}
@@ -281,7 +310,7 @@ export default function CheckInClient({ signalEnabled = false }: { signalEnabled
               />
             </div>
           ) : currentData ? (
-            <div style={{ background: calmPalette.surface, border: `1px solid ${calmPalette.border}`, borderRadius: signalTokens.radii.card, padding: 16 }}>
+            <div style={{ background: palette.surface, border: `1px solid ${palette.border}`, borderRadius: signalTokens.radii.card, padding: 16 }}>
               <CheckInForm
                 currentWeek={currentData.currentWeek}
                 weekPrior={currentData.weekPrior}
@@ -299,9 +328,9 @@ export default function CheckInClient({ signalEnabled = false }: { signalEnabled
           ) : null}
         </div>
 
-        <div style={{ height: 1, background: calmPalette.border, marginBottom: 24 }} />
+        <div style={{ height: 1, background: palette.border, marginBottom: 24 }} />
 
-        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: calmPalette.inkLight, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
           Previous Check-ins
         </div>
 
@@ -310,7 +339,7 @@ export default function CheckInClient({ signalEnabled = false }: { signalEnabled
             {[0, 1, 2].map(i => <Skeleton key={i} variant="rounded" height={52} sx={{ mb: 1 }} />)}
           </div>
         ) : history.length === 0 ? (
-          <div style={{ fontSize: 14, color: calmPalette.inkLight }}>No previous check-ins yet.</div>
+          <div style={{ fontSize: 14, color: palette.inkLight }}>No previous check-ins yet.</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {history.map(c => <SignalHistoryRow key={c.id} checkIn={c} />)}
@@ -320,8 +349,8 @@ export default function CheckInClient({ signalEnabled = false }: { signalEnabled
                 onClick={loadMoreHistory}
                 style={{
                   display: 'block', width: '100%', padding: '12px 16px',
-                  background: 'transparent', border: `1px solid ${calmPalette.border}`,
-                  borderRadius: signalTokens.radii.card, color: calmPalette.inkMid,
+                  background: 'transparent', border: `1px solid ${palette.border}`,
+                  borderRadius: signalTokens.radii.card, color: palette.inkMid,
                   fontFamily: signalTokens.fontVar.body, fontSize: 14, cursor: 'pointer',
                   marginTop: 4,
                 }}
@@ -331,6 +360,7 @@ export default function CheckInClient({ signalEnabled = false }: { signalEnabled
             )}
           </div>
         )}
+        </div>
       </div>
     );
   }

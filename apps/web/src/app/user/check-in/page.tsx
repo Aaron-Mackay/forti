@@ -9,7 +9,7 @@ export default async function CheckInPage() {
   const signalEnabled = await loadSignalFlag();
 
   return (
-    <SignalSurface signalEnabled={signalEnabled} surface="calm">
+    <SignalSurface signalEnabled={signalEnabled} surface="planning">
       <AppBarTitle title="Weekly Check-in" />
       {signalEnabled ? (
         <CheckInClient signalEnabled />

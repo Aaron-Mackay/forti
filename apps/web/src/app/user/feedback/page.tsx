@@ -6,7 +6,7 @@ export default async function FeedbackPage() {
   const signalEnabled = await loadSignalFlag();
 
   return (
-    <SignalSurface signalEnabled={signalEnabled} surface="calm">
+    <SignalSurface signalEnabled={signalEnabled} surface="planning">
       <FeedbackClient signalEnabled={signalEnabled} />
     </SignalSurface>
   );

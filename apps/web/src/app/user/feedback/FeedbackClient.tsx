@@ -19,7 +19,7 @@ import { signalTokens } from '@lib/signal/tokens';
 const FEEDBACK_TYPES = ['Bug Report', 'Feature Request', 'Improvement Suggestion'] as const;
 type FeedbackType = (typeof FEEDBACK_TYPES)[number];
 
-const palette = signalTokens.surface.calm;
+const palette = signalTokens.surface.planning;
 
 function LegacyFeedbackForm() {
   useAppBar({ title: 'Feedback' });

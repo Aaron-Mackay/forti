@@ -24,18 +24,6 @@ export const signalTokens = {
       border: '#d7d0c0',
       borderStrong: '#2a2823',
     },
-    calm: {
-      bg: '#ebe6da',
-      bgAlt: '#e3ddcf',
-      surface: '#f7f2e6',
-      surfaceAlt: '#f0eadc',
-      ink: '#22211c',
-      inkMid: '#5f5a50',
-      inkLight: '#8c8779',
-      inkGhost: '#c4bcab',
-      border: '#d0c7b3',
-      borderStrong: '#2a2823',
-    },
   },
   signal: {
     base: '#d4f24a',
@@ -80,5 +68,5 @@ export const signalTokens = {
   },
 } as const;
 
-export type SignalSurfaceMode = 'gym' | 'planning' | 'calm';
+export type SignalSurfaceMode = 'gym' | 'planning';
 export type SignalNavMode = 'user' | 'coach';

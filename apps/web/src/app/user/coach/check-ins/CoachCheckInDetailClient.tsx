@@ -258,7 +258,7 @@ export default function CoachCheckInDetailClient({
   )?.metricConfig;
   const hasRatings = !isCustomMode && checkInHasRatings(checkIn);
   const hasReflection = !isCustomMode && checkInHasReflection(checkIn);
-  const signalPalette = signalTokens.surface.calm;
+  const signalPalette = signalTokens.surface.planning;
 
   if (signalEnabled) {
     return (
@@ -860,7 +860,7 @@ function SignalSection({
   children: ReactNode;
   accent?: boolean;
 }) {
-  const palette = signalTokens.surface.calm;
+  const palette = signalTokens.surface.planning;
   return (
     <Paper
       elevation={0}
@@ -888,7 +888,7 @@ function SignalSection({
 }
 
 function SignalMetaTile({ label, value }: { label: string; value: string }) {
-  const palette = signalTokens.surface.calm;
+  const palette = signalTokens.surface.planning;
   return (
     <Box
       sx={{
@@ -918,7 +918,7 @@ function SignalMetaTile({ label, value }: { label: string; value: string }) {
 }
 
 function SignalRatingRow({ label, value }: { label: string; value: number | null }) {
-  const palette = signalTokens.surface.calm;
+  const palette = signalTokens.surface.planning;
   if (value === null) return null;
   return (
     <Box
@@ -951,7 +951,7 @@ function SignalRatingRow({ label, value }: { label: string; value: number | null
 }
 
 function SignalNoteBlock({ label, value }: { label: string; value: string | null }) {
-  const palette = signalTokens.surface.calm;
+  const palette = signalTokens.surface.planning;
   if (!value) return null;
   return (
     <Box>

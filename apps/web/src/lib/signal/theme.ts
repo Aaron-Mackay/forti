@@ -118,5 +118,4 @@ const buildTheme = (mode: SignalSurfaceMode): Theme => {
 export const signalThemes: Record<SignalSurfaceMode, Theme> = {
   gym: buildTheme('gym'),
   planning: buildTheme('planning'),
-  calm: buildTheme('calm'),
 };

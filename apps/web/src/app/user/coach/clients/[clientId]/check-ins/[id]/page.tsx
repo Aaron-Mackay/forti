@@ -30,8 +30,8 @@ export default async function ClientCheckInDetailPage({ params }: Props) {
           backHref={`/user/coach/clients/${clientId}/check-ins`}
         />
       )}
-      <SignalSurface signalEnabled={signalEnabled} surface="calm">
-        {signalEnabled && <SignalBackLink href={`/user/coach/clients/${clientId}/check-ins`} label="Check-ins" surface="calm" />}
+      <SignalSurface signalEnabled={signalEnabled} surface="planning">
+        {signalEnabled && <SignalBackLink href={`/user/coach/clients/${clientId}/check-ins`} label="Check-ins" surface="planning" />}
         <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 }, minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
           <CoachCheckInDetailPageClient checkInId={checkInId} lockedClientId={clientId} signalEnabled={signalEnabled} />
         </Box>

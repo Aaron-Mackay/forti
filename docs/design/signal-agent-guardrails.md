@@ -2,12 +2,11 @@ Before making any Signal UI changes, follow these rules.
 
 1. Treat `apps/web/src/lib/signal/tokens.ts` as the source of truth.
     - Do not introduce raw hex colours, random rgba values, new shadows, new radii, or new spacing scales inside page components.
-    - Use `signalTokens.surface.gym`, `planning`, or `calm`.
+    - Use `signalTokens.surface.gym` or `signalTokens.surface.planning`.
 
 2. Preserve the existing Signal surface model.
     - `gym` = workout / active training / app chrome.
-    - `planning` = planning, progress, nutrition, settings, editor-style screens.
-    - `calm` = check-ins, notifications, feedback, reflective screens.
+    - `planning` = everything else (planning, progress, nutrition, settings, check-ins, notifications, feedback, editor/reflective screens).
 
 3. Preserve the Signal shell behaviour.
     - Do not replace `SignalAppShell`, `SignalSurface`, `SignalSidebar`, `SignalTopBar`, or `SignalBottomNav` unless the task explicitly targets shell chrome.

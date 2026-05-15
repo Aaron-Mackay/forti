@@ -370,7 +370,7 @@ Use this order to reduce repeated navigation and catch shell-level problems earl
 ### `/user/check-in`
 
 - [ ] Signal flag off: legacy check-in.
-- [ ] Signal flag on: calm Signal check-in.
+- [ ] Signal flag on: planning-surface Signal check-in.
 - [ ] Current week loading.
 - [ ] Template-based form.
 - [ ] Legacy/default form.
@@ -476,7 +476,7 @@ Use this order to reduce repeated navigation and catch shell-level problems earl
 ### `/user/notifications`
 
 - [ ] Signal flag off: legacy notifications.
-- [ ] Signal flag on: calm Signal inbox.
+- [ ] Signal flag on: planning-surface Signal inbox.
 - [ ] Loading.
 - [ ] No notifications.
 - [ ] Unread notifications only.
@@ -518,7 +518,7 @@ Use this order to reduce repeated navigation and catch shell-level problems earl
 ### `/user/feedback`
 
 - [ ] Signal flag off: legacy feedback form.
-- [ ] Signal flag on: calm Signal feedback form.
+- [ ] Signal flag on: planning-surface Signal feedback form.
 - [ ] Feedback type empty.
 - [ ] Feedback type selected.
 - [ ] Description empty validation.

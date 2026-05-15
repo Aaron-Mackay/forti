@@ -82,8 +82,7 @@ Forti's current visual direction is Signal:
 - chartreuse signal/action accent used sparingly
 - large readable numerals
 - fast mobile gym logging
-- lighter dense planning and coach surfaces
-- calmer check-in and feedback surfaces
+- lighter dense planning and coach surfaces (also used for check-ins, notifications, and feedback)
 
 The app should feel like a serious training product, not a generic habit tracker, analytics dashboard, food database, or AI-chat product.
 

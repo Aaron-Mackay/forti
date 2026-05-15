@@ -30,7 +30,7 @@ type Props = {
   signalEnabled?: boolean;
 };
 
-const palette = signalTokens.surface.calm;
+const palette = signalTokens.surface.planning;
 
 function notificationIcon(type: Notification['type']) {
   switch (type) {
