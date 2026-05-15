@@ -1,0 +1,38 @@
+name: Copy prod user to dev
+
+on:
+  workflow_dispatch:
+    inputs:
+      user_email:
+        description: "User email to copy from prod to dev"
+        required: true
+        type: string
+      confirm:
+        description: "Type COPY_PROD_USER_TO_DEV"
+        required: true
+        type: string
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run postinstall --workspace=@forti/web
+
+      - name: Copy selected user
+        env:
+          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          DEV_DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
+          USER_EMAIL: ${{ inputs.user_email }}
+          CONFIRM: ${{ inputs.confirm }}
+        run: npm run db:copy-user-prod-to-dev --workspace=@forti/web
