@@ -28,7 +28,7 @@ export async function GET(req: NextRequest, props: {params: Promise<{exerciseId:
       },
       select: {
         workout: {select: {dateCompleted: true}},
-        sets: {select: {e1rm: true}},
+        sets: {select: {e1rm: true, weight: true, reps: true}},
       },
       orderBy: {workout: {dateCompleted: 'asc'}},
     });
@@ -44,17 +44,23 @@ export async function GET(req: NextRequest, props: {params: Promise<{exerciseId:
       },
     )
 
-    const byDate = new Map<string, number>();
+    type DateEntry = { bestE1rm: number; bestSet: { weight: number; reps: number } | null };
+    const byDate = new Map<string, DateEntry>();
     for (const we of selectedWorkoutExercises.slice().reverse()) {
       const date = we.workout.dateCompleted!.toISOString();
       for (const s of we.sets) {
         if (s.e1rm === null) continue;
         const current = byDate.get(date);
-        byDate.set(date, current === undefined ? s.e1rm : Math.max(current, s.e1rm));
+        if (current === undefined || s.e1rm > current.bestE1rm) {
+          byDate.set(date, {
+            bestE1rm: s.e1rm,
+            bestSet: s.weight != null && s.reps != null ? {weight: s.weight, reps: s.reps} : null,
+          });
+        }
       }
     }
 
-    const history: E1rmHistoryPoint[] = Array.from(byDate.entries()).map(([date, bestE1rm]) => ({date, bestE1rm}));
+    const history: E1rmHistoryPoint[] = Array.from(byDate.entries()).map(([date, {bestE1rm, bestSet}]) => ({date, bestE1rm, bestSet}));
 
     return NextResponse.json(history);
   } catch (err: unknown) {

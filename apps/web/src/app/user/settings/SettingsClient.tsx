@@ -32,6 +32,7 @@ import { Exercise } from '@/generated/prisma/browser';
 import CoachingSettings from './CoachingSettings';
 import { signalFontVariablesClassName } from '@lib/signal/fonts';
 import { signalTokens } from '@lib/signal/tokens';
+import { TrackedExercisePickerSheet } from './_components/TrackedExercisePickerSheet';
 
 type BooleanSettingKey = { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings];
 
@@ -114,12 +115,6 @@ function CustomMetricsSection() {
     saveDefs(defs.map(d => d.id === id ? { ...d, name: trimmed } : d));
   };
 
-  const handleTargetBlur = (id: string, value: string) => {
-    const num = parseFloat(value);
-    const target = isNaN(num) ? null : num;
-    saveDefs(defs.map(d => d.id === id ? { ...d, target } : d));
-  };
-
   const handleDelete = (id: string) => {
     saveDefs(defs.filter(d => d.id !== id));
   };
@@ -127,7 +122,7 @@ function CustomMetricsSection() {
   const handleAdd = () => {
     if (defs.length >= 4) return;
     const newDef: CustomMetricDef = {
-      id: crypto.randomUUID(),
+      id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
       name: `Metric ${defs.length + 1}`,
     };
     saveDefs([...defs, newDef]);
@@ -145,14 +140,6 @@ function CustomMetricsSection() {
             size="small"
             sx={{ flex: 1 }}
             onBlur={e => handleNameBlur(def.id, e.target.value)}
-          />
-          <TextField
-            type="number"
-            size="small"
-            placeholder="Target"
-            defaultValue={def.target ?? ''}
-            sx={{ width: 90 }}
-            onBlur={e => handleTargetBlur(def.id, e.target.value)}
           />
           <IconButton
             size="small"
@@ -173,6 +160,112 @@ function CustomMetricsSection() {
         Add metric
       </Button>
     </Box>
+  );
+}
+
+function SignalCustomMetricsSection() {
+  const { settings, updateCustomMetrics } = useSettings();
+  const [defs, setDefs] = useState<CustomMetricDef[]>(settings.customMetrics);
+
+  React.useEffect(() => {
+    setDefs(settings.customMetrics);
+  }, [settings.customMetrics]);
+
+  const saveDefs = (next: CustomMetricDef[]) => {
+    setDefs(next);
+    updateCustomMetrics(next);
+  };
+
+  const handleNameBlur = (id: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    saveDefs(defs.map(d => d.id === id ? { ...d, name: trimmed } : d));
+  };
+
+  const handleDelete = (id: string) => {
+    saveDefs(defs.filter(d => d.id !== id));
+  };
+
+  const handleAdd = () => {
+    if (defs.length >= 4) return;
+    saveDefs([...defs, { id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`, name: `Metric ${defs.length + 1}` }]);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {defs.map(def => (
+        <div
+          key={def.id}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '9px 14px',
+            background: palette.surface,
+            border: `1px solid ${palette.border}`,
+            borderRadius: signalTokens.radii.card,
+            gap: 8,
+          }}
+        >
+          <input
+            defaultValue={def.name}
+            onBlur={e => handleNameBlur(def.id, e.target.value)}
+            style={{
+              flex: 1,
+              border: 'none',
+              background: 'transparent',
+              fontSize: 14,
+              color: palette.ink,
+              fontFamily: signalTokens.fontVar.body,
+              outline: 'none',
+              minWidth: 0,
+            }}
+          />
+          <button
+            type="button"
+            aria-label={`Remove ${def.name}`}
+            onClick={() => handleDelete(def.id)}
+            style={{
+              appearance: 'none',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              color: palette.inkMid,
+              fontSize: 18,
+              lineHeight: 1,
+              padding: 0,
+              flexShrink: 0,
+            }}
+          >
+            ×
+          </button>
+        </div>
+      ))}
+
+      {defs.length < 4 && (
+        <button
+          type="button"
+          onClick={handleAdd}
+          style={{
+            appearance: 'none',
+            background: 'transparent',
+            border: `1px dashed ${palette.border}`,
+            borderRadius: signalTokens.radii.card,
+            cursor: 'pointer',
+            padding: '9px 14px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            fontFamily: signalTokens.fontVar.mono,
+            fontSize: 14,
+            color: palette.inkMid,
+          }}
+        >
+          Add metric…
+          <span aria-hidden="true">+</span>
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -287,6 +380,91 @@ function SignalToggleList({
         </React.Fragment>
       ))}
     </Box>
+  );
+}
+
+function SignalE1rmTrackingSection() {
+  const { settings, updateTrackedE1rmExercises } = useSettings();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const tracked = settings.trackedE1rmExercises;
+  const atMax = tracked.length >= 5;
+
+  return (
+    <>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {tracked.map((e) => (
+          <div
+            key={e.id}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '9px 14px',
+              background: palette.surface,
+              border: `1px solid ${palette.border}`,
+              borderRadius: signalTokens.radii.card,
+              gap: 8,
+            }}
+          >
+            <span style={{ fontSize: 14, color: palette.ink }}>{e.name}</span>
+            <button
+              type="button"
+              aria-label={`Remove ${e.name}`}
+              onClick={() => updateTrackedE1rmExercises(tracked.filter((t) => t.id !== e.id))}
+              style={{
+                appearance: 'none',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: palette.inkMid,
+                fontSize: 18,
+                lineHeight: 1,
+                padding: 0,
+                flexShrink: 0,
+              }}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+
+        {!atMax ? (
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            style={{
+              appearance: 'none',
+              background: 'transparent',
+              border: `1px dashed ${palette.border}`,
+              borderRadius: signalTokens.radii.card,
+              cursor: 'pointer',
+              padding: '9px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+              fontFamily: signalTokens.fontVar.mono,
+              fontSize: 14,
+              color: palette.inkMid,
+            }}
+          >
+            Add lift…
+            <span aria-hidden="true">+</span>
+          </button>
+        ) : (
+          <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, padding: '4px 2px' }}>
+            5 / 5 tracked
+          </div>
+        )}
+      </div>
+
+      <TrackedExercisePickerSheet
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        tracked={tracked}
+        onChange={(next) => updateTrackedE1rmExercises(next)}
+      />
+    </>
   );
 }
 
@@ -541,11 +719,11 @@ export default function SettingsClient({
             </SignalSectionCard>
 
             <SignalSectionCard eyebrow="Tracking" title="Custom metrics">
-              <CustomMetricsSection />
+              <SignalCustomMetricsSection />
             </SignalSectionCard>
 
             <SignalSectionCard eyebrow="Strength" title="Tracked lifts">
-              <E1rmTrackingSection />
+              <SignalE1rmTrackingSection />
             </SignalSectionCard>
 
             <SignalSectionCard eyebrow="Check-in" title="Weekly timing">

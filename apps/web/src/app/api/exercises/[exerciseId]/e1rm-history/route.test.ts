@@ -43,8 +43,8 @@ describe('GET /api/exercises/[exerciseId]/e1rm-history', () => {
     const date1 = new Date('2025-01-10T00:00:00Z');
     const date2 = new Date('2025-02-10T00:00:00Z');
     mockFindMany.mockResolvedValue([
-      {workout: {dateCompleted: date1}, sets: [{e1rm: 80}, {e1rm: 85}, {e1rm: 82}]},
-      {workout: {dateCompleted: date2}, sets: [{e1rm: 90}, {e1rm: 88}]},
+      {workout: {dateCompleted: date1}, sets: [{e1rm: 80, weight: 100, reps: 3}, {e1rm: 85, weight: 105, reps: 3}, {e1rm: 82, weight: 102, reps: 3}]},
+      {workout: {dateCompleted: date2}, sets: [{e1rm: 90, weight: 110, reps: 3}, {e1rm: 88, weight: 108, reps: 3}]},
     ]);
 
     const [req, props] = makeRequest('5');
@@ -52,29 +52,29 @@ describe('GET /api/exercises/[exerciseId]/e1rm-history', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual([
-      {date: date1.toISOString(), bestE1rm: 85},
-      {date: date2.toISOString(), bestE1rm: 90},
+      {date: date1.toISOString(), bestE1rm: 85, bestSet: {weight: 105, reps: 3}},
+      {date: date2.toISOString(), bestE1rm: 90, bestSet: {weight: 110, reps: 3}},
     ]);
   });
 
   it('combines duplicate exercise instances on the same date, keeping the highest e1rm', async () => {
     const date = new Date('2025-01-10T00:00:00Z');
     mockFindMany.mockResolvedValue([
-      {workout: {dateCompleted: date}, sets: [{e1rm: 80}, {e1rm: 85}]},
-      {workout: {dateCompleted: date}, sets: [{e1rm: 90}, {e1rm: 88}]},
+      {workout: {dateCompleted: date}, sets: [{e1rm: 80, weight: 100, reps: 3}, {e1rm: 85, weight: 105, reps: 3}]},
+      {workout: {dateCompleted: date}, sets: [{e1rm: 90, weight: 110, reps: 3}, {e1rm: 88, weight: 108, reps: 3}]},
     ]);
 
     const [req, props] = makeRequest('5');
     const res = await GET(req, props);
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toEqual([{date: date.toISOString(), bestE1rm: 90}]);
+    expect(body).toEqual([{date: date.toISOString(), bestE1rm: 90, bestSet: {weight: 110, reps: 3}}]);
   });
 
   it('excludes sessions where all sets have null e1rm', async () => {
     mockFindMany.mockResolvedValue([
-      {workout: {dateCompleted: new Date('2025-01-10')}, sets: [{e1rm: null}, {e1rm: null}]},
-      {workout: {dateCompleted: new Date('2025-02-10')}, sets: [{e1rm: 90}]},
+      {workout: {dateCompleted: new Date('2025-01-10')}, sets: [{e1rm: null, weight: 100, reps: 3}, {e1rm: null, weight: 95, reps: 5}]},
+      {workout: {dateCompleted: new Date('2025-02-10')}, sets: [{e1rm: 90, weight: 110, reps: 3}]},
     ]);
 
     const [req, props] = makeRequest('5');
@@ -82,6 +82,7 @@ describe('GET /api/exercises/[exerciseId]/e1rm-history', () => {
     const body = await res.json();
     expect(body).toHaveLength(1);
     expect(body[0].bestE1rm).toBe(90);
+    expect(body[0].bestSet).toEqual({weight: 110, reps: 3});
   });
 
   it('returns empty array when no completed sessions exist', async () => {
@@ -91,6 +92,18 @@ describe('GET /api/exercises/[exerciseId]/e1rm-history', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual([]);
+  });
+
+  it('sets bestSet to null when the best e1rm set has no weight or reps', async () => {
+    const date = new Date('2025-01-10T00:00:00Z');
+    mockFindMany.mockResolvedValue([
+      {workout: {dateCompleted: date}, sets: [{e1rm: 90, weight: null, reps: null}]},
+    ]);
+
+    const [req, props] = makeRequest('5');
+    const res = await GET(req, props);
+    const body = await res.json();
+    expect(body).toEqual([{date: date.toISOString(), bestE1rm: 90, bestSet: null}]);
   });
 
   it('returns 400 for invalid exerciseId', async () => {

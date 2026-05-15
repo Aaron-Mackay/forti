@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const E1rmHistoryPointSchema = z.object({
   date: z.string(),
   bestE1rm: z.number(),
+  bestSet: z.object({ weight: z.number(), reps: z.number().int() }).nullable(),
 });
 export type E1rmHistoryPoint = z.infer<typeof E1rmHistoryPointSchema>;
 

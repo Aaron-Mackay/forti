@@ -72,4 +72,4 @@ expo-env.d.ts
 apps/mobile/ios/
 apps/mobile/android/
 
-/apps/web/playwright/.auth/
+apps/web/playwright/.auth/

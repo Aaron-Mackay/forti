@@ -34,9 +34,7 @@ export default async function ProgressPage() {
           userName={user.name}
           metrics={metrics}
           events={events}
-          activePlanData={activePlanData}
           settings={settings}
-          today={today}
         />
       ) : (
         <LegacyProgress
