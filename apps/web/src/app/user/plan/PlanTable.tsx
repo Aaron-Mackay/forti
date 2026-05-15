@@ -1,13 +1,14 @@
 'use client'
 
-import React, { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { redirect, useRouter } from "next/navigation";
-import { useWorkoutEditorContext } from "@/context/WorkoutEditorContext";
+import { WorkoutEditorContext, useWorkoutEditorContext } from "@/context/WorkoutEditorContext";
 import { saveUserWorkoutData } from "@lib/clientApi";
 import { Alert, Box, Button, Chip, CircularProgress, FormControlLabel, Snackbar, Switch, ToggleButton, ToggleButtonGroup, Tooltip, useMediaQuery, useTheme } from "@mui/material";
 import GridOnIcon from '@mui/icons-material/GridOn';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import OpenWithIcon from '@mui/icons-material/OpenWith';
+import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import PlanWeekView from "./PlanWeekView";
 import PlanMultiWeekTable from "./PlanMultiWeekTable";
@@ -15,6 +16,8 @@ import PlanSheetView from "./PlanSheetView";
 import { usePlanViewControls } from "./usePlanViewControls";
 import { usePlanRepRangeValidation } from "./usePlanRepRangeValidation";
 import { signalTokens } from "@lib/signal/tokens";
+import { computeForwardSyncActions, countSyncedWeeks } from "@/utils/planForwardSync";
+import useDebouncedDispatch from "@/utils/useDebouncedDispatch";
 
 const planningPalette = signalTokens.surface.planning;
 
@@ -30,7 +33,26 @@ export const PlanTable: React.FC<{
     severity: 'success',
   });
   const [saving, setSaving] = useState(false);
-  const { state: userDataState, dispatch } = useWorkoutEditorContext();
+  const [forwardSyncEnabled, setForwardSyncEnabled] = useState(false);
+  const contextValue = useWorkoutEditorContext();
+  const { state: userDataState, dispatch } = contextValue;
+
+  const syncWeekCountRef = useRef(0);
+  const syncToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerSyncToast = useCallback((weekCount: number) => {
+    syncWeekCountRef.current = Math.max(syncWeekCountRef.current, weekCount);
+    if (syncToastTimerRef.current) clearTimeout(syncToastTimerRef.current);
+    syncToastTimerRef.current = setTimeout(() => {
+      const count = syncWeekCountRef.current;
+      syncWeekCountRef.current = 0;
+      setSnackbar({
+        open: true,
+        severity: 'success',
+        message: `Synced to ${count} future ${count === 1 ? 'week' : 'weeks'}`,
+      });
+    }, 800);
+  }, []);
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -58,6 +80,19 @@ export const PlanTable: React.FC<{
     showBack: !!backHref,
     onBack: backHref ? () => router.push(backHref) : undefined,
   });
+
+  const syncAwareDispatch = useCallback(
+    (action: Parameters<typeof dispatch>[0]) => {
+      dispatch(action);
+      if (!forwardSyncEnabled || !plan) return;
+      const extras = computeForwardSyncActions(plan, action);
+      extras.forEach(dispatch);
+      if (extras.length > 0) triggerSyncToast(countSyncedWeeks(extras));
+    },
+    [dispatch, forwardSyncEnabled, plan, triggerSyncToast],
+  );
+  const syncAwareDebouncedDispatch = useDebouncedDispatch(syncAwareDispatch, 250);
+  const syncAwareContextValue = { ...contextValue, dispatch: syncAwareDispatch, debouncedDispatch: syncAwareDebouncedDispatch };
 
   if (!plan) {
     redirect('/user/plan/create');
@@ -246,6 +281,23 @@ export const PlanTable: React.FC<{
         }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, mb: 1.5 }}>
+          {/* Forward sync toggle — only shown when plan has more than one week */}
+          {plan.weeks.length > 1 && (
+            <Tooltip title={forwardSyncEnabled ? 'Forward sync on — changes copy to future weeks' : 'Forward sync off'}>
+              <ToggleButton
+                value="forwardSync"
+                selected={forwardSyncEnabled}
+                onChange={() => setForwardSyncEnabled(v => !v)}
+                size="small"
+                sx={{ px: 1, py: 0.5, border: '1px solid', borderColor: 'divider' }}
+                aria-label="Toggle forward sync"
+              >
+                <SyncAltIcon fontSize="small" />
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' }, ml: 0.75, fontSize: '0.7rem' }}>Sync fwd</Box>
+              </ToggleButton>
+            </Tooltip>
+          )}
+
           {/* Arrange mode toggle — only visible in sheet mode on non-mobile */}
           {viewMode === 'sheet' && (
             <Tooltip title={arrangeMode ? 'Exit arrange mode' : 'Arrange mode'}>
@@ -293,22 +345,24 @@ export const PlanTable: React.FC<{
           </Alert>
         )}
 
-        {viewMode === 'sheet' ? (
-          <PlanSheetView
-            plan={plan}
-            planId={plan.id}
-            zoom={zoom}
-            onZoomChange={handleZoomChange}
-            arrangeMode={arrangeMode}
-            invalidRepRangeIds={visibleInvalidRepRangeIds}
-            onRepRangeFocus={handleRepRangeFocus}
-            onRepRangeBlur={handleRepRangeBlur}
-          />
-        ) : isMobile ? (
-          <PlanWeekView plan={plan} planId={plan.id} />
-        ) : (
-          <PlanMultiWeekTable plan={plan} planId={plan.id} />
-        )}
+        <WorkoutEditorContext.Provider value={syncAwareContextValue}>
+          {viewMode === 'sheet' ? (
+            <PlanSheetView
+              plan={plan}
+              planId={plan.id}
+              zoom={zoom}
+              onZoomChange={handleZoomChange}
+              arrangeMode={arrangeMode}
+              invalidRepRangeIds={visibleInvalidRepRangeIds}
+              onRepRangeFocus={handleRepRangeFocus}
+              onRepRangeBlur={handleRepRangeBlur}
+            />
+          ) : isMobile ? (
+            <PlanWeekView plan={plan} planId={plan.id} />
+          ) : (
+            <PlanMultiWeekTable plan={plan} planId={plan.id} />
+          )}
+        </WorkoutEditorContext.Provider>
       </Box>
 
       {/* Bottom-fixed Save button */}

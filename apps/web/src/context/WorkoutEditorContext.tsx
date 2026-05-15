@@ -14,7 +14,7 @@ export interface WorkoutEditorContextType {
   allExercises: Exercise[];
   addExercise: (exercise: Exercise) => void;
 }
-const WorkoutEditorContext = createContext<WorkoutEditorContextType | null>(null);
+export const WorkoutEditorContext = createContext<WorkoutEditorContextType | null>(null);
 
 interface WorkoutEditorProviderProps {
   userData: UserPrisma;
