@@ -1,11 +1,6 @@
 import {
   Box,
-  Button,
   Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   List,
   ListItem,
   ListItemText,
@@ -13,6 +8,7 @@ import {
 } from "@mui/material";
 import {format, parseISO} from "date-fns";
 import type {BlockOverlapResolution, BlockOverlapRange} from "@lib/events";
+import {Overlay} from "@/components/signal/overlay";
 
 function getActionLabel(action: BlockOverlapResolution['action']): string {
   if (action === 'delete') return 'Deleted';
@@ -50,9 +46,21 @@ export function BlockOverlapConfirmationDialog({
   onConfirm: () => void;
 }) {
   return (
-    <Dialog open={open} onClose={loading ? undefined : onCancel} fullWidth maxWidth="sm">
-      <DialogTitle>Resolve overlapping blocks?</DialogTitle>
-      <DialogContent>
+    <Overlay
+      open={open}
+      onClose={loading ? () => undefined : onCancel}
+      title="Resolve overlapping blocks?"
+      accent
+      size="md"
+      dismissOnBackdrop={!loading}
+      primaryAction={{
+        label: loading ? 'Applying…' : 'Confirm',
+        onClick: onConfirm,
+        disabled: loading,
+      }}
+      ghostAction={{ label: 'Cancel', onClick: onCancel }}
+    >
+      <Box sx={{ pt: 1, pb: 1 }}>
         <Typography variant="body2" color="text.secondary">
           The new date range overlaps existing blocks. Confirming will apply these changes.
         </Typography>
@@ -86,13 +94,7 @@ export function BlockOverlapConfirmationDialog({
             </ListItem>
           ))}
         </List>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel} disabled={loading}>Cancel</Button>
-        <Button onClick={onConfirm} variant="contained" disabled={loading}>
-          Confirm
-        </Button>
-      </DialogActions>
-    </Dialog>
+      </Box>
+    </Overlay>
   );
 }
