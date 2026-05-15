@@ -9,9 +9,9 @@ import {
   CardContent,
   Chip,
   Divider,
-  Drawer,
   Typography,
 } from '@mui/material'
+import { Overlay } from '@/components/signal/overlay'
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext'
 import { useNewPlan } from './useNewPlan'
 import { parsedPlanToPlanPrisma } from './planConverter'
@@ -85,33 +85,23 @@ export const TemplateBrowserScreen = ({ onSelect }: TemplateBrowserScreenProps) 
         ))}
       </Box>
 
-      {/* Preview bottom sheet */}
-      <Drawer
-        anchor="bottom"
+      <Overlay
         open={previewTemplate !== null}
         onClose={() => setPreviewTemplate(null)}
-        PaperProps={{
-          sx: {
-            borderTopLeftRadius: 16,
-            borderTopRightRadius: 16,
-            maxHeight: '75dvh',
-            px: 2,
-            pt: 2,
-            pb: 3,
-          },
-        }}
+        title={previewTemplate?.meta.name ?? 'Preview'}
+        eyebrow={
+          previewTemplate
+            ? `${previewTemplate.meta.daysPerWeek} days/wk · ${previewTemplate.meta.durationWeeks} weeks · ${previewTemplate.meta.level} · ${previewTemplate.meta.goal}`
+            : undefined
+        }
+        size="md"
+        height="tall"
+        primaryAction={{ label: 'Use this template', onClick: handleUseTemplate }}
+        ghostAction={{ label: 'Cancel', onClick: () => setPreviewTemplate(null) }}
       >
         {previewTemplate && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, overflow: 'auto' }}>
-            <Typography variant="h6" fontWeight={600}>
-              {previewTemplate.meta.name}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {previewTemplate.meta.daysPerWeek} days/wk · {previewTemplate.meta.durationWeeks}{' '}
-              weeks · {previewTemplate.meta.level} · {previewTemplate.meta.goal}
-            </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 1, pb: 1 }}>
             <Divider />
-
             {previewTemplate.plan.weeks[0].workouts.map((wo) => (
               <Box key={wo.order}>
                 <Typography variant="subtitle2" fontWeight={600}>
@@ -127,18 +117,9 @@ export const TemplateBrowserScreen = ({ onSelect }: TemplateBrowserScreenProps) 
                 ))}
               </Box>
             ))}
-
-            <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Button variant="contained" fullWidth size="large" onClick={handleUseTemplate}>
-                Use this template
-              </Button>
-              <Button variant="text" fullWidth onClick={() => setPreviewTemplate(null)}>
-                Cancel
-              </Button>
-            </Box>
           </Box>
         )}
-      </Drawer>
+      </Overlay>
     </>
   )
 }

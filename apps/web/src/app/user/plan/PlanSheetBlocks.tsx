@@ -1,7 +1,8 @@
 'use client'
 
 import React from 'react'
-import { Box, Dialog, DialogContent, DialogTitle, IconButton, TextField, Typography } from '@mui/material'
+import { Box, IconButton, TextField, Typography } from '@mui/material'
+import { Overlay } from '@/components/signal/overlay'
 import AddIcon from '@mui/icons-material/Add'
 import CloseIcon from '@mui/icons-material/Close'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
@@ -340,32 +341,30 @@ const SortableWorkoutSlot = ({
             >
               <NotesOutlinedIcon sx={{ fontSize: '0.8rem' }} />
             </IconButton>
-            <Dialog
+            <Overlay
               open={notesOpen}
               onClose={() => setNotesOpen(false)}
-              fullWidth
-              maxWidth="sm"
+              title={`${stripWorkoutSuffix(workout.name ?? `Workout ${slotIdx + 1}`)} notes`}
+              size="md"
             >
-              <DialogTitle sx={{ pb: 1 }}>{stripWorkoutSuffix(workout.name ?? `Workout ${slotIdx + 1}`)} notes</DialogTitle>
-              <DialogContent sx={{ pt: '8px !important' }}>
-                <TextField
-                  value={workout.notes ?? ''}
-                  onChange={(event) =>
-                    dispatch({
-                      type: 'UPDATE_WORKOUT_NOTES',
-                      planId,
-                      weekId,
-                      workoutId: workout.id,
-                      notes: event.target.value,
-                    })
-                  }
-                  placeholder="Add workout notes..."
-                  multiline
-                  minRows={4}
-                  fullWidth
-                />
-              </DialogContent>
-            </Dialog>
+              <TextField
+                value={workout.notes ?? ''}
+                onChange={(event) =>
+                  dispatch({
+                    type: 'UPDATE_WORKOUT_NOTES',
+                    planId,
+                    weekId,
+                    workoutId: workout.id,
+                    notes: event.target.value,
+                  })
+                }
+                placeholder="Add workout notes..."
+                multiline
+                minRows={4}
+                fullWidth
+                sx={{ pt: 1, pb: 1 }}
+              />
+            </Overlay>
           </>
         )}
         {!arrangeMode && (

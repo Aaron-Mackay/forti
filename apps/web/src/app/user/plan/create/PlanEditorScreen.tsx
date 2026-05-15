@@ -8,10 +8,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   IconButton,
   LinearProgress,
@@ -25,6 +21,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material'
+import { Overlay } from '@/components/signal/overlay'
 import GridOnIcon from '@mui/icons-material/GridOn'
 import ViewListIcon from '@mui/icons-material/ViewList'
 import OpenWithIcon from '@mui/icons-material/OpenWith'
@@ -488,38 +485,29 @@ export const PlanEditorScreen = ({
         </Alert>
       </Snackbar>
 
-      <Dialog
+      <Overlay
         open={enrichPhase !== null}
-        maxWidth="xs"
-        fullWidth
-        disableEscapeKeyDown={enrichPhase === 'enriching'}
-        onClose={enrichPhase === 'review' ? () => {
+        onClose={() => {
+          if (enrichPhase === 'enriching') return
           setEditingExerciseName(null)
           setMatchSuggestions(new Map())
           setEnrichPhase(null)
-        } : undefined}
-        PaperProps={{
-          sx: {
-            display: 'flex',
-            flexDirection: 'column',
-            maxHeight: {
-              xs: 'min(680px, calc(100dvh - 32px))',
-              sm: 'min(760px, calc(100dvh - 48px))',
-            },
-            m: { xs: 2, sm: 3 },
-          },
         }}
-        sx={{
-          '& .MuiDialog-container': {
-            alignItems: 'center',
-            p: { xs: 0, sm: 2 },
-          },
-        }}
+        title={enrichPhase === 'enriching' ? 'Enriching new exercises' : 'Review new exercises'}
+        size="sm"
+        height="tall"
+        dismissOnBackdrop={enrichPhase !== 'enriching'}
+        primaryAction={
+          enrichPhase === 'review'
+            ? {
+                label: saving ? 'Saving…' : 'Confirm & save plan',
+                onClick: handleConfirmEnrich,
+                disabled: saving,
+              }
+            : undefined
+        }
       >
-        <DialogTitle>
-          {enrichPhase === 'enriching' ? 'Enriching new exercises' : 'Review new exercises'}
-        </DialogTitle>
-        <DialogContent dividers sx={{ overflowY: 'auto', pb: enrichPhase === 'review' ? 2.5 : 2 }}>
+        <Box sx={{ pt: 1, pb: 1 }}>
           {enrichPhase === 'enriching' && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1 }}>
               <CircularProgress size={20} />
@@ -679,24 +667,9 @@ export const PlanEditorScreen = ({
               })}
             </Stack>
           )}
-        </DialogContent>
-        {enrichPhase === 'enriching' && <LinearProgress sx={{ mx: 2, mb: 2, borderRadius: 1 }} />}
-        {enrichPhase === 'review' && (
-          <DialogActions
-            sx={{
-              px: 3,
-              py: 2,
-              borderTop: '1px solid',
-              borderColor: 'divider',
-              bgcolor: 'background.paper',
-            }}
-          >
-            <Button onClick={handleConfirmEnrich} variant="contained" fullWidth disabled={saving}>
-              {saving ? 'Saving…' : 'Confirm & Save Plan'}
-            </Button>
-          </DialogActions>
-        )}
-      </Dialog>
+        </Box>
+        {enrichPhase === 'enriching' && <LinearProgress sx={{ mb: 1, borderRadius: 1 }} />}
+      </Overlay>
     </>
   )
 }

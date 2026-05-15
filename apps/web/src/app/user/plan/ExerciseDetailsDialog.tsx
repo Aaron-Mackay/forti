@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField } from '@mui/material'
+import { useEffect, useState } from 'react'
+import { Stack, TextField } from '@mui/material'
+import { Overlay } from '@/components/signal/overlay'
 
 type ExerciseDetailsDialogProps = {
   open: boolean
@@ -27,38 +28,39 @@ export default function ExerciseDetailsDialog({
     setDraftRestTime(restTime ?? '')
   }, [open, repRange, restTime])
 
+  const dirty = draftRepRange !== (repRange ?? '') || draftRestTime !== (restTime ?? '')
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>Edit details</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ pt: 0.5 }}>
-          <TextField
-            label="Rep range"
-            value={draftRepRange}
-            onChange={(event) => setDraftRepRange(event.target.value)}
-            size="small"
-            fullWidth
-            autoComplete="off"
-          />
-          <TextField
-            label="Rest time"
-            value={draftRestTime}
-            onChange={(event) => setDraftRestTime(event.target.value)}
-            size="small"
-            fullWidth
-            autoComplete="off"
-          />
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button
-          variant="contained"
-          onClick={() => onSave({ repRange: draftRepRange, restTime: draftRestTime })}
-        >
-          Save
-        </Button>
-      </DialogActions>
-    </Dialog>
+    <Overlay
+      open={open}
+      onClose={onClose}
+      title="Edit details"
+      size="sm"
+      dirty={dirty}
+      primaryAction={{
+        label: 'Save',
+        onClick: () => onSave({ repRange: draftRepRange, restTime: draftRestTime }),
+      }}
+      ghostAction={{ label: 'Cancel', onClick: onClose }}
+    >
+      <Stack spacing={2} sx={{ pt: 1, pb: 1 }}>
+        <TextField
+          label="Rep range"
+          value={draftRepRange}
+          onChange={(event) => setDraftRepRange(event.target.value)}
+          size="small"
+          fullWidth
+          autoComplete="off"
+        />
+        <TextField
+          label="Rest time"
+          value={draftRestTime}
+          onChange={(event) => setDraftRestTime(event.target.value)}
+          size="small"
+          fullWidth
+          autoComplete="off"
+        />
+      </Stack>
+    </Overlay>
   )
 }
