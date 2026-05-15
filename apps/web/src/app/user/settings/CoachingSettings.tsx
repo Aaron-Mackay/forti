@@ -7,10 +7,6 @@ import {
   Box,
   Button,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   FormControlLabel,
   IconButton,
@@ -25,6 +21,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { Overlay } from '@/components/signal/overlay';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import HourglassTopIcon from '@mui/icons-material/HourglassTop';
@@ -686,9 +683,15 @@ export default function CoachingSettings({ mode = 'normal' }: { mode?: 'normal' 
       )}
 
       {/* ── Crop dialog ───────────────────────────────── */}
-      <Dialog open={cropDialogOpen} onClose={() => setCropDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Crop Logo</DialogTitle>
-        <DialogContent>
+      <Overlay
+        open={cropDialogOpen}
+        onClose={() => setCropDialogOpen(false)}
+        title="Crop logo"
+        size="md"
+        primaryAction={{ label: 'Save', onClick: handleCropConfirm }}
+        ghostAction={{ label: 'Cancel', onClick: () => setCropDialogOpen(false) }}
+      >
+        <Box sx={{ pt: 1, pb: 1 }}>
           <Box sx={{ position: 'relative', height: 300, bgcolor: 'black', borderRadius: 1, overflow: 'hidden' }}>
             {cropImageUrl && (
               <Cropper
@@ -713,12 +716,8 @@ export default function CoachingSettings({ mode = 'normal' }: { mode?: 'normal' 
               size="small"
             />
           </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCropDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleCropConfirm}>Save</Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      </Overlay>
     </Box>
   );
 }

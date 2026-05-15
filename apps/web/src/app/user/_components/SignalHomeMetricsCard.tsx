@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
+import { Alert, Box, TextField } from '@mui/material';
+import { Overlay } from '@/components/signal/overlay';
 import type { Metric } from '@/generated/prisma/browser';
 import { updateMetricClient } from '@lib/metrics';
 import { signalTokens } from '@lib/signal/tokens';
@@ -264,23 +265,21 @@ export function SignalHomeMetricsCard({ userId, metrics, today, bodyweightUnit }
         ))}
       </div>
 
-      <Dialog
+      <Overlay
         open={editingKey != null}
-        onClose={saving ? undefined : () => setEditingKey(null)}
-        fullWidth
-        maxWidth="xs"
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-            background: palette.surface,
-            color: palette.ink,
-          },
+        onClose={() => setEditingKey(null)}
+        title={editingKey ? `Edit ${fieldTitle(editingKey, bodyweightUnit)}` : 'Edit metric'}
+        size="sm"
+        dismissOnBackdrop={!saving}
+        dirty={!saving && draftValue.length > 0}
+        primaryAction={{
+          label: saving ? 'Saving…' : 'Save',
+          onClick: handleSave,
+          disabled: saving,
         }}
+        ghostAction={{ label: 'Cancel', onClick: () => setEditingKey(null) }}
       >
-        <DialogTitle sx={{ fontFamily: signalTokens.fontVar.cond, fontWeight: 700 }}>
-          {editingKey ? `Edit ${fieldTitle(editingKey, bodyweightUnit)}` : 'Edit metric'}
-        </DialogTitle>
-        <DialogContent>
+        <Box sx={{ pt: 1, pb: 1 }}>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <TextField
             autoFocus
@@ -292,16 +291,8 @@ export function SignalHomeMetricsCard({ userId, metrics, today, bodyweightUnit }
             onChange={(event) => setDraftValue(event.target.value)}
             inputProps={editingKey === 'sleepMins' ? undefined : { inputMode: 'decimal' }}
           />
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setEditingKey(null)} disabled={saving} color="inherit">
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={saving} variant="contained">
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      </Overlay>
     </>
   );
 }

@@ -4,14 +4,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Box,
-  Button,
   ButtonBase,
   CircularProgress,
   Collapse,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   IconButton,
   Paper,
@@ -19,6 +14,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { Overlay } from '@/components/signal/overlay';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -690,91 +686,89 @@ export default function SupplementsClient({
           </div>
         </div>
 
-        <Dialog open={dialogOpen} onClose={handleDialogClose} fullWidth maxWidth="sm">
-          <DialogTitle>{editingSupp ? 'Edit Supplement' : 'Add Supplement'}</DialogTitle>
-          <DialogContent>
-            <Stack spacing={2} sx={{ mt: 1 }}>
-              {formError && (
-                <Alert severity="error" onClose={() => setFormError(null)}>
-                  {formError}
-                </Alert>
-              )}
+        <Overlay
+          open={dialogOpen}
+          onClose={handleDialogClose}
+          title={editingSupp ? 'Edit supplement' : 'Add supplement'}
+          size="md"
+          primaryAction={{ label: saving ? 'Saving…' : 'Save', onClick: handleSave, disabled: saving }}
+          ghostAction={{ label: 'Cancel', onClick: handleDialogClose }}
+        >
+          <Stack spacing={2} sx={{ mt: 1, pb: 1 }}>
+            {formError && (
+              <Alert severity="error" onClose={() => setFormError(null)}>
+                {formError}
+              </Alert>
+            )}
+            <TextField
+              label="Name"
+              required
+              fullWidth
+              value={formData.name}
+              onChange={e => setFormData(f => ({ ...f, name: e.target.value }))}
+              disabled={saving}
+            />
+            <TextField
+              label="Dosage"
+              required
+              fullWidth
+              placeholder="e.g. 400mg"
+              value={formData.dosage}
+              onChange={e => setFormData(f => ({ ...f, dosage: e.target.value }))}
+              disabled={saving}
+            />
+            <TextField
+              label="Frequency"
+              required
+              fullWidth
+              placeholder="e.g. Daily, Weekly"
+              value={formData.frequency}
+              onChange={e => setFormData(f => ({ ...f, frequency: e.target.value }))}
+              disabled={saving}
+            />
+            {editingSupp && (
               <TextField
-                label="Name"
-                required
-                fullWidth
-                value={formData.name}
-                onChange={e => setFormData(f => ({ ...f, name: e.target.value }))}
-                disabled={saving}
-              />
-              <TextField
-                label="Dosage"
-                required
-                fullWidth
-                placeholder="e.g. 400mg"
-                value={formData.dosage}
-                onChange={e => setFormData(f => ({ ...f, dosage: e.target.value }))}
-                disabled={saving}
-              />
-              <TextField
-                label="Frequency"
-                required
-                fullWidth
-                placeholder="e.g. Daily, Weekly"
-                value={formData.frequency}
-                onChange={e => setFormData(f => ({ ...f, frequency: e.target.value }))}
-                disabled={saving}
-              />
-              {editingSupp && (
-                <TextField
-                  label="Effective from"
-                  type="date"
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  value={formData.effectiveFrom}
-                  onChange={e => setFormData(f => ({ ...f, effectiveFrom: e.target.value }))}
-                  disabled={saving}
-                  helperText="When did this dosage/frequency change take effect?"
-                />
-              )}
-              <TextField
-                label="Start Date"
-                required
+                label="Effective from"
                 type="date"
                 fullWidth
                 InputLabelProps={{ shrink: true }}
-                value={formData.startDate}
-                onChange={e => setFormData(f => ({ ...f, startDate: e.target.value }))}
+                value={formData.effectiveFrom}
+                onChange={e => setFormData(f => ({ ...f, effectiveFrom: e.target.value }))}
                 disabled={saving}
+                helperText="When did this dosage/frequency change take effect?"
               />
-              <TextField
-                label="End Date (optional)"
-                type="date"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                value={formData.endDate}
-                onChange={e => setFormData(f => ({ ...f, endDate: e.target.value }))}
-                disabled={saving}
-                helperText="Leave blank for ongoing supplements"
-              />
-              <TextField
-                label="Notes"
-                fullWidth
-                multiline
-                rows={2}
-                value={formData.notes}
-                onChange={e => setFormData(f => ({ ...f, notes: e.target.value }))}
-                disabled={saving}
-              />
-            </Stack>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleDialogClose} disabled={saving}>Cancel</Button>
-            <Button variant="contained" onClick={handleSave} disabled={saving}>
-              {saving ? <CircularProgress size={20} /> : 'Save'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+            )}
+            <TextField
+              label="Start Date"
+              required
+              type="date"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={formData.startDate}
+              onChange={e => setFormData(f => ({ ...f, startDate: e.target.value }))}
+              disabled={saving}
+            />
+            <TextField
+              label="End Date (optional)"
+              type="date"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={formData.endDate}
+              onChange={e => setFormData(f => ({ ...f, endDate: e.target.value }))}
+              disabled={saving}
+              helperText="Leave blank for ongoing supplements"
+            />
+            <TextField
+              label="Notes"
+              fullWidth
+              multiline
+              rows={2}
+              value={formData.notes}
+              onChange={e => setFormData(f => ({ ...f, notes: e.target.value }))}
+              disabled={saving}
+            />
+          </Stack>
+        </Overlay>
       </>
     );
   }
@@ -861,91 +855,89 @@ export default function SupplementsClient({
         )}
       </Box>
 
-      <Dialog open={dialogOpen} onClose={handleDialogClose} fullWidth maxWidth="sm">
-        <DialogTitle>{editingSupp ? 'Edit Supplement' : 'Add Supplement'}</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            {formError && (
-              <Alert severity="error" onClose={() => setFormError(null)}>
-                {formError}
-              </Alert>
-            )}
+      <Overlay
+        open={dialogOpen}
+        onClose={handleDialogClose}
+        title={editingSupp ? 'Edit supplement' : 'Add supplement'}
+        size="md"
+        primaryAction={{ label: saving ? 'Saving…' : 'Save', onClick: handleSave, disabled: saving }}
+        ghostAction={{ label: 'Cancel', onClick: handleDialogClose }}
+      >
+        <Stack spacing={2} sx={{ mt: 1, pb: 1 }}>
+          {formError && (
+            <Alert severity="error" onClose={() => setFormError(null)}>
+              {formError}
+            </Alert>
+          )}
+          <TextField
+            label="Name"
+            required
+            fullWidth
+            value={formData.name}
+            onChange={e => setFormData(f => ({ ...f, name: e.target.value }))}
+            disabled={saving}
+          />
+          <TextField
+            label="Dosage"
+            required
+            fullWidth
+            placeholder="e.g. 400mg"
+            value={formData.dosage}
+            onChange={e => setFormData(f => ({ ...f, dosage: e.target.value }))}
+            disabled={saving}
+          />
+          <TextField
+            label="Frequency"
+            required
+            fullWidth
+            placeholder="e.g. Daily, Weekly"
+            value={formData.frequency}
+            onChange={e => setFormData(f => ({ ...f, frequency: e.target.value }))}
+            disabled={saving}
+          />
+          {editingSupp && (
             <TextField
-              label="Name"
-              required
-              fullWidth
-              value={formData.name}
-              onChange={e => setFormData(f => ({ ...f, name: e.target.value }))}
-              disabled={saving}
-            />
-            <TextField
-              label="Dosage"
-              required
-              fullWidth
-              placeholder="e.g. 400mg"
-              value={formData.dosage}
-              onChange={e => setFormData(f => ({ ...f, dosage: e.target.value }))}
-              disabled={saving}
-            />
-            <TextField
-              label="Frequency"
-              required
-              fullWidth
-              placeholder="e.g. Daily, Weekly"
-              value={formData.frequency}
-              onChange={e => setFormData(f => ({ ...f, frequency: e.target.value }))}
-              disabled={saving}
-            />
-            {editingSupp && (
-              <TextField
-                label="Effective from"
-                type="date"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                value={formData.effectiveFrom}
-                onChange={e => setFormData(f => ({ ...f, effectiveFrom: e.target.value }))}
-                disabled={saving}
-                helperText="When did this dosage/frequency change take effect?"
-              />
-            )}
-            <TextField
-              label="Start Date"
-              required
+              label="Effective from"
               type="date"
               fullWidth
               InputLabelProps={{ shrink: true }}
-              value={formData.startDate}
-              onChange={e => setFormData(f => ({ ...f, startDate: e.target.value }))}
+              value={formData.effectiveFrom}
+              onChange={e => setFormData(f => ({ ...f, effectiveFrom: e.target.value }))}
               disabled={saving}
+              helperText="When did this dosage/frequency change take effect?"
             />
-            <TextField
-              label="End Date (optional)"
-              type="date"
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              value={formData.endDate}
-              onChange={e => setFormData(f => ({ ...f, endDate: e.target.value }))}
-              disabled={saving}
-              helperText="Leave blank for ongoing supplements"
-            />
-            <TextField
-              label="Notes"
-              fullWidth
-              multiline
-              rows={2}
-              value={formData.notes}
-              onChange={e => setFormData(f => ({ ...f, notes: e.target.value }))}
-              disabled={saving}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDialogClose} disabled={saving}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave} disabled={saving}>
-            {saving ? <CircularProgress size={20} /> : 'Save'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          )}
+          <TextField
+            label="Start Date"
+            required
+            type="date"
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            value={formData.startDate}
+            onChange={e => setFormData(f => ({ ...f, startDate: e.target.value }))}
+            disabled={saving}
+          />
+          <TextField
+            label="End Date (optional)"
+            type="date"
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            value={formData.endDate}
+            onChange={e => setFormData(f => ({ ...f, endDate: e.target.value }))}
+            disabled={saving}
+            helperText="Leave blank for ongoing supplements"
+          />
+          <TextField
+            label="Notes"
+            fullWidth
+            multiline
+            rows={2}
+            value={formData.notes}
+            onChange={e => setFormData(f => ({ ...f, notes: e.target.value }))}
+            disabled={saving}
+          />
+        </Stack>
+      </Overlay>
     </>
   );
 }
