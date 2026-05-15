@@ -443,6 +443,7 @@ export function Overlay({
       >
         {open && (
           <div style={{ position: 'fixed', inset: 0, outline: 'none' }} tabIndex={-1}>
+            {isDesktop ? (
             <ModalShellRoot>
               <motion.div
                 role="dialog"
@@ -480,7 +481,7 @@ export function Overlay({
                 </div>
               </motion.div>
             </ModalShellRoot>
-
+            ) : (
             <DrawerShellRoot>
               <motion.div
                 role="dialog"
@@ -530,6 +531,7 @@ export function Overlay({
                 </div>
               </motion.div>
             </DrawerShellRoot>
+            )}
 
             {activeBody &&
               createPortal(

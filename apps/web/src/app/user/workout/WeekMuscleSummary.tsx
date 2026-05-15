@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Dialog, DialogContent, DialogTitle, IconButton, Typography } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import { Box, Typography } from '@mui/material';
 import MuscleBodyHeatmap from '@/components/fitness/MuscleBodyHeatmap';
 import { WeekPrisma, ExerciseMuscle, MUSCLE_NAMES } from '@/types/dataTypes';
+import { Overlay } from '@/components/signal/overlay';
 
 type MuscleCounts = Record<string, { planned: number; done: number }>;
 
@@ -75,31 +75,28 @@ export default function WeekMuscleSummary({ week }: { week: WeekPrisma }) {
         bodyStyle={{ height: '100%', width: 'auto' }}
       />
 
-      <Dialog open={modalOpen} onClose={() => setModalOpen(false)} fullWidth maxWidth="xs">
-        <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          Muscle Coverage
-          <IconButton onClick={() => setModalOpen(false)} size="small" edge="end" aria-label="Close">
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.25 }}>
-            {targeted.map(([muscle, { planned, done }]) => (
-              <Box
-                key={muscle}
-                sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', px: 0.5, py: 0.25 }}
-              >
-                <Typography variant="body2" noWrap sx={{ mr: 0.5, minWidth: 0 }}>
-                  {MUSCLE_NAMES[muscle] ?? muscle}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
-                  {Number.isInteger(done) ? done : done.toFixed(1)}/{Number.isInteger(planned) ? planned : planned.toFixed(1)}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        </DialogContent>
-      </Dialog>
+      <Overlay
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title="Muscle coverage"
+        size="sm"
+      >
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.25, pt: 1, pb: 1 }}>
+          {targeted.map(([muscle, { planned, done }]) => (
+            <Box
+              key={muscle}
+              sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', px: 0.5, py: 0.25 }}
+            >
+              <Typography variant="body2" noWrap sx={{ mr: 0.5, minWidth: 0 }}>
+                {MUSCLE_NAMES[muscle] ?? muscle}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+                {Number.isInteger(done) ? done : done.toFixed(1)}/{Number.isInteger(planned) ? planned : planned.toFixed(1)}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      </Overlay>
     </Box>
   );
 }

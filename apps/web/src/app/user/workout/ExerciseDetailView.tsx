@@ -4,15 +4,11 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {
   Alert,
   Box,
-  Button,
   Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Snackbar,
   Typography,
 } from '@mui/material';
+import {Overlay} from '@/components/signal/overlay';
 import {Swiper, SwiperSlide} from 'swiper/react';
 import {Pagination} from 'swiper/modules';
 import {Swiper as SwiperType} from 'swiper/types';
@@ -352,27 +348,25 @@ export default function ExerciseDetailView({
           {snackbar.message}
         </Alert>
       </Snackbar>
-      <Dialog open={warnUnloggedOpen} onClose={() => setWarnUnloggedOpen(false)}>
-        <DialogTitle>Unlogged sets</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2">
-            {unloggedCount} {unloggedCount === 1 ? 'set was' : 'sets were'} unlogged. Complete anyway?
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setWarnUnloggedOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="success"
-            onClick={() => {
-              setWarnUnloggedOpen(false);
-              onCompleteWorkout?.(true);
-            }}
-          >
-            Complete
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <Overlay
+        open={warnUnloggedOpen}
+        onClose={() => setWarnUnloggedOpen(false)}
+        title="Unlogged sets"
+        accent
+        size="sm"
+        primaryAction={{
+          label: 'Complete',
+          onClick: () => {
+            setWarnUnloggedOpen(false);
+            onCompleteWorkout?.(true);
+          },
+        }}
+        ghostAction={{label: 'Cancel', onClick: () => setWarnUnloggedOpen(false)}}
+      >
+        <Typography variant="body2" sx={{pt: 1, pb: 1}}>
+          {unloggedCount} {unloggedCount === 1 ? 'set was' : 'sets were'} unlogged. Complete anyway?
+        </Typography>
+      </Overlay>
     </Box>
   );
 }

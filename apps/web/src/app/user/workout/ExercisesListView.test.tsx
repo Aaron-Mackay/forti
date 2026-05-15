@@ -232,7 +232,7 @@ describe('ExercisesListView', () => {
     fireEvent.pointerDown(btn);
     act(() => { vi.advanceTimersByTime(650); });
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('Complete Workout')).toBeInTheDocument();
+    expect(screen.getByText('Complete workout')).toBeInTheDocument();
   });
 
   it('calls onCompleteWorkout with true and a Date on dialog confirm when all sets are logged', async () => {

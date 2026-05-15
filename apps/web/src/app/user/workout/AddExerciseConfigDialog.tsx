@@ -3,21 +3,14 @@
 import {useEffect, useState} from 'react';
 import {
   Box,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   IconButton,
   TextField,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import {Exercise} from '@/generated/prisma/browser';
-import {APPBAR_HEIGHT, HEIGHT_EXC_APPBAR} from '@/components/shell/CustomAppBar';
+import {Overlay} from '@/components/signal/overlay';
 
 export interface AddExerciseConfig {
   setCount: number;
@@ -42,14 +35,10 @@ export default function AddExerciseConfigDialog({
   onClose,
   onConfirm,
 }: AddExerciseConfigDialogProps) {
-  const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
-
   const [setCount, setSetCount] = useState(DEFAULT_SET_COUNT);
   const [repRange, setRepRange] = useState(DEFAULT_REP_RANGE);
   const [restTime, setRestTime] = useState(DEFAULT_REST_TIME);
 
-  // Reset to defaults whenever a new exercise is selected
   useEffect(() => {
     if (exercise) {
       setSetCount(DEFAULT_SET_COUNT);
@@ -62,24 +51,23 @@ export default function AddExerciseConfigDialog({
     onConfirm({setCount, repRange, restTime});
   };
 
+  const dirty =
+    setCount !== DEFAULT_SET_COUNT ||
+    repRange !== DEFAULT_REP_RANGE ||
+    restTime !== DEFAULT_REST_TIME;
+
   return (
-    <Dialog
+    <Overlay
       open={open}
       onClose={onClose}
-      fullScreen={fullScreen}
-      fullWidth
-      maxWidth="xs"
-      slotProps={fullScreen ? {paper: {sx: {mt: `${APPBAR_HEIGHT}px`, height: HEIGHT_EXC_APPBAR}}} : undefined}
+      title="Configure exercise"
+      eyebrow={exercise?.name}
+      size="sm"
+      dirty={dirty}
+      primaryAction={{label: 'Add', onClick: handleConfirm}}
+      ghostAction={{label: 'Cancel', onClick: onClose}}
     >
-      <DialogTitle>
-        Configure Exercise
-        {exercise && (
-          <Typography variant="subtitle2" color="text.secondary" sx={{mt: 0.25}}>
-            {exercise.name}
-          </Typography>
-        )}
-      </DialogTitle>
-      <DialogContent>
+      <Box sx={{pt: 1, pb: 1}}>
         <Box sx={{mb: 2}}>
           <Typography variant="body2" gutterBottom>Sets</Typography>
           <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
@@ -121,11 +109,7 @@ export default function AddExerciseConfigDialog({
           fullWidth
           inputProps={{inputMode: 'numeric', 'aria-label': 'Rest time'}}
         />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleConfirm}>Add</Button>
-      </DialogActions>
-    </Dialog>
+      </Box>
+    </Overlay>
   );
 }

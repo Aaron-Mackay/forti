@@ -6,45 +6,30 @@ import {
   Alert,
   Box,
   CircularProgress,
-  Dialog,
-  DialogContent,
-  DialogTitle,
   Divider,
-  IconButton,
   List,
   ListItemButton,
   ListItemText,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import {Exercise} from '@/generated/prisma/browser';
 import {AddExerciseForm} from '@/app/exercises/AddExerciseForm';
-import {APPBAR_HEIGHT, HEIGHT_EXC_APPBAR} from '@/components/shell/CustomAppBar';
+import {Overlay} from '@/components/signal/overlay';
 
-// Maps plain-English search terms to substrings found in muscle IDs.
-// Muscle IDs use kebab shorthand (e.g. sternal-pec, ant-delts, lower-back).
 const MUSCLE_ALIASES: Record<string, string[]> = {
-  // chest
   chest:      ['pec'],
   pecs:       ['pec'],
-  // shoulders
   shoulder:   ['delt'],
   shoulders:  ['delt'],
   delts:      ['delt'],
-  // back
   back:       ['lats', 'lower-back', 'trap'],
   lats:       ['lats'],
-  // traps
   traps:      ['trap'],
-  // legs (broad)
   leg:        ['quads', 'ham', 'calves', 'glutes', 'adductors'],
   legs:       ['quads', 'ham', 'calves', 'glutes', 'adductors'],
   lower:      ['quads', 'ham', 'calves', 'glutes'],
-  // individual leg muscles
   quad:       ['quads'],
   quads:      ['quads'],
   hamstring:  ['ham'],
@@ -54,13 +39,10 @@ const MUSCLE_ALIASES: Record<string, string[]> = {
   glutes:     ['glutes'],
   calf:       ['calves'],
   calves:     ['calves'],
-  // arms (broad)
   arm:        ['biceps', 'triceps', 'forearms'],
   arms:       ['biceps', 'triceps', 'forearms'],
-  // individual arm muscles
   bicep:      ['biceps'],
   tricep:     ['triceps'],
-  // core
   core:       ['abs', 'obliques'],
   abs:        ['abs'],
 };
@@ -81,9 +63,7 @@ function exerciseMatchesSearch(ex: Exercise, search: string): boolean {
 interface ExercisePickerDialogProps {
   open: boolean;
   title: string;
-  /** When provided, filters to this category and hides the category toggle (use for substitution). */
   defaultCategory?: string;
-  /** When provided, this exercise id is excluded from the list (e.g. the exercise being substituted). */
   excludeExerciseId?: number;
   onClose: () => void;
   onSelect: (exercise: Exercise) => void;
@@ -97,15 +77,11 @@ export default function ExercisePickerDialog({
   onClose,
   onSelect,
 }: ExercisePickerDialogProps) {
-  const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
-
   const {exercises, loading, addExercise} = useExerciseList(open);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>(defaultCategory ?? 'resistance');
   const [createOpen, setCreateOpen] = useState(false);
 
-  // Reset search and sync category when dialog reopens
   useEffect(() => {
     if (open) {
       setSearch('');
@@ -121,99 +97,77 @@ export default function ExercisePickerDialog({
   });
 
   return (
-    <Dialog
+    <Overlay
       open={open}
       onClose={onClose}
-      fullScreen={fullScreen}
-      fullWidth
-      maxWidth="sm"
-      sx={{ zIndex: 1450 }}
-      slotProps={{
-        backdrop: {
-          sx: {
-            top: fullScreen ? `${APPBAR_HEIGHT}px` : 0,
-          },
-        },
-      }}
-      PaperProps={{
-        sx: {
-          display: 'flex',
-          flexDirection: 'column',
-          maxHeight: fullScreen ? HEIGHT_EXC_APPBAR : '80vh',
-          mt: fullScreen ? `${APPBAR_HEIGHT}px` : 0,
-          borderTopLeftRadius: fullScreen ? 12 : undefined,
-          borderTopRightRadius: fullScreen ? 12 : undefined,
-        },
-      }}
+      title={title}
+      size="md"
+      height="tall"
     >
-      <DialogTitle sx={{pb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-        {title}
-        <IconButton onClick={onClose} size="small" edge="end" aria-label="Close">
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </DialogTitle>
-      <Box sx={{px: 3, pb: 1}}>
-        <TextField
-          autoFocus
-          fullWidth
-          size="small"
-          placeholder="Search exercises..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          inputProps={{'aria-label': 'Search exercises'}}
-        />
-        {!defaultCategory && (
-          <ToggleButtonGroup
-            exclusive
-            value={category}
-            onChange={(_e, val) => { if (val) setCategory(val); }}
+      <Box sx={{display: 'flex', flexDirection: 'column', height: '100%', minHeight: 320, pt: 1}}>
+        <Box sx={{pb: 1}}>
+          <TextField
+            autoFocus
+            fullWidth
             size="small"
-            sx={{mt: 1}}
-          >
-            <ToggleButton value="resistance">Resistance</ToggleButton>
-            <ToggleButton value="cardio">Cardio</ToggleButton>
-          </ToggleButtonGroup>
-        )}
-      </Box>
-      <Divider />
-      <DialogContent sx={{p: 0, overflowY: 'auto', flex: 1}}>
-        {!loading && !navigator.onLine && exercises.length === 0 && (
-          <Alert severity="info" sx={{m: 2}}>
-            Offline and no cached exercise library yet. Go online once to load exercises for offline use.
-          </Alert>
-        )}
-        {loading ? (
-          <Box sx={{display: 'flex', justifyContent: 'center', p: 3}}>
-            <CircularProgress size={28} />
-          </Box>
-        ) : (
-          <List disablePadding>
-            {filtered.map(ex => (
-              <ListItemButton
-                key={ex.id}
-                onClick={() => onSelect(ex)}
-                divider
-              >
-                <ListItemText primary={ex.name} />
-              </ListItemButton>
-            ))}
-            {filtered.length === 0 && !loading && search.trim().length === 0 && (
-              <ListItemText
-                primary="No exercises found"
-                sx={{px: 2, py: 2, color: 'text.secondary'}}
-              />
-            )}
-            {!loading && search.trim().length > 0 && !exercises.some(e => e.name.toLowerCase() === search.toLowerCase()) && (
-              <ListItemButton onClick={() => setCreateOpen(true)} divider>
+            placeholder="Search exercises..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            inputProps={{'aria-label': 'Search exercises'}}
+          />
+          {!defaultCategory && (
+            <ToggleButtonGroup
+              exclusive
+              value={category}
+              onChange={(_e, val) => { if (val) setCategory(val); }}
+              size="small"
+              sx={{mt: 1}}
+            >
+              <ToggleButton value="resistance">Resistance</ToggleButton>
+              <ToggleButton value="cardio">Cardio</ToggleButton>
+            </ToggleButtonGroup>
+          )}
+        </Box>
+        <Divider />
+        <Box sx={{flex: 1, overflowY: 'auto', minHeight: 0, mx: -2.75}}>
+          {!loading && typeof navigator !== 'undefined' && !navigator.onLine && exercises.length === 0 && (
+            <Alert severity="info" sx={{m: 2}}>
+              Offline and no cached exercise library yet. Go online once to load exercises for offline use.
+            </Alert>
+          )}
+          {loading ? (
+            <Box sx={{display: 'flex', justifyContent: 'center', p: 3}}>
+              <CircularProgress size={28} />
+            </Box>
+          ) : (
+            <List disablePadding>
+              {filtered.map(ex => (
+                <ListItemButton
+                  key={ex.id}
+                  onClick={() => onSelect(ex)}
+                  divider
+                >
+                  <ListItemText primary={ex.name} />
+                </ListItemButton>
+              ))}
+              {filtered.length === 0 && !loading && search.trim().length === 0 && (
                 <ListItemText
-                  primary={<em>+ Create &quot;{search}&quot;</em>}
-                  sx={{color: 'primary.main'}}
+                  primary="No exercises found"
+                  sx={{px: 2, py: 2, color: 'text.secondary'}}
                 />
-              </ListItemButton>
-            )}
-          </List>
-        )}
-      </DialogContent>
+              )}
+              {!loading && search.trim().length > 0 && !exercises.some(e => e.name.toLowerCase() === search.toLowerCase()) && (
+                <ListItemButton onClick={() => setCreateOpen(true)} divider>
+                  <ListItemText
+                    primary={<em>+ Create &quot;{search}&quot;</em>}
+                    sx={{color: 'primary.main'}}
+                  />
+                </ListItemButton>
+              )}
+            </List>
+          )}
+        </Box>
+      </Box>
       <AddExerciseForm
         open={createOpen}
         onClose={() => setCreateOpen(false)}
@@ -224,6 +178,6 @@ export default function ExercisePickerDialog({
           onSelect(newExercise);
         }}
       />
-    </Dialog>
+    </Overlay>
   );
 }

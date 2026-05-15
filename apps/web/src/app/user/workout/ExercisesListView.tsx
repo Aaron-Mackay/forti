@@ -7,10 +7,6 @@ import {
   Chip,
   Collapse,
   Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   IconButton,
   List,
   ListItem,
@@ -18,6 +14,7 @@ import {
   TextField,
   Typography
 } from '@mui/material';
+import {Overlay} from '@/components/signal/overlay';
 import {DatePicker} from '@mui/x-date-pickers';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
@@ -299,78 +296,72 @@ export default function ExercisesListView({
         </div>
 
         {/* Dialogs preserved unchanged */}
-        <Dialog open={datePickerOpen} onClose={() => setDatePickerOpen(false)}>
-          <DialogTitle>Complete Workout</DialogTitle>
-          <DialogContent>
-            <Typography variant="body2" sx={{mb: 2}}>Select a completion date:</Typography>
-            <DatePicker
-              value={pickedDate}
-              onChange={setPickedDate}
-              disableFuture
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDatePickerOpen(false)}>Cancel</Button>
-            <Button
-              variant="contained"
-              color="success"
-              onClick={() => {
-                setDatePickerOpen(false);
-                if (!pickedDate) return;
-                if (unloggedCount > 0) {
-                  setWarnUnloggedOpen(true);
-                } else {
-                  onCompleteWorkout(true, pickedDate);
-                }
-              }}
-            >
-              Complete
-            </Button>
-          </DialogActions>
-        </Dialog>
-        <Dialog open={pendingRemoveExerciseId !== null} onClose={() => setPendingRemoveExerciseId(null)}>
-          <DialogTitle>Remove exercise?</DialogTitle>
-          <DialogContent>
-            <Typography variant="body2">
-              This will remove this added exercise block from the workout.
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setPendingRemoveExerciseId(null)}>Cancel</Button>
-            <Button
-              color="error"
-              onClick={() => {
-                if (pendingRemoveExerciseId != null && onRemoveExercise) {
-                  onRemoveExercise(pendingRemoveExerciseId);
-                }
-                setPendingRemoveExerciseId(null);
-              }}
-            >
-              Remove
-            </Button>
-          </DialogActions>
-        </Dialog>
-        <Dialog open={warnUnloggedOpen} onClose={() => setWarnUnloggedOpen(false)}>
-          <DialogTitle>Unlogged sets</DialogTitle>
-          <DialogContent>
-            <Typography variant="body2">
-              {unloggedCount} {unloggedCount === 1 ? 'set was' : 'sets were'} unlogged. Complete anyway?
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setWarnUnloggedOpen(false)}>Cancel</Button>
-            <Button
-              variant="contained"
-              color="success"
-              onClick={() => {
-                setWarnUnloggedOpen(false);
-                onCompleteWorkout(true, pickedDate ?? undefined);
-              }}
-            >
-              Complete
-            </Button>
-          </DialogActions>
-        </Dialog>
+        <Overlay
+          open={datePickerOpen}
+          onClose={() => setDatePickerOpen(false)}
+          title="Complete workout"
+          size="sm"
+          primaryAction={{
+            label: 'Complete',
+            onClick: () => {
+              setDatePickerOpen(false);
+              if (!pickedDate) return;
+              if (unloggedCount > 0) {
+                setWarnUnloggedOpen(true);
+              } else {
+                onCompleteWorkout(true, pickedDate);
+              }
+            },
+          }}
+          ghostAction={{label: 'Cancel', onClick: () => setDatePickerOpen(false)}}
+        >
+          <Typography variant="body2" sx={{mb: 2, mt: 1}}>Select a completion date:</Typography>
+          <DatePicker
+            value={pickedDate}
+            onChange={setPickedDate}
+            disableFuture
+          />
+        </Overlay>
+        <Overlay
+          open={pendingRemoveExerciseId !== null}
+          onClose={() => setPendingRemoveExerciseId(null)}
+          title="Remove exercise?"
+          accent
+          size="sm"
+          primaryAction={{
+            label: 'Remove',
+            onClick: () => {
+              if (pendingRemoveExerciseId != null && onRemoveExercise) {
+                onRemoveExercise(pendingRemoveExerciseId);
+              }
+              setPendingRemoveExerciseId(null);
+            },
+          }}
+          ghostAction={{label: 'Cancel', onClick: () => setPendingRemoveExerciseId(null)}}
+        >
+          <Typography variant="body2" sx={{pt: 1, pb: 1}}>
+            This will remove this added exercise block from the workout.
+          </Typography>
+        </Overlay>
+        <Overlay
+          open={warnUnloggedOpen}
+          onClose={() => setWarnUnloggedOpen(false)}
+          title="Unlogged sets"
+          accent
+          size="sm"
+          primaryAction={{
+            label: 'Complete',
+            onClick: () => {
+              setWarnUnloggedOpen(false);
+              onCompleteWorkout(true, pickedDate ?? undefined);
+            },
+          }}
+          ghostAction={{label: 'Cancel', onClick: () => setWarnUnloggedOpen(false)}}
+        >
+          <Typography variant="body2" sx={{pt: 1, pb: 1}}>
+            {unloggedCount} {unloggedCount === 1 ? 'set was' : 'sets were'} unlogged. Complete anyway?
+          </Typography>
+        </Overlay>
         <AppBarStopwatch/>
       </>
     );
@@ -580,78 +571,72 @@ export default function ExercisesListView({
             {isCompleted ? `Completed ${completedDate}` : 'Mark as Complete'}
           </Button>
         </span>
-        <Dialog open={datePickerOpen} onClose={() => setDatePickerOpen(false)}>
-          <DialogTitle>Complete Workout</DialogTitle>
-          <DialogContent>
-            <Typography variant="body2" sx={{mb: 2}}>Select a completion date:</Typography>
-            <DatePicker
-              value={pickedDate}
-              onChange={setPickedDate}
-              disableFuture
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDatePickerOpen(false)}>Cancel</Button>
-            <Button
-              variant="contained"
-              color="success"
-              onClick={() => {
-                setDatePickerOpen(false);
-                if (!pickedDate) return;
-                if (unloggedCount > 0) {
-                  setWarnUnloggedOpen(true);
-                } else {
-                  onCompleteWorkout(true, pickedDate);
-                }
-              }}
-            >
-              Complete
-            </Button>
-          </DialogActions>
-        </Dialog>
-        <Dialog open={pendingRemoveExerciseId !== null} onClose={() => setPendingRemoveExerciseId(null)}>
-          <DialogTitle>Remove exercise?</DialogTitle>
-          <DialogContent>
-            <Typography variant="body2">
-              This will remove this added exercise block from the workout.
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setPendingRemoveExerciseId(null)}>Cancel</Button>
-            <Button
-              color="error"
-              onClick={() => {
-                if (pendingRemoveExerciseId != null && onRemoveExercise) {
-                  onRemoveExercise(pendingRemoveExerciseId);
-                }
-                setPendingRemoveExerciseId(null);
-              }}
-            >
-              Remove
-            </Button>
-          </DialogActions>
-        </Dialog>
-        <Dialog open={warnUnloggedOpen} onClose={() => setWarnUnloggedOpen(false)}>
-          <DialogTitle>Unlogged sets</DialogTitle>
-          <DialogContent>
-            <Typography variant="body2">
-              {unloggedCount} {unloggedCount === 1 ? 'set was' : 'sets were'} unlogged. Complete anyway?
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setWarnUnloggedOpen(false)}>Cancel</Button>
-            <Button
-              variant="contained"
-              color="success"
-              onClick={() => {
-                setWarnUnloggedOpen(false);
-                onCompleteWorkout(true, pickedDate ?? undefined);
-              }}
-            >
-              Complete
-            </Button>
-          </DialogActions>
-        </Dialog>
+        <Overlay
+          open={datePickerOpen}
+          onClose={() => setDatePickerOpen(false)}
+          title="Complete workout"
+          size="sm"
+          primaryAction={{
+            label: 'Complete',
+            onClick: () => {
+              setDatePickerOpen(false);
+              if (!pickedDate) return;
+              if (unloggedCount > 0) {
+                setWarnUnloggedOpen(true);
+              } else {
+                onCompleteWorkout(true, pickedDate);
+              }
+            },
+          }}
+          ghostAction={{label: 'Cancel', onClick: () => setDatePickerOpen(false)}}
+        >
+          <Typography variant="body2" sx={{mb: 2, mt: 1}}>Select a completion date:</Typography>
+          <DatePicker
+            value={pickedDate}
+            onChange={setPickedDate}
+            disableFuture
+          />
+        </Overlay>
+        <Overlay
+          open={pendingRemoveExerciseId !== null}
+          onClose={() => setPendingRemoveExerciseId(null)}
+          title="Remove exercise?"
+          accent
+          size="sm"
+          primaryAction={{
+            label: 'Remove',
+            onClick: () => {
+              if (pendingRemoveExerciseId != null && onRemoveExercise) {
+                onRemoveExercise(pendingRemoveExerciseId);
+              }
+              setPendingRemoveExerciseId(null);
+            },
+          }}
+          ghostAction={{label: 'Cancel', onClick: () => setPendingRemoveExerciseId(null)}}
+        >
+          <Typography variant="body2" sx={{pt: 1, pb: 1}}>
+            This will remove this added exercise block from the workout.
+          </Typography>
+        </Overlay>
+        <Overlay
+          open={warnUnloggedOpen}
+          onClose={() => setWarnUnloggedOpen(false)}
+          title="Unlogged sets"
+          accent
+          size="sm"
+          primaryAction={{
+            label: 'Complete',
+            onClick: () => {
+              setWarnUnloggedOpen(false);
+              onCompleteWorkout(true, pickedDate ?? undefined);
+            },
+          }}
+          ghostAction={{label: 'Cancel', onClick: () => setWarnUnloggedOpen(false)}}
+        >
+          <Typography variant="body2" sx={{pt: 1, pb: 1}}>
+            {unloggedCount} {unloggedCount === 1 ? 'set was' : 'sets were'} unlogged. Complete anyway?
+          </Typography>
+        </Overlay>
         <AppBarStopwatch/>
       </Container>
     </Box>

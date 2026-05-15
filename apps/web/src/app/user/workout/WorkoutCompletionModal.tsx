@@ -1,10 +1,9 @@
 'use client';
 
-import {Box, Chip, Dialog, DialogContent, DialogTitle, IconButton, Typography} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import {Box, Chip} from '@mui/material';
 import MuscleHighlight from '@/components/fitness/MuscleHighlight';
 import {WorkoutPrisma} from '@/types/dataTypes';
-import {APPBAR_HEIGHT} from '@/components/shell/CustomAppBar';
+import {Overlay} from '@/components/signal/overlay';
 
 function ordinal(n: number): string {
   const s = ['th', 'st', 'nd', 'rd'];
@@ -42,34 +41,15 @@ export default function WorkoutCompletionModal({
   const highlightedMuscles = muscleSummary.map(([m]) => m);
 
   return (
-    <Dialog
+    <Overlay
       open={open}
       onClose={onClose}
-      fullWidth
-      maxWidth="sm"
-      slotProps={{
-        backdrop: {sx: {top: `${APPBAR_HEIGHT}px`}},
-        paper: {sx: {mt: `${APPBAR_HEIGHT}px`, height: `calc(85dvh - ${APPBAR_HEIGHT}px)`, maxHeight: `calc(85dvh - ${APPBAR_HEIGHT}px)`, display: 'flex', flexDirection: 'column', overflow: 'hidden'}},
-      }}
+      title="Workout complete!"
+      eyebrow={`${ordinal(weekWorkoutsCompleted)} of ${weekWorkoutsTotal} workouts done this week`}
+      size="md"
+      height="tall"
     >
-      <DialogTitle sx={{pb: 1}}>
-        <Box sx={{display: 'flex', alignItems: 'flex-start'}}>
-          <Box sx={{flex: 1}}>
-            <Typography variant="h6" component="div">
-              Workout complete!
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {ordinal(weekWorkoutsCompleted)} of {weekWorkoutsTotal} workouts done this week
-            </Typography>
-          </Box>
-          <IconButton onClick={onClose} size="small" aria-label="Close" sx={{ml: 1, mt: -0.5}}>
-            <CloseIcon />
-          </IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent
-        sx={{display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1, minHeight: 0, pt: 0}}
-      >
+      <Box sx={{display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, pt: 1, pb: 1}}>
         {muscleSummary.length > 0 && (
           <Box sx={{flexShrink: 0, display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1}}>
             {muscleSummary.map(([muscle, count]) => (
@@ -82,10 +62,10 @@ export default function WorkoutCompletionModal({
             ))}
           </Box>
         )}
-        <Box sx={{flex: 1, minHeight: 0}}>
+        <Box sx={{flex: 1, minHeight: 240}}>
           <MuscleHighlight primaryMuscles={highlightedMuscles} exerciseId={workout.id} alwaysShow />
         </Box>
-      </DialogContent>
-    </Dialog>
+      </Box>
+    </Overlay>
   );
 }
