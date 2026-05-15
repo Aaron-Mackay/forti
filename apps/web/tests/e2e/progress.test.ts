@@ -43,11 +43,11 @@ test.describe('Progress', () => {
   test('flagged user sees the Signal progress route', async ({ page }) => {
     await page.goto('/user/progress');
 
-    const main = page.getByRole('main');
+    const surface = page.locator('[data-signal-surface="planning"]').first();
 
-    await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
-    await expect(main.getByText('My training', { exact: true })).toBeVisible();
-    await expect(main.getByText('Progress', { exact: true })).toBeVisible();
+    await expect(surface).toBeVisible();
+    await expect(surface.getByText('My training', { exact: true })).toBeVisible();
+    await expect(surface.getByText('Progress', { exact: true })).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Strength' })).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Bodyweight & metrics' })).toBeVisible();
     await expect(page.getByText('Focus exercises').first()).toBeVisible();
