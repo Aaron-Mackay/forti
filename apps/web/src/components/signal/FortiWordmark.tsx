@@ -1,6 +1,6 @@
 import { signalTokens } from '@lib/signal/tokens';
 
-export function ForftiWordmark({
+export function FortiWordmark({
   size = 22,
   color,
   glyphColor,

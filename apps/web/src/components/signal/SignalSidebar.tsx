@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { signalTokens, type SignalNavMode } from '@lib/signal/tokens';
 import { SignalBrandMark } from './SignalBrandMark';
+import { FortiWordmark } from './FortiWordmark';
 import { SignalIcon } from './SignalIcons';
 import { SignalModeSwitch } from './SignalModeSwitch';
 import { SignalNotificationsBell } from './SignalNotificationsBell';
@@ -51,8 +52,9 @@ export function SignalSidebar({ mode, activeOverride, userLabel, userInitials, h
           gap: 8,
         }}
       >
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
           <SignalBrandMark size={34} />
+          <FortiWordmark size={17} color={palette.ink} />
         </div>
         <SignalNotificationsBell hasUnread={hasUnreadNotifications} />
       </div>
