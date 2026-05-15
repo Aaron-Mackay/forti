@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Box, Drawer, Typography } from '@mui/material';
 import { format } from 'date-fns';
+import { Overlay } from '@/components/signal/overlay';
 import { MetricInput } from '@/app/user/calendar/MetricInput';
 import type { MetricKey } from '@/app/user/calendar/MetricBar';
 import { getCustomMetricsData } from '@/app/user/calendar/MetricBar';
@@ -84,42 +84,28 @@ export function BackfillDialog({
   };
 
   return (
-    <Drawer
-      anchor="bottom"
+    <Overlay
       open={open}
       onClose={onClose}
-      slotProps={{
-        paper: {
-          sx: {
-            borderTopLeftRadius: 16,
-            borderTopRightRadius: 16,
-            overflow: 'hidden',
-          },
-        },
-      }}
+      title={metricLabel || 'Edit metric'}
+      eyebrow={date ? format(date, 'EEE dd MMM yyyy') : undefined}
+      size="sm"
     >
-      <Box sx={{ p: 2, position: 'relative' }}>
-        {date && (
-          <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mb: 1 }}>
-            {metricLabel} · {format(date, 'EEE dd MMM yyyy')}
-          </Typography>
-        )}
-        {date && selectedMetric && (
-          <MetricInput
-            setSelectedMetric={handleSelect}
-            selectedMetric={selectedMetric}
-            setInputValue={setInputValue}
-            inputValue={inputValue}
-            dateMetric={existing}
-            selectedDate={date}
-            userId={userId}
-            setMetricStateCb={onMetricSaved}
-            hideBack
-            customMetricDefs={customMetricDefs}
-            bodyweightUnit={bodyweightUnit}
-          />
-        )}
-      </Box>
-    </Drawer>
+      {date && selectedMetric && (
+        <MetricInput
+          setSelectedMetric={handleSelect}
+          selectedMetric={selectedMetric}
+          setInputValue={setInputValue}
+          inputValue={inputValue}
+          dateMetric={existing}
+          selectedDate={date}
+          userId={userId}
+          setMetricStateCb={onMetricSaved}
+          hideBack
+          customMetricDefs={customMetricDefs}
+          bodyweightUnit={bodyweightUnit}
+        />
+      )}
+    </Overlay>
   );
 }

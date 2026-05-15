@@ -1,10 +1,10 @@
 "use client";
 import React from "react";
-import {Box, Drawer} from "@mui/material";
-import {MetricInput} from "@/app/user/calendar/MetricInput";
-import {MetricKey} from "@/app/user/calendar/MetricBar";
-import {MetricPrisma} from "@/types/dataTypes";
-import {CustomMetricDef} from "@/types/settingsTypes";
+import { Overlay } from "@/components/signal/overlay";
+import { MetricInput } from "@/app/user/calendar/MetricInput";
+import { MetricKey } from "@/app/user/calendar/MetricBar";
+import { MetricPrisma } from "@/types/dataTypes";
+import { CustomMetricDef } from "@/types/settingsTypes";
 
 type Props = {
   open: boolean;
@@ -34,34 +34,24 @@ export default function MetricDrawer({
   customMetricDefs = [],
 }: Props) {
   return (
-    <Drawer
-      anchor="bottom"
+    <Overlay
       open={open}
       onClose={onClose}
-      slotProps={{
-        paper: {
-          sx: {
-            borderTopLeftRadius: 16,
-            borderTopRightRadius: 16,
-            overflow: "hidden",
-          },
-        },
-      }}
+      title={selectedMetric ? "Log metric" : "Choose metric"}
+      size="sm"
     >
-      <Box sx={{p: 2, position: "relative"}}>
-        <MetricInput
-          setSelectedMetric={setSelectedMetric}
-          selectedMetric={selectedMetric}
-          setInputValue={setInputValue}
-          inputValue={inputValue}
-          dateMetric={dateMetric}
-          selectedDate={date}
-          userId={userId}
-          setMetricStateCb={setMetricStateCb}
-          hideBack
-          customMetricDefs={customMetricDefs}
-        />
-      </Box>
-    </Drawer>
+      <MetricInput
+        setSelectedMetric={setSelectedMetric}
+        selectedMetric={selectedMetric}
+        setInputValue={setInputValue}
+        inputValue={inputValue}
+        dateMetric={dateMetric}
+        selectedDate={date}
+        userId={userId}
+        setMetricStateCb={setMetricStateCb}
+        hideBack
+        customMetricDefs={customMetricDefs}
+      />
+    </Overlay>
   );
 }

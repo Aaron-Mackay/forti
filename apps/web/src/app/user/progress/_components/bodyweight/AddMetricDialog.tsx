@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
+import { Box, TextField } from '@mui/material';
 import { updateUserSettings } from '@lib/clientApi';
+import { Overlay } from '@/components/signal/overlay';
 import type { CustomMetricDef, Settings } from '@/types/settingsTypes';
 
 function generateId(): string {
@@ -67,38 +68,41 @@ export function AddMetricDialog({ open, onClose, existingCustomMetrics, onSaved 
     }
   };
 
+  const dirty = name.trim().length > 0 || target.trim().length > 0;
+
   return (
-    <Dialog open={open} onClose={busy ? undefined : onClose} fullWidth maxWidth="xs">
-      <DialogTitle>Add a metric</DialogTitle>
-      <DialogContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-          <TextField
-            autoFocus
-            label="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Energy, Resting HR, Waist"
-            fullWidth
-          />
-          <TextField
-            label="Target (optional)"
-            type="number"
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-            helperText="A small target (e.g. 5) renders the value as ‘n / 5’."
-            fullWidth
-          />
-          {error && (
-            <Box sx={{ color: 'error.main', fontSize: 13 }}>{error}</Box>
-          )}
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={busy}>Cancel</Button>
-        <Button onClick={handleSave} disabled={busy || !name.trim()} variant="contained">
-          {busy ? 'Saving…' : 'Save'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    <Overlay
+      open={open}
+      onClose={busy ? () => undefined : onClose}
+      title="Add a metric"
+      size="sm"
+      dirty={dirty && !busy}
+      primaryAction={{
+        label: busy ? 'Saving…' : 'Save',
+        onClick: handleSave,
+        disabled: busy || !name.trim(),
+      }}
+      ghostAction={{ label: 'Cancel', onClick: onClose }}
+    >
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1, pb: 1 }}>
+        <TextField
+          autoFocus
+          label="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. Energy, Resting HR, Waist"
+          fullWidth
+        />
+        <TextField
+          label="Target (optional)"
+          type="number"
+          value={target}
+          onChange={(e) => setTarget(e.target.value)}
+          helperText="A small target (e.g. 5) renders the value as ‘n / 5’."
+          fullWidth
+        />
+        {error && <Box sx={{ color: 'error.main', fontSize: 13 }}>{error}</Box>}
+      </Box>
+    </Overlay>
   );
 }
