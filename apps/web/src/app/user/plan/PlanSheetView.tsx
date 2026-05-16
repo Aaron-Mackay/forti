@@ -44,8 +44,10 @@ const PlanSheetView = ({
   const [renameTarget, setRenameTarget] = useState<{ weekId: number; workoutId: number; workoutExerciseId: number } | null>(null)
   const [menuState, setMenuState] = useState<MenuState | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const { scrollRef: fadeScrollRef, handleScroll, showStartFade, showEndFade } =
+  const { scrollRef: horizontalFadeScrollRef, handleScroll: handleHorizontalScroll, showStartFade: showLeftFade, showEndFade: showRightFade } =
     useScrollEdgeFades<HTMLDivElement>({ axis: 'x', threshold: 4 })
+  const { scrollRef: verticalFadeScrollRef, handleScroll: handleVerticalScroll, showStartFade: showTopFade, showEndFade: showBottomFade } =
+    useScrollEdgeFades<HTMLDivElement>({ axis: 'y', threshold: 4 })
   const innerRef = useRef<HTMLDivElement>(null)
   const zoomRef = useRef(zoom)
   const pinchRef = useRef<{ startDist: number; startZoom: number; midX: number; midY: number; contentX: number; contentY: number } | null>(null)
@@ -219,9 +221,13 @@ const PlanSheetView = ({
         <Box
           ref={(node) => {
             scrollRef.current = node
-            fadeScrollRef.current = node
+            horizontalFadeScrollRef.current = node
+            verticalFadeScrollRef.current = node
           }}
-          onScroll={handleScroll}
+          onScroll={(event) => {
+            handleHorizontalScroll(event)
+            handleVerticalScroll(event)
+          }}
           sx={{ overflow: 'auto', touchAction: 'pan-x pan-y', height: 'calc(100dvh - 200px)' }}
         >
           <Box ref={innerRef} sx={{ width: 'max-content', zoom }}>
@@ -265,7 +271,8 @@ const PlanSheetView = ({
             )}
           </Box>
         </Box>
-        <ScrollEdgeFades axis="x" showStart={showStartFade} showEnd={showEndFade} size={24} background="paper" />
+        <ScrollEdgeFades axis="x" showStart={showLeftFade} showEnd={showRightFade} size={24} background="paper" />
+        <ScrollEdgeFades axis="y" showStart={showTopFade} showEnd={showBottomFade} size={24} background="paper" />
         </Box>
       </PlanSheetProvider>
 
