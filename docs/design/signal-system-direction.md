@@ -122,3 +122,90 @@ Do not use it for:
 - chart series unless it has a clear comparison role
 
 If the screen already has a chartreuse primary CTA, be sceptical of adding another chartreuse element.
+
+---
+
+## Typography rules
+
+Use the existing Signal font tokens.
+
+- Body/default UI: Inter Tight via `signalTokens.fontVar.body`.
+- Display headers and large numerals: Archivo Narrow via `signalTokens.fontVar.cond`.
+- Labels, metadata, timers, set counts, status microcopy, and tabular numeric UI: JetBrains Mono via `signalTokens.fontVar.mono`.
+- Do not introduce new font families.
+- Do not use CSS `text-transform: uppercase` for production UI.
+- Keep headings sentence case unless there is a specific existing component convention.
+- Keep letter spacing restrained; small mono labels can be spaced, but do not turn every heading into tracked caps.
+- Numeric cells should use tabular numerals where users compare values.
+
+---
+
+## Layout and density rules
+
+Signal uses different density by job.
+
+Mobile gym logging: optimise for speed, thumb reach, large set inputs, no horizontal overflow, bottom actions clear of mobile nav, and previous performance close to the logging flow.
+
+Desktop planning and coach work: optimise for table/grid discipline, compact rows, hairline dividers, clear inline edit states, and restrained card padding.
+
+Check-ins and client feedback: optimise for reading and response quality with calmer hierarchy, generous line-height for written answers, and attachments/photos that support review without dominating it.
+
+Use the existing spacing/radius tokens. Do not invent arbitrary spacing scales, radii, or shadows in page code.
+
+---
+
+## Component direction
+
+### Home
+
+Home is a command centre.
+
+Priority:
+
+1. Resume Workout if active.
+2. Start Next Planned Workout if no active workout.
+3. Secondary signals such as week/block progress and compact metrics.
+
+Avoid charts dominating Home, streak counters, generic dashboard grids, stat landfill, and AI prompts as the hero identity.
+
+### Workout logging
+
+Workout logging is the most performance-critical surface.
+
+Rules:
+
+- planned sets are visible upfront as rows to fill in
+- last 3 valid previous sessions should be visible or surfaced close to the set rows
+- history informs; it does not prescribe automatic load/reps
+- active set/cell may use chartreuse emphasis
+- weight cells should remain neutral unless they are the explicit active input
+- finish workout is explicit
+- unlogged sets warning stays simple
+
+Do not make logging slower for visual polish.
+
+### Plan editor
+
+The plan editor should feel like a printed programme card or coach-marked worksheet.
+
+Rules:
+
+- light planning surface
+- dense table/sheet behaviour on desktop
+- simpler card/classic behaviour on mobile
+- mono headers and hairline rules are appropriate
+- week/day cells can feel inline-editable
+- avoid visual noise around every cell
+
+### Coach Home
+
+Coach Home is a task inbox.
+
+Primary workstreams:
+
+- submitted check-ins needing review
+- plan maintenance tasks
+
+Avoid business/admin metrics, engagement dashboards, broad behavioural alert sprawl, and chat-style navigation.
+
+Status should be text plus subtle dot/icon, not colour-only chips.
