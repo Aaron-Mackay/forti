@@ -10,6 +10,8 @@ import type { PreviousExerciseHistory, E1rmHistoryPoint } from '@lib/contracts/e
 import { SignalSetSection } from './SignalSetSection';
 import { SignalExerciseDetailSheet } from './SignalExerciseDetailSheet';
 import { SignalAdvanceCta } from './SignalAdvanceCta';
+import ScrollEdgeFades from '@/components/shell/ScrollEdgeFades';
+import { useScrollEdgeFades } from '@lib/hooks/useScrollEdgeFades';
 
 type Props = {
   ex: WorkoutExercisePrisma;
@@ -42,6 +44,7 @@ export function SignalExerciseSlide({
   const effectiveUnit = override ?? settings.weightUnit;
 
   const [detailOpen, setDetailOpen] = useState(false);
+  const { scrollRef, handleScroll, showStartFade, showEndFade } = useScrollEdgeFades<HTMLDivElement>({ axis: 'y', threshold: 4 });
   const [formCue, setFormCue] = useState(userExerciseNote?.note ?? '');
 
   const lastWorkout = previousWorkout?.workouts[0];
@@ -75,7 +78,8 @@ export function SignalExerciseSlide({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: palette.bg, color: palette.ink, fontFamily: signalTokens.fontVar.body, minHeight: 0 }}>
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '14px 16px 16px' }}>
+      <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
+        <div ref={scrollRef} onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto', padding: '14px 16px 16px' }}>
         <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginBottom: 6 }}>
           Exercise {ex.order}
         </div>
@@ -146,6 +150,8 @@ export function SignalExerciseSlide({
         <div style={{ marginTop: 18 }}>
           <SignalSetSection ex={ex} effectiveUnit={effectiveUnit} handleSetUpdate={handleSetUpdate} />
         </div>
+        </div>
+        <ScrollEdgeFades axis="y" showStart={showStartFade} showEnd={showEndFade} size={36} background="default" />
       </div>
 
       <SignalAdvanceCta label={ctaLabel} onAdvance={onAdvance} onSkip={onSkip} />
