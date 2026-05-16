@@ -10,6 +10,8 @@ import { MenuState } from './PlanSheetShared'
 import { PlanSheetWeekBlock } from './PlanSheetBlocks'
 import { PlanSheetExerciseMenu } from './PlanSheetExerciseMenu'
 import { PlanSheetProvider } from './PlanSheetContext'
+import ScrollEdgeFades from '@/components/shell/ScrollEdgeFades'
+import { useScrollEdgeFades } from '@lib/hooks/useScrollEdgeFades'
 
 interface PlanSheetViewProps {
   plan: PlanPrisma
@@ -42,6 +44,8 @@ const PlanSheetView = ({
   const [renameTarget, setRenameTarget] = useState<{ weekId: number; workoutId: number; workoutExerciseId: number } | null>(null)
   const [menuState, setMenuState] = useState<MenuState | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const { scrollRef: fadeScrollRef, handleScroll, showStartFade, showEndFade } =
+    useScrollEdgeFades<HTMLDivElement>({ axis: 'x', threshold: 4 })
   const innerRef = useRef<HTMLDivElement>(null)
   const zoomRef = useRef(zoom)
   const pinchRef = useRef<{ startDist: number; startZoom: number; midX: number; midY: number; contentX: number; contentY: number } | null>(null)
@@ -211,7 +215,15 @@ const PlanSheetView = ({
           onRepRangeBlur,
         }}
       >
-        <Box ref={scrollRef} sx={{ overflow: 'auto', touchAction: 'pan-x pan-y', height: 'calc(100dvh - 200px)' }}>
+        <Box sx={{ position: 'relative' }}>
+        <Box
+          ref={(node) => {
+            scrollRef.current = node
+            fadeScrollRef.current = node
+          }}
+          onScroll={handleScroll}
+          sx={{ overflow: 'auto', touchAction: 'pan-x pan-y', height: 'calc(100dvh - 200px)' }}
+        >
           <Box ref={innerRef} sx={{ width: 'max-content', zoom }}>
             {sortedWeeks.map((week) => (
               <PlanSheetWeekBlock
@@ -252,6 +264,8 @@ const PlanSheetView = ({
               </Box>
             )}
           </Box>
+        </Box>
+        <ScrollEdgeFades axis="x" showStart={showStartFade} showEnd={showEndFade} size={24} background="paper" />
         </Box>
       </PlanSheetProvider>
 

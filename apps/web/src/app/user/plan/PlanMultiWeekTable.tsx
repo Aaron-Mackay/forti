@@ -18,6 +18,8 @@ import NotesOutlinedIcon from '@mui/icons-material/NotesOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExerciseDetailsDialog from './ExerciseDetailsDialog';
+import ScrollEdgeFades from '@/components/shell/ScrollEdgeFades';
+import { useScrollEdgeFades } from '@lib/hooks/useScrollEdgeFades';
 
 interface PlanMultiWeekTableProps {
   plan: PlanPrisma;
@@ -45,6 +47,8 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
   const scrollTargetWeekId = getLatestTrackedWeekId(plan);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { scrollRef: fadeScrollRef, handleScroll, showStartFade, showEndFade } =
+    useScrollEdgeFades<HTMLDivElement>({ axis: 'x', threshold: 4 });
   useEffect(() => {
     const el = scrollRef.current?.querySelector('[data-scroll-target="true"]');
     if (el) el.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' });
@@ -253,7 +257,15 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
       )}
 
       {/* Scrollable table */}
-      <Box ref={scrollRef} sx={{ overflowX: 'auto' }}>
+      <Box sx={{ position: 'relative' }}>
+      <Box
+        ref={(node) => {
+          scrollRef.current = node;
+          fadeScrollRef.current = node;
+        }}
+        onScroll={handleScroll}
+        sx={{ overflowX: 'auto' }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'stretch', width: 'max-content' }}>
           <table style={{ borderCollapse: 'collapse' }}>
             <thead>
@@ -592,6 +604,8 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
             <AddIcon sx={{ fontSize: '1rem' }} />
           </Box>
         </Box>
+      </Box>
+      <ScrollEdgeFades axis="x" showStart={showStartFade} showEnd={showEndFade} size={24} background="paper" />
       </Box>
 
       <ExercisePickerDialog
