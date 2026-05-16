@@ -380,8 +380,7 @@ async function main() {
           sourceExercises.set(note.exercise.id, note.exercise);
         }
 
-        // @ts-expect-error ignore for now
-        for (const sourceExercise of [...sourceExercises.values()].sort((a, b) => a.id - b.id)) {
+        for (const sourceExercise of Array.from(sourceExercises.values()).sort((a, b) => a.id - b.id)) {
           if (sourceExercise.createdByUserId === sourceUser.id) {
             const copiedExercise = await tx.exercise.create({
               data: exerciseCreateData(sourceExercise, devUser.id),

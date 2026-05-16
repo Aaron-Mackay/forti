@@ -8,6 +8,8 @@ import { computeE1rm } from '../src/lib/e1rm';
 
 const exercises = exercisesData as unknown as SeedExercise[];
 
+const PRESERVE_EMAIL = 'aarongcmackay@gmail.com';
+
 function validateExercises(data: SeedExercise[]): void {
   for (const ex of data) {
     for (const eq of ex.equipment) {
@@ -31,13 +33,79 @@ function atDay(base: Date, deltaDays: number): Date {
 async function main() {
   const today = new Date();
 
-  await prisma.$executeRawUnsafe(`
-    TRUNCATE "ExerciseSet", "WorkoutExercise", "Exercise", "Workout", "Week", "Plan", "User", "Event", "UserExerciseNote", "Metric", "Account", "Session", "WeeklyCheckIn", "PushSubscription", "TargetTemplate", "TargetTemplateDay", "Notification", "AuditEvent", "LearningPlan", "LearningPlanStep", "LearningPlanAssignment", "LibraryAsset"
-    CASCADE
-  `);
+  const preserveUser = await prisma.user.findUnique({ where: { email: PRESERVE_EMAIL }, select: { id: true } });
+
+  if (!preserveUser) {
+    await prisma.$executeRawUnsafe(`
+      TRUNCATE "ExerciseSet", "WorkoutExercise", "Exercise", "Workout", "Week", "Plan", "User", "Event", "UserExerciseNote", "Metric", "Account", "Session", "WeeklyCheckIn", "PushSubscription", "TargetTemplate", "TargetTemplateDay", "Notification", "AuditEvent", "LearningPlan", "LearningPlanStep", "LearningPlanAssignment", "LibraryAsset"
+      CASCADE
+    `);
+  } else {
+    const skip = preserveUser.id;
+
+    // Null all coachId FKs first — no onDelete cascade on User.coachId
+    await prisma.user.updateMany({ data: { coachId: null } });
+
+    // Plan hierarchy — activePlanId has onDelete: SetNull, handled automatically
+    await prisma.exerciseSet.deleteMany({ where: { workoutExercise: { workout: { week: { plan: { userId: { not: skip } } } } } } });
+    await prisma.workoutExercise.deleteMany({ where: { workout: { week: { plan: { userId: { not: skip } } } } } });
+    await prisma.workout.deleteMany({ where: { week: { plan: { userId: { not: skip } } } } });
+    await prisma.week.deleteMany({ where: { plan: { userId: { not: skip } } } });
+    await prisma.plan.deleteMany({ where: { userId: { not: skip } } });
+
+    // Direct user-owned tables
+    await prisma.event.deleteMany({ where: { userId: { not: skip } } });
+    await prisma.userExerciseNote.deleteMany({ where: { userId: { not: skip } } });
+    await prisma.metric.deleteMany({ where: { userId: { not: skip } } });
+    await prisma.weeklyCheckIn.deleteMany({ where: { userId: { not: skip } } });
+    await prisma.pushSubscription.deleteMany({ where: { userId: { not: skip } } });
+
+    // TargetTemplate cascade
+    await prisma.targetTemplateDay.deleteMany({ where: { template: { userId: { not: skip } } } });
+    await prisma.targetTemplate.deleteMany({ where: { userId: { not: skip } } });
+
+    await prisma.notification.deleteMany({ where: { userId: { not: skip } } });
+    await prisma.auditEvent.deleteMany({ where: { actorUserId: { not: skip } } });
+
+    // Learning plans — also removes assignments linked to coaches being deleted
+    await prisma.learningPlanAssignment.deleteMany({ where: { plan: { coachId: { not: skip } } } });
+    await prisma.learningPlanStep.deleteMany({ where: { plan: { coachId: { not: skip } } } });
+    await prisma.learningPlan.deleteMany({ where: { coachId: { not: skip } } });
+    await prisma.libraryAsset.deleteMany({ where: { userId: { not: skip } } });
+    await prisma.coachRequest.deleteMany({});
+
+    // Auth tables
+    await prisma.account.deleteMany({ where: { userId: { not: skip } } });
+    await prisma.session.deleteMany({ where: { userId: { not: skip } } });
+
+    // Supplement exists in schema but not in original TRUNCATE
+    await prisma.supplement.deleteMany({ where: { userId: { not: skip } } });
+
+    await prisma.user.deleteMany({ where: { id: { not: skip } } });
+  }
 
   validateExercises(exercises);
-  await prisma.exercise.createMany({ data: exercises.map((ex) => ({ ...ex, description: ex.description ?? EXERCISE_DESCRIPTION })) });
+  // Use findFirst → update/create to preserve Exercise IDs (auto-increment Int) when a
+  // preserved user's WorkoutExercise rows reference them.
+  for (const ex of exercises) {
+    const existing = await prisma.exercise.findFirst({
+      where: { name: ex.name, category: ex.category, createdByUserId: null },
+      select: { id: true },
+    });
+    if (existing) {
+      await prisma.exercise.update({
+        where: { id: existing.id },
+        data: {
+          equipment: ex.equipment,
+          primaryMuscles: ex.primaryMuscles,
+          secondaryMuscles: ex.secondaryMuscles ?? [],
+          description: ex.description ?? EXERCISE_DESCRIPTION,
+        },
+      });
+    } else {
+      await prisma.exercise.create({ data: { ...ex, description: ex.description ?? EXERCISE_DESCRIPTION } });
+    }
+  }
 
   const coach = await prisma.user.create({
     data: {
