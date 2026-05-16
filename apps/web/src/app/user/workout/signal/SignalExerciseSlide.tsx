@@ -83,13 +83,13 @@ export function SignalExerciseSlide({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: palette.bg, color: palette.ink, fontFamily: signalTokens.fontVar.body, minHeight: 0 }}>
       <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
         <div
-          ref={(node) => {
+          ref={(node: HTMLDivElement | null) => {
             verticalScrollRef.current = node;
             horizontalScrollRef.current = node;
           }}
-          onScroll={(event) => {
-            handleVerticalScroll(event);
-            handleHorizontalScroll(event);
+          onScroll={() => {
+            handleVerticalScroll();
+            handleHorizontalScroll();
           }}
           style={{ height: '100%', overflowY: 'auto', overflowX: 'auto', padding: '14px 16px 16px' }}
         >
