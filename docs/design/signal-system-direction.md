@@ -209,3 +209,59 @@ Primary workstreams:
 Avoid business/admin metrics, engagement dashboards, broad behavioural alert sprawl, and chat-style navigation.
 
 Status should be text plus subtle dot/icon, not colour-only chips.
+
+### Client workspace and check-in review
+
+Client workspace should help the coach understand context and act.
+
+Rules:
+
+- client overview summarises, it does not become a data dump
+- pending check-ins should be easy to enter directly
+- check-in review should include training, metrics, photos/custom responses, comments, targets, and feedback where relevant
+- coach feedback should read like considered correspondence, not an alert
+
+### Charts
+
+Charts should be restrained and useful.
+
+Rules:
+
+- default to a single ink line where possible
+- add series only for meaningful comparison
+- avoid boxed chart ornaments that make charts feel detached from the page
+- do not use chartreuse as the default chart colour just because it exists
+- labels/values should support quick reading, not visual spectacle
+- missing data is missing, not zero
+
+### Notifications / status / badges
+
+Do not communicate status by colour alone.
+
+Prefer dot plus label, icon plus label, small mono metadata, and restrained unread indicators.
+
+Avoid traffic-light chip rows, excessive red/yellow/green badges, and gamified notification styling.
+
+### Empty, loading, and error states
+
+Empty states should be calm and actionable.
+
+- Empty: one-line explanation plus one useful action where appropriate.
+- Loading: plain skeletons or simple progress; no shimmer unless an existing primitive explicitly provides it.
+- Error: clear retry action; do not block the whole screen unless the route truly cannot function.
+
+---
+
+## Navigation rules
+
+Use the current design docs as authority.
+
+Current Signal target:
+
+- My Training, uncoached: Home / Plan / Progress / More
+- My Training, coached: Home / Plan / Progress / Check-in / More
+- Coach mode: Home / Clients / Library / More
+
+Do not add or preserve a primary nav item only because the legacy UI had it.
+
+Do not change IA/routing for a visual-only task.
