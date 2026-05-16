@@ -55,8 +55,10 @@ const PlanMultiWeekTable = ({ plan, planId, dispatchOverride, runWithCheckpoint,
   const scrollTargetWeekId = getLatestTrackedWeekId(plan);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { scrollRef: fadeScrollRef, handleScroll, showStartFade, showEndFade } =
+  const { scrollRef: horizontalFadeScrollRef, handleScroll: handleHorizontalScroll, showStartFade: showLeftFade, showEndFade: showRightFade } =
     useScrollEdgeFades<HTMLDivElement>({ axis: 'x', threshold: 4 });
+  const { scrollRef: verticalFadeScrollRef, handleScroll: handleVerticalScroll, showStartFade: showTopFade, showEndFade: showBottomFade } =
+    useScrollEdgeFades<HTMLDivElement>({ axis: 'y', threshold: 4 });
   useEffect(() => {
     const el = scrollRef.current?.querySelector('[data-scroll-target="true"]');
     if (el) el.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' });
@@ -273,10 +275,14 @@ const PlanMultiWeekTable = ({ plan, planId, dispatchOverride, runWithCheckpoint,
       <Box
         ref={(node) => {
           scrollRef.current = node;
-          fadeScrollRef.current = node;
+          horizontalFadeScrollRef.current = node;
+          verticalFadeScrollRef.current = node;
         }}
-        onScroll={handleScroll}
-        sx={{ overflowX: 'auto' }}
+        onScroll={(event) => {
+          handleHorizontalScroll(event);
+          handleVerticalScroll(event);
+        }}
+        sx={{ overflowX: 'auto', overflowY: 'auto' }}
       >
         <Box sx={{ display: 'flex', alignItems: 'stretch', width: 'max-content' }}>
           <table style={{ borderCollapse: 'collapse' }}>
@@ -617,7 +623,8 @@ const PlanMultiWeekTable = ({ plan, planId, dispatchOverride, runWithCheckpoint,
           </Box>
         </Box>
       </Box>
-      <ScrollEdgeFades axis="x" showStart={showStartFade} showEnd={showEndFade} size={24} background="paper" />
+      <ScrollEdgeFades axis="x" showStart={showLeftFade} showEnd={showRightFade} size={24} background="paper" />
+      <ScrollEdgeFades axis="y" showStart={showTopFade} showEnd={showBottomFade} size={24} background="paper" />
       </Box>
 
       <ExercisePickerDialog
