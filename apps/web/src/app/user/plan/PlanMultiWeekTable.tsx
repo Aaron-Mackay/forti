@@ -273,7 +273,7 @@ const PlanMultiWeekTable = ({ plan, planId, dispatchOverride, runWithCheckpoint,
       {/* Scrollable table */}
       <Box sx={{ position: 'relative' }}>
       <Box
-        ref={(node) => {
+        ref={(node: HTMLDivElement | null) => {
           scrollRef.current = node;
           horizontalFadeScrollRef.current = node;
           verticalFadeScrollRef.current = node;
