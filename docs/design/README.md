@@ -23,18 +23,24 @@ Read these first:
    - mobile and accessibility expectations
    - verification expectations after page tweaks
 
-3. [`signal-audit.md`](./signal-audit.md)
+3. [`signal-system-direction.md`](./signal-system-direction.md)
+   - Fast visual-direction guide distilled from the Stage 5 Signal screenshots
+   - Signal tone, accent, typography, surface, density, and component-direction rules
+   - Explicit stale-screenshot notes where later Forti decisions override older screenshot direction
+   - Agent review triggers for UI work
+
+4. [`signal-audit.md`](./signal-audit.md)
    - Current Signal implementation audit
    - pass / partial / missing status by product area
    - working punch list for design/implementation gaps
 
-4. [`signal-ui-qa-checklist.md`](./signal-ui-qa-checklist.md)
+5. [`signal-ui-qa-checklist.md`](./signal-ui-qa-checklist.md)
    - Manual QA checklist for Signal UI
    - route/state matrix
    - seed-data suggestions
    - highest-risk routes to inspect first
 
-5. [`stage5-signal-review.md`](./stage5-signal-review.md)
+6. [`stage5-signal-review.md`](./stage5-signal-review.md)
    - Original Signal design review against the repo
    - implementation risks
    - missing schema/API support noted at review time
@@ -47,10 +53,11 @@ When documents conflict, use this order unless a newer document explicitly super
 
 1. Locked product and UX decisions in `stage-1-decision-register.md`.
 2. Current Signal guardrails in `signal-agent-guardrails.md`.
-3. Current implementation audit status in `signal-audit.md`.
-4. Route-specific QA expectations in `signal-ui-qa-checklist.md`.
-5. Historical reviews, design options, and archived notes.
-6. Current code, when it conflicts with locked design decisions.
+3. Signal visual-direction shortcut in `signal-system-direction.md`, only where it does not conflict with the two files above.
+4. Current implementation audit status in `signal-audit.md`.
+5. Route-specific QA expectations in `signal-ui-qa-checklist.md`.
+6. Historical reviews, design options, and archived notes.
+7. Current code, when it conflicts with locked design decisions.
 
 Current code is evidence. It is not automatically the product/design source of truth.
 
@@ -61,8 +68,9 @@ Before UI work:
 1. Read this file.
 2. Read `stage-1-decision-register.md` for product intent and locked decisions.
 3. Read `signal-agent-guardrails.md` before touching Signal UI code.
-4. Use `signal-audit.md` to understand current implementation status.
-5. Use `signal-ui-qa-checklist.md` to choose relevant manual checks.
+4. Read `signal-system-direction.md` to preserve the intended Signal tone and avoid screenshot-era stale directions.
+5. Use `signal-audit.md` to understand current implementation status.
+6. Use `signal-ui-qa-checklist.md` to choose relevant manual checks.
 
 Classify the change before editing:
 
