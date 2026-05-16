@@ -1,5 +1,5 @@
-import {Loading} from "@/components/shell/Loading";
+import { UserRouteLoading } from '../_components/UserRouteLoading';
 
 export default function CalendarLoading() {
-  return <Loading />;
+  return <UserRouteLoading />;
 }

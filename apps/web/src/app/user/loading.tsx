@@ -1,17 +1,5 @@
-import { Box, CircularProgress } from '@mui/material';
+import { UserRouteLoading } from './_components/UserRouteLoading';
 
 export default function UserLoading() {
-  return (
-    <Box
-      sx={{
-        minHeight: 240,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        py: 6,
-      }}
-    >
-      <CircularProgress aria-label="Loading..." />
-    </Box>
-  );
+  return <UserRouteLoading />;
 }
