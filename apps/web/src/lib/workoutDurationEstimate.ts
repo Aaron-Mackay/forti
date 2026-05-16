@@ -1,6 +1,11 @@
+type WorkoutDurationSet = {
+  reps?: number | null;
+  weight?: number | null;
+};
+
 type WorkoutDurationExercise = {
   restTime?: string | null;
-  sets: Array<unknown>;
+  sets: WorkoutDurationSet[];
 };
 
 type WorkoutDurationWorkout = {
@@ -45,4 +50,15 @@ export function estimateWorkoutMinutes(workout: WorkoutDurationWorkout): number 
   }, 0);
 
   return totalSeconds;
+}
+
+export function estimateWorkoutRemainingSeconds(workout: WorkoutDurationWorkout): number {
+  return workout.exercises.reduce((sum, exercise) => {
+    const restSeconds = parseWorkoutRestSeconds(exercise.restTime);
+    const completedSetCount = exercise.sets.filter((set) => set.reps != null || set.weight != null).length;
+    const remainingSetCount = Math.max(exercise.sets.length - completedSetCount, 0);
+    const warmupSeconds = completedSetCount > 0 ? 0 : WARMUP_SECONDS_PER_EXERCISE;
+
+    return sum + (remainingSetCount * (restSeconds + PER_SET_SECONDS)) + warmupSeconds;
+  }, 0);
 }

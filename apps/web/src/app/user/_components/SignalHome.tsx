@@ -3,7 +3,7 @@ import type { Metric } from '@/generated/prisma/browser';
 import { signalTokens } from '@lib/signal/tokens';
 import { signalFontVariablesClassName } from '@lib/signal/fonts';
 import type { ActivePlanWithStats, ActivePlanTree } from '@lib/userService';
-import { estimateWorkoutMinutes } from '@lib/workoutDurationEstimate';
+import { estimateWorkoutMinutes, estimateWorkoutRemainingSeconds } from '@lib/workoutDurationEstimate';
 import type { Settings } from '@/types/settingsTypes';
 import { CompleteWeekButton } from './CompleteWeekButton';
 import { SignalHomeMetricsCard } from './SignalHomeMetricsCard';
@@ -49,6 +49,7 @@ type HeroState =
       exerciseCount: number;
       exerciseNames: string[];
       estimatedDurationSeconds: number;
+      estimatedRemainingSeconds: number;
       setCount: number;
     };
 
@@ -110,6 +111,7 @@ function resolve(activePlan: ActivePlanTree | null): Pick<ResolvedHome, 'hero' |
       exerciseNames: focusWorkout.exercises.map((exercise) => exercise.exercise.name),
       estimatedDurationSeconds: estimateWorkoutMinutes(focusWorkout),
       setCount: totalSetsFor(focusWorkout),
+      estimatedRemainingSeconds: estimateWorkoutRemainingSeconds(focusWorkout),
     },
     weekIndex: activeWeekIdx + 1,
     weekTotal,
@@ -313,6 +315,7 @@ function Hero({ hero }: { hero: HeroState }) {
   const isResume = hero.kind === 'resume';
   const exerciseLine = hero.exerciseNames.slice(0, 6).join(' · ');
   const estimatedMinutes = Math.round(hero.estimatedDurationSeconds / 60);
+  const estimatedRemainingMinutes = Math.max(1, Math.round(hero.estimatedRemainingSeconds / 60));
   return (
     <div
       style={{
@@ -346,7 +349,7 @@ function Hero({ hero }: { hero: HeroState }) {
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontFamily: signalTokens.fontVar.mono, fontSize: 12, color: heroPalette.inkMid, marginBottom: 0 }}>
             <span><span style={{ color: heroPalette.ink, fontWeight: 600 }}>{hero.exerciseCount}</span> exercises</span>
             <span><span style={{ color: heroPalette.ink, fontWeight: 600 }}>{hero.setCount}</span> sets</span>
-            <span><span style={{ color: heroPalette.ink, fontWeight: 600 }}>~{estimatedMinutes}</span> min</span>
+            <span><span style={{ color: heroPalette.ink, fontWeight: 600 }}>~{isResume ? estimatedRemainingMinutes : estimatedMinutes}</span> {isResume ? 'm left' : 'min'}</span>
           </div>
         </div>
         <div style={{ padding: '0 20px 20px', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
