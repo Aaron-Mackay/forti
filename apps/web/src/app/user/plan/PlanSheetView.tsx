@@ -237,14 +237,14 @@ const PlanSheetView = ({
       >
         <Box sx={{ position: 'relative' }}>
         <Box
-          ref={(node) => {
+          ref={(node: HTMLDivElement | null) => {
             scrollRef.current = node
             horizontalFadeScrollRef.current = node
             verticalFadeScrollRef.current = node
           }}
-          onScroll={(event) => {
-            handleHorizontalScroll(event)
-            handleVerticalScroll(event)
+          onScroll={() => {
+            handleHorizontalScroll()
+            handleVerticalScroll()
           }}
           sx={{ overflow: 'auto', touchAction: 'pan-x pan-y', height: 'calc(100dvh - 200px)' }}
         >
