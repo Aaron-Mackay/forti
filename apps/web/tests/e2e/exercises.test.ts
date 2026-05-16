@@ -112,7 +112,7 @@ test.describe('Exercises browse page', () => {
       await page.locator('.MuiCard-root').first().click();
       const dialog = page.getByRole('dialog');
       await expect(dialog.getByText('Est. 1RM Progress')).toBeVisible();
-      await dialog.getByRole('button', { name: 'Close' }).click();
+      await dialog.getByRole('button', { name: 'Close', exact: true }).click();
       await expect(dialog).not.toBeVisible();
     });
   });

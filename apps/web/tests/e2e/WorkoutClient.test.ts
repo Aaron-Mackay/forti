@@ -209,7 +209,7 @@ test.describe('Workout page', () => {
     test('completion modal closes when the X button is clicked', async ({ page }) => {
       await page.getByRole('button', { name: 'Mark as Complete' }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
-      await page.getByRole('button', { name: 'Close' }).click();
+      await page.getByRole('button', { name: 'Close', exact: true }).click();
       await expect(page.getByRole('dialog')).not.toBeVisible();
     });
   });

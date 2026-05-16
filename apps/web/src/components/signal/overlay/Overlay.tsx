@@ -486,7 +486,7 @@ export function Overlay({
               <motion.div
                 role="dialog"
                 aria-modal="true"
-                aria-labelledby={titleId}
+                aria-labelledby={`${titleId}-d`}
                 key="drawer"
                 drag={dismissOnGripDrag ? 'y' : false}
                 dragControls={dragControls}
