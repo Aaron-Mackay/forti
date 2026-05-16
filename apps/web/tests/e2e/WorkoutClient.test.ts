@@ -199,8 +199,11 @@ test.describe('Workout page', () => {
 
     test('completion modal shows anatomy model', async ({ page }) => {
       await page.getByRole('button', { name: 'Mark as Complete' }).click();
-      await expect(page.getByRole('dialog')).toBeVisible();
-      await expect(page.locator('[id^="anatomy-"]').first()).toBeVisible();
+      const dialog = page.getByRole('dialog');
+      await expect(dialog).toBeVisible();
+      const anatomy = dialog.getByTestId('workout-completion-anatomy');
+      await expect(anatomy).toBeVisible();
+      await expect(anatomy.locator('svg').first()).toBeVisible();
     });
 
     test('completion modal closes when the X button is clicked', async ({ page }) => {

@@ -62,7 +62,10 @@ export default function WorkoutCompletionModal({
             ))}
           </Box>
         )}
-        <Box sx={{flex: 1, minHeight: 240}}>
+        <Box
+          data-testid="workout-completion-anatomy"
+          sx={{height: {xs: 240, sm: 280}, minHeight: 240, width: '100%'}}
+        >
           <MuscleHighlight primaryMuscles={highlightedMuscles} exerciseId={workout.id} alwaysShow />
         </Box>
       </Box>

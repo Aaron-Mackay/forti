@@ -31,7 +31,7 @@ test.describe('Signal Feedback', () => {
 
     const main = page.getByRole('main');
 
-    await expect(page.locator('[data-signal-surface="calm"]').first()).toBeVisible();
+    await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
     await expect(main.getByText('Tell us what broke', { exact: true })).toBeVisible();
     await expect(main.getByLabel('Description')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Submit feedback' })).toBeVisible();

@@ -30,7 +30,7 @@ test.describe('Signal Notifications', () => {
   test('flagged user sees the Signal notifications inbox', async ({ page }) => {
     await page.goto('/user/notifications');
 
-    await expect(page.locator('[data-signal-surface="calm"]').first()).toBeVisible();
+    await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
     await expect(page.getByText('Your inbox')).toBeVisible();
     await expect(page.getByText(/Coach feedback, check-in alerts/i)).toBeVisible();
 

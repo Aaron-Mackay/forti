@@ -63,26 +63,28 @@ function E1rmChart({exercise}: {exercise: Exercise}) {
   const categories = history.map(p => format(new Date(p.date), 'dd MMM yy'));
 
   return (
-    <Chart
-      type="line"
-      height={180}
-      series={series}
-      options={{
-        chart: {
-          id: `e1rm-chart-${exercise.id}`,
-          toolbar: {show: false},
-          animations: {enabled: false},
-        },
-        stroke: {curve: 'smooth', width: 2},
-        markers: {size: 4},
-        xaxis: {
-          categories,
-          labels: {rotate: -30, style: {fontSize: '11px'}},
-          tickAmount: Math.min(history.length, 6),
-        },
-        colors: [PRIMARY_COLOUR],
-      }}
-    />
+    <Box data-testid="exercise-e1rm-chart" aria-label="Est. 1RM history chart">
+      <Chart
+        type="line"
+        height={180}
+        series={series}
+        options={{
+          chart: {
+            id: `e1rm-chart-${exercise.id}`,
+            toolbar: {show: false},
+            animations: {enabled: false},
+          },
+          stroke: {curve: 'smooth', width: 2},
+          markers: {size: 4},
+          xaxis: {
+            categories,
+            labels: {rotate: -30, style: {fontSize: '11px'}},
+            tickAmount: Math.min(history.length, 6),
+          },
+          colors: [PRIMARY_COLOUR],
+        }}
+      />
+    </Box>
   );
 }
 

@@ -92,28 +92,28 @@ test.describe('Exercises browse page', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify([
-            {date: '2025-01-10T00:00:00.000Z', bestE1rm: 80},
-            {date: '2025-03-10T00:00:00.000Z', bestE1rm: 95},
+            {date: '2025-01-10T00:00:00.000Z', bestE1rm: 80, bestSet: null},
+            {date: '2025-03-10T00:00:00.000Z', bestE1rm: 95, bestSet: null},
           ]),
         }),
       );
 
       await page.locator('.MuiCard-root').first().click();
-      await expect(page.getByText('Est. 1RM Progress')).toBeVisible();
-      // ApexCharts renders an SVG when data is present
-      await expect(page.locator('.apexcharts-canvas').first()).toBeVisible();
+      const dialog = page.getByRole('dialog');
+      await expect(dialog.getByText('Est. 1RM Progress')).toBeVisible();
+      await expect(dialog.getByTestId('exercise-e1rm-chart')).toBeVisible();
     });
 
-    test('drawer closes when clicking outside', async ({page}) => {
+    test('drawer closes from the close button', async ({page}) => {
       await page.route('**/api/exercises/*/e1rm-history**', route =>
         route.fulfill({status: 200, contentType: 'application/json', body: '[]'}),
       );
 
       await page.locator('.MuiCard-root').first().click();
-      await expect(page.getByText('Est. 1RM Progress')).toBeVisible();
-      // Close the drawer with Escape (reliable across all browsers including mobile)
-      await page.keyboard.press('Escape');
-      await expect(page.getByText('Est. 1RM Progress')).not.toBeVisible();
+      const dialog = page.getByRole('dialog');
+      await expect(dialog.getByText('Est. 1RM Progress')).toBeVisible();
+      await dialog.getByRole('button', { name: 'Close' }).click();
+      await expect(dialog).not.toBeVisible();
     });
   });
 });

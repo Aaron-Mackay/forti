@@ -318,9 +318,11 @@ test.describe('Coach check-ins — Signal list surface', () => {
   test('flagged check-in list shows the Signal planning desk', async ({ page }) => {
     await page.goto('/user/coach/check-ins');
 
+    const main = page.getByRole('main');
+
     await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
-    await expect(page.getByText('Check-ins desk')).toBeVisible();
-    await expect(page.getByText('Coach Check-ins')).toBeVisible();
+    await expect(main.getByText('Check-ins desk')).toBeVisible();
+    await expect(main.getByText('Coach Check-ins')).toBeVisible();
     await expect(page.getByRole('tab', { name: /Needs review/i })).toBeVisible();
     await expect(page.getByRole('tab', { name: /Browse archive/i })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Configure template' })).toBeVisible();
