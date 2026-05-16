@@ -6,6 +6,10 @@ import { MenuState, WorkoutEditorDispatch } from './PlanSheetShared'
 interface PlanSheetContextValue {
   planId: number
   dispatch: WorkoutEditorDispatch
+  runWithCheckpoint: (fn: () => void) => void
+  beginBufferedEdit?: () => void
+  commitBufferedEdit?: () => void
+  cancelBufferedEdit?: () => void
   arrangeMode: boolean
   creationMode: boolean
   openPicker: (weekId: number, workoutId: number) => void
