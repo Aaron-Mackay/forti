@@ -44,7 +44,10 @@ export function SignalExerciseSlide({
   const effectiveUnit = override ?? settings.weightUnit;
 
   const [detailOpen, setDetailOpen] = useState(false);
-  const { scrollRef, handleScroll, showStartFade, showEndFade } = useScrollEdgeFades<HTMLDivElement>({ axis: 'y', threshold: 4 });
+  const { scrollRef: verticalScrollRef, handleScroll: handleVerticalScroll, showStartFade: showTopFade, showEndFade: showBottomFade } =
+    useScrollEdgeFades<HTMLDivElement>({ axis: 'y', threshold: 4 });
+  const { scrollRef: horizontalScrollRef, handleScroll: handleHorizontalScroll, showStartFade: showLeftFade, showEndFade: showRightFade } =
+    useScrollEdgeFades<HTMLDivElement>({ axis: 'x', threshold: 4 });
   const [formCue, setFormCue] = useState(userExerciseNote?.note ?? '');
 
   const lastWorkout = previousWorkout?.workouts[0];
@@ -79,7 +82,17 @@ export function SignalExerciseSlide({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: palette.bg, color: palette.ink, fontFamily: signalTokens.fontVar.body, minHeight: 0 }}>
       <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
-        <div ref={scrollRef} onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto', padding: '14px 16px 16px' }}>
+        <div
+          ref={(node) => {
+            verticalScrollRef.current = node;
+            horizontalScrollRef.current = node;
+          }}
+          onScroll={(event) => {
+            handleVerticalScroll(event);
+            handleHorizontalScroll(event);
+          }}
+          style={{ height: '100%', overflowY: 'auto', overflowX: 'auto', padding: '14px 16px 16px' }}
+        >
         <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginBottom: 6 }}>
           Exercise {ex.order}
         </div>
@@ -151,7 +164,8 @@ export function SignalExerciseSlide({
           <SignalSetSection ex={ex} effectiveUnit={effectiveUnit} handleSetUpdate={handleSetUpdate} />
         </div>
         </div>
-        <ScrollEdgeFades axis="y" showStart={showStartFade} showEnd={showEndFade} size={36} background="default" />
+        <ScrollEdgeFades axis="y" showStart={showTopFade} showEnd={showBottomFade} size={36} background="default" />
+        <ScrollEdgeFades axis="x" showStart={showLeftFade} showEnd={showRightFade} size={24} background="default" />
       </div>
 
       <SignalAdvanceCta label={ctaLabel} onAdvance={onAdvance} onSkip={onSkip} />
