@@ -278,9 +278,9 @@ const PlanMultiWeekTable = ({ plan, planId, dispatchOverride, runWithCheckpoint,
           horizontalFadeScrollRef.current = node;
           verticalFadeScrollRef.current = node;
         }}
-        onScroll={(event) => {
-          handleHorizontalScroll(event);
-          handleVerticalScroll(event);
+        onScroll={() => {
+          handleHorizontalScroll();
+          handleVerticalScroll();
         }}
         sx={{ overflowX: 'auto', overflowY: 'auto' }}
       >
