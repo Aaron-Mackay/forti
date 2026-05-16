@@ -41,7 +41,7 @@ export function Grip({ surface, onActivate, onPointerDown }: GripProps) {
     <GripButton
       type="button"
       $surface={surface}
-      aria-label="Close overlay"
+      aria-label="Dismiss overlay"
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
           e.preventDefault();
