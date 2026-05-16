@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import {
   Alert,
   Autocomplete,
@@ -30,6 +30,8 @@ import ViewListIcon from '@mui/icons-material/ViewList'
 import OpenWithIcon from '@mui/icons-material/OpenWith'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import CheckIcon from '@mui/icons-material/Check'
+import UndoIcon from '@mui/icons-material/Undo'
+import RedoIcon from '@mui/icons-material/Redo'
 import { useNewPlan } from './useNewPlan'
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext'
 import { enrichExercises, savePlan } from '@lib/clientApi'
@@ -41,6 +43,7 @@ import PlanWeekView from '../PlanWeekView'
 import PlanMultiWeekTable from '../PlanMultiWeekTable'
 import { usePlanViewControls } from '../usePlanViewControls'
 import { usePlanRepRangeValidation } from '../usePlanRepRangeValidation'
+import { usePlanEditorHistory } from './usePlanEditorHistory'
 import MuscleHighlight from '@/components/fitness/MuscleHighlight'
 import {
   EXERCISE_MUSCLES,
@@ -220,6 +223,20 @@ export const PlanEditorScreen = ({
   } = usePlanRepRangeValidation(statePlan)
 
   const sortedWeeks = [...statePlan.weeks].sort((a, b) => a.order - b.order)
+  const currentSnapshot = useMemo(() => ({ plan: statePlan, weekCount }), [statePlan, weekCount])
+  const restoreSnapshot = useCallback((snapshot: { plan: PlanPrisma; weekCount: string }) => {
+    dispatch({ type: 'REPLACE_PLAN', planId: statePlan.id, plan: snapshot.plan })
+    setWeekCount(snapshot.weekCount)
+  }, [dispatch, setWeekCount, statePlan.id])
+  const {
+    canUndo,
+    canRedo,
+    runWithCheckpoint,
+    beginBufferedEdit,
+    commitBufferedEdit,
+    undo,
+    redo,
+  } = usePlanEditorHistory({ current: currentSnapshot, restore: restoreSnapshot })
   const usesSingleWeekTemplate = source !== 'import'
   const showsDurationInput = source !== 'import'
   const displayPlan = usesSingleWeekTemplate
@@ -363,7 +380,9 @@ export const PlanEditorScreen = ({
             label="Plan name"
             value={statePlan.name}
             autoComplete="off"
+            onFocus={beginBufferedEdit}
             onChange={(event) => dispatch({ type: 'UPDATE_PLAN_NAME', planId: statePlan.id, name: event.target.value })}
+            onBlur={commitBufferedEdit}
           />
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
@@ -376,7 +395,9 @@ export const PlanEditorScreen = ({
                   size="small"
                   sx={{ width: '4.5em' }}
                   autoComplete="off"
+                  onFocus={beginBufferedEdit}
                   onChange={(event) => setWeekCount(event.target.value.replace(/\D/g, ''))}
+                  onBlur={commitBufferedEdit}
                 />
                 <Typography variant="body2" color="text.secondary">
                   weeks
@@ -387,6 +408,20 @@ export const PlanEditorScreen = ({
             )}
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Tooltip title="Undo">
+                <span>
+                  <IconButton size="small" onClick={undo} disabled={!canUndo || saving} aria-label="Undo plan edit">
+                    <UndoIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Redo">
+                <span>
+                  <IconButton size="small" onClick={redo} disabled={!canRedo || saving} aria-label="Redo plan edit">
+                    <RedoIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
               {viewMode === 'sheet' && (
                 <Tooltip title={arrangeMode ? 'Exit arrange mode' : 'Arrange mode'}>
                   <ToggleButton
@@ -446,6 +481,10 @@ export const PlanEditorScreen = ({
               arrangeMode={arrangeMode}
               creationMode
               showWeekHeaders={!usesSingleWeekTemplate && sortedWeeks.length > 1}
+              dispatchOverride={dispatch}
+              runWithCheckpoint={runWithCheckpoint}
+              beginBufferedEdit={beginBufferedEdit}
+              commitBufferedEdit={commitBufferedEdit}
             />
           </Box>
         ) : (
@@ -456,9 +495,20 @@ export const PlanEditorScreen = ({
                 planId={statePlan.id}
                 hideWeekNavigationWhenSingleWeek={usesSingleWeekTemplate}
                 showProgress={false}
+                dispatchOverride={dispatch}
+                runWithCheckpoint={runWithCheckpoint}
+                beginBufferedEdit={beginBufferedEdit}
+                commitBufferedEdit={commitBufferedEdit}
               />
             ) : (
-              <PlanMultiWeekTable plan={displayPlan} planId={statePlan.id} />
+              <PlanMultiWeekTable
+                plan={displayPlan}
+                planId={statePlan.id}
+                dispatchOverride={dispatch}
+                runWithCheckpoint={runWithCheckpoint}
+                beginBufferedEdit={beginBufferedEdit}
+                commitBufferedEdit={commitBufferedEdit}
+              />
             )}
           </Box>
         )}

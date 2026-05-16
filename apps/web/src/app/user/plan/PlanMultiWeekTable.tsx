@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Box, Chip, Collapse, IconButton, Menu, TextField, Tooltip, Typography } from '@mui/material';
 import { PlanPrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
+import { WorkoutEditorAction } from '@lib/useWorkoutEditor';
 import { getWeekStatus } from '@/lib/workoutProgress';
 import ExercisePickerDialog from '@/app/user/workout/ExercisePickerDialog';
 import { ExerciseMenuActionItem, ExerciseMenuDropAndBfrItems } from './ExerciseMenuItems';
@@ -22,10 +23,17 @@ import ExerciseDetailsDialog from './ExerciseDetailsDialog';
 interface PlanMultiWeekTableProps {
   plan: PlanPrisma;
   planId: number;
+  dispatchOverride?: React.Dispatch<WorkoutEditorAction>;
+  runWithCheckpoint?: (fn: () => void) => void;
+  beginBufferedEdit?: () => void;
+  commitBufferedEdit?: () => void;
 }
 
-const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
-  const { allExercises, dispatch, debouncedDispatch } = useWorkoutEditorContext();
+const PlanMultiWeekTable = ({ plan, planId, dispatchOverride, runWithCheckpoint, beginBufferedEdit, commitBufferedEdit }: PlanMultiWeekTableProps) => {
+  const context = useWorkoutEditorContext();
+  const { allExercises } = context;
+  const dispatch = dispatchOverride ?? context.dispatch;
+  const withCheckpoint = runWithCheckpoint ?? ((fn: () => void) => fn());
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState<'add' | 'change'>('add');
   const [exerciseMenu, setExerciseMenu] = useState<null | { anchor: HTMLElement; rowIndex: number }>(null);
@@ -140,7 +148,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
             setChangeExerciseRowIndex(null);
             const activeWeek = sortedWeeks.find(w => w.order === activeWeekOrder);
             if (activeWeek) {
-              dispatch({ type: 'ADD_WORKOUT', planId, weekId: activeWeek.id });
+              withCheckpoint(() => dispatch({ type: 'ADD_WORKOUT', planId, weekId: activeWeek.id }));
             }
           }}
           variant="outlined"
@@ -160,7 +168,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
               onChange={(e) => {
                 workoutsByWeek.forEach(({ week, workout: wo }) => {
                   if (wo) {
-                    debouncedDispatch({
+                    dispatch({
                       type: 'UPDATE_WORKOUT_NAME',
                       planId,
                       weekId: week.id,
@@ -172,6 +180,8 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
               }}
               sx={{ width: '100%', maxWidth: 320 }}
               autoComplete="off"
+              onFocus={beginBufferedEdit}
+              onBlur={commitBufferedEdit}
             />
             <IconButton
               size="small"
@@ -232,7 +242,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
                 onChange={(event) => {
                   workoutsByWeek.forEach(({ week, workout: wo }) => {
                     if (wo) {
-                      debouncedDispatch({
+                      dispatch({
                         type: 'UPDATE_WORKOUT_NOTES',
                         planId,
                         weekId: week.id,
@@ -246,6 +256,8 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
                 minRows={2}
                 fullWidth
                 sx={{ mt: 0.5, maxWidth: 600 }}
+                onFocus={beginBufferedEdit}
+                onBlur={commitBufferedEdit}
               />
             </Collapse>
           </Box>
@@ -296,7 +308,7 @@ const PlanMultiWeekTable = ({ plan, planId }: PlanMultiWeekTableProps) => {
                       {canRemoveWeek && week.id === lastWeek?.id && (
                         <button
                           type="button"
-                          onClick={() => dispatch({ type: 'REMOVE_WEEK', planId, weekId: week.id })}
+                          onClick={() => withCheckpoint(() => dispatch({ type: 'REMOVE_WEEK', planId, weekId: week.id }))}
                           aria-label={`Delete week ${week.order}`}
                           style={{
                             border: 'none',

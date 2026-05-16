@@ -5,6 +5,7 @@ import { Box, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import { PlanPrisma } from '@/types/dataTypes'
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext'
+import { WorkoutEditorAction } from '@lib/useWorkoutEditor'
 import ExercisePickerDialog from '@/app/user/workout/ExercisePickerDialog'
 import { MenuState } from './PlanSheetShared'
 import { PlanSheetWeekBlock } from './PlanSheetBlocks'
@@ -22,6 +23,11 @@ interface PlanSheetViewProps {
   invalidRepRangeIds?: Set<number>
   onRepRangeFocus?: (exerciseId: number) => void
   onRepRangeBlur?: (exerciseId: number) => void
+  dispatchOverride?: React.Dispatch<WorkoutEditorAction>
+  runWithCheckpoint?: (fn: () => void) => void
+  beginBufferedEdit?: () => void
+  commitBufferedEdit?: () => void
+  cancelBufferedEdit?: () => void
 }
 
 const PlanSheetView = ({
@@ -35,8 +41,16 @@ const PlanSheetView = ({
   invalidRepRangeIds,
   onRepRangeFocus,
   onRepRangeBlur,
+  dispatchOverride,
+  runWithCheckpoint,
+  beginBufferedEdit,
+  commitBufferedEdit,
+  cancelBufferedEdit,
 }: PlanSheetViewProps) => {
-  const { dispatch, allExercises } = useWorkoutEditorContext()
+  const context = useWorkoutEditorContext()
+  const { allExercises } = context
+  const dispatch = dispatchOverride ?? context.dispatch
+  const withCheckpoint = runWithCheckpoint ?? ((fn: () => void) => fn())
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pickerTarget, setPickerTarget] = useState<{ weekId: number; workoutId: number } | null>(null)
   const [renameTarget, setRenameTarget] = useState<{ weekId: number; workoutId: number; workoutExerciseId: number } | null>(null)
@@ -181,10 +195,10 @@ const PlanSheetView = ({
           sx={{ mt: 1, cursor: 'pointer', display: 'inline-block' }}
           onClick={() => {
             if (lastWeek) {
-              dispatch({ type: 'ADD_WORKOUT', planId, weekId: lastWeek.id })
+              withCheckpoint(() => dispatch({ type: 'ADD_WORKOUT', planId, weekId: lastWeek.id }))
               return
             }
-            dispatch({ type: 'ADD_WEEK', planId })
+            withCheckpoint(() => dispatch({ type: 'ADD_WEEK', planId }))
           }}
         >
           <Typography variant="caption" color="primary" sx={{ fontSize: '0.7rem', userSelect: 'none' }}>
@@ -201,6 +215,10 @@ const PlanSheetView = ({
         value={{
           planId,
           dispatch,
+          runWithCheckpoint: withCheckpoint,
+          beginBufferedEdit,
+          commitBufferedEdit,
+          cancelBufferedEdit,
           arrangeMode,
           creationMode,
           openPicker,
@@ -228,7 +246,7 @@ const PlanSheetView = ({
               <Box
                 onClick={() => {
                   const lastWeek = sortedWeeks[sortedWeeks.length - 1]
-                  if (lastWeek) dispatch({ type: 'DUPLICATE_WEEK', planId, weekId: lastWeek.id })
+                  if (lastWeek) withCheckpoint(() => dispatch({ type: 'DUPLICATE_WEEK', planId, weekId: lastWeek.id }))
                 }}
                 aria-label="Add week"
                 sx={{

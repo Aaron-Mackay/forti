@@ -11,6 +11,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { PlanPrisma } from '@/types/dataTypes';
 import { useWorkoutEditorContext } from '@/context/WorkoutEditorContext';
+import { WorkoutEditorAction } from '@lib/useWorkoutEditor';
 import { getWorkoutStatus } from '@/lib/workoutProgress';
 import ExerciseProgressCard from './ExerciseProgressCard';
 import ExercisePickerDialog from '@/app/user/workout/ExercisePickerDialog';
@@ -21,6 +22,10 @@ interface PlanWeekViewProps {
   planId: number;
   hideWeekNavigationWhenSingleWeek?: boolean;
   showProgress?: boolean;
+  dispatchOverride?: React.Dispatch<WorkoutEditorAction>;
+  runWithCheckpoint?: (fn: () => void) => void;
+  beginBufferedEdit?: () => void;
+  commitBufferedEdit?: () => void;
 }
 
 const PlanWeekView = ({
@@ -28,8 +33,14 @@ const PlanWeekView = ({
   planId,
   hideWeekNavigationWhenSingleWeek = false,
   showProgress = true,
+  dispatchOverride,
+  runWithCheckpoint,
+  beginBufferedEdit,
+  commitBufferedEdit,
 }: PlanWeekViewProps) => {
-  const { dispatch, debouncedDispatch } = useWorkoutEditorContext();
+  const context = useWorkoutEditorContext();
+  const dispatch = dispatchOverride ?? context.dispatch;
+  const withCheckpoint = runWithCheckpoint ?? ((fn: () => void) => fn());
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<{ weekId: number; workoutId: number } | null>(null);
   const sortedWeeks = [...plan.weeks].sort((a, b) => a.order - b.order);
@@ -85,7 +96,7 @@ const PlanWeekView = ({
               <IconButton
                 size="small"
                 onClick={() => {
-                  dispatch({ type: 'REMOVE_WEEK', planId, weekId: week.id });
+                  withCheckpoint(() => dispatch({ type: 'REMOVE_WEEK', planId, weekId: week.id }));
                   setWeekIdx((prev) => Math.max(0, Math.min(prev, sortedWeeks.length - 2)));
                   setSelectedWorkoutIdx(0);
                 }}
@@ -101,7 +112,7 @@ const PlanWeekView = ({
             size="small"
             onClick={() => {
               if (weekIdx === sortedWeeks.length - 1) {
-                dispatch({ type: 'DUPLICATE_WEEK', planId, weekId: week.id });
+                withCheckpoint(() => dispatch({ type: 'DUPLICATE_WEEK', planId, weekId: week.id }));
                 setWeekIdx(sortedWeeks.length);
                 setSelectedWorkoutIdx(0);
                 return;
@@ -147,7 +158,7 @@ const PlanWeekView = ({
           label="+ Workout"
           onClick={() => {
             setSelectedWorkoutIdx(sortedWorkouts.length); // index of the workout about to be created
-            dispatch({ type: 'ADD_WORKOUT', planId, weekId: week.id });
+            withCheckpoint(() => dispatch({ type: 'ADD_WORKOUT', planId, weekId: week.id }));
           }}
           variant="outlined"
           size="small"
@@ -163,8 +174,9 @@ const PlanWeekView = ({
               size="small"
               label="Workout name"
               value={workout.name ?? ''}
+              onFocus={beginBufferedEdit}
               onChange={(e) =>
-                debouncedDispatch({
+                dispatch({
                   type: 'UPDATE_WORKOUT_NAME',
                   planId,
                   weekId: week.id,
@@ -173,6 +185,7 @@ const PlanWeekView = ({
                 })
               }
               sx={{ width: '100%', maxWidth: 320 }}
+              onBlur={commitBufferedEdit}
               autoComplete="off"
             />
             <IconButton
@@ -228,8 +241,9 @@ const PlanWeekView = ({
                 size="small"
                 placeholder="Add workout notes..."
                 value={workout.notes ?? ''}
+                onFocus={beginBufferedEdit}
                 onChange={(event) =>
-                  debouncedDispatch({
+                  dispatch({
                     type: 'UPDATE_WORKOUT_NOTES',
                     planId,
                     weekId: week.id,
@@ -241,6 +255,7 @@ const PlanWeekView = ({
                 minRows={2}
                 fullWidth
                 sx={{ mt: 0.5 }}
+                onBlur={commitBufferedEdit}
               />
             </Collapse>
           </Box>
