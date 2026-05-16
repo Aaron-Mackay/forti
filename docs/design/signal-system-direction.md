@@ -77,6 +77,8 @@ Avoid dashboards inside logging, decorative gradients, noisy chips, dense planni
 
 Use for planning, progress, nutrition, settings, check-ins, notifications, feedback, editors, and reflective screens.
 
+Planning pages may sit inside dark Signal app chrome. Treat `SignalSurface` as the content surface; do not infer that a light planning content area requires light shell chrome.
+
 Direction:
 
 - light bone/off-white surface
@@ -104,24 +106,27 @@ Do not introduce raw warm-bone colours or new surface tokens inside page code. I
 
 ## Chartreuse / signal accent rules
 
-Chartreuse is not decoration. It marks the one thing the user's eye should land on next.
+Chartreuse is not decoration. It marks the next action, active focus, or a narrow state grammar the user needs to scan quickly.
 
 Use it for:
 
-- the primary action, usually at most one per screen
-- the active workout logging cell/state
+- one primary action or current-input focus per local task area
+- persistent shell active state and restrained unread indicators
+- active workout logging cells/states, including completed or filled set markers where repetition is part of the logging grammar
+- selected row/tab state in dense planning or progress tables
 - rare active/focus indicators where the next action would otherwise be ambiguous
 
 Do not use it for:
 
 - branding every card
+- decorative labels, hero eyebrows, or generic section metadata
 - secondary actions
 - all active tabs/chips by default
 - status traffic lights
 - decorative glows
 - chart series unless it has a clear comparison role
 
-If the screen already has a chartreuse primary CTA, be sceptical of adding another chartreuse element.
+If the screen already has a chartreuse primary CTA, be sceptical of adding another chartreuse element unless it belongs to a separate local task area or the established shell/logging/table state grammar.
 
 ---
 
@@ -133,7 +138,8 @@ Use the existing Signal font tokens.
 - Display headers and large numerals: Archivo Narrow via `signalTokens.fontVar.cond`.
 - Labels, metadata, timers, set counts, status microcopy, and tabular numeric UI: JetBrains Mono via `signalTokens.fontVar.mono`.
 - Do not introduce new font families.
-- Do not use CSS `text-transform: uppercase` for production UI.
+- Do not use CSS `text-transform: uppercase` for headings, buttons, nav labels, chips, or general copy.
+- Short structural labels may use uppercase when it improves scanning, such as weekday headers or compact mono metadata.
 - Keep headings sentence case unless there is a specific existing component convention.
 - Keep letter spacing restrained; small mono labels can be spaced, but do not turn every heading into tracked caps.
 - Numeric cells should use tabular numerals where users compare values.
@@ -261,6 +267,27 @@ Current Signal target:
 - My Training, uncoached: Home / Plan / Progress / More
 - My Training, coached: Home / Plan / Progress / Check-in / More
 - Coach mode: Home / Clients / Library / More
+
+On mobile, More may expand a secondary link panel below the bottom nav, pushing the nav up while open. This placement is intentional; do not move the panel above the bottom nav for conventional drawer parity. Keep this secondary panel compact and route-focused; it should not become another dashboard.
+
+Mobile More should close on route change, outside taps on the top bar/main content, and Escape. Animate open/close quickly with height/opacity motion. Cap its height with an inner scroll region so added secondary links cannot consume the whole viewport.
+
+On desktop, do not recreate More as an expandable sidebar item. Expose the same secondary routes directly in the sidebar as a compact Tools / Coach tools group below the primary nav.
+
+Treat mobile More and desktop Tools / Coach tools as one shared secondary-navigation IA contract. Route membership, order intent, and role should stay unified; presentation may differ by viewport, and hrefs may differ by mode when a coach-context route is needed to preserve shell state.
+
+Current secondary route order:
+
+- My Training: Exercises, Nutrition, Calendar, Supplements when enabled, Learning, Feedback, Settings.
+- Coach mode: Exercises, Check-in template, Learning plans, Feedback, Settings.
+
+Coach Tools should include Exercises as a coach-context route, so coaches can add exercises and edit client-facing exercise notes without leaving coach mode.
+
+Coach primary Library should also use a coach-context route. Keep the user-facing library route available, but coach navigation should stay under `/user/coach/...` when the route needs coach shell state.
+
+Coach Tools Feedback should use a coach-context route for the same reason. Keep `/user/feedback` available for user mode, but coach navigation should use `/user/coach/feedback`.
+
+Do not create a coach-context Settings alias. Settings is global account/app configuration, so `/user/settings` remains canonical even when reached from coach Tools.
 
 Do not add or preserve a primary nav item only because the legacy UI had it.
 

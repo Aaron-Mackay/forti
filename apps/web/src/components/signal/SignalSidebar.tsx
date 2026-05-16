@@ -9,7 +9,7 @@ import { FortiWordmark } from './FortiWordmark';
 import { SignalIcon } from './SignalIcons';
 import { SignalModeSwitch } from './SignalModeSwitch';
 import { SignalNotificationsBell } from './SignalNotificationsBell';
-import { activeNavId, navItemsFor, type NavItemId } from './navItems';
+import { activeNavId, isSecondaryNavItemActive, navItemsFor, secondaryNavItemsFor, type NavItemId } from './navItems';
 import { useSettings } from '@lib/providers/SettingsProvider';
 
 type Props = {
@@ -25,7 +25,9 @@ export function SignalSidebar({ mode, activeOverride, userLabel, userInitials, h
   const palette = signalTokens.surface.gym;
   const pathname = usePathname();
   const items = navItemsFor(mode, !loading && settings.coachModeActive);
-  const active = activeOverride ?? activeNavId(items, pathname) ?? 'home';
+  const primaryItems = items.filter((item) => item.id !== 'more');
+  const active = activeOverride ?? activeNavId(primaryItems, pathname);
+  const secondaryItems = secondaryNavItemsFor(mode, !loading && settings.showSupplements);
 
   const showModeSwitch = !loading && (settings.coachModeActive || mode === 'coach');
 
@@ -65,8 +67,8 @@ export function SignalSidebar({ mode, activeOverride, userLabel, userInitials, h
         </div>
       )}
 
-      <nav style={{ padding: '6px 8px', flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {items.map((item) => {
+      <nav style={{ padding: '6px 8px', flex: 1, display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
+        {primaryItems.map((item) => {
           const isActive = item.id === active;
           return (
             <Link
@@ -90,6 +92,50 @@ export function SignalSidebar({ mode, activeOverride, userLabel, userInitials, h
               }}
             >
               <SignalIcon name={item.icon} size={18} color={isActive ? palette.ink : palette.inkMid} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+        <div
+          aria-hidden
+          style={{
+            height: 1,
+            background: palette.border,
+            margin: '12px 8px 8px',
+            flexShrink: 0,
+          }}
+        />
+        <div
+          style={{
+            padding: '0 10px 4px',
+            fontFamily: signalTokens.fontVar.mono,
+            fontSize: 10,
+            color: palette.inkLight,
+          }}
+        >
+          {mode === 'coach' ? 'Coach tools' : 'Tools'}
+        </div>
+        {secondaryItems.map((item) => {
+          const isActive = isSecondaryNavItemActive(item, pathname);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={isActive ? 'page' : undefined}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '8px 10px 8px 13px',
+                color: isActive ? palette.ink : palette.inkMid,
+                background: isActive ? palette.surface : 'transparent',
+                borderLeft: `3px solid ${isActive ? signalTokens.signal.base : 'transparent'}`,
+                marginLeft: -3,
+                fontSize: 12,
+                fontWeight: isActive ? 600 : 500,
+                textDecoration: 'none',
+                fontFamily: signalTokens.fontVar.body,
+              }}
+            >
               <span>{item.label}</span>
             </Link>
           );

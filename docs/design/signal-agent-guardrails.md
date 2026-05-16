@@ -3,6 +3,7 @@ Before making any Signal UI changes, follow these rules.
 1. Treat `apps/web/src/lib/signal/tokens.ts` as the source of truth.
     - Do not introduce raw hex colours, random rgba values, new shadows, new radii, or new spacing scales inside page components.
     - Use `signalTokens.surface.gym` or `signalTokens.surface.planning`.
+    - Current-code review may tolerate documented raw colour exceptions for third-party library CSS variables, camera/photo overlays, real-world plate colours, media/video affordance colours, and generated alpha tints while a token is missing. Treat other raw colours as token drift and fix them opportunistically.
 
 2. Preserve the existing Signal surface model.
     - `gym` = workout / active training / app chrome.
@@ -28,6 +29,7 @@ Before making any Signal UI changes, follow these rules.
     - Body text should use `signalTokens.fontVar.body`.
     - Condensed display/header text should use `signalTokens.fontVar.cond`.
     - Labels, small metadata, and numeric/status microcopy can use `signalTokens.fontVar.mono`.
+    - Coach-authored correspondence may use `signalTokens.font.serif` when the surrounding Signal component already supports the calm check-in/client feedback tone.
     - Do not introduce new font families.
 
 7. Respect mobile-first constraints.

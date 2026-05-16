@@ -53,9 +53,9 @@ When documents conflict, use this order unless a newer document explicitly super
 
 1. Locked product and UX decisions in `stage-1-decision-register.md`.
 2. Current Signal guardrails in `signal-agent-guardrails.md`.
-3. Signal visual-direction shortcut in `signal-system-direction.md`, only where it does not conflict with the two files above.
-4. Current implementation audit status in `signal-audit.md`.
-5. Route-specific QA expectations in `signal-ui-qa-checklist.md`.
+3. Current implementation audit status in `signal-audit.md`.
+4. Route-specific QA expectations in `signal-ui-qa-checklist.md`.
+5. Signal visual-direction shortcut in `signal-system-direction.md`, only where it does not conflict with the files above.
 6. Historical reviews, design options, and archived notes.
 7. Current code, when it conflicts with locked design decisions.
 

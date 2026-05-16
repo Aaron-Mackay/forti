@@ -1,6 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
+import { AnimatePresence, motion } from 'framer-motion';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { signalFontVariablesClassName } from '@lib/signal/fonts';
 import { signalThemes } from '@lib/signal/theme';
 import { signalTokens, type SignalNavMode, type SignalSurfaceMode } from '@lib/signal/tokens';
@@ -8,7 +12,9 @@ import { SignalSidebar } from './SignalSidebar';
 import { SignalBottomNav } from './SignalBottomNav';
 import { SignalTopBar } from './SignalTopBar';
 import { SignalSurfaceProvider } from './SignalSurfaceContext';
-import type { NavItemId } from './navItems';
+import { SignalIcon } from './SignalIcons';
+import { secondaryNavItemsFor, type NavItemId } from './navItems';
+import { useSettings } from '@lib/providers/SettingsProvider';
 
 type Props = {
   mode: SignalNavMode;
@@ -32,6 +38,24 @@ export function SignalAppShell({
   children,
 }: Props) {
   const contentPalette = signalTokens.surface[surface];
+  const chromePalette = signalTokens.surface.gym;
+  const pathname = usePathname();
+  const { settings, loading: settingsLoading } = useSettings();
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  const moreLinks = secondaryNavItemsFor(mode, !settingsLoading && settings.showSupplements);
+
+  useEffect(() => {
+    setMobileMoreOpen(false);
+  }, [mode, pathname]);
+
+  useEffect(() => {
+    if (!mobileMoreOpen) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setMobileMoreOpen(false);
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mobileMoreOpen]);
 
   return (
     <ThemeProvider theme={signalThemes[surface]}>
@@ -89,11 +113,19 @@ export function SignalAppShell({
             overflow: 'hidden',
           }}
         >
-          <div data-signal-shell-topbar>
+          <div
+            data-signal-shell-topbar
+            onPointerDown={() => {
+              if (mobileMoreOpen) setMobileMoreOpen(false);
+            }}
+          >
             <SignalTopBar mode={mode} hasUnreadNotifications={hasUnreadNotifications} />
           </div>
 
           <main
+            onPointerDown={() => {
+              if (mobileMoreOpen) setMobileMoreOpen(false);
+            }}
             style={{
               flex: 1,
               minWidth: 0,
@@ -106,16 +138,69 @@ export function SignalAppShell({
             {children}
           </main>
 
-          <div
-            data-signal-shell-bottomnav
-            style={{
-              position: 'sticky',
-              bottom: 0,
-              zIndex: 20,
-              flexShrink: 0,
-            }}
-          >
-            <SignalBottomNav mode={mode} activeOverride={activeNavOverride} />
+          <div data-signal-shell-bottomnav style={{ zIndex: 20, flexShrink: 0 }}>
+            <SignalBottomNav
+              mode={mode}
+              activeOverride={activeNavOverride}
+              moreOpen={mobileMoreOpen}
+              onMoreToggle={() => setMobileMoreOpen((open) => !open)}
+            />
+            <AnimatePresence initial={false}>
+              {mobileMoreOpen && (
+                <motion.div
+                  id="signal-mobile-more-panel"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                  style={{
+                    overflow: 'hidden',
+                    maxHeight: '42dvh',
+                    background: chromePalette.bgAlt,
+                    color: chromePalette.ink,
+                    borderTop: `1px solid ${chromePalette.border}`,
+                    fontFamily: signalTokens.fontVar.body,
+                  }}
+                >
+                  <div
+                    style={{
+                      maxHeight: '42dvh',
+                      overflowY: 'auto',
+                      padding: '8px 10px calc(10px + env(safe-area-inset-bottom))',
+                      display: 'grid',
+                      gap: 6,
+                    }}
+                  >
+                    {moreLinks.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 12,
+                          padding: '10px 10px',
+                          border: `1px solid ${chromePalette.border}`,
+                          borderRadius: signalTokens.radii.card,
+                          background: chromePalette.surface,
+                          color: chromePalette.ink,
+                          textDecoration: 'none',
+                        }}
+                      >
+                        <span style={{ minWidth: 0 }}>
+                          <span style={{ display: 'block', fontSize: 13, fontWeight: 600 }}>{item.label}</span>
+                          <span style={{ display: 'block', marginTop: 2, fontFamily: signalTokens.fontVar.mono, fontSize: 10, color: chromePalette.inkMid }}>
+                            {item.detail}
+                          </span>
+                        </span>
+                        <SignalIcon name="arrowRight" size={16} color={signalTokens.signal.base} />
+                      </Link>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>

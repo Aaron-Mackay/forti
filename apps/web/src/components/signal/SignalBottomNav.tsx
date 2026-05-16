@@ -10,14 +10,16 @@ import { useSettings } from '@lib/providers/SettingsProvider';
 type Props = {
   mode: SignalNavMode;
   activeOverride?: NavItemId;
+  moreOpen?: boolean;
+  onMoreToggle?: () => void;
 };
 
-export function SignalBottomNav({ mode, activeOverride }: Props) {
+export function SignalBottomNav({ mode, activeOverride, moreOpen = false, onMoreToggle }: Props) {
   const palette = signalTokens.surface.gym;
   const pathname = usePathname();
   const { settings, loading } = useSettings();
   const items = navItemsFor(mode, !loading && settings.coachModeActive);
-  const active = activeOverride ?? activeNavId(items, pathname) ?? 'home';
+  const active = moreOpen ? 'more' : activeOverride ?? activeNavId(items, pathname) ?? 'home';
 
   return (
     <nav
@@ -35,6 +37,39 @@ export function SignalBottomNav({ mode, activeOverride }: Props) {
     >
       {items.map((item) => {
         const isActive = item.id === active;
+        if (item.id === 'more' && onMoreToggle) {
+          return (
+            <button
+              key={item.id}
+              type="button"
+              aria-current={isActive ? 'page' : undefined}
+              aria-expanded={moreOpen}
+              aria-controls="signal-mobile-more-panel"
+              onClick={onMoreToggle}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 4,
+                color: isActive ? palette.ink : palette.inkMid,
+                background: 'transparent',
+                border: 0,
+                borderTop: `2px solid ${isActive ? signalTokens.signal.base : 'transparent'}`,
+                textDecoration: 'none',
+                fontSize: 11,
+                fontWeight: isActive ? 600 : 500,
+                minHeight: 44,
+                padding: '4px 0 6px',
+                fontFamily: signalTokens.fontVar.body,
+                cursor: 'pointer',
+              }}
+            >
+              <SignalIcon name={item.icon} size={20} color={isActive ? palette.ink : palette.inkMid} />
+              <span>{item.label}</span>
+            </button>
+          );
+        }
         return (
           <Link
             key={item.id}
