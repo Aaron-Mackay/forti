@@ -27,7 +27,7 @@ test.describe('Check-in Signal', () => {
     });
   });
 
-  test('flagged user sees the Signal calm surface on the check-in route', async ({ page }) => {
+  test('flagged user sees the Signal planning surface on the check-in route', async ({ page }) => {
     function getIsoWeekStart(): string {
       const date = new Date();
       const day = (date.getUTCDay() + 6) % 7;
@@ -88,7 +88,7 @@ test.describe('Check-in Signal', () => {
 
     await page.goto('/user/check-in');
 
-    await expect(page.locator('[data-signal-surface="calm"]').first()).toBeVisible();
+    await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
     await expect(page.getByText('Weekly check-in').first()).toBeVisible();
     await expect(page.getByRole('button', { name: /Submit Check-in/i })).toBeVisible();
     await expect(page.getByText(/No previous check-ins yet/i).first()).toBeVisible();
