@@ -33,7 +33,12 @@ function atDay(base: Date, deltaDays: number): Date {
 async function main() {
   const today = new Date();
 
-  const preserveUser = await prisma.user.findUnique({ where: { email: PRESERVE_EMAIL }, select: { id: true } });
+  const preserveUser = await prisma.user.findUnique({ where: { email: PRESERVE_EMAIL }, select: { id: true, coachId: true } });
+  let preservedCoachEmail: string | null = null;
+  if (preserveUser?.coachId) {
+    const formerCoach = await prisma.user.findUnique({ where: { id: preserveUser.coachId }, select: { email: true } });
+    preservedCoachEmail = formerCoach?.email ?? null;
+  }
 
   if (!preserveUser) {
     await prisma.$executeRawUnsafe(`
@@ -134,6 +139,14 @@ async function main() {
     },
   });
   await seedTestUserData(testuser, new Date('2024-06-01'));
+
+  // Restore preserved user's coach link if their former coach was re-seeded
+  if (preserveUser && preservedCoachEmail) {
+    const newCoach = await prisma.user.findUnique({ where: { email: preservedCoachEmail }, select: { id: true } });
+    if (newCoach) {
+      await prisma.user.update({ where: { id: preserveUser.id }, data: { coachId: newCoach.id } });
+    }
+  }
 
   const coachAsset = await prisma.libraryAsset.create({
     data: {
