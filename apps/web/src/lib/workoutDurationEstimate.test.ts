@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { estimateWorkoutMinutes, parseWorkoutRestSeconds } from './workoutDurationEstimate';
+import { estimateWorkoutMinutes, estimateWorkoutRemainingSeconds, parseWorkoutRestSeconds } from './workoutDurationEstimate';
 
 describe('parseWorkoutRestSeconds', () => {
   it('parses plain numeric rest strings', () => {
@@ -54,5 +54,29 @@ describe('estimateWorkoutMinutes', () => {
     });
 
     expect(seconds).toBe(510);
+  });
+});
+
+
+describe('estimateWorkoutRemainingSeconds', () => {
+  it('subtracts completed sets and skips warmup for started exercises', () => {
+    const seconds = estimateWorkoutRemainingSeconds({
+      exercises: [
+        { restTime: '90', sets: [{ reps: 10, weight: 100 }, {}, {}] },
+        { restTime: '120', sets: [{}, {}] },
+      ],
+    });
+
+    expect(seconds).toBe(780);
+  });
+
+  it('never returns less than zero seconds for over-logged sets', () => {
+    const seconds = estimateWorkoutRemainingSeconds({
+      exercises: [
+        { restTime: '60', sets: [] },
+      ],
+    });
+
+    expect(seconds).toBe(180);
   });
 });
