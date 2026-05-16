@@ -9,7 +9,7 @@ interface SettingsContextValue {
   loading: boolean;
   error: string | null;
   clearError: () => void;
-  updateSetting: (key: keyof Settings, value: boolean | number | string) => Promise<void>;
+  updateSetting: (key: keyof Settings, value: boolean | number | string) => Promise<boolean>;
   updateCustomMetrics: (defs: CustomMetricDef[]) => Promise<void>;
   updateTrackedE1rmExercises: (exercises: TrackedE1rmExercise[]) => Promise<void>;
   setExerciseUnitOverride: (exerciseId: number, override: ExerciseUnitOverride | null) => Promise<void>;
@@ -17,12 +17,13 @@ interface SettingsContextValue {
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
 const NOOP_ASYNC = async () => {};
+const NOOP_BOOLEAN_ASYNC = async () => false;
 const FALLBACK_SETTINGS_CONTEXT: SettingsContextValue = {
   settings: DEFAULT_SETTINGS,
   loading: true,
   error: null,
   clearError: () => {},
-  updateSetting: NOOP_ASYNC,
+  updateSetting: NOOP_BOOLEAN_ASYNC,
   updateCustomMetrics: NOOP_ASYNC,
   updateTrackedE1rmExercises: NOOP_ASYNC,
   setExerciseUnitOverride: NOOP_ASYNC,
@@ -62,10 +63,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       await updateUserSettings({ [key]: value }, { signal: controller.signal });
+      return true;
     } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') return;
+      if (err instanceof Error && err.name === 'AbortError') {
+        return false;
+      }
       setSettings(prev);
       setError('Failed to save setting. Please try again.');
+      return false;
     }
   }, []); // Empty deps — reads latest settings via settingsRef to avoid stale closures
 

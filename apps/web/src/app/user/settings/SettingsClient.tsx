@@ -2,6 +2,7 @@
 
 import React, {useState} from 'react';
 import { signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import {
   Alert,
   Autocomplete,
@@ -478,6 +479,7 @@ export default function SettingsClient({
   signalEnabled?: boolean;
 }) {
   const { settings, loading, error, clearError, updateSetting } = useSettings();
+  const router = useRouter();
 
   // Profile state
   const [name, setName] = useState(initialName);
@@ -516,8 +518,13 @@ export default function SettingsClient({
     .map(w => w[0].toUpperCase())
     .join('');
 
-  const handleToggle = (key: BooleanSettingKey) => {
-    updateSetting(key, !settings[key]);
+  const handleToggle = async (key: BooleanSettingKey) => {
+    const nextValue = !settings[key];
+    const saved = await updateSetting(key, nextValue);
+
+    if (saved && key === 'signalUiEnabled') {
+      router.refresh();
+    }
   };
 
   if (signalEnabled) {
