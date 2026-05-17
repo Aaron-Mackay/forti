@@ -4,7 +4,7 @@ test.describe.configure({ mode: 'serial' });
 
 test.describe('Signal Settings', () => {
   test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || !isMobile,
-    'Signal settings coverage runs on mobile chromium only to verify scroll behavior; user settings are shared');
+    'Signal settings coverage runs on mobile chromium only to verify hub + sub-screen flow; user settings are shared');
 
   test.beforeEach(async ({ page }) => {
     await page.request.patch('/api/user/settings', {
@@ -27,27 +27,43 @@ test.describe('Signal Settings', () => {
     });
   });
 
-  test('flagged user can scroll the settings route on mobile', async ({ page }) => {
+  test('flagged user lands on the hub and can drill into a sub-screen', async ({ page }) => {
     await page.goto('/user/settings');
 
-    const scrollArea = page.locator('[data-signal-shell-mobile-frame] main');
-    const main = scrollArea;
-
     await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
-    await expect(main.getByText('Preferences', { exact: true })).toBeVisible();
 
-    const metrics = await scrollArea.evaluate((node) => ({
-      viewportHeight: node.clientHeight,
-      scrollHeight: node.scrollHeight,
-    }));
+    const main = page.locator('[data-signal-shell-mobile-frame] main');
+    await expect(main.getByRole('heading', { level: 1, name: 'Everything' })).toBeVisible();
 
-    expect(metrics.scrollHeight).toBeGreaterThan(metrics.viewportHeight);
+    // Group titles render in expected order
+    await expect(main.getByText('ACCOUNT', { exact: true })).toBeVisible();
+    await expect(main.getByText('TRAINING', { exact: true })).toBeVisible();
+    await expect(main.getByText('COACHING', { exact: true })).toBeVisible();
+    await expect(main.getByText('DATA', { exact: true })).toBeVisible();
 
-    await scrollArea.evaluate((node) => {
-      node.scrollTop = node.scrollHeight;
-    });
+    // Drill into Dashboard cards sub-screen
+    await main.getByRole('link', { name: /Dashboard cards/ }).click();
+    await expect(page).toHaveURL(/\/user\/settings\/dashboard$/);
+    await expect(main.getByRole('heading', { level: 1, name: 'Dashboard cards' })).toBeVisible();
 
-    await expect(main.getByText('Connections and coaching', { exact: true })).toBeVisible();
-    await expect(main.getByRole('link', { name: 'Download Check-in History' })).toBeVisible();
+    // Back chevron returns to hub
+    await main.getByRole('link', { name: 'Back to Settings hub' }).click();
+    await expect(page).toHaveURL(/\/user\/settings$/);
+    await expect(main.getByRole('heading', { level: 1, name: 'Everything' })).toBeVisible();
+  });
+
+  test('deep link to a sub-screen renders that section directly', async ({ page }) => {
+    await page.goto('/user/settings/checkin');
+
+    const main = page.locator('[data-signal-shell-mobile-frame] main');
+    await expect(main.getByRole('heading', { level: 1, name: 'Weekly timing' })).toBeVisible();
+    await expect(main.getByRole('radiogroup', { name: 'Check-in day' })).toBeVisible();
+  });
+
+  test('unknown sub-screen slug renders not-found instead of a Settings section', async ({ page }) => {
+    await page.goto('/user/settings/nonexistent-slug');
+    const main = page.locator('[data-signal-shell-mobile-frame] main');
+    await expect(main.getByRole('heading', { level: 1, name: 'Everything' })).toBeHidden();
+    await expect(page.getByText(/This page could not be found/i)).toBeVisible();
   });
 });

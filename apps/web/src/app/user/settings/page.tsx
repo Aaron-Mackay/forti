@@ -5,6 +5,7 @@ import SettingsClient from './SettingsClient';
 import getLoggedInUser from '@lib/getLoggedInUser';
 import { loadSignalFlag } from '@lib/signal/loadSignalFlag';
 import { SignalSurface } from '@/components/signal/SignalSurface';
+import { SettingsShell } from './_components/SettingsShell';
 
 export default async function SettingsPage() {
   const user = await getLoggedInUser();
@@ -13,10 +14,10 @@ export default async function SettingsPage() {
   if (signalEnabled) {
     return (
       <SignalSurface signalEnabled surface="planning">
-        <SettingsClient
+        <SettingsShell
+          section={null}
           initialName={user.name ?? ''}
           initialImage={user.image ?? null}
-          signalEnabled
         />
       </SignalSurface>
     );

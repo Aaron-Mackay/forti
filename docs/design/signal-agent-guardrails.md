@@ -18,6 +18,7 @@ Before making any Signal UI changes, follow these rules.
     - Do not refactor unrelated routes.
     - Do not move shared components unless at least two pages need the same fix.
     - Do not alter data fetching, mutation logic, routing, feature flags, permissions, or API behaviour for visual-only requests.
+    - For buttons, toggles, segmented controls, and card frames in new Signal surfaces, use the existing primitives (`SignalButton`, `SignalToggle`, `SignalSegmented`, `SignalSectionCard` under `apps/web/src/components/signal/`) instead of re-skinning MUI components per call site. The Signal MUI theme override path is reserved for app-wide changes coordinated separately.
 
 5. Keep Signal visually restrained.
     - Avoid dashboard creep.

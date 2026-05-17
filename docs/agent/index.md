@@ -43,6 +43,23 @@ Code in `src/lib/` is intended to be portable to a future React Native client. S
 - `apps/mobile/lib/api/mobileApiClient.ts` + `apps/mobile/lib/api/accountApi.ts` — authenticated bearer-token client and the first typed Forti mobile API surface.
 - `packages/shared/src/contracts/userProfile.ts` + `packages/shared/src/contracts/userSettings.ts` — cross-platform DTOs shared by the web API and Expo client.
 
+## Settings screen (Signal)
+
+- Route entry: `src/app/user/settings/page.tsx` (hub or desktop two-pane) + `src/app/user/settings/[section]/page.tsx` (catch-all sub-route).
+- Shell + presentations: `src/app/user/settings/_components/SettingsShell.tsx`, `SettingsMobileHub.tsx`, `SettingsMobileSubScreen.tsx`, `SettingsDesktopTwoPane.tsx`.
+- Section registry: `src/app/user/settings/_components/sections.ts` (slugs, groups, eyebrow/title metadata) — also the `isSectionSlug()` validator used by the catch-all route.
+- Section bodies (one per sub-screen): `src/app/user/settings/_sections/*` — dispatched by `_sections/index.tsx` `renderSection()`.
+- Coach cards + state: `src/app/user/settings/_components/coach/useCoachAdmin.ts` plus `CoachConnectionCard`, `CoachModeCard`, `CoachPortalCard`.
+- Save indicator + live region: `src/app/user/settings/_components/SavedState.tsx` (`SavedStateProvider`, `useSettingsWithSaved`, `SavedTimestampLabel`).
+- Legacy MUI fallback (`signalEnabled === false`): `src/app/user/settings/SettingsClient.tsx`.
+
+## Settings primitives (reusable Signal)
+
+- `src/components/signal/SignalButton.tsx` — `intent: 'primary' | 'outlined' | 'ghost' | 'urgent'`, `size: 'sm' | 'md'`. Use in place of MUI `<Button>` for new Signal surfaces.
+- `src/components/signal/SignalToggle.tsx` — 30×18 px switch with `role="switch"`.
+- `src/components/signal/SignalSegmented.tsx` — `role="radiogroup"` segmented control with `'md' | 'sm'` size.
+- `src/components/signal/SignalSectionCard.tsx` — card frame with eyebrow + title + optional description.
+
 ## Maintenance rule (required)
 
 - Update this file whenever you add a major feature area or a new top-level domain (for example: a new `src/app/<domain>/...` surface or a new `src/lib/contracts/<domain>.ts` contract group).
