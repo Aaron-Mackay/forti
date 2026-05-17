@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { AppBarProvider } from '@lib/providers/AppBarProvider';
 import { useNotifications } from '@lib/providers/NotificationsProvider';
 import { SignalAppShell } from './SignalAppShell';
-import type { SignalNavMode, SignalSurfaceMode } from '@lib/signal/tokens';
+import type { SignalNavMode } from '@lib/signal/tokens';
 
 type Props = {
   signalEnabled: boolean;
@@ -29,7 +29,7 @@ export function SignalShellSwitch({
   }
 
   const mode: SignalNavMode = isCoachDomain ? 'coach' : 'user';
-  const surface: SignalSurfaceMode = isCoachDomain ? 'planning' : 'gym';
+  const surface = 'planning';
 
   return (
     <SignalAppShell
