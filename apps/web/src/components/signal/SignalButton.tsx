@@ -1,7 +1,7 @@
 'use client';
 
 import { forwardRef, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from 'react';
-import { signalTokens } from '@lib/signal/tokens';
+import { signalTokens, type SignalSurfaceMode } from '@lib/signal/tokens';
 
 export type SignalButtonIntent = 'primary' | 'outlined' | 'ghost' | 'urgent';
 export type SignalButtonSize = 'sm' | 'md';
@@ -9,15 +9,15 @@ export type SignalButtonSize = 'sm' | 'md';
 export interface SignalButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
   intent?: SignalButtonIntent;
   size?: SignalButtonSize;
+  surface?: SignalSurfaceMode;
   fullWidth?: boolean;
   startIcon?: ReactNode;
   endIcon?: ReactNode;
   children?: ReactNode;
 }
 
-const palette = signalTokens.surface.planning;
-
-function styleFor(intent: SignalButtonIntent, size: SignalButtonSize): CSSProperties {
+function styleFor(intent: SignalButtonIntent, size: SignalButtonSize, surface: SignalSurfaceMode): CSSProperties {
+  const palette = signalTokens.surface[surface];
   const base: CSSProperties = {
     appearance: 'none',
     display: 'inline-flex',
@@ -69,11 +69,11 @@ function styleFor(intent: SignalButtonIntent, size: SignalButtonSize): CSSProper
 }
 
 export const SignalButton = forwardRef<HTMLButtonElement, SignalButtonProps>(function SignalButton(
-  { intent = 'primary', size = 'md', fullWidth, startIcon, endIcon, style, children, disabled, type = 'button', ...rest },
+  { intent = 'primary', size = 'md', surface = 'planning', fullWidth, startIcon, endIcon, style, children, disabled, type = 'button', ...rest },
   ref,
 ) {
   const merged: CSSProperties = {
-    ...styleFor(intent, size),
+    ...styleFor(intent, size, surface),
     width: fullWidth ? '100%' : undefined,
     opacity: disabled ? 0.5 : undefined,
     cursor: disabled ? 'not-allowed' : 'pointer',

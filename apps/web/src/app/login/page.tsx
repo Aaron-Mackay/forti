@@ -1,114 +1,182 @@
-import {Box, Card, CardContent, CardMedia, Chip, Typography} from "@mui/material";
+'use client';
+
 import Image from "next/image";
+import { ThemeProvider } from "@mui/material/styles";
+import { FortiWordmark } from "@/components/signal/FortiWordmark";
+import { signalTokens } from "@lib/signal/tokens";
+import { signalThemes } from "@lib/signal/theme";
 import LoginButtons from "./LoginButtons";
 
-const betaPillSx = {
-  bgcolor: "rgba(45,127,249,0.15)",
-  color: "rgb(45,127,249)",
-  fontWeight: 600,
-  fontSize: "0.7rem",
-  textTransform: "uppercase",
-  letterSpacing: "0.05em",
-  border: "none",
-};
-
-const betaPillDesktopSx = {
-  bgcolor: "rgba(255,255,255,0.2)",
-  color: "#FFFFFF",
-  fontWeight: 700,
-  fontSize: "0.75rem",
-  letterSpacing: "0.1em",
-  textTransform: "uppercase",
-  border: "1px solid rgba(255,255,255,0.3)",
-  borderRadius: "99px",
-  px: "12px",
-  py: "4px",
-  mt: "10px",
-  mb: "20px",
-  display: "inline-block",
-};
+const gym = signalTokens.surface.gym;
+const planning = signalTokens.surface.planning;
+const desktopBp = signalTokens.space.desktopBreakpointPx;
 
 function isProductionAuthEnvironment() {
   return process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+}
+
+function BetaPill({ variant }: { variant: 'gym' | 'planning' }) {
+  const color = variant === 'gym' ? signalTokens.signal.base : signalTokens.signal.deep;
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        fontFamily: signalTokens.fontVar.mono,
+        fontSize: 10,
+        lineHeight: 1,
+        letterSpacing: '0.14em',
+        textTransform: 'uppercase',
+        color,
+        border: `1px solid ${color}`,
+        borderRadius: 999,
+        padding: '3px 8px',
+      }}
+    >
+      Beta
+    </span>
+  );
 }
 
 export default function LoginPage() {
   const enableDemoUserPicker = !isProductionAuthEnvironment();
 
   return (
-    <Box
-      sx={{
-        display: "grid",
-        gridTemplateColumns: {xs: "1fr", md: "1fr 1fr"},
-        minHeight: "100dvh",
+    <div
+      style={{
+        minHeight: '100dvh',
+        background: gym.bg,
+        color: gym.ink,
+        fontFamily: signalTokens.fontVar.body,
       }}
     >
-      {/* Left side (Brand / Illustration) */}
-      <Box
-        sx={{
-          display: {xs: "none", md: "flex"},
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: "primary.main",
-          color: "primary.contrastText",
-          p: 6,
+      <style>{`
+        .signal-login-mobile { display: flex; }
+        .signal-login-desktop { display: none; }
+        @media (min-width: ${desktopBp}px) {
+          .signal-login-mobile { display: none; }
+          .signal-login-desktop { display: grid; }
+        }
+      `}</style>
+
+      {/* Mobile: full gym surface, single viewport */}
+      <ThemeProvider theme={signalThemes.gym}>
+        <div
+          className="signal-login-mobile"
+          style={{
+            position: 'relative',
+            flexDirection: 'column',
+            height: '100dvh',
+            padding: '20px 20px 24px',
+            boxSizing: 'border-box',
+          }}
+        >
+          <div style={{ position: 'absolute', top: 16, right: 20 }}>
+            <BetaPill variant="gym" />
+          </div>
+
+          <div style={{ flex: 1, minHeight: 16 }} />
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <Image
+              src="/forti-icon.svg"
+              alt=""
+              width={168}
+              height={168}
+              priority
+              style={{ filter: 'brightness(0) invert(0.94)' }}
+            />
+            <FortiWordmark size={56} color={gym.ink} glyphColor={gym.ink} />
+          </div>
+
+          <div style={{ flex: 1, minHeight: 16 }} />
+
+          <div style={{ width: '100%', maxWidth: 440, margin: '0 auto' }}>
+            <LoginButtons enableDemoUserPicker={enableDemoUserPicker} surface="gym" />
+          </div>
+        </div>
+      </ThemeProvider>
+
+      {/* Desktop: gym hero + planning form split */}
+      <div
+        className="signal-login-desktop"
+        style={{
+          gridTemplateColumns: '1fr 1fr',
+          minHeight: '100dvh',
         }}
       >
-        <Box textAlign="center">
-          <Image
-            src="/forti-icon.svg"
-            alt="Logo"
-            width={200}
-            height={200}
-            priority
-            style={{margin: "0 auto", filter: "invert(1)"}}
-          />
-          <Box sx={{display: "flex", justifyContent: "center"}}>
-            <Box component="span" sx={betaPillDesktopSx}>Beta</Box>
-          </Box>
-          <Typography variant="h4" fontWeight={700}>
-            Welcome to Forti
-          </Typography>
-          <Typography variant="body1" mt={2}>
-            Your training, organised and tracked with ease.
-          </Typography>
-        </Box>
-      </Box>
+        <aside
+          style={{
+            background: gym.bg,
+            color: gym.ink,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 48,
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+            <Image
+              src="/forti-icon.svg"
+              alt=""
+              width={168}
+              height={168}
+              priority
+              style={{ filter: 'brightness(0) invert(0.94)' }}
+            />
+            <FortiWordmark size={56} color={gym.ink} glyphColor={signalTokens.signal.base} />
+            <BetaPill variant="gym" />
+          </div>
+        </aside>
 
-      {/* Right side (Login form) */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+        <ThemeProvider theme={signalThemes.planning}>
+          <main
+            style={{
+              background: planning.bg,
+              color: planning.ink,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 16,
+            }}
+          >
+            <section
+              style={{
+                width: '100%',
+                maxWidth: 400,
+                background: planning.surface,
+                border: `1px solid ${planning.border}`,
+                borderRadius: signalTokens.radii.cardLarge,
+                padding: '24px 20px 20px',
+              }}
+            >
+              <h1
+                style={{
+                  fontFamily: signalTokens.fontVar.cond,
+                  fontSize: 30,
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  letterSpacing: '-0.015em',
+                  color: planning.ink,
+                  margin: 0,
+                  marginBottom: 16,
+                  textAlign: 'center',
+                }}
+              >
+                Sign in
+              </h1>
 
-        }}
-      >
-        <Card elevation={4} sx={{width: "100%", maxWidth: 400, borderRadius: 3, m:1}}>
-          <CardMedia
-            component={'img'}
-            sx={{ height: 250, objectFit: "contain", display: { xs: "flex", md: "none" }}}
-            image="/forti-icon.svg"
-            title="Logo"
-            loading="eager"
-          />
-          <CardContent sx={{textAlign: "center"}}>
-            <Box sx={{display: {xs: "flex", md: "none"}, justifyContent: "center", mt: -1, mb: 0.5}}>
-              <Chip label="Beta" size="small" sx={betaPillSx}/>
-            </Box>
-            <Typography variant="h2" sx={{display: {xs: "block", md: "none"}}}>Forti</Typography>
-            <Typography variant="h5" fontWeight={600} gutterBottom>
-              Sign in
-            </Typography>
-            <Typography variant="body2" color="text.secondary" mb={3}>
-              Continue with your account
-            </Typography>
-
-            {/* Client component with actual buttons */}
-            <LoginButtons enableDemoUserPicker={enableDemoUserPicker}/>
-          </CardContent>
-        </Card>
-      </Box>
-    </Box>
+              <LoginButtons enableDemoUserPicker={enableDemoUserPicker} surface="planning" />
+            </section>
+          </main>
+        </ThemeProvider>
+      </div>
+    </div>
   );
 }
