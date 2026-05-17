@@ -2,6 +2,7 @@ import type { CSSProperties, ReactElement } from 'react';
 
 type IconName =
   | 'home'
+  | 'training'
   | 'plan'
   | 'progress'
   | 'more'
@@ -19,6 +20,15 @@ const ICONS: Record<IconName, ReactElement> = {
     <>
       <path d="M3 11l9-7 9 7" />
       <path d="M5 10v10h14V10" />
+    </>
+  ),
+  training: stroke(
+    <>
+      <path d="M5 9v6" />
+      <path d="M9 8v8" />
+      <path d="M15 8v8" />
+      <path d="M19 9v6" />
+      <path d="M3 12h18" />
     </>
   ),
   plan: stroke(

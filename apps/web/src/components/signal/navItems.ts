@@ -1,7 +1,7 @@
 import type { SignalNavMode } from '@lib/signal/tokens';
 import type { SignalIconName } from './SignalIcons';
 
-export type NavItemId = 'home' | 'plan' | 'progress' | 'more' | 'clients' | 'library' | 'check-in';
+export type NavItemId = 'home' | 'training' | 'plan' | 'progress' | 'more' | 'clients' | 'library' | 'check-in';
 
 export type SignalNavItem = {
   id: NavItemId;
@@ -20,6 +20,7 @@ export type SignalSecondaryNavItem = {
 
 const userNav: SignalNavItem[] = [
   { id: 'home', label: 'Home', icon: 'home', href: '/user', matchPrefixes: ['/user'] },
+  { id: 'training', label: 'Training', icon: 'training', href: '/user/workout', matchPrefixes: ['/user/workout'] },
   { id: 'plan', label: 'Plan', icon: 'plan', href: '/user/plan', matchPrefixes: ['/user/plan'] },
   { id: 'progress', label: 'Progress', icon: 'progress', href: '/user/progress', matchPrefixes: ['/user/progress'] },
   { id: 'more', label: 'More', icon: 'more', href: '/user/settings', matchPrefixes: ['/user/settings', '/user/feedback', '/user/nutrition', '/user/calendar', '/user/supplements', '/user/learning-plans', '/exercises'] },
@@ -27,6 +28,7 @@ const userNav: SignalNavItem[] = [
 
 const coachedUserNav: SignalNavItem[] = [
   { id: 'home', label: 'Home', icon: 'home', href: '/user', matchPrefixes: ['/user'] },
+  { id: 'training', label: 'Training', icon: 'training', href: '/user/workout', matchPrefixes: ['/user/workout'] },
   { id: 'plan', label: 'Plan', icon: 'plan', href: '/user/plan', matchPrefixes: ['/user/plan'] },
   { id: 'progress', label: 'Progress', icon: 'progress', href: '/user/progress', matchPrefixes: ['/user/progress'] },
   { id: 'check-in', label: 'Check-in', icon: 'checkin', href: '/user/check-in', matchPrefixes: ['/user/check-in'] },

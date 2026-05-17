@@ -97,12 +97,14 @@ Implementation decision, not fully locked long-term.
 ### Decision
 Uncoached user navigation:
 - Home
+- Training
 - Plan
 - Progress
 - More
 
 Coached client navigation:
 - Home
+- Training
 - Plan
 - Progress
 - Check-in
@@ -1062,7 +1064,7 @@ Current UI/navigation may conflict with target IA. Target decisions in this regi
 The redesign is intentionally changing current structure.
 
 ### Implication
-Do not preserve current top-level Nutrition, Calendar, Training, etc. merely because they exist.
+Do not preserve current top-level Nutrition, Calendar, etc. merely because they exist. Training is a primary nav item because the workout route is intentionally promoted in the My Training IA.
 
 ### Status
 Locked.
@@ -1178,8 +1180,8 @@ Use this checklist to compare implementation against Stage 1 decisions.
 - [ ] Check-in due/submitted/reviewed states exist.
 
 ## Navigation/modes
-- [ ] My Training uncoached nav is Home / Plan / Progress / More.
-- [ ] My Training coached nav is Home / Plan / Progress / Check-in / More.
+- [ ] My Training uncoached nav is Home / Training / Plan / Progress / More.
+- [ ] My Training coached nav is Home / Training / Plan / Progress / Check-in / More.
 - [ ] Coach nav is Home / Clients / Library / More.
 - [ ] Notifications are global.
 - [ ] Cross-mode notification opens correct context.

@@ -264,8 +264,8 @@ Use the current design docs as authority.
 
 Current Signal target:
 
-- My Training, uncoached: Home / Plan / Progress / More
-- My Training, coached: Home / Plan / Progress / Check-in / More
+- My Training, uncoached: Home / Training / Plan / Progress / More
+- My Training, coached: Home / Training / Plan / Progress / Check-in / More
 - Coach mode: Home / Clients / Library / More
 
 On mobile, More may expand a secondary link panel below the bottom nav, pushing the nav up while open. This placement is intentional; do not move the panel above the bottom nav for conventional drawer parity. Keep this secondary panel compact and route-focused; it should not become another dashboard.
@@ -289,6 +289,6 @@ Coach Tools Feedback should use a coach-context route for the same reason. Keep 
 
 Do not create a coach-context Settings alias. Settings is global account/app configuration, so `/user/settings` remains canonical even when reached from coach Tools.
 
-Do not add or preserve a primary nav item only because the legacy UI had it.
+Do not add or preserve a primary nav item only because the legacy UI had it. Training is primary because `/user/workout` is intentionally promoted in the My Training IA.
 
 Do not change IA/routing for a visual-only task.

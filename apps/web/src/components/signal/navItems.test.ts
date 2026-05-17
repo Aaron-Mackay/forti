@@ -1,7 +1,38 @@
 import { describe, expect, it } from 'vitest';
 import { activeNavId, isSecondaryNavItemActive, navItemsFor, secondaryNavItemsFor } from './navItems';
 
-describe('Signal secondary navigation', () => {
+describe('Signal navigation', () => {
+  it('keeps user primary routes ordered and includes Training', () => {
+    expect(navItemsFor('user').map((item) => item.label)).toEqual([
+      'Home',
+      'Training',
+      'Plan',
+      'Progress',
+      'More',
+    ]);
+
+    expect(navItemsFor('user', true).map((item) => item.label)).toEqual([
+      'Home',
+      'Training',
+      'Plan',
+      'Progress',
+      'Check-in',
+      'More',
+    ]);
+
+    expect(navItemsFor('user').find((item) => item.id === 'training')).toMatchObject({
+      href: '/user/workout',
+      matchPrefixes: ['/user/workout'],
+    });
+  });
+
+  it('marks Training active on workout routes', () => {
+    const userItems = navItemsFor('user');
+
+    expect(activeNavId(userItems, '/user/workout')).toBe('training');
+    expect(activeNavId(userItems, '/user/workout/active')).toBe('training');
+  });
+
   it('keeps user secondary routes ordered and gates Supplements', () => {
     expect(secondaryNavItemsFor('user').map((item) => item.label)).toEqual([
       'Exercises',

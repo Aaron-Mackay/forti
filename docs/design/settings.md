@@ -108,7 +108,7 @@ Settings is reached from **More → Settings** in the existing Signal secondary 
 │  └─────────────────────────────────────┘  │
 │                                           │
 ├───────────────────────────────────────────┤
-│ Home · Plan · Nutrition · Progress · More │  ← bottom nav (More active, 2px signal rule)
+│ Home · Training · Plan · Progress · More │  ← bottom nav (More active, 2px signal rule)
 └───────────────────────────────────────────┘
 ```
 
@@ -172,7 +172,7 @@ Every sub-screen follows the same shell. The `SignalTopBar` stays on top; the Se
 │  └─────────────────────────────────────┘  │
 │                                           │
 ├───────────────────────────────────────────┤
-│ Home · Plan · Nutrition · Progress · More │
+│ Home · Training · Plan · Progress · More │
 └───────────────────────────────────────────┘
 ```
 
@@ -425,7 +425,7 @@ All buttons: padding `8 px 14 px`, radius 3, font `600 12px Inter Tight`. Use th
 ## 10 · Out of scope (do not build)
 
 - Self-managed check-ins (Forti rule: client-only weekly review for now).
-- Nutrition targets — has its own top-level nav, not a Settings sub-screen.
+- Nutrition targets — live in app navigation, not as a Settings sub-screen.
 - Bodyweight target — lives under client Targets workspace.
 - AI assistant configuration — Forti rule: AI is utility only, no persistent assistant.
 - Push-notification preferences — separate primitive, not part of this PR.

@@ -126,8 +126,8 @@ Updated as items are fixed. Use this as the working punch list.
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
-| NM-1 | My Training uncoached nav: Home / Plan / Progress / More | ✅ | `userNav` in navItems.ts |
-| NM-2 | My Training coached nav: Home / Plan / Progress / Check-in / More | ✅ | `coachedUserNav` in navItems.ts |
+| NM-1 | My Training uncoached nav: Home / Training / Plan / Progress / More | ✅ | `userNav` in navItems.ts |
+| NM-2 | My Training coached nav: Home / Training / Plan / Progress / Check-in / More | ✅ | `coachedUserNav` in navItems.ts |
 | NM-3 | Notification routing updates mode cookie | ✅ | Middleware syncs `preferred_mode` on every page nav |
 
 ---
