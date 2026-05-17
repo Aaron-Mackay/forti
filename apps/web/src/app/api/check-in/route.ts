@@ -8,10 +8,9 @@ import { getCheckInWeekStart, toDateOnly } from '@lib/checkInUtils';
 import { notifyCoachCheckInSubmitted } from '@lib/notifications';
 import { getTemplateForClient } from '@lib/checkInTemplate';
 import { parseCustomResponses } from '@/types/checkInTemplateTypes';
-import type { CheckInTemplate, CheckInRatingField, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
-import { getAllInputFields } from '@/types/checkInTemplateTypes';
 import { Prisma } from '@/generated/prisma/browser';
 import { errorResponse } from '@lib/apiResponses';
+import { validateCustomResponsesForSubmit } from '@lib/checkInCustomResponseValidation';
 import {
   CheckInHistoryResponseSchema,
   LegacyCheckInRequestSchema,
@@ -154,31 +153,6 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(CheckInHistoryResponseSchema.parse({ checkIns: mappedCheckIns, total }));
 }
 
-/**
- * Validate customResponses against a template.
- * Returns an error string, or null if valid.
- */
-function validateCustomResponses(
-  responses: CustomCheckInResponses,
-  template: CheckInTemplate,
-): string | null {
-  for (const field of getAllInputFields(template)) {
-    const val = responses[field.id];
-    if (field.type === 'rating') {
-      const ratingField = field as CheckInRatingField;
-      if (val === undefined || val === null) continue; // optional
-      if (typeof val !== 'number' || !Number.isInteger(val) || val < ratingField.minScale || val > ratingField.maxScale) {
-        return `"${field.label}" must be an integer between ${ratingField.minScale} and ${ratingField.maxScale}`;
-      }
-    } else if (field.type === 'text' || field.type === 'textarea') {
-      if (val !== undefined && val !== null && typeof val !== 'string') {
-        return `"${field.label}" must be a string`;
-      }
-    }
-  }
-  return null;
-}
-
 /** POST /api/check-in — submit (complete) this week's check-in */
 export async function POST(req: NextRequest) {
   const session = await requireSession();
@@ -224,7 +198,7 @@ export async function POST(req: NextRequest) {
     }
 
     const responses = parseCustomResponses(templateBody.customResponses);
-    const validationError = validateCustomResponses(responses, template);
+    const validationError = validateCustomResponsesForSubmit(responses, template);
     if (validationError) {
       return errorResponse(validationError, 400);
     }

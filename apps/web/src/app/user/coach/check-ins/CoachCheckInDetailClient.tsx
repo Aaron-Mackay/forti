@@ -34,7 +34,7 @@ import {
 import MetricsSystemCard from '@/components/checkin/MetricsSystemCard';
 import WorkoutsSystemCard from '@/components/checkin/WorkoutsSystemCard';
 import {checkInHasRatings, checkInHasReflection, checkInHasCustomResponses} from '@/lib/checkInUtils';
-import {parseCheckInTemplate} from '@/types/checkInTemplateTypes';
+import {getAllTemplateCards, parseCheckInTemplate} from '@/types/checkInTemplateTypes';
 import type {CheckInTemplate} from '@/types/checkInTemplateTypes';
 import type {DataVizCard} from '@/types/datavizTypes';
 import DataVizChartCard from '@/components/charts/DataVizChartCard';
@@ -252,10 +252,12 @@ export default function CoachCheckInDetailClient({
 
   const isCustomMode = checkInHasCustomResponses(checkIn);
   const templateSnapshot = isCustomMode ? parseCheckInTemplate(checkIn.templateSnapshot) : null;
-  const metricsCardConfig = templateSnapshot?.cards.find(
-    (card): card is Extract<CheckInTemplate['cards'][number], { kind: 'system'; systemType: 'metrics' }> =>
+  const metricsCardConfig = templateSnapshot
+    ? getAllTemplateCards(templateSnapshot).find(
+    (card): card is Extract<ReturnType<typeof getAllTemplateCards>[number], { kind: 'system'; systemType: 'metrics' }> =>
       card.kind === 'system' && card.systemType === 'metrics',
-  )?.metricConfig;
+  )?.metricConfig
+    : undefined;
   const hasRatings = !isCustomMode && checkInHasRatings(checkIn);
   const hasReflection = !isCustomMode && checkInHasReflection(checkIn);
   const signalPalette = signalTokens.surface.planning;
@@ -367,7 +369,7 @@ export default function CoachCheckInDetailClient({
               </SignalSection>
             )}
 
-            {coachTemplate?.cards
+            {coachTemplate && getAllTemplateCards(coachTemplate)
               .filter((c): c is DataVizCard => c.kind === 'dataviz')
               .map(card => (
                 <DataVizChartCard
@@ -657,7 +659,7 @@ export default function CoachCheckInDetailClient({
             </Box>
           )}
 
-          {coachTemplate?.cards
+          {coachTemplate && getAllTemplateCards(coachTemplate)
             .filter((c): c is DataVizCard => c.kind === 'dataviz')
             .map(card => (
               <DataVizChartCard

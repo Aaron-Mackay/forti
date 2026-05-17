@@ -47,67 +47,80 @@ function TextResponse({ label, value }: { label: string; value: string | null })
 export default function CustomCheckInResponseDisplay({ responses: rawResponses, template }: Props) {
   const responses = parseCustomResponses(rawResponses);
 
-  const visibleCustomCards = template.cards
-    .filter((c): c is CustomCard => c.kind === 'custom')
-    .filter(card =>
-      card.fields.some(f =>
-        isFieldVisible(f, responses) &&
-        responses[f.id] !== undefined &&
-        responses[f.id] !== null &&
-        responses[f.id] !== '',
-      )
-    );
+  const visibleSteps = template.steps
+    .map(step => ({
+      ...step,
+      cards: step.cards
+        .filter((c): c is CustomCard => c.kind === 'custom')
+        .filter(card =>
+          card.fields.some(f =>
+            isFieldVisible(f, responses) &&
+            responses[f.id] !== undefined &&
+            responses[f.id] !== null &&
+            responses[f.id] !== '',
+          )
+        ),
+    }))
+    .filter(step => step.cards.length > 0);
 
-  if (visibleCustomCards.length === 0) return null;
+  if (visibleSteps.length === 0) return null;
 
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-      {visibleCustomCards.map(card => {
-        const visibleFields = card.fields.filter(f => isFieldVisible(f, responses));
+    <Stack spacing={2}>
+      {visibleSteps.map(step => (
+        <Box key={step.id}>
+          <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
+            {step.title}
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+            {step.cards.map(card => {
+              const visibleFields = card.fields.filter(f => isFieldVisible(f, responses));
 
-        return (
-          <Paper
-            key={card.id}
-            variant="outlined"
-            sx={{
-              gridColumn: { xs: '1 / -1', sm: `span ${card.columnSpan}` },
-              p: 2,
-              borderRadius: 2,
-            }}
-          >
-            {card.title && (
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                {card.title}
-              </Typography>
-            )}
-            <Stack spacing={0.5}>
-              {visibleFields.map(field => {
-                const val = responses[field.id];
-                if (field.type === 'rating') {
-                  return (
-                    <RatingResponse
-                      key={field.id}
-                      field={field as CheckInRatingField}
-                      value={typeof val === 'number' ? val : null}
-                    />
-                  );
-                }
-                // Capitalise yes/no responses for display
-                const displayVal = typeof val === 'string'
-                  ? (field.type === 'yesno' ? val.charAt(0).toUpperCase() + val.slice(1) : val)
-                  : null;
-                return (
-                  <TextResponse
-                    key={field.id}
-                    label={field.label}
-                    value={displayVal}
-                  />
-                );
-              })}
-            </Stack>
-          </Paper>
-        );
-      })}
-    </Box>
+              return (
+                <Paper
+                  key={card.id}
+                  variant="outlined"
+                  sx={{
+                    gridColumn: { xs: '1 / -1', sm: `span ${card.columnSpan}` },
+                    p: 2,
+                    borderRadius: 2,
+                  }}
+                >
+                  {card.title && (
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                      {card.title}
+                    </Typography>
+                  )}
+                  <Stack spacing={0.5}>
+                    {visibleFields.map(field => {
+                      const val = responses[field.id];
+                      if (field.type === 'rating') {
+                        return (
+                          <RatingResponse
+                            key={field.id}
+                            field={field as CheckInRatingField}
+                            value={typeof val === 'number' ? val : null}
+                          />
+                        );
+                      }
+                      const displayVal = typeof val === 'string'
+                        ? (field.type === 'yesno' ? val.charAt(0).toUpperCase() + val.slice(1) : val)
+                        : null;
+                      return (
+                        <TextResponse
+                          key={field.id}
+                          label={field.label}
+                          value={displayVal}
+                        />
+                      );
+                    })}
+                  </Stack>
+                </Paper>
+              );
+            })}
+          </Box>
+        </Box>
+      ))}
+    </Stack>
   );
 }

@@ -154,3 +154,11 @@ export const SubmitCheckInResponseSchema = z.object({
   checkIn: WeeklyCheckInSchema,
 });
 export type SubmitCheckInResponse = z.infer<typeof SubmitCheckInResponseSchema>;
+
+export const SaveCheckInDraftRequestSchema = TemplateCheckInRequestSchema;
+export type SaveCheckInDraftRequest = z.infer<typeof SaveCheckInDraftRequestSchema>;
+
+export const SaveCheckInDraftResponseSchema = z.object({
+  checkIn: WeeklyCheckInSchema,
+});
+export type SaveCheckInDraftResponse = z.infer<typeof SaveCheckInDraftResponseSchema>;

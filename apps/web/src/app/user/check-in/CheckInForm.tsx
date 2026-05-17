@@ -7,6 +7,7 @@ import {
   Button,
   CircularProgress,
   Divider,
+  Stack,
   TextField,
   Typography,
 } from '@mui/material';
@@ -21,14 +22,14 @@ import WorkoutsSystemCard from '@/components/checkin/WorkoutsSystemCard';
 import MetricsSystemCard from '@/components/checkin/MetricsSystemCard';
 import ProgressPhotoSection from './ProgressPhotoSection';
 import type { PreviousPhotos, WeekTargets } from '@/types/checkInTypes';
-import type { CheckInTemplate, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
-import { parseCustomResponses, isFieldVisible, getAllInputFields } from '@/types/checkInTemplateTypes';
-import type { SubmitCheckInRequest } from '@lib/contracts/checkIn';
+import type { CheckInStep, CheckInTemplate, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
+import { parseCustomResponses, isFieldVisible, getAllInputFields, getAllTemplateCards } from '@/types/checkInTemplateTypes';
+import type { SaveCheckInDraftRequest, SubmitCheckInRequest } from '@lib/contracts/checkIn';
 import { useCheckInPayload } from './useCheckInPayload';
 import { useCheckInPhotos } from './useCheckInPhotos';
 import { useCheckInMetricsEditor } from './useCheckInMetricsEditor';
 import { useCheckInAutosave } from './useCheckInAutosave';
-import { submitCheckIn } from '@lib/clientApi';
+import { saveCheckInDraft, submitCheckIn } from '@lib/clientApi';
 
 interface Props {
   currentWeek: Metric[];
@@ -69,12 +70,34 @@ interface LegacyFormState {
 
 function getInitialMetricsExpansion(template: CheckInTemplate | null): Record<string, boolean> {
   if (!template) return {};
-  return template.cards.reduce<Record<string, boolean>>((acc, card) => {
+  return getAllTemplateCards(template).reduce<Record<string, boolean>>((acc, card) => {
     if (card.kind === 'system' && card.systemType === 'metrics') {
       acc[card.id] = card.columnSpan === 2;
     }
     return acc;
   }, {});
+}
+
+function isEmptyFieldValue(value: string | number | null | undefined): boolean {
+  return value === undefined || value === null || value === '';
+}
+
+function validateVisibleRequiredFieldsForStep(
+  step: CheckInStep,
+  responses: CustomCheckInResponses,
+): string | null {
+  for (const card of step.cards) {
+    if (card.kind !== 'custom') continue;
+    for (const field of card.fields) {
+      if (!isFieldVisible(field, responses) || !field.required) continue;
+      const value = responses[field.id];
+      if (isEmptyFieldValue(value)) return `"${field.label}" is required`;
+      if (field.type === 'rating' && typeof value !== 'number') return `"${field.label}" is required`;
+      if (field.type === 'yesno' && value !== 'yes' && value !== 'no') return `"${field.label}" is required`;
+    }
+  }
+
+  return null;
 }
 
 export default function CheckInForm({
@@ -90,6 +113,9 @@ export default function CheckInForm({
   const { photoUrls, onPhotoUploaded, onPhotoRemoved } = useCheckInPhotos(checkIn);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [lastDraftSavedAt, setLastDraftSavedAt] = useState<Date | null>(null);
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
 
   // ── Template mode state ────────────────────────────────────────────────────
   const [customResponses, setCustomResponses] = useState<CustomCheckInResponses>(() =>
@@ -137,7 +163,27 @@ export default function CheckInForm({
     await submitCheckIn(payload);
   }
 
+  async function persistDraft(payload: SaveCheckInDraftRequest | SubmitCheckInRequest) {
+    await saveCheckInDraft(payload as SaveCheckInDraftRequest);
+  }
+
+  const templateDraftPayload = checkInPayload as SaveCheckInDraftRequest;
+  const activeStep = activeTemplate?.steps[activeStepIndex] ?? null;
+  const isLastStep = activeTemplate !== null && activeStepIndex === activeTemplate.steps.length - 1;
+
   async function handleSubmit() {
+    if (activeTemplate) {
+      for (const step of activeTemplate.steps) {
+        const validationError = validateVisibleRequiredFieldsForStep(step, customResponses);
+        if (validationError) {
+          setError(validationError);
+          const failingIndex = activeTemplate.steps.findIndex(candidate => candidate.id === step.id);
+          if (failingIndex >= 0) setActiveStepIndex(failingIndex);
+          return;
+        }
+      }
+    }
+
     setSubmitting(true);
     setError(null);
     try {
@@ -159,8 +205,9 @@ export default function CheckInForm({
     : null;
 
   // ── Determine which system blocks the template positions ───────────────────
-  const templateHasMetrics  = activeTemplate?.cards.some(c => c.kind === 'system' && c.systemType === 'metrics')  ?? false;
-  const templateHasWorkouts = activeTemplate?.cards.some(c => c.kind === 'system' && c.systemType === 'workouts') ?? false;
+  const templateCards = activeTemplate ? getAllTemplateCards(activeTemplate) : [];
+  const templateHasMetrics  = templateCards.some(c => c.kind === 'system' && c.systemType === 'metrics');
+  const templateHasWorkouts = templateCards.some(c => c.kind === 'system' && c.systemType === 'workouts');
 
   // In legacy mode, photos always appear above. In template mode, shown at card position.
   const showPhotosAbove = activeTemplate === null;
@@ -182,12 +229,43 @@ export default function CheckInForm({
   useEffect(() => {
     setMetricsExpandedByCardId(getInitialMetricsExpansion(activeTemplate));
   }, [activeTemplate]);
+
+  useEffect(() => {
+    if (!activeTemplate) return;
+    setActiveStepIndex(index => Math.min(index, activeTemplate.steps.length - 1));
+  }, [activeTemplate]);
+
   useCheckInAutosave({
-    isEditing,
+    enabled: isEditing,
     payload: checkInPayload,
-    persistCheckIn,
+    persist: persistCheckIn,
     setError: (message) => setError(message),
   });
+
+  useCheckInAutosave({
+    enabled: !isEditing && activeTemplate !== null,
+    payload: templateDraftPayload,
+    persist: persistDraft,
+    setError: () => setError('Failed to auto-save check-in draft'),
+    onSavingChange: setSavingDraft,
+    onSaved: () => setLastDraftSavedAt(new Date()),
+  });
+
+  function handleNextStep() {
+    if (!activeStep || !activeTemplate) return;
+    const validationError = validateVisibleRequiredFieldsForStep(activeStep, customResponses);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError(null);
+    setActiveStepIndex(index => Math.min(index + 1, activeTemplate.steps.length - 1));
+  }
+
+  function handlePreviousStep() {
+    setError(null);
+    setActiveStepIndex(index => Math.max(index - 1, 0));
+  }
 
   const systemData: SystemCardData = {
     photoUrls,
@@ -254,10 +332,29 @@ export default function CheckInForm({
 
       {(!templateHasMetrics || !templateHasWorkouts) && <Divider sx={{ my: 3 }} />}
 
-      {activeTemplate !== null ? (
-        // ── Template mode: render cards in a 2-column responsive grid ─────────
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'minmax(0, 1fr) minmax(0, 1fr)' }, gap: 2 }}>
-          {activeTemplate.cards.map(card => {
+      {activeTemplate !== null && activeStep !== null ? (
+        <>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+            <Box>
+              <Typography variant="overline" color="text.secondary">
+                Step {activeStepIndex + 1} of {activeTemplate.steps.length}
+              </Typography>
+              <Typography variant="h6">{activeStep.title}</Typography>
+              {activeStep.description && (
+                <Typography variant="body2" color="text.secondary">
+                  {activeStep.description}
+                </Typography>
+              )}
+            </Box>
+            {!isEditing && (
+              <Typography variant="caption" color="text.secondary">
+                {savingDraft ? 'Saving…' : lastDraftSavedAt ? `Saved ${lastDraftSavedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : 'Draft not saved yet'}
+              </Typography>
+            )}
+          </Stack>
+
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'minmax(0, 1fr) minmax(0, 1fr)' }, gap: 2 }}>
+          {activeStep.cards.map(card => {
             const metricsExpanded = card.kind === 'system' && card.systemType === 'metrics'
               ? (metricsExpandedByCardId[card.id] ?? card.columnSpan === 2)
               : undefined;
@@ -280,7 +377,30 @@ export default function CheckInForm({
               />
             );
           })}
-        </Box>
+          </Box>
+
+          <Stack direction="row" spacing={1.5} sx={{ mt: 2 }}>
+            <Button variant="outlined" onClick={handlePreviousStep} disabled={activeStepIndex === 0 || submitting}>
+              Back
+            </Button>
+            {isEditing || isLastStep ? (
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={handleSubmit}
+                disabled={submitting}
+                startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : undefined}
+                size="large"
+              >
+                Submit Check-in
+              </Button>
+            ) : (
+              <Button variant="contained" fullWidth onClick={handleNextStep}>
+                Next
+              </Button>
+            )}
+          </Stack>
+        </>
       ) : (
         // ── Legacy mode: hardcoded ratings + text areas ────────────────────
         <>
@@ -325,7 +445,7 @@ export default function CheckInForm({
         </>
       )}
 
-      {!isEditing && (
+      {!isEditing && activeTemplate === null && (
         <Button
           variant="contained"
           fullWidth

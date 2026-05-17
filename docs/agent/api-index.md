@@ -9,6 +9,7 @@
 - /api/calendar-data | methods=GET | auth=session | contracts=@lib/contracts/calendarData
 - /api/check-in | methods=GET,POST | auth=session | contracts=@lib/contracts/checkIn
 - /api/check-in/current | methods=GET | auth=session | contracts=@lib/contracts/checkIn
+- /api/check-in/draft | methods=PATCH | auth=session | contracts=@lib/contracts/checkIn
 - /api/check-in/photos | methods=POST,DELETE | auth=session | contracts=-
 - /api/check-in/photos/[checkInId]/[angle] | methods=GET | auth=session | contracts=-
 - /api/coach | methods=GET | auth=session | contracts=-

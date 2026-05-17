@@ -26,7 +26,7 @@ import type { CurrentCheckInResponse } from '@lib/contracts/checkIn';
 import { useSettings } from '@lib/providers/SettingsProvider';
 import MetricsSystemCard from '@/components/checkin/MetricsSystemCard';
 import { checkInHasCustomResponses } from '@/lib/checkInUtils';
-import { parseCheckInTemplate } from '@/types/checkInTemplateTypes';
+import { getAllTemplateCards, parseCheckInTemplate } from '@/types/checkInTemplateTypes';
 import { getCheckInHistory, getCurrentCheckIn } from '@lib/clientApi';
 import { signalTokens } from '@lib/signal/tokens';
 
@@ -158,9 +158,11 @@ export default function CheckInClient({ signalEnabled = false }: { signalEnabled
   const completedCheckInTemplateSnapshot = currentData && checkInHasCustomResponses(currentData.checkIn)
     ? parseCheckInTemplate(currentData.checkIn.templateSnapshot)
     : null;
-  const completedMetricsCardConfig = completedCheckInTemplateSnapshot?.cards.find(
+  const completedMetricsCardConfig = completedCheckInTemplateSnapshot
+    ? getAllTemplateCards(completedCheckInTemplateSnapshot).find(
     card => card.kind === 'system' && card.systemType === 'metrics',
-  )?.metricConfig;
+    )?.metricConfig
+    : undefined;
 
   const weekLabel = currentData
     ? new Date(currentData.checkIn.weekStartDate).toLocaleDateString('en-GB', {

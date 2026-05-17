@@ -12,7 +12,8 @@ export type { DataVizCard };
 // v2 model: fields are grouped into cards.
 //   SystemCard  — pre-defined atomic block (photos, metrics, workouts); no editable fields
 //   CustomCard  — coach-defined; contains input fields (rating, text, textarea)
-// v1 → v2 migration is applied transparently on read via parseCheckInTemplate.
+// v3 model: cards are grouped into explicit steps.
+// v1/v2 → v3 migration is applied transparently on read via parseCheckInTemplate.
 
 // ─── Conditional branching ────────────────────────────────────────────────────
 
@@ -126,9 +127,26 @@ export type CheckInCard = SystemCard | CustomCard | DataVizCard;
 
 // ─── Template ─────────────────────────────────────────────────────────────────
 
-export interface CheckInTemplate {
-  version: 2;
+export interface CheckInStep {
+  id: string;
+  title: string;
+  description?: string;
   cards: CheckInCard[];
+}
+
+export interface CheckInTemplate {
+  version: 3;
+  steps: CheckInStep[];
+}
+
+interface CheckInTemplateV1 {
+  version: 1;
+  fields: unknown[];
+}
+
+interface CheckInTemplateV2 {
+  version: 2;
+  cards: unknown[];
 }
 
 // Stored in WeeklyCheckIn.customResponses: field ID → value (input fields only)
@@ -174,8 +192,12 @@ export function resolveMetricCardConfig(config?: MetricCardConfig): Required<Met
 // ─── Utility helpers ─────────────────────────────────────────────────────────
 
 /** Flatten all input fields from all custom cards in order. */
+export function getAllTemplateCards(template: CheckInTemplate): CheckInCard[] {
+  return template.steps.flatMap(step => step.cards);
+}
+
 export function getAllInputFields(template: CheckInTemplate): CheckInInputField[] {
-  return template.cards
+  return getAllTemplateCards(template)
     .filter((c): c is CustomCard => c.kind === 'custom')
     .flatMap(c => c.fields);
 }
@@ -183,45 +205,71 @@ export function getAllInputFields(template: CheckInTemplate): CheckInInputField[
 // ─── Default template (mirrors the existing hardcoded legacy check-in) ────────
 
 export const DEFAULT_TEMPLATE: CheckInTemplate = {
-  version: 2,
-  cards: [
-    { id: 'default-metrics',  kind: 'system', systemType: 'metrics',  columnSpan: 1 },
-    { id: 'default-workouts', kind: 'system', systemType: 'workouts', columnSpan: 1 },
-    { id: 'default-photos',   kind: 'system', systemType: 'photos',   columnSpan: 2 },
+  version: 3,
+  steps: [
     {
-      id: 'default-wellbeing', kind: 'custom', title: 'How was your week?', columnSpan: 1,
-      fields: [
-        { id: 'default-energy',    type: 'rating', label: 'Energy level',               minScale: 1, maxScale: 5 },
-        { id: 'default-mood',      type: 'rating', label: 'Mood / Motivation',          minScale: 1, maxScale: 5 },
-        { id: 'default-stress',    type: 'rating', label: 'Stress level',               minScale: 1, maxScale: 5 },
-        { id: 'default-sleep',     type: 'rating', label: 'Sleep quality (subjective)', minScale: 1, maxScale: 5 },
-        { id: 'default-recovery',  type: 'rating', label: 'Recovery between sessions',  minScale: 1, maxScale: 5 },
-        { id: 'default-adherence', type: 'rating', label: 'Adherence to plan',          minScale: 1, maxScale: 5 },
+      id: 'default-progress-step',
+      title: 'Progress',
+      cards: [
+        { id: 'default-metrics', kind: 'system', systemType: 'metrics', columnSpan: 1 },
+        { id: 'default-workouts', kind: 'system', systemType: 'workouts', columnSpan: 1 },
       ],
     },
     {
-      id: 'default-reflection', kind: 'custom', title: 'Reflection', columnSpan: 1,
-      fields: [
-        { id: 'default-review',  type: 'textarea', label: 'How did your week go overall?' },
-        { id: 'default-goals',   type: 'textarea', label: 'Goals / focus for next week' },
-        { id: 'default-message', type: 'textarea', label: 'Message to your coach (optional)' },
+      id: 'default-photos-step',
+      title: 'Photos',
+      cards: [
+        { id: 'default-photos', kind: 'system', systemType: 'photos', columnSpan: 2 },
+      ],
+    },
+    {
+      id: 'default-questions-step',
+      title: 'Questions',
+      cards: [
+        {
+          id: 'default-wellbeing', kind: 'custom', title: 'How was your week?', columnSpan: 1,
+          fields: [
+            { id: 'default-energy', type: 'rating', label: 'Energy level', minScale: 1, maxScale: 5 },
+            { id: 'default-mood', type: 'rating', label: 'Mood / Motivation', minScale: 1, maxScale: 5 },
+            { id: 'default-stress', type: 'rating', label: 'Stress level', minScale: 1, maxScale: 5 },
+            { id: 'default-sleep', type: 'rating', label: 'Sleep quality (subjective)', minScale: 1, maxScale: 5 },
+            { id: 'default-recovery', type: 'rating', label: 'Recovery between sessions', minScale: 1, maxScale: 5 },
+            { id: 'default-adherence', type: 'rating', label: 'Adherence to plan', minScale: 1, maxScale: 5 },
+          ],
+        },
+        {
+          id: 'default-reflection', kind: 'custom', title: 'Reflection', columnSpan: 1,
+          fields: [
+            { id: 'default-review', type: 'textarea', label: 'How did your week go overall?' },
+            { id: 'default-goals', type: 'textarea', label: 'Goals / focus for next week' },
+            { id: 'default-message', type: 'textarea', label: 'Message to your coach (optional)' },
+          ],
+        },
       ],
     },
   ],
 };
 
-/** Return a copy of the default template with fresh UUIDs (safe for multiple coaches). */
+/** Return a copy of the default template steps with fresh UUIDs (safe for multiple coaches). */
+export function makeDefaultSteps(): CheckInStep[] {
+  return DEFAULT_TEMPLATE.steps.map(step => ({
+    ...step,
+    id: crypto.randomUUID(),
+    cards: step.cards.map(card => {
+      if (card.kind === 'system' || card.kind === 'dataviz') {
+        return { ...card, id: crypto.randomUUID() };
+      }
+      return {
+        ...card,
+        id: crypto.randomUUID(),
+        fields: card.fields.map(f => ({ ...f, id: crypto.randomUUID() })),
+      };
+    }),
+  }));
+}
+
 export function makeDefaultCards(): CheckInCard[] {
-  return DEFAULT_TEMPLATE.cards.map(card => {
-    if (card.kind === 'system' || card.kind === 'dataviz') {
-      return { ...card, id: crypto.randomUUID() };
-    }
-    return {
-      ...card,
-      id: crypto.randomUUID(),
-      fields: card.fields.map(f => ({ ...f, id: crypto.randomUUID() })),
-    };
-  });
+  return getAllTemplateCards({ version: 3, steps: makeDefaultSteps() });
 }
 
 // ─── Parse helpers ────────────────────────────────────────────────────────────
@@ -381,7 +429,7 @@ function parseSystemCard(raw: Record<string, unknown>): SystemCard | null {
   };
 }
 
-/** Auto-migrate a v1 template (flat fields[]) to v2 cards.
+/** Auto-migrate a v1 template (flat fields[]) to v3 steps.
  *  photos/metrics/workouts fields → SystemCard; input fields → single-field CustomCard. */
 export function migrateV1Template(raw: { version: 1; fields: unknown[] }): CheckInTemplate {
   const photosUsed   = new Set<string>();
@@ -411,31 +459,26 @@ export function migrateV1Template(raw: { version: 1; fields: unknown[] }): Check
     }
   }
 
-  return { version: 2, cards };
+  return {
+    version: 3,
+    steps: [
+      {
+        id: crypto.randomUUID(),
+        title: 'Check-in',
+        cards,
+      },
+    ],
+  };
 }
 
-/** Defensively parse a Prisma JsonValue into a CheckInTemplate or null.
- *  Transparently migrates v1 templates to v2 on read. */
-export function parseCheckInTemplate(raw: unknown): CheckInTemplate | null {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-  const t = raw as Record<string, unknown>;
-
-  // v1 migration path
-  if (t.version === 1 && Array.isArray(t.fields)) {
-    return migrateV1Template(t as { version: 1; fields: unknown[] });
-  }
-
-  // v2 parse path
-  if (t.version !== 2) return null;
-  if (!Array.isArray(t.cards)) return null;
-
+function parseCards(rawCards: unknown[]): CheckInCard[] {
   const cards: CheckInCard[] = [];
   let photosCount   = 0;
   let metricsCount  = 0;
   let workoutsCount = 0;
   let totalFields   = 0;
 
-  for (const rawCard of t.cards) {
+  for (const rawCard of rawCards) {
     if (!rawCard || typeof rawCard !== 'object' || Array.isArray(rawCard)) continue;
     const c = rawCard as Record<string, unknown>;
 
@@ -467,7 +510,66 @@ export function parseCheckInTemplate(raw: unknown): CheckInTemplate | null {
     if (cards.length >= MAX_TEMPLATE_CARDS) break;
   }
 
-  return { version: 2, cards };
+  return cards;
+}
+
+function parseStep(raw: unknown): CheckInStep | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const step = raw as Record<string, unknown>;
+  if (typeof step.id !== 'string' || !step.id) return null;
+  if (!Array.isArray(step.cards)) return null;
+
+  const parsedStep: CheckInStep = {
+    id: step.id,
+    title: typeof step.title === 'string' && step.title.trim() ? step.title.trim() : 'Untitled step',
+    cards: parseCards(step.cards),
+  };
+
+  if (typeof step.description === 'string' && step.description.trim()) {
+    parsedStep.description = step.description.trim();
+  }
+
+  return parsedStep;
+}
+
+function wrapCardsAsSingleStep(cards: CheckInCard[], title = 'Check-in'): CheckInTemplate {
+  return {
+    version: 3,
+    steps: [
+      {
+        id: crypto.randomUUID(),
+        title,
+        cards,
+      },
+    ],
+  };
+}
+
+function migrateV2Template(raw: CheckInTemplateV2): CheckInTemplate {
+  return wrapCardsAsSingleStep(parseCards(raw.cards));
+}
+
+/** Defensively parse a Prisma JsonValue into a CheckInTemplate or null.
+ *  Transparently migrates v1/v2 templates to v3 on read. */
+export function parseCheckInTemplate(raw: unknown): CheckInTemplate | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const t = raw as Record<string, unknown>;
+
+  if (t.version === 1 && Array.isArray(t.fields)) {
+    return migrateV1Template(t as unknown as CheckInTemplateV1);
+  }
+
+  if (t.version === 2 && Array.isArray(t.cards)) {
+    return migrateV2Template(t as unknown as CheckInTemplateV2);
+  }
+
+  if (t.version !== 3 || !Array.isArray(t.steps)) return null;
+
+  const steps = t.steps
+    .map(parseStep)
+    .filter((step): step is CheckInStep => step !== null);
+
+  return { version: 3, steps };
 }
 
 /** Defensively parse a Prisma JsonValue into CustomCheckInResponses. */
@@ -516,22 +618,34 @@ export function isFieldVisible(
 
 /** Validate a CheckInTemplate for the PUT API endpoint. Returns an error string or null. */
 export function validateTemplate(template: CheckInTemplate): string | null {
-  if (template.version !== 2) return 'Invalid template version';
-  if (!Array.isArray(template.cards)) return 'cards must be an array';
-  if (template.cards.length > MAX_TEMPLATE_CARDS) {
+  if (template.version !== 3) return 'Invalid template version';
+  if (!Array.isArray(template.steps) || template.steps.length === 0) return 'steps must be a non-empty array';
+
+  const allCards = getAllTemplateCards(template);
+  if (allCards.length > MAX_TEMPLATE_CARDS) {
     return `Template may not exceed ${MAX_TEMPLATE_CARDS} cards`;
   }
 
   // Build id→type map for showIf cross-validation (input fields only)
   const fieldTypes = new Map<string, CheckInInputField['type']>();
+  const stepIds = new Set<string>();
   let totalFields = 0;
-  for (const card of template.cards) {
-    if (card.kind === 'custom') {
-      for (const field of card.fields) {
-        if (typeof field.id === 'string' && field.id) {
-          fieldTypes.set(field.id, field.type);
+  for (const step of template.steps) {
+    if (!step.id || typeof step.id !== 'string') return 'Each step must have a string id';
+    if (stepIds.has(step.id)) return `Duplicate step id: ${step.id}`;
+    stepIds.add(step.id);
+    if (!step.title || typeof step.title !== 'string' || !step.title.trim()) {
+      return `Step "${step.id}" must have a title`;
+    }
+
+    for (const card of step.cards) {
+      if (card.kind === 'custom') {
+        for (const field of card.fields) {
+          if (typeof field.id === 'string' && field.id) {
+            fieldTypes.set(field.id, field.type);
+          }
+          totalFields++;
         }
-        totalFields++;
       }
     }
   }
@@ -545,93 +659,94 @@ export function validateTemplate(template: CheckInTemplate): string | null {
   let metricsCount  = 0;
   let workoutsCount = 0;
 
-  for (const card of template.cards) {
-    if (!card.id || typeof card.id !== 'string') return 'Each card must have a string id';
-    if (cardIds.has(card.id)) return `Duplicate card id: ${card.id}`;
-    cardIds.add(card.id);
-    if (card.columnSpan !== 1 && card.columnSpan !== 2) {
-      return `Card "${card.id}" columnSpan must be 1 or 2`;
-    }
-
-    if (card.kind === 'system') {
-      if (card.systemType === 'photos')   { photosCount++;   if (photosCount   > 1) return 'Only one photos card is allowed per template'; }
-      if (card.systemType === 'metrics')  { metricsCount++;  if (metricsCount  > 1) return 'Only one metrics card is allowed per template'; }
-      if (card.systemType === 'workouts') { workoutsCount++; if (workoutsCount > 1) return 'Only one workouts card is allowed per template'; }
-      if (card.systemType === 'metrics' && card.metricConfig) {
-        const { visibleBuiltInMetrics, includeCustomMetrics } = card.metricConfig;
-        if (visibleBuiltInMetrics !== undefined) {
-          if (!Array.isArray(visibleBuiltInMetrics)) {
-            return `Metrics card "${card.id}" visibleBuiltInMetrics must be an array`;
-          }
-          if (!visibleBuiltInMetrics.every(key => BUILTIN_METRIC_KEYS.includes(key))) {
-            return `Metrics card "${card.id}" has unknown metric key`;
-          }
-        }
-        if (includeCustomMetrics !== undefined && typeof includeCustomMetrics !== 'boolean') {
-          return `Metrics card "${card.id}" includeCustomMetrics must be boolean`;
-        }
-        const selectedKeys = card.metricConfig.visibleBuiltInMetrics;
-        const builtInVisibleCount = selectedKeys
-          ? selectedKeys.filter(key => BUILTIN_METRIC_KEYS.includes(key)).length
-          : BUILTIN_METRIC_KEYS.length;
-        const includeCustomResolved = card.metricConfig.includeCustomMetrics ?? true;
-        if (builtInVisibleCount === 0 && !includeCustomResolved) {
-          return 'Metrics card must show at least one metric.';
-        }
+  for (const step of template.steps) {
+    for (const card of step.cards) {
+      if (!card.id || typeof card.id !== 'string') return 'Each card must have a string id';
+      if (cardIds.has(card.id)) return `Duplicate card id: ${card.id}`;
+      cardIds.add(card.id);
+      if (card.columnSpan !== 1 && card.columnSpan !== 2) {
+        return `Card "${card.id}" columnSpan must be 1 or 2`;
       }
-    } else if (card.kind === 'custom') {
-      if (!Array.isArray(card.fields)) return `Card "${card.id}" fields must be an array`;
 
-      for (const field of card.fields) {
-        if (!field.id || typeof field.id !== 'string') return 'Each field must have a string id';
-        if (fieldIds.has(field.id)) return `Duplicate field id: ${field.id}`;
-        fieldIds.add(field.id);
-        if (!field.label || typeof field.label !== 'string') return 'Each field must have a label';
-
-        if (field.type === 'rating') {
-          if (field.minScale !== 1) return `Rating field "${field.label}" minScale must be 1`;
-          if (field.maxScale < MIN_RATING_SCALE || field.maxScale > MAX_RATING_SCALE) {
-            return `Rating field "${field.label}" maxScale must be between ${MIN_RATING_SCALE} and ${MAX_RATING_SCALE}`;
+      if (card.kind === 'system') {
+        if (card.systemType === 'photos')   { photosCount++;   if (photosCount   > 1) return 'Only one photos card is allowed per template'; }
+        if (card.systemType === 'metrics')  { metricsCount++;  if (metricsCount  > 1) return 'Only one metrics card is allowed per template'; }
+        if (card.systemType === 'workouts') { workoutsCount++; if (workoutsCount > 1) return 'Only one workouts card is allowed per template'; }
+        if (card.systemType === 'metrics' && card.metricConfig) {
+          const { visibleBuiltInMetrics, includeCustomMetrics } = card.metricConfig;
+          if (visibleBuiltInMetrics !== undefined) {
+            if (!Array.isArray(visibleBuiltInMetrics)) {
+              return `Metrics card "${card.id}" visibleBuiltInMetrics must be an array`;
+            }
+            if (!visibleBuiltInMetrics.every(key => BUILTIN_METRIC_KEYS.includes(key))) {
+              return `Metrics card "${card.id}" has unknown metric key`;
+            }
           }
-        } else if (field.type !== 'text' && field.type !== 'textarea' && field.type !== 'yesno') {
-          return `Unknown input field type: ${String((field as CheckInInputField).type)}`;
-        }
-
-        // Validate showIf condition
-        if (field.showIf) {
-          const cond = field.showIf;
-          if (cond.fieldId === field.id) return `Field "${field.label}" cannot reference itself in showIf`;
-          const refType = fieldTypes.get(cond.fieldId);
-          if (!refType) return `Field "${field.label}" showIf references unknown field id: ${cond.fieldId}`;
-          if (RATING_OPERATORS.has(cond.operator) && refType !== 'rating') {
-            return `Field "${field.label}" uses a rating operator but references a non-rating field`;
+          if (includeCustomMetrics !== undefined && typeof includeCustomMetrics !== 'boolean') {
+            return `Metrics card "${card.id}" includeCustomMetrics must be boolean`;
           }
-          if (TEXT_OPERATORS.has(cond.operator) && refType !== 'text' && refType !== 'textarea' && refType !== 'yesno') {
-            return `Field "${field.label}" uses an answered/not_answered operator but references a non-text field`;
+          const selectedKeys = card.metricConfig.visibleBuiltInMetrics;
+          const builtInVisibleCount = selectedKeys
+            ? selectedKeys.filter(key => BUILTIN_METRIC_KEYS.includes(key)).length
+            : BUILTIN_METRIC_KEYS.length;
+          const includeCustomResolved = card.metricConfig.includeCustomMetrics ?? true;
+          if (builtInVisibleCount === 0 && !includeCustomResolved) {
+            return 'Metrics card must show at least one metric.';
           }
         }
-      }
-    } else if (card.kind === 'dataviz') {
-      if (!BUILTIN_METRIC_KEYS.includes(card.metric)) {
-        return `DataViz card "${card.id}" has unknown metric: ${card.metric}`;
-      }
-      const tr = card.timeRange;
-      if (tr.mode === 'relative') {
-        if (!RELATIVE_WEEK_OPTIONS.includes(tr.weeks)) {
-          return `DataViz card "${card.id}" has invalid weeks value: ${String(tr.weeks)}`;
+      } else if (card.kind === 'custom') {
+        if (!Array.isArray(card.fields)) return `Card "${card.id}" fields must be an array`;
+
+        for (const field of card.fields) {
+          if (!field.id || typeof field.id !== 'string') return 'Each field must have a string id';
+          if (fieldIds.has(field.id)) return `Duplicate field id: ${field.id}`;
+          fieldIds.add(field.id);
+          if (!field.label || typeof field.label !== 'string') return 'Each field must have a label';
+
+          if (field.type === 'rating') {
+            if (field.minScale !== 1) return `Rating field "${field.label}" minScale must be 1`;
+            if (field.maxScale < MIN_RATING_SCALE || field.maxScale > MAX_RATING_SCALE) {
+              return `Rating field "${field.label}" maxScale must be between ${MIN_RATING_SCALE} and ${MAX_RATING_SCALE}`;
+            }
+          } else if (field.type !== 'text' && field.type !== 'textarea' && field.type !== 'yesno') {
+            return `Unknown input field type: ${String((field as CheckInInputField).type)}`;
+          }
+
+          if (field.showIf) {
+            const cond = field.showIf;
+            if (cond.fieldId === field.id) return `Field "${field.label}" cannot reference itself in showIf`;
+            const refType = fieldTypes.get(cond.fieldId);
+            if (!refType) return `Field "${field.label}" showIf references unknown field id: ${cond.fieldId}`;
+            if (RATING_OPERATORS.has(cond.operator) && refType !== 'rating') {
+              return `Field "${field.label}" uses a rating operator but references a non-rating field`;
+            }
+            if (TEXT_OPERATORS.has(cond.operator) && refType !== 'text' && refType !== 'textarea' && refType !== 'yesno') {
+              return `Field "${field.label}" uses an answered/not_answered operator but references a non-text field`;
+            }
+          }
         }
-      } else if (tr.mode === 'absolute') {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(tr.startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(tr.endDate)) {
-          return `DataViz card "${card.id}" has invalid date format`;
+      } else if (card.kind === 'dataviz') {
+        if (!BUILTIN_METRIC_KEYS.includes(card.metric)) {
+          return `DataViz card "${card.id}" has unknown metric: ${card.metric}`;
         }
-        if (tr.startDate >= tr.endDate) {
-          return `DataViz card "${card.id}" startDate must be before endDate`;
+        const tr = card.timeRange;
+        if (tr.mode === 'relative') {
+          if (!RELATIVE_WEEK_OPTIONS.includes(tr.weeks)) {
+            return `DataViz card "${card.id}" has invalid weeks value: ${String(tr.weeks)}`;
+          }
+        } else if (tr.mode === 'absolute') {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(tr.startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(tr.endDate)) {
+            return `DataViz card "${card.id}" has invalid date format`;
+          }
+          if (tr.startDate >= tr.endDate) {
+            return `DataViz card "${card.id}" startDate must be before endDate`;
+          }
+        } else {
+          return `DataViz card "${card.id}" has unknown timeRange mode`;
         }
       } else {
-        return `DataViz card "${card.id}" has unknown timeRange mode`;
+        return `Unknown card kind: ${String((card as CheckInCard & { kind: string }).kind)}`;
       }
-    } else {
-      return `Unknown card kind: ${String((card as CheckInCard & { kind: string }).kind)}`;
     }
   }
 

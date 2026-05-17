@@ -67,21 +67,33 @@ describe('CheckInForm', () => {
 
   it('template mode renders cards in template order and clears hidden conditional fields', async () => {
     const template: CheckInTemplate = {
-      version: 2,
-      cards: [
+      version: 3,
+      steps: [
         {
-          id: 'c1',
-          kind: 'custom',
-          title: 'Q1',
-          columnSpan: 1,
-          fields: [
-            { id: 'f1', type: 'rating', label: 'Field 1', minScale: 1, maxScale: 5 },
-            { id: 'f2', type: 'text', label: 'Field 2', showIf: { fieldId: 'f1', operator: 'eq', value: 3 } },
+          id: 's1',
+          title: 'Step one',
+          cards: [
+            {
+              id: 'c1',
+              kind: 'custom',
+              title: 'Q1',
+              columnSpan: 1,
+              fields: [
+                { id: 'f1', type: 'rating', label: 'Field 1', minScale: 1, maxScale: 5 },
+                { id: 'f2', type: 'text', label: 'Field 2', showIf: { fieldId: 'f1', operator: 'eq', value: 3 } },
+              ],
+            },
+            { id: 'm', kind: 'system', systemType: 'metrics', columnSpan: 1 },
           ],
         },
-        { id: 'm', kind: 'system', systemType: 'metrics', columnSpan: 1 },
-        { id: 'p', kind: 'system', systemType: 'photos', columnSpan: 1 },
-        { id: 'w', kind: 'system', systemType: 'workouts', columnSpan: 1 },
+        {
+          id: 's2',
+          title: 'Step two',
+          cards: [
+            { id: 'p', kind: 'system', systemType: 'photos', columnSpan: 1 },
+            { id: 'w', kind: 'system', systemType: 'workouts', columnSpan: 1 },
+          ],
+        },
       ],
     };
 
@@ -90,6 +102,7 @@ describe('CheckInForm', () => {
     const q1 = screen.getByText('Q1');
     const metricTitle = screen.getByText('Last 2 weeks of metrics');
     expect(q1.compareDocumentPosition(metricTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText('Step 1 of 2')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '3' }));
     const field2 = await screen.findByLabelText('Field 2');
@@ -98,5 +111,8 @@ describe('CheckInForm', () => {
     await waitFor(() => {
       expect(screen.queryByLabelText('Field 2')).not.toBeInTheDocument();
     });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByText('Step 2 of 2')).toBeInTheDocument();
   });
 });

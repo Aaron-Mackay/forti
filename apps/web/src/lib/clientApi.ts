@@ -26,12 +26,16 @@ import {
   CheckInHistoryResponseSchema,
   CurrentCheckInResponseSchema,
   PhotoHistoryResponseSchema,
+  SaveCheckInDraftRequestSchema,
+  SaveCheckInDraftResponseSchema,
   SubmitCheckInRequestSchema,
   SubmitCheckInResponseSchema,
   type CheckInTemplateResponse,
   type CheckInHistoryResponse,
   type CurrentCheckInResponse,
   type PhotoHistoryResponse,
+  type SaveCheckInDraftRequest,
+  type SaveCheckInDraftResponse,
   type SubmitCheckInRequest,
   type SubmitCheckInResponse,
 } from './contracts/checkIn';
@@ -215,6 +219,14 @@ export async function submitCheckIn(payload: SubmitCheckInRequest): Promise<Subm
   return fetchJsonWithSchema('/api/check-in', SubmitCheckInResponseSchema, {
     method: 'POST',
     body: JSON.stringify(SubmitCheckInRequestSchema.parse(payload)),
+    headers: {'Content-Type': 'application/json'},
+  });
+}
+
+export async function saveCheckInDraft(payload: SaveCheckInDraftRequest): Promise<SaveCheckInDraftResponse> {
+  return fetchJsonWithSchema('/api/check-in/draft', SaveCheckInDraftResponseSchema, {
+    method: 'PATCH',
+    body: JSON.stringify(SaveCheckInDraftRequestSchema.parse(payload)),
     headers: {'Content-Type': 'application/json'},
   });
 }

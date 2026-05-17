@@ -54,7 +54,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  makeDefaultCards,
+  getAllTemplateCards,
+  makeDefaultSteps,
   MAX_RATING_SCALE,
   MAX_TEMPLATE_FIELDS,
   MAX_TEMPLATE_CARDS,
@@ -65,6 +66,7 @@ import {
 } from '@/types/checkInTemplateTypes';
 import type {
   CheckInTemplate,
+  CheckInStep,
   CheckInCard,
   SystemCard,
   CustomCard,
@@ -1032,15 +1034,16 @@ function AddCardMenu({ hasPhotos, hasMetrics, hasWorkouts, atCardLimit, onAddCus
 // ─── Template preview modal ───────────────────────────────────────────────────
 
 interface TemplatePreviewProps {
-  cards: CheckInCard[];
+  steps: CheckInStep[];
   onClose: () => void;
 }
 
-function TemplatePreview({ cards, onClose }: TemplatePreviewProps) {
+function TemplatePreview({ steps, onClose }: TemplatePreviewProps) {
   const [device, setDevice] = useState<'mobile' | 'desktop'>('desktop');
   const [previewResponses, setPreviewResponses] = useState<CustomCheckInResponses>({});
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [metricsExpandedByCardId, setMetricsExpandedByCardId] = useState<Record<string, boolean>>(() =>
-    cards.reduce<Record<string, boolean>>((acc, card) => {
+    getAllTemplateCards({ version: 3, steps }).reduce<Record<string, boolean>>((acc, card) => {
       if (card.kind === 'system' && card.systemType === 'metrics') {
         acc[card.id] = card.columnSpan === 2;
       }
@@ -1049,8 +1052,9 @@ function TemplatePreview({ cards, onClose }: TemplatePreviewProps) {
   );
 
   const isMobile = device === 'mobile';
-  const template: CheckInTemplate = { version: 2, cards };
+  const template: CheckInTemplate = { version: 3, steps };
   const allFields = getAllInputFields(template);
+  const activeStep = steps[activeStepIndex] ?? null;
 
   useEffect(() => {
     const hidden = allFields.filter(f => !isFieldVisible(f, previewResponses));
@@ -1065,14 +1069,14 @@ function TemplatePreview({ cards, onClose }: TemplatePreviewProps) {
 
   useEffect(() => {
     setMetricsExpandedByCardId(
-      cards.reduce<Record<string, boolean>>((acc, card) => {
+      getAllTemplateCards({ version: 3, steps }).reduce<Record<string, boolean>>((acc, card) => {
         if (card.kind === 'system' && card.systemType === 'metrics') {
           acc[card.id] = card.columnSpan === 2;
         }
         return acc;
       }, {})
     );
-  }, [cards]);
+  }, [steps]);
 
   return (
     <Overlay
@@ -1127,11 +1131,20 @@ function TemplatePreview({ cards, onClose }: TemplatePreviewProps) {
                 bgcolor: device === 'mobile' ? 'background.paper' : 'transparent',
               }}
             >
-              {cards.length === 0 ? (
+              {steps.length === 0 || activeStep === null ? (
                 <Typography variant="body2" color="text.secondary">No cards to preview.</Typography>
               ) : (
-                <Box sx={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 2 }}>
-                  {cards.map(card => {
+                <>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                    <Box>
+                      <Typography variant="overline" color="text.secondary">
+                        Step {activeStepIndex + 1} of {steps.length}
+                      </Typography>
+                      <Typography variant="h6">{activeStep.title}</Typography>
+                    </Box>
+                  </Stack>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 2 }}>
+                  {activeStep.cards.map(card => {
                     const metricsExpanded = card.kind === 'system' && card.systemType === 'metrics'
                       ? (metricsExpandedByCardId[card.id] ?? card.columnSpan === 2)
                       : undefined;
@@ -1174,13 +1187,25 @@ function TemplatePreview({ cards, onClose }: TemplatePreviewProps) {
                       />
                     );
                   })}
-                </Box>
+                  </Box>
+                </>
               )}
 
-              {cards.length > 0 && (
-                <Button variant="contained" fullWidth disabled size="large" sx={{ mt: 3 }}>
-                  Submit Check-in
-                </Button>
+              {steps.length > 0 && (
+                <Stack direction="row" spacing={1} sx={{ mt: 3 }}>
+                  <Button variant="outlined" disabled={activeStepIndex === 0} onClick={() => setActiveStepIndex(i => Math.max(i - 1, 0))}>
+                    Back
+                  </Button>
+                  {activeStepIndex < steps.length - 1 ? (
+                    <Button variant="contained" fullWidth onClick={() => setActiveStepIndex(i => Math.min(i + 1, steps.length - 1))}>
+                      Next
+                    </Button>
+                  ) : (
+                    <Button variant="contained" fullWidth disabled size="large">
+                      Submit Check-in
+                    </Button>
+                  )}
+                </Stack>
               )}
             </Box>
           </Box>
@@ -1205,8 +1230,22 @@ function ensureUniqueCardIds(cards: CheckInCard[]): CheckInCard[] {
   });
 }
 
+function ensureUniqueStepAndCardIds(steps: CheckInStep[]): CheckInStep[] {
+  const seenStepIds = new Set<string>();
+  return steps.map(step => {
+    const stepId = step.id && !seenStepIds.has(step.id) ? step.id : crypto.randomUUID();
+    seenStepIds.add(stepId);
+    return {
+      ...step,
+      id: stepId,
+      title: step.title || 'Untitled step',
+      cards: ensureUniqueCardIds(step.cards),
+    };
+  });
+}
+
 export default function CheckInTemplateEditor({ signalEnabled = false }: { signalEnabled?: boolean }) {
-  const [cards, setCards] = useState<CheckInCard[]>([]);
+  const [steps, setSteps] = useState<CheckInStep[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1224,7 +1263,7 @@ export default function CheckInTemplateEditor({ signalEnabled = false }: { signa
       const res = await fetch('/api/coach/check-in-template');
       if (!res.ok) throw new Error('Failed to load template');
       const data = await res.json() as { template: CheckInTemplate | null };
-      setCards(ensureUniqueCardIds(data.template?.cards ?? makeDefaultCards()));
+      setSteps(ensureUniqueStepAndCardIds(data.template?.steps ?? makeDefaultSteps()));
     } catch {
       setError('Could not load your check-in template.');
     } finally {
@@ -1237,23 +1276,38 @@ export default function CheckInTemplateEditor({ signalEnabled = false }: { signa
   function handleCardDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      setCards(cs => {
-        const oldIdx = cs.findIndex(c => c.id === active.id);
-        const newIdx = cs.findIndex(c => c.id === over.id);
-        return arrayMove(cs, oldIdx, newIdx);
+      setSteps(currentSteps => {
+        const stepIndex = currentSteps.findIndex(step => step.cards.some(c => c.id === active.id) && step.cards.some(c => c.id === over.id));
+        if (stepIndex < 0) return currentSteps;
+        const cards = currentSteps[stepIndex].cards;
+        const oldIdx = cards.findIndex(c => c.id === active.id);
+        const newIdx = cards.findIndex(c => c.id === over.id);
+        if (oldIdx < 0 || newIdx < 0) return currentSteps;
+        return currentSteps.map((step, index) => index === stepIndex ? { ...step, cards: arrayMove(cards, oldIdx, newIdx) } : step);
       });
     }
   }
 
-  function addCustomCard() {
-    setCards(cs => [...cs, { kind: 'custom', id: crypto.randomUUID(), columnSpan: 1, fields: [] }]);
+  function addStep() {
+    setSteps(currentSteps => [
+      ...currentSteps,
+      { id: crypto.randomUUID(), title: `Step ${currentSteps.length + 1}`, cards: [] },
+    ]);
   }
 
-  function addSystemCard(systemType: SystemCard['systemType']) {
-    setCards(cs => [...cs, { kind: 'system', id: crypto.randomUUID(), systemType, columnSpan: systemType === 'photos' ? 2 : 1 }]);
+  function addCustomCard(stepId: string) {
+    setSteps(currentSteps => currentSteps.map(step => step.id === stepId
+      ? { ...step, cards: [...step.cards, { kind: 'custom', id: crypto.randomUUID(), columnSpan: 1, fields: [] }] }
+      : step));
   }
 
-  function addDataVizCard() {
+  function addSystemCard(stepId: string, systemType: SystemCard['systemType']) {
+    setSteps(currentSteps => currentSteps.map(step => step.id === stepId
+      ? { ...step, cards: [...step.cards, { kind: 'system', id: crypto.randomUUID(), systemType, columnSpan: systemType === 'photos' ? 2 : 1 }] }
+      : step));
+  }
+
+  function addDataVizCard(stepId: string) {
     const card: DataVizCard = {
       kind: 'dataviz',
       id: crypto.randomUUID(),
@@ -1261,28 +1315,39 @@ export default function CheckInTemplateEditor({ signalEnabled = false }: { signa
       timeRange: { mode: 'relative', weeks: 2 },
       columnSpan: 1,
     };
-    setCards(cs => [...cs, card]);
+    setSteps(currentSteps => currentSteps.map(step => step.id === stepId
+      ? { ...step, cards: [...step.cards, card] }
+      : step));
   }
 
-  function updateCardAt(index: number, updated: CheckInCard) {
-    setCards(cs => {
-      if (index < 0 || index >= cs.length) return cs;
-      return cs.map((c, i) => i === index ? updated : c);
-    });
+  function updateStep(stepId: string, updater: (step: CheckInStep) => CheckInStep) {
+    setSteps(currentSteps => currentSteps.map(step => step.id === stepId ? updater(step) : step));
   }
 
-  function removeCardAt(index: number) {
-    setCards(cs => {
-      if (index < 0 || index >= cs.length) return cs;
-      return cs.filter((_c, i) => i !== index);
-    });
+  function updateCardAt(stepId: string, index: number, updated: CheckInCard) {
+    updateStep(stepId, step => ({
+      ...step,
+      cards: step.cards.map((card, cardIndex) => cardIndex === index ? updated : card),
+    }));
+  }
+
+  function removeCardAt(stepId: string, index: number) {
+    updateStep(stepId, step => ({
+      ...step,
+      cards: step.cards.filter((_card, cardIndex) => cardIndex !== index),
+    }));
+  }
+
+  function removeStep(stepId: string) {
+    setSteps(currentSteps => currentSteps.filter(step => step.id !== stepId));
   }
 
   async function handleSave() {
     setError(null);
-    const template: CheckInTemplate = { version: 2, cards };
+    const template: CheckInTemplate = { version: 3, steps };
+    const allCards = getAllTemplateCards(template);
 
-    if (cards.length > 0) {
+    if (allCards.length > 0) {
       const validationError = validateTemplate(template);
       if (validationError) {
         setError(validationError);
@@ -1292,7 +1357,7 @@ export default function CheckInTemplateEditor({ signalEnabled = false }: { signa
 
     setSaving(true);
     try {
-      const res = cards.length === 0
+      const res = allCards.length === 0
         ? await fetch('/api/coach/check-in-template', { method: 'DELETE' })
         : await fetch('/api/coach/check-in-template', {
           method: 'PUT',
@@ -1312,13 +1377,14 @@ export default function CheckInTemplateEditor({ signalEnabled = false }: { signa
     }
   }
 
-  const allInputFields = getAllInputFields({ version: 2, cards });
+  const allCards = getAllTemplateCards({ version: 3, steps });
+  const allInputFields = getAllInputFields({ version: 3, steps });
   const atFieldLimit   = allInputFields.length >= MAX_TEMPLATE_FIELDS;
-  const atCardLimit    = cards.length >= MAX_TEMPLATE_CARDS;
+  const atCardLimit    = allCards.length >= MAX_TEMPLATE_CARDS;
 
-  const hasPhotos   = cards.some(c => c.kind === 'system' && c.systemType === 'photos');
-  const hasMetrics  = cards.some(c => c.kind === 'system' && c.systemType === 'metrics');
-  const hasWorkouts = cards.some(c => c.kind === 'system' && c.systemType === 'workouts');
+  const hasPhotos   = allCards.some(c => c.kind === 'system' && c.systemType === 'photos');
+  const hasMetrics  = allCards.some(c => c.kind === 'system' && c.systemType === 'metrics');
+  const hasWorkouts = allCards.some(c => c.kind === 'system' && c.systemType === 'workouts');
 
   if (loading) {
     return (
@@ -1337,76 +1403,109 @@ export default function CheckInTemplateEditor({ signalEnabled = false }: { signa
       )}
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-        <Button size="small" variant="text" onClick={() => setCards(makeDefaultCards())}>
+        <Button size="small" variant="text" onClick={() => setSteps(makeDefaultSteps())}>
           Start from default check-in
         </Button>
-        {cards.length > 0 && (
-          <Button size="small" variant="text" color="error" onClick={() => setCards([])}>
+        {steps.length > 0 && (
+          <Button size="small" variant="text" color="error" onClick={() => setSteps([])}>
             Clear all
           </Button>
         )}
       </Box>
 
-      {cards.length === 0 ? (
+      {steps.length === 0 ? (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          No cards yet. Add cards below, or start from the default check-in.
+          No steps yet. Add a step below, or start from the default check-in.
         </Typography>
       ) : (
-        <DndContext id="cards-dnd" sensors={cardSensors} collisionDetection={closestCenter} onDragEnd={handleCardDragEnd}>
-          <SortableContext items={cards.map(c => c.id)} strategy={rectSortingStrategy}>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 2, mb: 2, height: '100%' }}>
-              <AnimatePresence initial={false}>
-                {cards.map((card, cardIndex) => {
-                  return (
-                    <MotionBox
-                      key={card.id}
-                      layout
-                      sx={{ gridColumn: `span ${card.columnSpan}`, minWidth: 0 }}
-                      initial={{opacity: 0, scale: 0.97}}
-                      animate={{opacity: 1, scale: 1}}
-                      exit={{opacity: 0, scale: 0.97}}
-                      transition={{duration: 0.15}}
-                    >
-                      {card.kind === 'system' ? (
-                        <SortableSystemCard
-                          card={card}
-                          onUpdate={updated => updateCardAt(cardIndex, updated)}
-                          onRemove={() => removeCardAt(cardIndex)}
-                        />
-                      ) : card.kind === 'dataviz' ? (
-                        <SortableDataVizCard
-                          card={card}
-                          onUpdate={updated => updateCardAt(cardIndex, updated)}
-                          onRemove={() => removeCardAt(cardIndex)}
-                        />
-                      ) : (
-                        <SortableCustomCard
-                          card={card}
-                          allInputFields={allInputFields}
-                          atFieldLimit={atFieldLimit}
-                          onUpdate={updated => updateCardAt(cardIndex, updated)}
-                          onRemove={() => removeCardAt(cardIndex)}
-                        />
-                      )}
-                    </MotionBox>
-                  )
-                })}
-              </AnimatePresence>
-            </Box>
-          </SortableContext>
-        </DndContext>
+        <Stack spacing={2} sx={{ mb: 2 }}>
+          {steps.map((step) => (
+            <Paper key={step.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+                <Stack spacing={1} sx={{ flex: 1 }}>
+                  <TextField
+                    label="Step title"
+                    size="small"
+                    fullWidth
+                    value={step.title}
+                    onChange={event => updateStep(step.id, currentStep => ({ ...currentStep, title: event.target.value }))}
+                  />
+                  <TextField
+                    label="Description"
+                    size="small"
+                    fullWidth
+                    value={step.description ?? ''}
+                    onChange={event => updateStep(step.id, currentStep => ({
+                      ...currentStep,
+                      description: event.target.value || undefined,
+                    }))}
+                  />
+                </Stack>
+                <Button color="error" onClick={() => removeStep(step.id)}>Remove step</Button>
+              </Stack>
+
+              <DndContext id={`cards-dnd-${step.id}`} sensors={cardSensors} collisionDetection={closestCenter} onDragEnd={handleCardDragEnd}>
+                <SortableContext items={step.cards.map(c => c.id)} strategy={rectSortingStrategy}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 2, height: '100%' }}>
+                    <AnimatePresence initial={false}>
+                      {step.cards.map((card, cardIndex) => (
+                        <MotionBox
+                          key={card.id}
+                          layout
+                          sx={{ gridColumn: `span ${card.columnSpan}`, minWidth: 0 }}
+                          initial={{opacity: 0, scale: 0.97}}
+                          animate={{opacity: 1, scale: 1}}
+                          exit={{opacity: 0, scale: 0.97}}
+                          transition={{duration: 0.15}}
+                        >
+                          {card.kind === 'system' ? (
+                            <SortableSystemCard
+                              card={card}
+                              onUpdate={updated => updateCardAt(step.id, cardIndex, updated)}
+                              onRemove={() => removeCardAt(step.id, cardIndex)}
+                            />
+                          ) : card.kind === 'dataviz' ? (
+                            <SortableDataVizCard
+                              card={card}
+                              onUpdate={updated => updateCardAt(step.id, cardIndex, updated)}
+                              onRemove={() => removeCardAt(step.id, cardIndex)}
+                            />
+                          ) : (
+                            <SortableCustomCard
+                              card={card}
+                              allInputFields={allInputFields}
+                              atFieldLimit={atFieldLimit}
+                              onUpdate={updated => updateCardAt(step.id, cardIndex, updated)}
+                              onRemove={() => removeCardAt(step.id, cardIndex)}
+                            />
+                          )}
+                        </MotionBox>
+                      ))}
+                    </AnimatePresence>
+                  </Box>
+                </SortableContext>
+              </DndContext>
+
+              <Box sx={{ mt: 2 }}>
+                <AddCardMenu
+                  hasPhotos={hasPhotos}
+                  hasMetrics={hasMetrics}
+                  hasWorkouts={hasWorkouts}
+                  atCardLimit={atCardLimit}
+                  onAddCustom={() => addCustomCard(step.id)}
+                  onAddSystem={(systemType) => addSystemCard(step.id, systemType)}
+                  onAddDataViz={() => addDataVizCard(step.id)}
+                />
+              </Box>
+            </Paper>
+          ))}
+        </Stack>
       )}
 
       <Stack spacing={1.5} sx={{ mt: 2 }}>
-        <AddCardMenu
-          hasPhotos={hasPhotos}
-          hasMetrics={hasMetrics}
-          hasWorkouts={hasWorkouts}
-          atCardLimit={atCardLimit}
-          onAddCustom={addCustomCard}
-          onAddSystem={addSystemCard}
-          onAddDataViz={addDataVizCard}
-        />
+        <Button variant="outlined" startIcon={<AddIcon />} onClick={addStep}>
+          Add step
+        </Button>
         {atCardLimit && (
           <Typography variant="caption" color="text.secondary">
             Maximum of {MAX_TEMPLATE_CARDS} cards reached.
@@ -1422,7 +1521,7 @@ export default function CheckInTemplateEditor({ signalEnabled = false }: { signa
       <Divider sx={{ my: 3 }} />
 
       <Box sx={{ display: 'flex', gap: 1.5 }}>
-        {cards.length > 0 && (
+        {steps.length > 0 && (
           <Button
             variant="outlined"
             startIcon={<VisibilityIcon />}
@@ -1439,7 +1538,7 @@ export default function CheckInTemplateEditor({ signalEnabled = false }: { signa
           startIcon={saving ? <CircularProgress size={18} color="inherit" /> : undefined}
           sx={{ flex: 1 }}
         >
-          {cards.length === 0 ? 'Remove Template (use default form)' : 'Save Template'}
+          {allCards.length === 0 ? 'Remove Template (use default form)' : 'Save Template'}
         </Button>
       </Box>
 
@@ -1453,7 +1552,7 @@ export default function CheckInTemplateEditor({ signalEnabled = false }: { signa
       )}
 
       {previewOpen && (
-        <TemplatePreview cards={cards} onClose={() => setPreviewOpen(false)} />
+        <TemplatePreview steps={steps} onClose={() => setPreviewOpen(false)} />
       )}
     </Box>
   );
@@ -1484,7 +1583,7 @@ export default function CheckInTemplateEditor({ signalEnabled = false }: { signa
           marginBottom: 18,
         }}
       >
-        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: cards.length > 0 ? signalTokens.signal.deep : palette.inkLight, marginBottom: 6 }}>
+        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: allCards.length > 0 ? signalTokens.signal.deep : palette.inkLight, marginBottom: 6 }}>
           Coach Check-in Template
         </div>
         <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 32, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 10 }}>
@@ -1495,9 +1594,9 @@ export default function CheckInTemplateEditor({ signalEnabled = false }: { signa
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginTop: 18 }}>
-          <SignalMetricPill label="Cards" value={cards.length} />
+          <SignalMetricPill label="Steps" value={steps.length} />
           <SignalMetricPill label="Inputs" value={allInputFields.length} />
-          <SignalMetricPill label="System" value={cards.filter(card => card.kind === 'system').length} />
+          <SignalMetricPill label="System" value={allCards.filter(card => card.kind === 'system').length} />
         </div>
       </section>
 
@@ -1514,7 +1613,7 @@ export default function CheckInTemplateEditor({ signalEnabled = false }: { signa
           Builder
         </div>
         <div style={{ fontSize: 14, color: palette.inkMid, lineHeight: 1.5, marginBottom: 2 }}>
-          Start from the default check-in, then add or remove cards before previewing the client experience.
+          Start from the default check-in, then arrange the steps and cards before previewing the client experience.
         </div>
 
         <Box
