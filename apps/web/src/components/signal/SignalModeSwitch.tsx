@@ -71,7 +71,7 @@ export function SignalModeSwitch({ mode, surface }: Props) {
           onClick={() => handleClick(m)}
           style={m === mode ? activeCell : inactiveCell}
         >
-          {m === 'user' ? 'My Training' : 'Coach'}
+          {m === 'user' ? 'Train' : 'Coach'}
         </button>
       ))}
     </div>

@@ -35,13 +35,13 @@ test.describe('Signal Shell', () => {
 
   test('mode pill navigates to coach portal on same domain', async ({ page }) => {
     await page.goto('/user');
-    const myTraining = page.getByRole('button', { name: 'My Training' }).first();
+    const train = page.getByRole('button', { name: 'Train' }).first();
     const coach = page.getByRole('button', { name: 'Coach' }).first();
-    await expect(myTraining).toBeVisible();
+    await expect(train).toBeVisible();
     await expect(coach).toBeVisible();
 
-    // My Training is pressed by default
-    await expect(myTraining).toHaveAttribute('aria-pressed', 'true');
+    // Train is pressed by default
+    await expect(train).toHaveAttribute('aria-pressed', 'true');
     await expect(coach).toHaveAttribute('aria-pressed', 'false');
 
     // Click Coach — should navigate within the same domain
@@ -50,12 +50,12 @@ test.describe('Signal Shell', () => {
 
     // Coach pill is now pressed
     await expect(coach).toHaveAttribute('aria-pressed', 'true');
-    await expect(myTraining).toHaveAttribute('aria-pressed', 'false');
+    await expect(train).toHaveAttribute('aria-pressed', 'false');
 
-    // Click My Training — navigate back
-    await myTraining.click();
+    // Click Train — navigate back
+    await train.click();
     await expect(page).toHaveURL('/user');
-    await expect(myTraining).toHaveAttribute('aria-pressed', 'true');
+    await expect(train).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('flagged user sees the Signal sidebar with mode pill and a working notifications bell', async ({ page }) => {
@@ -68,8 +68,8 @@ test.describe('Signal Shell', () => {
     const sidebar = page.locator('[data-signal-shell-sidebar]').first();
     await expect(sidebar).toBeVisible();
 
-    // Mode pill — both labels rendered, "My Training" pressed
-    await expect(sidebar.getByRole('button', { name: 'My Training' })).toHaveAttribute('aria-pressed', 'true');
+    // Mode pill — both labels rendered, "Train" pressed
+    await expect(sidebar.getByRole('button', { name: 'Train' })).toHaveAttribute('aria-pressed', 'true');
     await expect(sidebar.getByRole('button', { name: 'Coach' })).toHaveAttribute('aria-pressed', 'false');
 
     // Bell links to /user/notifications

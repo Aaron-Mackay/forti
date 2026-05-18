@@ -49,7 +49,7 @@ export function SignalProgress({ userId, metrics, settings }: Props) {
         }}
       >
         <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginBottom: 4 }}>
-          My training
+          Train
         </div>
         <div
           style={{

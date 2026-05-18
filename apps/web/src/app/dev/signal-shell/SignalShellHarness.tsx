@@ -84,7 +84,7 @@ export function SignalShellHarness({
         <ControlRow palette={palette} label="Mode">
           <Toggle
             palette={palette}
-            options={MODES.map((m) => ({ value: m, label: m === 'user' ? 'My Training' : 'Coach' }))}
+            options={MODES.map((m) => ({ value: m, label: m === 'user' ? 'Train' : 'Coach' }))}
             value={mode}
             onChange={(next) => {
               setMode(next);

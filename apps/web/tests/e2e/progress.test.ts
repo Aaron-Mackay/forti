@@ -46,7 +46,7 @@ test.describe('Progress', () => {
     const surface = page.locator('[data-signal-surface="planning"]').first();
 
     await expect(surface).toBeVisible();
-    await expect(surface.getByText('My training', { exact: true })).toBeVisible()
+    await expect(surface.getByText('Train', { exact: true })).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Strength' })).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Bodyweight & metrics' })).toBeVisible();
     await expect(page.getByText('Focus exercises').first()).toBeVisible();

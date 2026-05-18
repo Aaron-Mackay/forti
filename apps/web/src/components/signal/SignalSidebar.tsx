@@ -182,7 +182,7 @@ export function SignalSidebar({ mode, activeOverride, userLabel, userInitials, h
             {userLabel ?? 'Signed in'}
           </div>
           <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 10, color: palette.inkLight }}>
-            {mode === 'coach' ? 'coach' : 'my training'}
+            {mode === 'coach' ? 'coach' : 'train'}
           </div>
         </div>
         <button

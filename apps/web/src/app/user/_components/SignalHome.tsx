@@ -169,7 +169,7 @@ export function SignalHome({ userId, activePlanData, metrics, settings, today, c
             Today&apos;s session
           </h1>
           <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: pagePalette.inkLight, marginBottom: 8 }}>
-            My training · {dateLabel}
+            Train · {dateLabel}
           </div>
         </div>
       </header>
