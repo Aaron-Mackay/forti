@@ -15,7 +15,7 @@ export default defineConfig({
       ['junit', {outputFile: 'test-results/junit.xml'}],
       ['html', {open: 'never'}],
       [
-        './tests/agent-readable-failure-reporter.mjs',
+        './tests/reporters/agent-readable-failure-reporter.mjs',
         {outputFile: 'test-results/agent-failures.txt'},
       ],
     ]

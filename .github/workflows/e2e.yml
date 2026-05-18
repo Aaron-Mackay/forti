@@ -197,6 +197,9 @@ jobs:
             fi
           } > playwright-agent-failures.txt
 
+      - name: Add combined summary to job summary
+        run: cat playwright-agent-failures.txt >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload combined agent failure summary
         uses: actions/upload-artifact@v7
         with:
