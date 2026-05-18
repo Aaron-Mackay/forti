@@ -143,5 +143,3 @@ class AgentFailureReporter {
     fs.writeFileSync(outputPath, lines.join('\n'));
   }
 }
-
-module.exports = AgentFailureReporter;
