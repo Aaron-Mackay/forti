@@ -31,6 +31,7 @@ import { getE1rmDeltaDirection, getPreviousTrackedExercise, stripWorkoutSuffix }
 import { EditableExerciseNameWithMeta } from './PlanExercisePrimitives'
 import { cellSx, headerCellSx, inputSx } from './PlanSheetShared'
 import { usePlanSheetContext } from './PlanSheetContext'
+import { signalTokens } from '@lib/signal/tokens'
 
 type WeekData = PlanPrisma['weeks'][number]
 
@@ -286,11 +287,12 @@ const SortableWorkoutSlot = ({
 }: SortableWorkoutSlotProps) => {
   const {
     planId, dispatch, arrangeMode, openPicker, openRenamePicker, setMenuState,
-    creationMode, invalidRepRangeIds,
+    creationMode, invalidRepRangeIds, highlightedWorkoutIds,
   } = usePlanSheetContext()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `wo-${workout.id}`,
   })
+  const isHighlighted = highlightedWorkoutIds?.has(workout.id) ?? false
   const [notesOpen, setNotesOpen] = React.useState(false)
 
   const sensors = useSensors(
@@ -315,12 +317,22 @@ const SortableWorkoutSlot = ({
   return (
     <Box
       ref={setNodeRef}
+      data-checkin-highlight={isHighlighted ? 'true' : undefined}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.6 : 1,
       }}
-      sx={{ flexShrink: 0 }}
+      sx={{
+        flexShrink: 0,
+        ...(isHighlighted && {
+          backgroundColor: signalTokens.signal.dim,
+          boxShadow: `inset 0 0 0 1px ${signalTokens.signal.deep}`,
+          borderRadius: `${signalTokens.radii.card}px`,
+          px: 0.75,
+          py: 0.75,
+        }),
+      }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
         {arrangeMode && (
@@ -328,9 +340,30 @@ const SortableWorkoutSlot = ({
             <DragHandleIcon sx={{ fontSize: '0.85rem' }} />
           </Box>
         )}
-        <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.72rem', color: 'text.primary', flex: 1 }}>
+        <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.72rem', color: 'text.primary', flexShrink: 0 }}>
           {stripWorkoutSuffix(workout.name ?? `Workout ${slotIdx + 1}`)}
         </Typography>
+        {isHighlighted && (
+          <Box
+            component="span"
+            sx={{
+              ml: 0.75,
+              px: 0.75,
+              py: 0.15,
+              fontFamily: signalTokens.fontVar.mono,
+              fontSize: 10,
+              lineHeight: 1.4,
+              color: signalTokens.surface.planning.ink,
+              border: `1px solid ${signalTokens.signal.deep}`,
+              backgroundColor: signalTokens.signal.dim,
+              borderRadius: 999,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Completed in check-in week
+          </Box>
+        )}
+        <Box sx={{ flex: 1 }} />
         {!arrangeMode && (
           <>
             <IconButton

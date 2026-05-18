@@ -21,17 +21,19 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExerciseDetailsDialog from './ExerciseDetailsDialog';
 import ScrollEdgeFades from '@/components/shell/ScrollEdgeFades';
 import { useScrollEdgeFades } from '@lib/hooks/useScrollEdgeFades';
+import { signalTokens } from '@lib/signal/tokens';
 
 interface PlanMultiWeekTableProps {
   plan: PlanPrisma;
   planId: number;
+  highlightedWorkoutIds?: Set<number>;
   dispatchOverride?: React.Dispatch<WorkoutEditorAction>;
   runWithCheckpoint?: (fn: () => void) => void;
   beginBufferedEdit?: () => void;
   commitBufferedEdit?: () => void;
 }
 
-const PlanMultiWeekTable = ({ plan, planId, dispatchOverride, runWithCheckpoint, beginBufferedEdit, commitBufferedEdit }: PlanMultiWeekTableProps) => {
+const PlanMultiWeekTable = ({ plan, planId, highlightedWorkoutIds, dispatchOverride, runWithCheckpoint, beginBufferedEdit, commitBufferedEdit }: PlanMultiWeekTableProps) => {
   const context = useWorkoutEditorContext();
   const { allExercises } = context;
   const dispatch = dispatchOverride ?? context.dispatch;
@@ -54,12 +56,28 @@ const PlanMultiWeekTable = ({ plan, planId, dispatchOverride, runWithCheckpoint,
   // Find the id of the latest week that has any weight/reps entered
   const scrollTargetWeekId = getLatestTrackedWeekId(plan);
 
+  const highlightedSlotOrders = React.useMemo(() => {
+    const orders = new Set<number>();
+    if (!highlightedWorkoutIds || highlightedWorkoutIds.size === 0) return orders;
+    for (const week of plan.weeks) {
+      for (const workout of week.workouts) {
+        if (highlightedWorkoutIds.has(workout.id)) orders.add(workout.order);
+      }
+    }
+    return orders;
+  }, [plan.weeks, highlightedWorkoutIds]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const { scrollRef: horizontalFadeScrollRef, handleScroll: handleHorizontalScroll, showStartFade: showLeftFade, showEndFade: showRightFade } =
     useScrollEdgeFades<HTMLDivElement>({ axis: 'x', threshold: 4 });
   const { scrollRef: verticalFadeScrollRef, handleScroll: handleVerticalScroll, showStartFade: showTopFade, showEndFade: showBottomFade } =
     useScrollEdgeFades<HTMLDivElement>({ axis: 'y', threshold: 4 });
   useEffect(() => {
+    const highlightTarget = scrollRef.current?.querySelector('[data-checkin-highlight-cell="true"]');
+    if (highlightTarget) {
+      highlightTarget.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' });
+      return;
+    }
     const el = scrollRef.current?.querySelector('[data-scroll-target="true"]');
     if (el) el.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' });
   }, []); // on mount only
@@ -135,17 +153,31 @@ const PlanMultiWeekTable = ({ plan, planId, dispatchOverride, runWithCheckpoint,
     <Box>
       {/* Workout chips + add */}
       <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', pb: 1, mb: 1, alignItems: 'center' }}>
-        {slotLabels.map((label, i) => (
-          <Chip
-            key={i}
-            label={label}
-            onClick={() => setSelectedWorkoutOrder(i + 1)}
-            variant={selectedWorkoutOrder === i + 1 ? 'filled' : 'outlined'}
-            color={selectedWorkoutOrder === i + 1 ? 'primary' : 'default'}
-            size="small"
-            sx={{ flexShrink: 0, cursor: 'pointer' }}
-          />
-        ))}
+        {slotLabels.map((label, i) => {
+          const isSelected = selectedWorkoutOrder === i + 1;
+          const isHighlighted = highlightedSlotOrders.has(i + 1);
+          return (
+            <Chip
+              key={i}
+              label={label}
+              onClick={() => setSelectedWorkoutOrder(i + 1)}
+              variant={isSelected ? 'filled' : 'outlined'}
+              color={isSelected ? 'primary' : 'default'}
+              size="small"
+              sx={{
+                flexShrink: 0,
+                cursor: 'pointer',
+                ...(isHighlighted && isSelected && {
+                  boxShadow: `inset 0 0 0 1px ${signalTokens.signal.deep}`,
+                }),
+                ...(isHighlighted && !isSelected && {
+                  backgroundColor: signalTokens.signal.dim,
+                  borderColor: signalTokens.signal.deep,
+                }),
+              }}
+            />
+          );
+        })}
         <Chip
           label="+ Workout"
           onClick={() => {
@@ -166,6 +198,27 @@ const PlanMultiWeekTable = ({ plan, planId, dispatchOverride, runWithCheckpoint,
       {/* Editable workout name */}
       {activeWorkout && (
         <Box sx={{ mb: 2 }}>
+          {(highlightedWorkoutIds?.has(activeWorkout.id) ?? false) && (
+            <Box
+              component="span"
+              sx={{
+                display: 'inline-block',
+                mb: 0.75,
+                px: 0.75,
+                py: 0.15,
+                fontFamily: signalTokens.fontVar.mono,
+                fontSize: 10,
+                lineHeight: 1.4,
+                color: signalTokens.surface.planning.ink,
+                border: `1px solid ${signalTokens.signal.deep}`,
+                backgroundColor: signalTokens.signal.dim,
+                borderRadius: 999,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Completed in check-in week
+            </Box>
+          )}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <TextField
               size="small"
@@ -413,9 +466,20 @@ const PlanMultiWeekTable = ({ plan, planId, dispatchOverride, runWithCheckpoint,
 
                   {/* One cell per week */}
                   {exByWeek.map(({ week, workout, ex }) => {
+                    const cellIsHighlighted = workout != null && (highlightedWorkoutIds?.has(workout.id) ?? false);
+                    const cellHighlightStyle = cellIsHighlighted
+                      ? {
+                          backgroundColor: signalTokens.signal.dim,
+                          boxShadow: `inset 0 0 0 1px ${signalTokens.signal.deep}`,
+                        }
+                      : {};
                     if (isCardio) {
                       return (
-                        <td key={week.id} style={{ padding: '8px 12px', verticalAlign: 'top', textAlign: 'center' }}>
+                        <td
+                          key={week.id}
+                          data-checkin-highlight-cell={cellIsHighlighted ? 'true' : undefined}
+                          style={{ padding: '8px 12px', verticalAlign: 'top', textAlign: 'center', ...cellHighlightStyle }}
+                        >
                           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, max-content)', justifyContent: 'center', gap: 0.75 }}>
                             {([
                               ['cardioDuration', 'Min', ex?.cardioDuration ?? null],
@@ -458,7 +522,11 @@ const PlanMultiWeekTable = ({ plan, planId, dispatchOverride, runWithCheckpoint,
                     const trailingDropSets = setModel?.trailingDropSets ?? [];
 
                     return (
-                      <td key={week.id} style={{ padding: '8px 12px', verticalAlign: 'top', textAlign: 'center' }}>
+                      <td
+                        key={week.id}
+                        data-checkin-highlight-cell={cellIsHighlighted ? 'true' : undefined}
+                        style={{ padding: '8px 12px', verticalAlign: 'top', textAlign: 'center', ...cellHighlightStyle }}
+                      >
                         {regularSets.length === 0 && (
                           <Typography variant="caption" color="text.disabled">
                             —

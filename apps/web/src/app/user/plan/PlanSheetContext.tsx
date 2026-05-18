@@ -18,6 +18,7 @@ interface PlanSheetContextValue {
   invalidRepRangeIds?: Set<number>
   onRepRangeFocus?: (exerciseId: number) => void
   onRepRangeBlur?: (exerciseId: number) => void
+  highlightedWorkoutIds?: Set<number>
 }
 
 const PlanSheetContext = createContext<PlanSheetContextValue | null>(null)

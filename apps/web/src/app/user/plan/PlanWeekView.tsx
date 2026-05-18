@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Box, Chip, Collapse, IconButton, LinearProgress, TextField, Tooltip, Typography } from '@mui/material';
+import { signalTokens } from '@lib/signal/tokens';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import AddIcon from '@mui/icons-material/Add';
@@ -22,6 +23,7 @@ interface PlanWeekViewProps {
   planId: number;
   hideWeekNavigationWhenSingleWeek?: boolean;
   showProgress?: boolean;
+  highlightedWorkoutIds?: Set<number>;
   dispatchOverride?: React.Dispatch<WorkoutEditorAction>;
   runWithCheckpoint?: (fn: () => void) => void;
   beginBufferedEdit?: () => void;
@@ -33,6 +35,7 @@ const PlanWeekView = ({
   planId,
   hideWeekNavigationWhenSingleWeek = false,
   showProgress = true,
+  highlightedWorkoutIds,
   dispatchOverride,
   runWithCheckpoint,
   beginBufferedEdit,
@@ -54,6 +57,26 @@ const PlanWeekView = ({
   useEffect(() => {
     setNotesExpanded(false);
   }, [weekIdx, selectedWorkoutIdx, planId]);
+
+  const highlightKey = highlightedWorkoutIds && highlightedWorkoutIds.size > 0
+    ? [...highlightedWorkoutIds].sort((a, b) => a - b).join(',')
+    : '';
+  const appliedHighlightJumpRef = useRef<string>('');
+  useEffect(() => {
+    if (!highlightKey) return;
+    if (appliedHighlightJumpRef.current === `${planId}:${highlightKey}`) return;
+    for (let wi = 0; wi < sortedWeeks.length; wi++) {
+      const sortedW = [...sortedWeeks[wi].workouts].sort((a, b) => a.order - b.order);
+      const idx = sortedW.findIndex(w => highlightedWorkoutIds?.has(w.id));
+      if (idx >= 0) {
+        setWeekIdx(wi);
+        setSelectedWorkoutIdx(idx);
+        appliedHighlightJumpRef.current = `${planId}:${highlightKey}`;
+        return;
+      }
+    }
+    appliedHighlightJumpRef.current = `${planId}:${highlightKey}`;
+  }, [highlightKey, planId, sortedWeeks, highlightedWorkoutIds]);
 
   const week = sortedWeeks[weekIdx];
   if (!week) {
@@ -143,17 +166,31 @@ const PlanWeekView = ({
 
       {/* Workout chips + add workout */}
       <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', pb: 1, mb: 2, alignItems: 'center' }}>
-        {sortedWorkouts.map((w, i) => (
-          <Chip
-            key={w.id}
-            label={w.name ? stripWorkoutSuffix(w.name) : `Workout ${w.order}`}
-            onClick={() => setSelectedWorkoutIdx(i)}
-            variant={selectedWorkoutIdx === i ? 'filled' : 'outlined'}
-            color={selectedWorkoutIdx === i ? 'primary' : 'default'}
-            size="small"
-            sx={{ flexShrink: 0, cursor: 'pointer' }}
-          />
-        ))}
+        {sortedWorkouts.map((w, i) => {
+          const isHighlighted = highlightedWorkoutIds?.has(w.id) ?? false;
+          const isSelected = selectedWorkoutIdx === i;
+          return (
+            <Chip
+              key={w.id}
+              label={w.name ? stripWorkoutSuffix(w.name) : `Workout ${w.order}`}
+              onClick={() => setSelectedWorkoutIdx(i)}
+              variant={isSelected ? 'filled' : 'outlined'}
+              color={isSelected ? 'primary' : 'default'}
+              size="small"
+              sx={{
+                flexShrink: 0,
+                cursor: 'pointer',
+                ...(isHighlighted && isSelected && {
+                  boxShadow: `inset 0 0 0 1px ${signalTokens.signal.deep}`,
+                }),
+                ...(isHighlighted && !isSelected && {
+                  backgroundColor: signalTokens.signal.dim,
+                  borderColor: signalTokens.signal.deep,
+                }),
+              }}
+            />
+          );
+        })}
         <Chip
           label="+ Workout"
           onClick={() => {
@@ -169,6 +206,27 @@ const PlanWeekView = ({
       {/* Editable workout name */}
       {workout && (
         <Box sx={{ mb: 2 }}>
+          {workout && (highlightedWorkoutIds?.has(workout.id) ?? false) && (
+            <Box
+              component="span"
+              sx={{
+                display: 'inline-block',
+                mb: 0.75,
+                px: 0.75,
+                py: 0.15,
+                fontFamily: signalTokens.fontVar.mono,
+                fontSize: 10,
+                lineHeight: 1.4,
+                color: signalTokens.surface.planning.ink,
+                border: `1px solid ${signalTokens.signal.deep}`,
+                backgroundColor: signalTokens.signal.dim,
+                borderRadius: 999,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Completed in check-in week
+            </Box>
+          )}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <TextField
               size="small"

@@ -25,6 +25,7 @@ interface PlanSheetViewProps {
   invalidRepRangeIds?: Set<number>
   onRepRangeFocus?: (exerciseId: number) => void
   onRepRangeBlur?: (exerciseId: number) => void
+  highlightedWorkoutIds?: Set<number>
   dispatchOverride?: React.Dispatch<WorkoutEditorAction>
   runWithCheckpoint?: (fn: () => void) => void
   beginBufferedEdit?: () => void
@@ -43,6 +44,7 @@ const PlanSheetView = ({
   invalidRepRangeIds,
   onRepRangeFocus,
   onRepRangeBlur,
+  highlightedWorkoutIds,
   dispatchOverride,
   runWithCheckpoint,
   beginBufferedEdit,
@@ -145,6 +147,21 @@ const PlanSheetView = ({
     }
   }, [onZoomChange])
 
+  const highlightKey = useMemo(
+    () => (highlightedWorkoutIds ? [...highlightedWorkoutIds].sort((a, b) => a - b).join(',') : ''),
+    [highlightedWorkoutIds],
+  )
+
+  useEffect(() => {
+    if (!highlightKey) return
+    const container = scrollRef.current
+    if (!container) return
+    const target = container.querySelector('[data-checkin-highlight="true"]')
+    if (target instanceof HTMLElement) {
+      target.scrollIntoView({ block: 'nearest', inline: 'center' })
+    }
+  }, [highlightKey, planId])
+
   const sortedWeeks = useMemo(() => [...plan.weeks].sort((a, b) => a.order - b.order), [plan.weeks])
   const maxWorkoutCount = useMemo(() => Math.max(0, ...sortedWeeks.map((week) => week.workouts.length)), [sortedWeeks])
   const slotMaxSets = useMemo<number[]>(
@@ -233,6 +250,7 @@ const PlanSheetView = ({
           invalidRepRangeIds,
           onRepRangeFocus,
           onRepRangeBlur,
+          highlightedWorkoutIds,
         }}
       >
         <Box sx={{ position: 'relative' }}>

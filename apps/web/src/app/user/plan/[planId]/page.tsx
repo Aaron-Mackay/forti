@@ -13,7 +13,7 @@ const PlanPage = async ({
   searchParams,
 }: {
   params: Promise<{ planId: string }>;
-  searchParams?: Promise<{ returnTo?: string }>;
+  searchParams?: Promise<{ returnTo?: string; highlightCheckInWeekStart?: string }>;
 }) => {
   const planId = (await params).planId
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
@@ -21,6 +21,9 @@ const PlanPage = async ({
   const loggedInUserId = (await getLoggedInUser()).id
   const returnTo = resolvedSearchParams?.returnTo;
   const clientBackHref = returnTo === '/user/check-in' ? '/user/check-in' : '/user/plan';
+  const rawHighlight = resolvedSearchParams?.highlightCheckInWeekStart;
+  const highlightCheckInWeekStart =
+    rawHighlight && /^\d{4}-\d{2}-\d{2}$/.test(rawHighlight) ? rawHighlight : undefined;
 
   if (userDetails?.id !== loggedInUserId && userDetails?.coachId !== loggedInUserId) {
     return notFound()
@@ -40,6 +43,7 @@ const PlanPage = async ({
           backHref={userDetails.id === loggedInUserId ? clientBackHref : `/user/coach/clients/${userDetails.id}/plans`}
           signalEnabled={signalEnabled}
           canManageClientEditing={userDetails.coachId === loggedInUserId}
+          highlightCheckInWeekStart={highlightCheckInWeekStart}
         />
       </WorkoutEditorProvider>
     </SignalSurface>
