@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import {defineConfig, devices} from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -11,11 +11,15 @@ export default defineConfig({
   workers: 1,
   reporter: process.env.CI
     ? [
-        ['github'],
-        ['junit', { outputFile: 'test-results/junit.xml' }],
-        ['html', { open: 'never' }],
-      ]
-    : [['html', { open: 'on-failure' }]],
+      ['github'],
+      ['junit', {outputFile: 'test-results/junit.xml'}],
+      ['html', {open: 'never'}],
+      [
+        './tests/agent-readable-failure-reporter.mjs',
+        {outputFile: 'test-results/agent-failures.txt'},
+      ],
+    ]
+    : [['html', {open: 'on-failure'}]],
   // In CI, Next.js dev server compiles pages on first access (~5s per page).
   // Raise expect timeout to 15s so URL/visibility assertions don't time out
   // during first-load compilation.
