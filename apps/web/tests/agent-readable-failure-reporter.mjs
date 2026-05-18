@@ -24,7 +24,7 @@ function toWorkspaceTestTarget(file, line) {
   return line && line !== '?' ? `${relativeFile}:${line}` : relativeFile;
 }
 
-class AgentFailureReporter {
+export class AgentFailureReporter {
   constructor(options = {}) {
     this.outputFile = options.outputFile || 'test-results/agent-failures.txt';
     this.tests = new Map();
