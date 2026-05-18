@@ -45,13 +45,14 @@ test.describe('Coach Client Overview', () => {
 
     await page.goto(`/user/coach/clients/${clientId}`);
     const main = page.getByRole('main');
+    const clientNav = page.getByRole('navigation', { name: 'Client workspace' });
 
     await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
-    await expect(page.getByRole('link', { name: 'Check-ins' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Plans' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Nutrition' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Supplements' })).toBeVisible();
+    await expect(clientNav.getByRole('link', { name: 'Overview', exact: true })).toHaveAttribute('aria-current', 'page');
+    await expect(clientNav.getByRole('link', { name: 'Check-ins', exact: true })).toBeVisible();
+    await expect(clientNav.getByRole('link', { name: 'Plans', exact: true })).toBeVisible();
+    await expect(clientNav.getByRole('link', { name: 'Nutrition', exact: true })).toBeVisible();
+    await expect(clientNav.getByRole('link', { name: 'Supplements', exact: true })).toBeVisible();
     await expect(main.getByText('Latest metrics').first()).toBeVisible();
     await expect(main.getByText('This week').first()).toBeVisible();
   });
@@ -60,11 +61,13 @@ test.describe('Coach Client Overview', () => {
     const clientId = await firstCoachClientId(page);
 
     await page.goto(`/user/coach/clients/${clientId}`);
-    await page.getByRole('link', { name: 'Plans' }).click();
+    const clientNav = page.getByRole('navigation', { name: 'Client workspace' });
+
+    await clientNav.getByRole('link', { name: 'Plans', exact: true }).click();
     await expect(page).toHaveURL(`/user/coach/clients/${clientId}/plans`);
 
     await page.goto(`/user/coach/clients/${clientId}`);
-    await page.getByRole('link', { name: 'Check-ins' }).click();
+    await clientNav.getByRole('link', { name: 'Check-ins', exact: true }).click();
     await expect(page).toHaveURL(`/user/coach/clients/${clientId}/check-ins`);
   });
 

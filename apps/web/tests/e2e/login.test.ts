@@ -14,14 +14,14 @@ test.describe('Login page', () => {
     await page.goto('/login');
   });
 
-  test('displays the Forti branding and sign-in heading', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
-    // The card-level "Forti" heading is visible on small viewports
-    const fortiHeading = page.getByRole('heading', { name: 'Forti' });
-    if (await fortiHeading.isVisible()) {
-      await expect(fortiHeading).toBeVisible();
-    } else {
-      await expect(page.getByText('Welcome to Forti')).toBeVisible();
+  test('displays the Forti login surface across layouts', async ({ page, isMobile }) => {
+    await expect(page.locator('img[src="/forti-icon.svg"]:visible')).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /Continue with Google/i })
+    ).toBeVisible();
+
+    if (!isMobile) {
+      await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
     }
   });
 
