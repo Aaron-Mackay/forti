@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { redirect, useRouter } from "next/navigation";
 import { WorkoutEditorContext, useWorkoutEditorContext } from "@/context/WorkoutEditorContext";
 import { saveUserWorkoutData } from "@lib/clientApi";
@@ -26,7 +26,8 @@ export const PlanTable: React.FC<{
   backHref?: string;
   signalEnabled?: boolean;
   canManageClientEditing?: boolean;
-}> = ({ planId, backHref, signalEnabled = false, canManageClientEditing = false }) => {
+  highlightCheckInWeekStart?: string;
+}> = ({ planId, backHref, signalEnabled = false, canManageClientEditing = false, highlightCheckInWeekStart }) => {
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -74,6 +75,23 @@ export const PlanTable: React.FC<{
     ? userDataState.plans.find(p => p.id === parseInt(planId))
     : userDataState.plans[0];
   const clientEditingLocked = signalEnabled && plan?.clientCanEdit === false && !canManageClientEditing;
+
+  const highlightedWorkoutIds = useMemo(() => {
+    if (!plan || !highlightCheckInWeekStart) return new Set<number>();
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(highlightCheckInWeekStart);
+    if (!m) return new Set<number>();
+    const from = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+    const to = new Date(from.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const ids = new Set<number>();
+    for (const week of plan.weeks) {
+      for (const workout of week.workouts) {
+        if (!workout.dateCompleted) continue;
+        const completed = new Date(workout.dateCompleted);
+        if (completed >= from && completed < to) ids.add(workout.id);
+      }
+    }
+    return ids;
+  }, [plan, highlightCheckInWeekStart]);
 
   useAppBar({
     title: plan?.name ?? 'Plan',
@@ -263,6 +281,25 @@ export const PlanTable: React.FC<{
                 Your coach has locked this plan for editing. You can still review it here, but saving changes is disabled.
               </Alert>
             )}
+            {highlightCheckInWeekStart && highlightedWorkoutIds.size > 0 && (
+              <Box
+                role="status"
+                sx={{
+                  mt: 1.75,
+                  px: 1.25,
+                  py: 0.75,
+                  backgroundColor: signalTokens.signal.dim,
+                  border: `1px solid ${signalTokens.signal.deep}`,
+                  borderRadius: `${signalTokens.radii.card}px`,
+                  color: planningPalette.ink,
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                }}
+              >
+                Showing sessions completed during this check-in week ·{' '}
+                {highlightedWorkoutIds.size} session{highlightedWorkoutIds.size === 1 ? '' : 's'}
+              </Box>
+            )}
           </Box>
         </Box>
       )}
@@ -356,11 +393,12 @@ export const PlanTable: React.FC<{
               invalidRepRangeIds={visibleInvalidRepRangeIds}
               onRepRangeFocus={handleRepRangeFocus}
               onRepRangeBlur={handleRepRangeBlur}
+              highlightedWorkoutIds={highlightedWorkoutIds}
             />
           ) : isMobile ? (
-            <PlanWeekView plan={plan} planId={plan.id} />
+            <PlanWeekView plan={plan} planId={plan.id} highlightedWorkoutIds={highlightedWorkoutIds} />
           ) : (
-            <PlanMultiWeekTable plan={plan} planId={plan.id} />
+            <PlanMultiWeekTable plan={plan} planId={plan.id} highlightedWorkoutIds={highlightedWorkoutIds} />
           )}
         </WorkoutEditorContext.Provider>
       </Box>

@@ -193,6 +193,16 @@ export default function CoachCheckInDetailClient({
     targetValues.fatPct !== baselineTargetValues.fatPct
   );
 
+  const activePlanHref = useMemo(() => {
+    if (activePlanId === null) {
+      return `/user/coach/clients/${checkIn.user.id}/plans`;
+    }
+    const params = new URLSearchParams({
+      highlightCheckInWeekStart: new Date(checkIn.weekStartDate).toISOString().slice(0, 10),
+    });
+    return `/user/plan/${activePlanId}?${params.toString()}`;
+  }, [activePlanId, checkIn.user.id, checkIn.weekStartDate]);
+
   const weekLabel = new Date(checkIn.weekStartDate).toLocaleDateString('en-GB', {
     weekday: 'long',
     day: 'numeric',
@@ -432,10 +442,7 @@ export default function CoachCheckInDetailClient({
               <WorkoutsSystemCard
                 workoutSummaries={workoutSummaries}
                 onWorkoutsClick={() => {
-                  const href = activePlanId !== null
-                    ? `/user/plan/${activePlanId}`
-                    : `/user/coach/clients/${checkIn.user.id}/plans`;
-                  window.open(href, '_blank', 'noopener,noreferrer');
+                  window.open(activePlanHref, '_blank', 'noopener,noreferrer');
                 }}
               />
             </SignalSection>
@@ -544,7 +551,7 @@ export default function CoachCheckInDetailClient({
               <Stack spacing={1.5}>
                 <Button
                   variant="outlined"
-                  href={activePlanId !== null ? `/user/plan/${activePlanId}` : `/user/coach/clients/${checkIn.user.id}/plans`}
+                  href={activePlanHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   sx={{ justifyContent: 'space-between' }}
@@ -733,10 +740,7 @@ export default function CoachCheckInDetailClient({
             <WorkoutsSystemCard
               workoutSummaries={workoutSummaries}
               onWorkoutsClick={() => {
-                const href = activePlanId !== null
-                  ? `/user/plan/${activePlanId}`
-                  : `/user/coach/clients/${checkIn.user.id}/plans`;
-                window.open(href, '_blank', 'noopener,noreferrer');
+                window.open(activePlanHref, '_blank', 'noopener,noreferrer');
               }}
             />
           </Section>
