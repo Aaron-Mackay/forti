@@ -154,11 +154,8 @@ export function SignalHome({ userId, activePlanData, metrics, settings, today, c
         }
       `}</style>
 
-      <header data-signal-home-header style={{ marginBottom: 20 }}>
-        <div>
-          <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: pagePalette.inkLight, marginBottom: 8 }}>
-            My training · {dateLabel}
-          </div>
+      <header data-signal-home-header style={{ marginBottom: 18 }}>
+        <div style={{display: 'flex', justifyContent: 'space-between', width: '100%'}}>
           <h1
             style={{
               margin: 0,
@@ -171,12 +168,10 @@ export function SignalHome({ userId, activePlanData, metrics, settings, today, c
           >
             Today&apos;s session
           </h1>
-        </div>
-        {resolved.planName && resolved.weekIndex != null && (
-          <div style={{ marginTop: 8, fontFamily: signalTokens.fontVar.mono, fontSize: 12, color: pagePalette.inkMid, whiteSpace: 'nowrap' }}>
-            {resolved.planName} · wk {resolved.weekIndex} / {resolved.weekTotal}
+          <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: pagePalette.inkLight, marginBottom: 8 }}>
+            My training · {dateLabel}
           </div>
-        )}
+        </div>
       </header>
 
       <div data-signal-home-grid style={{ display: 'grid', gap: 20 }}>
@@ -336,7 +331,7 @@ function Hero({ hero }: { hero: HeroState }) {
               marginBottom: 6,
             }}
           >
-            {isResume ? 'In progress' : `Next planned · ${hero.planName} · wk ${hero.weekIndex}`}
+            {isResume ? 'In progress' : `${hero.planName} · wk ${hero.weekIndex} / ${hero.weekTotal}`}
           </div>
           <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 32, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 14, color: heroPalette.ink }}>
             {hero.workoutName}
@@ -381,7 +376,7 @@ function Hero({ hero }: { hero: HeroState }) {
               display: 'flex',
               alignItems: 'center',
               fontSize: 16,
-              flex: '0 1 auto',
+              flex: '1 1 220px',
               minWidth: 160,
               textDecoration: 'none',
             }}
