@@ -11,13 +11,13 @@ export default defineConfig({
   workers: 1,
   reporter: process.env.CI
     ? [
-      ['github'],
-      ['junit', {outputFile: 'test-results/junit.xml'}],
-      ['html', {open: 'never'}],
       [
         './tests/reporters/agent-readable-failure-reporter.mjs',
         {outputFile: 'test-results/agent-failures.txt'},
       ],
+      ['github'],
+      ['junit', {outputFile: 'test-results/junit.xml'}],
+      ['html', {open: 'never'}],
     ]
     : [['html', {open: 'on-failure'}]],
   // In CI, Next.js dev server compiles pages on first access (~5s per page).

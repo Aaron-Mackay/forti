@@ -113,12 +113,12 @@ jobs:
         run: |
           mkdir -p apps/web/test-results
           if [ ! -f apps/web/test-results/agent-failures.txt ]; then
-            cat > apps/web/test-results/agent-failures.txt <<'EOF'
-            # Playwright E2E Agent Failure Context
-
-            No Playwright agent failure summary was produced.
-            The test runner may not have started, or failure happened before Playwright executed.
-            EOF
+            printf '%s\n' \
+              '# Playwright E2E Agent Failure Context' \
+              '' \
+              'No Playwright agent failure summary was produced.' \
+              'The test runner may not have started, or failure happened before Playwright executed.' \
+              > apps/web/test-results/agent-failures.txt
           fi
 
       - name: Upload Playwright agent failure summary
