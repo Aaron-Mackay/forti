@@ -6,7 +6,7 @@
       "vitest/globals",
       "@testing-library/jest-dom"
     ],
-    "module": "CommonJS", // Module system for Node.js
+    "module": "ESNext", // Next.js expects modern ESM module output for type resolution
     "lib": [
       "DOM",
       "esnext"
@@ -18,8 +18,7 @@
     "resolveJsonModule": true, // Allows importing JSON files
     "outDir": "./dist", // Output directory for compiled JS files
     "rootDir": ".", // Root directory of your TypeScript files
-    "moduleResolution": "node", // Use Node's module resolution
-    "ignoreDeprecations": "6.0",
+    "moduleResolution": "bundler", // Resolve package exports the way Next.js and modern ESM packages expect
     "baseUrl": ".", // Base directory for resolving non-relative paths
     "paths": {
       "@/*": [

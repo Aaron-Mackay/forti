@@ -11,6 +11,16 @@ updates:
         patterns:
           - "*"
     ignore:
+      - dependency-name: "expo"
+      - dependency-name: "expo-*"
+      - dependency-name: "react-native"
+      - dependency-name: "react-native-*"
+      - dependency-name: "@expo/*"
+      - dependency-name: "react"
+      - dependency-name: "react-dom"
+      - dependency-name: "@types/react"
+      - dependency-name: "date-fns"
+
       - dependency-name: "eslint"
         update-types:
           - "version-update:semver-major"
