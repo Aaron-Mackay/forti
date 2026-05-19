@@ -1616,34 +1616,7 @@ export default function CheckInTemplateEditor({ signalEnabled = false }: { signa
           Start from the default check-in, then arrange the steps and cards before previewing the client experience.
         </div>
 
-        <Box
-          sx={{
-            '& .MuiButton-root': {
-              borderRadius: `${signalTokens.radii.card}px`,
-              textTransform: 'none',
-              fontWeight: 600,
-            },
-            '& .MuiButton-contained': {
-              bgcolor: palette.ink,
-              color: palette.bg,
-              '&:hover': {
-                bgcolor: palette.borderStrong,
-              },
-            },
-            '& .MuiButton-outlined': {
-              borderColor: palette.borderStrong,
-              color: palette.ink,
-            },
-            '& .MuiPaper-root': {
-              borderRadius: `${signalTokens.radii.cardLarge}px`,
-            },
-            '& .MuiDialog-paper': {
-              borderRadius: `${signalTokens.radii.cardLarge}px`,
-            },
-          }}
-        >
-          {editorContent}
-        </Box>
+        {editorContent}
       </section>
     </div>
   );

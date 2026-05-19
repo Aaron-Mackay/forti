@@ -22,6 +22,7 @@ import WorkoutsSystemCard from '@/components/checkin/WorkoutsSystemCard';
 import MetricsSystemCard from '@/components/checkin/MetricsSystemCard';
 import ProgressPhotoSection from './ProgressPhotoSection';
 import { SignalSectionCard } from '@/components/signal/SignalSectionCard';
+import { SignalButton } from '@/components/signal/SignalButton';
 import type { PreviousPhotos, WeekTargets } from '@/types/checkInTypes';
 import type { CheckInStep, CheckInTemplate, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
 import { parseCustomResponses, isFieldVisible, getAllInputFields, getAllTemplateCards } from '@/types/checkInTemplateTypes';
@@ -409,20 +410,46 @@ export default function CheckInForm({
           </Box>
 
           <Stack direction="row" spacing={1.5} sx={{ mt: 2 }}>
-            <Button variant="outlined" onClick={handlePreviousStep} disabled={activeStepIndex === 0 || submitting}>
-              Back
-            </Button>
-            {isEditing || isLastStep ? (
-              <Button
-                variant="contained"
-                fullWidth
-                onClick={handleSubmit}
-                disabled={submitting}
-                startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : undefined}
-                size="large"
+            {signalEnabled ? (
+              <SignalButton
+                intent="outlined"
+                onClick={handlePreviousStep}
+                disabled={activeStepIndex === 0 || submitting}
               >
-                Submit Check-in
+                Back
+              </SignalButton>
+            ) : (
+              <Button variant="outlined" onClick={handlePreviousStep} disabled={activeStepIndex === 0 || submitting}>
+                Back
               </Button>
+            )}
+            {isEditing || isLastStep ? (
+              signalEnabled ? (
+                <SignalButton
+                  intent="primary"
+                  fullWidth
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : undefined}
+                >
+                  Submit Check-in
+                </SignalButton>
+              ) : (
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : undefined}
+                  size="large"
+                >
+                  Submit Check-in
+                </Button>
+              )
+            ) : signalEnabled ? (
+              <SignalButton intent="primary" fullWidth onClick={handleNextStep}>
+                Next
+              </SignalButton>
             ) : (
               <Button variant="contained" fullWidth onClick={handleNextStep}>
                 Next
@@ -475,17 +502,31 @@ export default function CheckInForm({
       )}
 
       {!isEditing && activeTemplate === null && (
-        <Button
-          variant="contained"
-          fullWidth
-          onClick={handleSubmit}
-          disabled={submitting}
-          startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : undefined}
-          size="large"
-          sx={{ mt: 2 }}
-        >
-          Submit Check-in
-        </Button>
+        signalEnabled ? (
+          <Box sx={{ mt: 2 }}>
+            <SignalButton
+              intent="primary"
+              fullWidth
+              onClick={handleSubmit}
+              disabled={submitting}
+              startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : undefined}
+            >
+              Submit Check-in
+            </SignalButton>
+          </Box>
+        ) : (
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleSubmit}
+            disabled={submitting}
+            startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : undefined}
+            size="large"
+            sx={{ mt: 2 }}
+          >
+            Submit Check-in
+          </Button>
+        )
       )}
     </Box>
   );
