@@ -97,6 +97,22 @@ import {
 import { SessionsListResponseSchema, type SessionsListResponse } from './contracts/sessions';
 import { WorkoutDataResponseSchema, type WorkoutDataResponse } from './contracts/workoutData';
 
+const inFlightReadRequests = new Map<string, Promise<unknown>>();
+
+function coalesceReadRequest<T>(key: string, requestFactory: () => Promise<T>): Promise<T> {
+  const existingRequest = inFlightReadRequests.get(key);
+  if (existingRequest) {
+    return existingRequest as Promise<T>;
+  }
+
+  const request = requestFactory().finally(() => {
+    inFlightReadRequests.delete(key);
+  });
+
+  inFlightReadRequests.set(key, request as Promise<unknown>);
+  return request;
+}
+
 function normalizeUserWorkoutDataForSave(userData: UserPrisma): UserPrisma {
   if (!Array.isArray(userData.plans)) return userData;
 
@@ -164,7 +180,9 @@ export async function getCalendarData(): Promise<CalendarDataResponse> {
 }
 
 export async function getNotifications(): Promise<NotificationsListResponse> {
-  return fetchJsonWithSchema('/api/notifications', NotificationsListResponseSchema);
+  return coalesceReadRequest('GET:/api/notifications', () =>
+    fetchJsonWithSchema('/api/notifications', NotificationsListResponseSchema),
+  );
 }
 
 export async function markNotificationRead(id: number): Promise<NotificationMutationResponse> {
@@ -180,7 +198,15 @@ export async function markAllNotificationsRead(): Promise<NotificationMutationRe
 }
 
 export async function getUserSettings(options?: Pick<RequestInit, 'cache' | 'signal'>): Promise<UserSettingsResponse> {
-  return fetchJsonWithSchema('/api/user/settings', UserSettingsResponseSchema, options);
+  const key = `GET:/api/user/settings:${options?.cache ?? 'default'}`;
+
+  if (options?.signal) {
+    return fetchJsonWithSchema('/api/user/settings', UserSettingsResponseSchema, options);
+  }
+
+  return coalesceReadRequest(key, () =>
+    fetchJsonWithSchema('/api/user/settings', UserSettingsResponseSchema, options),
+  );
 }
 
 export async function updateUserSettings(
@@ -208,7 +234,7 @@ export async function getCheckInHistory(opts: CheckInHistoryOptions = {}): Promi
   if (opts.excludeCurrent) params.set('excludeCurrent', 'true');
   const qs = params.toString();
   const url = qs ? `/api/check-in?${qs}` : '/api/check-in';
-  return fetchJsonWithSchema(url, CheckInHistoryResponseSchema);
+  return coalesceReadRequest(`GET:${url}`, () => fetchJsonWithSchema(url, CheckInHistoryResponseSchema));
 }
 
 export async function getCurrentCheckIn(): Promise<CurrentCheckInResponse> {
