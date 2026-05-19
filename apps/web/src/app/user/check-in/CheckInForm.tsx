@@ -21,6 +21,7 @@ import type { SystemCardData } from '@/components/checkin/TemplateCardRenderer';
 import WorkoutsSystemCard from '@/components/checkin/WorkoutsSystemCard';
 import MetricsSystemCard from '@/components/checkin/MetricsSystemCard';
 import ProgressPhotoSection from './ProgressPhotoSection';
+import { SignalSectionCard } from '@/components/signal/SignalSectionCard';
 import type { PreviousPhotos, WeekTargets } from '@/types/checkInTypes';
 import type { CheckInStep, CheckInTemplate, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
 import { parseCustomResponses, isFieldVisible, getAllInputFields, getAllTemplateCards } from '@/types/checkInTemplateTypes';
@@ -52,6 +53,7 @@ interface Props {
   activePlanId: number | null;
   template: CheckInTemplate | null;
   onSubmitted: () => void;
+  signalEnabled?: boolean;
 }
 
 // ─── Legacy mode state ───────────────────────────────────────────────────────
@@ -103,7 +105,7 @@ function validateVisibleRequiredFieldsForStep(
 export default function CheckInForm({
   currentWeek, weekPrior, checkIn, previousPhotos, weekTargets,
   completedWorkoutsCount, plannedWorkoutsCount, workoutSummaries, activePlanId,
-  template, onSubmitted,
+  template, onSubmitted, signalEnabled = false,
 }: Props) {
   const router = useRouter();
   const { settings } = useSettings();
@@ -306,7 +308,22 @@ export default function CheckInForm({
 
       {/* Metrics summary — shown above only in legacy mode or when template doesn't include a metrics card */}
       {!templateHasMetrics && (
-        <>
+        signalEnabled ? (
+          <Box sx={{ mb: 2 }}>
+            <SignalSectionCard eyebrow="Weekly metrics">
+              <MetricsSystemCard
+                currentWeek={currentWeekMetrics}
+                weekPrior={weekPrior}
+                weekTargets={weekTargets}
+                customMetricDefs={settings.customMetrics ?? []}
+                bodyweightUnit={settings.bodyweightUnit}
+                weekStartDate={checkIn.weekStartDate}
+                editableBreakdown
+                onBreakdownMetricChange={handleMetricChange}
+              />
+            </SignalSectionCard>
+          </Box>
+        ) : (
           <MetricsSystemCard
             currentWeek={currentWeekMetrics}
             weekPrior={weekPrior}
@@ -317,17 +334,28 @@ export default function CheckInForm({
             editableBreakdown
             onBreakdownMetricChange={handleMetricChange}
           />
-        </>
+        )
       )}
 
       {/* Workout row — shown above only in legacy mode or when template doesn't include a workouts card */}
       {!templateHasWorkouts && (
-        <Box sx={{ mt: templateHasMetrics ? 0 : 1.5 }}>
-          <WorkoutsSystemCard
-            workoutSummaries={workoutSummaries}
-            onWorkoutsClick={workoutClickable && trainingHref ? () => router.push(trainingHref) : undefined}
-          />
-        </Box>
+        signalEnabled ? (
+          <Box sx={{ mb: 2 }}>
+            <SignalSectionCard eyebrow="Training">
+              <WorkoutsSystemCard
+                workoutSummaries={workoutSummaries}
+                onWorkoutsClick={workoutClickable && trainingHref ? () => router.push(trainingHref) : undefined}
+              />
+            </SignalSectionCard>
+          </Box>
+        ) : (
+          <Box sx={{ mt: templateHasMetrics ? 0 : 1.5 }}>
+            <WorkoutsSystemCard
+              workoutSummaries={workoutSummaries}
+              onWorkoutsClick={workoutClickable && trainingHref ? () => router.push(trainingHref) : undefined}
+            />
+          </Box>
+        )
       )}
 
       {(!templateHasMetrics || !templateHasWorkouts) && <Divider sx={{ my: 3 }} />}
@@ -374,6 +402,7 @@ export default function CheckInForm({
                 onMetricsExpandedChange={next =>
                   setMetricsExpandedByCardId(prev => ({ ...prev, [card.id]: next }))
                 }
+                signalEnabled={signalEnabled}
               />
             );
           })}
