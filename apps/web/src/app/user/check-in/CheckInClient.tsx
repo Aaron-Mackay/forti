@@ -30,6 +30,7 @@ import { getAllTemplateCards, parseCheckInTemplate } from '@/types/checkInTempla
 import { getCheckInHistory, getCurrentCheckIn } from '@lib/clientApi';
 import { signalTokens } from '@lib/signal/tokens';
 import { SignalSectionCard } from '@/components/signal/SignalSectionCard';
+import { SignalButton } from '@/components/signal/SignalButton';
 
 const palette = signalTokens.surface.planning;
 
@@ -350,19 +351,14 @@ export default function CheckInClient({ signalEnabled = false }: { signalEnabled
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {history.map(c => <SignalHistoryRow key={c.id} checkIn={c} />)}
             {history.length < historyTotal && (
-              <button
-                type="button"
+              <SignalButton
+                intent="ghost"
+                fullWidth
                 onClick={loadMoreHistory}
-                style={{
-                  display: 'block', width: '100%', padding: '12px 16px',
-                  background: 'transparent', border: `1px solid ${palette.border}`,
-                  borderRadius: signalTokens.radii.card, color: palette.inkMid,
-                  fontFamily: signalTokens.fontVar.body, fontSize: 14, cursor: 'pointer',
-                  marginTop: 4,
-                }}
+                style={{ marginTop: 4 }}
               >
                 Load more
-              </button>
+              </SignalButton>
             )}
           </div>
         )}

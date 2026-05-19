@@ -45,6 +45,7 @@ import {getLoomEmbedUrl} from '@lib/loom';
 import {saveCoachCheckInNotes, saveTargetTemplate} from '@lib/clientApi';
 import { signalTokens } from '@lib/signal/tokens';
 import { SignalSection as SignalSectionPrimitive } from '@/components/signal/SignalSection';
+import { SignalButton } from '@/components/signal/SignalButton';
 
 interface Props {
   checkIn: CheckInWithUser;
@@ -521,24 +522,17 @@ export default function CoachCheckInDetailClient({
               {saveError && <Alert severity="error" sx={{ mt: 2 }}>{saveError}</Alert>}
               {!macroSplitValid && macroSplitError && <Alert severity="warning" sx={{ mt: 2 }}>{macroSplitError}</Alert>}
 
-              <Button
-                variant="contained"
-                fullWidth
-                onClick={handleSaveNotes}
-                disabled={saving || !macroSplitValid || (!targetsChanged && notes === (checkIn.coachNotes ?? '') && coachResponseUrl === (checkIn.coachResponseUrl ?? ''))}
-                startIcon={saving ? <CircularProgress size={16} color="inherit"/> : undefined}
-                sx={{
-                  mt: 2,
-                  minHeight: 46,
-                  backgroundColor: signalPalette.ink,
-                  color: signalPalette.surface,
-                  '&:hover': {
-                    backgroundColor: signalPalette.borderStrong,
-                  },
-                }}
-              >
-                Send review
-              </Button>
+              <Box sx={{ mt: 2 }}>
+                <SignalButton
+                  intent="primary"
+                  fullWidth
+                  onClick={handleSaveNotes}
+                  disabled={saving || !macroSplitValid || (!targetsChanged && notes === (checkIn.coachNotes ?? '') && coachResponseUrl === (checkIn.coachResponseUrl ?? ''))}
+                  startIcon={saving ? <CircularProgress size={14} color="inherit"/> : undefined}
+                >
+                  Send review
+                </SignalButton>
+              </Box>
             </SignalSection>
 
             <SignalSection label="Week targets">

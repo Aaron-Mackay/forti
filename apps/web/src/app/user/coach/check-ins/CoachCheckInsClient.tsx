@@ -27,6 +27,7 @@ import { listCoachCheckIns } from '@lib/clientApi';
 import type { CoachClient } from '@lib/contracts/coach';
 import { signalFontVariablesClassName } from '@lib/signal/fonts';
 import { signalTokens } from '@lib/signal/tokens';
+import { SignalButton } from '@/components/signal/SignalButton';
 
 export default function CoachCheckInsClient({
   lockedClientId,
@@ -503,18 +504,14 @@ function SignalCoachCheckIns({
                     onChange={(event) => setFilterTo(event.target.value)}
                     slotProps={{ inputLabel: { shrink: true } }}
                   />
-                  <Button
-                    variant="outlined"
+                  <SignalButton
+                    intent="outlined"
                     onClick={() => void runBrowse(0)}
                     disabled={browseLoading}
-                    sx={{
-                      minHeight: 40,
-                      borderColor: palette.borderStrong,
-                      color: palette.ink,
-                    }}
+                    startIcon={browseLoading ? <CircularProgress size={14} /> : undefined}
                   >
-                    {browseLoading ? <CircularProgress size={18} /> : 'Search'}
-                  </Button>
+                    {browseLoading ? 'Searching…' : 'Search'}
+                  </SignalButton>
                 </div>
 
                 {browseLoading && browseCheckIns.length === 0 ? (
@@ -533,14 +530,14 @@ function SignalCoachCheckIns({
                       <SignalCheckInRow key={checkIn.id} checkIn={checkIn} href={getCheckInHref(checkIn)} />
                     ))}
                     {browseCheckIns.length < browseTotal && (
-                      <Button
-                        variant="text"
+                      <SignalButton
+                        intent="ghost"
                         onClick={() => void runBrowse(browseCheckIns.length, true)}
                         disabled={browseLoading}
-                        sx={{ alignSelf: 'flex-start', color: palette.ink }}
+                        style={{ alignSelf: 'flex-start' }}
                       >
                         Load more
-                      </Button>
+                      </SignalButton>
                     )}
                   </div>
                 )}
