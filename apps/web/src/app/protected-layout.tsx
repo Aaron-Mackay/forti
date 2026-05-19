@@ -8,6 +8,7 @@ import { NotificationsProvider } from "@lib/providers/NotificationsProvider";
 import { SignalShellSwitch } from "@/components/signal/SignalShellSwitch";
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
+import AuthProvider from '@lib/providers/AuthProvider';
 
 function computeInitials(input: string | null | undefined): string {
   if (!input) return '·';
@@ -40,18 +41,20 @@ export default async function ProtectedLayout({children}: { children: React.Reac
   const userInitials = computeInitials(session.user.name ?? session.user.email);
 
   return (
-    <SettingsProvider>
-      <NotificationsProvider>
-        <CoachClientsProvider>
-          <SignalShellSwitch
-            signalEnabled={settings.signalUiEnabled}
-            userLabel={userLabel}
-            userInitials={userInitials}
-          >
-            {children}
-          </SignalShellSwitch>
-        </CoachClientsProvider>
-      </NotificationsProvider>
-    </SettingsProvider>
+    <AuthProvider session={session}>
+      <SettingsProvider>
+        <NotificationsProvider>
+          <CoachClientsProvider>
+            <SignalShellSwitch
+              signalEnabled={settings.signalUiEnabled}
+              userLabel={userLabel}
+              userInitials={userInitials}
+            >
+              {children}
+            </SignalShellSwitch>
+          </CoachClientsProvider>
+        </NotificationsProvider>
+      </SettingsProvider>
+    </AuthProvider>
   );
 }
