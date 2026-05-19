@@ -32,6 +32,7 @@ export const signalTokens = {
   },
   status: {
     ok: '#5a8c4f',
+    okDim: 'rgba(90, 140, 79, 0.08)',
     warn: '#c79232',
     urgent: '#b14a35',
   },
