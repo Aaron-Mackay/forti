@@ -14,6 +14,8 @@ type ExistingTree = {
   plans: Array<{
     id: number;
     order: number;
+    name: string;
+    description: string | null;
     clientCanEdit: boolean;
     weeks: Array<{
       id: number;
@@ -27,7 +29,7 @@ type ExistingTree = {
           id: number;
           order: number;
           workoutId: number;
-          sets: Array<{ id: number; order: number; isDropSet: boolean }>;
+          sets: Array<{ id: number; order: number; isDropSet: boolean; weight: number | null; reps: number | null; parentSetId: number | null }>;
         }>;
       }>;
     }>;
@@ -105,17 +107,23 @@ export async function syncPlanTree(
 
     let planId: number;
     if (existingPlan) {
-      const updated = await tx.plan.update({
-        where: { id: existingPlan.id },
-        data: {
-          order: incomingPlan.order,
-          name: incomingPlan.name,
-          description: incomingPlan.description ?? null,
-          clientCanEdit: incomingPlan.clientCanEdit ?? true,
-        },
-        select: { id: true },
-      });
-      planId = updated.id;
+      const nextData = {
+        order: incomingPlan.order,
+        name: incomingPlan.name,
+        description: incomingPlan.description ?? null,
+        clientCanEdit: incomingPlan.clientCanEdit ?? true,
+      };
+      if (
+        existingPlan.order !== nextData.order
+        || existingPlan.name !== nextData.name
+        || existingPlan.description !== nextData.description
+        || existingPlan.clientCanEdit !== nextData.clientCanEdit
+      ) {
+        const updated = await tx.plan.update({ where: { id: existingPlan.id }, data: nextData, select: { id: true } });
+        planId = updated.id;
+      } else {
+        planId = existingPlan.id;
+      }
     } else {
       const created = await tx.plan.create({
         data: {
@@ -146,6 +154,8 @@ async function loadExistingTree(
     select: {
       id: true,
       order: true,
+      name: true,
+      description: true,
       clientCanEdit: true,
       weeks: {
         select: {
@@ -162,7 +172,7 @@ async function loadExistingTree(
                   id: true,
                   order: true,
                   workoutId: true,
-                  sets: { select: { id: true, order: true, isDropSet: true } },
+                  sets: { select: { id: true, order: true, isDropSet: true, weight: true, reps: true, parentSetId: true } },
                 },
               },
             },
@@ -353,7 +363,7 @@ async function syncSets(
   tx: Prisma.TransactionClient,
   workoutExerciseId: number,
   incomingSets: SetInput[],
-  existingSets: Array<{ id: number; order: number; isDropSet: boolean }>,
+  existingSets: Array<{ id: number; order: number; isDropSet: boolean; weight: number | null; reps: number | null; parentSetId: number | null }>,
   kept: Kept,
 ): Promise<void> {
   if (needsTemporaryOrderStaging(existingSets, incomingSets)) {
@@ -378,10 +388,14 @@ async function syncSets(
       : undefined;
 
     if (existingSet) {
-      await tx.exerciseSet.update({
-        where: { id: existingSet.id },
-        data: regularSetUpdateData(incomingSet),
-      });
+      const shouldUpdate = existingSet.order !== incomingSet.order
+        || existingSet.isDropSet
+        || existingSet.parentSetId !== null
+        || existingSet.weight !== (incomingSet.weight ?? null)
+        || existingSet.reps !== (incomingSet.reps ?? null);
+      if (shouldUpdate) {
+        await tx.exerciseSet.update({ where: { id: existingSet.id }, data: regularSetUpdateData(incomingSet) });
+      }
       if (incomingSet.id != null) idMap.set(incomingSet.id, existingSet.id);
       kept.sets.add(existingSet.id);
     } else {
@@ -411,10 +425,14 @@ async function syncSets(
       : null;
 
     if (existingSet) {
-      await tx.exerciseSet.update({
-        where: { id: existingSet.id },
-        data: dropSetUpdateData(incomingSet, resolvedParentSetId),
-      });
+      const shouldUpdate = existingSet.order !== incomingSet.order
+        || !existingSet.isDropSet
+        || existingSet.parentSetId !== resolvedParentSetId
+        || existingSet.weight !== (incomingSet.weight ?? null)
+        || existingSet.reps !== (incomingSet.reps ?? null);
+      if (shouldUpdate) {
+        await tx.exerciseSet.update({ where: { id: existingSet.id }, data: dropSetUpdateData(incomingSet, resolvedParentSetId) });
+      }
       kept.sets.add(existingSet.id);
     } else {
       newDropData.push(dropSetCreateData(workoutExerciseId, incomingSet, resolvedParentSetId));

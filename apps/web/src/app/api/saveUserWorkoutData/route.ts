@@ -3,6 +3,7 @@ import {NextResponse} from "next/server";
 import confirmPermission from "@lib/confirmPermission";
 import {extractErrorMessage} from "@lib/apiError";
 import {AuditEventType} from "@/generated/prisma/browser";
+import type { Prisma } from '@/generated/prisma/browser';
 import { recordAuditEvent } from '@lib/auditEvents';
 import {authenticationErrorResponse, isAuthenticationError} from "@lib/requireSession";
 import { getSessionActorUserId } from '@lib/sessionActor';
@@ -18,6 +19,63 @@ import { logInvalidJson, logUnexpectedError, logValidationError, summarizePayloa
 import { withApiRoute } from '@lib/routeAuth';
 
 const SAVE_USER_WORKOUT_DATA_TRANSACTION_TIMEOUT_MS = 15_000;
+
+async function loadExistingPlansForSave(tx: Prisma.TransactionClient, userId: string): Promise<SaveUserWorkoutDataRequest['plans']> {
+  const user = await tx.user.findUnique({
+    where: { id: userId },
+    select: {
+      plans: {
+        orderBy: { order: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          clientCanEdit: true,
+          order: true,
+          weeks: {
+            orderBy: { order: 'asc' },
+            select: {
+              id: true,
+              order: true,
+              workouts: {
+                orderBy: { order: 'asc' },
+                select: {
+                  id: true,
+                  name: true,
+                  notes: true,
+                  order: true,
+                  dateCompleted: true,
+                  exercises: {
+                    orderBy: { order: 'asc' },
+                    select: {
+                      id: true,
+                      order: true,
+                      repRange: true,
+                      restTime: true,
+                      notes: true,
+                      targetRpe: true,
+                      targetRir: true,
+                      isBfr: true,
+                      requiresRecording: true,
+                      exercise: {
+                        select: { id: true, name: true, category: true, primaryMuscles: true, secondaryMuscles: true },
+                      },
+                      sets: {
+                        orderBy: { order: 'asc' },
+                        select: { id: true, weight: true, reps: true, rpe: true, rir: true, order: true, isDropSet: true, parentSetId: true },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  return user?.plans ?? [];
+}
 
 export const POST = withApiRoute({ route: '/api/saveUserWorkoutData' }, async function POST(ctx: RequestLogContext, req: Request) {
   const json = await req.json().catch(() => null);
@@ -62,7 +120,16 @@ export const POST = withApiRoute({ route: '/api/saveUserWorkoutData' }, async fu
             select: { order: true },
           });
 
-      await syncPlanTree(tx, userId, body.plans, { actorIsAssignedCoach });
+      let plansToSave = body.plans;
+      if (body.saveScope) {
+        const existingPlanData = await loadExistingPlansForSave(tx, userId);
+        const incomingById = new Map(body.plans.filter((plan) => plan.id != null).map((plan) => [plan.id!, plan]));
+        plansToSave = existingPlanData.map((plan) => incomingById.get(plan.id) ?? plan);
+        const hasScopedPlan = plansToSave.some((plan) => plan.id === body.saveScope?.planId);
+        if (!hasScopedPlan && body.plans[0]) plansToSave.push(body.plans[0]);
+      }
+
+      await syncPlanTree(tx, userId, plansToSave, { actorIsAssignedCoach });
 
       const requestedActivePlanOrder = body.activePlanId === undefined
         ? undefined
