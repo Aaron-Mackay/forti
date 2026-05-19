@@ -328,7 +328,7 @@ export default function CoachCheckInDetailClient({
                 sx={{
                   borderRadius: 999,
                   border: `1px solid ${isReviewed ? signalTokens.status.ok : signalTokens.signal.deep}`,
-                  backgroundColor: isReviewed ? 'rgba(90, 140, 79, 0.08)' : signalTokens.signal.dim,
+                  backgroundColor: isReviewed ? signalTokens.status.okDim : signalTokens.signal.dim,
                   color: signalPalette.ink,
                   '& .MuiChip-icon': {
                     color: isReviewed ? signalTokens.status.ok : signalTokens.signal.deep,
