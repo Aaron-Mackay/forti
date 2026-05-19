@@ -74,7 +74,26 @@ async function loadExistingPlansForSave(tx: Prisma.TransactionClient, userId: st
       },
     },
   });
-  return user?.plans ?? [];
+
+  const normalizedPlans = (user?.plans ?? []).map((plan) => ({
+    ...plan,
+    weeks: plan.weeks.map((week) => ({
+      ...week,
+      workouts: week.workouts.map((workout) => ({
+        ...workout,
+        dateCompleted: workout.dateCompleted?.toISOString() ?? null,
+        exercises: workout.exercises.map((exercise) => ({
+          ...exercise,
+          exercise: {
+            ...exercise.exercise,
+            category: exercise.exercise.category ?? 'resistance',
+          },
+        })),
+      })),
+    })),
+  }));
+
+  return SaveUserWorkoutDataRequestSchema.shape.plans.parse(normalizedPlans);
 }
 
 export const POST = withApiRoute({ route: '/api/saveUserWorkoutData' }, async function POST(ctx: RequestLogContext, req: Request) {
@@ -124,7 +143,11 @@ export const POST = withApiRoute({ route: '/api/saveUserWorkoutData' }, async fu
       if (body.saveScope) {
         const existingPlanData = await loadExistingPlansForSave(tx, userId);
         const incomingById = new Map(body.plans.filter((plan) => plan.id != null).map((plan) => [plan.id!, plan]));
-        plansToSave = existingPlanData.map((plan) => incomingById.get(plan.id) ?? plan);
+        plansToSave = existingPlanData.map((plan) => (
+          plan.id == null
+            ? plan
+            : incomingById.get(plan.id) ?? plan
+        ));
         const hasScopedPlan = plansToSave.some((plan) => plan.id === body.saveScope?.planId);
         if (!hasScopedPlan && body.plans[0]) plansToSave.push(body.plans[0]);
       }

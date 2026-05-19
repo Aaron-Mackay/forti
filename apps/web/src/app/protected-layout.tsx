@@ -6,6 +6,7 @@ import { SettingsProvider } from "@lib/providers/SettingsProvider";
 import { CoachClientsProvider } from "@lib/providers/CoachClientsProvider";
 import { NotificationsProvider } from "@lib/providers/NotificationsProvider";
 import { SignalShellSwitch } from "@/components/signal/SignalShellSwitch";
+import { DateLocalizationProvider } from "@/lib/providers/DateLocalizationProvider";
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 import AuthProvider from '@lib/providers/AuthProvider';
@@ -42,19 +43,21 @@ export default async function ProtectedLayout({children}: { children: React.Reac
 
   return (
     <AuthProvider session={session}>
-      <SettingsProvider>
-        <NotificationsProvider>
-          <CoachClientsProvider>
-            <SignalShellSwitch
-              signalEnabled={settings.signalUiEnabled}
-              userLabel={userLabel}
-              userInitials={userInitials}
-            >
-              {children}
-            </SignalShellSwitch>
-          </CoachClientsProvider>
-        </NotificationsProvider>
-      </SettingsProvider>
+      <DateLocalizationProvider>
+        <SettingsProvider>
+          <NotificationsProvider>
+            <CoachClientsProvider>
+              <SignalShellSwitch
+                signalEnabled={settings.signalUiEnabled}
+                userLabel={userLabel}
+                userInitials={userInitials}
+              >
+                {children}
+              </SignalShellSwitch>
+            </CoachClientsProvider>
+          </NotificationsProvider>
+        </SettingsProvider>
+      </DateLocalizationProvider>
     </AuthProvider>
   );
 }

@@ -7,11 +7,9 @@ import "./globals.css";
 import {Box, GlobalStyles, ThemeProvider} from "@mui/material";
 import {AppRouterCacheProvider} from "@mui/material-nextjs/v14-appRouter";
 import theme, {PRIMARY_COLOUR} from "@/lib/theme";
-import {SpeedInsights} from "@vercel/speed-insights/next"
-import {Analytics} from "@vercel/analytics/next"
-import {DateLocalizationProvider} from "@lib/providers/DateLocalizationProvider";
 import AuthProvider from "@lib/providers/AuthProvider";
 import NextTopLoader from "nextjs-toploader";
+import { DeferredTelemetry } from "@/components/shell/DeferredTelemetry";
 
 export const metadata: Metadata = {
   title: "Forti",
@@ -26,6 +24,7 @@ export default function RootLayout({
                                    }: {
   children: React.ReactNode;
 }) {
+  const telemetryEnabled = process.env.NODE_ENV === "production";
   return (
     <html lang="en">
     <body>
@@ -40,15 +39,12 @@ export default function RootLayout({
             "@keyframes mui-auto-fill-cancel": {from: {display: "block"}},
           }}
         />
-        <DateLocalizationProvider>
-          <AuthProvider>
-            <Box sx={{backgroundColor: 'background.default', minHeight: '100dvh'}}>
-              {children}
-            </Box>
-          </AuthProvider>
-        </DateLocalizationProvider>
-        <SpeedInsights/>
-        <Analytics/>
+        <AuthProvider>
+          <Box sx={{backgroundColor: 'background.default', minHeight: '100dvh'}}>
+            {children}
+          </Box>
+        </AuthProvider>
+        {telemetryEnabled ? <DeferredTelemetry /> : null}
       </ThemeProvider>
     </AppRouterCacheProvider>
     </body>
