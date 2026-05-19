@@ -247,7 +247,7 @@ export default function PlansListCard({
         <div data-plans-shell>
           <header data-plans-header style={{ marginBottom: 14 }}>
             <div>
-              {isCoach && (
+              {isCoach ? (
                 <Link
                   href="/user/coach/clients"
                   style={{
@@ -262,6 +262,18 @@ export default function PlansListCard({
                 >
                   &lt; CLIENTS
                 </Link>
+              ) : (
+                <div
+                  style={{
+                    marginBottom: 7,
+                    color: palette.inkLight,
+                    fontFamily: signalTokens.fontVar.mono,
+                    fontSize: 10,
+                    letterSpacing: '0.14em',
+                  }}
+                >
+                  MY TRAINING · PLANS
+                </div>
               )}
               <h1 style={{ margin: 0, fontFamily: signalTokens.fontVar.cond, fontSize: 30, fontWeight: 700, lineHeight: 1.05, letterSpacing: '-0.015em', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                 {title}

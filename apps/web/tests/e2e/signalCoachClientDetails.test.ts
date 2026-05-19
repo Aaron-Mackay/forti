@@ -61,7 +61,7 @@ test.describe('Coach client detail surfaces', () => {
 
     await page.goto(`/user/coach/clients/${clientId}/plans`);
     await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
-    await expect(page.getByText('Open an existing plan').first()).toBeVisible();
-    await expect(page.getByRole('link', { name: 'New plan' })).toBeVisible();
+    await expect(page.getByText('Manage client plans.').first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /\+ Plan/i })).toBeVisible();
   });
 });

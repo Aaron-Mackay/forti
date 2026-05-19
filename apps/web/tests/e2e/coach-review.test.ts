@@ -284,7 +284,7 @@ test.describe('Coach check-ins — Signal review surface', () => {
     await expect(main.getByText('Client check-in').first()).toBeVisible();
     await expect(main.getByText('Coach response').first()).toBeVisible();
     await expect(main.getByText('Week targets').first()).toBeVisible();
-    await expect(main.getByText('Support').first()).toBeVisible();
+    await expect(main.getByText('Training Plan').first()).toBeVisible();
     await expect(page.getByRole('link', { name: /Open current plan/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /Send review/i })).toBeVisible();
   });
