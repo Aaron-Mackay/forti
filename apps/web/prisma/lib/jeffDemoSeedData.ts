@@ -39,18 +39,18 @@ const PLAN_LIBRARY: Record<ClientVariant, {
   notes: [string, string];
 }> = {
   hypertrophy: {
-    inactiveName: 'Foundation Hypertrophy (Completed)',
-    activeName: 'Upper/Lower Hypertrophy (Active)',
+    inactiveName: 'Foundation Hypertrophy',
+    activeName: 'Upper/Lower Hypertrophy',
     notes: ['Build volume tolerance', 'Progressive overload with controlled tempo'],
   },
   recomposition: {
-    inactiveName: 'Recomposition Primer (Completed)',
-    activeName: 'Recomposition Phase 2 (Active)',
+    inactiveName: 'Recomposition Primer',
+    activeName: 'Recomposition Phase 2',
     notes: ['Body-composition reset block', 'Maintain strength while tightening nutrition'],
   },
   strength: {
-    inactiveName: 'Base Strength Cycle (Completed)',
-    activeName: 'Peaking Strength Cycle (Active)',
+    inactiveName: 'Base Strength Cycle',
+    activeName: 'Peaking Strength Cycle',
     notes: ['Technique and base loading', 'Top sets + back-off progression'],
   },
 };
