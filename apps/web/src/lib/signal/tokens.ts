@@ -35,6 +35,7 @@ export const signalTokens = {
     okDim: 'rgba(90, 140, 79, 0.08)',
     warn: '#c79232',
     urgent: '#b14a35',
+    urgentDim: 'rgba(177, 74, 53, 0.06)',
   },
   chart: {
     series1: '#15140f',
@@ -66,7 +67,7 @@ export const signalTokens = {
     cell: 3,
     card: 4,
     cardLarge: 6,
-    pill: 2,
+    pill: 999,
   },
 } as const;
 

@@ -666,7 +666,7 @@ function SignalCheckInRow({ checkIn, href }: { checkIn: CheckInWithUser; href: s
             alignItems: 'center',
             minHeight: 28,
             padding: '0 10px',
-            borderRadius: 999,
+            borderRadius: signalTokens.radii.pill,
             fontFamily: signalTokens.fontVar.mono,
             fontSize: 11,
             color: isReviewed ? signalTokens.status.ok : signalTokens.signal.deep,
