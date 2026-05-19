@@ -115,4 +115,30 @@ describe('CheckInForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByText('Step 2 of 2')).toBeInTheDocument();
   });
+
+  it('keeps focus on a metric input in template mode when numeric input updates the metric state', async () => {
+    const template: CheckInTemplate = {
+      version: 3,
+      steps: [
+        {
+          id: 's1',
+          title: 'Metrics',
+          cards: [
+            { id: 'm', kind: 'system', systemType: 'metrics', columnSpan: 2 },
+          ],
+        },
+      ],
+    };
+
+    render(<CheckInForm {...makeProps({ template })} />);
+
+    const firstInput = screen.getAllByRole('spinbutton')[0] as HTMLInputElement;
+    firstInput.focus();
+
+    fireEvent.change(firstInput, { target: { value: '1' } });
+
+    await waitFor(() => {
+      expect(document.activeElement).toBe(firstInput);
+    });
+  });
 });

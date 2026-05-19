@@ -143,6 +143,55 @@ interface Props {
   signalEnabled?: boolean;
 }
 
+function SystemFrame({
+  children,
+  gridColumn,
+  label,
+  onClick,
+  signalEnabled,
+}: {
+  children: React.ReactNode;
+  gridColumn: string | Record<string, string>;
+  label: string;
+  onClick?: () => void;
+  signalEnabled: boolean;
+}) {
+  if (signalEnabled) {
+    return (
+      <Box
+        sx={{
+          gridColumn,
+          minWidth: 0,
+          cursor: onClick ? 'pointer' : 'default',
+        }}
+        onClick={onClick}
+      >
+        <SignalSectionCard eyebrow={label}>{children}</SignalSectionCard>
+      </Box>
+    );
+  }
+
+  return (
+    <Paper
+      variant="outlined"
+      onClick={onClick}
+      sx={{
+        gridColumn,
+        p: 2,
+        borderRadius: 2,
+        minWidth: 0,
+        cursor: onClick ? 'pointer' : 'default',
+        ...(onClick && { '&:hover': { bgcolor: 'action.hover' } }),
+      }}
+    >
+      <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }} color="text.secondary">
+        {label}
+      </Typography>
+      {children}
+    </Paper>
+  );
+}
+
 // ─── Renderer ─────────────────────────────────────────────────────────────────
 
 export default function TemplateCardRenderer({
@@ -192,48 +241,14 @@ export default function TemplateCardRenderer({
     systemType === 'metrics'  ? 'Weekly metrics' :
                                 'Training';
 
-  function SystemFrame({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
-    if (signalEnabled) {
-      return (
-        <Box
-          sx={{
-            gridColumn,
-            minWidth: 0,
-            cursor: onClick ? 'pointer' : 'default',
-          }}
-          onClick={onClick}
-        >
-          <SignalSectionCard eyebrow={label}>{children}</SignalSectionCard>
-        </Box>
-      );
-    }
-    return (
-      <Paper
-        variant="outlined"
-        onClick={onClick}
-        sx={{
-          gridColumn,
-          p: 2,
-          borderRadius: 2,
-          minWidth: 0,
-          cursor: onClick ? 'pointer' : 'default',
-          ...(onClick && { '&:hover': { bgcolor: 'action.hover' } }),
-        }}
-      >
-        {!signalEnabled && (
-          <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }} color="text.secondary">
-            {label}
-          </Typography>
-        )}
-        {children}
-      </Paper>
-    );
-  }
-
   if (!systemData) {
     // Preview mode — show placeholder
     return (
-      <SystemFrame>
+      <SystemFrame
+        gridColumn={gridColumn}
+        label={label}
+        signalEnabled={signalEnabled}
+      >
         <SystemCardPlaceholder
           systemType={systemType}
           metricConfig={card.systemType === 'metrics' ? card.metricConfig : undefined}
@@ -249,7 +264,11 @@ export default function TemplateCardRenderer({
 
   if (systemType === 'photos') {
     return (
-      <SystemFrame>
+      <SystemFrame
+        gridColumn={gridColumn}
+        label={label}
+        signalEnabled={signalEnabled}
+      >
         <ProgressPhotoSection
           currentPhotos={systemData.photoUrls}
           previousPhotos={systemData.previousPhotos}
@@ -263,7 +282,11 @@ export default function TemplateCardRenderer({
 
   if (systemType === 'metrics') {
     return (
-      <SystemFrame>
+      <SystemFrame
+        gridColumn={gridColumn}
+        label={label}
+        signalEnabled={signalEnabled}
+      >
         <MetricsSystemCard
           currentWeek={systemData.currentWeek}
           weekPrior={systemData.weekPrior}
@@ -287,7 +310,12 @@ export default function TemplateCardRenderer({
   // training
   const { workoutSummaries, onWorkoutsClick } = systemData;
   return (
-    <SystemFrame onClick={onWorkoutsClick}>
+    <SystemFrame
+      gridColumn={gridColumn}
+      label={label}
+      onClick={onWorkoutsClick}
+      signalEnabled={signalEnabled}
+    >
       <WorkoutsSystemCard workoutSummaries={workoutSummaries} onWorkoutsClick={undefined} />
     </SystemFrame>
   );
