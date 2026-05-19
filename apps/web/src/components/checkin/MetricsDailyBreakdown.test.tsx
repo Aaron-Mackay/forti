@@ -1,7 +1,9 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import type { Metric } from '@/generated/prisma/browser';
 import MetricsDailyBreakdown from './MetricsDailyBreakdown';
+import MetricsSummaryTable from './MetricsSummaryTable';
 
 function makeMetric(partial: Partial<Metric> = {}): Metric {
   return {
@@ -17,6 +19,58 @@ function makeMetric(partial: Partial<Metric> = {}): Metric {
     fat: partial.fat ?? null,
     customMetrics: partial.customMetrics ?? null,
   };
+}
+
+function EditableBreakdownHarness({ metric }: { metric: Metric }) {
+  const [metrics, setMetrics] = useState([metric]);
+
+  return (
+    <MetricsDailyBreakdown
+      metrics={metrics}
+      weekStartDate="2026-01-05"
+      customMetricDefs={[]}
+      includeEmptyRows
+      editable
+      onMetricChange={(dayOffset, key, value) => {
+        setMetrics(prev => prev.map((entry, index) => {
+          if (index !== 0 || dayOffset !== 0 || key !== 'steps') return entry;
+          return { ...entry, steps: value };
+        }));
+      }}
+      metricConfig={{ visibleBuiltInMetrics: ['weight', 'steps', 'sleepMins', 'calories', 'protein', 'carbs', 'fat'], includeCustomMetrics: true }}
+    />
+  );
+}
+
+function EditableMetricsCardHarness({ metric }: { metric: Metric }) {
+  const [metrics, setMetrics] = useState([metric]);
+
+  return (
+    <>
+      <MetricsSummaryTable
+        currentWeek={metrics}
+        weekPrior={[]}
+        weekTargets={null}
+        customMetricDefs={[]}
+        bodyweightUnit="kg"
+        metricConfig={{ visibleBuiltInMetrics: ['steps'], includeCustomMetrics: true }}
+      />
+      <MetricsDailyBreakdown
+        metrics={metrics}
+        weekStartDate="2026-01-05"
+        customMetricDefs={[]}
+        includeEmptyRows
+        editable
+        onMetricChange={(dayOffset, key, value) => {
+          setMetrics(prev => prev.map((entry, index) => {
+            if (index !== 0 || dayOffset !== 0 || key !== 'steps') return entry;
+            return { ...entry, steps: value };
+          }));
+        }}
+        metricConfig={{ visibleBuiltInMetrics: ['steps'], includeCustomMetrics: true }}
+      />
+    </>
+  );
 }
 
 describe('MetricsDailyBreakdown', () => {
@@ -95,5 +149,43 @@ describe('MetricsDailyBreakdown', () => {
     expect(screen.queryByText('Protein (g)')).not.toBeInTheDocument();
     expect(screen.queryByText('Carbs (g)')).not.toBeInTheDocument();
     expect(screen.queryByText('Fat (g)')).not.toBeInTheDocument();
+  });
+
+  it('keeps focus on an editable numeric cell when parent metric state updates immediately', async () => {
+    render(<EditableBreakdownHarness metric={makeMetric({ steps: 1000 })} />);
+
+    const stepsRow = screen.getByText('Steps').closest('tr');
+    expect(stepsRow).not.toBeNull();
+    const stepInputs = within(stepsRow as HTMLTableRowElement).getAllByRole('spinbutton') as HTMLInputElement[];
+    const firstInput = stepInputs[0];
+
+    firstInput.focus();
+    expect(document.activeElement).toBe(firstInput);
+
+    fireEvent.change(firstInput, { target: { value: '1234' } });
+
+    await waitFor(() => {
+      expect(firstInput.value).toBe('1234');
+    });
+
+    expect(document.activeElement).toBe(firstInput);
+  });
+
+  it('updates the summary table immediately when an editable metric changes', async () => {
+    render(<EditableMetricsCardHarness metric={makeMetric({ steps: 1000 })} />);
+
+    const summaryTable = screen.getByTestId('summary-table');
+    const breakdownTable = screen.getByTestId('breakdown-table');
+    expect(within(summaryTable).getByText('1,000')).toBeInTheDocument();
+
+    const stepsRow = within(breakdownTable).getByText('Steps').closest('tr');
+    expect(stepsRow).not.toBeNull();
+    const stepInputs = within(stepsRow as HTMLTableRowElement).getAllByRole('spinbutton') as HTMLInputElement[];
+
+    fireEvent.change(stepInputs[0], { target: { value: '1234' } });
+
+    await waitFor(() => {
+      expect(within(summaryTable).getByText('1,234')).toBeInTheDocument();
+    });
   });
 });

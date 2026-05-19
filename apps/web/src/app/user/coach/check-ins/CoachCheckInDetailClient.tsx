@@ -389,6 +389,7 @@ export default function CoachCheckInDetailClient({
                   card={card}
                   gridColumn={{ xs: '1 / -1', lg: `span ${card.columnSpan}` }}
                   clientId={checkIn.user.id}
+                  rangeAnchorDate={checkIn.weekStartDate}
                   mode="use"
                 />
               ))}
@@ -670,6 +671,7 @@ export default function CoachCheckInDetailClient({
                 card={card}
                 gridColumn={{ xs: '1 / -1', lg: `span ${card.columnSpan}` }}
                 clientId={checkIn.user.id}
+                rangeAnchorDate={checkIn.weekStartDate}
                 mode="use"
               />
             ))

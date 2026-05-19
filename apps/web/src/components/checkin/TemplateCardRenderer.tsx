@@ -165,6 +165,8 @@ export default function TemplateCardRenderer({
         card={card}
         gridColumn={gridColumn}
         clientId={clientId}
+        optimisticMetrics={systemData?.currentWeek}
+        rangeAnchorDate={systemData?.weekStart}
         mode={systemData ? 'use' : 'editor-preview'}
         interactivePreview={datavizPreviewInteractive}
       />

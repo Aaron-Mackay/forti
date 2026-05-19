@@ -17,15 +17,16 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
+import type { Metric } from '@/generated/prisma/browser';
 import type { DataVizCard, DataVizTimeRange, RelativeWeeks } from '@/types/datavizTypes';
 import { RELATIVE_WEEK_OPTIONS } from '@/types/datavizTypes';
 import { BUILTIN_METRIC_LABELS } from '@/types/metricTypes';
 import { useApiGet } from '@lib/hooks/api/useApiGet';
 import type { MetricHistoryResponse } from '@lib/contracts/metricHistory';
 import { colorTokens } from '@lib/theme';
-import { getCheckInWeekStart } from '@lib/checkInUtils';
 import { useSettings } from '@lib/providers/SettingsProvider';
 import { generateDataVizDummySeries } from './dataVizDummySeries';
+import { mergeOptimisticMetricPoints, resolveRelativeRange } from './dataVizChartUtils';
 
 const Chart = dynamic(
   () => import('react-apexcharts'),
@@ -39,6 +40,10 @@ interface Props {
   gridColumn: string | Record<string, string>;
   /** Pass the client's userId when rendering on the coach review page */
   clientId?: string;
+  /** Optional optimistic metrics to overlay on top of fetched history. */
+  optimisticMetrics?: Metric[];
+  /** Optional check-in window start used to anchor relative ranges to a specific check-in. */
+  rangeAnchorDate?: string | Date;
   /** Use runtime controls + live data in use mode; dummy chart in editor-preview mode. */
   mode?: 'use' | 'editor-preview';
   /** Allow runtime date controls while still using dummy preview data. */
@@ -58,16 +63,15 @@ function defaultAbsoluteRange(): { startDate: string; endDate: string } {
   return { startDate: formatDateISO(start), endDate: formatDateISO(end) };
 }
 
-function resolveRange(timeRange: DataVizTimeRange, checkInDay: number): { startDate: string; endDate: string } {
+function resolveRange(
+  timeRange: DataVizTimeRange,
+  checkInDay: number,
+  rangeAnchorDate?: string | Date,
+): { startDate: string; endDate: string } {
   if (timeRange.mode === 'absolute') {
     return { startDate: timeRange.startDate, endDate: timeRange.endDate };
   }
-  const windowStart = getCheckInWeekStart(new Date(), checkInDay);
-  const end = new Date(windowStart);
-  end.setDate(windowStart.getDate() + 6); // last day before check-in day
-  const start = new Date(end);
-  start.setDate(end.getDate() - timeRange.weeks * 7);
-  return { startDate: formatDateISO(start), endDate: formatDateISO(end) };
+  return resolveRelativeRange(timeRange.weeks, checkInDay, rangeAnchorDate);
 }
 
 function isInvalidRange(timeRange: DataVizTimeRange): boolean {
@@ -78,6 +82,8 @@ export default function DataVizChartCard({
   card,
   gridColumn,
   clientId,
+  optimisticMetrics,
+  rangeAnchorDate,
   mode = 'use',
   interactivePreview = false,
   withPaper = true,
@@ -94,7 +100,10 @@ export default function DataVizChartCard({
   }, [card.id, card.timeRange]);
 
   const activeRange = hasRuntimeControls ? runtimeRange : card.timeRange;
-  const { startDate, endDate } = useMemo(() => resolveRange(activeRange, checkInDay), [activeRange, checkInDay]);
+  const { startDate, endDate } = useMemo(
+    () => resolveRange(activeRange, checkInDay, rangeAnchorDate),
+    [activeRange, checkInDay, rangeAnchorDate],
+  );
   const rangeStartTs = useMemo(() => new Date(`${startDate}T00:00:00`).getTime(), [startDate]);
   const rangeEndTs = useMemo(() => new Date(`${endDate}T23:59:59`).getTime(), [endDate]);
   const rangeInvalid = isInvalidRange(activeRange);
@@ -126,11 +135,15 @@ export default function DataVizChartCard({
     }
     return [{
       name: BUILTIN_METRIC_LABELS[card.metric],
-      data: (data?.points ?? [])
-        .filter(p => p.value !== null)
-        .map(p => ({ x: new Date(p.date).getTime(), y: p.value as number })),
+      data: mergeOptimisticMetricPoints({
+        points: data?.points ?? [],
+        optimisticMetrics,
+        metricKey: card.metric,
+        startDate,
+        endDate,
+      }),
     }];
-  }, [isUseMode, data, card.metric, dummySeries]);
+  }, [isUseMode, data, card.metric, dummySeries, optimisticMetrics, startDate, endDate]);
 
   const title = card.title || BUILTIN_METRIC_LABELS[card.metric];
 

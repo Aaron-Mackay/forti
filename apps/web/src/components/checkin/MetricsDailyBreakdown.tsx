@@ -40,6 +40,14 @@ function sanitizeNumericDraft(value: string): string {
   return value.replaceAll(',', '');
 }
 
+function mapsEqual(a: Map<string, string>, b: Map<string, string>): boolean {
+  if (a.size !== b.size) return false;
+  for (const [key, value] of a) {
+    if (b.get(key) !== value) return false;
+  }
+  return true;
+}
+
 function getCustomValue(metric: Metric, id: string): number | null {
   if (!metric.customMetrics || typeof metric.customMetrics !== 'object' || Array.isArray(metric.customMetrics)) return null;
   const entry = (metric.customMetrics as Record<string, unknown>)[id];
@@ -242,6 +250,7 @@ export default function MetricsDailyBreakdown({
     return map;
   }, [metrics, rows, weekStartDate]);
   const [draftValues, setDraftValues] = useState<Map<string, string>>(initialDraftValues);
+  const [activeDraftKey, setActiveDraftKey] = useState<string | null>(null);
 
   useEffect(() => {
     updateFades();
@@ -250,7 +259,18 @@ export default function MetricsDailyBreakdown({
   // props rather than the derived initialDraftValues Map, which has a new reference
   // on every render (rows is computed inline) and would cause an infinite loop.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setDraftValues(initialDraftValues); }, [metrics, customMetricDefs, weekStartDate, includeEmptyRows, bodyweightUnit]);
+  useEffect(() => {
+    setDraftValues(prev => {
+      const next = new Map(initialDraftValues);
+      if (activeDraftKey !== null) {
+        const activeValue = prev.get(activeDraftKey);
+        if (activeValue !== undefined) {
+          next.set(activeDraftKey, activeValue);
+        }
+      }
+      return mapsEqual(prev, next) ? prev : next;
+    });
+  }, [activeDraftKey, initialDraftValues]);
 
   if (rows.length === 0) return null;
 
@@ -345,6 +365,7 @@ export default function MetricsDailyBreakdown({
                         type="number"
                         value={draftValues.get(`${row.key}:${i}`) ?? ''}
                         sx={{ '& .MuiInput-root': { pb: 0 }, '& .MuiInputBase-input': { py: 0, textAlign: 'center', ...cellSx } }}
+                        onFocus={() => setActiveDraftKey(`${row.key}:${i}`)}
                         onChange={e => {
                           const raw = sanitizeNumericDraft(e.target.value);
                           setDraftValues(prev => {
@@ -363,6 +384,7 @@ export default function MetricsDailyBreakdown({
                           }
                         }}
                         onBlur={e => {
+                          setActiveDraftKey(current => current === `${row.key}:${i}` ? null : current);
                           const raw = sanitizeNumericDraft(e.target.value);
                           const trimmed = raw.trim();
                           if (trimmed === '' || trimmed === '-' || trimmed === '.' || trimmed === '-.') {
