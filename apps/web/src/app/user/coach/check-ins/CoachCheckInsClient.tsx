@@ -28,6 +28,7 @@ import type { CoachClient } from '@lib/contracts/coach';
 import { signalFontVariablesClassName } from '@lib/signal/fonts';
 import { signalTokens } from '@lib/signal/tokens';
 import { SignalButton } from '@/components/signal/SignalButton';
+import { SignalTabs } from '@/components/signal/SignalTabs';
 
 export default function CoachCheckInsClient({
   lockedClientId,
@@ -404,54 +405,21 @@ function SignalCoachCheckIns({
             padding: '16px 16px 18px',
           }}
         >
-          <Tabs
-            value={tab}
-            onChange={(_event, value) => setTab(value as 0 | 1)}
-            variant="fullWidth"
-            sx={{
-              minHeight: 0,
-              '& .MuiTabs-indicator': {
-                height: 2,
-                backgroundColor: palette.ink,
+          <SignalTabs
+            value={String(tab) as '0' | '1'}
+            onChange={(next) => setTab(Number(next) as 0 | 1)}
+            ariaLabel="Check-in inbox tabs"
+            tabs={[
+              {
+                value: '0',
+                label: 'Needs review',
+                count: !loading && newCheckIns.length > 0 ? newCheckIns.length : undefined,
               },
-              '& .MuiTab-root': {
-                minHeight: 0,
-                px: 0.5,
-                py: 1.25,
-                textTransform: 'none',
-                fontSize: 14,
-                fontWeight: 600,
-                color: palette.inkLight,
-              },
-              '& .Mui-selected': {
-                color: `${palette.ink} !important`,
-              },
-            }}
-          >
-            <Tab
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                  Needs review
-                  {!loading && newCheckIns.length > 0 && (
-                    <Chip
-                      label={newCheckIns.length}
-                      size="small"
-                      sx={{
-                        height: 20,
-                        fontSize: 11,
-                        backgroundColor: signalTokens.signal.dim,
-                        color: signalTokens.signal.deep,
-                        border: `1px solid ${palette.border}`,
-                      }}
-                    />
-                  )}
-                </Box>
-              }
-            />
-            <Tab label="Browse archive" />
-          </Tabs>
+              { value: '1', label: 'Browse archive' },
+            ]}
+          />
 
-          <div style={{ marginTop: 14 }}>
+          <div style={{ marginTop: 16 }}>
             {tab === 0 ? (
               loading ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>

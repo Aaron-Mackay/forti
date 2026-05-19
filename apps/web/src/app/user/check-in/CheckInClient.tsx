@@ -16,7 +16,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import CloseIcon from '@mui/icons-material/Close';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import type { WeeklyCheckIn } from '@/generated/prisma/browser';
 import CheckInForm from './CheckInForm';
 import CheckInHistoryCard, { CheckInDetails } from './CheckInHistoryCard';
@@ -31,6 +30,7 @@ import { getCheckInHistory, getCurrentCheckIn } from '@lib/clientApi';
 import { signalTokens } from '@lib/signal/tokens';
 import { SignalSectionCard } from '@/components/signal/SignalSectionCard';
 import { SignalButton } from '@/components/signal/SignalButton';
+import { SignalAccordion } from '@/components/signal/SignalAccordion';
 
 const palette = signalTokens.surface.planning;
 
@@ -50,7 +50,6 @@ function normalizeCurrentCheckInResponse(data: CurrentCheckInResponse): CurrentD
 }
 
 function SignalHistoryRow({ checkIn }: { checkIn: WeeklyCheckIn }) {
-  const [expanded, setExpanded] = useState(false);
   const [activePhoto, setActivePhoto] = useState<{ src: string; alt: string } | null>(null);
 
   const weekLabel = new Date(checkIn.weekStartDate).toLocaleDateString('en-GB', {
@@ -62,43 +61,31 @@ function SignalHistoryRow({ checkIn }: { checkIn: WeeklyCheckIn }) {
       })
     : null;
 
-  return (
-    <div style={{ border: `1px solid ${palette.border}`, borderRadius: signalTokens.radii.card, overflow: 'hidden', background: palette.surface }}>
-      <button
-        type="button"
-        onClick={() => setExpanded(e => !e)}
-        style={{
-          display: 'flex', alignItems: 'center', width: '100%',
-          background: 'transparent', border: 'none', padding: '12px 16px',
-          cursor: 'pointer', gap: 8, color: palette.ink, textAlign: 'left',
-        }}
-      >
-        {checkIn.completedAt && (
-          <CheckCircleIcon style={{ fontSize: 18, color: signalTokens.signal.deep, flexShrink: 0 }} />
-        )}
-        <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: signalTokens.fontVar.body, fontSize: 14, fontWeight: 500 }}>
-            Week of {weekLabel}
-          </div>
-          {submittedLabel && (
-            <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight }}>
-              Submitted {submittedLabel}
-            </div>
-          )}
-        </div>
-        <ExpandMoreIcon style={{
-          fontSize: 20, color: palette.inkLight, flexShrink: 0,
-          transform: expanded ? 'rotate(180deg)' : 'none',
-          transition: 'transform 200ms ease',
-        }} />
-      </button>
-      {expanded && (
-        <div style={{ padding: '0 16px 16px', borderTop: `1px solid ${palette.border}` }}>
-          <CheckInDetails checkIn={checkIn} onPhotoOpen={(src, alt) => setActivePhoto({ src, alt })} />
-        </div>
+  const summary = (
+    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {checkIn.completedAt && (
+        <CheckCircleIcon style={{ fontSize: 18, color: signalTokens.signal.deep, flexShrink: 0 }} />
       )}
+      <span>
+        <span style={{ display: 'block', fontFamily: signalTokens.fontVar.body, fontSize: 14, fontWeight: 500 }}>
+          Week of {weekLabel}
+        </span>
+        {submittedLabel && (
+          <span style={{ display: 'block', fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight }}>
+            Submitted {submittedLabel}
+          </span>
+        )}
+      </span>
+    </span>
+  );
+
+  return (
+    <>
+      <SignalAccordion summary={summary}>
+        <CheckInDetails checkIn={checkIn} onPhotoOpen={(src, alt) => setActivePhoto({ src, alt })} />
+      </SignalAccordion>
       <PhotoViewerDialog photo={activePhoto} onClose={() => setActivePhoto(null)} />
-    </div>
+    </>
   );
 }
 
