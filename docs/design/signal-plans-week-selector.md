@@ -88,9 +88,8 @@ Note: `PlansListView.tsx` was already deleted in a previous PR — no inline pla
 
 ```
 ┌──────┬────────────────────────────────────────────────────────────────────────┐
-│ side │ MY TRAINING · PLANS                                                    │
-│ bar  │ Plans                                                       [+ New plan]
-│      │ One active at a time · pick another to switch.                         │
+│ side │ Plans                                                       [+ New plan]
+│ bar  │ One active at a time · pick another to switch.                         │
 │      ├────────────────────────────────────────────────────────────────────────┤
 │      │ ALL · 4   ACTIVE · 1   INACTIVE · 1   COMPLETED · 2  SORT: LAST ACT  ↓ │
 │      ├────────────────────────────────────────────────────────────────────────┤
@@ -120,7 +119,7 @@ Note: `PlansListView.tsx` was already deleted in a previous PR — no inline pla
 
 ### Header
 
-- Eyebrow: mono 10 / 0.14em / `inkLight`. Text: `MY TRAINING · PLANS` for self; `CLIENTS · {NAME} · PLANS` for coach.
+- Coach view only: eyebrow renders as a `< CLIENTS` back-link (mono 10 / 0.14em / `inkLight`). Self view has **no** eyebrow — the title is the top element. (The historical `MY TRAINING · PLANS` overline was removed once the surface sat under the Signal sidebar; the sidebar already labels the section.)
 - Title: `Archivo Narrow 30 / 1.0 / -0.015em / ink`. Default `Plans`; coach uses `{name}'s plans`.
 - Subtitle: `Inter Tight 12 / 1.5 / inkMid` — `One active at a time · pick another to switch.` (Coach copy: `Manage {first-name}'s plans.`)
 - Header right: primary `+ New plan` button (`ink` fill, font 12/600, padding `8px 14px`, radius `card`). Coach copy: `+ Plan for {first-name}`.
@@ -174,7 +173,6 @@ Mono 11 / `inkLight`, single line: `Switching plans does not delete progress —
 ┌───────────────────────────────────────────┐
 │ [F] Forti                          [🔔]   │  top bar (existing SignalAppShell)
 ├───────────────────────────────────────────┤
-│ MY TRAINING · PLANS                       │  eyebrow mono 10
 │ Plans                              [ + ]  │  title Archivo Narrow 28 + outlined 32×32 add
 ├───────────────────────────────────────────┤
 │ ALL · 4   ACTIVE · 1   INACTIVE · 1   …   │  filter rail mono 10 (sort moves to a small icon menu)
@@ -217,7 +215,7 @@ Mono 11 / `inkLight`, single line: `Switching plans does not delete progress —
 
 ### Header
 
-- Eyebrow + title as desktop.
+- Title as desktop (no eyebrow in self view; coach view keeps the `< CLIENTS` back-link).
 - Right: `32×32` outlined add button (`1.5px borderStrong`, radius `cell`, `+` 14px stroke 2).
 
 ---

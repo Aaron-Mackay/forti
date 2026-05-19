@@ -41,7 +41,7 @@ test.describe('PlansListCard Signal surface', () => {
 
   test('renders the new planning table surface', async ({ page }) => {
     await expect(page.locator('[data-signal-surface="planning"]').first()).toBeVisible();
-    await expect(page.getByText('MY TRAINING · PLANS')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Plans', level: 1 })).toBeVisible();
     await expect(page.getByText('SCHEDULE')).toBeVisible();
     await expect(page.getByText('STATUS')).toBeVisible();
     await expect(page.getByRole('link', { name: /\+ New plan/i })).toHaveAttribute('href', '/user/plan/create');
