@@ -17,7 +17,7 @@ export function CoachSection() {
             padding: '10px 14px',
             border: `1px solid ${signalTokens.status.urgent}`,
             borderRadius: signalTokens.radii.card,
-            background: 'rgba(177,74,53,0.06)',
+            background: signalTokens.status.urgentDim,
             color: signalTokens.status.urgent,
             fontSize: 13,
           }}
@@ -31,7 +31,7 @@ export function CoachSection() {
             padding: '10px 14px',
             border: `1px solid ${signalTokens.status.urgent}`,
             borderRadius: signalTokens.radii.card,
-            background: 'rgba(177,74,53,0.06)',
+            background: signalTokens.status.urgentDim,
             color: signalTokens.status.urgent,
             fontSize: 13,
             display: 'flex',

@@ -44,7 +44,7 @@ export function CompleteWeekButton() {
             style={{
               background: 'transparent',
               border: `1px solid ${palette.ink}`,
-              borderRadius: 4,
+              borderRadius: signalTokens.radii.card,
               padding: '4px 14px',
               fontSize: 13,
               fontWeight: 500,
@@ -61,7 +61,7 @@ export function CompleteWeekButton() {
             style={{
               background: palette.ink,
               border: 'none',
-              borderRadius: 4,
+              borderRadius: signalTokens.radii.card,
               padding: '4px 14px',
               fontSize: 13,
               fontWeight: 600,

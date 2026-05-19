@@ -42,7 +42,7 @@ export function SettingsShell({ section, initialName, initialImage }: Props) {
             style={{
               padding: '10px 14px',
               borderBottom: `1px solid ${signalTokens.status.urgent}`,
-              background: 'rgba(177,74,53,0.06)',
+              background: signalTokens.status.urgentDim,
               color: signalTokens.status.urgent,
               fontSize: 12,
               fontFamily: signalTokens.fontVar.mono,
