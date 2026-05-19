@@ -6,6 +6,7 @@ import { SettingsProvider } from "@lib/providers/SettingsProvider";
 import { CoachClientsProvider } from "@lib/providers/CoachClientsProvider";
 import { NotificationsProvider } from "@lib/providers/NotificationsProvider";
 import { SignalShellSwitch } from "@/components/signal/SignalShellSwitch";
+import { DateLocalizationProvider } from "@/lib/providers/DateLocalizationProvider";
 import prisma from '@lib/prisma';
 import { parseDashboardSettings } from '@/types/settingsTypes';
 
@@ -40,7 +41,8 @@ export default async function ProtectedLayout({children}: { children: React.Reac
   const userInitials = computeInitials(session.user.name ?? session.user.email);
 
   return (
-    <SettingsProvider>
+    <DateLocalizationProvider>
+      <SettingsProvider>
       <NotificationsProvider>
         <CoachClientsProvider>
           <SignalShellSwitch
@@ -52,6 +54,7 @@ export default async function ProtectedLayout({children}: { children: React.Reac
           </SignalShellSwitch>
         </CoachClientsProvider>
       </NotificationsProvider>
-    </SettingsProvider>
+      </SettingsProvider>
+    </DateLocalizationProvider>
   );
 }
