@@ -1,4 +1,4 @@
-import { test } from './fixtures';
+import { test, expect } from './fixtures';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -28,9 +28,14 @@ test.describe('Plan Editor', () => {
   });
 
   test('opens the plan editor route from the plans list', async ({ page }) => {
+    const response = await page.request.get('/api/workout-data');
+    expect(response.ok()).toBe(true);
+    const data = await response.json() as { plans: Array<{ id: number; name: string }> };
+    expect(data.plans.length).toBeGreaterThan(0);
+    const firstPlan = data.plans[0];
+
     await page.goto('/user/plan');
-    const firstPlanLink = page.getByRole('listitem').first().getByRole('link');
-    await firstPlanLink.click();
+    await page.getByRole('link', { name: new RegExp(firstPlan.name, 'i') }).first().click();
     await page.waitForURL(/\/user\/plan\/\d+/);
   });
 });
