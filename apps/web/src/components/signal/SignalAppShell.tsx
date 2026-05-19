@@ -15,6 +15,7 @@ import { SignalSurfaceProvider } from './SignalSurfaceContext';
 import { SignalIcon } from './SignalIcons';
 import { secondaryNavItemsFor, type NavItemId } from './navItems';
 import { useSettings } from '@lib/providers/SettingsProvider';
+import { useApiGet } from '@lib/hooks/api/useApiGet';
 
 type Props = {
   mode: SignalNavMode;
@@ -41,8 +42,12 @@ export function SignalAppShell({
   const chromePalette = signalTokens.surface.gym;
   const pathname = usePathname();
   const { settings, loading: settingsLoading } = useSettings();
+  const { data: coachInfo } = useApiGet<{ currentCoach: { id: string; name: string } | null }>(
+    mode === 'user' ? '/api/coach' : null
+  );
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const moreLinks = secondaryNavItemsFor(mode, !settingsLoading && settings.showSupplements);
+  const hasCoach = mode === 'user' && Boolean(coachInfo?.currentCoach);
 
   useEffect(() => {
     setMobileMoreOpen(false);
@@ -98,6 +103,7 @@ export function SignalAppShell({
             userLabel={userLabel}
             userInitials={userInitials}
             hasUnreadNotifications={hasUnreadNotifications}
+            hasCoach={hasCoach}
           />
         </div>
 
@@ -144,6 +150,7 @@ export function SignalAppShell({
               activeOverride={activeNavOverride}
               moreOpen={mobileMoreOpen}
               onMoreToggle={() => setMobileMoreOpen((open) => !open)}
+              hasCoach={hasCoach}
             />
             <AnimatePresence initial={false}>
               {mobileMoreOpen && (

@@ -66,9 +66,9 @@ const coachSecondaryNav: SignalSecondaryNavItem[] = [
   { label: 'Settings', href: '/user/settings', detail: 'Account, coaching, exports', matchPrefixes: ['/user/settings'] },
 ];
 
-export function navItemsFor(mode: SignalNavMode, coachModeActive = false): SignalNavItem[] {
+export function navItemsFor(mode: SignalNavMode, hasCoach = false): SignalNavItem[] {
   if (mode === 'coach') return coachNav;
-  return coachModeActive ? coachedUserNav : userNav;
+  return hasCoach ? coachedUserNav : userNav;
 }
 
 export function secondaryNavItemsFor(mode: SignalNavMode, showSupplements = false): SignalSecondaryNavItem[] {

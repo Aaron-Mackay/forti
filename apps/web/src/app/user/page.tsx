@@ -22,7 +22,7 @@ export default async function UserPage() {
     getUserMetrics(user.id),
     getUserEvents(user.id),
     getActivePlanWithStats(user.id),
-    prisma.user.findUnique({ where: { id: user.id }, select: { settings: true } }),
+    prisma.user.findUnique({ where: { id: user.id }, select: { settings: true, coachId: true } }),
   ])
   const userBlocks = allEvents.filter((ev: PrismaEvent) => ev.eventType === EventType.BlockEvent)
   const settings = parseDashboardSettings(userRecord?.settings)
@@ -35,7 +35,7 @@ export default async function UserPage() {
 
   // For coached users in Signal mode, determine if this week's check-in is still pending
   let checkInPending = false;
-  if (signalEnabled && settings.coachModeActive) {
+  if (signalEnabled && userRecord?.coachId) {
     const weekStart = toDateOnly(getCheckInWeekStart(new Date(), settings.checkInDay));
     const checkIn = await prisma.weeklyCheckIn.findUnique({
       where: { userId_weekStartDate: { userId: user.id, weekStartDate: weekStart } },

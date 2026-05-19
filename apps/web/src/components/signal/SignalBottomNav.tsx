@@ -5,20 +5,19 @@ import { usePathname } from 'next/navigation';
 import { signalTokens, type SignalNavMode } from '@lib/signal/tokens';
 import { SignalIcon } from './SignalIcons';
 import { activeNavId, navItemsFor, type NavItemId } from './navItems';
-import { useSettings } from '@lib/providers/SettingsProvider';
 
 type Props = {
   mode: SignalNavMode;
   activeOverride?: NavItemId;
   moreOpen?: boolean;
   onMoreToggle?: () => void;
+  hasCoach?: boolean;
 };
 
-export function SignalBottomNav({ mode, activeOverride, moreOpen = false, onMoreToggle }: Props) {
+export function SignalBottomNav({ mode, activeOverride, moreOpen = false, onMoreToggle, hasCoach = false }: Props) {
   const palette = signalTokens.surface.gym;
   const pathname = usePathname();
-  const { settings, loading } = useSettings();
-  const items = navItemsFor(mode, !loading && settings.coachModeActive);
+  const items = navItemsFor(mode, hasCoach);
   const active = moreOpen ? 'more' : activeOverride ?? activeNavId(items, pathname) ?? 'home';
 
   return (

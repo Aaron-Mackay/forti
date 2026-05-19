@@ -18,13 +18,14 @@ type Props = {
   userLabel?: string;
   userInitials?: string;
   hasUnreadNotifications?: boolean;
+  hasCoach?: boolean;
 };
 
-export function SignalSidebar({ mode, activeOverride, userLabel, userInitials, hasUnreadNotifications }: Props) {
+export function SignalSidebar({ mode, activeOverride, userLabel, userInitials, hasUnreadNotifications, hasCoach = false }: Props) {
   const { settings, loading } = useSettings();
   const palette = signalTokens.surface.gym;
   const pathname = usePathname();
-  const items = navItemsFor(mode, !loading && settings.coachModeActive);
+  const items = navItemsFor(mode, hasCoach);
   const primaryItems = items.filter((item) => item.id !== 'more');
   const active = activeOverride ?? activeNavId(primaryItems, pathname);
   const secondaryItems = secondaryNavItemsFor(mode, !loading && settings.showSupplements);
