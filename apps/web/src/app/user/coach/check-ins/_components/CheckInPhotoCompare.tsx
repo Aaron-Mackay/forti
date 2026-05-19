@@ -63,7 +63,7 @@ function pickInitialAngle(current: CurrentCheckIn, history: Entry[]): PhotoAngle
   return 'front';
 }
 
-export default function CheckInPhotoCompare({ currentCheckIn }: Props) {
+export default function CheckInPhotoCompare({ currentCheckIn, signalEnabled = false }: Props & { signalEnabled?: boolean }) {
   const [history, setHistory] = useState<Entry[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [angle, setAngle] = useState<PhotoAngle>('front');
@@ -156,8 +156,8 @@ export default function CheckInPhotoCompare({ currentCheckIn }: Props) {
 
   if (history === null) {
     return (
-      <Section>
-        <Header />
+      <Section signalEnabled={signalEnabled}>
+        {!signalEnabled && <Header />}
         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' } }}>
           <Skeleton variant="rounded" sx={{ aspectRatio: '4 / 5', width: '100%' }} />
           <Skeleton variant="rounded" sx={{ aspectRatio: '4 / 5', width: '100%' }} />
@@ -359,7 +359,11 @@ export default function CheckInPhotoCompare({ currentCheckIn }: Props) {
   );
 }
 
-function Section({ children }: { children: React.ReactNode }) {
+function Section({ children, signalEnabled }: { children: React.ReactNode; signalEnabled?: boolean }) {
+  if (signalEnabled) {
+    // Parent (CoachCheckInDetailClient) already provides a labelled section frame in Signal mode.
+    return <>{children}</>;
+  }
   return (
     <Paper
       elevation={0}

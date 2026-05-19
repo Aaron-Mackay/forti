@@ -1,6 +1,7 @@
 'use client';
 
 import { Box, Paper, Stack, Typography } from '@mui/material';
+import { SignalSectionCard } from '@/components/signal/SignalSectionCard';
 import type { Metric } from '@/generated/prisma/browser';
 import type { CheckInCard, CustomCheckInResponses } from '@/types/checkInTemplateTypes';
 import type { PreviousPhotos, WeekTargets } from '@/types/checkInTypes';
@@ -139,6 +140,7 @@ interface Props {
   metricsExpanded?: boolean;
   /** Optional expansion callback for metrics system cards. */
   onMetricsExpandedChange?: (expanded: boolean) => void;
+  signalEnabled?: boolean;
 }
 
 // ─── Renderer ─────────────────────────────────────────────────────────────────
@@ -155,6 +157,7 @@ export default function TemplateCardRenderer({
   datavizPreviewInteractive = false,
   metricsExpanded,
   onMetricsExpandedChange,
+  signalEnabled = false,
 }: Props) {
   if (card.kind === 'dataviz') {
     return (
@@ -175,6 +178,7 @@ export default function TemplateCardRenderer({
         gridColumn={gridColumn}
         responses={responses}
         onChange={onResponseChange ?? (() => undefined)}
+        signalEnabled={signalEnabled}
       />
     );
   }
@@ -186,13 +190,48 @@ export default function TemplateCardRenderer({
     systemType === 'metrics'  ? 'Weekly metrics' :
                                 'Training';
 
+  function SystemFrame({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
+    if (signalEnabled) {
+      return (
+        <Box
+          sx={{
+            gridColumn,
+            minWidth: 0,
+            cursor: onClick ? 'pointer' : 'default',
+          }}
+          onClick={onClick}
+        >
+          <SignalSectionCard eyebrow={label}>{children}</SignalSectionCard>
+        </Box>
+      );
+    }
+    return (
+      <Paper
+        variant="outlined"
+        onClick={onClick}
+        sx={{
+          gridColumn,
+          p: 2,
+          borderRadius: 2,
+          minWidth: 0,
+          cursor: onClick ? 'pointer' : 'default',
+          ...(onClick && { '&:hover': { bgcolor: 'action.hover' } }),
+        }}
+      >
+        {!signalEnabled && (
+          <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }} color="text.secondary">
+            {label}
+          </Typography>
+        )}
+        {children}
+      </Paper>
+    );
+  }
+
   if (!systemData) {
     // Preview mode — show placeholder
     return (
-      <Paper variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2, minWidth: 0 }}>
-        <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }} color="text.secondary">
-          {label}
-        </Typography>
+      <SystemFrame>
         <SystemCardPlaceholder
           systemType={systemType}
           metricConfig={card.systemType === 'metrics' ? card.metricConfig : undefined}
@@ -202,13 +241,13 @@ export default function TemplateCardRenderer({
           expanded={metricsExpanded}
           onExpandedChange={onMetricsExpandedChange}
         />
-      </Paper>
+      </SystemFrame>
     );
   }
 
   if (systemType === 'photos') {
     return (
-      <Paper variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2, minWidth: 0 }}>
+      <SystemFrame>
         <ProgressPhotoSection
           currentPhotos={systemData.photoUrls}
           previousPhotos={systemData.previousPhotos}
@@ -216,13 +255,13 @@ export default function TemplateCardRenderer({
           onPhotoUploaded={systemData.onPhotoUploaded}
           onPhotoRemoved={systemData.onPhotoRemoved}
         />
-      </Paper>
+      </SystemFrame>
     );
   }
 
   if (systemType === 'metrics') {
     return (
-      <Paper variant="outlined" sx={{ gridColumn, p: 2, borderRadius: 2, minWidth: 0 }}>
+      <SystemFrame>
         <MetricsSystemCard
           currentWeek={systemData.currentWeek}
           weekPrior={systemData.weekPrior}
@@ -239,29 +278,15 @@ export default function TemplateCardRenderer({
           onBreakdownMetricChange={systemData.onMetricChange}
           metricConfig={card.metricConfig}
         />
-      </Paper>
+      </SystemFrame>
     );
   }
 
   // training
   const { workoutSummaries, onWorkoutsClick } = systemData;
   return (
-    <Paper
-      variant="outlined"
-      onClick={onWorkoutsClick}
-      sx={{
-        gridColumn,
-        p: 2,
-        borderRadius: 2,
-        minWidth: 0,
-        cursor: onWorkoutsClick ? 'pointer' : 'default',
-        ...(onWorkoutsClick && { '&:hover': { bgcolor: 'action.hover' } }),
-      }}
-    >
-      <WorkoutsSystemCard
-        workoutSummaries={workoutSummaries}
-        onWorkoutsClick={undefined}
-      />
-    </Paper>
+    <SystemFrame onClick={onWorkoutsClick}>
+      <WorkoutsSystemCard workoutSummaries={workoutSummaries} onWorkoutsClick={undefined} />
+    </SystemFrame>
   );
 }

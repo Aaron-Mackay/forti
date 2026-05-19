@@ -44,6 +44,7 @@ import SupplementsClient from '@/app/user/supplements/SupplementsClient';
 import {getLoomEmbedUrl} from '@lib/loom';
 import {saveCoachCheckInNotes, saveTargetTemplate} from '@lib/clientApi';
 import { signalTokens } from '@lib/signal/tokens';
+import { SignalSection as SignalSectionPrimitive } from '@/components/signal/SignalSection';
 
 interface Props {
   checkIn: CheckInWithUser;
@@ -367,7 +368,7 @@ export default function CoachCheckInDetailClient({
         >
           <Stack spacing={2}>
             <SignalSection label="Photos">
-              <CheckInPhotoCompare currentCheckIn={checkIn} />
+              <CheckInPhotoCompare currentCheckIn={checkIn} signalEnabled />
             </SignalSection>
 
             {isCustomMode && templateSnapshot && (
@@ -544,6 +545,7 @@ export default function CoachCheckInDetailClient({
               <CoachWeekTargetsCard
                 values={targetValues}
                 onChange={setTargetValues}
+                signalEnabled
               />
             </SignalSection>
 
@@ -866,30 +868,10 @@ function SignalSection({
   children: ReactNode;
   accent?: boolean;
 }) {
-  const palette = signalTokens.surface.planning;
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: { xs: 2, sm: 2.5 },
-        borderRadius: 2,
-        border: `1px solid ${accent ? palette.borderStrong : palette.border}`,
-        backgroundColor: accent ? palette.surface : palette.surfaceAlt,
-      }}
-    >
-      <Typography
-        component="div"
-        sx={{
-          fontFamily: signalTokens.fontVar.mono,
-          fontSize: 11,
-          color: accent ? signalTokens.signal.deep : palette.inkLight,
-          mb: 1.5,
-        }}
-      >
-        {label}
-      </Typography>
+    <SignalSectionPrimitive label={label} accent={accent}>
       {children}
-    </Paper>
+    </SignalSectionPrimitive>
   );
 }
 

@@ -29,6 +29,7 @@ import { checkInHasCustomResponses } from '@/lib/checkInUtils';
 import { getAllTemplateCards, parseCheckInTemplate } from '@/types/checkInTemplateTypes';
 import { getCheckInHistory, getCurrentCheckIn } from '@lib/clientApi';
 import { signalTokens } from '@lib/signal/tokens';
+import { SignalSectionCard } from '@/components/signal/SignalSectionCard';
 
 const palette = signalTokens.surface.planning;
 
@@ -254,9 +255,10 @@ export default function CheckInClient({ signalEnabled = false }: { signalEnabled
               activePlanId={currentData.activePlanId}
               template={currentData.template}
               onSubmitted={() => setSubmitted(s => !s)}
+              signalEnabled
             />
           ) : editingCurrent && currentData ? (
-            <div style={{ background: palette.surface, border: `1px solid ${palette.border}`, borderRadius: signalTokens.radii.card, padding: 16 }}>
+            <SignalSectionCard>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                 <span style={{ fontFamily: signalTokens.fontVar.body, fontSize: 15, fontWeight: 600 }}>Edit submitted check-in</span>
                 <IconButton
@@ -279,10 +281,11 @@ export default function CheckInClient({ signalEnabled = false }: { signalEnabled
                 activePlanId={currentData.activePlanId}
                 template={currentData.template}
                 onSubmitted={() => setSubmitted(s => !s)}
+                signalEnabled
               />
-            </div>
+            </SignalSectionCard>
           ) : isCompleted && currentData ? (
-            <div style={{ background: palette.surface, border: `1px solid ${palette.border}`, borderRadius: signalTokens.radii.card, padding: 16 }}>
+            <SignalSectionCard>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                 <CheckCircleIcon style={{ color: signalTokens.signal.deep }} />
                 <div style={{ flex: 1 }}>
@@ -310,9 +313,9 @@ export default function CheckInClient({ signalEnabled = false }: { signalEnabled
                 defaultExpanded={false}
                 metricConfig={completedMetricsCardConfig}
               />
-            </div>
+            </SignalSectionCard>
           ) : currentData ? (
-            <div style={{ background: palette.surface, border: `1px solid ${palette.border}`, borderRadius: signalTokens.radii.card, padding: 16 }}>
+            <SignalSectionCard>
               <CheckInForm
                 currentWeek={currentData.currentWeek}
                 weekPrior={currentData.weekPrior}
@@ -325,8 +328,9 @@ export default function CheckInClient({ signalEnabled = false }: { signalEnabled
                 activePlanId={currentData.activePlanId}
                 template={currentData.template}
                 onSubmitted={() => setSubmitted(s => !s)}
+                signalEnabled
               />
-            </div>
+            </SignalSectionCard>
           ) : null}
         </div>
 

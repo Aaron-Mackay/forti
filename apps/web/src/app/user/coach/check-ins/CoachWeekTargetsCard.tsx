@@ -16,10 +16,45 @@ export interface TargetValues {
 interface Props {
   values: TargetValues;
   onChange: (values: TargetValues) => void;
+  signalEnabled?: boolean;
 }
 
-export default function CoachWeekTargetsCard({values, onChange}: Props) {
+export default function CoachWeekTargetsCard({values, onChange, signalEnabled = false}: Props) {
   const isMobile = useMediaQuery(useTheme().breakpoints.down('sm'));
+
+  const body = (
+    <Stack spacing={1.5}>
+      <MacroTargetsPanel
+        values={{calories: values.calories, proteinPct: values.proteinPct, carbsPct: values.carbsPct, fatPct: values.fatPct}}
+        onChange={macro => onChange({...values, ...macro})}
+      />
+
+      <Divider/>
+
+      <Box sx={{display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 1.5, width: '100%'}}>
+        <TextField
+          label="Steps"
+          placeholder="Target steps"
+          size="small"
+          type="number"
+          value={values.steps}
+          onChange={e => onChange({...values, steps: e.target.value})}
+          slotProps={{htmlInput: {min: 0}}}
+          sx={{flex: isMobile ? null : 1}}
+        />
+        <SleepHmInput
+          valueMins={values.sleep}
+          onChange={sleep => onChange({...values, sleep})}
+          sx={{flex: isMobile ? null : 1}}
+        />
+      </Box>
+    </Stack>
+  );
+
+  if (signalEnabled) {
+    // Parent (CoachCheckInDetailClient SignalSection) provides the frame and eyebrow.
+    return body;
+  }
 
   return (
     <Paper
@@ -34,33 +69,7 @@ export default function CoachWeekTargetsCard({values, onChange}: Props) {
       <Typography variant="overline" color="text.secondary" sx={{display: 'block', mb: 1.5}}>
         Targets
       </Typography>
-
-      <Stack spacing={1.5}>
-        <MacroTargetsPanel
-          values={{calories: values.calories, proteinPct: values.proteinPct, carbsPct: values.carbsPct, fatPct: values.fatPct}}
-          onChange={macro => onChange({...values, ...macro})}
-        />
-
-        <Divider/>
-
-        <Box sx={{display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 1.5, width: '100%'}}>
-          <TextField
-            label="Steps"
-            placeholder="Target steps"
-            size="small"
-            type="number"
-            value={values.steps}
-            onChange={e => onChange({...values, steps: e.target.value})}
-            slotProps={{htmlInput: {min: 0}}}
-            sx={{flex: isMobile ? null : 1}}
-          />
-          <SleepHmInput
-            valueMins={values.sleep}
-            onChange={sleep => onChange({...values, sleep})}
-            sx={{flex: isMobile ? null : 1}}
-          />
-        </Box>
-      </Stack>
+      {body}
     </Paper>
   );
 }
