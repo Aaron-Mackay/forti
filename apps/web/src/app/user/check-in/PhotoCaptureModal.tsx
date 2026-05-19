@@ -324,6 +324,7 @@ export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null,
     activePointersRef.current.clear();
     setStage('adjust');
     setUploadError(null);
+    setAdjustImageLoaded(false);
     gestureRef.current = {
       dragging: false,
       lastX: 0,
@@ -439,17 +440,26 @@ export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null,
   useEffect(() => {
     if (stage !== 'adjust') return;
     setAdjustImageLoaded(false);
+    setUploadError(null);
     const blob = capturedBlobRef.current;
-    if (!blob) return;
+    if (!blob) {
+      setUploadError('No photo was selected.');
+      return;
+    }
+
     const url = URL.createObjectURL(blob);
     const img = new Image();
     img.onload = () => {
       adjustImgRef.current = img;
       setAdjustImageLoaded(true);
     };
+    img.onerror = () => {
+      adjustImgRef.current = null;
+      setUploadError('This photo could not be loaded. Try a JPG, PNG, or WebP image.');
+    };
     img.src = url;
     return () => URL.revokeObjectURL(url);
-  }, [stage]);
+  }, [initialFile, stage]);
 
   useEffect(() => {
     if (stage !== 'adjust') return;
@@ -960,7 +970,7 @@ export default function PhotoCaptureModal({ angle, ghostUrl, initialFile = null,
                   event.stopPropagation();
                   void handleSave();
                 }}
-                disabled={uploading}
+                disabled={uploading || !adjustImageLoaded}
                 startIcon={uploading ? <CircularProgress size={16} color="inherit" /> : undefined}
                 sx={{
                   bgcolor: 'rgba(255,255,255,0.9)',

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent, useRef } from 'react';
 import type { SaveCheckInDraftRequest, SubmitCheckInRequest } from '@lib/contracts/checkIn';
 
 export function useCheckInAutosave({
@@ -21,6 +21,10 @@ export function useCheckInAutosave({
   const checkInSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasInitialAutoSaveRunRef = useRef(false);
   const requestIdRef = useRef(0);
+  const persistEvent = useEffectEvent(persist);
+  const setErrorEvent = useEffectEvent(setError);
+  const onSavingChangeEvent = useEffectEvent((value: boolean) => onSavingChange?.(value));
+  const onSavedEvent = useEffectEvent(() => onSaved?.());
 
   useEffect(() => {
     return () => {
@@ -41,20 +45,20 @@ export function useCheckInAutosave({
     if (checkInSaveTimeoutRef.current) clearTimeout(checkInSaveTimeoutRef.current);
     const requestId = ++requestIdRef.current;
     checkInSaveTimeoutRef.current = setTimeout(async () => {
-      onSavingChange?.(true);
+      onSavingChangeEvent(true);
       try {
-        await persist(payload);
+        await persistEvent(payload);
         if (requestId === requestIdRef.current) {
-          onSaved?.();
+          onSavedEvent();
         }
       } catch {
-        setError('Failed to auto-save check-in');
+        setErrorEvent('Failed to auto-save check-in');
       } finally {
         if (requestId === requestIdRef.current) {
-          onSavingChange?.(false);
+          onSavingChangeEvent(false);
         }
         checkInSaveTimeoutRef.current = null;
       }
     }, delayMs);
-  }, [delayMs, enabled, onSaved, onSavingChange, payload, persist, setError]);
+  }, [delayMs, enabled, payload]);
 }
