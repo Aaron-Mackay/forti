@@ -1,6 +1,6 @@
 'use client';
 
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {cancelQueuedRequest, queueOrSendRequest, queueOrSendRequestJson, syncQueuedRequests} from '@/utils/offlineSync';
 import {getUserDataCache, saveUserDataCache} from '@/utils/clientDb';
@@ -32,6 +32,49 @@ type SnackbarState = {
 
 type CompletionModal = {workout: WorkoutPrisma; done: number; total: number};
 type Field = 'weight' | 'reps';
+type WorkoutContext = {planId: number; weekId: number; workoutId: number};
+type WeekContext = {planId: number; weekId: number};
+
+function buildContextIndexes(userData: WorkoutDataResponse) {
+  const workoutById = new Map<number, WorkoutContext>();
+  const weekById = new Map<number, WeekContext>();
+
+  for (const plan of userData.plans) {
+    for (const week of plan.weeks) {
+      const weekContext = {planId: plan.id, weekId: week.id};
+      weekById.set(week.id, weekContext);
+      for (const workout of week.workouts) {
+        workoutById.set(workout.id, {...weekContext, workoutId: workout.id});
+      }
+    }
+  }
+
+  return {workoutById, weekById};
+}
+
+function buildEntityIndexes(userData: WorkoutDataResponse) {
+  const planById = new Map<number, WorkoutDataResponse['plans'][number]>();
+  const weekById = new Map<number, WorkoutDataResponse['plans'][number]['weeks'][number]>();
+  const workoutById = new Map<number, WorkoutDataResponse['plans'][number]['weeks'][number]['workouts'][number]>();
+
+  for (const plan of userData.plans) {
+    planById.set(plan.id, plan);
+    for (const week of plan.weeks) {
+      weekById.set(week.id, week);
+      for (const workout of week.workouts) {
+        workoutById.set(workout.id, workout);
+      }
+    }
+  }
+
+  return {planById, weekById, workoutById};
+}
+
+function buildPlanStructureKey(userData: WorkoutDataResponse): string {
+  return userData.plans
+    .map(plan => `${plan.id}:${plan.weeks.map(week => `${week.id}:${week.workouts.map(workout => workout.id).join(',')}`).join('|')}`)
+    .join('||');
+}
 
 type SubstituteTarget = {
   workoutExerciseId: number;
@@ -54,30 +97,6 @@ function detectStructuralChange(prev: WorkoutDataResponse, next: WorkoutDataResp
     }
   }
   return false;
-}
-
-export function findWorkoutContext(userData: WorkoutDataResponse, workoutId: number) {
-  for (const plan of userData.plans) {
-    for (const week of plan.weeks) {
-      for (const workout of week.workouts) {
-        if (workout.id === workoutId) {
-          return {planId: plan.id, weekId: week.id, workoutId: workout.id};
-        }
-      }
-    }
-  }
-  return null;
-}
-
-export function findWeekContext(userData: WorkoutDataResponse, weekId: number) {
-  for (const plan of userData.plans) {
-    for (const week of plan.weeks) {
-      if (week.id === weekId) {
-        return {planId: plan.id, weekId: week.id};
-      }
-    }
-  }
-  return null;
 }
 
 export function useWorkoutSession(
@@ -159,15 +178,28 @@ export function useWorkoutSession(
     return () => window.removeEventListener('online', handleOnline);
   }, []);
 
+  const isDev = process.env.NODE_ENV !== 'production';
+  const planStructureKey = useMemo(() => buildPlanStructureKey(userDataState), [userDataState]);
+  const indexedContextCacheRef = useRef<{key: string; value: ReturnType<typeof buildContextIndexes>} | null>(null);
+  const contextIndexes = useMemo(() => {
+    const cache = indexedContextCacheRef.current;
+    if (cache && cache.key === planStructureKey) return cache.value;
+    if (isDev) console.debug('[WorkoutSession] rebuilding context indexes');
+    const rebuiltIndexes = buildContextIndexes(userDataState);
+    indexedContextCacheRef.current = {key: planStructureKey, value: rebuiltIndexes};
+    return rebuiltIndexes;
+  }, [isDev, planStructureKey, userDataState]);
+  const entityIndexes = useMemo(() => buildEntityIndexes(userDataState), [userDataState]);
+
   // Derived selectors
-  const workoutContext = workoutIdFromUrl ? findWorkoutContext(userDataState, workoutIdFromUrl) : null;
-  const weekContext = !workoutContext && weekIdFromUrl ? findWeekContext(userDataState, weekIdFromUrl) : null;
+  const workoutContext = workoutIdFromUrl ? contextIndexes.workoutById.get(workoutIdFromUrl) ?? null : null;
+  const weekContext = !workoutContext && weekIdFromUrl ? contextIndexes.weekById.get(weekIdFromUrl) ?? null : null;
   const selectedPlanId = workoutContext?.planId ?? weekContext?.planId ?? null;
   const selectedWeekId = workoutContext?.weekId ?? weekContext?.weekId ?? null;
   const selectedWorkoutId = workoutContext?.workoutId ?? null;
-  const selectedPlan = userDataState.plans.find(p => p.id === selectedPlanId);
-  const selectedWeek = selectedPlan?.weeks.find(w => w.id === selectedWeekId);
-  const selectedWorkout = selectedWeek?.workouts.find(w => w.id === selectedWorkoutId);
+  const selectedPlan = selectedPlanId ? entityIndexes.planById.get(selectedPlanId) : undefined;
+  const selectedWeek = selectedWeekId ? entityIndexes.weekById.get(selectedWeekId) : undefined;
+  const selectedWorkout = selectedWorkoutId ? entityIndexes.workoutById.get(selectedWorkoutId) : undefined;
 
   useEffect(() => {
     setSelectedExerciseId(null);
@@ -179,11 +211,13 @@ export function useWorkoutSession(
   const isPopStateNavRef = useRef(false);
 
   const goBack = useCallback(() => {
+    const navStart = isDev ? performance.now() : 0;
     if (selectedExerciseId) setSelectedExerciseId(null);
     else if (selectedWorkout && selectedWeek) router.push(`/user/workout?weekId=${selectedWeek.id}`);
     else if (selectedWeek && selectedPlanId) router.push(`/user/plan/${selectedPlanId}/weeks`);
     else router.push('/user/plan');
-  }, [router, selectedExerciseId, selectedPlanId, selectedWeek, selectedWorkout]);
+    if (isDev) console.debug('[WorkoutSession] goBack transition', { depth, durationMs: Number((performance.now() - navStart).toFixed(2)) });
+  }, [depth, isDev, router, selectedExerciseId, selectedPlanId, selectedWeek, selectedWorkout]);
 
   const goBackRef = useRef(goBack);
   useEffect(() => { goBackRef.current = goBack; }, [goBack]);
@@ -228,16 +262,20 @@ export function useWorkoutSession(
   }, [depth, goBack]);
 
   const navigateToWorkoutsList = useCallback(() => {
+    const navStart = isDev ? performance.now() : 0;
     setSelectedExerciseId(null);
     if (selectedWeek) {
       router.push(`/user/workout?weekId=${selectedWeek.id}`);
     }
-  }, [router, selectedWeek]);
+    if (isDev) console.debug('[WorkoutSession] navigateToWorkoutsList', { durationMs: Number((performance.now() - navStart).toFixed(2)) });
+  }, [isDev, router, selectedWeek]);
 
   const navigateToWorkout = useCallback((workoutId: number) => {
+    const navStart = isDev ? performance.now() : 0;
     setSelectedExerciseId(null);
     router.push(`/user/workout?workoutId=${workoutId}`);
-  }, [router]);
+    if (isDev) console.debug('[WorkoutSession] navigateToWorkout', { workoutId, durationMs: Number((performance.now() - navStart).toFixed(2)) });
+  }, [isDev, router]);
 
   const handleSetUpdate = (workoutExerciseId: number, setIdx: number, field: Field, value: string) => {
     if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
