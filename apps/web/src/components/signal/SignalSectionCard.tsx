@@ -13,9 +13,18 @@ export interface SignalSectionCardProps {
   /** Disables the default card frame (border + padding). Use for transparent grouping wrappers. */
   bare?: boolean;
   style?: CSSProperties;
+  'data-testid'?: string;
 }
 
-export function SignalSectionCard({ eyebrow, title, description, children, bare, style }: SignalSectionCardProps) {
+export function SignalSectionCard({
+  eyebrow,
+  title,
+  description,
+  children,
+  bare,
+  style,
+  'data-testid': dataTestId,
+}: SignalSectionCardProps) {
   const sectionStyle: CSSProperties = bare
     ? { ...style }
     : {
@@ -27,7 +36,7 @@ export function SignalSectionCard({ eyebrow, title, description, children, bare,
       };
 
   return (
-    <section style={sectionStyle}>
+    <section style={sectionStyle} data-testid={dataTestId}>
       {eyebrow ? (
         <div
           style={{
