@@ -10,6 +10,7 @@ const {
   syncQueuedRequests,
   saveUserDataCache,
   getWorkoutData,
+  routerPush,
 } = vi.hoisted(() => ({
   cancelQueuedRequest: vi.fn(),
   queueOrSendRequest: vi.fn(),
@@ -17,6 +18,7 @@ const {
   syncQueuedRequests: vi.fn(),
   saveUserDataCache: vi.fn(),
   getWorkoutData: vi.fn(),
+  routerPush: vi.fn(),
 }));
 
 vi.mock('@/utils/offlineSync', () => ({
@@ -41,6 +43,14 @@ vi.mock('@lib/firstWeekEvents', () => ({
 
 vi.mock('@lib/clientApi', () => ({
   getWorkoutData,
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: routerPush,
+    refresh: vi.fn(),
+    back: vi.fn(),
+  }),
 }));
 
 function buildUserData() {

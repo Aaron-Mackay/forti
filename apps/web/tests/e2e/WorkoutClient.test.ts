@@ -17,6 +17,18 @@ async function clearActivePlan(page: import('@playwright/test').Page) {
   expect(response.ok()).toBe(true);
 }
 
+async function setFirstPlanActive(page: import('@playwright/test').Page) {
+  const res = await page.request.get('/api/workout-data');
+  expect(res.ok()).toBe(true);
+  const data = await res.json();
+  const firstPlanId: number | undefined = data.plans?.[0]?.id;
+  expect(firstPlanId).toBeTruthy();
+  const patch = await page.request.patch('/api/plan/active', {
+    data: { planId: firstPlanId },
+  });
+  expect(patch.ok()).toBe(true);
+}
+
 async function disableSignalUi(page: import('@playwright/test').Page) {
   const response = await page.request.patch('/api/user/settings', {
     data: { settings: { signalUiEnabled: false } },
@@ -64,31 +76,33 @@ function addedLegPressWorkoutExercise() {
 test.describe('Workout page', () => {
   test.beforeEach(async ({ page }) => {
     await disableSignalUi(page);
-    await clearActivePlan(page);
+    await setFirstPlanActive(page);
     await page.goto('/user/workout');
   });
 
-  test('renders the Training app bar title', async ({ page }) => {
-    await expect(page.getByRole('banner')).toContainText('Training');
+  test('redirects to the active plan weeks route', async ({ page }) => {
+    await expect(page).toHaveURL(/\/user\/plan\/\d+\/weeks/);
+    await expect(page.getByRole('banner')).toContainText('Weeks');
   });
 
-  test('shows the plans list on first load', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /Plan/i }).first()).toBeVisible();
-  });
-
-  test('selecting a plan reveals the weeks list', async ({ page }) => {
-    await page.getByRole('button', { name: /Plan/i }).first().click();
+  test('lands on the weeks route when an active plan is set', async ({ page }) => {
     await expect(page.getByRole('button', { name: /Week/i }).first()).toBeVisible();
   });
 
+  test('shows the no-active-plan empty state when no active plan is set', async ({ page }) => {
+    await clearActivePlan(page);
+    await page.goto('/user/workout');
+    await expect(page).toHaveURL('/user/workout');
+    await expect(page.getByText('No active plan').first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /View plans/i })).toBeVisible();
+  });
+
   test('selecting a week reveals the workouts list', async ({ page }) => {
-    await page.getByRole('button', { name: /Plan/i }).first().click();
     await page.getByRole('button', { name: /Week/i }).first().click();
     await expect(page.getByRole('button', { name: /Workout/i }).first()).toBeVisible();
   });
 
   test('workouts list shows muscle coverage summary with body diagram', async ({ page }) => {
-    await page.getByRole('button', { name: /Plan/i }).first().click();
     await page.getByRole('button', { name: /Week/i }).first().click();
     await expect(page.getByText('Muscle Coverage')).toBeVisible();
     await expect(page.locator('[id^="week-muscle-"] svg').first()).toBeVisible();
@@ -98,7 +112,6 @@ test.describe('Workout page', () => {
   });
 
   test('selecting a workout reveals the stopwatch and exercise list', async ({ page }) => {
-    await page.getByRole('button', { name: /Plan/i }).first().click();
     await page.getByRole('button', { name: /Week/i }).first().click();
     await page.getByRole('button', { name: /Workout/i }).first().click();
 
@@ -108,7 +121,6 @@ test.describe('Workout page', () => {
   });
 
   test('selecting an exercise opens the detail view with sets', async ({ page }) => {
-    await page.getByRole('button', { name: /Plan/i }).first().click();
     await page.getByRole('button', { name: /Week/i }).first().click();
     await page.getByRole('button', { name: /Workout/i }).first().click();
     await page.getByRole('button', { name: 'Squat' }).click();
@@ -118,7 +130,6 @@ test.describe('Workout page', () => {
   });
 
   test('exercise detail shows anatomy diagram for exercises with muscles', async ({ page }) => {
-    await page.getByRole('button', { name: /Plan/i }).first().click();
     await page.getByRole('button', { name: /Week/i }).first().click();
     await page.getByRole('button', { name: /Workout/i }).first().click();
     await page.getByRole('button', { name: 'Squat' }).click();
@@ -130,7 +141,6 @@ test.describe('Workout page', () => {
   });
 
   test('back button in exercise detail returns to exercises list', async ({ page }) => {
-    await page.getByRole('button', { name: /Plan/i }).first().click();
     await page.getByRole('button', { name: /Week/i }).first().click();
     await page.getByRole('button', { name: /Workout/i }).first().click();
     await page.getByRole('button', { name: 'Squat' }).click();
@@ -142,7 +152,6 @@ test.describe('Workout page', () => {
   });
 
   test('back button from workout returns to workouts list', async ({ page }) => {
-    await page.getByRole('button', { name: /Plan/i }).first().click();
     await page.getByRole('button', { name: /Week/i }).first().click();
     await page.getByRole('button', { name: /Workout/i }).first().click();
 
@@ -166,7 +175,6 @@ test.describe('Workout page', () => {
         }
       });
 
-      await page.getByRole('button', { name: /Plan/i }).first().click();
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();
       await expect(page.getByRole('button', { name: 'Squat' })).toBeVisible();
@@ -214,14 +222,13 @@ test.describe('Workout page', () => {
     });
   });
 
-  test('back button from week returns to plans list', async ({ page }) => {
-    await page.getByRole('button', { name: /Plan/i }).first().click();
-    await page.getByRole('button', { name: /Week/i }).first().click();
+  test('back button from weeks route navigates to /user/plan', async ({ page }) => {
+    // Land on the weeks list (active plan is set in beforeEach).
+    await expect(page.getByRole('button', { name: /Week/i }).first()).toBeVisible();
 
     await page.getByRole('button', { name: /back/i }).click();
-    await page.getByRole('button', { name: /back/i }).click();
 
-    await expect(page.getByRole('button', { name: /Plan/i }).first()).toBeVisible();
+    await expect(page).toHaveURL('/user/plan');
   });
 
   test.describe('e1rm display in exercise detail', () => {
@@ -231,7 +238,6 @@ test.describe('Workout page', () => {
         route.fulfill({status: 200, contentType: 'application/json', body: '[]'}),
       );
 
-      await page.getByRole('button', {name: /Plan/i}).first().click();
       await page.getByRole('button', {name: /Week/i}).first().click();
       await page.getByRole('button', {name: /Workout/i}).first().click();
       await page.getByRole('button', {name: 'Squat'}).click();
@@ -259,7 +265,6 @@ test.describe('Workout page', () => {
         }),
       );
 
-      await page.getByRole('button', {name: /Plan/i}).first().click();
       await page.getByRole('button', {name: /Week/i}).first().click();
       await page.getByRole('button', {name: /Workout/i}).first().click();
       await page.getByRole('button', {name: 'Squat'}).click();
@@ -277,7 +282,6 @@ test.describe('Workout page', () => {
 
   test.describe('cardio exercise in workout', () => {
     test('shows cardio summary chip for a cardio exercise with logged data', async ({ page }) => {
-      await page.getByRole('button', { name: /Plan/i }).first().click();
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();
 
@@ -294,7 +298,6 @@ test.describe('Workout page', () => {
         });
       });
 
-      await page.getByRole('button', { name: /Plan/i }).first().click();
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();
       await page.getByRole('button', { name: 'Treadmill' }).click();
@@ -316,7 +319,6 @@ test.describe('Workout page', () => {
         }
       });
 
-      await page.getByRole('button', { name: /Plan/i }).first().click();
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();
       await page.getByRole('button', { name: 'Treadmill' }).click();
@@ -338,7 +340,6 @@ test.describe('Workout page', () => {
         });
       });
 
-      await page.getByRole('button', { name: /Plan/i }).first().click();
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();
       await page.getByRole('button', { name: 'Treadmill' }).click();
@@ -360,7 +361,6 @@ test.describe('Workout page', () => {
         });
       });
 
-      await page.getByRole('button', {name: /Plan/i}).first().click();
       await page.getByRole('button', {name: /Week/i}).first().click();
       await page.getByRole('button', {name: /Workout/i}).first().click();
       await expect(page.getByRole('button', {name: 'Squat'})).toBeVisible();
@@ -533,7 +533,6 @@ test.describe('Workout page', () => {
         }
       });
 
-      await page.getByRole('button', {name: /Plan/i}).first().click();
       await page.getByRole('button', {name: /Week/i}).first().click();
       await page.getByRole('button', {name: /Workout/i}).first().click();
       await expect(page.getByRole('button', {name: 'Squat'})).toBeVisible();
@@ -573,7 +572,6 @@ test.describe('Workout page', () => {
       // via page.request before this call. Without a reload the context retains
       // the value that was loaded at the start of the test.
       await page.goto('/user/workout');
-      await page.getByRole('button', { name: /Plan/i }).first().click();
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();
       await page.getByRole('button', { name: 'Squat' }).click();
@@ -696,7 +694,6 @@ test.describe('Workout page', () => {
         });
       });
 
-      await page.getByRole('button', { name: /Plan/i }).first().click();
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();
       await page.getByRole('button', { name: 'Squat' }).click();
@@ -731,7 +728,6 @@ test.describe('Workout page', () => {
         });
       });
 
-      await page.getByRole('button', { name: /Plan/i }).first().click();
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();
       await page.getByRole('button', { name: 'Squat' }).click();
@@ -752,7 +748,6 @@ test.describe('Workout page', () => {
         });
       });
 
-      await page.getByRole('button', { name: /Plan/i }).first().click();
       await page.getByRole('button', { name: /Week/i }).first().click();
       await page.getByRole('button', { name: /Workout/i }).first().click();
       await page.getByRole('button', { name: 'Squat' }).click();

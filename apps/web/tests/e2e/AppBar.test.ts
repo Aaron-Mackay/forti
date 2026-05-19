@@ -89,9 +89,20 @@ test.describe('AppBar navigation drawer', () => {
   });
 
   test('clicking Training in the drawer navigates to /user/workout', async ({ page }) => {
+    // /user/workout redirects to the active plan's weeks route when an active plan is set, so
+    // ensure one is active before asserting the destination URL.
+    const dataRes = await page.request.get('/api/workout-data');
+    if (dataRes.ok()) {
+      const data = await dataRes.json();
+      const firstPlanId: number | undefined = data.plans?.[0]?.id;
+      if (firstPlanId) {
+        await page.request.patch('/api/plan/active', { data: { planId: firstPlanId } });
+      }
+    }
+
     await openDrawer(page);
     await page.getByRole('link', { name: 'Training' }).click();
-    await expect(page).toHaveURL('/user/workout');
+    await expect(page).toHaveURL(/\/user\/plan\/\d+\/weeks/);
   });
 
   test('closing the drawer by clicking outside hides it', async ({ page, isMobile }) => {
@@ -109,7 +120,7 @@ test.describe('AppBar navigation drawer', () => {
 test.describe('AppBar — Plan detail back button', () => {
   test('plan detail page renders a back arrow instead of hamburger', async ({ page }) => {
     await page.goto('/user/plan');
-    const firstPlanLink = page.getByRole('listitem').first().getByRole('link');
+    const firstPlanLink = page.getByRole('link', { name: /TestUser's Plan/i }).first();
     await firstPlanLink.click();
     await page.waitForURL(/\/user\/plan\/\d+/);
 

@@ -68,6 +68,7 @@
 - /api/notifications/[id]/read | methods=PATCH | auth=session | contracts=@lib/contracts/notifications
 - /api/notifications/read-all | methods=PATCH | auth=session | contracts=@lib/contracts/notifications
 - /api/plan | methods=POST | auth=none | contracts=@lib/contracts/plan
+- /api/plan/[planId] | methods=DELETE | auth=session | contracts=-
 - /api/plan/active | methods=GET,PATCH | auth=session | contracts=@lib/contracts/activePlan
 - /api/plan/active/complete-week | methods=POST | auth=session | contracts=-
 - /api/plan/ai-import | methods=POST | auth=session | contracts=@lib/contracts/aiImport

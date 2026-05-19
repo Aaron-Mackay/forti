@@ -69,16 +69,21 @@ async function expectFocusVisible(locator: Locator): Promise<void> {
 }
 
 async function openWorkoutDetail(page: Page): Promise<boolean> {
+  const dataRes = await page.request.get('/api/workout-data');
+  if (dataRes.ok()) {
+    const data = await dataRes.json();
+    const firstPlanId: number | undefined = data.plans?.[0]?.id;
+    if (firstPlanId) {
+      await page.request.patch('/api/plan/active', { data: { planId: firstPlanId } });
+    }
+  }
+
   await page.goto('/user/workout');
   const content = page.locator('main');
   const markAsComplete = content.getByRole('button', { name: 'Mark as Complete' });
   const completedButton = content.getByRole('button', { name: /^Completed/ });
 
   if (!(await markAsComplete.isVisible()) && !(await completedButton.isVisible())) {
-    const planButton = content.getByRole('button', { name: /Plan/i }).first();
-    if (await planButton.isVisible()) {
-      await planButton.click();
-    }
     const weekButton = content.getByRole('button', { name: /Week/i }).first();
     if (await weekButton.isVisible()) {
       await weekButton.click();

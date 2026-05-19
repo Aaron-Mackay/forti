@@ -34,24 +34,24 @@ async function setCoachMode(page: import('@playwright/test').Page, active: boole
   throw new Error(`Failed to apply coach mode state: ${active}`);
 }
 
-async function clearActivePlan(page: import('@playwright/test').Page) {
-  await page.request.patch('/api/plan/active', {
-    data: { planId: null },
-  });
+async function setFirstPlanActive(page: import('@playwright/test').Page) {
+  const res = await page.request.get('/api/workout-data');
+  if (!res.ok()) return;
+  const data = await res.json();
+  const firstPlanId: number | undefined = data.plans?.[0]?.id;
+  if (firstPlanId) {
+    await page.request.patch('/api/plan/active', { data: { planId: firstPlanId } });
+  }
 }
 
 async function openWorkoutFlow(page: import('@playwright/test').Page): Promise<boolean> {
-  await clearActivePlan(page);
+  await setFirstPlanActive(page);
   await page.goto('/user/workout');
   const content = page.locator('main');
   const markAsComplete = content.getByRole('button', { name: 'Mark as Complete' });
   const completedButton = content.getByRole('button', { name: /^Completed/ });
 
   if (!(await markAsComplete.isVisible()) && !(await completedButton.isVisible())) {
-    const planButton = content.getByRole('button', { name: /Plan/i }).first();
-    if (await planButton.isVisible()) {
-      await planButton.click();
-    }
     const weekButton = content.getByRole('button', { name: /Week/i }).first();
     if (await weekButton.isVisible()) {
       await weekButton.click();

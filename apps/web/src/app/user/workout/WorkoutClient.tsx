@@ -1,17 +1,16 @@
 'use client';
 
+import type {ReactNode} from 'react';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useSearchParams} from 'next/navigation';
 import {useWorkoutSession} from './useWorkoutSession';
 import type {WorkoutDataResponse} from '@lib/contracts/workoutData';
 
-import WeeksListView from './WeeksListView';
 import WorkoutsListView from './WorkoutsListView';
 import ExercisesListView from './ExercisesListView';
 import ExerciseDetailView from './ExerciseDetailView';
 import ExercisePickerDialog from './ExercisePickerDialog';
 import AddExerciseConfigDialog from './AddExerciseConfigDialog';
-import PlansListView from '@/app/user/workout/PlansListView';
 import WorkoutCompletionModal from '@/app/user/workout/WorkoutCompletionModal';
 import { SignalCompletionSheet } from '@/app/user/workout/SignalCompletionSheet';
 import {StopwatchProvider} from '@/app/user/workout/StopwatchContext';
@@ -19,11 +18,15 @@ import {Alert, Collapse} from '@mui/material';
 import type {PreviousExerciseHistory} from '@lib/contracts/exerciseHistory';
 import {groupWorkoutExercises} from './groupWorkoutExercises';
 import {getPreviousExerciseHistory} from '@lib/clientApi';
+import {getWeekStatus} from '@lib/workoutProgress';
+import {CompleteWeekModal} from '@/app/user/plan/CompleteWeekModal';
 
 export default function WorkoutClient({userData, signalEnabled = false}: {userData: WorkoutDataResponse; signalEnabled?: boolean}) {
   const searchParams = useSearchParams();
   const workoutIdParam = searchParams.get('workoutId');
+  const weekIdParam = searchParams.get('weekId');
   const initialWorkoutId = workoutIdParam ? Number(workoutIdParam) : null;
+  const initialWeekId = weekIdParam ? Number(weekIdParam) : null;
   const [previousSetsMap, setPreviousSetsMap] = useState<Map<number, PreviousExerciseHistory>>(new Map());
   const previousSetsMapRef = useRef<Map<number, PreviousExerciseHistory>>(new Map());
   const previousSetsExerciseIdRef = useRef<Map<number, number>>(new Map());
@@ -31,11 +34,8 @@ export default function WorkoutClient({userData, signalEnabled = false}: {userDa
 
   const {
     userDataState,
-    setSelectedPlanId,
-    setSelectedWeekId,
-    setSelectedWorkoutId,
     selectedExerciseId, setSelectedExerciseId,
-    selectedPlan, selectedWeek, selectedWorkout,
+    selectedWeek, selectedWorkout,
     completionModal, setCompletionModal,
     snackbar,
     planUpdatedBanner, setPlanUpdatedBanner,
@@ -44,6 +44,7 @@ export default function WorkoutClient({userData, signalEnabled = false}: {userDa
     pendingExercise, setPendingExercise,
     navigateBack,
     navigateToWorkoutsList,
+    navigateToWorkout,
     handleSetUpdate,
     handleEffortUpdate,
     handleWorkoutNoteBlur,
@@ -56,7 +57,7 @@ export default function WorkoutClient({userData, signalEnabled = false}: {userDa
     handleAddExercise,
     handleRemoveExercise,
     handleExcludeFromHistoryChange,
-  } = useWorkoutSession(userData, initialWorkoutId);
+  } = useWorkoutSession(userData, initialWorkoutId, initialWeekId);
 
   useEffect(() => {
     previousSetsMapRef.current = previousSetsMap;
@@ -104,15 +105,32 @@ export default function WorkoutClient({userData, signalEnabled = false}: {userDa
     }
   }, [fetchPreviousSets, selectedWorkout]);
   const selectedWorkoutGroups = selectedWorkout ? groupWorkoutExercises(selectedWorkout.exercises) : [];
+  const [completeWeekOpen, setCompleteWeekOpen] = useState(false);
+  const activePlan = userDataState.plans.find((plan) => plan.id === userDataState.activePlanId);
+  const activeWeek = activePlan?.weeks.find((week) => getWeekStatus(week) !== 'completed') ?? null;
+  const canCompleteSelectedWeek = Boolean(
+    selectedWeek &&
+    activeWeek &&
+    selectedWeek.id === activeWeek.id &&
+    selectedWeek.workouts.some((workout) => !workout.dateCompleted),
+  );
 
-  // View switching
-  let view;
-  if (selectedPlan && selectedWeek && selectedWorkout && selectedExerciseId) {
+  let view: ReactNode = null;
+  const mode: 'workouts' | 'exercises' | 'exerciseDetail' | 'invalid' =
+    selectedWorkout && selectedExerciseId
+      ? 'exerciseDetail'
+      : selectedWorkout
+        ? 'exercises'
+        : selectedWeek
+          ? 'workouts'
+          : 'invalid';
+
+  if (mode === 'exerciseDetail') {
     view = (
       <ExerciseDetailView
-        workout={selectedWorkout}
-        currentWorkoutId={selectedWorkout.id}
-        activeExerciseId={selectedExerciseId}
+        workout={selectedWorkout!}
+        currentWorkoutId={selectedWorkout!.id}
+        activeExerciseId={selectedExerciseId!}
         previousSetsMap={previousSetsMap}
         fetchPreviousSets={fetchPreviousSets}
         userExerciseNotes={userDataState.userExerciseNotes}
@@ -136,10 +154,10 @@ export default function WorkoutClient({userData, signalEnabled = false}: {userDa
         signalEnabled={signalEnabled}
       />
     );
-  } else if (selectedPlan && selectedWeek && selectedWorkout) {
+  } else if (mode === 'exercises') {
     view = (
       <ExercisesListView
-        workout={selectedWorkout}
+        workout={selectedWorkout!}
         onEnter={prefetchPreviousSetsForWorkout}
         onBack={navigateBack}
         onSelectExercise={setSelectedExerciseId}
@@ -150,26 +168,16 @@ export default function WorkoutClient({userData, signalEnabled = false}: {userDa
         signalEnabled={signalEnabled}
       />
     );
-  } else if (selectedPlan && selectedWeek) {
+  } else if (mode === 'workouts') {
     view = (
       <WorkoutsListView
-        week={selectedWeek}
+        week={selectedWeek!}
         onBack={navigateBack}
-        onSelectWorkout={setSelectedWorkoutId}
+        onSelectWorkout={navigateToWorkout}
+        onCompleteWeek={canCompleteSelectedWeek ? () => setCompleteWeekOpen(true) : undefined}
         signalEnabled={signalEnabled}
       />
     );
-  } else if (selectedPlan) {
-    view = (
-      <WeeksListView
-        plan={selectedPlan}
-        onBack={navigateBack}
-        onSelectWeek={setSelectedWeekId}
-        signalEnabled={signalEnabled}
-      />
-    );
-  } else {
-    view = <PlansListView userData={userDataState} onSelectPlan={setSelectedPlanId} signalEnabled={signalEnabled}/>;
   }
 
   return (
@@ -206,6 +214,16 @@ export default function WorkoutClient({userData, signalEnabled = false}: {userDa
           weekWorkoutsTotal={completionModal.total}
         />
       ))}
+      {selectedWeek && (
+        <CompleteWeekModal
+          open={completeWeekOpen}
+          weekNumber={selectedWeek.order}
+          done={selectedWeek.workouts.filter((workout) => workout.dateCompleted).length}
+          total={selectedWeek.workouts.length}
+          incompleteWorkoutNames={selectedWeek.workouts.filter((workout) => !workout.dateCompleted).map((workout) => workout.name)}
+          onClose={() => setCompleteWeekOpen(false)}
+        />
+      )}
       <ExercisePickerDialog
         open={substituteTarget !== null}
         title="Substitute Exercise"

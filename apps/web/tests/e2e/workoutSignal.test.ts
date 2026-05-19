@@ -2,6 +2,15 @@ import { test, expect } from './fixtures';
 
 test.describe.configure({ mode: 'serial' });
 
+async function firstWorkoutEntryUrl(page: import('@playwright/test').Page) {
+  const dataRes = await page.request.get('/api/workout-data');
+  expect(dataRes.ok()).toBe(true);
+  const data = await dataRes.json();
+  const weekId: number | undefined = data.plans?.[0]?.weeks?.[0]?.id;
+  expect(weekId).toBeTruthy();
+  return `/user/workout?weekId=${weekId}`;
+}
+
 test.describe('Workout Signal', () => {
   test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile,
     'Signal workout coverage runs on desktop chromium only; user settings are shared');
@@ -15,6 +24,15 @@ test.describe('Workout Signal', () => {
         },
       },
     });
+
+    const dataRes = await page.request.get('/api/workout-data');
+    if (dataRes.ok()) {
+      const data = await dataRes.json();
+      const firstPlanId: number | undefined = data.plans?.[0]?.id;
+      if (firstPlanId) {
+        await page.request.patch('/api/plan/active', { data: { planId: firstPlanId } });
+      }
+    }
   });
 
   test.afterEach(async ({ page }) => {
@@ -28,21 +46,9 @@ test.describe('Workout Signal', () => {
   });
 
   test('flagged user sees the Signal gym surface on the workout route', async ({ page }) => {
-    await page.goto('/user/workout');
+    await page.goto(await firstWorkoutEntryUrl(page));
 
     await expect(page.locator('[data-signal-surface="gym"]').first()).toBeVisible();
-
-    // Plans list: gym surface with "Your plans" heading
-    await expect(page.getByText('Your plans').first()).toBeVisible();
-    await expect(page.getByText('Training').first()).toBeVisible();
-
-    // Navigate into the first plan — find by Plan N text in the plan row buttons
-    await page.locator('button').filter({ hasText: "Plan 1" }).first().click();
-
-    // Weeks list: gym surface with "Select a week"
-    await expect(page.getByText('Select a week').first()).toBeVisible();
-    // Click the first week button (Signal rows render "Week N" exactly)
-    await page.locator('button').filter({ hasText: 'Week 1' }).first().click();
 
     // Workouts list: gym surface with "Select a workout"
     await expect(page.getByText('Select a workout').first()).toBeVisible();
@@ -56,11 +62,9 @@ test.describe('Workout Signal', () => {
   });
 
   test('exercise detail sheet exposes the history exclusion toggle', async ({ page }) => {
-    await page.goto('/user/workout');
+    await page.goto(await firstWorkoutEntryUrl(page));
 
-    // Navigate to exercises list
-    await page.locator('button').filter({ hasText: 'Plan 1' }).first().click();
-    await page.locator('button').filter({ hasText: 'Week 1' }).first().click();
+    // Navigate to exercises list from the direct week URL.
     await page.locator('button').filter({ hasText: 'Workout A' }).first().click();
 
     // Click the first exercise row to enter the slide

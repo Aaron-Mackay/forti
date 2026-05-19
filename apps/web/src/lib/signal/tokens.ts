@@ -66,6 +66,7 @@ export const signalTokens = {
     cell: 3,
     card: 4,
     cardLarge: 6,
+    pill: 2,
   },
 } as const;
 

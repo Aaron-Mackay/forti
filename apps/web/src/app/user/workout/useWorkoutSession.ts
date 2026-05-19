@@ -1,6 +1,7 @@
 'use client';
 
 import {useCallback, useEffect, useRef, useState} from 'react';
+import {useRouter} from 'next/navigation';
 import {cancelQueuedRequest, queueOrSendRequest, queueOrSendRequestJson, syncQueuedRequests} from '@/utils/offlineSync';
 import {getUserDataCache, saveUserDataCache} from '@/utils/clientDb';
 import {useOfflineCache} from '@lib/hooks/useOfflineCache';
@@ -55,7 +56,7 @@ function detectStructuralChange(prev: WorkoutDataResponse, next: WorkoutDataResp
   return false;
 }
 
-function findWorkoutContext(userData: WorkoutDataResponse, workoutId: number) {
+export function findWorkoutContext(userData: WorkoutDataResponse, workoutId: number) {
   for (const plan of userData.plans) {
     for (const week of plan.weeks) {
       for (const workout of week.workouts) {
@@ -68,14 +69,23 @@ function findWorkoutContext(userData: WorkoutDataResponse, workoutId: number) {
   return null;
 }
 
-export function useWorkoutSession(userData: WorkoutDataResponse, initialWorkoutId: number | null) {
-  const initialContext = initialWorkoutId
-    ? findWorkoutContext(userData, initialWorkoutId)
-    : null;
+export function findWeekContext(userData: WorkoutDataResponse, weekId: number) {
+  for (const plan of userData.plans) {
+    for (const week of plan.weeks) {
+      if (week.id === weekId) {
+        return {planId: plan.id, weekId: week.id};
+      }
+    }
+  }
+  return null;
+}
 
-  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(initialContext?.planId ?? userData.activePlanId ?? null);
-  const [selectedWeekId, setSelectedWeekId] = useState<number | null>(initialContext?.weekId ?? null);
-  const [selectedWorkoutId, setSelectedWorkoutId] = useState<number | null>(initialContext?.workoutId ?? null);
+export function useWorkoutSession(
+  userData: WorkoutDataResponse,
+  workoutIdFromUrl: number | null,
+  weekIdFromUrl: number | null = null,
+) {
+  const router = useRouter();
   const [selectedExerciseId, setSelectedExerciseId] = useState<number | null>(null);
 
   const [completionModal, setCompletionModal] = useState<CompletionModal | null>(null);
@@ -119,9 +129,10 @@ export function useWorkoutSession(userData: WorkoutDataResponse, initialWorkoutI
   }, [userDataState]);
 
   useEffect(() => {
+    const timers = networkTimers.current;
     return () => {
-      for (const timer of networkTimers.current.values()) clearTimeout(timer);
-      networkTimers.current.clear();
+      for (const timer of timers.values()) clearTimeout(timer);
+      timers.clear();
     };
   }, []);
 
@@ -146,26 +157,33 @@ export function useWorkoutSession(userData: WorkoutDataResponse, initialWorkoutI
     };
     window.addEventListener('online', handleOnline);
     return () => window.removeEventListener('online', handleOnline);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Derived selectors
+  const workoutContext = workoutIdFromUrl ? findWorkoutContext(userDataState, workoutIdFromUrl) : null;
+  const weekContext = !workoutContext && weekIdFromUrl ? findWeekContext(userDataState, weekIdFromUrl) : null;
+  const selectedPlanId = workoutContext?.planId ?? weekContext?.planId ?? null;
+  const selectedWeekId = workoutContext?.weekId ?? weekContext?.weekId ?? null;
+  const selectedWorkoutId = workoutContext?.workoutId ?? null;
   const selectedPlan = userDataState.plans.find(p => p.id === selectedPlanId);
   const selectedWeek = selectedPlan?.weeks.find(w => w.id === selectedWeekId);
   const selectedWorkout = selectedWeek?.workouts.find(w => w.id === selectedWorkoutId);
 
-  const depth = selectedExerciseId ? 4 : selectedWorkoutId ? 3 : selectedWeekId ? 2 : selectedPlanId ? 1 : 0;
+  useEffect(() => {
+    setSelectedExerciseId(null);
+  }, [weekIdFromUrl, workoutIdFromUrl]);
+
+  const depth = selectedExerciseId ? 1 : 0;
 
   const prevDepthRef = useRef<number | null>(null);
   const isPopStateNavRef = useRef(false);
-  const pendingNavDepthRef = useRef<number | null>(null);
 
   const goBack = useCallback(() => {
     if (selectedExerciseId) setSelectedExerciseId(null);
-    else if (selectedWorkoutId) setSelectedWorkoutId(null);
-    else if (selectedWeekId) setSelectedWeekId(null);
-    else if (selectedPlanId) setSelectedPlanId(null);
-  }, [selectedExerciseId, selectedWorkoutId, selectedWeekId, selectedPlanId]);
+    else if (selectedWorkout && selectedWeek) router.push(`/user/workout?weekId=${selectedWeek.id}`);
+    else if (selectedWeek && selectedPlanId) router.push(`/user/plan/${selectedPlanId}/weeks`);
+    else router.push('/user/plan');
+  }, [router, selectedExerciseId, selectedPlanId, selectedWeek, selectedWorkout]);
 
   const goBackRef = useRef(goBack);
   useEffect(() => { goBackRef.current = goBack; }, [goBack]);
@@ -195,10 +213,6 @@ export function useWorkoutSession(userData: WorkoutDataResponse, initialWorkoutI
 
   useEffect(() => {
     const handlePopState = () => {
-      if (pendingNavDepthRef.current !== null) {
-        pendingNavDepthRef.current = null;
-        return;
-      }
       isPopStateNavRef.current = true;
       goBackRef.current();
     };
@@ -210,18 +224,20 @@ export function useWorkoutSession(userData: WorkoutDataResponse, initialWorkoutI
   // history and React state stay in sync (no ghost entries).
   const navigateBack = useCallback(() => {
     if (depth > 0) history.back();
-  }, [depth]);
+    else goBack();
+  }, [depth, goBack]);
 
-  // Navigate to the workouts list (depth 2) from exercise detail or exercises list.
-  // Uses history.go to keep the browser back stack correct rather than direct state mutation.
   const navigateToWorkoutsList = useCallback(() => {
-    const stepsBack = depth - 2;
-    if (stepsBack <= 0) return;
     setSelectedExerciseId(null);
-    setSelectedWorkoutId(null);
-    pendingNavDepthRef.current = 2;
-    history.go(-stepsBack);
-  }, [depth]);
+    if (selectedWeek) {
+      router.push(`/user/workout?weekId=${selectedWeek.id}`);
+    }
+  }, [router, selectedWeek]);
+
+  const navigateToWorkout = useCallback((workoutId: number) => {
+    setSelectedExerciseId(null);
+    router.push(`/user/workout?workoutId=${workoutId}`);
+  }, [router]);
 
   const handleSetUpdate = (workoutExerciseId: number, setIdx: number, field: Field, value: string) => {
     if (!(selectedPlanId && selectedWeekId && selectedWorkoutId)) return;
@@ -542,9 +558,9 @@ export function useWorkoutSession(userData: WorkoutDataResponse, initialWorkoutI
     // Data
     userDataState,
     // Navigation state + setters
-    selectedPlanId, setSelectedPlanId,
-    selectedWeekId, setSelectedWeekId,
-    selectedWorkoutId, setSelectedWorkoutId,
+    selectedPlanId,
+    selectedWeekId,
+    selectedWorkoutId,
     selectedExerciseId, setSelectedExerciseId,
     // Derived
     selectedPlan, selectedWeek, selectedWorkout,
@@ -558,6 +574,7 @@ export function useWorkoutSession(userData: WorkoutDataResponse, initialWorkoutI
     // Handlers
     navigateBack,
     navigateToWorkoutsList,
+    navigateToWorkout,
     handleSetUpdate,
     handleEffortUpdate,
     handleWorkoutNoteBlur,

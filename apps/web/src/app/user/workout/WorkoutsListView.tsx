@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Container, List, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
+import { Box, Button, Container, List, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
 import { WeekPrisma } from '@/types/dataTypes';
 import { useAppBar } from '@lib/providers/AppBarProvider';
 import ProgressIcon from '@/lib/ProgressIcon';
@@ -15,11 +15,13 @@ export default function WorkoutsListView({
   week,
   onBack,
   onSelectWorkout,
+  onCompleteWeek,
   signalEnabled = false,
 }: {
   week: WeekPrisma;
   onBack: () => void;
   onSelectWorkout: (workoutId: number) => void;
+  onCompleteWeek?: () => void;
   signalEnabled?: boolean;
 }) {
   useAppBar({ title: `Week ${week.order}`, showBack: true, onBack });
@@ -33,6 +35,28 @@ export default function WorkoutsListView({
         <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 26, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 18 }}>
           Select a workout
         </div>
+        {onCompleteWeek && (
+          <button
+            type="button"
+            onClick={onCompleteWeek}
+            style={{
+              width: '100%',
+              border: `1px solid ${gymPalette.borderStrong}`,
+              borderRadius: signalTokens.radii.card,
+              background: gymPalette.surface,
+              color: gymPalette.ink,
+              padding: '12px 14px',
+              textAlign: 'left',
+              marginBottom: 12,
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{ display: 'block', fontFamily: signalTokens.fontVar.mono, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', marginBottom: 3 }}>
+              COMPLETE WEEK
+            </span>
+            <span style={{ color: gymPalette.inkMid, fontSize: 13 }}>Mark unfinished workouts as complete</span>
+          </button>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {week.workouts.map((workout) => {
             const setCount = workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
@@ -79,6 +103,11 @@ export default function WorkoutsListView({
         <Typography variant="subtitle1" gutterBottom>
           Workouts
         </Typography>
+        {onCompleteWeek && (
+          <Button variant="outlined" size="small" onClick={onCompleteWeek} sx={{ mb: 1 }}>
+            Complete week
+          </Button>
+        )}
         <List>
           {week.workouts.map((workout) => {
             const setCount = workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
