@@ -6,6 +6,17 @@ import { signalTokens, type SignalSurfaceMode } from './tokens';
 const surfaceFor = (mode: SignalSurfaceMode) => signalTokens.surface[mode];
 
 const baseComponents = {
+  MuiTextField: {
+    defaultProps: {
+      autoComplete: 'off',
+    },
+  },
+  MuiInputBase: {
+    defaultProps: {
+      autoComplete: 'off',
+      disableInjectingGlobalStyles: true,
+    },
+  },
   MuiButtonBase: {
     defaultProps: { disableRipple: true },
   },

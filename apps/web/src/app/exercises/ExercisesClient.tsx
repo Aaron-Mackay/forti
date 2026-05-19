@@ -148,6 +148,7 @@ export default function ExercisesClient({
       <AddExerciseForm
         open={addDialogOpen}
         onClose={() => setAddDialogOpen(false)}
+        category="resistance"
         onExerciseAdded={handleExerciseAdded}
       />
       <ExerciseDetailDrawer

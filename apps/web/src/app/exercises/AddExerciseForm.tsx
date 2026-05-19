@@ -13,6 +13,7 @@ import {
   DialogTitle,
   TextField,
 } from '@mui/material';
+import {ExerciseCategory} from '@/generated/prisma/browser';
 import {EQUIPMENT_NAMES, EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, ExerciseEquipment, ExerciseMuscle, MUSCLE_NAMES} from '@/types/dataTypes';
 import MuscleHighlight from '@/components/fitness/MuscleHighlight';
 import {Exercise} from '@/generated/prisma/browser';
@@ -23,9 +24,16 @@ interface AddExerciseFormProps {
   onClose: () => void;
   onExerciseAdded?: (exercise: Exercise) => void;
   initialName?: string;
+  category?: ExerciseCategory;
 }
 
-export function AddExerciseForm({open, onClose, onExerciseAdded, initialName}: AddExerciseFormProps) {
+export function AddExerciseForm({
+  open,
+  onClose,
+  onExerciseAdded,
+  initialName,
+  category = ExerciseCategory.resistance,
+}: AddExerciseFormProps) {
   const [name, setName] = useState(initialName ?? '');
   const [description, setDescription] = useState('');
   const [equipment, setEquipment] = useState<ExerciseEquipment[]>([]);
@@ -65,7 +73,7 @@ export function AddExerciseForm({open, onClose, onExerciseAdded, initialName}: A
     try {
       const createdExercise = await createExercise({
         name: name.trim(),
-        category: null,
+        category,
         description: description.trim() || null,
         equipment,
         primaryMuscles,

@@ -1,0 +1,14 @@
+# Combined Playwright E2E Agent Failure Context
+
+Paste this file directly into a coding agent.
+This summary deliberately excludes screenshots, videos, traces, artifact paths, and other external files.
+
+Repository: Aaron-Mackay/forti
+Run: https://github.com/Aaron-Mackay/forti/actions/runs/26031303210
+Commit: eb7389ad0972c813c39ffcaf1fede52f67309e0c
+Ref: refs/heads/main
+Generated: 2026-05-18T11:45:26Z
+
+No shard failure summaries were downloaded.
+
+This usually means the E2E job did not reach the summary upload step.

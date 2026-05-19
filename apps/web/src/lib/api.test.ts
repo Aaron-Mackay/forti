@@ -456,7 +456,7 @@ describe('API functions', () => {
 
       const payload = {
         name: 'New Lift',
-        category: null,
+        category: 'cardio' as const,
         description: null,
         equipment: ['barbell'] as const,
         primaryMuscles: ['sternal-pec'] as const,

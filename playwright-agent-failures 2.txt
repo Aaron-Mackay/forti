@@ -1,0 +1,254 @@
+# Combined Playwright E2E Agent Failure Context
+
+Paste this file directly into a coding agent.
+This summary deliberately excludes screenshots, videos, traces, artifact paths, and other external files.
+
+Repository: Aaron-Mackay/forti
+Run: https://github.com/Aaron-Mackay/forti/actions/runs/26032215492
+Commit: efac15b9287c0a13e43219c8fb49067a345b9bac
+Ref: refs/heads/main
+Generated: 2026-05-18T12:12:02Z
+
+---
+
+# playwright-agent-failures-shard-1
+
+# Playwright E2E Agent Failure Context
+
+Paste this file directly into a coding agent.
+This summary deliberately excludes screenshots, videos, traces, artifact paths, and other external files.
+
+Repository: Aaron-Mackay/forti
+Run: https://github.com/Aaron-Mackay/forti/actions/runs/26032215492
+Commit: efac15b9287c0a13e43219c8fb49067a345b9bac
+Branch/ref: main
+Shard: 1/6
+Generated: 2026-05-18T12:09:13.760Z
+
+Failed tests: 2
+
+---
+
+## TEST
+[chromium] tests/e2e/coachClientOverview.test.ts:43:7
+chromium › coachClientOverview.test.ts › Coach Client Overview › flagged coach sees the Signal client overview surface
+
+## REPRODUCE
+```bash
+cd apps/web
+npx playwright test tests/e2e/coachClientOverview.test.ts:43 --project="chromium"
+```
+
+## RESULT
+Final status: failed
+Retries used: 2
+
+## FAILURE
+```txt
+Error: expect(locator).toBeVisible() failed
+
+Locator: getByRole('link', { name: 'Plans' })
+Expected: visible
+Error: strict mode violation: getByRole('link', { name: 'Plans' }) resolved to 2 elements:
+    1) <a href="/user/coach/learning-plans">…</a> aka getByRole('link', { name: 'Learning plans' })
+    2) <a href="/user/coach/clients/cmpb5n8it0003dz4epm48oao6/plans">Plans</a> aka getByRole('link', { name: 'Plans', exact: true })
+
+Call log:
+  - Expect "toBeVisible" with timeout 15000ms
+  - waiting for getByRole('link', { name: 'Plans' })
+
+    at /home/runner/work/forti/forti/apps/web/tests/e2e/coachClientOverview.test.ts:52:61
+```
+
+---
+
+## TEST
+[chromium] tests/e2e/login.test.ts:17:7
+chromium › login.test.ts › Login page › displays the Forti branding and sign-in heading
+
+## REPRODUCE
+```bash
+cd apps/web
+npx playwright test tests/e2e/login.test.ts:17 --project="chromium"
+```
+
+## RESULT
+Final status: failed
+Retries used: 2
+
+## FAILURE
+```txt
+Error: expect(locator).toBeVisible() failed
+
+Locator: getByText('Welcome to Forti')
+Expected: visible
+Timeout: 15000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 15000ms
+  - waiting for getByText('Welcome to Forti')
+
+    at /home/runner/work/forti/forti/apps/web/tests/e2e/login.test.ts:24:56
+```
+
+
+---
+
+# playwright-agent-failures-shard-2
+
+# Playwright E2E Agent Failure Context
+
+Paste this file directly into a coding agent.
+This summary deliberately excludes screenshots, videos, traces, artifact paths, and other external files.
+
+Repository: Aaron-Mackay/forti
+Run: https://github.com/Aaron-Mackay/forti/actions/runs/26032215492
+Commit: efac15b9287c0a13e43219c8fb49067a345b9bac
+Branch/ref: main
+Shard: 2/6
+Generated: 2026-05-18T12:06:47.077Z
+
+No failed Playwright tests in this shard.
+
+
+---
+
+# playwright-agent-failures-shard-3
+
+# Playwright E2E Agent Failure Context
+
+Paste this file directly into a coding agent.
+This summary deliberately excludes screenshots, videos, traces, artifact paths, and other external files.
+
+Repository: Aaron-Mackay/forti
+Run: https://github.com/Aaron-Mackay/forti/actions/runs/26032215492
+Commit: efac15b9287c0a13e43219c8fb49067a345b9bac
+Branch/ref: main
+Shard: 3/6
+Generated: 2026-05-18T12:08:57.912Z
+
+Failed tests: 1
+
+---
+
+## TEST
+[Mobile Chrome] tests/e2e/login.test.ts:17:7
+Mobile Chrome › login.test.ts › Login page › displays the Forti branding and sign-in heading
+
+## REPRODUCE
+```bash
+cd apps/web
+npx playwright test tests/e2e/login.test.ts:17 --project="Mobile Chrome"
+```
+
+## RESULT
+Final status: failed
+Retries used: 2
+
+## FAILURE
+```txt
+Error: expect(locator).toBeVisible() failed
+
+Locator: getByRole('heading', { name: 'Sign in' })
+Expected: visible
+Timeout: 15000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 15000ms
+  - waiting for getByRole('heading', { name: 'Sign in' })
+
+    at /home/runner/work/forti/forti/apps/web/tests/e2e/login.test.ts:18:66
+```
+
+
+---
+
+# playwright-agent-failures-shard-4
+
+# Playwright E2E Agent Failure Context
+
+Paste this file directly into a coding agent.
+This summary deliberately excludes screenshots, videos, traces, artifact paths, and other external files.
+
+Repository: Aaron-Mackay/forti
+Run: https://github.com/Aaron-Mackay/forti/actions/runs/26032215492
+Commit: efac15b9287c0a13e43219c8fb49067a345b9bac
+Branch/ref: main
+Shard: 4/6
+Generated: 2026-05-18T12:09:15.812Z
+
+No failed Playwright tests in this shard.
+
+
+---
+
+# playwright-agent-failures-shard-5
+
+# Playwright E2E Agent Failure Context
+
+Paste this file directly into a coding agent.
+This summary deliberately excludes screenshots, videos, traces, artifact paths, and other external files.
+
+Repository: Aaron-Mackay/forti
+Run: https://github.com/Aaron-Mackay/forti/actions/runs/26032215492
+Commit: efac15b9287c0a13e43219c8fb49067a345b9bac
+Branch/ref: main
+Shard: 5/6
+Generated: 2026-05-18T12:11:50.869Z
+
+Failed tests: 1
+
+---
+
+## TEST
+[Mobile Safari] tests/e2e/login.test.ts:17:7
+Mobile Safari › login.test.ts › Login page › displays the Forti branding and sign-in heading
+
+## REPRODUCE
+```bash
+cd apps/web
+npx playwright test tests/e2e/login.test.ts:17 --project="Mobile Safari"
+```
+
+## RESULT
+Final status: failed
+Retries used: 2
+
+## FAILURE
+```txt
+Error: expect(locator).toBeVisible() failed
+
+Locator: getByRole('heading', { name: 'Sign in' })
+Expected: visible
+Timeout: 15000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 15000ms
+  - waiting for getByRole('heading', { name: 'Sign in' })
+
+    at /home/runner/work/forti/forti/apps/web/tests/e2e/login.test.ts:18:66
+```
+
+
+---
+
+# playwright-agent-failures-shard-6
+
+# Playwright E2E Agent Failure Context
+
+Paste this file directly into a coding agent.
+This summary deliberately excludes screenshots, videos, traces, artifact paths, and other external files.
+
+Repository: Aaron-Mackay/forti
+Run: https://github.com/Aaron-Mackay/forti/actions/runs/26032215492
+Commit: efac15b9287c0a13e43219c8fb49067a345b9bac
+Branch/ref: main
+Shard: 6/6
+Generated: 2026-05-18T12:08:10.671Z
+
+No failed Playwright tests in this shard.
+
+

@@ -14,7 +14,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from '@mui/material';
-import {Exercise} from '@/generated/prisma/browser';
+import {Exercise, ExerciseCategory} from '@/generated/prisma/browser';
 import {AddExerciseForm} from '@/app/exercises/AddExerciseForm';
 import {Overlay} from '@/components/signal/overlay';
 
@@ -63,7 +63,7 @@ function exerciseMatchesSearch(ex: Exercise, search: string): boolean {
 interface ExercisePickerDialogProps {
   open: boolean;
   title: string;
-  defaultCategory?: string;
+  defaultCategory?: ExerciseCategory;
   excludeExerciseId?: number;
   onClose: () => void;
   onSelect: (exercise: Exercise) => void;
@@ -79,13 +79,13 @@ export default function ExercisePickerDialog({
 }: ExercisePickerDialogProps) {
   const {exercises, loading, addExercise} = useExerciseList(open);
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState<string>(defaultCategory ?? 'resistance');
+  const [category, setCategory] = useState<ExerciseCategory>(defaultCategory ?? ExerciseCategory.resistance);
   const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
       setSearch('');
-      setCategory(defaultCategory ?? 'resistance');
+      setCategory(defaultCategory ?? ExerciseCategory.resistance);
     }
   }, [open, defaultCategory]);
 
@@ -95,6 +95,10 @@ export default function ExercisePickerDialog({
     const notExcluded = excludeExerciseId == null || ex.id !== excludeExerciseId;
     return matchesCategory && matchesSearch && notExcluded;
   });
+  const normalizedSearch = search.trim().toLowerCase();
+  const hasExactNameMatchInCategory = normalizedSearch.length > 0 && exercises.some(
+    ex => ex.category === category && ex.name.toLowerCase() === normalizedSearch,
+  );
 
   return (
     <Overlay
@@ -156,7 +160,7 @@ export default function ExercisePickerDialog({
                   sx={{px: 2, py: 2, color: 'text.secondary'}}
                 />
               )}
-              {!loading && search.trim().length > 0 && !exercises.some(e => e.name.toLowerCase() === search.toLowerCase()) && (
+              {!loading && normalizedSearch.length > 0 && !hasExactNameMatchInCategory && (
                 <ListItemButton onClick={() => setCreateOpen(true)} divider>
                   <ListItemText
                     primary={<em>+ Create &quot;{search}&quot;</em>}
@@ -172,6 +176,7 @@ export default function ExercisePickerDialog({
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         initialName={search}
+        category={category}
         onExerciseAdded={(newExercise) => {
           addExercise(newExercise);
           setCreateOpen(false);

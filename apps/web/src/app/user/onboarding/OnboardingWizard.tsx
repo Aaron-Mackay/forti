@@ -69,7 +69,6 @@ function StepProfile({ initialImage, initials, name, onNameChange }: StepProfile
         value={name}
         onChange={e => onNameChange(e.target.value)}
         fullWidth
-        autoComplete="name"
         inputProps={{ maxLength: 100 }}
       />
     </>

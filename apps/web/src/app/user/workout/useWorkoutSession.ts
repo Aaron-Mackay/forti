@@ -19,7 +19,7 @@ import {
   updateWorkoutDateCompleted,
   updateWorkoutNotes,
 } from '@/utils/userPlanMutators';
-import {Exercise} from '@/generated/prisma/browser';
+import {Exercise, ExerciseCategory} from '@/generated/prisma/browser';
 import {AddExerciseConfig} from './AddExerciseConfigDialog';
 import { trackFirstWeekEvent } from '@lib/firstWeekEvents';
 import { getWorkoutData } from '@lib/clientApi';
@@ -36,7 +36,7 @@ type Field = 'weight' | 'reps';
 type SubstituteTarget = {
   workoutExerciseId: number;
   exerciseId: number;
-  category: string;
+  category: ExerciseCategory;
   isAdded: boolean;
 } | null;
 
@@ -403,7 +403,7 @@ export function useWorkoutSession(
     setSubstituteTarget({
       workoutExerciseId,
       exerciseId: ex.exerciseId,
-      category: ex.exercise.category ?? 'resistance',
+      category: ex.exercise.category ?? ExerciseCategory.resistance,
       isAdded: ex.isAdded,
     });
   };

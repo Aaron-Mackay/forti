@@ -150,8 +150,14 @@ const theme = createTheme({
   },
   fortiTokens: nonMuiTokens,
   components: {
+    MuiTextField: {
+      defaultProps: {
+        autoComplete: 'off',
+      },
+    },
     MuiInputBase: {
       defaultProps: {
+        autoComplete: 'off',
         disableInjectingGlobalStyles: true,
       },
       styleOverrides: {
