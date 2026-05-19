@@ -16,6 +16,11 @@ export type NotificationResponse = z.infer<typeof NotificationResponseSchema>;
 export const NotificationsListResponseSchema = z.object({
   notifications: z.array(NotificationResponseSchema),
   unreadCount: z.number().int().nonnegative(),
+  metadata: z.object({
+    version: z.string().min(1),
+    etag: z.string().min(1),
+    lastModified: z.string().datetime(),
+  }),
 });
 export type NotificationsListResponse = z.infer<typeof NotificationsListResponseSchema>;
 
