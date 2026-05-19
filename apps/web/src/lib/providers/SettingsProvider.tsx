@@ -7,6 +7,7 @@ import { getUserSettings, updateUserSettings } from '@lib/clientApi';
 interface SettingsContextValue {
   settings: Settings;
   loading: boolean;
+  syncing: boolean;
   error: string | null;
   clearError: () => void;
   updateSetting: (key: keyof Settings, value: boolean | number | string) => Promise<boolean>;
@@ -21,6 +22,7 @@ const NOOP_BOOLEAN_ASYNC = async () => false;
 const FALLBACK_SETTINGS_CONTEXT: SettingsContextValue = {
   settings: DEFAULT_SETTINGS,
   loading: true,
+  syncing: false,
   error: null,
   clearError: () => {},
   updateSetting: NOOP_BOOLEAN_ASYNC,
@@ -29,9 +31,30 @@ const FALLBACK_SETTINGS_CONTEXT: SettingsContextValue = {
   setExerciseUnitOverride: NOOP_ASYNC,
 };
 
+const SETTINGS_STORAGE_KEY = 'forti:user-settings:v1';
+
+function readCachedSettings(): Settings | null {
+  try {
+    const raw = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (!raw) return null;
+    return parseDashboardSettings(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedSettings(next: Settings): void {
+  try {
+    window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Ignore storage write failures
+  }
+}
+
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
@@ -41,14 +64,25 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => { settingsRef.current = settings; }, [settings]);
 
   useEffect(() => {
-    getUserSettings({ cache: 'no-store' })
+    const cachedSettings = readCachedSettings();
+    if (cachedSettings) {
+      setSettings(cachedSettings);
+      setLoading(false);
+      setSyncing(true);
+    }
+
+    getUserSettings()
       .then(data => {
-        setSettings(parseDashboardSettings(data.settings));
+        const next = parseDashboardSettings(data.settings);
+        setSettings(prev => JSON.stringify(prev) === JSON.stringify(next) ? prev : next);
+        writeCachedSettings(next);
         setLoading(false);
+        setSyncing(false);
       })
       .catch(() => {
         setError('Failed to load settings.');
         setLoading(false);
+        setSyncing(false);
       });
   }, []);
 
@@ -59,7 +93,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     abortRef.current = controller;
 
     const prev = settingsRef.current;
-    setSettings(s => ({ ...s, [key]: value }));
+    const optimistic = { ...prev, [key]: value };
+    setSettings(optimistic);
+    writeCachedSettings(optimistic);
     setError(null);
     try {
       await updateUserSettings({ [key]: value }, { signal: controller.signal });
@@ -69,6 +105,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         return false;
       }
       setSettings(prev);
+      writeCachedSettings(prev);
       setError('Failed to save setting. Please try again.');
       return false;
     }
@@ -80,13 +117,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     abortRef.current = controller;
 
     const prev = settingsRef.current;
-    setSettings(s => ({ ...s, customMetrics: defs }));
+    const optimistic = { ...prev, customMetrics: defs };
+    setSettings(optimistic);
+    writeCachedSettings(optimistic);
     setError(null);
     try {
       await updateUserSettings({ customMetrics: defs }, { signal: controller.signal });
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
       setSettings(prev);
+      writeCachedSettings(prev);
       setError('Failed to save setting. Please try again.');
     }
   }, []);
@@ -97,13 +137,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     abortRef.current = controller;
 
     const prev = settingsRef.current;
-    setSettings(s => ({ ...s, trackedE1rmExercises: exercises }));
+    const optimistic = { ...prev, trackedE1rmExercises: exercises };
+    setSettings(optimistic);
+    writeCachedSettings(optimistic);
     setError(null);
     try {
       await updateUserSettings({ trackedE1rmExercises: exercises }, { signal: controller.signal });
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
       setSettings(prev);
+      writeCachedSettings(prev);
       setError('Failed to save setting. Please try again.');
     }
   }, []);
@@ -120,13 +163,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     } else {
       next[String(exerciseId)] = override;
     }
-    setSettings(s => ({ ...s, exerciseUnitOverrides: next }));
+    const optimistic = { ...prev, exerciseUnitOverrides: next };
+    setSettings(optimistic);
+    writeCachedSettings(optimistic);
     setError(null);
     try {
       await updateUserSettings({ exerciseUnitOverrides: next }, { signal: controller.signal });
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
       setSettings(prev);
+      writeCachedSettings(prev);
       setError('Failed to save setting. Please try again.');
     }
   }, []);
@@ -134,7 +180,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const clearError = useCallback(() => setError(null), []);
 
   return (
-    <SettingsContext.Provider value={{ settings, loading, error, clearError, updateSetting, updateCustomMetrics, updateTrackedE1rmExercises, setExerciseUnitOverride }}>
+    <SettingsContext.Provider value={{ settings, loading, syncing, error, clearError, updateSetting, updateCustomMetrics, updateTrackedE1rmExercises, setExerciseUnitOverride }}>
       {children}
     </SettingsContext.Provider>
   );
