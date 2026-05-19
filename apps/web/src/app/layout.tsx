@@ -12,8 +12,6 @@ import {Analytics} from "@vercel/analytics/next"
 import {DateLocalizationProvider} from "@lib/providers/DateLocalizationProvider";
 import AuthProvider from "@lib/providers/AuthProvider";
 import NextTopLoader from "nextjs-toploader";
-import {getServerSession} from "next-auth/next";
-import {authOptions} from "@lib/auth";
 
 export const metadata: Metadata = {
   title: "Forti",
@@ -23,12 +21,11 @@ export const viewport: Viewport = {
   themeColor: PRIMARY_COLOUR,
 }
 
-export default async function RootLayout({
+export default function RootLayout({
                                      children,
                                    }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
   return (
     <html lang="en">
     <body>
@@ -44,7 +41,7 @@ export default async function RootLayout({
           }}
         />
         <DateLocalizationProvider>
-          <AuthProvider session={session}>
+          <AuthProvider>
             <Box sx={{backgroundColor: 'background.default', minHeight: '100dvh'}}>
               {children}
             </Box>

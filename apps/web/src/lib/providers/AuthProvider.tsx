@@ -9,7 +9,7 @@ export default function AuthProvider({
   session,
 }: {
   children: ReactNode;
-  session: Session | null;
+  session?: Session | null;
 }) {
   return (
     <SessionProvider session={session} refetchOnWindowFocus={false}>
