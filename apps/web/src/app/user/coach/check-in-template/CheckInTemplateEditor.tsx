@@ -1571,7 +1571,7 @@ export default function CheckInTemplateEditor({ signalEnabled = false }: { signa
         background: palette.bg,
         color: palette.ink,
         fontFamily: signalTokens.fontVar.body,
-        paddingTop: 14,
+        paddingTop: 12,
       }}
     >
       <section
@@ -1579,21 +1579,21 @@ export default function CheckInTemplateEditor({ signalEnabled = false }: { signa
           background: palette.surface,
           border: `1px solid ${palette.borderStrong}`,
           borderRadius: signalTokens.radii.cardLarge,
-          padding: '20px 20px 18px',
-          marginBottom: 18,
+          padding: '20px',
+          marginBottom: 16,
         }}
       >
-        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: allCards.length > 0 ? signalTokens.signal.deep : palette.inkLight, marginBottom: 6 }}>
+        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: allCards.length > 0 ? signalTokens.signal.deep : palette.inkLight, marginBottom: 8 }}>
           Coach Check-in Template
         </div>
-        <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 32, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 10 }}>
+        <div style={{ fontFamily: signalTokens.fontVar.cond, fontSize: 32, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 12 }}>
           Template workspace
         </div>
         <div style={{ fontSize: 14, color: palette.inkMid, lineHeight: 1.5, maxWidth: 680 }}>
           Shape the check-in flow your clients complete each week. System cards keep progress photos, metrics, and training anchored while custom cards let you ask for the context you actually coach from.
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginTop: 18 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginTop: 16 }}>
           <SignalMetricPill label="Steps" value={steps.length} />
           <SignalMetricPill label="Inputs" value={allInputFields.length} />
           <SignalMetricPill label="System" value={allCards.filter(card => card.kind === 'system').length} />
@@ -1605,14 +1605,14 @@ export default function CheckInTemplateEditor({ signalEnabled = false }: { signa
           background: palette.surface,
           border: `1px solid ${palette.border}`,
           borderRadius: signalTokens.radii.cardLarge,
-          padding: '4px 18px 18px',
+          padding: '4px 16px 16px',
           marginBottom: 16,
         }}
       >
-        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginTop: 14, marginBottom: 4 }}>
+        <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: palette.inkLight, marginTop: 16, marginBottom: 4 }}>
           Builder
         </div>
-        <div style={{ fontSize: 14, color: palette.inkMid, lineHeight: 1.5, marginBottom: 2 }}>
+        <div style={{ fontSize: 14, color: palette.inkMid, lineHeight: 1.5, marginBottom: 4 }}>
           Start from the default check-in, then arrange the steps and cards before previewing the client experience.
         </div>
 

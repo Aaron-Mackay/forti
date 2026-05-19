@@ -332,7 +332,7 @@ function SignalCoachCheckIns({
         background: palette.bg,
         color: palette.ink,
         fontFamily: signalTokens.fontVar.body,
-        padding: '14px 0 28px',
+        padding: '12px 0 28px',
         maxWidth: 1080,
         margin: '0 auto',
       }}
@@ -366,7 +366,7 @@ function SignalCoachCheckIns({
           background: palette.surface,
           border: `1px solid ${palette.borderStrong}`,
           borderRadius: signalTokens.radii.cardLarge,
-          padding: '20px 20px 18px',
+          padding: '20px 20px 20px',
         }}
       >
         <div style={{ fontFamily: signalTokens.fontVar.mono, fontSize: 11, color: newCheckIns.length > 0 ? signalTokens.signal.deep : palette.inkLight, marginBottom: 6 }}>
@@ -615,7 +615,7 @@ function SignalActionButton({ label, onClick }: { label: string; onClick: () => 
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: 40,
-        padding: '0 14px',
+        padding: '0 16px',
         borderRadius: signalTokens.radii.card,
         fontSize: 14,
         fontWeight: 600,
@@ -639,7 +639,7 @@ function SignalLinkButton({ href, label, secondary = false }: { href: string; la
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: 40,
-        padding: '0 14px',
+        padding: '0 16px',
         borderRadius: signalTokens.radii.card,
         textDecoration: 'none',
         fontSize: 14,
@@ -674,7 +674,7 @@ function SignalCheckInRow({ checkIn, href }: { checkIn: CheckInWithUser; href: s
         gap: 12,
         textDecoration: 'none',
         color: palette.ink,
-        padding: '14px 14px 13px',
+        padding: '12px',
         border: `1px solid ${palette.border}`,
         borderRadius: signalTokens.radii.cardLarge,
         background: palette.surfaceAlt,
@@ -702,7 +702,7 @@ function SignalCheckInRow({ checkIn, href }: { checkIn: CheckInWithUser; href: s
             fontFamily: signalTokens.fontVar.mono,
             fontSize: 11,
             color: isReviewed ? signalTokens.status.ok : signalTokens.signal.deep,
-            background: isReviewed ? 'rgba(90, 140, 79, 0.08)' : signalTokens.signal.dim,
+            background: isReviewed ? signalTokens.status.okDim : signalTokens.signal.dim,
             border: `1px solid ${palette.border}`,
           }}
         >
