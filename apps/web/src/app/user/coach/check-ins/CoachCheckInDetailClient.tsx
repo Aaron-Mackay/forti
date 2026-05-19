@@ -544,7 +544,7 @@ export default function CoachCheckInDetailClient({
               />
             </SignalSection>
 
-            <SignalSection label="Support">
+            <SignalSection label="Training Plan">
               <Stack spacing={1.5}>
                 <Button
                   variant="outlined"

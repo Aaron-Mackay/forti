@@ -15,7 +15,13 @@ const NAV_ITEMS = [
   { label: 'Supplements', segment: 'supplements' },
 ] as const;
 
-export function SignalClientNav({ clientId }: { clientId: string }) {
+export function SignalClientNav({
+  clientId,
+  activeSegment,
+}: {
+  clientId: string;
+  activeSegment?: string;
+}) {
   const pathname = usePathname();
   const base = `/user/coach/clients/${clientId}`;
 
@@ -32,9 +38,11 @@ export function SignalClientNav({ clientId }: { clientId: string }) {
     >
       {NAV_ITEMS.map(({ label, segment }) => {
         const href = segment ? `${base}/${segment}` : base;
-        const isActive = segment
-          ? pathname === href || pathname.startsWith(`${href}/`)
-          : pathname === base;
+        const isActive = activeSegment !== undefined
+          ? segment === activeSegment
+          : segment
+            ? pathname === href || pathname.startsWith(`${href}/`)
+            : pathname === base;
 
         return (
           <Link

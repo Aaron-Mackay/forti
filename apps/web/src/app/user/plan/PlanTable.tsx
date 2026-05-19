@@ -221,7 +221,7 @@ export const PlanTable: React.FC<{
             >
               <SignalPlanMetric label="Weeks" value={weekCount} />
               <SignalPlanMetric label="Workouts" value={workoutCount} />
-              <SignalPlanMetric label="Exercise slots" value={exerciseSlotCount} />
+              <SignalPlanMetric label="Exercises" value={exerciseSlotCount} />
             </Box>
             <Box
               sx={{

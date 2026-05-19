@@ -10,6 +10,7 @@ import type { CheckInTemplate } from '@/types/checkInTemplateTypes';
 import CoachCheckInDetailClient from './CoachCheckInDetailClient';
 import { getCoachCheckInDetail, getCoachCheckInTemplate } from '@lib/clientApi';
 import type { CoachCheckInDetailResponse } from '@lib/contracts/coach';
+import { SignalClientNav } from '../clients/[clientId]/_components/SignalClientNav';
 
 interface Props {
   checkInId: number;
@@ -97,17 +98,22 @@ export default function CoachCheckInDetailPageClient({ checkInId, lockedClientId
   }
 
   return (
-    <CoachCheckInDetailClient
-      checkIn={checkIn}
-      currentWeek={currentWeek}
-      weekPrior={weekPrior}
-      weekTargets={weekTargets}
-      activeTemplate={activeTemplate}
-      customMetricDefs={customMetricDefs}
-      workoutSummaries={workoutSummaries}
-      activePlanId={activePlanId}
-      coachTemplate={coachTemplate}
-      signalEnabled={signalEnabled}
-    />
+    <>
+      {signalEnabled && !lockedClientId && (
+        <SignalClientNav clientId={checkIn.user.id} activeSegment="check-ins" />
+      )}
+      <CoachCheckInDetailClient
+        checkIn={checkIn}
+        currentWeek={currentWeek}
+        weekPrior={weekPrior}
+        weekTargets={weekTargets}
+        activeTemplate={activeTemplate}
+        customMetricDefs={customMetricDefs}
+        workoutSummaries={workoutSummaries}
+        activePlanId={activePlanId}
+        coachTemplate={coachTemplate}
+        signalEnabled={signalEnabled}
+      />
+    </>
   );
 }

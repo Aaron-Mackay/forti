@@ -6,6 +6,7 @@ import CoachCheckInDetailPageClient from '@/app/user/coach/check-ins/CoachCheckI
 import { SignalSurface } from '@/components/signal/SignalSurface';
 import { SignalBackLink } from '@/components/signal/SignalBackLink';
 import { loadSignalFlag } from '@lib/signal/loadSignalFlag';
+import { SignalClientNav } from '../../_components/SignalClientNav';
 
 interface Props {
   params: Promise<{ clientId: string; id: string }>;
@@ -32,6 +33,7 @@ export default async function ClientCheckInDetailPage({ params }: Props) {
       )}
       <SignalSurface signalEnabled={signalEnabled} surface="planning">
         {signalEnabled && <SignalBackLink href={`/user/coach/clients/${clientId}/check-ins`} label="Check-ins" surface="planning" />}
+        {signalEnabled && <SignalClientNav clientId={clientId} />}
         <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 }, minHeight: HEIGHT_EXC_APPBAR, overflowY: 'auto' }}>
           <CoachCheckInDetailPageClient checkInId={checkInId} lockedClientId={clientId} signalEnabled={signalEnabled} />
         </Box>
