@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { redirect, useRouter } from "next/navigation";
 import { WorkoutEditorContext, useWorkoutEditorContext } from "@/context/WorkoutEditorContext";
-import { saveUserWorkoutData } from "@lib/clientApi";
+import { saveSinglePlan } from "@lib/clientApi";
 import { Alert, Box, Button, Chip, CircularProgress, FormControlLabel, Snackbar, Switch, ToggleButton, ToggleButtonGroup, Tooltip, useMediaQuery, useTheme } from "@mui/material";
 import GridOnIcon from '@mui/icons-material/GridOn';
 import ViewListIcon from '@mui/icons-material/ViewList';
@@ -34,12 +34,15 @@ export const PlanTable: React.FC<{
     severity: 'success',
   });
   const [saving, setSaving] = useState(false);
+  const [autoSaveArmed, setAutoSaveArmed] = useState(false);
   const [forwardSyncEnabled, setForwardSyncEnabled] = useState(false);
   const contextValue = useWorkoutEditorContext();
   const { state: userDataState, dispatch } = contextValue;
 
   const syncWeekCountRef = useRef(0);
   const syncToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedPlanSnapshotRef = useRef<string>('');
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const triggerSyncToast = useCallback((weekCount: number) => {
     syncWeekCountRef.current = Math.max(syncWeekCountRef.current, weekCount);
@@ -144,11 +147,41 @@ export const PlanTable: React.FC<{
       return;
     }
     setSaving(true);
-    saveUserWorkoutData(userDataState)
-      .then(() => setSnackbar({ open: true, message: 'Saved successfully', severity: 'success' }))
+    saveSinglePlan(userDataState.id, plan, userDataState.activePlanId)
+      .then(() => {
+        lastSavedPlanSnapshotRef.current = JSON.stringify(plan);
+        setSnackbar({ open: true, message: 'Saved successfully', severity: 'success' });
+      })
       .catch(() => setSnackbar({ open: true, message: 'Failed to save', severity: 'error' }))
       .finally(() => setSaving(false));
   };
+
+  useEffect(() => {
+    if (!plan) return;
+    if (!autoSaveArmed) {
+      lastSavedPlanSnapshotRef.current = JSON.stringify(plan);
+      setAutoSaveArmed(true);
+      return;
+    }
+    const current = JSON.stringify(plan);
+    if (current === lastSavedPlanSnapshotRef.current || saving || clientEditingLocked || visibleInvalidRepRangeIds.size > 0) return;
+
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      setSaving(true);
+      saveSinglePlan(userDataState.id, plan, userDataState.activePlanId)
+        .then(() => {
+          lastSavedPlanSnapshotRef.current = JSON.stringify(plan);
+          setSnackbar({ open: true, message: 'Changes auto-saved', severity: 'success' });
+        })
+        .catch(() => setSnackbar({ open: true, message: 'Auto-save failed', severity: 'error' }))
+        .finally(() => setSaving(false));
+    }, 900);
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [plan, autoSaveArmed, saving, clientEditingLocked, visibleInvalidRepRangeIds.size, userDataState.id, userDataState.activePlanId]);
 
   const weekCount = plan.weeks.length;
   const workoutCount = plan.weeks.reduce((sum, week) => sum + week.workouts.length, 0);

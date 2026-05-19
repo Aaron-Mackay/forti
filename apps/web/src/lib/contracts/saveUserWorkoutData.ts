@@ -5,6 +5,9 @@ export const SaveUserWorkoutDataRequestSchema = z.object({
   id: z.string(),
   activePlanId: z.number().int().positive().nullable().optional(),
   plans: z.array(PlanInputSchema),
+  saveScope: z.object({
+    planId: z.number().int().positive(),
+  }).optional(),
 });
 export type SaveUserWorkoutDataRequest = z.infer<typeof SaveUserWorkoutDataRequestSchema>;
 

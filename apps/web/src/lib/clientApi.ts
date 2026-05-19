@@ -123,11 +123,50 @@ function normalizeUserWorkoutDataForSave(userData: UserPrisma): UserPrisma {
   };
 }
 
+function normalizePlanForSave(plan: PlanPrisma): PlanPrisma {
+  return {
+    ...plan,
+    weeks: (plan.weeks ?? []).map((week) => ({
+      ...week,
+      workouts: (week.workouts ?? []).map((workout) => ({
+        ...workout,
+        exercises: (workout.exercises ?? []).map((exercise) => ({
+          ...exercise,
+          exercise: exercise.exercise
+            ? {
+                ...exercise.exercise,
+                category: exercise.exercise.category ?? 'resistance',
+              }
+            : exercise.exercise,
+        })),
+      })),
+    })),
+  };
+}
+
 export async function saveUserWorkoutData(userData: UserPrisma): Promise<SaveUserWorkoutDataSuccess> {
   const normalizedUserData = normalizeUserWorkoutDataForSave(userData);
   return fetchJsonWithSchema('/api/saveUserWorkoutData', SaveUserWorkoutDataSuccessSchema, {
     method: 'POST',
     body: JSON.stringify(normalizedUserData),
+    headers: {'Content-Type': 'application/json'},
+  });
+}
+
+export async function saveSinglePlan(
+  userId: string,
+  plan: PlanPrisma,
+  activePlanId?: number | null,
+): Promise<SaveUserWorkoutDataSuccess> {
+  const normalizedPlan = normalizePlanForSave(plan);
+  return fetchJsonWithSchema('/api/saveUserWorkoutData', SaveUserWorkoutDataSuccessSchema, {
+    method: 'POST',
+    body: JSON.stringify({
+      id: userId,
+      activePlanId,
+      plans: [normalizedPlan],
+      saveScope: { planId: plan.id },
+    }),
     headers: {'Content-Type': 'application/json'},
   });
 }
