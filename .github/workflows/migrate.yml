@@ -63,10 +63,14 @@ jobs:
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
           MIGRATION_DIR="prisma/migrations/${TIMESTAMP}_${NAME}"
           mkdir -p "$MIGRATION_DIR"
+          # Use --output so the SQL script is written directly to the file.
+          # Redirecting stdout includes the Prisma CLI env-loader banner
+          # ("◇ injected env (0) from .env ...") which is not valid SQL.
           npx prisma migrate diff \
             --from-config-datasource \
             --to-schema=prisma/schema.prisma \
-            --script > "$MIGRATION_DIR/migration.sql"
+            --script \
+            --output="$MIGRATION_DIR/migration.sql"
           if grep -qvE "^(--|[[:space:]]*$)" "$MIGRATION_DIR/migration.sql"; then
             echo "Schema changes detected — applying migration."
             npx prisma migrate deploy
