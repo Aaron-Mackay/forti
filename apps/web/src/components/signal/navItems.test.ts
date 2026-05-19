@@ -33,6 +33,15 @@ describe('Signal navigation', () => {
     expect(activeNavId(userItems, '/user/workout/active')).toBe('training');
   });
 
+  it('marks Training active on plan-week routes reached from the Training tab', () => {
+    const userItems = navItemsFor('user');
+
+    expect(activeNavId(userItems, '/user/plan/2/weeks')).toBe('training');
+    expect(activeNavId(userItems, '/user/plan/15/weeks')).toBe('training');
+    expect(activeNavId(userItems, '/user/plan')).toBe('plan');
+    expect(activeNavId(userItems, '/user/plan/2')).toBe('plan');
+  });
+
   it('keeps user secondary routes ordered and gates Supplements', () => {
     expect(secondaryNavItemsFor('user').map((item) => item.label)).toEqual([
       'Exercises',

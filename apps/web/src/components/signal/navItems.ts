@@ -81,8 +81,14 @@ export function secondaryNavItemsFor(mode: SignalNavMode, showSupplements = fals
   ];
 }
 
+const PLAN_WEEKS_TRAINING_PATTERN = /^\/user\/plan\/\d+\/weeks(\/|$)/;
+
 export function activeNavId(items: SignalNavItem[], pathname: string | null): NavItemId | null {
   if (!pathname) return null;
+  if (PLAN_WEEKS_TRAINING_PATTERN.test(pathname)) {
+    const training = items.find((item) => item.id === 'training');
+    if (training) return training.id;
+  }
   let best: { item: SignalNavItem; len: number } | null = null;
   for (const item of items) {
     for (const prefix of item.matchPrefixes) {
