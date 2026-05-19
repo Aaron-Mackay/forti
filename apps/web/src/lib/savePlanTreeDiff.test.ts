@@ -19,17 +19,21 @@ type Tx = Parameters<typeof syncPlanTree>[0];
 
 interface ExistingPlan {
   id: number;
+  order: number;
   clientCanEdit?: boolean;
   weeks: Array<{
     id: number;
+    order: number;
     planId: number;
     workouts: Array<{
       id: number;
+      order: number;
       weekId: number;
       exercises: Array<{
         id: number;
+        order: number;
         workoutId: number;
-        sets: Array<{ id: number; isDropSet: boolean }>;
+        sets: Array<{ id: number; order: number; isDropSet: boolean }>;
       }>;
     }>;
   }>;
@@ -177,20 +181,24 @@ describe('syncPlanTree', () => {
   it('updates an existing plan in place when ids match (no recreation)', async () => {
     const existing: ExistingPlan = {
       id: 42,
+      order: 0,
       clientCanEdit: true,
       weeks: [
         {
           id: 7,
+          order: 0,
           planId: 42,
           workouts: [
             {
               id: 11,
+              order: 0,
               weekId: 7,
               exercises: [
                 {
                   id: 21,
+                  order: 0,
                   workoutId: 11,
-                  sets: [{ id: 31, isDropSet: false }],
+                  sets: [{ id: 31, order: 0, isDropSet: false }],
                 },
               ],
             },
@@ -250,20 +258,24 @@ describe('syncPlanTree', () => {
   it('skips locked plans for client saves but keeps their existing tree', async () => {
     const existing: ExistingPlan = {
       id: 42,
+      order: 0,
       clientCanEdit: false,
       weeks: [
         {
           id: 7,
+          order: 0,
           planId: 42,
           workouts: [
             {
               id: 11,
+              order: 0,
               weekId: 7,
               exercises: [
                 {
                   id: 21,
+                  order: 0,
                   workoutId: 11,
-                  sets: [{ id: 31, isDropSet: false }],
+                  sets: [{ id: 31, order: 0, isDropSet: false }],
                 },
               ],
             },
@@ -300,19 +312,23 @@ describe('syncPlanTree', () => {
   it('inserts only the new set when one is added to an existing exercise', async () => {
     const existing: ExistingPlan = {
       id: 42,
+      order: 0,
       weeks: [
         {
           id: 7,
+          order: 0,
           planId: 42,
           workouts: [
             {
               id: 11,
+              order: 0,
               weekId: 7,
               exercises: [
                 {
                   id: 21,
+                  order: 0,
                   workoutId: 11,
-                  sets: [{ id: 31, isDropSet: false }],
+                  sets: [{ id: 31, order: 0, isDropSet: false }],
                 },
               ],
             },
@@ -367,13 +383,15 @@ describe('syncPlanTree', () => {
   it('deletes only entities not present in the incoming tree', async () => {
     const existing: ExistingPlan = {
       id: 42,
+      order: 0,
       weeks: [
         {
           id: 7,
+          order: 0,
           planId: 42,
           workouts: [
-            { id: 11, weekId: 7, exercises: [] }, // kept
-            { id: 12, weekId: 7, exercises: [] }, // dropped
+            { id: 11, order: 0, weekId: 7, exercises: [] }, // kept
+            { id: 12, order: 1, weekId: 7, exercises: [] }, // dropped
           ],
         },
       ],
@@ -410,7 +428,8 @@ describe('syncPlanTree', () => {
   it('clears the entire tree when incoming plans are empty', async () => {
     const existing: ExistingPlan = {
       id: 42,
-      weeks: [{ id: 7, planId: 42, workouts: [] }],
+      order: 0,
+      weeks: [{ id: 7, order: 0, planId: 42, workouts: [] }],
     };
     const { tx, mocks } = createTx([existing]);
 
@@ -495,5 +514,74 @@ describe('syncPlanTree', () => {
 
     const createCall = mocks.workoutExercise.create.mock.calls[0][0];
     expect(createCall.data.requiresRecording).toBe(false);
+  });
+
+  it('stages existing exercise orders before applying a reorder inside a workout', async () => {
+    const existing: ExistingPlan = {
+      id: 42,
+      order: 0,
+      weeks: [
+        {
+          id: 7,
+          order: 0,
+          planId: 42,
+          workouts: [
+            {
+              id: 11,
+              order: 0,
+              weekId: 7,
+              exercises: [
+                { id: 21, order: 0, workoutId: 11, sets: [] },
+                { id: 22, order: 1, workoutId: 11, sets: [] },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const { tx, mocks } = createTx([existing]);
+
+    await syncPlanTree(
+      tx,
+      'user-1',
+      [
+        {
+          id: 42,
+          order: 0,
+          name: 'Plan A',
+          weeks: [
+            {
+              id: 7,
+              order: 0,
+              workouts: [
+                {
+                  id: 11,
+                  name: 'Push Day',
+                  order: 0,
+                  exercises: [
+                    buildExercise({ id: 22, order: 0 }),
+                    buildExercise({ id: 21, order: 1 }),
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      { actorIsAssignedCoach: false },
+    );
+
+    expect(mocks.workoutExercise.update.mock.calls.slice(0, 2)).toEqual([
+      [{ where: { id: 21 }, data: { order: -22 } }],
+      [{ where: { id: 22 }, data: { order: -23 } }],
+    ]);
+    expect(mocks.workoutExercise.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 22 },
+      data: expect.objectContaining({ order: 0 }),
+    }));
+    expect(mocks.workoutExercise.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 21 },
+      data: expect.objectContaining({ order: 1 }),
+    }));
   });
 });

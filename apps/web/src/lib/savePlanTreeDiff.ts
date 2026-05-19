@@ -13,17 +13,21 @@ type SetInput = ExerciseInput['sets'][number];
 type ExistingTree = {
   plans: Array<{
     id: number;
+    order: number;
     clientCanEdit: boolean;
     weeks: Array<{
       id: number;
+      order: number;
       planId: number;
       workouts: Array<{
         id: number;
+        order: number;
         weekId: number;
         exercises: Array<{
           id: number;
+          order: number;
           workoutId: number;
-          sets: Array<{ id: number; isDropSet: boolean }>;
+          sets: Array<{ id: number; order: number; isDropSet: boolean }>;
         }>;
       }>;
     }>;
@@ -32,6 +36,16 @@ type ExistingTree = {
 
 interface SyncOptions {
   actorIsAssignedCoach: boolean;
+}
+
+interface ExistingOrderedEntity {
+  id: number;
+  order: number;
+}
+
+interface IncomingOrderedEntity {
+  id?: number;
+  order: number;
 }
 
 /**
@@ -55,6 +69,13 @@ export async function syncPlanTree(
   options: SyncOptions,
 ): Promise<void> {
   const existing: ExistingTree = await loadExistingTree(tx, userId);
+  const planOrdersWereStaged = needsTemporaryOrderStaging(existing.plans, incomingPlans);
+
+  if (planOrdersWereStaged) {
+    await stageTemporaryOrders(existing.plans, (id, order) =>
+      tx.plan.update({ where: { id }, data: { order } }),
+    );
+  }
 
   const kept = {
     plans: new Set<number>(),
@@ -71,6 +92,12 @@ export async function syncPlanTree(
     const lockedForClient = !!existingPlan && existingPlan.clientCanEdit === false && !options.actorIsAssignedCoach;
 
     if (existingPlan && lockedForClient) {
+      if (planOrdersWereStaged) {
+        await tx.plan.update({
+          where: { id: existingPlan.id },
+          data: { order: existingPlan.order },
+        });
+      }
       kept.plans.add(existingPlan.id);
       keepExistingPlanTree(existingPlan, kept);
       continue;
@@ -118,20 +145,24 @@ async function loadExistingTree(
     where: { userId },
     select: {
       id: true,
+      order: true,
       clientCanEdit: true,
       weeks: {
         select: {
           id: true,
+          order: true,
           planId: true,
           workouts: {
             select: {
               id: true,
+              order: true,
               weekId: true,
               exercises: {
                 select: {
                   id: true,
+                  order: true,
                   workoutId: true,
-                  sets: { select: { id: true, isDropSet: true } },
+                  sets: { select: { id: true, order: true, isDropSet: true } },
                 },
               },
             },
@@ -173,6 +204,12 @@ async function syncWeeks(
   userId: string,
   options: SyncOptions,
 ): Promise<void> {
+  if (needsTemporaryOrderStaging(existingWeeks, incomingWeeks)) {
+    await stageTemporaryOrders(existingWeeks, (id, order) =>
+      tx.week.update({ where: { id }, data: { order } }),
+    );
+  }
+
   for (const incomingWeek of incomingWeeks) {
     const existingWeek = incomingWeek.id != null
       ? existingWeeks.find((w) => w.id === incomingWeek.id && w.planId === planId)
@@ -208,6 +245,12 @@ async function syncWorkouts(
   userId: string,
   options: SyncOptions,
 ): Promise<void> {
+  if (needsTemporaryOrderStaging(existingWorkouts, incomingWorkouts)) {
+    await stageTemporaryOrders(existingWorkouts, (id, order) =>
+      tx.workout.update({ where: { id }, data: { order } }),
+    );
+  }
+
   for (const incomingWorkout of incomingWorkouts) {
     const existingWorkout = incomingWorkout.id != null
       ? existingWorkouts.find((w) => w.id === incomingWorkout.id && w.weekId === weekId)
@@ -250,6 +293,12 @@ async function syncWorkoutExercises(
   userId: string,
   options: SyncOptions,
 ): Promise<void> {
+  if (needsTemporaryOrderStaging(existingExercises, incomingExercises)) {
+    await stageTemporaryOrders(existingExercises, (id, order) =>
+      tx.workoutExercise.update({ where: { id }, data: { order } }),
+    );
+  }
+
   for (const incomingExercise of incomingExercises) {
     const existingExercise = incomingExercise.id != null
       ? existingExercises.find((e) => e.id === incomingExercise.id && e.workoutId === workoutId)
@@ -304,9 +353,15 @@ async function syncSets(
   tx: Prisma.TransactionClient,
   workoutExerciseId: number,
   incomingSets: SetInput[],
-  existingSets: Array<{ id: number; isDropSet: boolean }>,
+  existingSets: Array<{ id: number; order: number; isDropSet: boolean }>,
   kept: Kept,
 ): Promise<void> {
+  if (needsTemporaryOrderStaging(existingSets, incomingSets)) {
+    await stageTemporaryOrders(existingSets, (id, order) =>
+      tx.exerciseSet.update({ where: { id }, data: { order } }),
+    );
+  }
+
   // Process regular sets first so drop sets can resolve their parentSetId
   // against the (now stable) regular set ids in the same save.
   const regularSets = incomingSets.filter((s) => !s.isDropSet);
@@ -428,6 +483,44 @@ function dropSetCreateData(
     parentSetId: resolvedParentSetId,
     e1rm: computeE1rm(set.weight, set.reps),
   };
+}
+
+function needsTemporaryOrderStaging(
+  existingItems: ExistingOrderedEntity[],
+  incomingItems: IncomingOrderedEntity[],
+): boolean {
+  if (existingItems.length === 0 || incomingItems.length === 0) {
+    return false;
+  }
+
+  const currentOccupantByOrder = new Map(existingItems.map((item) => [item.order, item.id]));
+  const currentOrderById = new Map(existingItems.map((item) => [item.id, item.order]));
+
+  return incomingItems.some((item) => {
+    const currentOccupantId = currentOccupantByOrder.get(item.order);
+    if (currentOccupantId == null) {
+      return false;
+    }
+
+    if (item.id != null && currentOccupantId === item.id && currentOrderById.get(item.id) === item.order) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+async function stageTemporaryOrders(
+  existingItems: Array<{ id: number }>,
+  updateOrder: (id: number, order: number) => Promise<unknown>,
+): Promise<void> {
+  for (const item of existingItems) {
+    await updateOrder(item.id, toTemporaryOrder(item.id));
+  }
+}
+
+function toTemporaryOrder(id: number): number {
+  return -(id + 1);
 }
 
 async function deleteUntrackedRows(
